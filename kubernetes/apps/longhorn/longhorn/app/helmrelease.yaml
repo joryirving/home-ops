@@ -31,6 +31,7 @@ spec:
       createPrometheusRules: true
     ingress:
       dashboard:
+        enabled: true
         ingressClassName: nginx
         annotations:
           external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
@@ -38,6 +39,7 @@ spec:
             10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
           hajimari.io/appName: "longhorn"
           hajimari.io/icon: mdi:longhorn
+          hajimari.io/enable: "true"
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
