@@ -29,23 +29,5 @@ spec:
     monitoring:
       enabled: true
       createPrometheusRules: true
-    ingress:
-      main:
-        enabled: true
-        ingressClassName: nginx
-        annotations:
-          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
-          hajimari.io/icon: mdi:longhorn
-          hajimari.io/enable: "true"
-        hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  name: longhorn-frontend
-        tls:
-          - hosts:
-              - *host
     defaultSettings:
       defaultDataPath: "/storage01"
