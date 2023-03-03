@@ -31,8 +31,7 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: ghcr.io/k8s-at-home/wireguard
-      tag: v1.0.20210914
+      repository: linuxserver/wireguard
     env:
       TZ: America/Edmonton
     ingress:
@@ -49,7 +48,6 @@ spec:
         tls:
           - hosts:
               - *host
-          - secretName: wireguard-tls
     podSecurityContext:
       runAsUser: 568
       runAsGroup: 568
@@ -59,7 +57,7 @@ spec:
       - name: config
         mountPath: /etc/wireguard
         accessMode: ReadWriteOnce
-        size: 5Gi
+        size: 500Mi
         storageClass: longhorn
     resources:
       requests:
