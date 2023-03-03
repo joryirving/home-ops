@@ -5,12 +5,12 @@ metadata:
   name: radarr
   namespace: networking
   annotations:
-    external-dns.target/enabled: "true"
+    external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
   ingressClassName: nginx
   rules:
-    - host: &host "radarr.lildrunkensmurf.com"
+    - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
       http:
         paths:
           - pathType: Prefix
@@ -19,7 +19,7 @@ spec:
               service:
                 name: radarr
                 port:
-                  number: 7878
+                  number: 9981
   tls:
     - hosts:
         - *host
