@@ -14,7 +14,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: longhorn
-        namespace: longhorn-system
+        namespace: flux-system
   maxHistory: 3
   install:
     createNamespace: true
@@ -29,3 +29,20 @@ spec:
   values:
     monitoring:
       enabled: true
+      createPrometheusRules: true
+    ingress:
+      dashboard:
+        ingressClassName: nginx
+        annotations:
+          nginx.ingress.kubernetes.io/whitelist-source-range: |
+            10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+          hajimari.io/appName: "longhorn"
+          hajimari.io/icon: mdi:chess-rook
+        host:
+          name: &host rook.lildrunkensmurf.com
+          path: /
+        tls:
+          - hosts:
+              - *host
+    defaultSettings:
+      defaultDataPath: "/storage01"
