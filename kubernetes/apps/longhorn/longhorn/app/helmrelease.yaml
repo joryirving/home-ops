@@ -30,7 +30,7 @@ spec:
       enabled: true
       createPrometheusRules: true
   ingress:
-    longhorn-frontend:
+    main:
       enabled: true
       ingressClassName: nginx
       annotations:
@@ -42,6 +42,8 @@ spec:
           paths:
             - path: /
               pathType: Prefix
+              service:
+                name: longhorn-frontend
       tls:
         - hosts:
             - *host
