@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: radarr
+  name: sonarr
   namespace: networking
   annotations:
     external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
@@ -12,16 +12,16 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: &host "radarr.${SECRET_DOMAIN}"
+    - host: &host "sonarr.${SECRET_DOMAIN}"
       http:
         paths:
           - pathType: Prefix
             path: "/"
             backend:
               service:
-                name: radarr
+                name: sonarr
                 port:
-                  number: 7878
+                  number: 8989
   tls:
     - hosts:
         - *host
@@ -29,23 +29,23 @@ spec:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: radarr
+  name: sonarr
   namespace: networking
 subsets:
   - addresses:
       - ip: 192.168.1.100
     ports:
       - name: http
-        port: 7878
+        port: 8989
         protocol: TCP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: radarr
+  name: sonarr
   namespace: networking
 spec:
   ports:
     - name: http
-      port: 7878
+      port: 8989
   type: ClusterIP
