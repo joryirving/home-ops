@@ -6,8 +6,6 @@ metadata:
   namespace: security
 spec:
   interval: 15m
-  targetNamespace: security
-  releaseName: app-oauth2-proxy
   chart:
     spec:
       chart: oauth2-proxy
@@ -16,7 +14,21 @@ spec:
         kind: HelmRepository
         name: oauth2-proxy
         namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
   values:
+    controller:
+      replicas: 3
+      strategy: RollingUpdate
     extraArgs:
       provider: github
       github-org: "LDS-Home"
@@ -37,7 +49,7 @@ spec:
         enabled: true
         ingressClassName: nginx
         annotations:
-          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+          external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
         hosts:
           - host: &host "auth.${SECRET_DOMAIN}"
             paths:
@@ -46,3 +58,9 @@ spec:
         tls:
           - hosts:
               - *host
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        memory: 105Mi
