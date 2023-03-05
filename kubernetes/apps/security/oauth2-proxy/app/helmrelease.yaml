@@ -8,27 +8,22 @@ spec:
   interval: 15m
   chart:
     spec:
-      chart: oauth2-proxy
-      version: "6.9.1"
+      chart: app-template
+      version: 1.3.2
       sourceRef:
         kind: HelmRepository
-        name: oauth2-proxy
+        name: bjw-s
         namespace: flux-system
   maxHistory: 3
-  install:
-    createNamespace: true
-    remediation:
-      retries: 3
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
   values:
     controller:
       replicas: 3
       strategy: RollingUpdate
+    podAnnotations:
+      secret.reloader.stakater.com/reload: app-oauth2-proxy
+    image:
+      repository: quay.io/oauth2-proxy/oauth2-proxy
+      tag: v7.4.0
     extraArgs:
       provider: github
       github-org: "LDS-Home"
@@ -50,18 +45,14 @@ spec:
         ingressClassName: nginx
         annotations:
           external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
-          nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-          cert-manager.io/cluster-issuer: letsencrypt
         hosts:
-          - host: &host "auth.${SECRET_DOMAIN}"
+          - host: &host auth.lildrunkensmurf.com
             paths:
               - path: /oauth2
                 pathType: Prefix
         tls:
           - hosts:
               - *host
-            secretName: auth.lildrunkensmurf.com-tls
-
     resources:
       requests:
         cpu: 10m
