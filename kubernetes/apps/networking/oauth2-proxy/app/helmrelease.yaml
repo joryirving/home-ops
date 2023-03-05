@@ -5,8 +5,9 @@ metadata:
   name: app-oauth2-proxy
   namespace: networking
 spec:
-  targetNamespace: networking
-  releaseName: app-oauth2-proxy
+  interval: 15m
+  #targetNamespace: networking
+  #releaseName: app-oauth2-proxy
   chart:
     spec:
       chart: oauth2-proxy
@@ -15,7 +16,6 @@ spec:
         kind: HelmRepository
         name: oauth2-proxy
         namespace: flux-system
-  interval: 1m0s
   values:
     extraArgs:
       provider: github
@@ -24,3 +24,25 @@ spec:
       cookie-expire: 168h0m0s
     config:
       existingSecret: app-oauth2-proxy
+    service:
+      main:
+        ports:
+          http:
+            port: 80
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
+          nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+          cert-manager.io/cluster-issuer: letsencrypt
+        hosts:
+          - host: &host "auth.${SECRET_DOMAIN}"
+            paths:
+              - path: /oauth2
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+            secretName: auth.lildrunkensmurf.com-tls
