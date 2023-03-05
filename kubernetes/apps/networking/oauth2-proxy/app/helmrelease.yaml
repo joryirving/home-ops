@@ -24,11 +24,6 @@ spec:
       cookie-expire: 168h0m0s
     config:
       existingSecret: app-oauth2-proxy
-    service:
-      main:
-        ports:
-          http:
-            port: 4180
     ingress:
       main:
         enabled: true
@@ -38,10 +33,15 @@ spec:
           nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
           cert-manager.io/cluster-issuer: letsencrypt
         hosts:
-          - host: &host auth.lildrunkensmurf.com
+          - host: &host "auth.${SECRET_DOMAIN}"
             paths:
               - path: /oauth2
                 pathType: Prefix
+                backend:
+                  service:
+                    name: app-oauth2-proxy
+                    port:
+                      number: 80
         tls:
           - hosts:
               - *host
