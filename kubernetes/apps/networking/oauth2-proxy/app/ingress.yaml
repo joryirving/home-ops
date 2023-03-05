@@ -5,21 +5,23 @@ metadata:
   name: app-oauth2-proxy
   namespace: networking
   annotations:
-    kubernetes.io/ingress.class: nginx
+    external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
-  tls:
-    - hosts:
-        - "auth.lildrunkensmurf.com"
-      secretName: auth.lildrunkensmurf.com-tls
+  ingressClassName: nginx
   rules:
-    - host: auth.lildrunkensmurf.com
+    - host: &host "auth.${SECRET_DOMAIN}"
       http:
         paths:
-          - path: /oauth2
-            pathType: Prefix
+          - pathType: Prefix
+            path: /oauth2
             backend:
               service:
                 name: app-oauth2-proxy
                 port:
                   number: 80
+  tls:
+    - hosts:
+        - *host
+      secretName: auth.lildrunkensmurf.com-tls
