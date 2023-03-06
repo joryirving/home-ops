@@ -46,8 +46,8 @@ spec:
         ingressClassName: nginx
         annotations:
           external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
-          #nginx.ingress.kubernetes.io/auth-url: "http://app-oauth2-proxy.networking.svc.cluster.local/oauth2/auth"
-          #nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
+          nginx.ingress.kubernetes.io/auth-url: "http://app-oauth2-proxy.security.svc.cluster.local/oauth2/auth"
+          nginx.ingress.kubernetes.io/auth-signin: "https://auth.${SECRET_DOMAIN}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
           hajimari.io/icon: mdi:eye-circle
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
