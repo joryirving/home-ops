@@ -68,12 +68,13 @@ spec:
       runAsGroup: 568
       fsGroup: 568
       fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
+    volumeMounts:
       - name: config
         mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 5Gi
-        storageClass: longhorn
+    volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: home-assistant-storage
     resources:
       requests:
         cpu: 10m
