@@ -31,3 +31,16 @@ spec:
       runOnControlPlane: true
     node:
       tolerations: []
+  postRenderers:
+    - kustomize:
+        patchesStrategicMerge:
+          - apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: csi-nfs-controller
+              namespace: kube-system
+            spec:
+              template:
+                spec:
+                  nodeSelector:
+                    node-role.kubernetes.io/control-plane: "true"
