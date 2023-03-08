@@ -2,28 +2,28 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: sabnzbd
-  namespace: networking
+  name: nas
+  namespace: default
   annotations:
     external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
     nginx.ingress.kubernetes.io/whitelist-source-range: |
       10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
     hajimari.io/enable: "true"
-    hajimari.io/icon: mdi:download
+    hajimari.io/icon: mdi:nas
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
   ingressClassName: nginx
   rules:
-    - host: &host "sabnzbd.${SECRET_DOMAIN}"
+    - host: &host "nas.${SECRET_DOMAIN}"
       http:
         paths:
           - pathType: Prefix
             path: "/"
             backend:
               service:
-                name: sabnzbd
+                name: nas
                 port:
-                  number: 8080
+                  number: 80
   tls:
     - hosts:
         - *host
@@ -31,23 +31,23 @@ spec:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: sabnzbd
-  namespace: networking
+  name: nas
+  namespace: default
 subsets:
   - addresses:
       - ip: 192.168.1.100
     ports:
       - name: http
-        port: 8080
+        port: 80
         protocol: TCP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: sabnzbd
-  namespace: networking
+  name: nas
+  namespace: default
 spec:
   ports:
     - name: http
-      port: 8080
+      port: 80
   type: ClusterIP
