@@ -26,3 +26,22 @@ spec:
     controller:
       replicas: 3
       runOnControlPlane: true
+    node:
+      tolerations: []
+
+  # runOnControlPlane: true sets the nodeSelector to
+  # node-role.kubernetes.io/control-plane: "" - which does not match the
+  # actual value of "true".
+  postRenderers:
+    - kustomize:
+        patchesStrategicMerge:
+          - apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: csi-nfs-controller
+              namespace: kube-system
+            spec:
+              template:
+                spec:
+                  nodeSelector:
+                    node-role.kubernetes.io/control-plane: "true"
