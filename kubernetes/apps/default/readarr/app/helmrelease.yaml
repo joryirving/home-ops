@@ -71,8 +71,13 @@ spec:
     persistence:
       media:
         enabled: true
-        existingClaim: media-books
+        type: nfs
+        server: &nas 'nas.${SECRET_DOMAIN}'
+        path: ${SECRET_NFS_BOOK}
+        mountPath: /media
       downloads:
         enabled: true
-        existingClaim: media-downloads
-        mountMath: "/downloads"
+        type: nfs
+        server: &nas 'nas.${SECRET_DOMAIN}'
+        path: ${SECRET_NFS_DOWNLOADS}
+        mountPath: /downloads
