@@ -1,0 +1,84 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: csi-driver-nfs-downloads
+    meta.helm.sh/release-namespace: kube-system
+  labels:
+    app.kubernetes.io/name: csi-driver-nfs-downloads
+    app.kubernetes.io/instance: nfs-direct
+  name: nfs-direct
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: ${SECRET_NFS_SERVER}
+  share: ${SECRET_NFS_DOWNLOADS}
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.2
+  - nconnect=8
+  - hard
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: csi-driver-nfs-anime
+    meta.helm.sh/release-namespace: kube-system
+  labels:
+    app.kubernetes.io/name: csi-driver-nfs-anime
+    app.kubernetes.io/instance: nfs-direct
+  name: nfs-direct
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: ${SECRET_NFS_SERVER}
+  share: ${SECRET_NFS_ANIME}
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.2
+  - nconnect=8
+  - hard
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: csi-driver-nfs-movies
+    meta.helm.sh/release-namespace: kube-system
+  labels:
+    app.kubernetes.io/name: csi-driver-nfs-movies
+    app.kubernetes.io/instance: nfs-direct
+  name: nfs-direct
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: ${SECRET_NFS_SERVER}
+  share: ${SECRET_NFS_MOVIES}
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.2
+  - nconnect=8
+  - hard
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: csi-driver-nfs-tv
+    meta.helm.sh/release-namespace: kube-system
+  labels:
+    app.kubernetes.io/name: csi-driver-nfs-tv
+    app.kubernetes.io/instance: nfs-direct
+  name: nfs-direct
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: ${SECRET_NFS_SERVER}
+  share: ${SECRET_NFS_TV}
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.2
+  - nconnect=8
+  - hard
