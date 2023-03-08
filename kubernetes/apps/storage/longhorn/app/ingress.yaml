@@ -1,0 +1,29 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: longhorn
+  namespace: storage
+  annotations:
+    external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
+    nginx.ingress.kubernetes.io/auth-url: "http://app-oauth2-proxy.security.svc.cluster.local/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://auth.${SECRET_DOMAIN}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
+    nginx.ingress.kubernetes.io/whitelist-source-range: |
+      10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    hajimari.io/icon: mdi:harddisk
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: &host "longhorn.${SECRET_DOMAIN}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: longhorn-frontend
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - *host
