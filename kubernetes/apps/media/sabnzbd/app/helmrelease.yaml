@@ -32,7 +32,7 @@ spec:
     env:
       TZ: America/Edmonton
       SABNZBD__HOST_WHITELIST_ENTRIES: >-
-        sabnzbd, sabnzbd.media, sabnzbd.media.svc, sabnzbd.media.svc.cluster, sabnzbd.media.svc.cluster.local, sabnzbd.${EXTERNAL_DOMAIN}, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+        sabnzbd, sabnzbd.media, sabnzbd.media.svc, sabnzbd.media.svc.cluster, sabnzbd.media.svc.cluster.local, sabnzbd.${EXTERNAL_DOMAIN}
     service:
       main:
         ports:
@@ -48,8 +48,8 @@ spec:
             proxy_set_header Accept-Encoding "";
             sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${EXTERNAL_DOMAIN}/css/base/sabnzbd/plex.css"></head>';
             sub_filter_once on;
-          nginx.ingress.kubernetes.io/whitelist-source-range: |
-            10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+          #nginx.ingress.kubernetes.io/whitelist-source-range: |
+          #  10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
           hajimari.io/icon: mdi:download
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
