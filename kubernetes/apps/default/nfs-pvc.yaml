@@ -4,182 +4,123 @@ kind: PersistentVolume
 metadata:
   name: media-downloads
 spec:
-  storageClassName: media-nfs
+  storageClassName: media-downloads
   capacity:
     storage: 1Mi
   accessModes: ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  nfs:
-    server: ${SECRET_NFS_SERVER}
-    share: ${SECRET_NFS_DOWNLOADS}
+  csi:
+    driver: nfs.csi.k8s.io
+    readOnly: false
+    volumeAttributes:
+      server: ${SECRET_NFS_SERVER}
+      share: ${SECRET_NFS_ANIME}
 mountOptions:
   - nfsvers=4.2
   - nconnect=8
   - hard
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: media-downloads
-  namespace: default
-spec:
-  accessModes: ReadWriteMany
-  storageClassName: media-nfs
-  resources:
-    requests:
-      storage: 1Mi
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: media-anime
 spec:
-  storageClassName: media-nfs
+  storageClassName: media-anime
   capacity:
     storage: 1Mi
   accessModes: ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  nfs:
-    server: ${SECRET_NFS_SERVER}
-    share: ${SECRET_NFS_ANIME}
+  csi:
+    driver: nfs.csi.k8s.io
+    readOnly: false
+    volumeAttributes:
+      server: ${SECRET_NFS_SERVER}
+      share: ${SECRET_NFS_ANIME}
 mountOptions:
   - nfsvers=4.2
   - nconnect=8
   - hard
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: media-anime
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: media-nfs
-  resources:
-    requests:
-      storage: 1Mi
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: media-books
 spec:
-  storageClassName: media-nfs
+  storageClassName: media-books
   capacity:
     storage: 1Mi
   accessModes: ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  nfs:
-    server: ${SECRET_NFS_SERVER}
-    share: ${SECRET_NFS_BOOK}
+  csi:
+    driver: nfs.csi.k8s.io
+    readOnly: false
+    volumeAttributes:
+      server: ${SECRET_NFS_SERVER}
+      share: ${SECRET_NFS_BOOK}
 mountOptions:
   - nfsvers=4.2
   - nconnect=8
   - hard
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: media-books
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: media-nfs
-  resources:
-    requests:
-      storage: 1Mi
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: media-movies
 spec:
-  storageClassName: media-nfs
+  storageClassName: media-movies
   capacity:
     storage: 1Mi
   accessModes: ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  nfs:
-    server: ${SECRET_NFS_SERVER}
-    share: ${SECRET_NFS_MOVIES}
+  csi:
+    driver: nfs.csi.k8s.io
+    readOnly: false
+    volumeAttributes:
+      server: ${SECRET_NFS_SERVER}
+      share: ${SECRET_NFS_MOVIES}
 mountOptions:
   - nfsvers=4.2
   - nconnect=8
   - hard
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: media-movies
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: media-nfs
-  resources:
-    requests:
-      storage: 1Mi
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: media-tv
 spec:
-  storageClassName: media-nfs
+  storageClassName: media-tv
   capacity:
     storage: 1Mi
   accessModes: ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  nfs:
-    server: ${SECRET_NFS_SERVER}
-    share: ${SECRET_NFS_TV}
+  csi:
+    driver: nfs.csi.k8s.io
+    readOnly: false
+    volumeAttributes:
+      server: ${SECRET_NFS_SERVER}
+      share: ${SECRET_NFS_TV}
 mountOptions:
   - nfsvers=4.2
   - nconnect=8
   - hard
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: media-tv
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: media-nfs
-  resources:
-    requests:
-      storage: 1Mi
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: media-recycle-bin
 spec:
-  storageClassName: media-nfs-
+  storageClassName: media-recycle-bin
   capacity:
     storage: 1Mi
   accessModes: ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  nfs:
-    server: ${SECRET_NFS_SERVER}
-    share: ${SECRET_NFS_RECYCLE}
+  csi:
+    driver: nfs.csi.k8s.io
+    readOnly: false
+    volumeAttributes:
+      server: ${SECRET_NFS_SERVER}
+      share: ${SECRET_NFS_RECYCLE}
 mountOptions:
   - nfsvers=4.2
   - nconnect=8
   - hard
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: media-recycle-bin
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: media-nfs
-  resources:
-    requests:
-      storage: 1Mi
