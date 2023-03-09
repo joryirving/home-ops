@@ -4,7 +4,7 @@ kind: StorageClass
 metadata:
   annotations:
     meta.helm.sh/release-name: media-downloads
-    meta.helm.sh/release-namespace: kube-system
+    meta.helm.sh/release-namespace: storage
   labels:
     app.kubernetes.io/name: media-downloads
     app.kubernetes.io/instance: nfs-direct
@@ -25,7 +25,7 @@ kind: StorageClass
 metadata:
   annotations:
     meta.helm.sh/release-name: media-anime
-    meta.helm.sh/release-namespace: kube-system
+    meta.helm.sh/release-namespace: storage
   labels:
     app.kubernetes.io/name: media-anime
     app.kubernetes.io/instance: nfs-direct
@@ -46,7 +46,7 @@ kind: StorageClass
 metadata:
   annotations:
     meta.helm.sh/release-name: media-books
-    meta.helm.sh/release-namespace: kube-system
+    meta.helm.sh/release-namespace: storage
   labels:
     app.kubernetes.io/name: media-books
     app.kubernetes.io/instance: nfs-direct
@@ -67,7 +67,7 @@ kind: StorageClass
 metadata:
   annotations:
     meta.helm.sh/release-name: media-movies
-    meta.helm.sh/release-namespace: kube-system
+    meta.helm.sh/release-namespace: storage
   labels:
     app.kubernetes.io/name: media-movies
     app.kubernetes.io/instance: nfs-direct
@@ -88,7 +88,7 @@ kind: StorageClass
 metadata:
   annotations:
     meta.helm.sh/release-name: media-tv
-    meta.helm.sh/release-namespace: kube-system
+    meta.helm.sh/release-namespace: storage
   labels:
     app.kubernetes.io/name: media-tv
     app.kubernetes.io/instance: nfs-direct
@@ -109,7 +109,7 @@ kind: StorageClass
 metadata:
   annotations:
     meta.helm.sh/release-name: media-recycle-bin
-    meta.helm.sh/release-namespace: kube-system
+    meta.helm.sh/release-namespace: storage
   labels:
     app.kubernetes.io/name: media-recycle-bin
     app.kubernetes.io/instance: nfs-direct
@@ -120,6 +120,26 @@ parameters:
   share: ${SECRET_NFS_RECYCLE}
 reclaimPolicy: Retain
 volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.2
+  - nconnect=8
+  - hard
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: media-nfs
+    meta.helm.sh/release-namespace: storage
+  labels:
+    app.kubernetes.io/name: media-nfs
+    app.kubernetes.io/instance: nfs-direct
+  name: media-nfs
+provisioner: nfs.csi.k8s.io
+parameters:
+  pathPattern: ""
+  archiveOnDelete: false
+reclaimPolicy: Retain
 mountOptions:
   - nfsvers=4.2
   - nconnect=8
