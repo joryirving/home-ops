@@ -35,18 +35,25 @@ spec:
       tag: 1.3.1.2796@sha256:54fe75318731daa03291cc993091adc5b0961fef12df3e93e4b784f0e2123bce
     env:
       TZ: America/Edmonton
+      PROWLARR__INSTANCE_NAME: Prowlarr
+      PROWLARR__PORT: &port 80
+      PROWLARR__LOG_LEVEL: info
       PROWLARR__AUTHENTICATION_METHOD: External
     service:
       main:
         ports:
           http:
-            port: 9696
+            port: *port
     ingress:
       main:
         enabled: true
         ingressClassName: nginx
         annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
+          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+          nginx.ingress.kubernetes.io/configuration-snippet: |
+            proxy_set_header Accept-Encoding "";
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/prowlarr/plex.css"></head>';
+            sub_filter_once on;
           nginx.ingress.kubernetes.io/whitelist-source-range: |
             10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
           hajimari.io/icon: mdi:movie-search
