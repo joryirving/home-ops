@@ -46,6 +46,12 @@ spec:
         ingressClassName: nginx
         annotations:
           external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
+          nginx.ingress.kubernetes.io/configuration-snippet: |
+            proxy_set_header Accept-Encoding "";
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/radarr/plex.css"></head>';
+            sub_filter_once on;
+          nginx.ingress.kubernetes.io/auth-url: "http://app-oauth2-proxy.security.svc.cluster.local/oauth2/auth"
+          nginx.ingress.kubernetes.io/auth-signin: "https://auth.${SECRET_DOMAIN}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
           nginx.ingress.kubernetes.io/whitelist-source-range: |
             10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
           hajimari.io/icon: mdi:filmstrip
