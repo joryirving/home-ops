@@ -31,21 +31,37 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: ghcr.io/onedr0p/sonarr
-      tag: rolling
+      repository: ghcr.io/onedr0p/sonarr-develop
+      tag: 4.0.0.394@sha256:46577752f11ade77ad384a20265de3fe44532cb9cb5d84b09404b238b535f03c
     env:
       TZ: America/Edmonton
+      SONARR__PORT: &port 80
     service:
       main:
         ports:
           http:
-            port: 8989
+            port: *port
+    probes:
+      liveness: &probes
+        enabled: true
+        custom: true
+        spec:
+          httpGet:
+            path: /ping
+            port: *port
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 1
+          failureThreshold: 3
+      readiness: *probes
+      startup:
+        enabled: false
     ingress:
       main:
         enabled: true
         ingressClassName: nginx
         annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
+          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
           nginx.ingress.kubernetes.io/configuration-snippet: |
             proxy_set_header Accept-Encoding "";
             sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/sonarr/plex.css"></head>';
