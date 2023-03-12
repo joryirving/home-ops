@@ -30,18 +30,11 @@ spec:
         env:
           - name: VPN_SERVICE_PROVIDER
             value: nordvpn
-          - name: OPENVPN_USER
-            valueFrom:
-              secretKeyRef:
-                name: downloads-gateway-vpn
-                key: OPENVPN_USER
-          - name: OPENVPN_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: downloads-gateway-vpn
-                key: OPENVPN_PASSWORD
           - name: SERVER_REGIONS
             value: Canada
+        envFrom:
+          - secretRef:
+              name: downloads-gateway-vpn
         securityContext:
           capabilities:
             add:
