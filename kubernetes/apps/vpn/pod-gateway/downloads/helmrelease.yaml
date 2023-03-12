@@ -25,14 +25,11 @@ spec:
         enabled: true
         type: gluetun
         image:
-          # TODO: Replace with ghcr.io/qdm12/gluetun when a versioned tag is available
           repository: ghcr.io/qdm12/gluetun
           tag: v3.32.0
         env:
           - name: VPN_SERVICE_PROVIDER
             value: nordvpn
-          # - name: VPN_TYPE
-          #   value: openvpn
           - name: OPENVPN_USER
             valueFrom:
               secretKeyRef:
@@ -56,9 +53,9 @@ spec:
       - IP: 10
         hostname: qbittorrent
         ports:
-          - port: 56202
+          - port: 50413
             type: udp
-          - port: 56202
+          - port: 50413
             type: tcp
     routed_namespaces:
       - media
