@@ -35,9 +35,17 @@ spec:
         value: NORDVPN
       - name: LOCAL_NETWORK
         value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-    envFrom:
-      - secretRef:
-          name: transmission-vpn
+    secretEnv:
+      - name: OPENVPN_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: transmission-vpn
+            key: OPENVPN_USERNAME
+      - name: OPENVPN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: transmission-vpn
+            key: OPENVPN_PASSWORD
     service:
       main:
         ports:
