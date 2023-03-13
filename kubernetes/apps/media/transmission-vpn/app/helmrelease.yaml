@@ -85,11 +85,6 @@ spec:
         accessMode: ReadWriteOnce
         size: 2Gi
         storageClass: longhorn
-      - name: openvpn
-        mountPath: /etc/openvpn
-        accessMode: ReadWriteOnce
-        size: 500Mi
-        storageClass: longhorn
     persistence:
       downloads:
         enabled: true
@@ -97,6 +92,10 @@ spec:
         mountPath: /downloads
       incomplete:
         enabled: true
+        type: emptyDir
+      openvpn:
+        enabled: true
+        mountPath: /etc/openvpn
         type: emptyDir
     resources:
       requests:
