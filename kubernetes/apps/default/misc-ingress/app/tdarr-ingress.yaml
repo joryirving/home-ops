@@ -1,0 +1,53 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tdarr
+  namespace: default
+  annotations:
+    external-dns.alpha.kubernetes.io/target: ipv4.lildrunkensmurf.com
+    nginx.ingress.kubernetes.io/whitelist-source-range: |
+      10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    hajimari.io/enable: "true"
+    hajimari.io/icon: mdi:play-network
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: &host "nas.${SECRET_DOMAIN}"
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: tdarr
+                port:
+                  number: 8265
+  tls:
+    - hosts:
+        - *host
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: tdarr
+  namespace: default
+subsets:
+  - addresses:
+      - ip: 192.168.1.100
+    ports:
+      - name: http
+        port: 8265
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tdarr
+  namespace: default
+spec:
+  ports:
+    - name: http
+      port: 8265
+  type: ClusterIP
