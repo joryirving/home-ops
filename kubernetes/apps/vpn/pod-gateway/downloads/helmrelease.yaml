@@ -38,16 +38,11 @@ spec:
             value: "off"
           - name: DOT
             value: "off"
-          - name: WIREGUARD_PRIVATE_KEY
-            valueFrom:
-              secretKeyRef:
-                name: downloads-gateway-vpnconfig
-                key: WIREGUARD_PRIVATE_KEY
-          - name: WIREGUARD_ADDRESSES
-            valueFrom:
-              secretKeyRef:
-                name: downloads-gateway-vpnconfig
-                key: WIREGUARD_ADDRESSES
+          - name: SERVER_COUNTRIES
+            value: Canada
+        envFrom:
+          - secretRef:
+              name: downloads-gateway-vpnconfig
         securityContext:
           capabilities:
             add:
