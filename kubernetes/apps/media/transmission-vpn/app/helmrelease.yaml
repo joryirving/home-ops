@@ -40,7 +40,7 @@ spec:
       - name: LOCAL_NETWORK
         value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
       - name: CREATE_TUN_DEVICE
-        value: 'false'
+        value: 'true'
     envFrom:
       - secretRef:
           name: transmission-vpn
@@ -49,6 +49,7 @@ spec:
         add:
           - NET_ADMIN
       privileged: true
+      runAsUser: 0
     service:
       main:
         ports:
