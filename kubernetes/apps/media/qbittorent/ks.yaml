@@ -4,6 +4,8 @@ kind: Kustomization
 metadata:
   name: cluster-apps-qbittorent
   namespace: flux-system
+  labels:
+    substitution.flux.home.arpa/enabled: "true"
 spec:
   path: ./kubernetes/apps/media/qbittorent/app
   prune: true
@@ -18,3 +20,5 @@ spec:
   interval: 30m
   retryInterval: 1m
   timeout: 3m
+  dependsOn:
+    - name: cluster-apps-qbittorent-pod-gateway-downloads
