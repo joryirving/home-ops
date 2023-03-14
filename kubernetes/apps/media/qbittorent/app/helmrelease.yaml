@@ -41,6 +41,18 @@ spec:
         ports:
           http:
             port: 8080
+      bittorrent:
+        enabled: true
+        type: LoadBalancer
+        externalIPs:
+          - "${SVC_QBITTORRENT_ADDR}"
+        ports:
+          bittorrent:
+            enabled: true
+            port: *port-bt
+            protocol: TCP
+            targetPort: *port-bt
+        externalTrafficPolicy: Local
     ingress:
       main:
         enabled: true
@@ -63,13 +75,13 @@ spec:
           - hosts:
               - *host
     ##Remove these once we fix why probes are failing
-    probes:
-      liveness:
-        enabled: false
-      readiness:
-        enabled: false
-      startup:
-        enabled: false
+    # probes:
+    #   liveness:
+    #     enabled: false
+    #   readiness:
+    #     enabled: false
+    #   startup:
+    #     enabled: false
     podSecurityContext:
       runAsUser: 568
       runAsGroup: 568
