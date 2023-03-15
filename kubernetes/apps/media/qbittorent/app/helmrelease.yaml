@@ -33,14 +33,31 @@ spec:
       tag: 4.5.2
     env:
       TZ: "${TZ}"
+      UMASK: "022"
       QBITTORRENT__BT_PORT: &port-bt "${SECRET_VPN_FORWARDED_PORT_1}"
+      QBITTORRENT__PORT: &port 8080
+      QBITTORRENT__USE_PROFILE: "true"
     podAnnotations:
       setGateway: "true"
+    initContainers:
+      copy-config:
+        image: busybox:latest
+        command:
+          - "/bin/sh"
+          - -c
+        args:
+          - cp /data/configfiles/* /data/config/
+        volumeMounts:
+          - name: config
+            mountPath: /data/config
+          - name: configfiles
+            mountPath: /data/configfiles
+    hostname: qbittorrent
     service:
       main:
         ports:
           http:
-            port: 8080
+            port: *port
     ingress:
       main:
         enabled: true
@@ -75,13 +92,20 @@ spec:
       runAsGroup: 568
       fsGroup: 568
       fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 2Gi
-        storageClass: longhorn
     persistence:
+      config:
+        enabled: true
+        type: emptyDir
+        mountPath: /config/qBittorrent/config
+      cache:
+        enabled: true
+        type: emptyDir
+        mountPath: /config/qBittorrent/cache
+      configfiles:
+        enabled: true
+        type: configMap
+        name: qbittorrent-configmap
+        mountPath: "-"
       downloads:
         enabled: true
         existingClaim: media-downloads
