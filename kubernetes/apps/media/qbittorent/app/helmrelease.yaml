@@ -26,7 +26,6 @@ spec:
     keepHistory: false
   values:
     controller:
-      type: statefulset
       annotations:
         reloader.stakater.com/auto: "true"
     image:
@@ -41,7 +40,22 @@ spec:
       main:
         ports:
           http:
-            port: 8080
+            port: &port 8080
+    probes:
+      liveness: &probes
+        enabled: true
+        custom: true
+        spec:
+          httpGet:
+            path: /health
+            port: *port
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 1
+          failureThreshold: 3
+      readiness: *probes
+      startup:
+        enabled: false
     ingress:
       main:
         enabled: true
@@ -63,14 +77,6 @@ spec:
         tls:
           - hosts:
               - *host
-    ##Remove these once we fix why probes are failing
-    probes:
-      liveness:
-        enabled: false
-      readiness:
-        enabled: false
-      startup:
-        enabled: false
     podSecurityContext:
       runAsUser: 568
       runAsGroup: 568
