@@ -91,11 +91,21 @@ spec:
         size: 2Gi
         storageClass: longhorn
     persistence:
-      media:
+      books:
         enabled: true
-        existingClaim: media-books
-        mountPath: /media
+        type: nfs
+        server: ${SECRET_NFS_SERVER}
+        path: "${SECRET_NFS_DATA}/media/books"
+        mountPath: /books
       downloads:
         enabled: true
-        existingClaim: media-downloads
+        type: nfs
+        server: ${SECRET_NFS_SERVER}
+        path: "${SECRET_NFS_DATA}/usenet"
         mountPath: /downloads
+      recycle:
+        enabled: true
+        type: nfs
+        server: ${SECRET_NFS_SERVER}
+        path: "${SECRET_NFS_DATA}/media-recycle-bin"
+        mountPath: /media-recycle-bin

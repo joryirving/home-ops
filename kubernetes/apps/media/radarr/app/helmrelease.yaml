@@ -92,15 +92,21 @@ spec:
         size: 2Gi
         storageClass: longhorn
     persistence:
-      anime:
+      movies:
         enabled: true
-        existingClaim: media-movies
+        type: nfs
+        server: ${SECRET_NFS_SERVER}
+        path: "${SECRET_NFS_DATA}/media/movies"
         mountPath: /movies
       downloads:
         enabled: true
-        existingClaim: media-downloads
+        type: nfs
+        server: ${SECRET_NFS_SERVER}
+        path: "${SECRET_NFS_DATA}/usenet"
         mountPath: /downloads
       recycle:
         enabled: true
-        existingClaim: media-recycle-bin
+        type: nfs
+        server: ${SECRET_NFS_SERVER}
+        path: "${SECRET_NFS_DATA}/media-recycle-bin"
         mountPath: /media-recycle-bin
