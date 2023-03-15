@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: radarr
+  name: bazarr
   namespace: media
 spec:
   interval: 15m
@@ -31,34 +31,19 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: ghcr.io/onedr0p/radarr-develop
-      tag: 4.4.2.6956
+      repository: ghcr.io/onedr0p/bazarr
+      tag: 1.2.0
     env:
       TZ: "${TZ}"
-      RADARR__INSTANCE_NAME: Radarr
-      RADARR__PORT: &port 80
-      RADARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_DOMAIN}"
-      RADARR__LOG_LEVEL: info
+      BAZARR__INSTANCE_NAME: Bazarr
+      BAZARR__PORT: &port 80
+      BAZARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_DOMAIN}"
+      BAZARR__LOG_LEVEL: info
     service:
       main:
         ports:
           http:
             port: *port
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /ping
-            port: *port
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-      readiness: *probes
-      startup:
-        enabled: false
     ingress:
       main:
         enabled: true
@@ -67,11 +52,11 @@ spec:
           external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
           nginx.ingress.kubernetes.io/configuration-snippet: |
             proxy_set_header Accept-Encoding "";
-            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/radarr/plex.css"></head>';
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/bazarr/plex.css"></head>';
             sub_filter_once on;
           nginx.ingress.kubernetes.io/whitelist-source-range: |
             10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
-          hajimari.io/icon: mdi:filmstrip
+          hajimari.io/icon: mdi:subtitles-outline
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
@@ -89,30 +74,34 @@ spec:
       - name: config
         mountPath: /config
         accessMode: ReadWriteOnce
-        size: 2Gi
+        size: 1Gi
         storageClass: longhorn
     persistence:
-      movies:
+      media:
         enabled: true
         type: nfs
         server: ${SECRET_NFS_SERVER}
-        path: "${SECRET_NFS_DATA}/media/movies"
-        mountPath: /movies
-      usenet:
-        enabled: true
-        type: nfs
-        server: ${SECRET_NFS_SERVER}
-        path: "${SECRET_NFS_DATA}/usenet"
+        path: "${SECRET_NFS_DATA}/media"
         mountPath: /usenet
-      torrents:
+      add-ons:
         enabled: true
-        type: nfs
-        server: ${SECRET_NFS_SERVER}
-        path: "${SECRET_NFS_DATA}/torrents"
-        mountPath: /torrents
-      recycle:
-        enabled: true
-        type: nfs
-        server: ${SECRET_NFS_SERVER}
-        path: "${SECRET_NFS_DATA}/media-recycle-bin"
-        mountPath: /media-recycle-bin
+        type: emptyDir
+        mountPath: /add-ons
+    resources:
+      requests:
+        cpu: 10m
+        memory: 250Mi
+      limits:
+        memory: 2000Mi
+    sidecars:
+      subcleaner:
+        image: k8s.gcr.io/git-sync/git-sync:v3.6.4
+        imagePullPolicy: IfNotPresent
+        args:
+          - --repo=https://github.com/KBlixt/subcleaner.git
+          - --branch=master
+          - --depth=1
+          - --wait=21600 # 6 hours
+          - --root=/add-ons/subcleaner
+        volumeMounts:
+          - { name: add-ons, mountPath: /add-ons }
