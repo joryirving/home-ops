@@ -8,20 +8,14 @@ spec:
     storage: 16T
   accessModes:
     - ReadWriteMany
-  persistentVolumeReclaimPolicy: Delete
+  nfs:
+    server: ${SECRET_NFS_SERVER}
+    share: ${SECRET_NFS_DATA}
   mountOptions:
     - nfsvers=4.2
     - nconnect=16
     - hard
     - noatime
-  csi:
-    driver: nfs.csi.k8s.io
-    readOnly: false
-    volumeHandle: media-nfs-storage-media
-    volumeAttributes:
-      server: ${SECRET_NFS_SERVER}
-      share: ${SECRET_NFS_DATA}
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
