@@ -1,4 +1,4 @@
-kubectl rollout restart daemonset engine-image-ei-d4c780c6 -n storage
+kubectl rollout restart daemonset engine-image-ei-7fa7c208 -n storage
 kubectl rollout restart daemonset longhorn-csi-plugin -n storage
 kubectl rollout restart daemonset longhorn-manager -n storage
 
