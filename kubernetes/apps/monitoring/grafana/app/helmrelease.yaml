@@ -72,34 +72,20 @@ spec:
     grafana.ini:
       analytics:
         check_for_updates: false
-      # auth:
-      #   signout_redirect_url: "https://auth.${SECRET_DOMAIN}/logout"
-      #   oauth_auto_login: false
-      # auth.basic:
-      #   enabled: false
-      # auth.generic_oauth:
-      #   enabled: true
-      #   name: Authelia
-      #   client_id: grafana
-      #   client_secret: "${SECRET_AUTHELIA_GRAFANA_CLIENT_SECRET}"
-      #   scopes: "openid profile email groups"
-      #   empty_scopes: false
-      #   auth_url: "https://auth.${SECRET_DOMAIN}/api/oidc/authorization"
-      #   token_url: "https://auth.${SECRET_DOMAIN}/api/oidc/token"
-      #   api_url: "https://auth.${SECRET_DOMAIN}/api/oidc/userinfo"
-      #   login_attribute_path: preferred_username
-      #   groups_attribute_path: groups
-      #   name_attribute_path: name
-      #   use_pkce: true
-      # auth.generic_oauth.group_mapping:
-      #   role_attribute_path: |
-      #     contains(groups[*], 'admins') && 'Admin' || contains(groups[*], 'people') && 'Viewer'
-      #   org_id: 1
-      auth.anonymous:
+      auth.basic:
         enabled: true
-        org_name: HomeOps
-        org_id: 1
-        org_role: Viewer
+      auth.github:
+        enabled: true
+        allow_sign_up: false
+        auto_login: false
+        client_id: ${GITHUB_APP_ID}
+        client_secret: ${GITHUB_CLIENT_SECRET}
+        scopes: user:email,read:org
+        auth_url: https://github.com/login/oauth/authorize
+        token_url: https://github.com/login/oauth/access_token
+        api_url: https://api.github.com/user
+        team_ids: "lds-home-team"
+        allowed_organizations: "LDS-Home"
       grafana_net:
         url: https://grafana.net
       log:
