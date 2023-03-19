@@ -2,28 +2,20 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: node-feature-discovery
+  name: intel-device-plugins-operator
   namespace: kube-system
 spec:
   interval: 30m
   chart:
     spec:
-      chart: node-feature-discovery
-      version: 0.12.1
+      chart: intel-device-plugins-operator
+      version: 0.26.0
+      interval: 30m
       sourceRef:
         kind: HelmRepository
-        name: kubernetes-sigs-nfd
+        name: intel
         namespace: flux-system
-      interval: 30m
   install:
     crds: CreateReplace
   upgrade:
     crds: CreateReplace
-  values:
-    worker:
-      resources:
-        requests:
-          cpu: 15m
-          memory: 64M
-        limits:
-          memory: 64M
