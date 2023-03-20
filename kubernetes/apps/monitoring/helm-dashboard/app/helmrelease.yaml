@@ -19,12 +19,13 @@ spec:
   values:
     ingress:
       enabled: true
-      className: "nginx"
+      ClassName: nginx
+      annotations:
+        external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+        nginx.ingress.kubernetes.io/whitelist-source-range: |
+          10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       hosts:
-        - host: &host "helm.${SECRET_DOMAIN}"
-          paths:
-            - path: /
-              pathType: Prefix
+        - &host helm.${SECRET_DOMAIN}
       tls:
         - hosts:
             - *host
