@@ -8,124 +8,89 @@ spec:
   interval: 15m
   chart:
     spec:
-      # renovate: registryUrl=https://prometheus-community.github.io/helm-charts
       chart: kube-prometheus-stack
       version: 45.7.1
       sourceRef:
         kind: HelmRepository
         name: prometheus-community
         namespace: flux-system
-      interval: 15m
+  maxHistory: 3
   install:
     createNamespace: true
     crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
+    cleanupOnFail: true
     crds: CreateReplace
     remediation:
       retries: 3
-  dependsOn:
-    - name: longhorn
-      namespace: storage
+  uninstall:
+    keepHistory: false
   values:
-    fullnameOverride: prom
-    defaultRules:
-      enabled: true
-      rules:
-        alertmanager: true
-        etcd: true
-        configReloaders: true
-        general: true
-        k8s: true
-        kubeApiserver: true
-        kubeApiserverAvailability: true
-        kubeApiserverSlos: true
-        kubelet: true
-        kubeProxy: false
-        kubePrometheusGeneral: true
-        kubePrometheusNodeRecording: true
-        kubernetesApps: true
-        kubernetesResources: true
-        kubernetesStorage: true
-        kubernetesSystem: true
-        kubeScheduler: false
-        kubeStateMetrics: true
-        network: true
-        node: true
-        nodeExporterAlerting: true
-        nodeExporterRecording: true
-        prometheus: true
-        prometheusOperator: true
-
-    kube-state-metrics:
-      fullnameOverride: kube-state-metrics
-    prometheus-node-exporter:
-      fullnameOverride: node-exporter
-      tolerations:
-        - effect: "NoExecute"
-          operator: "Exists"
-        - effect: "NoSchedule"
-          operator: "Exists"
-      prometheus:
-        monitor:
-          enabled: true
-          relabelings:
-            - action: replace
-              regex: (.*)
-              replacement: $1
-              sourceLabels:
-                - __meta_kubernetes_pod_node_name
-              targetLabel: kubernetes_node
-    grafana:
-      enabled: false
-      forceDeployDashboards: true
-      sidecar:
-        dashboards:
-          annotations:
-            grafana_folder: Prometheus
-    kubelet:
-      enabled: true
-      serviceMonitor:
-        metricRelabelings:
-          - action: replace
-            sourceLabels:
-              - node
-            targetLabel: instance
-    kubeApiServer:
-      enabled: true
-    kubeControllerManager:
-      enabled: false
-    kubeScheduler:
-      enabled: false
-    kubeProxy:
-      enabled: false
-    kubeEtcd:
-      enabled: true
-      endpoints:
-        - 192.168.1.50
-
+    cleanPrometheusOperatorObjectNames: true
     # alertmanager:
     #   config:
     #     global:
     #       resolve_timeout: 5m
     #     receivers:
-    #       - name: "null"
-    #       - name: "discord"
+    #       - name: heartbeat
     #         webhook_configs:
-    #           - url: http://alertmanager-discord:9094
+    #           - url: "https://heartbeat.uptimerobot.com/${SECRET_ALERTMANAGER_UPTIMEROBOT_HEARTBEAT_TOKEN}"
     #             send_resolved: true
+    #       - name: "null" # quote
+    #       - name: pushover
+    #         pushover_configs:
+    #           - url_title: View in Alert Manager
+    #             token: "${SECRET_ALERTMANAGER_PUSHOVER_TOKEN}"
+    #             user_key: "${SECRET_ALERTMANAGER_PUSHOVER_USER_KEY}"
+    #             send_resolved: true
+    #             html: true
+    #             sound: gamelan
+    #             priority: |-
+    #               {{ if eq .Status "firing" }}1{{ else }}0{{ end }}
+    #             title: |-
+    #               [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
+    #             message: |-
+    #               {{- range .Alerts }}
+    #                 {{- if ne .Labels.severity "" }}
+    #                   <b>Severity:</b> <i>{{ .Labels.severity }}</i>
+    #                 {{- else }}
+    #                   <b>Severity:</b> <i>N/A</i>
+    #                 {{- end }}
+    #                 {{- if ne .Annotations.description "" }}
+    #                   <b>Description:</b> <i>{{ .Annotations.description }}</i>
+    #                 {{- else if ne .Annotations.summary "" }}
+    #                   <b>Summary:</b> <i>{{ .Annotations.summary }}</i>
+    #                 {{- else if ne .Annotations.message "" }}
+    #                   <b>Message:</b> <i>{{ .Annotations.message }}</i>
+    #                 {{- else }}
+    #                   <b>Description:</b> <i>N/A</i>
+    #                 {{- end }}
+    #                 {{- if gt (len .Labels.SortedPairs) 0 }}
+    #                   <b>Details:</b>
+    #                   {{- range .Labels.SortedPairs }}
+    #                     • <b>{{ .Name }}:</b> <i>{{ .Value }}</i>
+    #                   {{- end }}
+    #                 {{- end }}
+    #               {{- end }}
     #     route:
-    #       group_by: [ "alertname", "job" ]
-    #       group_wait: 30s
-    #       group_interval: 5m
-    #       repeat_interval: 6h
-    #       receiver: "discord"
+    #       group_by: ["alertname", "job"]
+    #       group_wait: 45s
+    #       group_interval: 10m
+    #       repeat_interval: 12h
+    #       receiver: pushover
     #       routes:
-    #         - receiver: "null"
+    #         - receiver: heartbeat
+    #           group_wait: 0s
+    #           group_interval: 2m
+    #           repeat_interval: 2m
     #           matchers:
-    #             - alertname =~ "InfoInhibitor|Watchdog"
-    #         - receiver: "discord"
+    #             - alertname =~ "Watchdog"
+    #         - receiver: "null" # quote
+    #           matchers:
+    #             - alertname =~ "InfoInhibitor"
+    #         - receiver: pushover
     #           matchers:
     #             - severity = "critical"
     #           continue: true
@@ -134,37 +99,70 @@ spec:
     #           - severity = "critical"
     #         target_matchers:
     #           - severity = "warning"
-    #     ingress:
-    #       enabled: true
-    #       pathType: Prefix
-    #       ingressClassName: "nginx"
-    #       hosts:
-    #         - &host "alerts.skylab.fi"
-    #       tls:
-    #         - hosts:
-    #             - *host
-    #     alertmanagerSpec:
-    #       replicas: 1
-    #       storage:
-    #         volumeClaimTemplate:
-    #           spec:
-    #             storageClass: longhorn
-    #             resources:
-    #               requests:
-    #                 storage: 1Gi
-
-    prometheusOperator:
-      resources:
-        requests:
-          memory: 164M
-        limits:
-          memory: 300M
-      prometheusConfigReloader:
-        resources:
-          requests:
-            memory: 50Mi
-          limits:
-            memory: 100Mi
+    #         equal: ["alertname", "namespace"]
+    #   ingress:
+    #     enabled: true
+    #     pathType: Prefix
+    #     ingressClassName: nginx
+    #     annotations:
+    #       nginx.ingress.kubernetes.io/whitelist-source-range: |
+    #         10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    #       hajimari.io/appName: "Alert Manager"
+    #       hajimari.io/icon: mdi:alert-decagram-outline
+    #     hosts:
+    #       - &host "alert-manager.${SECRET_DOMAIN}"
+    #     tls:
+    #       - hosts:
+    #           - *host
+    #   alertmanagerSpec:
+    #     replicas: 3
+    #     storage:
+    #       volumeClaimTemplate:
+    #         spec:
+    #           storageClassName: local-path
+    #           resources:
+    #             requests:
+    #               storage: 1Gi
+    grafana:
+      enabled: false
+      forceDeployDashboards: true
+      sidecar:
+        dashboards:
+          multicluster:
+            etcd:
+              enabled: true
+    kubelet:
+      enabled: true
+      serviceMonitor:
+        metricRelabelings:
+          - action: replace
+            sourceLabels: ["node"]
+            targetLabel: instance
+    kube-state-metrics:
+      metricLabelsAllowlist: ["persistentvolumeclaims=[*]"]
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels: ["__meta_kubernetes_pod_node_name"]
+              targetLabel: kubernetes_node
+    kubeApiServer:
+      enabled: true
+    kubeControllerManager:
+      enabled: true
+      endpoints: ["192.168.1.50"]
+    kubeScheduler:
+      enabled: true
+      endpoints: ["192.168.1.50"]
+    kubeProxy:
+      enabled: true
+      endpoints: ["192.168.1.50"]
+    kubeEtcd:
+      enabled: true
+      endpoints: ["192.168.1.50"]
     prometheus:
       ingress:
         enabled: true
@@ -173,34 +171,30 @@ spec:
           external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
           nginx.ingress.kubernetes.io/whitelist-source-range: |
             10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+          hajimari.io/appName: Prometheus
+          hajimari.io/icon: simple-icons:prometheus
+        pathType: Prefix
         hosts:
-          - &host prometheus.${SECRET_DOMAIN}
+          - &host "prometheus.${SECRET_DOMAIN}"
         tls:
           - hosts:
               - *host
-      thanosService:
-        enabled: false
       prometheusSpec:
         replicas: 1
-        podAntiAffinity: hard
-        retentionSize: "6GB"
-        replicaExternalLabelName: "replica"
+        replicaExternalLabelName: __replica__
+        scrapeInterval: 15m
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
-        retention: 2d
         enableAdminAPI: true
         walCompression: true
+        retention: 2d
+        retentionSize: 5GB
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: longhorn
+              storageClassName: local-path
               resources:
                 requests:
-                  storage: 10Gi
-        resources:
-          requests:
-            memory: 500M
-          limits:
-            memory: 2000M
+                  storage: 5Gi
