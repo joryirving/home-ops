@@ -21,7 +21,7 @@ The purpose here is to learn k8s, while practicing Gitops.
 | Device                    | Count | OS Disk Size  | Data Disk Size              | Ram   | Operating System      | Purpose             |
 |---------------------------|-------|---------------|-----------------------------|-------|-----------------------|---------------------|
 | HP z820 Workstation.      | 1     | 32GB USB3.0   | ZFS 26TB w/ 2 disk Parity   | 128GB | Unraid                | NAS + NFS + Backup  |
-| Virtual Machine (16 Core) | 1     | 100GB vDisk   | -                           | 32GB  | Ubuntu                | Kubernetes Master   |
+| Virtual Machine (16 Core) | 1     | 50GB vDisk    | 100GB vDisk                 | 32GB  | Ubuntu                | Kubernetes Master   |
 | Beelink Mini-S            | 1     | 250GB SSD     | 250GB M.2 SSD               | 16GB  | Ubuntu                | Kubernetes Master   |
 | Raspberry Pi 4            | 1     | 240GB SSD     | -                           | 8GB   | Raspbian Lite 64-bit  | Kubernetes Master   |
 | Raspberry Pi 4            | 2     | 240GB SSD     | -                           | 4GB   | Raspbian Lite 64-bit  | Kubernetes Worker   |
