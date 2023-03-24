@@ -1,0 +1,76 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: authentik
+  namespace: security
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: authentik
+      version: 2023.3.1
+      sourceRef:
+        kind: HelmRepository
+        name: authentik-charts
+        namespace: flux-system
+      interval: 5m
+  values:
+    image:
+      repository: ghcr.io/goauthentik/server
+      tag: 2023.3.1
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+        hosts:
+          - host: &host "id.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+
+    geoip:
+      enabled: false
+    authentik:
+      email:
+        host: smtp.gmail.com
+        port: 465
+        username: ${SECRET_EMAIL}
+        password: "${SECRET_AUTHELIA_SMTP_PASSWORD}"
+        use_ssl: true
+        from: id@${SECRET_DOMAIN}
+      secret_key: ${AUTHENTIK_KEY}
+      log_level: debug
+
+      outposts:
+        docker_image_base: ghcr.io/goauthentik/%(type)s:%(version)s
+
+      postgresql:
+        host: '{{ .Release.Name }}-postgresql'
+        name: authentik
+        user: authentik
+        password: ${SECRET_AUTHENTIK_POSTGRES_PASSWORD} ##generate this
+      redis:
+        host: '{{ .Release.Name }}-redis-master'
+        password: ${SECRET_AUTHENTIK_REDIS_PASSWORD} ##generate this
+
+    postgresql:
+      enabled: true
+      persistence:
+        enabled: true
+        existingClaim: authentik-postgresql-pvc
+
+      postgresqlUsername: authentik
+      postgresqlDatabase: authentik
+      postgresqlPassword: ${SECRET_AUTHENTIK_POSTGRES_PASSWORD}
+
+    redis:
+      enabled: true
+      auth:
+        enabled: true
+        password: ${SECRET_AUTHENTIK_REDIS_PASSWORD}
