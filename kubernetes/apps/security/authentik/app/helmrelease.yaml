@@ -26,15 +26,10 @@ spec:
         annotations:
           external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
         hosts:
-          - host: &host "id.${SECRET_DOMAIN}"
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
-                backend:
-                  service:
-                    name: {{ .Release.Name }}
-                    port:
-                      number: 80
         tls:
           - hosts:
               - *host
