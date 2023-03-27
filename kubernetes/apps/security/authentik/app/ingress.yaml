@@ -24,3 +24,21 @@ spec:
     - hosts:
         - *host
       secretName: "authentik.${SECRET_DOMAIN}-tls"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: authentik-outpost
+spec:
+    rules:
+        - host: auth.lildrunkensmurf.com
+          http:
+              paths: /outpost.goauthentik.io
+              pathType: Prefix
+              backend:
+                  # Or, to use an external Outpost, create an ExternalName service and reference that here.
+                  # See https://kubernetes.io/docs/concepts/services-networking/service/#externalname
+                  service:
+                      name: ak-outpost-authentik-embedded-outpost
+                      port:
+                          number: 9000
