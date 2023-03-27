@@ -29,6 +29,10 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: authentik-outpost
+  namespace: security
+  annotations:
+    external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
   rules:
     - host: "id.${SECRET_DOMAIN}"
