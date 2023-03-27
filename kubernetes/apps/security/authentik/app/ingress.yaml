@@ -28,17 +28,17 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-    name: authentik-outpost
+  name: authentik-outpost
 spec:
-    rules:
-        - host: "id.${SECRET_DOMAIN}"
-          http:
-              paths: /outpost.goauthentik.io
-              pathType: Prefix
-              backend:
-                  # Or, to use an external Outpost, create an ExternalName service and reference that here.
-                  # See https://kubernetes.io/docs/concepts/services-networking/service/#externalname
-                  service:
-                      name: ak-outpost-authentik-embedded-outpost
-                      port:
-                          number: 9000
+  rules:
+    - host: "id.${SECRET_DOMAIN}"
+      http:
+        paths: /outpost.goauthentik.io
+        pathType: Prefix
+        backend:
+          # Or, to use an external Outpost, create an ExternalName service and reference that here.
+          # See https://kubernetes.io/docs/concepts/services-networking/service/#externalname
+          service:
+            name: ak-outpost-media-outpost
+            port:
+              number: 9000
