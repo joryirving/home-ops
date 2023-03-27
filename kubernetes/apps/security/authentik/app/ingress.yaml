@@ -34,14 +34,13 @@ metadata:
     external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
+  ingressClassName: nginx
   rules:
     - host: "id.${SECRET_DOMAIN}"
       http:
-        paths: /outpost.goauthentik.io
         pathType: Prefix
+        paths: /outpost.goauthentik.io
         backend:
-          # Or, to use an external Outpost, create an ExternalName service and reference that here.
-          # See https://kubernetes.io/docs/concepts/services-networking/service/#externalname
           service:
             name: ak-outpost-media-outpost
             port:
