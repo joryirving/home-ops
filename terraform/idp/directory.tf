@@ -28,8 +28,3 @@ resource "authentik_source_oauth" "discord" {
   consumer_key    = var.client_id
   consumer_secret = var.client_secret
 }
-
-resource "authentik_service_connection_kubernetes" "local" {
-  name  = "local"
-  local = true
-}
