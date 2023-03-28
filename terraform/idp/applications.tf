@@ -33,6 +33,7 @@ locals {
     "nas",
     "overseerr",
     "prowlarr",
+    "portainer",
     "qbittorrent",
     "radarr",
     "readarr",
