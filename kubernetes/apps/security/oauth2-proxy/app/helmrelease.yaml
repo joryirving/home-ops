@@ -43,23 +43,6 @@ spec:
     probes:
       liveness: &probes
         enabled: false
-    ingress:
-      main:
-        enabled: true
-        ingressClassName: nginx
-        annotations:
-          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
-          nginx.ingress.kubernetes.io/whitelist-source-range: |
-            10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
-          hajimari.io/enable: "false"
-        hosts:
-          - host: &host auth.lildrunkensmurf.com
-            paths:
-              - path: /oauth2
-                pathType: Prefix
-        tls:
-          - hosts:
-              - *host
     resources:
       requests:
         cpu: 10m
