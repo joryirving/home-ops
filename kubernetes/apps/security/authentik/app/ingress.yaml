@@ -1,30 +1,30 @@
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: authentik
-  namespace: security
-  annotations:
-    external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
-    hajimari.io/icon: simple-icons:webauthn
-    #hajimari.io/group: infrastructure
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: &host "authentik.${SECRET_DOMAIN}"
-      http:
-        paths:
-          - pathType: Prefix
-            path: /
-            backend:
-              service:
-                name: authentik
-                port:
-                  number: 80
-  tls:
-    - hosts:
-        - *host
-      secretName: "authentik.${SECRET_DOMAIN}-tls"
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: authentik
+#   namespace: security
+#   annotations:
+#     external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+#     hajimari.io/icon: simple-icons:webauthn
+#     #hajimari.io/group: infrastructure
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: &host "authentik.${SECRET_DOMAIN}"
+#       http:
+#         paths:
+#           - pathType: Prefix
+#             path: /
+#             backend:
+#               service:
+#                 name: authentik
+#                 port:
+#                   number: 80
+#   tls:
+#     - hosts:
+#         - *host
+#       secretName: "authentik.${SECRET_DOMAIN}-tls"
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
