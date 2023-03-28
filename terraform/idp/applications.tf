@@ -29,15 +29,16 @@ resource "authentik_outpost" "proxyoutpost" {
 
 locals {
   applications = toset([
-    "overseerr",
-    "tautulli",
     "bazarr",
+    "nas",
+    "overseerr",
     "prowlarr",
     "qbittorrent",
     "radarr",
     "readarr",
     "sabnzbd",
-    "sonarr"
+    "sonarr",
+    "tautulli"
   ])
 }
 
