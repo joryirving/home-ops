@@ -1,5 +1,9 @@
 terraform {
   required_providers {
+    sops = {
+      source  = "carlpett/sops"
+      version = "0.7.2"
+    }
     authentik = {
       source  = "goauthentik/authentik"
       version = "2023.3.0"
@@ -7,11 +11,11 @@ terraform {
   }
 }
 
-provider "authentik" {
-  url   = "https://authentik.lildrunkensmurf.com"
-  token = var.authentik_bootstrap_token
+data "sops_file" "authentik_secrets" {
+  source_file = "secret.sops.yaml"
 }
 
-data "authentik_certificate_key_pair" "generated" {
-  name = "authentik Self-signed Certificate"
+provider "authentik" {
+  url   = data.sops_file.authentik_secrets.data["authentik_endpoint"]
+  token = data.sops_file.authentik_secrets.data["authentik_token"]
 }

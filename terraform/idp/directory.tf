@@ -1,11 +1,21 @@
-resource "authentik_group" "media_admin" {
-  name         = "media_admin"
+resource "authentik_group" "users" {
+  name         = "users"
   is_superuser = false
 }
 
 resource "authentik_group" "media" {
   name         = "media"
   is_superuser = false
+  parent       = resource.authentik_group.users.id
+}
+
+resource "authentik_group" "infrastructure" {
+  name         = "infrastructure"
+  is_superuser = false
+}
+
+data "authentik_group" "admins" {
+  name = "authentik Admins"
 }
 
 resource "authentik_source_oauth" "discord" {
@@ -22,13 +32,4 @@ resource "authentik_source_oauth" "discord" {
 resource "authentik_service_connection_kubernetes" "local" {
   name  = "local"
   local = true
-}
-
-resource "authentik_outpost" "media_outpost" {
-  name               = "media-outpost"
-  type               = "proxy"
-  service_connection = authentik_service_connection_kubernetes.local.id
-  protocol_providers = [
-    for s in local.applications : authentik_provider_proxy.proxy[s].id
-  ]
 }
