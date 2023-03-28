@@ -25,28 +25,28 @@ spec:
     - hosts:
         - *host
       secretName: "authentik.${SECRET_DOMAIN}-tls"
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: authentik-outpost
-  namespace: security
-  annotations:
-    external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
-    hajimari.io/enable: "false"
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: "authentik.${SECRET_DOMAIN}"
-      http:
-        paths:
-          - pathType: Prefix
-            path: /outpost.goauthentik.io
-            backend:
-              service:
-                name: ak-outpost-authentik-embedded-outpost
-                port:
-                  number: 9000
-  tls:
-    - hosts:
-        - "authentik.${SECRET_DOMAIN}"
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: authentik-outpost
+#   namespace: security
+#   annotations:
+#     external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+#     hajimari.io/enable: "false"
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: "authentik.${SECRET_DOMAIN}"
+#       http:
+#         paths:
+#           - pathType: Prefix
+#             path: /outpost.goauthentik.io
+#             backend:
+#               service:
+#                 name: ak-outpost-authentik-embedded-outpost
+#                 port:
+#                   number: 9000
+#   tls:
+#     - hosts:
+#         - "authentik.${SECRET_DOMAIN}"
