@@ -2,18 +2,29 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: authentik-ingress-annotations
+  name: ingress-annotations
   annotations:
-    policies.kyverno.io/title: Authentik ingress annotations
+    policies.kyverno.io/title: Ingress annotations
     policies.kyverno.io/subject: Ingress
     policies.kyverno.io/description: >-
-      This policy creates auth annotations on ingresses. When
-      the `authentik.home.arpa/enabled` annotation is `true` it
-      applies the nginx auth annotations for use with Authentik.
+      This policy creates annotations on ingresses for external-dns
+      and authentication based on custom annotations.
 spec:
   mutateExistingOnPolicyUpdate: true
   generateExistingOnPolicyUpdate: true
   rules:
+    - name: external-dns
+      match:
+        any:
+          - resources:
+              kinds: ["Ingress"]
+              annotations:
+                external-dns.home.arpa/enabled: "true"
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            annotations:
+              +(external-dns.alpha.kubernetes.io/target): ipv4.${SECRET_DOMAIN}
     - name: auth
       match:
         any:
