@@ -29,7 +29,6 @@ resource "authentik_outpost" "proxyoutpost" {
 
 locals {
   applications = toset([
-    "hajimari",
     "overseerr",
     "tautulli",
     "bazarr",
