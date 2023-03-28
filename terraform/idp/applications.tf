@@ -58,6 +58,6 @@ resource "authentik_application" "application" {
   protocol_provider  = authentik_provider_proxy.proxy[each.value].id
   group              = authentik_group.media.name
   open_in_new_tab    = true
-  meta_icon          = "https://${each.value}.lildrunkensmurf.com/Content/Images/logo.svg"
+  meta_icon          = "https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/${each.value}.png"
   policy_engine_mode = "all"
 }
