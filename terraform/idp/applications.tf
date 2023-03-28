@@ -39,7 +39,8 @@ locals {
     "readarr",
     "sabnzbd",
     "sonarr",
-    "tautulli"
+    "tautulli",
+    "tdarr"
   ])
 }
 
