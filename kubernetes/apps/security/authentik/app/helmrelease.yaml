@@ -25,6 +25,8 @@ spec:
         ingressClassName: nginx
         annotations:
           external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+          hajimari.io/icon: simple-icons:webauthn
+          hajimari.io/group: infrastructure
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
@@ -33,6 +35,7 @@ spec:
         tls:
           - hosts:
               - *host
+            secretName: *host
     geoip:
       enabled: false
     authentik:
