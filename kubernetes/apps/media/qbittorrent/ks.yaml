@@ -2,12 +2,12 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
 metadata:
-  name: cluster-apps-qbittorent
+  name: cluster-apps-qbittorrent
   namespace: flux-system
   labels:
     substitution.flux.home.arpa/enabled: "true"
 spec:
-  path: ./kubernetes/apps/media/qbittorent/app
+  path: ./kubernetes/apps/media/qbittorrent/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -15,10 +15,10 @@ spec:
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2beta1
       kind: HelmRelease
-      name: qbittorent
+      name: qbittorrent
       namespace: media
   interval: 30m
   retryInterval: 1m
   timeout: 3m
   dependsOn:
-    - name: cluster-apps-qbittorent-pod-gateway-downloads
+    - name: cluster-apps-qbittorrent-pod-gateway-downloads
