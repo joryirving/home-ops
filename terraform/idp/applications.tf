@@ -49,7 +49,7 @@ resource "authentik_provider_proxy" "proxy" {
 
 resource "authentik_application" "application" {
   for_each           = local.applications
-  name               = title(authentik_provider_proxy.proxy[each.value].name)
+  name               = title(each.value)
   slug               = authentik_provider_proxy.proxy[each.value].name
   protocol_provider  = authentik_provider_proxy.proxy[each.value].id
   group              = authentik_group.media.name
