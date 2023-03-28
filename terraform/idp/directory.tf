@@ -25,6 +25,6 @@ resource "authentik_source_oauth" "discord" {
   enrollment_flow     = resource.authentik_flow.provider-authorization-implicit-consent.uuid
 
   provider_type   = "discord"
-  consumer_key    = var.client_id
-  consumer_secret = var.client_secret
+  consumer_key    = data.sops_file.authentik_secrets.data["discord_client_id"]
+  consumer_secret = data.sops_file.authentik_secrets.data["discord_client_secret"]
 }
