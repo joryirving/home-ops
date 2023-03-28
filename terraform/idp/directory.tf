@@ -21,8 +21,8 @@ data "authentik_group" "admins" {
 resource "authentik_source_oauth" "discord" {
   name                = "discord"
   slug                = "discord"
-  authentication_flow = data.authentik_flow.default-authorization-flow.id
-  enrollment_flow     = data.authentik_flow.default-authorization-flow.id
+  authentication_flow = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  enrollment_flow     = resource.authentik_flow.provider-authorization-implicit-consent.uuid
 
   provider_type   = "discord"
   consumer_key    = var.client_id
