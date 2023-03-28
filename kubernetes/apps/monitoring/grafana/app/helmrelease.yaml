@@ -18,6 +18,14 @@ spec:
   timeout: 20m
   values:
     replicas: 1
+    podAnnotations:
+      configmap.reloader.stakater.com/reload: grafana
+    resources:
+      limits:
+        memory: 219M
+      requests:
+        cpu: 23m
+        memory: 127M
 
     admin:
       existingSecret: grafana-secrets
@@ -28,20 +36,14 @@ spec:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-          - disableDeletion: false
-            editable: true
+          - name: "default"
+            orgId: 1
             folder: ""
-            name: default
+            type: file
+            disableDeletion: false
+            editable: true
             options:
               path: /var/lib/grafana/dashboards/default
-            orgId: 1
-            type: file
-
-    dashboards:
-      default:
-        node-exporter-full:
-          datasource: Prometheus
-          url: https://grafana.com/api/dashboards/1860/revisions/22/download
 
     datasources:
       datasources.yaml:
@@ -59,6 +61,77 @@ spec:
     #     deleteDatasources:
     #       - name: Loki
     #         orgId: 1
+
+    dashboards:
+      default:
+        # Ref: https://grafana.com/grafana/dashboards/11312-unifi-poller-usw-insights-prometheus/
+        unifi-usw:
+          gnetId: 11312
+          revision: 9
+          datasource: Prometheus
+        # Ref: https://grafana.com/grafana/dashboards/7845-zfs/
+        zfs:
+          gnetId: 7845
+          revision: 4
+          datasource: Prometheus
+        # Ref: https://grafana.com/grafana/dashboards/1860-node-exporter-full/
+        node-exporter-full:
+          gnetId: 1860
+          revision: 30
+          datasource: Prometheus
+        cert-manager:
+          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/cert-manager/dashboards/cert-manager.json
+          datasource: Prometheus
+        external-secrets:
+          url: https://raw.githubusercontent.com/external-secrets/external-secrets/main/docs/snippets/dashboard.json
+          datasource: Prometheus
+        flux-cluster:
+          url: https://raw.githubusercontent.com/fluxcd/flux2/main/manifests/monitoring/monitoring-config/dashboards/cluster.json
+          datasource: Prometheus
+        flux-control-plane:
+          url: https://raw.githubusercontent.com/fluxcd/flux2/main/manifests/monitoring/monitoring-config/dashboards/control-plane.json
+          datasource: Prometheus
+        flux-logs:
+          url: https://raw.githubusercontent.com/fluxcd/flux2/main/manifests/monitoring/monitoring-config/dashboards/logs.json
+          datasource: Prometheus
+        kubernetes-api-server:
+          url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json
+          datasource: Prometheus
+        kubernetes-coredns:
+          url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
+          datasource: Prometheus
+        kubernetes-global:
+          url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-global.json
+          datasource: Prometheus
+        kubernetes-namespaces:
+          url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-namespaces.json
+          datasource: Prometheus
+        kubernetes-nodes:
+          url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-nodes.json
+          datasource: Prometheus
+        kubernetes-pods:
+          url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
+          datasource: Prometheus
+
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: ALL
+        # folderAnnotation: grafana_folder
+        # provider:
+        #   foldersFromFilesStructure: true
+      datasources:
+        enabled: true
+        searchNamespace: ALL
+    plugins:
+      - grafana-clock-panel
+      - grafana-piechart-panel
+      - grafana-worldmap-panel
+      - natel-discrete-panel
+      - pr0ps-trackmap-panel
+      - vonage-status-panel
+    serviceMonitor:
+      enabled: true
 
     deploymentStrategy:
       type: Recreate
@@ -106,14 +179,12 @@ spec:
       server:
         root_url: https://grafana.${SECRET_DOMAIN}
 
-    imageRenderer:
-      enabled: false
-
     ingress:
       enabled: true
       ingressClassName: nginx
       annotations:
         external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+        hajimari.io/icon: simple-icons:grafana
         nginx.ingress.kubernetes.io/whitelist-source-range: |
           10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       hosts:
@@ -122,37 +193,19 @@ spec:
         - hosts:
             - *host
 
+    imageRenderer:
+      enabled: true
+      replicas: 3
+      networkPolicy:
+        limitIngress: false
+      serviceMonitor:
+        enabled: true
     persistence:
       enabled: false
-
-    plugins:
-      - natel-discrete-panel
-      - pr0ps-trackmap-panel
-      - grafana-piechart-panel
-      - vonage-status-panel
-      - grafana-worldmap-panel
-      - grafana-clock-panel
-
-    podAnnotations:
-      configmap.reloader.stakater.com/reload: grafana
-
-    resources:
-      limits:
-        memory: 219M
-      requests:
-        cpu: 23m
-        memory: 127M
-
-    serviceMonitor:
-      enabled: true
-
-    sidecar:
-      dashboards:
-        enabled: true
-        labelValue: ""
-        searchNamespace: ALL
-      datasources:
-        enabled: true
-        labelValue: ""
-        searchNamespace: ALL
-      logLevel: INFO
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: grafana
