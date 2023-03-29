@@ -82,10 +82,16 @@ spec:
       runAsGroup: 568
       fsGroup: 568
       fsGroupChangePolicy: OnRootMismatch
+    volumeClaimTemplates:
+      - name: config
+        mountPath: /config
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: longhorn
     persistence:
-      config:
-        enabled: true
-        existingClaim: qbittorrent-config
+      # config:
+      #   enabled: true
+      #   existingClaim: qbittorrent-config
       media:
         enabled: true
         existingClaim: downloads
