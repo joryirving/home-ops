@@ -52,15 +52,14 @@ spec:
           10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       hosts:
         - host: &host "auth.${SECRET_DOMAIN}"
-          http:
-            paths:
-              - pathType: Prefix
-                path: "/oauth2"
-                backend:
-                  service:
-                    name: oauth2-proxy
-                    port:
-                      number: 80
+          paths:
+            - pathType: Prefix
+              path: "/oauth2"
+              backend:
+                service:
+                  name: oauth2-proxy
+                  port:
+                    number: 80
       tls:
         - hosts:
             - *host
