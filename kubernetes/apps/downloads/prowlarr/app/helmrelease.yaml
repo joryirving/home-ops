@@ -39,6 +39,11 @@ spec:
       PROWLARR__PORT: &port 80
       PROWLARR__LOG_LEVEL: info
       PROWLARR__AUTHENTICATION_METHOD: External
+      PROWLARR__API_KEY:
+        valueFrom:
+          secretKeyRef:
+            name: download-secrets
+            key: "PROWLARR_TOKEN"
     service:
       main:
         ports:
