@@ -91,16 +91,52 @@ spec:
             - k3s-home-cluster:
                 - href: 'https://github.com/LilDrunkenSmurf/k3s-home-cluster'
       services:
+        - Downloads:
+            - Tdarr:
+                href: https://tdarr.${SECRET_DOMAIN}
+                icon: tdarr.png
+                widget:
+                  type: tdarr
+                  url: https//${NAS_IP}:8265
+        - Media:
+            - Plex:
+                href: https://app.plex.tv
+                icon: plex.png
+                widget:
+                  type: plex
+                  url: http://${NAS_IP}:32400
+                  key: ${PLEX_TOKEN}
         - Infrastructure:
+            - Unraid:
+                href: nas.${SECRET_DOMAIN}
+                icon: unraid.png
+                description: Unraid WebUI
             - Unifi:
-                href: 'https://unifi.ui.com'
+                href: https://unifi.ui.com
                 icon: unifi.png
                 description: Unifi Dashboard
+                widget:
+                  type: unifi
+                  url: https://192.186.1.1
+                  username: ${UNIFI_USERNAME}
+                  password: ${UNIFI_PASSWORD}
             - PiHole:
-                href: "10.0.5.3"
+                href: '10.0.5.3'
                 icon: pihole.png
                 description: Pi Hole
-
+                widget:
+                  type: pihole
+                  url: http://10.0.5.3
+                  key: ${PIHOLE_API}
+            - Portainer:
+                href: https://portainer.lildrunkensmurf.com
+                icon: portainer.png
+                description: Portainer Unraid
+                widget:
+                  type: portainer
+                  url: http://${NAS_IP}:9000
+                  env: 1
+                  key: ${PORTAINER_TOKEN}
     service:
       main:
         ports:
