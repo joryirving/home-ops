@@ -38,6 +38,81 @@ spec:
     env:
       TZ: ${TZ}
       LOG_LEVEL: debug
+    config:
+      bookmarks:
+        - Communitcate:
+            - Discord:
+                - href: 'https://discord.com/app'
+            - Gmail:
+                - href: 'http://gmail.com'
+            - Google Calendar:
+                - href: 'https://calendar.google.com'
+            - Outlook:
+                - href: 'https://outlook.com'
+        - Media:
+            - YouTube:
+                - href: 'https://youtube.com/feed/subscriptions'
+            - Spotify:
+                - href: 'http://open.spotify.com'
+            - Youtube Music:
+                - href: 'https://music.youtube.com'
+        - Reading:
+            - Beyond:
+                - href: 'https://forums.beyond.ca/search.php?do=getnew&contenttype=vBForum_Post'
+            - Western Subaru Club:
+                - href: 'http://westernsubaruclub.com/smf/index.php?action=unread'
+            - Reddit:
+                - href: 'https://reddit.com'
+        - Git:
+            - k8s-at-home:
+                - href: 'https://nanne.dev/k8s-at-home-search/'
+            - k3s-home-cluster:
+                - href: 'https://github.com/LilDrunkenSmurf/k3s-home-cluster'
+      services:
+        - Infrastructure:
+            - Unifi:
+                href: 'https://unifi.ui.com'
+                #icon: arcticons:unifi-network
+                description: Unifi Dashboard
+        - Media:
+            - Plex:
+                href: 'https://app.plex.tv'
+                #icon: mdi:plex
+                description: Plex Media Player
+      widgets:
+        - resources:
+            # change backend to 'kubernetes' to use Kubernetes integration. Requires RBAC.
+            backend: kubernetes
+            expanded: true
+            cpu: true
+            memory: true
+        - search:
+            provider: duckduckgo
+            target: _blank
+        - kubernetes:
+            cluster:
+              # Shows the cluster node
+              show: true
+              # Shows the aggregate CPU stats
+              cpu: true
+              # Shows the aggregate memory stats
+              memory: true
+              # Shows a custom label
+              showLabel: true
+              label: "cluster"
+            nodes:
+              # Shows the clusters
+              show: true
+              # Shows the CPU for each node
+              cpu: true
+              # Shows the memory for each node
+              memory: true
+              # Shows the label, which is always the node name
+              showLabel: true
+      kubernetes:
+        # change mode to 'cluster' to use RBAC service account
+        mode: cluster
+
     service:
       main:
         ports:
@@ -61,37 +136,13 @@ spec:
           - hosts:
               - *host
     persistence:
-      config:
+      logs:
         enabled: true
-        # type: configmap
-        # name: homepage-config
-        # mountPath: /app/config
-        type: custom
-        volumeSpec:
-          configMap:
-            name: *app
-        subPath:
-          - path: settings.yaml
-            mountPath: /app/config/settings.yaml
-          - path: widgets.yaml
-            mountPath: /app/config/widgets.yaml
-          - path: services.yaml
-            mountPath: /app/config/services.yaml
-          - path: bookmarks.yaml
-            mountPath: /app/config/bookmarks.yaml
-          - path: docker.yaml
-            mountPath: /app/config/docker.yaml
-          - path: kubernetes.yaml
-            mountPath: /app/config/kubernetes.yaml
-    # volumeClaimTemplates:
-    #   - name: config
-    #     mountPath: /app/config
-    #     accessMode: ReadWriteOnce
-    #     size: 1Gi
-    #     storageClass: longhorn
+        type: emptyDir
+        mountPath: /app/config/logs
     resources:
       requests:
-        cpu: 25m
-        memory: 105M
+        cpu: 10m
+        memory: 10Mi
       limits:
-        memory: 225M
+        memory: 200Mi
