@@ -22,8 +22,8 @@ spec:
     remediation:
       retries: 3
   values:
-    controller:
-      type: statefulset
+    # controller:
+    #   type: statefulset
     global:
       nameOverride: *app
       annotations:
@@ -60,35 +60,35 @@ spec:
         tls:
           - hosts:
               - *host
-    # persistence:
-    #   config:
-    #     enabled: true
-    #     # type: configmap
-    #     # name: homepage-config
-    #     # mountPath: /app/config
-    #     type: custom
-    #     volumeSpec:
-    #       configMap:
-    #         name: *app
-    #     subPath:
-    #       - path: settings.yaml
-    #         mountPath: /app/config/settings.yaml
-    #       - path: widgets.yaml
-    #         mountPath: /app/config/widgets.yaml
-    #       - path: services.yaml
-    #         mountPath: /app/config/services.yaml
-    #       - path: bookmarks.yaml
-    #         mountPath: /app/config/bookmarks.yaml
-    #       - path: docker.yaml
-    #         mountPath: /app/config/docker.yaml
-    #       - path: kubernetes.yaml
-    #         mountPath: /app/config/kubernetes.yaml
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /app/config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn
+    persistence:
+      config:
+        enabled: true
+        # type: configmap
+        # name: homepage-config
+        # mountPath: /app/config
+        type: custom
+        volumeSpec:
+          configMap:
+            name: *app
+        subPath:
+          - path: settings.yaml
+            mountPath: /app/config/settings.yaml
+          - path: widgets.yaml
+            mountPath: /app/config/widgets.yaml
+          - path: services.yaml
+            mountPath: /app/config/services.yaml
+          - path: bookmarks.yaml
+            mountPath: /app/config/bookmarks.yaml
+          - path: docker.yaml
+            mountPath: /app/config/docker.yaml
+          - path: kubernetes.yaml
+            mountPath: /app/config/kubernetes.yaml
+    # volumeClaimTemplates:
+    #   - name: config
+    #     mountPath: /app/config
+    #     accessMode: ReadWriteOnce
+    #     size: 1Gi
+    #     storageClass: longhorn
     resources:
       requests:
         cpu: 25m
