@@ -144,3 +144,11 @@ resource "authentik_flow" "provider-authorization-implicit-consent" {
   designation        = "authorization"
   # background         = "https://placeholder.jpeg"
 }
+
+data "authentik_flow" "default-source-authentication" {
+  slug = "default-source-authentication"
+}
+
+data "authentik_flow" "default-source-enrollment" {
+  slug = "default-source-enrollment"
+}

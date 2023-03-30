@@ -17,14 +17,3 @@ resource "authentik_group" "infrastructure" {
 data "authentik_group" "admins" {
   name = "authentik Admins"
 }
-
-resource "authentik_source_oauth" "discord" {
-  name                = "discord"
-  slug                = "discord"
-  authentication_flow = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-  enrollment_flow     = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-
-  provider_type   = "discord"
-  consumer_key    = data.sops_file.authentik_secrets.data["discord_client_id"]
-  consumer_secret = data.sops_file.authentik_secrets.data["discord_client_secret"]
-}
