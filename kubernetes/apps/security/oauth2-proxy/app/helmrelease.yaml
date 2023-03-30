@@ -51,7 +51,7 @@ spec:
         nginx.ingress.kubernetes.io/whitelist-source-range: |
           10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       hosts:
-        - host: auth.${SECRET_DOMAIN}
+        - host: &host auth.lildrunkensmurf.com
           paths:
             - pathType: Prefix
               path: "/oauth2"
@@ -62,7 +62,7 @@ spec:
                     number: 80
       tls:
         - hosts:
-            - auth.${SECRET_DOMAIN}
+            - *host
     resources:
       requests:
         cpu: 10m
