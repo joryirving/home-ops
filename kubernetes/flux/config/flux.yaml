@@ -49,4 +49,14 @@ spec:
           value: --requeue-dependency=5s
       target:
         kind: Deployment
-        name: "(kustomize-controller|helm-controller|source-controller)"
+        name: (kustomize-controller|helm-controller|source-controller)
+    - patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --feature-gates=DetectDrift=true,CorrectDrift=false
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --log-level=debug
+      target:
+        kind: Deployment
+        name: helm-controller
