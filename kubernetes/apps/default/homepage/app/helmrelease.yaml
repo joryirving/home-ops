@@ -1,0 +1,97 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app homepage
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.3.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s-charts
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    controller:
+      type: statefulset
+    global:
+      nameOverride: *app
+      annotations:
+        reloader.stakater.com/search: "true"
+    image:
+      repository: ghcr.io/benphelps/homepage
+      tag: v0.6.10
+      pullPolicy: IfNotPresent
+    serviceAccount:
+      # allow scraping of k8s resources for widget
+      create: true
+    env:
+      TZ: ${TZ}
+      LOG_LEVEL: debug
+    service:
+      main:
+        ports:
+          http:
+            port: 3000
+            targetPort: 3000
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+          nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.security.svc.cluster.local/oauth2/auth"
+          nginx.ingress.kubernetes.io/auth-signin: "https://auth.${SECRET_DOMAIN}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
+        hosts:
+          - host: &host "home.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+    # persistence:
+    #   config:
+    #     enabled: true
+    #     # type: configmap
+    #     # name: homepage-config
+    #     # mountPath: /app/config
+    #     type: custom
+    #     volumeSpec:
+    #       configMap:
+    #         name: *app
+    #     subPath:
+    #       - path: settings.yaml
+    #         mountPath: /app/config/settings.yaml
+    #       - path: widgets.yaml
+    #         mountPath: /app/config/widgets.yaml
+    #       - path: services.yaml
+    #         mountPath: /app/config/services.yaml
+    #       - path: bookmarks.yaml
+    #         mountPath: /app/config/bookmarks.yaml
+    #       - path: docker.yaml
+    #         mountPath: /app/config/docker.yaml
+    #       - path: kubernetes.yaml
+    #         mountPath: /app/config/kubernetes.yaml
+    volumeClaimTemplates:
+      - name: config
+        mountPath: /app/config
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: longhorn
+    resources:
+      requests:
+        cpu: 25m
+        memory: 105M
+      limits:
+        memory: 225M
