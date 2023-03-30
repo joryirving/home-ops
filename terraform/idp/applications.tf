@@ -24,12 +24,15 @@ locals {
 }
 
 resource "authentik_provider_proxy" "media_proxy" {
-  for_each              = local.media_applications
-  name                  = "${each.value}-provider"
-  external_host         = "http://${each.value}.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
-  mode                  = "forward_single"
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-  access_token_validity = "hours=24"
+  for_each                      = local.media_applications
+  name                          = "${each.value}-provider"
+  basic_auth_enabled            = true
+  basic_auth_username_attribute = data.sops_file.authentik_secrets.data["${each.value}_username"]
+  basic_auth_password_attribute = data.sops_file.authentik_secrets.data["${each.value}_password"]
+  external_host                 = "http://${each.value}.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
+  mode                          = "forward_single"
+  authorization_flow            = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  access_token_validity         = "hours=4"
 }
 
 resource "authentik_application" "media_application" {
