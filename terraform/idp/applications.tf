@@ -3,7 +3,6 @@ locals {
     "bazarr",
     "overseerr",
     "prowlarr",
-    "portainer",
     "qbittorrent",
     "radarr",
     "readarr",
@@ -14,6 +13,7 @@ locals {
 
   infra_applications = toset([
     "nas",
+    "portainer",
     "tdarr"
   ])
 
