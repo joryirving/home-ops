@@ -8,12 +8,12 @@ spec:
   interval: 15m
   chart:
     spec:
-      chart: app-template
-      version: 1.3.2
+      chart: homepage
+      version: 1.1.1
       sourceRef:
         kind: HelmRepository
-        name: bjw-s
-        namespace: flux-system
+        name: jameswynn
+        namespace: apps
   install:
     createNamespace: true
     remediation:
@@ -38,7 +38,39 @@ spec:
     env:
       TZ: ${TZ}
       LOG_LEVEL: debug
+    enableRbac: true
     config:
+      kubernetes:
+        mode: cluster
+      widgets:
+        - resources:
+            backend: kubernetes
+            expanded: true
+            cpu: true
+            memory: true
+        - search:
+            provider: duckduckgo
+            target: _blank
+        - kubernetes:
+            cluster:
+              # Shows the cluster node
+              show: true
+              # Shows the aggregate CPU stats
+              cpu: true
+              # Shows the aggregate memory stats
+              memory: true
+              # Shows a custom label
+              showLabel: true
+              label: "cluster"
+            nodes:
+              # Shows the clusters
+              show: true
+              # Shows the CPU for each node
+              cpu: true
+              # Shows the memory for each node
+              memory: true
+              # Shows the label, which is always the node name
+              showLabel: true
       bookmarks:
         - Communitcate:
             - Discord:
@@ -79,39 +111,6 @@ spec:
                 href: 'https://app.plex.tv'
                 #icon: mdi:plex
                 description: Plex Media Player
-      widgets:
-        - resources:
-            # change backend to 'kubernetes' to use Kubernetes integration. Requires RBAC.
-            backend: kubernetes
-            expanded: true
-            cpu: true
-            memory: true
-        - search:
-            provider: duckduckgo
-            target: _blank
-        - kubernetes:
-            cluster:
-              # Shows the cluster node
-              show: true
-              # Shows the aggregate CPU stats
-              cpu: true
-              # Shows the aggregate memory stats
-              memory: true
-              # Shows a custom label
-              showLabel: true
-              label: "cluster"
-            nodes:
-              # Shows the clusters
-              show: true
-              # Shows the CPU for each node
-              cpu: true
-              # Shows the memory for each node
-              memory: true
-              # Shows the label, which is always the node name
-              showLabel: true
-      kubernetes:
-        # change mode to 'cluster' to use RBAC service account
-        mode: cluster
 
     service:
       main:
