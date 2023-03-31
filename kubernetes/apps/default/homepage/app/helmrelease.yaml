@@ -18,7 +18,7 @@ spec:
     controller:
       strategy: RollingUpdate
     global:
-      # nameOverride: homepage
+      nameOverride: homepage
       annotations:
         reloader.stakater.com/search: "true"
     image:
@@ -26,7 +26,6 @@ spec:
       tag: v0.6.10
     serviceAccount:
       create: true
-      name: homepage
     env:
       TZ: ${TZ}
       LOG_LEVEL: debug
@@ -55,13 +54,10 @@ spec:
     persistence:
       config:
         enabled: true
-        # type: configmap
-        # name: homepage-config
-        # mountPath: /app/config
         type: custom
         volumeSpec:
           configMap:
-            name: homepage-config
+            name: homepage
         subPath:
           - path: settings.yaml
             mountPath: /app/config/settings.yaml
