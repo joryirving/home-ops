@@ -1,0 +1,149 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: home
+  labels:
+    app.kubernetes.io/name: homepage
+  annotations:
+    reloader.stakater.com/match: "true"
+data:
+  settings.yaml: |
+    ---
+    title: Dashboard
+    #favicon: placeholder
+    theme: dark
+    color: slate
+    layout: # key by group name in services.yaml
+      Media:
+        # style: row
+        # columns: 3
+        # icon: home-assistant.png
+        # headerStyle: boxed
+      Downloads:
+        # style: row
+        # columns: 3
+        # icon: home-assistant.png
+        # headerStyle: boxed
+      Infrastructure:
+        # style: row
+        # columns: 3
+        # icon: Docker.png
+        # headerStyle: boxed
+      Home:
+        # style: row
+        # columns: 4
+        # icon: home-assistant.png
+        # headerStyle: boxed
+      Monitoring:
+        # style: row
+        # columns: 3
+        # icon: Grafana.png
+        # headerStyle: boxed
+  widgets.yaml: |
+    - resources:
+        backend: kubernetes
+        cpu: true
+        expanded: true
+        memory: true
+    - search:
+        provider: duckduckgo
+        target: _blank
+    - kubernetes:
+        cluster:
+          cpu: true
+          label: cluster
+          memory: true
+          show: true
+          showLabel: true
+        nodes:
+          cpu: true
+          memory: true
+          show: true
+          showLabel: true
+    - openmeteo:
+        label: Home # optional
+        latitude: 51.1309043420699
+        longitude: -114.189615832694
+        units: metric # or metric
+        cache: 5 # Time in minutes to cache API responses, to stay within limits
+  services.yaml: |
+    ---
+    - Media:
+        - Plex:
+            href: https://app.plex.tv
+            icon: plex.png
+            widget:
+              type: plex
+              url: http://${NAS_IP}:32400
+              key: ${PLEX_TOKEN}
+        - Tdarr:
+            href: https://tdarr.${SECRET_DOMAIN}
+            icon: tdarr.png
+            widget:
+              type: tdarr
+              url: http://${NAS_IP}:8265
+    - Infrastructure:
+        - Unraid:
+            href: nas.${SECRET_DOMAIN}
+            icon: unraid.png
+            description: Unraid WebUI
+        - Unifi:
+            href: https://unifi.ui.com
+            icon: unifi.png
+            description: Unifi Dashboard
+            widget:
+              type: unifi
+              url: https://192.168.1.1:443
+              username: ${UNIFI_USERNAME}
+              password: ${UNIFI_PASSWORD}
+        - PiHole:
+            href: http://${PIHOLE_URL}
+            icon: pihole.png
+            description: Pi Hole
+            widget:
+              type: pihole
+              url: http://${PIHOLE_URL}
+              key: ${PIHOLE_TOKEN}
+        - Portainer:
+            href: https://portainer.lildrunkensmurf.com
+            icon: portainer.png
+            description: Portainer Unraid
+            widget:
+              type: portainer
+              url: http://${NAS_IP}:9000
+              env: 1
+              key: ${PORTAINER_TOKEN}
+  bookmarks.yaml: |
+    ---
+        - Communitcate:
+            - Discord:
+                - href: 'https://discord.com/app'
+            - Gmail:
+                - href: 'http://gmail.com'
+            - Google Calendar:
+                - href: 'https://calendar.google.com'
+            - Outlook:
+                - href: 'https://outlook.com'
+        - Media:
+            - YouTube:
+                - href: 'https://youtube.com/feed/subscriptions'
+            - Spotify:
+                - href: 'http://open.spotify.com'
+            - Youtube Music:
+                - href: 'https://music.youtube.com'
+        - Reading:
+            - Beyond:
+                - href: 'https://forums.beyond.ca/search.php?do=getnew&contenttype=vBForum_Post'
+            - Western Subaru Club:
+                - href: 'http://westernsubaruclub.com/smf/index.php?action=unread'
+            - Reddit:
+                - href: 'https://reddit.com'
+        - Git:
+            - k8s-at-home:
+                - href: 'https://nanne.dev/k8s-at-home-search/'
+            - k3s-home-cluster:
+                - href: 'https://github.com/LilDrunkenSmurf/k3s-home-cluster'
+  docker.yaml: |
+    ---

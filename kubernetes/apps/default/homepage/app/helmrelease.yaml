@@ -2,145 +2,31 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: &app homepage
+  name: homepage
   namespace: default
 spec:
   interval: 15m
   chart:
     spec:
-      chart: homepage
-      version: 1.1.1
+      chart: app-template
+      version: 1.3.2
       sourceRef:
         kind: HelmRepository
-        name: jameswynn
+        name: bjw-s-charts
         namespace: flux-system
-  install:
-    createNamespace: true
-    remediation:
-      retries: 3
-  upgrade:
-    remediation:
-      retries: 3
   values:
     controller:
       strategy: RollingUpdate
     global:
-      nameOverride: *app
+      # nameOverride: homepage
       annotations:
         reloader.stakater.com/search: "true"
     image:
       repository: ghcr.io/benphelps/homepage
       tag: v0.6.10
-    serviceAccount:
-      create: true
     env:
-      TZ: ${TZ}
+      TZ: ${TIMEZONE}
       LOG_LEVEL: debug
-      THEME: dark
-    enableRbac: true
-    config:
-      kubernetes:
-        mode: cluster
-      widgets:
-        - resources:
-            backend: kubernetes
-            expanded: true
-            cpu: true
-            memory: true
-        - search:
-            provider: duckduckgo
-            target: _blank
-        - kubernetes:
-            cluster:
-              show: true
-              cpu: true
-              memory: true
-              showLabel: true
-              label: "cluster"
-            nodes:
-              show: true
-              cpu: true
-              memory: true
-              showLabel: true
-      bookmarks:
-        - Communitcate:
-            - Discord:
-                - href: 'https://discord.com/app'
-            - Gmail:
-                - href: 'http://gmail.com'
-            - Google Calendar:
-                - href: 'https://calendar.google.com'
-            - Outlook:
-                - href: 'https://outlook.com'
-        - Media:
-            - YouTube:
-                - href: 'https://youtube.com/feed/subscriptions'
-            - Spotify:
-                - href: 'http://open.spotify.com'
-            - Youtube Music:
-                - href: 'https://music.youtube.com'
-        - Reading:
-            - Beyond:
-                - href: 'https://forums.beyond.ca/search.php?do=getnew&contenttype=vBForum_Post'
-            - Western Subaru Club:
-                - href: 'http://westernsubaruclub.com/smf/index.php?action=unread'
-            - Reddit:
-                - href: 'https://reddit.com'
-        - Git:
-            - k8s-at-home:
-                - href: 'https://nanne.dev/k8s-at-home-search/'
-            - k3s-home-cluster:
-                - href: 'https://github.com/LilDrunkenSmurf/k3s-home-cluster'
-      services:
-        - layout:
-            - Media:
-                style: row
-                columns: 4
-        - Media:
-            - Plex:
-                href: https://app.plex.tv
-                icon: plex.png
-                widget:
-                  type: plex
-                  url: http://${NAS_IP}:32400
-                  key: ${PLEX_TOKEN}
-            - Tdarr:
-                href: https://tdarr.${SECRET_DOMAIN}
-                icon: tdarr.png
-                widget:
-                  type: tdarr
-                  url: http://${NAS_IP}:8265
-        - Infrastructure:
-            - Unraid:
-                href: nas.${SECRET_DOMAIN}
-                icon: unraid.png
-                description: Unraid WebUI
-            - Unifi:
-                href: https://unifi.ui.com
-                icon: unifi.png
-                description: Unifi Dashboard
-                widget:
-                  type: unifi
-                  url: https://192.168.1.1:443
-                  username: ${UNIFI_USERNAME}
-                  password: ${UNIFI_PASSWORD}
-            - PiHole:
-                href: http://${PIHOLE_URL}
-                icon: pihole.png
-                description: Pi Hole
-                widget:
-                  type: pihole
-                  url: http://${PIHOLE_URL}
-                  key: ${PIHOLE_TOKEN}
-            - Portainer:
-                href: https://portainer.lildrunkensmurf.com
-                icon: portainer.png
-                description: Portainer Unraid
-                widget:
-                  type: portainer
-                  url: http://${NAS_IP}:9000
-                  env: 1
-                  key: ${PORTAINER_TOKEN}
     service:
       main:
         ports:
@@ -153,8 +39,8 @@ spec:
         ingressClassName: nginx
         annotations:
           external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
-          #nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.security.svc.cluster.local/oauth2/auth"
-          #nginx.ingress.kubernetes.io/auth-signin: "https://auth.${SECRET_DOMAIN}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
+          # nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.security.svc.cluster.local/oauth2/auth"
+          # nginx.ingress.kubernetes.io/auth-signin: "https://auth.${SECRET_DOMAIN}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
         hosts:
           - host: &host "home.${SECRET_DOMAIN}"
             paths:
@@ -164,13 +50,29 @@ spec:
           - hosts:
               - *host
     persistence:
-      logs:
+      config:
         enabled: true
-        type: emptyDir
-        mountPath: /app/config/logs
+        # type: configmap
+        # name: homepage-config
+        # mountPath: /app/config
+        type: custom
+        volumeSpec:
+          configMap:
+            name: homepage-config
+        subPath:
+          - path: settings.yaml
+            mountPath: /app/config/settings.yaml
+          - path: widgets.yaml
+            mountPath: /app/config/widgets.yaml
+          - path: services.yaml
+            mountPath: /app/config/services.yaml
+          - path: bookmarks.yaml
+            mountPath: /app/config/bookmarks.yaml
+          - path: docker.yaml
+            mountPath: /app/config/docker.yaml
     resources:
       requests:
         cpu: 10m
-        memory: 10Mi
+        memory: 50Mi
       limits:
         memory: 200Mi
