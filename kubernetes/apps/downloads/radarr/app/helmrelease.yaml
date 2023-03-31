@@ -39,11 +39,7 @@ spec:
       RADARR__PORT: &port 80
       RADARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_DOMAIN}"
       RADARR__LOG_LEVEL: info
-      RADARR__API_KEY:
-        valueFrom:
-          secretKeyRef:
-            name: download-secrets
-            key: "RADARR_TOKEN"
+      RADARR__API_KEY: ${RADARR_TOKEN}
     service:
       main:
         ports:
