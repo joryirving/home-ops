@@ -12,6 +12,7 @@ locals {
   ])
 
   infra_applications = toset([
+    "longhorn",
     "nas",
     "portainer",
     "tdarr"
@@ -19,7 +20,8 @@ locals {
 
   proxy_list = concat(
     values(authentik_provider_proxy.media_proxy)[*].id,
-    values(authentik_provider_proxy.infra_proxy)[*].id
+    values(authentik_provider_proxy.infra_proxy)[*].id,
+    [authentik_provider_proxy.hass_proxy.id]
   )
 }
 
@@ -63,6 +65,24 @@ resource "authentik_application" "infra_application" {
   group              = authentik_group.infrastructure.name
   open_in_new_tab    = true
   meta_icon          = "https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/${each.value}.png"
+  policy_engine_mode = "all"
+}
+
+resource "authentik_provider_proxy" "hass_proxy" {
+  name                  = "home-assistant-provider"
+  external_host         = "http://hass.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
+  mode                  = "forward_single"
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  access_token_validity = "hours=24"
+}
+
+resource "authentik_application" "hass_application" {
+  name               = "Home-Assistant"
+  slug               = authentik_provider_proxy.hass_proxy.name
+  protocol_provider  = authentik_provider_proxy.hass_proxy.id
+  group              = authentik_group.infrastructure.name
+  open_in_new_tab    = true
+  meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/home-assistant.png"
   policy_engine_mode = "all"
 }
 
