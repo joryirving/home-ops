@@ -3,15 +3,25 @@ resource "authentik_group" "users" {
   is_superuser = false
 }
 
-resource "authentik_group" "media" {
-  name         = "media"
+resource "authentik_group" "downloads" {
+  name         = "Downloads"
   is_superuser = false
-  parent       = resource.authentik_group.users.id
 }
 
 resource "authentik_group" "infrastructure" {
-  name         = "infrastructure"
+  name         = "Infrastructure"
   is_superuser = false
+}
+
+resource "authentik_group" "home" {
+  name         = "Home"
+  is_superuser = false
+}
+
+resource "authentik_group" "media" {
+  name         = "Media"
+  is_superuser = false
+  parent       = resource.authentik_group.users.id
 }
 
 data "authentik_group" "admins" {

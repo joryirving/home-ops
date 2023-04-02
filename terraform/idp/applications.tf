@@ -1,14 +1,17 @@
 locals {
   media_applications = toset([
-    "bazarr",
     "overseerr",
+    "tautulli",
+  ])
+
+  download_applications = toset([
+    "bazarr",
     "prowlarr",
     "qbittorrent",
     "radarr",
     "readarr",
     "sabnzbd",
     "sonarr",
-    "tautulli",
   ])
 
   infra_applications = toset([
@@ -19,30 +22,28 @@ locals {
   ])
 
   proxy_list = concat(
+    values(authentik_provider_proxy.download_proxy)[*].id,
     values(authentik_provider_proxy.media_proxy)[*].id,
     values(authentik_provider_proxy.infra_proxy)[*].id,
     [authentik_provider_proxy.hass_proxy.id]
   )
 }
 
-resource "authentik_provider_proxy" "media_proxy" {
-  for_each                      = local.media_applications
-  name                          = "${each.value}-provider"
-  basic_auth_enabled            = true
-  basic_auth_username_attribute = data.sops_file.authentik_secrets.data["${each.value}_username"]
-  basic_auth_password_attribute = data.sops_file.authentik_secrets.data["${each.value}_password"]
-  external_host                 = "http://${each.value}.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
-  mode                          = "forward_single"
-  authorization_flow            = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-  access_token_validity         = "hours=4"
+resource "authentik_provider_proxy" "download_proxy" {
+  for_each              = local.download_applications
+  name                  = "${each.value}-provider"
+  external_host         = "http://${each.value}.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
+  mode                  = "forward_single"
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  access_token_validity = "hours=24"
 }
 
-resource "authentik_application" "media_application" {
-  for_each           = local.media_applications
+resource "authentik_application" "download_application" {
+  for_each           = local.download_applications
   name               = title(each.value)
-  slug               = authentik_provider_proxy.media_proxy[each.value].name
-  protocol_provider  = authentik_provider_proxy.media_proxy[each.value].id
-  group              = authentik_group.media.name
+  slug               = authentik_provider_proxy.download_proxy[each.value].name
+  protocol_provider  = authentik_provider_proxy.download_proxy[each.value].id
+  group              = authentik_group.downloads.name
   open_in_new_tab    = true
   meta_icon          = "https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/${each.value}.png"
   policy_engine_mode = "all"
@@ -68,6 +69,29 @@ resource "authentik_application" "infra_application" {
   policy_engine_mode = "all"
 }
 
+resource "authentik_provider_proxy" "media_proxy" {
+  for_each                      = local.media_applications
+  name                          = "${each.value}-provider"
+  basic_auth_enabled            = true
+  basic_auth_username_attribute = data.sops_file.authentik_secrets.data["${each.value}_username"]
+  basic_auth_password_attribute = data.sops_file.authentik_secrets.data["${each.value}_password"]
+  external_host                 = "http://${each.value}.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
+  mode                          = "forward_single"
+  authorization_flow            = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  access_token_validity         = "hours=4"
+}
+
+resource "authentik_application" "media_application" {
+  for_each           = local.media_applications
+  name               = title(each.value)
+  slug               = authentik_provider_proxy.media_proxy[each.value].name
+  protocol_provider  = authentik_provider_proxy.media_proxy[each.value].id
+  group              = authentik_group.media.name
+  open_in_new_tab    = true
+  meta_icon          = "https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/${each.value}.png"
+  policy_engine_mode = "all"
+}
+
 resource "authentik_provider_proxy" "hass_proxy" {
   name                  = "home-assistant-provider"
   external_host         = "http://hass.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
@@ -80,7 +104,7 @@ resource "authentik_application" "hass_application" {
   name               = "Home-Assistant"
   slug               = authentik_provider_proxy.hass_proxy.name
   protocol_provider  = authentik_provider_proxy.hass_proxy.id
-  group              = authentik_group.infrastructure.name
+  group              = authentik_group.home.name
   open_in_new_tab    = true
   meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/home-assistant.png"
   policy_engine_mode = "all"
