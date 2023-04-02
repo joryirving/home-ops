@@ -35,7 +35,7 @@ resource "authentik_provider_proxy" "download_proxy" {
   external_host         = "http://${each.value}.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
   mode                  = "forward_single"
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-  access_token_validity = "hours=24"
+  access_token_validity = "hours=4"
 }
 
 resource "authentik_application" "download_application" {
@@ -55,7 +55,7 @@ resource "authentik_provider_proxy" "infra_proxy" {
   external_host         = "http://${each.value}.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
   mode                  = "forward_single"
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-  access_token_validity = "hours=24"
+  access_token_validity = "hours=4"
 }
 
 resource "authentik_application" "infra_application" {
@@ -97,7 +97,7 @@ resource "authentik_provider_proxy" "hass_proxy" {
   external_host         = "http://hass.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
   mode                  = "forward_single"
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-  access_token_validity = "hours=24"
+  access_token_validity = "hours=4"
 }
 
 resource "authentik_application" "hass_application" {
