@@ -7,6 +7,10 @@ metadata:
   labels:
     substitution.flux.home.arpa/enabled: "true"
 spec:
+  dependsOn:
+    - name: cluster-apps-qbittorrent-pod-gateway-downloads
+    - name: cluster-apps-longhorn
+    - name: cluster-apps-ingress-nginx
   path: ./kubernetes/apps/downloads/qbittorrent/app
   prune: true
   sourceRef:
@@ -20,6 +24,3 @@ spec:
   interval: 30m
   retryInterval: 1m
   timeout: 3m
-  dependsOn:
-    - name: cluster-apps-qbittorrent-pod-gateway-downloads
-    - name: cluster-apps-longhorn
