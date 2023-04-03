@@ -45,9 +45,9 @@ main() {
         envsubst < "${PROJECT_DIR}/tmpl/kubernetes/flux/cluster.yaml" \
             > "${PROJECT_DIR}/kubernetes/flux/config/cluster.yaml"
         # generate secrets
-        envsubst < "${PROJECT_DIR}/tmpl/kubernetes/cluster-secrets.sops.yaml" \
-            > "${PROJECT_DIR}/kubernetes/flux/vars/cluster-secrets.sops.yaml"
-        sops --encrypt --in-place "${PROJECT_DIR}/kubernetes/flux/vars/cluster-secrets.sops.yaml"
+        # envsubst < "${PROJECT_DIR}/tmpl/kubernetes/cluster-secrets.sops.yaml" \
+        #     > "${PROJECT_DIR}/kubernetes/flux/vars/cluster-secrets.sops.yaml"
+        # sops --encrypt --in-place "${PROJECT_DIR}/kubernetes/flux/vars/cluster-secrets.sops.yaml"
         envsubst < "${PROJECT_DIR}/tmpl/kubernetes/cert-manager-secret.sops.yaml" \
             > "${PROJECT_DIR}/kubernetes/apps/cert-manager/cert-manager/issuers/secret.sops.yaml"
         sops --encrypt --in-place "${PROJECT_DIR}/kubernetes/apps/cert-manager/cert-manager/issuers/secret.sops.yaml"
