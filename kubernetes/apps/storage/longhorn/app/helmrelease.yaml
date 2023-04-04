@@ -30,8 +30,15 @@ spec:
       enabled: true
       createPrometheusRules: true
     defaultSettings:
+      backupTarget: "nfs://${SECRET_NFS_SERVER}:${SECRET_NFS_BACKUP}"
+      createDefaultDiskLabeledNodes: true
+      storageOverProvisioningPercentage: 100
+      storageMinimalAvailablePercentage: 10
+      guaranteedEngineManagerCPU: 20
+      guaranteedReplicaManagerCPU: 20
+      concurrentAutomaticEngineUpgradePerNodeLimit: 1
       defaultDataPath: "/storage01"
       defaultDataLocality: best-effort
       replicaAutoBalance: best-effort
-      storageOverProvisioningPercentage: "100"
-      backupTarget: "nfs://${SECRET_NFS_SERVER}:${SECRET_NFS_BACKUP}"
+      defaultLonghornStaticStorageClass: longhorn
+      nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
