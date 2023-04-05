@@ -20,12 +20,12 @@ The purpose here is to learn k8s, while practicing Gitops.
 
 | Device                    | Count | OS Disk Size  | Data Disk Size              | Ram   | Operating System      | Purpose             |
 |---------------------------|-------|---------------|-----------------------------|-------|-----------------------|---------------------|
-| HP z820 Workstation.      | 1     | 32GB USB3.0   | ZFS 26TB w/ 2 disk Parity   | 128GB | Unraid                | NAS + NFS + Backup  |
-| Lenovo M910q              | 1     | 120GB SSD     | 1TB NVMe                    | 64GB  | Ubuntu                | Kubernetes Master   |
-| Beelink Mini-S            | 1     | 250GB SSD     | 250GB M.2 SSD               | 16GB  | Ubuntu                | Kubernetes Master   |
+| HP z820 Workstation       | 1     | 32GB USB3.0   | ZFS 26TB w/ 2 disk Parity   | 128GB | Unraid                | NAS + NFS + Backup  |
+| Lenovo M910q              | 1     | 120GB SSD     | 1TB M.e NVMe                | 64GB  | Ubuntu                | Kubernetes Worker   |
+| Beelink Mini-S            | 1     | 250GB SSD     | 1TB M.2 SSD                 | 16GB  | Ubuntu                | Kubernetes Worker   |
 | Raspberry Pi 4            | 1     | 240GB SSD     | -                           | 8GB   | Raspbian Lite 64-bit  | Kubernetes Master   |
-| Raspberry Pi 4            | 2     | 240GB SSD     | -                           | 4GB   | Raspbian Lite 64-bit  | Kubernetes Worker   |
-| APC Smart-UPS 750         | 1     | -             | -                           | -     | -                     | UPS - Unraid        |
+| Raspberry Pi 4            | 2     | 240GB SSD     | -                           | 4GB   | Raspbian Lite 64-bit  | Kubernetes Master   |
+| APC Smart-UPS 750         | 1     | -             | -                           | -     | -                     | UPS - NAS           |
 | APC Back-UPS 600          | 1     | -             | -                           | -     | -                     | UPS - K8s + Network |
 | Unifi UDM Base            | 1     | -             | -                           | -     | Unifi OS              | Router              |
 | Netgear GS324P            | 1     |               | -                           | -     | -                     | 24 Port PoE Switch  |
