@@ -141,6 +141,8 @@ spec:
       GF_EXPLORE_ENABLED: true
       GF_LOG_FILTERS: rendering:debug
       GF_PANELS_DISABLE_SANITIZE_HTML: true
+    envFromSecrets:
+      - name: grafana-github-secret
 
     grafana.ini:
       analytics:
@@ -151,16 +153,8 @@ spec:
         enabled: true
         allow_sign_up: false
         auto_login: false
-        client_id:
-          valueFrom:
-            secretKeyRef:
-              name: grafana-github-secret
-              key: APP_ID
-        client_secret:
-          valueFrom:
-            secretKeyRef:
-              name: grafana-github-secret
-              key: CLIENT_SECRET
+        client_id: # Set by env vars secret
+        client_secret: # Set by env vars secret
         scopes: user:email,read:org
         auth_url: https://github.com/login/oauth/authorize
         token_url: https://github.com/login/oauth/access_token
