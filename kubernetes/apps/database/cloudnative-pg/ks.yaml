@@ -4,35 +4,37 @@ kind: Kustomization
 metadata:
   name: cluster-apps-cloudnative-pg
   namespace: flux-system
-  labels:
-    substitution.flux.home.arpa/enabled: "true"
 spec:
-  dependsOn:
-    - name: cluster-apps-longhorn
-    - name: cluster-apps-ingress-nginx
-  interval: 10m
-  path: "./kubernetes/cluster-0/apps/database/cloudnative-pg/operator"
+  path: ./kubernetes/apps/database/cloudnative-pg/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  wait: true
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: cloudnative-pg
+      namespace: database
+  interval: 30m
+  retryInterval: 1m
+  timeout: 3m
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
 metadata:
-  name: cluster-apps-cloudnative-pg-config
+  name: cluster-apps-cloudnative-pg-cluster
   namespace: flux-system
-  labels:
-    substitution.flux.home.arpa/enabled: "true"
 spec:
-  interval: 10m
-  path: "./kubernetes/apps/database/cloudnative-pg/config"
+  dependsOn:
+    - name: cluster-apps-cloudnative-pg
+    - name: cluster-apps-local-path-provisioner
+    - name: cluster-apps-external-secrets-stores
+  path: ./kubernetes/apps/database/cloudnative-pg/cluster
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
   wait: true
-  dependsOn:
-    - name: cluster-apps-cloudnative-pg
-    - name: cluster-apps-onepassword-connect
+  interval: 30m
+  retryInterval: 1m
+  timeout: 3m
