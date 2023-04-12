@@ -29,97 +29,29 @@ spec:
     keepHistory: false
   values:
     cleanPrometheusOperatorObjectNames: true
-    # alertmanager:
-    #   config:
-    #     global:
-    #       resolve_timeout: 5m
-    #     receivers:
-    #       - name: heartbeat
-    #         webhook_configs:
-    #           - url: "https://heartbeat.uptimerobot.com/${SECRET_ALERTMANAGER_UPTIMEROBOT_HEARTBEAT_TOKEN}"
-    #             send_resolved: true
-    #       - name: "null" # quote
-    #       - name: pushover
-    #         pushover_configs:
-    #           - url_title: View in Alertmanager
-    #             token: "${SECRET_ALERTMANAGER_PUSHOVER_TOKEN}"
-    #             user_key: "${SECRET_ALERTMANAGER_PUSHOVER_USER_KEY}"
-    #             send_resolved: true
-    #             html: true
-    #             sound: gamelan
-    #             priority: |-
-    #               {{ if eq .Status "firing" }}1{{ else }}0{{ end }}
-    #             title: |-
-    #                {{ .CommonLabels.alertname }} [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}]
-    #             message: |-
-    #               {{- range .Alerts }}
-    #                 {{- if ne .Annotations.description "" }}
-    #                   {{ .Annotations.description }}
-    #                 {{- else if ne .Annotations.summary "" }}
-    #                   {{ .Annotations.summary }}
-    #                 {{- else if ne .Annotations.message "" }}
-    #                   {{ .Annotations.message }}
-    #                 {{- else }}
-    #                   Alert description not available
-    #                 {{- end }}
-    #                 {{- if gt (len .Labels.SortedPairs) 0 }}
-    #                   <small>
-    #                   {{- range .Labels.SortedPairs }}
-    #                     <b>{{ .Name }}:</b> {{ .Value }}
-    #                   {{- end }}
-    #                   </small>
-    #                 {{- end }}
-    #               {{- end }}
-    #     route:
-    #       group_by: ["alertname", "job"]
-    #       group_wait: 1m
-    #       group_interval: 10m
-    #       repeat_interval: 12h
-    #       receiver: pushover
-    #       routes:
-    #         - receiver: heartbeat
-    #           group_wait: 0s
-    #           group_interval: 2m
-    #           repeat_interval: 2m
-    #           matchers:
-    #             - alertname =~ "Watchdog"
-    #         - receiver: "null" # quote
-    #           matchers:
-    #             - alertname =~ "InfoInhibitor"
-    #         - receiver: pushover
-    #           matchers:
-    #             - severity = "critical"
-    #           continue: true
-    #     inhibit_rules:
-    #       - source_matchers:
-    #           - severity = "critical"
-    #         target_matchers:
-    #           - severity = "warning"
-    #         equal: ["alertname", "namespace"]
-    # ingress:
-    #   enabled: true
-    #   pathType: Prefix
-    #   ingressClassName: nginx
-    #   annotations:
-    #     external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
-    #     nginx.ingress.kubernetes.io/whitelist-source-range: |
-    #       10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
-    #     hajimari.io/appName: "Alert Manager"
-    #     hajimari.io/icon: mdi:alert-decagram-outline
-    #   hosts:
-    #     - &host alert-manager.${SECRET_DOMAIN}
-    #   tls:
-    #     - hosts:
-    #         - *host
-    # alertmanagerSpec:
-    #   replicas: 3
-    #   storage:
-    #     volumeClaimTemplate:
-    #       spec:
-    #         storageClassName: local-path
-    #         resources:
-    #           requests:
-    #             storage: 1Gi
+    alertmanager:
+      ingress:
+        enabled: true
+        annotations:
+          external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+          nginx.ingress.kubernetes.io/whitelist-source-range: |
+            10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+        hosts:
+          - &host-alert-manager alert-manager.${SECRET_DOMAIN}
+        paths:
+          - /
+        pathType: Prefix
+        tls:
+          - hosts:
+              - *host-alert-manager
+      alertManagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn
+              resources:
+                requests:
+                  storage: 10Gi
     grafana:
       enabled: false
       forceDeployDashboards: true
