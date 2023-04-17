@@ -163,6 +163,25 @@ spec:
     grafana.ini:
       analytics:
         check_for_updates: false
+      auth:
+        signout_redirect_url: https://authentik.${SECRET_DOMAIN}/application/o/grafana-provider/end-session/
+        oauth_auto_login: true
+      auth.anonymous:
+        enabled: true
+        org_name: Main Org.
+        org_role: Viewer
+        hide_version: true
+      auth.generic_oauth:
+        name: authentik
+        enabled: true
+        client_id: # Set by env vars secret
+        client_secret: # Set by env vars secret
+        scopes: openid email profile
+        auth_url: https://authentik.${SECRET_DOMAIN}/application/o/authorize/
+        token_url: https://authentik.${SECRET_DOMAIN}/application/o/token/
+        api_url: https://authentik.${SECRET_DOMAIN}/application/o/userinfo/
+        # Optionally map user groups to Grafana roles
+        role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'
       auth.basic:
         enabled: true
       auth.github:
