@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: paperless-nfs
+spec:
+  capacity:
+    storage: 16T
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: ${SECRET_NFS_SERVER}
+    path: ${SECRET_NFS_PAPERLESS}
+  mountOptions:
+    - nfsvers=4.2
+    - nconnect=16
+    - hard
+    - noatime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: paperless-nfs
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeName: paperless-nfs
+  storageClassName: ""
+  resources:
+    requests:
+      storage: 16T
