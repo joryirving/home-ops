@@ -8,73 +8,72 @@ spec:
   interval: 15m
   chart:
     spec:
-      # renovate: registryUrl=https://kubernetes-sigs.github.io/descheduler
       chart: descheduler
       version: 0.26.1
       sourceRef:
         kind: HelmRepository
         name: descheduler
         namespace: flux-system
+  maxHistory: 2
   install:
-    timeout: 10m
-    replace: true
-    crds: CreateReplace
     createNamespace: true
     remediation:
       retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
-      remediateLastFailure: true
       retries: 3
-      strategy: rollback
-    cleanupOnFail: true
-    crds: CreateReplace
-  test:
-    enable: true
-  rollback:
-    recreate: true
-    force: true
-    cleanupOnFail: true
   uninstall:
     keepHistory: false
-  maxHistory: 3
   values:
+    kind: Deployment
     deschedulerPolicy:
       strategies:
         RemoveDuplicates:
           enabled: true
+        RemovePodsViolatingNodeTaints:
+          enabled: true
+        RemovePodsViolatingNodeAffinity:
+          enabled: true
+          params:
+            nodeAffinityType: ["requiredDuringSchedulingIgnoredDuringExecution"]
+        RemovePodsViolatingTopologySpreadConstraint:
+          enabled: true
+          params:
+            includeSoftConstraints: true
+        RemovePodsViolatingInterPodAntiAffinity:
+          enabled: true
+          params:
+            nodeFit: true
+        LowNodeUtilization:
+          enabled: false
+        RemoveFailedPods:
+          enabled: true
+          params:
+            failedPods:
+              includingInitContainers: true
+              excludeOwnerKinds: ["Job"]
+              minPodLifetimeSeconds: 3600
         RemovePodsHavingTooManyRestarts:
           enabled: true
           params:
             podsHavingTooManyRestarts:
               podRestartThreshold: 100
               includingInitContainers: true
-        RemovePodsViolatingNodeTaints:
-          enabled: true
-        RemovePodsViolatingNodeAffinity:
-          enabled: true
-          params:
-            nodeAffinityType:
-              - requiredDuringSchedulingIgnoredDuringExecution
-        RemovePodsViolatingInterPodAntiAffinity:
-          enabled: true
-        RemovePodsViolatingTopologySpreadConstraint:
-          enabled: true
-          params:
-            includeSoftConstraints: false
-        LowNodeUtilization:
-          enabled: true
-          params:
-            nodeResourceUtilizationThresholds:
-              thresholds:
-                cpu: 20
-                memory: 20
-                pods: 20
-              targetThresholds:
-                cpu: 50
-                memory: 50
-                pods: 50
     service:
-      enabled: false
+      enabled: true
     serviceMonitor:
       enabled: true
+    podAnnotations:
+      configmap.reloader.stakater.com/reload: "descheduler"
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values: ["descheduler"]
+              topologyKey: kubernetes.io/hostname
