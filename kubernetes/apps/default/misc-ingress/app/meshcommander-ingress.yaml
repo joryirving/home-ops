@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mesh
+  name: meshcommander
   namespace: default
   annotations:
     external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
@@ -18,9 +18,9 @@ spec:
             path: "/"
             backend:
               service:
-                name: nas
+                name: meshcommander
                 port:
-                  number: 80
+                  number: 8086
   tls:
     - hosts:
         - *host
@@ -28,7 +28,7 @@ spec:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: mesh
+  name: meshcommander
   namespace: default
 subsets:
   - addresses:
@@ -41,10 +41,10 @@ subsets:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mesh
+  name: meshcommander
   namespace: default
 spec:
   ports:
     - name: http
-      port: 80
+      port: 8086
   type: ClusterIP
