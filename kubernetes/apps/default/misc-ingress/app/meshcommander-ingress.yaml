@@ -1,0 +1,50 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mesh
+  namespace: default
+  annotations:
+    external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
+    nginx.ingress.kubernetes.io/whitelist-source-range: |
+      10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: &host mesh.${SECRET_DOMAIN}
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: nas
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - *host
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: mesh
+  namespace: default
+subsets:
+  - addresses:
+      - ip: 192.168.1.100
+    ports:
+      - name: http
+        port: 8086
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mesh
+  namespace: default
+spec:
+  ports:
+    - name: http
+      port: 80
+  type: ClusterIP
