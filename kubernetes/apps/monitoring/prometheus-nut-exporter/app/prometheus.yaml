@@ -64,19 +64,19 @@ metadata:
     app.kubernetes.io/instance: servers
     app.kubernetes.io/name: prometheus-nut-exporter
     prometheus: kube-prometheus
-  name: prometheus-nut-exporter-servers
+  name: prometheus-nut-exporter-network
   namespace: monitoring
 spec:
   endpoints:
     - interval: 30s
       metricRelabelings:
         - action: replace
-          replacement: servers
+          replacement: network
           sourceLabels:
             - instance
           targetLabel: instance
         - action: replace
-          replacement: castor
+          replacement: network
           sourceLabels:
             - server
           targetLabel: server
@@ -104,19 +104,19 @@ metadata:
     app.kubernetes.io/instance: servers
     app.kubernetes.io/name: prometheus-nut-exporter
     prometheus: kube-prometheus
-  name: prometheus-nut-exporter-internet
+  name: prometheus-nut-exporter-nas
   namespace: monitoring
 spec:
   endpoints:
     - interval: 30s
       metricRelabelings:
         - action: replace
-          replacement: internet
+          replacement: nas
           sourceLabels:
             - instance
           targetLabel: instance
         - action: replace
-          replacement: pollux
+          replacement: nas
           sourceLabels:
             - server
           targetLabel: server
