@@ -1,0 +1,63 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app prometheus-nut-exporter
+  namespace: monitoring
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+
+  values:
+    nameOverride: *app
+    image:
+      repository: ghcr.io/druggeri/nut_exporter
+      tag: "3.0.0"
+      pullPolicy: IfNotPresent
+    env:
+      TZ: "${TZ}"
+    args:
+      # the first time I set this, the first and last entries were ignored, so I have doubled them.
+      - --nut.vars_enable="battery.charge,battery.charge,battery.runtime,battery.voltage,battery.voltage.nominal,input.voltage,input.voltage.nominal,ups.load,ups.status,ups.status"
+    service:
+      main:
+        ports:
+          http:
+            enabled: false
+          metrics:
+            enabled: true
+            protocol: TCP
+            port: 9199
+        type: LoadBalancer
+        externalIPs:
+          - ${NAS_IP}
+          - ${PI_IP}
+        externalTrafficPolicy: Cluster
+        ipFamilyPolicy: PreferDualStack
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: "exporters.${SECRET_DOMAIN}"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi

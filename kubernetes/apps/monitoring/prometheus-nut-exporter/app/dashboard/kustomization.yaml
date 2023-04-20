@@ -1,0 +1,18 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+configMapGenerator:
+  - name: prometheus-nut-exporter-dashboard
+    files:
+      - prometheus-nut-exporter.json
+  - name: ups-aggregate-dashboard
+    files:
+      - ups-aggregate.json
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+    grafana_folder: "Home"
+  labels:
+    grafana_dashboard: "true"
