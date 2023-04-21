@@ -152,7 +152,7 @@ resource "authentik_application" "portainer_application" {
   name               = "portainer"
   slug               = authentik_provider_oauth2.portainer_oauth2.name
   protocol_provider  = authentik_provider_oauth2.portainer_oauth2.id
-  group              = authentik_group.monitoring.name
+  group              = authentik_group.infrastructure.name
   open_in_new_tab    = true
   meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/portainer.png"
   meta_launch_url    = "https://portainer.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"
