@@ -24,9 +24,15 @@ resource "authentik_group" "media" {
   parent       = resource.authentik_group.users.id
 }
 
+resource "authentik_group" "grafana_admin" {
+  name         = "Grafana Admins"
+  is_superuser = false
+}
+
 resource "authentik_group" "monitoring" {
   name         = "Monitoring"
   is_superuser = false
+  parent       = resource.authentik_group.grafana_admin.id
 }
 
 data "authentik_group" "admins" {
