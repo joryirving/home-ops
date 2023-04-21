@@ -17,7 +17,6 @@ locals {
   infra_applications = toset([
     "longhorn",
     "nas",
-    "portainer",
     "tdarr"
   ])
 
@@ -29,6 +28,8 @@ locals {
   )
 }
 
+### Proxy Providers ###
+## Downloads ##
 resource "authentik_provider_proxy" "download_proxy" {
   for_each              = local.download_applications
   name                  = "${each.value}-provider"
@@ -49,6 +50,7 @@ resource "authentik_application" "download_application" {
   policy_engine_mode = "all"
 }
 
+## Infra ##
 resource "authentik_provider_proxy" "infra_proxy" {
   for_each              = local.infra_applications
   name                  = "${each.value}-provider"
@@ -69,6 +71,7 @@ resource "authentik_application" "infra_application" {
   policy_engine_mode = "all"
 }
 
+## Media ##
 resource "authentik_provider_proxy" "media_proxy" {
   for_each                      = local.media_applications
   name                          = "${each.value}-provider"
@@ -92,6 +95,7 @@ resource "authentik_application" "media_application" {
   policy_engine_mode = "all"
 }
 
+## HASS ##
 resource "authentik_provider_proxy" "hass_proxy" {
   name                  = "home-assistant-provider"
   external_host         = "http://hass.${data.sops_file.authentik_secrets.data["cluster_domain"]}"
@@ -110,6 +114,8 @@ resource "authentik_application" "hass_application" {
   policy_engine_mode = "all"
 }
 
+### Oauth2 Providers ###
+## Grafana ##
 resource "authentik_provider_oauth2" "grafana_oauth2" {
   name                  = "grafana-provider"
   client_id             = data.sops_file.authentik_secrets.data["grafana_id"]
@@ -131,6 +137,29 @@ resource "authentik_application" "grafana_application" {
   policy_engine_mode = "all"
 }
 
+## Portainer ##
+resource "authentik_provider_oauth2" "portainer_oauth2" {
+  name                  = "portainer-provider"
+  client_id             = data.sops_file.authentik_secrets.data["portainer_id"]
+  client_secret         = data.sops_file.authentik_secrets.data["portainer_secret"]
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  property_mappings     = data.authentik_scope_mapping.oauth2.ids
+  access_token_validity = "hours=4"
+  redirect_uris         = ["https://portainer.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"]
+}
+
+resource "authentik_application" "portainer_application" {
+  name               = "portainer"
+  slug               = authentik_provider_oauth2.portainer_oauth2.name
+  protocol_provider  = authentik_provider_oauth2.portainer_oauth2.id
+  group              = authentik_group.monitoring.name
+  open_in_new_tab    = true
+  meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/portainer.png"
+  meta_launch_url    = "https://portainer.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"
+  policy_engine_mode = "all"
+}
+
+### Outpost ###
 resource "authentik_outpost" "proxyoutpost" {
   name               = "proxy-outpost"
   type               = "proxy"
