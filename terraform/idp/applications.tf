@@ -149,7 +149,7 @@ resource "authentik_provider_oauth2" "portainer_oauth2" {
 }
 
 resource "authentik_application" "portainer_application" {
-  name               = "portainer"
+  name               = "Portainer"
   slug               = authentik_provider_oauth2.portainer_oauth2.name
   protocol_provider  = authentik_provider_oauth2.portainer_oauth2.id
   group              = authentik_group.infrastructure.name
