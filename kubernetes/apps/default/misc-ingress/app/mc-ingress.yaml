@@ -2,25 +2,23 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: meshcommander
+  name: mc
   namespace: default
   annotations:
     external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_DOMAIN}"
-    nginx.ingress.kubernetes.io/whitelist-source-range: |
-      10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 spec:
   ingressClassName: nginx
   rules:
-    - host: &host mesh.${SECRET_DOMAIN}
+    - host: &host mc.${SECRET_DOMAIN}
       http:
         paths:
           - pathType: Prefix
             path: "/"
             backend:
               service:
-                name: meshcommander
+                name: mc
                 port:
-                  number: 8086
+                  number: 25565
   tls:
     - hosts:
         - *host
@@ -28,23 +26,23 @@ spec:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: meshcommander
+  name: mc
   namespace: default
 subsets:
   - addresses:
       - ip: 192.168.1.100
     ports:
       - name: http
-        port: 8086
+        port: 25565
         protocol: TCP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: meshcommander
+  name: mc
   namespace: default
 spec:
   ports:
     - name: http
-      port: 8086
+      port: 25565
   type: ClusterIP
