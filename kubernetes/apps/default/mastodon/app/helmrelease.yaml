@@ -28,6 +28,9 @@ spec:
     image:
       repository: ghcr.io/mastodon/mastodon
     mastodon:
+      secrets:
+        secret_key_base:
+          existingSecret: mastodon-secret
       createAdmin:
         enabled: false
         username: ${MASTODON_USERNAME}
@@ -53,9 +56,6 @@ spec:
           resources:
             requests:
               storage: 100Gi
-    secrets:
-      secret_key_base:
-        existingSecret: mastodon-secret
     sidekiq:
       workers:
         - name: all-queues
