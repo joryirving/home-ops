@@ -27,9 +27,6 @@ spec:
       strategy: RollingUpdate
     image:
       repository: ghcr.io/mastodon/mastodon
-    envFrom:
-      - secretRef:
-          name: mastodon-secret
     mastodon:
       createAdmin:
         enabled: false
@@ -56,6 +53,10 @@ spec:
           resources:
             requests:
               storage: 100Gi
+    secrets:
+      secret_key_base:
+        - secretRef:
+            name: mastodon-secret
     sidekiq:
       workers:
         - name: all-queues
