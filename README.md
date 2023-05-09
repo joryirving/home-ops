@@ -3,7 +3,7 @@
 <div align="center">
 
 [![Discord](https://img.shields.io/discord/673534664354430999?color=7289da&label=DISCORD&style=for-the-badge&logo=discord)](https://discord.gg/k8s-at-home 'k8s at home Discord Community')
-[![GitHub stars](https://img.shields.io/github/stars/lildrunkensmurf/k3s-home-cluster?color=green&style=for-the-badge)](https://github.com/Truxnell/lildrunkensmurf/k3s-home-cluster 'This repo star count')
+[![GitHub stars](https://img.shields.io/github/stars/lildrunkensmurf/k3s-home-cluster?color=green&style=for-the-badge)](https://github.com/lildrunkensmurf/k3s-home-cluster/stargazers 'This repo star count')
 [![GitHub last commit](https://img.shields.io/github/last-commit/lildrunkensmurf/k3s-home-cluster?color=purple&style=for-the-badge)](https://github.com/LilDrunkenSmurf/k3s-home-cluster/commits/main 'Commit History')\
 [![Release](https://img.shields.io/github/v/release/lildrunkensmurf/k3s-home-cluster?style=for-the-badge)](https://github.com/lildrunkensmurf/k3s-home-cluster/releases 'Repo releases')
 
