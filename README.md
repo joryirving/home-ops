@@ -23,6 +23,7 @@ The purpose here is to learn k8s, while practicing Gitops.
 | HP z820 Workstation       | 1     | 32GB USB3.0   | ZFS 26TB w/ 2 disk Parity   | 128GB | Unraid                | NAS + NFS + Backup  |
 | Lenovo M910q              | 1     | 120GB SSD     | 1TB M.2 NVMe                | 64GB  | Ubuntu                | Kubernetes Worker   |
 | Dell Optiplex 7050mff     | 1     | 256GB SSD     | 1TB M.2 NVMe                | 64GB  | Ubuntu                | Kubernetes Worker   |
+| Dell Optiplex 7080mff     | 1     | 256GB SSD     | 1TB M.2 NVMe+256GB M.2 NVMe | 64GB  | Proxmox               | PVE + K8s vm Worker |
 | Beelink Mini-S            | 1     | 250GB SSD     | 1TB M.2 SSD                 | 16GB  | Ubuntu                | Kubernetes Worker   |
 | Raspberry Pi 4            | 1     | 240GB SSD     | -                           | 8GB   | Raspbian Lite 64-bit  | Kubernetes Master   |
 | Raspberry Pi 4            | 2     | 240GB SSD     | -                           | 4GB   | Raspbian Lite 64-bit  | Kubernetes Master   |
