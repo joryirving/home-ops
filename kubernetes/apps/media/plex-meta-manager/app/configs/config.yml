@@ -84,7 +84,7 @@ settings:
 
 plex:
   url: http://plex.media.svc.cluster.local:32400
-  token: {{ .PLEX_APIKEY }}
+  token: ${PLEX_TOKEN}
   timeout: 60
   clean_bundles: false
   empty_trash: false
@@ -92,28 +92,28 @@ plex:
 
 tautulli:
   url: http://tautulli.media.svc.cluster.local:8181
-  apikey: {{ .TAUTULLI_APIKEY }}
+  apikey: ${TAUTULLI_TOKEN}
 
 tmdb:
-  apikey: {{ .TMDB_APIKEY }}
+  apikey: {{ .TMDB_APIKEY }}  ##TODO
   language: en
   cache_expiration: 60
   region:
 
 omdb:
-  apikey: {{ .OMDB_APIKEY }}
+  apikey: {{ .OMDB_APIKEY }} ##TODO
   cache_expiration: 60
 
 mdblist:
-  apikey: {{ .MDBLIST_APIKEY }}
+  apikey: {{ .MDBLIST_APIKEY }} ##TODO
   cache_expiration: 60
 
 radarr:
-  url: http://radarr.media.svc.cluster.local:7878
-  token: {{ .RADARR_APIKEY }}
+  url: http://radarr.downloads.svc.cluster.local
+  token: ${RADARR_TOKEN}
   add_missing: false
   add_existing: false
-  root_folder_path: /media/movies
+  root_folder_path: /data/media/movies
   monitor: true
   availability: announced
   quality_profile: Web-1080p
@@ -123,14 +123,14 @@ radarr:
   plex_path:
   upgrade_existing: false
 
-sonarr:
-  url: http://sonarr.media.svc.cluster.local:8989
-  token: {{ .SONARR_APIKEY }}
+sonarr: ##Figure out multiple instances
+  url: http://sonarr.media.svc.cluster.local
+  token: ${SONARR_TOKEN}
   add_missing: false
   add_existing: false
-  root_folder_path: /media/shows
+  root_folder_path: "/data/media/tv shows"
   monitor: all
-  quality_profile: Web-1080p
+  quality_profile: Web-720p
   language_profile: English
   series_type: standard
   season_folder: true
@@ -142,13 +142,13 @@ sonarr:
   upgrade_existing: false
 
 trakt:
-  client_id: {{ .TRAKT_CLIENT_ID }}
-  client_secret: {{ .TRAKT_CLIENT_SECRET }}
+  client_id: {{ .TRAKT_CLIENT_ID }} ## TODO
+  client_secret: {{ .TRAKT_CLIENT_SECRET }} ## TODO
   authorization:
-    access_token: {{ .TRAKT_ACCESS_TOKEN }}
+    access_token: {{ .TRAKT_ACCESS_TOKEN }} ## TODO
     token_type: Bearer
-    expires_in: {{ .TRAKT_EXPIRES_IN }}
-    refresh_token: {{ .TRAKT_REFRESH_TOKEN }}
+    expires_in: {{ .TRAKT_EXPIRES_IN }} ## TODO
+    refresh_token: {{ .TRAKT_REFRESH_TOKEN }} ## TODO
     scope: public
-    created_at: {{ .TRAKT_CREATED_AT }}
+    created_at: {{ .TRAKT_CREATED_AT }} ## TODO
   pin:
