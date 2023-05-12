@@ -27,6 +27,16 @@ spec:
     keepHistory: false
   values:
     kind: Deployment
+    leaderElection:
+      enabled: true
+    podAnnotations:
+      configmap.reloader.stakater.com/reload: "descheduler"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 48M
+      limits:
+        memory: 48M
     deschedulerPolicy:
       strategies:
         RemoveDuplicates:
@@ -36,7 +46,8 @@ spec:
         RemovePodsViolatingNodeAffinity:
           enabled: true
           params:
-            nodeAffinityType: ["requiredDuringSchedulingIgnoredDuringExecution"]
+            nodeAffinityType:
+              - requiredDuringSchedulingIgnoredDuringExecution
         RemovePodsViolatingTopologySpreadConstraint:
           enabled: true
           params:
@@ -52,7 +63,8 @@ spec:
           params:
             failedPods:
               includingInitContainers: true
-              excludeOwnerKinds: ["Job"]
+              excludeOwnerKinds:
+                - "Job"
               minPodLifetimeSeconds: 3600
         RemovePodsHavingTooManyRestarts:
           enabled: true
@@ -60,20 +72,3 @@ spec:
             podsHavingTooManyRestarts:
               podRestartThreshold: 100
               includingInitContainers: true
-    service:
-      enabled: true
-    serviceMonitor:
-      enabled: true
-    podAnnotations:
-      configmap.reloader.stakater.com/reload: "descheduler"
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/name
-                    operator: In
-                    values: ["descheduler"]
-              topologyKey: kubernetes.io/hostname
