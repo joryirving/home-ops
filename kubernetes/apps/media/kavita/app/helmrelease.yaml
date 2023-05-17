@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: calibre-web
+  name: kavita
   namespace: media
 spec:
   interval: 15m
@@ -31,51 +31,47 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: ghcr.io/bjw-s/calibre-web
-      tag: 0.6.19@sha256:7c00c5b6d75c24f3e951298a0e1550aae1b1b29aeb354fef1255658c4221a67f
+      repository: kizaing/kavita
+      tag: 0.7.2
     env:
       TZ: ${TZ}
-      CACHE_DIR: /cache
-    enableServiceLinks: false
     service:
       main:
         ports:
           http:
-            port: 8083
+            port: 5000
     ingress:
       main:
         enabled: true
         ingressClassName: nginx
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: calibre-web.png
-          gethomepage.dev/name: calibre-web
+          gethomepage.dev/icon: kavita.png
+          gethomepage.dev/name: kavita
           gethomepage.dev/group: Media
           external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_DOMAIN}"
           # nginx.ingress.kubernetes.io/auth-response-headers: Set-Cookie,X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid
-          # nginx.ingress.kubernetes.io/auth-signin: https://calibre-web.${SECRET_DOMAIN}/outpost.goauthentik.io/start?rd=$scheme://$http_host$request_uri
+          # nginx.ingress.kubernetes.io/auth-signin: https://kavita.${SECRET_DOMAIN}/outpost.goauthentik.io/start?rd=$scheme://$http_host$request_uri
           # nginx.ingress.kubernetes.io/auth-snippet: proxy_set_header X-Forwarded-Host $http_host;
           # nginx.ingress.kubernetes.io/auth-url: http://ak-outpost-proxy-outpost.security.svc.cluster.local:9000/outpost.goauthentik.io/auth/nginx
         hosts:
-          - host: &host calibre-web.${SECRET_DOMAIN}
+          - host: &host kavita.${SECRET_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
         tls:
           - hosts:
               - *host
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-      supplementalGroups:
-        - 65539
+    # podSecurityContext:
+    #   runAsUser: 568
+    #   runAsGroup: 568
+    #   fsGroup: 568
+    #   fsGroupChangePolicy: OnRootMismatch
     volumeClaimTemplates:
       - name: config
         mountPath: /config
         accessMode: ReadWriteOnce
-        size: 20Gi
+        size: 1Gi
         storageClass: longhorn
     persistence:
       media:
@@ -83,13 +79,9 @@ spec:
         existingClaim: media
         mountPath: /data
         subPath: media
-      cache:
-        enabled: true
-        type: emptyDir
-        mountPath: /cache
     resources:
       requests:
-        cpu: 15m
-        memory: 250M
+        cpu: 20m
+        memory: 100Mi
       limits:
-        memory: 300M
+        memory: 250Mi
