@@ -35,6 +35,8 @@ spec:
       tag: version-v0.5.7
     env:
       TZ: "${TZ}"
+      UID: "1000"
+      GID: "1000"
     service:
       main:
         ports:
@@ -64,11 +66,11 @@ spec:
         tls:
           - hosts:
               - *host
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
+    # podSecurityContext:
+    #   runAsUser: 568
+    #   runAsGroup: 568
+    #   fsGroup: 568
+    #   fsGroupChangePolicy: OnRootMismatch
     volumeClaimTemplates:
       - name: config
         mountPath: /config
