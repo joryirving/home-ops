@@ -1,0 +1,106 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: kapowarr
+  namespace: downloads
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controller:
+      type: statefulset
+      annotations:
+        reloader.stakater.com/auto: "true"
+    image:
+      repository: mrcas/kapowarr
+    env:
+      TZ: "${TZ}"
+      # kapowarr__INSTANCE_NAME: kapowarr
+      # kapowarr__PORT: &port 80
+      # kapowarr__LOG_LEVEL: info
+      # kapowarr__API_KEY: ${kapowarr_TOKEN}
+    service:
+      main:
+        ports:
+          http:
+            port: &port 5656
+    probes:
+      liveness: &probes
+        enabled: true
+        custom: true
+        spec:
+          httpGet:
+            path: /ping
+            port: *port
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 1
+          failureThreshold: 3
+      readiness: *probes
+      startup:
+        enabled: false
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/icon: kapowarr.png
+          gethomepage.dev/name: kapowarr
+          gethomepage.dev/group: Downloads
+          # gethomepage.dev/widget.type: kapowarr
+          # gethomepage.dev/widget.url: http://kapowarr.downloads
+          # gethomepage.dev/widget.key: ${KAPOWARR_TOKEN}
+          nginx.ingress.kubernetes.io/configuration-snippet: |
+            proxy_set_header Accept-Encoding "";
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/kapowarr/plex.css"></head>';
+            sub_filter_once on;
+        hosts:
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+    # podSecurityContext:
+    #   runAsUser: 568
+    #   runAsGroup: 568
+    #   fsGroup: 568
+    #   fsGroupChangePolicy: OnRootMismatch
+    volumeClaimTemplates:
+      - name: config
+        mountPath: /app/db
+        accessMode: ReadWriteOnce
+        size: 2Gi
+        storageClass: longhorn
+    persistence:
+      media:
+        enabled: true
+        existingClaim: downloads
+        mountPath: /data
+    resources:
+      requests:
+        cpu: 15m
+        memory: 350M
+      limits:
+        memory: 600M
