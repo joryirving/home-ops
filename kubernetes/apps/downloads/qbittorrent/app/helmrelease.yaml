@@ -96,6 +96,14 @@ spec:
         existingClaim: downloads
         mountPath: /downloads
         subPath: torrents
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values: ["sabnzbd"]
     resources:
       requests:
         cpu: 25m
