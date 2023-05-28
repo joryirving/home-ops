@@ -27,12 +27,12 @@ spec:
     keepHistory: false
   values:
     initContainers:
-      01-init-config:
+      init-profile:
         image: public.ecr.aws/docker/library/busybox:latest
         imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "-c", "cp /tmp/config/*.xml /usr/lib/plexmediaserver/Resources/Profiles/"]
+        command: ["/bin/sh", "-c", "cp /tmp/Profiles/*.xml /usr/lib/plexmediaserver/Resources/Profiles/"]
         volumeMounts:
-          - { name: config-file, mountPath: /tmp/config }
+          - { name: plex-profile, mountPath: /tmp/Profiles }
     controller:
       type: statefulset
       annotations:
@@ -105,7 +105,7 @@ spec:
         existingClaim: media
         mountPath: /data
         subPath: media
-      config-file:
+      plex-profile:
         enabled: true
         type: configMap
         name: plex-profile-configmap # overriden by kustomizeconfig
