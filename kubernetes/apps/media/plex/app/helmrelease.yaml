@@ -26,13 +26,6 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    # initContainers:
-    #   init-profile:
-    #     image: public.ecr.aws/docker/library/busybox:latest
-    #     imagePullPolicy: IfNotPresent
-    #     command: ["/bin/sh", "-c", "cp /tmp/Profiles/*.xml /usr/lib/plexmediaserver/Resources/Profiles/"]
-    #     volumeMounts:
-    #       - { name: plex-profile, mountPath: /tmp/Profiles }
     controller:
       type: statefulset
       annotations:
@@ -105,8 +98,10 @@ spec:
         existingClaim: media
         mountPath: /data
         subPath: media
-      # plex-profile:
-      #   enabled: true
-      #   type: configMap
-      #   name: plex-profile-configmap
-      #   mountPath: /usr/lib/plexmediaserver/Resources/Profiles/Chromecast.xml
+      plex-profile:
+        enabled: true
+        type: configMap
+        name: plex-profile-configmap
+        subPath: Chromecast.xml
+        mountPath: /usr/lib/plexmediaserver/Resources/Profiles/Chromecast.xml
+        readOnly: true
