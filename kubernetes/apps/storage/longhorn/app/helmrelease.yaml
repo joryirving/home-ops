@@ -30,14 +30,17 @@ spec:
       enabled: true
       createPrometheusRules: true
     defaultSettings:
+      defaultReplicaCount: 3
       backupTarget: "nfs://${NAS_IP}:${SECRET_NFS_BACKUP}"
+      backupstorePollInterval: 0
       createDefaultDiskLabeledNodes: true
       storageOverProvisioningPercentage: 100
       storageMinimalAvailablePercentage: 10
       guaranteedEngineManagerCPU: 20
       guaranteedReplicaManagerCPU: 20
-      concurrentAutomaticEngineUpgradePerNodeLimit: 1
-      defaultDataPath: "/storage01"
+      orphanAutoDeletion: true
+      defaultDataPath: /mnt/external/longhorn
+      concurrentAutomaticEngineUpgradePerNodeLimit: 3
       defaultDataLocality: best-effort
       replicaAutoBalance: best-effort
       defaultLonghornStaticStorageClass: longhorn
