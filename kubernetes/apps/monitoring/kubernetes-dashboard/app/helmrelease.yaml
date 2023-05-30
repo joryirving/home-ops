@@ -14,7 +14,7 @@ spec:
         kind: HelmRepository
         name: kubernetes-dashboard
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     createNamespace: true
     remediation:
@@ -27,7 +27,7 @@ spec:
     keepHistory: false
   values:
     env:
-      TZ: "${TZ}"
+      TZ: "${TIMEZONE}"
     extraArgs:
       - --enable-skip-login
       - --disable-settings-authorizer
@@ -36,6 +36,8 @@ spec:
     ingress:
       enabled: true
       className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-staging
       hosts:
         - &host "kubernetes.${SECRET_DOMAIN}"
       tls:

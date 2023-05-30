@@ -5,18 +5,12 @@ metadata:
   name: cluster-apps-kubernetes-dashboard
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: cluster-apps-ingress-nginx
   path: ./kubernetes/apps/monitoring/kubernetes-dashboard/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
-      kind: HelmRelease
-      name: kubernetes-dashboard
-      namespace: monitoring
+  wait: true
   interval: 30m
   retryInterval: 1m
-  timeout: 3m
+  timeout: 5m
