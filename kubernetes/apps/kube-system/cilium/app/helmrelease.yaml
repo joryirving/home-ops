@@ -26,11 +26,14 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    bpf:
-      masquerade: true
+    k8sServiceHost: "${KUBE_VIP_ADDR}"
+    k8sServicePort: 6443
     cluster:
       name: home-cluster
       id: 1
+    rollOutCiliumPods: true
+    bpf:
+      masquerade: true
     containerRuntime:
       integration: containerd
       socketPath: /var/run/k3s/containerd/containerd.sock
@@ -65,20 +68,18 @@ spec:
             - hosts:
                 - *host
     ipam:
-      mode: cluster-pool
-      operator:
-        clusterPoolIPv4PodCIDRList: ["${CLUSTER_CIDR}"]
-        clusterPoolIPv4MaskSize: 24
-    k8sServiceHost: "${KUBE_VIP_ADDR}"
-    k8sServicePort: 6443
+      mode: kubernetes
+      # mode: cluster-pool
+      # operator:
+      #   clusterPoolIPv4PodCIDRList: ["${CLUSTER_CIDR}"]
+      #   clusterPoolIPv4MaskSize: 24
     kubeProxyReplacement: strict
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
-    # ipv4NativeRoutingCIDR: "10.42.0.0/16"
-    # tunnel: "disabled"
+    ipv4NativeRoutingCIDR: ${CLUSTER_CIDR}
+    tunnel: "disabled"
     operator:
-      enabled: true
-      replicas: 1
       rollOutPods: true
+      replicas: 2
       prometheus:
         enabled: true
         serviceMonitor:
@@ -87,4 +88,3 @@ spec:
       enabled: true
       serviceMonitor:
         enabled: true
-    rollOutCiliumPods: true
