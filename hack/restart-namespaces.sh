@@ -18,3 +18,4 @@ kubectl get statefulset -n media -o custom-columns=NAME:.metadata.name|grep -iv 
 
 kubectl get deployments -n downloads -o custom-columns=NAME:.metadata.name|grep -iv NAME|while read LINE; do kubectl rollout restart deployment $LINE -n downloads; done;
 kubectl get statefulset -n downloads -o custom-columns=NAME:.metadata.name|grep -iv NAME|while read LINE; do kubectl rollout restart statefulset $LINE -n downloads; done;
+kubectl get daemonset -n downloads -o custom-columns=NAME:.metadata.name|grep -iv NAME|while read LINE; do kubectl rollout restart daemonset $LINE -n downloads; done;
