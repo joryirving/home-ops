@@ -18,19 +18,21 @@ The purpose here is to learn k8s, while practicing Gitops.
 
 ## 🔧 Hardware
 
-| Device                    | Count | OS Disk Size  | Data Disk Size              | Ram   | Operating System      | Purpose             |
-|---------------------------|-------|---------------|-----------------------------|-------|-----------------------|---------------------|
-| HP z820 Workstation       | 1     | 32GB USB3.0   | ZFS 26TB w/ 2 disk Parity   | 128GB | Unraid                | NAS + NFS + Backup  |
-| Lenovo M910q              | 1     | 120GB SSD     | 1TB M.2 NVMe                | 64GB  | Ubuntu                | Kubernetes Worker   |
-| Dell Optiplex 7050mff     | 1     | 256GB SSD     | 1TB M.2 NVMe                | 64GB  | Ubuntu                | Kubernetes Worker   |
-| Dell Optiplex 7080mff     | 1     | 256GB SSD     | 1TB M.2 NVMe+256GB M.2 NVMe | 64GB  | Ubuntu                | Kubernetes Worker   |
-| Beelink Mini-S            | 1     | 250GB SSD     | 1TB M.2 SSD                 | 16GB  | Ubuntu                | Kubernetes Worker   |
-| Raspberry Pi 4            | 1     | 240GB SSD     | -                           | 8GB   | Raspbian Lite 64-bit  | Kubernetes Master   |
-| Raspberry Pi 4            | 2     | 240GB SSD     | -                           | 4GB   | Raspbian Lite 64-bit  | Kubernetes Master   |
-| APC Smart-UPS 750         | 1     | -             | -                           | -     | -                     | UPS - NAS           |
-| APC Back-UPS 600          | 1     | -             | -                           | -     | -                     | UPS - K8s + Network |
-| Unifi UDM Base            | 1     | -             | -                           | 2GB   | Unifi OS              | Router              |
-| Netgear GS324P            | 1     | -             | -                           | -     | -                     | 24 Port PoE Switch  |
+| Name        | Device            | CPU            | OS Disk   | Data Disk           | RAM   | OS       | Purpose             |
+|-------------|-------------------|----------------|-----------|---------------------|-------|----------|---------------------|
+| NAS         | HP z820           | 2x E5-2680     | 32GB USB  | ZFS 36TB            | 128GB | Unraid   | NAS/NFS/Backup      |
+| Eula        | Dell 7080mff      | i7-10700T      | 480GB SSD | 1TB NVME/256GB NVME | 64GB  | Ubuntu   | k8s Worker          |
+| Ayaka       | Dell 7080mff      | i5-10500T      | 480GB SSD | 1TB NVME/256GB NMVE | 64GB  | Ubuntu   | k8s Worker          |
+| Ganyu       | Dell 7050mff      | i5-7500T       | 240GB SSD | 1TB NVME            | 64GB  | Ubuntu   | k8s Worker          |
+| HuTao       | Lenovo m910q      | i5-7500T       | 480GB SSD | 1TB NVME            | 64GB  | Ubuntu   | k8s Worker          |
+| Yelan       | Beelink Mini-s    | Celetron N5095 | 256GB SSD | 1TB M.2 SSD         | 16GB  | Ubuntu   | k8s Worker          |
+| Raiden      | Raspberry Pi4 POE | Cortex A72     | 240GB SSD | -                   | 8GB   | Ubuntu   | k8s control-plane   |
+| Zhongli     | Raspberry Pi4 POE | Cortex A72     | 240GB SSD | -                   | 4GB   | Ubuntu   | k8s control-plane   |
+| Nahida      | Raspberry Pi4 POE | Cortex A72     | 240GB SSD | -                   | 4GB   | Ubuntu   | k8s control-plane   |
+| Nas UPS     | APC Smart-UPS 750 | -              | -         | -                   | -     | -        | UPS - NAS           |
+| Network UPS |APC Back-UPS 600   | -              | -         | -                   | -     | -        | UPS - K8s + Network |
+| UDMB        | Unifi UDM Base    | Cortex A57     | -         | -                   | 2GB   | Unifi OS | Router              |
+| DumbSwitch  | Netgear GS324P    | -              | -         | -                   | -     | -        | 24 Port PoE Switch  |
 
 ## 🤝 Thanks
 
