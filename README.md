@@ -29,6 +29,7 @@ The purpose here is to learn k8s, while practicing Gitops.
 | Raiden      | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 8GB   | Ubuntu   | k8s control-plane   |
 | Zhongli     | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB   | Ubuntu   | k8s control-plane   |
 | Nahida      | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB   | Ubuntu   | k8s control-plane   |
+| Amber       | Raspberry Pi3B | Cortex A53     | 120GB mSD | -           | 1GB   | Raspbian | DNS/VPN/MeshCentral |
 | Nas UPS     | Smart-UPS 750  | -              | -         | -           | -     | -        | UPS - NAS           |
 | Network UPS | Back-UPS 600   | -              | -         | -           | -     | -        | UPS - K8s + Network |
 | UDMB        | Unifi UDM Base | Cortex A57     | -         | -           | 2GB   | Unifi OS | Router              |
