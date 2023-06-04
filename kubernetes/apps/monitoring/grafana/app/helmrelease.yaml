@@ -13,9 +13,20 @@ spec:
         kind: HelmRepository
         name: grafana
         namespace: flux-system
-      version: 6.57.2
-  interval: 15m
-  timeout: 20m
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+    - name: local-path-provisioner
+      namespace: kube-system
   values:
     replicas: 1
     podAnnotations:
