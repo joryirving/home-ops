@@ -97,10 +97,13 @@ spec:
         existingClaim: media
         mountPath: /data
         subPath: media
-      # plex-profile:
-      #   enabled: true
-      #   type: configMap
-      #   name: plex-profile-configmap
-      #   subPath: Chromecast.xml
-      #   mountPath: /usr/lib/plexmediaserver/Resources/Profiles/Chromecast.xml
-      #   readOnly: true
+      transcode:
+        enabled: true
+        type: emptyDir
+      plex-profile:
+        enabled: true
+        type: configMap
+        name: plex-profile-configmap
+        subPath: Chromecast.xml
+        mountPath: /usr/lib/plexmediaserver/Resources/Profiles/Chromecast.xml
+        readOnly: true
