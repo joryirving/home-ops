@@ -30,7 +30,6 @@ spec:
       type: statefulset
       annotations:
         reloader.stakater.com/auto: "true"
-        configmap.reloader.stakater.com/reload: &configmap autobrr-configmap
     image:
       repository: ghcr.io/autobrr/autobrr
       tag: v1.26.2
@@ -69,7 +68,7 @@ spec:
       config-file:
         enabled: true
         type: configMap
-        name: *configmap
+        name: autobrr-configmap
         subPath: config.toml
         mountPath: /config/config.toml
         readOnly: true
