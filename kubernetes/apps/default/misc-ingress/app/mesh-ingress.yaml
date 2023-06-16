@@ -4,6 +4,11 @@ kind: Ingress
 metadata:
   name: mesh
   namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # decryption of tls occurs in the backend service
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/tls-acme: "false"
 spec:
   ingressClassName: nginx
   rules:
@@ -30,7 +35,7 @@ subsets:
   - addresses:
       - ip: ${NAS_IP}
     ports:
-      - name: https
+      - name: http
         port: 8086
         protocol: TCP
 ---
@@ -41,6 +46,6 @@ metadata:
   namespace: default
 spec:
   ports:
-    - name: https
+    - name: http
       port: 8086
   type: ClusterIP
