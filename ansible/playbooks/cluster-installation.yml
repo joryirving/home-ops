@@ -34,14 +34,13 @@
       become: false
       run_once: true
       check_mode: false
-      ansible.builtin.command: |-
-        git rev-parse --show-toplevel
+      ansible.builtin.command: git rev-parse --show-toplevel
       register: repository_path
 
     - name: Copy kubeconfig to the project directory
       when: k3s_primary_control_node
       ansible.builtin.fetch:
-        src: "/etc/rancher/k3s/k3s.yaml"
+        src: /etc/rancher/k3s/k3s.yaml
         dest: "{{ repository_path.stdout }}/kubeconfig"
         flat: true
 
@@ -51,14 +50,10 @@
       run_once: true
       ansible.builtin.replace:
         path: "{{ repository_path.stdout }}/kubeconfig"
-        regexp: "https://127.0.0.1:6443"
+        regexp: https://127.0.0.1:6443
         replace: "https://{{ k3s_registration_address }}:6443"
 
-    # Unmanaging and removing the Cilium HelmChart is required for
-    # flux to take over managing the lifecycle of Cilium
-
-    - name: Post installation of custom manifests tasks
-      run_once: true
+    - name: Post installation of custom manifests
       when:
         - k3s_primary_control_node
         - (k3s_server_manifests_templates | length > 0
@@ -120,7 +115,7 @@
             kind: HelmChart
             namespace: kube-system
           register: cilium_helmchart
-        - name: Remove finializers on the Cilium HelmChart
+        - name: Force delete the Cilium HelmChart
           when: cilium_helmchart.resources | count > 0
           kubernetes.core.k8s:
             kubeconfig: /etc/rancher/k3s/k3s.yaml
