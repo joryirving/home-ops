@@ -18,7 +18,7 @@ The purpose here is to learn k8s, while practicing Gitops.
 
 ## 🔧 Hardware
 
-### Kubernetes Hardware
+### Kubernetes Workers
 
 | Name    | Device         | CPU            | OS Disk   | Data Disk   | RAM   | OS       | Purpose           |
 |---------|----------------|----------------|-----------|-------------|-------|----------|-------------------|
@@ -33,14 +33,14 @@ Total CPU: 32 threads (workers)
 
 Total RAM: 144GB (workers)
 
-### Suporting Hardware
+### Supporting Hardware
 
 | Name  | Device         | CPU        | OS Disk   | Data Disk | RAM   | OS       | Purpose             |
 |-------|----------------|------------|-----------|-----------|-------|----------|---------------------|
 | NAS   | HP z820        | 2x E5-2680 | 32GB USB  | ZFS 36TB  | 128GB | Unraid   | NAS/NFS/Backup      |
 | Amber | Raspberry Pi3B | Cortex A53 | 120GB mSD | -         | 1GB   | Raspbian | DNS/VPN/MeshCentral |
 
-### Networking/UPS
+### Networking/UPS Hardware
 
 | Device         | Purpose             |
 |----------------|---------------------|
