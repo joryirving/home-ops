@@ -23,12 +23,12 @@ The purpose here is to learn k8s, while practicing Gitops.
 | NAS         | HP z820        | 2x E5-2680     | 32GB USB  | ZFS 36TB    | 128GB | Unraid   | NAS/NFS/Backup      |
 | Eula        | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB  | Ubuntu   | k8s Worker          |
 | Ayaka       | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB  | Ubuntu   | k8s Worker          |
-| Ganyu       | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB  | Ubuntu   | k8s Worker          |
-| HuTao       | Lenovo m910q   | i5-7500T       | 480GB SSD | 1TB NVME    | 64GB  | Ubuntu   | k8s Worker          |
 | Yelan       | Beelink Mini-s | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB  | Ubuntu   | k8s Worker          |
 | Raiden      | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 8GB   | Ubuntu   | k8s control-plane   |
 | Zhongli     | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB   | Ubuntu   | k8s control-plane   |
 | Nahida      | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB   | Ubuntu   | k8s control-plane   |
+| Ganyu       | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB  | Ubuntu   | PVE host w/ Ceph    |
+| HuTao       | Lenovo m910q   | i5-7500T       | 480GB SSD | 1TB NVME    | 64GB  | Ubuntu   | PVE host w/ Ceph    |
 | Amber       | Raspberry Pi3B | Cortex A53     | 120GB mSD | -           | 1GB   | Raspbian | DNS/VPN/MeshCentral |
 | Nas UPS     | Smart-UPS 750  | -              | -         | -           | -     | -        | UPS - NAS           |
 | Network UPS | Back-UPS 600   | -              | -         | -           | -     | -        | UPS - K8s + Network |
