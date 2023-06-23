@@ -2,6 +2,6 @@ terraform {
   backend "kubernetes" {
     secret_suffix = "state"
     config_path   = "~/.kube/config"
-    namespace     = "kube-tools"
+    namespace     = "flux-system"
   }
 }
