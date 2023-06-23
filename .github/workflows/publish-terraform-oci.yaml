@@ -12,7 +12,7 @@ on: # yamllint disable-line rule:truthy
 jobs:
   changed-files:
     name: Generate matrix for building images
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -59,7 +59,7 @@ jobs:
           fi
 
   publish:
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     needs:
       - changed-files
     strategy:
@@ -93,12 +93,12 @@ jobs:
 
       - name: Publish OCI
         run: |
-          flux push artifact "oci://ghcr.io/LilDrunkenSmurf/terraform/$(basename ${{ matrix.project }}):$(git rev-parse --short HEAD)" \
+          flux push artifact "oci://ghcr.io/LilDrunkenSmurf/terraform/$(basename ${{ matrix.project }})" \
             --path="./${{ matrix.project }}" \
             --source="$(git config --get remote.origin.url)" \
             --revision="$(git branch --show-current)/$(git rev-parse HEAD)"
 
       - name: Tag OCI
         run: |
-          flux tag artifact "oci://ghcr.io/LilDrunkenSmurf/terraform/$(basename ${{ matrix.project }}):$(git rev-parse --short HEAD)" \
+          flux tag artifact "oci://ghcr.io/LilDrunkenSmurf/terraform/$(basename ${{ matrix.project }})" \
             --tag main
