@@ -1,0 +1,107 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: pterodactyl
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controller:
+      type: statefulset
+    image:
+      repository: ghcr.io/pterodactyl/panel
+      tag: v1.11.3@sha256:540b9ced418428bdc2a214e23f0739fb3510960c92e5ad3447254446e40509cc
+    env:
+      DB_HOST: mariadb.database
+      DB_PORT: 3306
+      DB_DATABASE: "panel"
+      DB_USERNAME: "pterodactyl"
+      ##DB_PASSWORD: PTERODACTYL_MARIADB_PASSWORD
+      REDIS_HOST: redis.database
+      CACHE_DRIVER: "redis"
+      SESSION_DRIVER: "redis"
+      QUEUE_DRIVER: "redis"
+      APP_URL: "https://pterodactyl.${SECRET_DOMAIN}"
+      APP_ENV: "production"
+      APP_ENVIRONMENT_ONLY: "false"
+      APP_TIMEZONE: ${TZ}
+      APP_SERVICE_AUTHOR: ${SECRET_ACME_EMAIL}
+      TRUSTED_PROXIES: "*"
+    envFrom:
+      - secretRef:
+       name: pterodactyl-mariadb-secret
+    service:
+      main:
+        ports:
+          http:
+            port: 80
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          external-dns.alpha.kubernetes.io/target: ingress.${SECRET_DOMAIN}
+          nginx.ingress.kubernetes.io/enable-cors: "true"
+          nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, OPTIONS"
+          nginx.ingress.kubernetes.io/cors-allow-headers: "*"
+          nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+          nginx.ingress.kubernetes.io/cors-max-age: "100"
+          nginx.ingress.kubernetes.io/configuration-snippet: |
+            more_set_input_headers X-Forwarded-Proto "https";
+            more_set_headers X-Forwarded-Proto "https";
+        hosts:
+          - host: &host "pterodactyl.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+    volumeClaimTemplates:
+      - name: pterodactyl-app
+        mountPath: /app/var/
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: longhorn-gameserver
+      - name: pterodactyl-nginx
+        mountPath: /etc/nginx/http.d/
+        accessMode: ReadWriteOnce
+        size: 500Mi
+        storageClass: longhorn-config
+      - name: pterodactyl-le
+        mountPath: /etc/letsencrypt/
+        accessMode: ReadWriteOnce
+        size: 100Mi
+        storageClass: longhorn-config
+      - name: pterodactyl-logs
+        mountPath: /app/storage/logs/
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: longhorn-config
+    resources:
+      requests:
+        cpu: 300m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
