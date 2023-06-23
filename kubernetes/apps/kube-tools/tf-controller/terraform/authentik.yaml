@@ -1,4 +1,15 @@
 ---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: oci-terraform-authentik
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: oci://ghcr.io/lildrunkensmurf/terraform-authentik
+  ref:
+    tag: main
+---
 apiVersion: infra.contrib.fluxcd.io/v1alpha1
 kind: Terraform
 metadata:
@@ -8,8 +19,8 @@ spec:
   interval: 12h
   path: ./terraform
   sourceRef:
-    kind: GitRepository
-    name: home-kubernetes
+    kind: OCIRepository
+    name: oci-terraform-authentik
     namespace: flux-system
   runnerPodTemplate:
     spec:
