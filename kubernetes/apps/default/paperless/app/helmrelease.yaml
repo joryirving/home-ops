@@ -55,7 +55,7 @@ spec:
       PAPERLESS_REDIS: redis://redis.database:6379
       PAPERLESS_TASK_WORKERS: 2
       PAPERLESS_TIME_ZONE: ${TIMEZONE}
-      PAPERLESS_URL: &host https://paperless.${SECRET_DOMAIN}
+      PAPERLESS_URL: https://paperless.${SECRET_DOMAIN}
       USERMAP_UID: 568
       USERMAP_GID: 568
     envFrom:
@@ -80,7 +80,7 @@ spec:
             10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
           hajimari.io/icon: mdi:file-multiple
         hosts:
-          - host: *host
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
         tls:
