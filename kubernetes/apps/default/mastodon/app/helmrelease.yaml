@@ -28,46 +28,58 @@ spec:
     image:
       repository: ghcr.io/mastodon/mastodon
     mastodon:
-      secrets:
-        secret_key_base:
-          existingSecret: mastodon-secret
-      createAdmin:
-        enabled: false
-        username: ${MASTODON_USERNAME}
-        email: ${MASTODON_EMAIL}
-      cron:
-        removeMedia:
-          enabled: true
-          schedule: "0 0 * * 0"
-      locale: en
-      local_domain: null
-      web_domain: mastodon.${SECRET_DOMAIN}
-      singleUserMode: false
-      authorizedFetch: false
-      limitedFederationMode: false
-      persistence:
-        assets:
-          accessMode: ReadWriteOnce
-          resource:
-            requests:
-              storage: 10Gi
-        system:
-          accessMode: ReadWriteOnce
-          resources:
-            requests:
-              storage: 100Gi
-    sidekiq:
-      workers:
-        - name: all-queues
-          concurrency: 3
-          replicas: 1
-          queues:
-            - default,8
-            - push,6
-            - ingress,4
-            - mailers,2
-            - pull
-            - scheduler
+      ## These are chart defaults
+      # createAdmin:
+      #   enabled: false
+      #   username: ${MASTODON_USERNAME}
+      #   email: ${MASTODON_EMAIL}
+      # cron:
+      #   removeMedia:
+      #     enabled: true
+      #     schedule: "0 0 * * 0"
+
+      # locale: en #default value
+      # local_domain: null #default value
+
+      web_domain: &host mastodon.${SECRET_DOMAIN}
+
+      # singleUserMode: false #default value
+      # authorizedFetch: false #default value
+
+      #limitedFederationMode: false #Not in the current published chart
+
+      ## These are chart defaults
+      # persistence:
+      #   assets:
+      #     accessMode: ReadWriteOnce
+      #     resource:
+      #       requests:
+      #         storage: 10Gi
+      #   system:
+      #     accessMode: ReadWriteOnce
+      #     resources:
+      #       requests:
+      #         storage: 100Gi
+
+    secrets:
+      secret_key_base:
+        existingSecret: mastodon-secret
+
+    # # These are chart defaults
+    # sidekiq:
+    #   workers:
+    #     - name: all-queues
+    #       concurrency: 25
+    #       replicas: 1
+    #       queues:
+    #         - default,8
+    #         - push,6
+    #         - ingress,4
+    #         - mailers,2
+    #         - pull
+    #         - scheduler
+
+    # # These are chart defaults
     # smtp:
     #   auth_method: plain
     #   ca_file: /etc/ssl/certs/ca-certificates.crt
@@ -84,96 +96,63 @@ spec:
     #   # -- Instead of defining login/password above, you can specify the name of an existing secret here. Login and
     #   # password must be located in keys named `login` and `password` respectively.
     #   existingSecret: mastodon-smpt-secret
-    streaming:
-      port: 4000
-      workers: 1
-      base_url: null
-      replicas: 1
-    web:
-      port: 3000
-      replicas: 1
-      resources: {}
+
+    # # These are chart defaults
+    # streaming:
+    #   port: 4000
+    #   workers: 1
+    #   base_url: null
+    #   replicas: 1
+
+    # # These are chart defaults
+    # web:
+    #   port: 3000
+    #   replicas: 1
+      # resources: {}
       # requests:
       #   cpu: 250m
       #   memory: 768Mi
       # limits:
       #   cpu: "1"
       #   memory: 1280Mi
-      # -- Puma-specific options. Below values are based on default behavior in
-      # config/puma.rb when no custom values are provided.
-      minThreads: "5"
-      maxThreads: "5"
-      workers: "2"
-      persistentTimeout: "20"
-    metrics:
-      statsd:
-        address: ""
-    # Sets the PREPARED_STATEMENTS environment variable: https://docs.joinmastodon.org/admin/config/#prepared_statements
-    preparedStatements: true
-    service:
-      main:
-        ports:
-          http:
-            port: 80
+
+
     ingress:
-      main:
-        enabled: true
-        ingressClassName: nginx
-        annotations:
-          external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_DOMAIN}"
-        hosts:
-          - host: &host "mastodon.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                pathType: Prefix
-        tls:
-          - hosts:
-              - *host
-    elasticsearch:
       enabled: true
-    # https://github.com/bitnami/charts/tree/master/bitnami/postgresql#parameters
+      annotations:
+        external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_DOMAIN}"
+      ingressClassName: nginx
+      hosts:
+        - host: *host
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - *host
+
+    # # These are chart defaults
+    # elasticsearch:
+    #   enabled: true
+
     postgresql:
-      enabled: true
+      enabled: false
+      postgresqlHostname: postgres-rw.database
+      postgresqlPort: 5432
       auth:
-        database: mastodon_production
+        database: mastodon
         username: mastodon
-        # you must set a password; the password generated by the postgresql chart will
-        # be rotated on each upgrade:
-        # https://github.com/bitnami/charts/tree/master/bitnami/postgresql#upgrade
-        # you can also specify the name of an existing Secret
-        # with a key of password set to the password you want
-        existingSecret: mastodon-pg-secret
-    # https://github.com/bitnami/charts/tree/master/bitnami/redis#parameters
+        existingSecret: mastodon-secret
+
     redis:
-      enabled: true
-      hostname: ""
-      port: 6379
       auth:
-        # you can also specify the name of an existing Secret
-        # with a key of redis-password set to the password you want
-        existingSecret: masstodon-redis-secret
-    externalAuth:
-      oauth_global:
-        # -- Automatically redirect to OIDC, CAS or SAML, and don't use local account authentication when clicking on Sign-In
-        omniauth_only: false
-    podSecurityContext:
-      runAsUser: 991
-      runAsGroup: 991
-      fsGroup: 991
-    serviceAccount:
-      create: true
-      annotations: {}
-    # If set to true, an annotation with the current chart release number will be added to all mastodon pods. This will
-    # cause all pods to be recreated every `helm upgrade` regardless of whether their config or spec changes.
-    revisionPodAnnotation: true
-    resources: {}
-      # We usually recommend not to specify default resources and to leave this as a conscious
-      # choice for the user. This also increases chances charts run on environments with little
-      # resources, such as Minikube. If you do want to specify resources, uncomment the following
-      # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-      # limits:
-      #   cpu: 100m
-      #   memory: 128Mi
-      # requests:
-      #   cpu: 100m
-      #   memory: 128Mi
+        existingSecret: masstodon-secret
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    # externalAuth:
+    #   oauth_global:
+    #     # -- Automatically redirect to OIDC, CAS or SAML, and don't use local account authentication when clicking on Sign-In
+    #     omniauth_only: false
