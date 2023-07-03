@@ -5,7 +5,7 @@ metadata:
   name: ingress-nginx
   namespace: networking
 spec:
-  interval: 15m
+  interval: 30m
   chart:
     spec:
       chart: ingress-nginx
@@ -35,7 +35,7 @@ spec:
         annotations:
           external-dns.alpha.kubernetes.io/hostname: "ingress.${SECRET_DOMAIN}"
         loadBalancerIP: "${METALLB_INGRESS_ADDR}"
-        externalTrafficPolicy: Local
+        externalTrafficPolicy: Cluster
       publishService:
         enabled: true
       ingressClassResource:
