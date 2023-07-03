@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-gatus-ep
+  namespace: monitoring
+  labels:
+    gatus.io/enabled: "true"
+data:
+  config.yaml: |
+    endpoints:
+      - name: grafana
+        url: https://grafana.${SECRET_DOMAIN}
+        interval: 1m
+        conditions: ["[STATUS] == 200"]
+        alerts: [{ type: discord }]
