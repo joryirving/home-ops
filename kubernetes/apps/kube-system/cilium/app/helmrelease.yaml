@@ -26,17 +26,14 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    k8sServiceHost: ${KUBE_VIP_ADDR}
-    k8sServicePort: 6443
-    cluster:
-      name: home-cluster
-      id: 1
-    rollOutCiliumPods: true
     autoDirectNodeRoutes: true
     bpf:
       masquerade: true
     bgp:
       enabled: false
+    cluster:
+      name: home-cluster
+      id: 1
     containerRuntime:
       integration: containerd
       socketPath: /var/run/k3s/containerd/containerd.sock
@@ -74,10 +71,11 @@ spec:
                 - *host
     ipam:
       mode: kubernetes
+    k8sServiceHost: ${KUBE_VIP_ADDR}
+    k8sServicePort: 6443
+    ipv4NativeRoutingCIDR: ${CLUSTER_CIDR}
     kubeProxyReplacement: strict
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
-    ipv4NativeRoutingCIDR: ${CLUSTER_CIDR}
-    tunnel: "disabled"
     operator:
       rollOutPods: true
       replicas: 2
@@ -85,6 +83,11 @@ spec:
         enabled: true
         serviceMonitor:
           enabled: true
+    prometheus:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+    rollOutCiliumPods: true
     l2announcements:
       enabled: true
     loadBalancer:
@@ -92,7 +95,4 @@ spec:
       mode: dsr
     securityContext:
       privileged: true
-    prometheus:
-      enabled: true
-      serviceMonitor:
-        enabled: true
+    tunnel: disabled
