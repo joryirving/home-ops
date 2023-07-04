@@ -2,19 +2,18 @@
 version: "3"
 
 vars:
-  KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
+  TEMPLATE_DIR: "{{.ROOT_DIR}}/template"
   ANSIBLE_DIR: "{{.ROOT_DIR}}/ansible"
-
-dotenv: [".config.env"]
+  KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
 
 env:
   KUBECONFIG: "{{.ROOT_DIR}}/kubeconfig"
   SOPS_AGE_KEY_FILE: ~/.config/sops/age/keys.txt
 
 includes:
-  ansible: .taskfiles/AnsibleTasks.yml
-  cluster: .taskfiles/ClusterTasks.yml
-  es: .taskfiles/ExternalSecretTasks.yml
+  ansible: .taskfiles/AnsibleTasks.yaml
+  cluster: .taskfiles/ClusterTasks.yaml
+  es: .taskfiles/ExternalSecretTasks.yaml
 
 tasks:
   init:
@@ -35,21 +34,14 @@ tasks:
         fluxcd/tap/flux
         go-task/tap/go-task
         helm
-        ipcalc
         jq
         kubernetes-cli
         kustomize
         sops
         stern
-        weaveworks/tap/gitops
-        yq
-
-  verify:
-    desc: Verify env settings
-    cmds:
-      - ./configure --verify
 
   configure:
-    desc: Configure repository from env settings
+    desc: Configure repository from Ansible vars
+    dir: "{{.TEMPLATE_DIR}}"
     cmds:
-      - ./configure
+      - ansible-playbook configure.yaml
