@@ -96,3 +96,18 @@ spec:
       target:
         kind: Deployment
         name: helm-controller
+    # Enable helm caching options to the source-controller Deployment.
+    # https://fluxcd.io/flux/cheatsheets/bootstrap/#enable-helm-repositories-caching
+    - patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --helm-cache-max-size=10
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --helm-cache-ttl=60m
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --helm-cache-purge-interval=5m
+      target:
+        kind: Deployment
+        name: source-controller
