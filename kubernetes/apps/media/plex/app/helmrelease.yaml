@@ -38,7 +38,9 @@ spec:
     service:
       main:
         type: LoadBalancer
-        externalIPs: ["${SVC_PLEX_ADDR}"]
+        annotations:
+          io.cilium/lb-ipam-ips: ["${SVC_PLEX_ADDR}"]
+        #externalIPs: ["${SVC_PLEX_ADDR}"]
         externalTrafficPolicy: Cluster
         ports:
           http:
