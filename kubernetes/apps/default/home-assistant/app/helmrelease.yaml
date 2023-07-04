@@ -36,7 +36,8 @@ spec:
     service:
       main:
         type: LoadBalancer
-        externalIPs: ["${SVC_HOME_ASSISTANT_ADDR}"]
+        annotations:
+          io.cilium/lb-ipam-ips: "${SVC_HOME_ASSISTANT_ADDR}"
         externalTrafficPolicy: Cluster
         ports:
           http:
