@@ -6,12 +6,10 @@ metadata:
   namespace: database
   annotations:
     external-dns.alpha.kubernetes.io/hostname: postgres.${SECRET_DOMAIN}
+    io.cilium/lb-ipam-ips: "${SVC_DB_ADDR}"
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Cluster
-  annotations:
-    io.cilium/lb-ipam-ips: "${SVC_DB_ADDR}"
-  externalIPs: ["${SVC_DB_ADDR}"]
   ports:
     - name: postgres
       port: 5432
