@@ -9,7 +9,8 @@ metadata:
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Cluster
-  externalIPs: ["${SVC_DB_ADDR}"]
+  annotations:
+    io.cilium/lb-ipam-ips: "${SVC_DB_ADDR}"
   ports:
     - name: postgres
       port: 5432
