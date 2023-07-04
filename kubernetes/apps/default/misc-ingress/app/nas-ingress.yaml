@@ -44,3 +44,22 @@ spec:
     - name: http
       port: 80
   type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nas-gatus-ep
+  namespace: default
+  labels:
+    gatus.io/enabled: "true"
+data:
+  config.yaml: |
+    endpoints:
+      - name: NAS
+        group: Internal
+        url: https://${NAS_IP}/login
+        interval: 1m
+        conditions: ["[STATUS] == 200"]
+        alerts: [{ type: discord }]
+        ui:
+          hide-url: true
