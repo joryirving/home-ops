@@ -1,0 +1,55 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: speedtest-exporter
+  namespace: monitor
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controller:
+      strategy: RollingUpdate
+    image:
+      repository: ghcr.io/miguelndecarvalho/speedtest-exporter
+      tag: v3.5.4
+    env:
+      TZ: Europe/Warsaw
+    service:
+      main:
+        ports:
+          http:
+            port: 9798
+    resources:
+      requests:
+        cpu: 15m
+        memory: 30Mi
+      limits:
+        memory: 50Mi
+    serviceMonitor:
+      main:
+        enabled: true
+        endpoints:
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 15m
+            scrapeTimeout: 300s
