@@ -34,6 +34,8 @@ spec:
       - --enable-insecure-login
       - --token-ttl=43200
     ingress:
+      enabled: true
+      className: nginx
       annotations:
         gethomepage.dev/enabled: "true"
         gethomepage.dev/icon: kubernetes-dashboard.png
@@ -45,9 +47,11 @@ spec:
         - hosts:
             - *host
           secretName: kubernetes-dashboard-tls
-      issuer:
-        scope: cluster
     metricsScraper:
       enabled: true
     serviceMonitor:
+      enabled: false
+    cert-manager:
+      enabled: false
+    nginx:
       enabled: false
