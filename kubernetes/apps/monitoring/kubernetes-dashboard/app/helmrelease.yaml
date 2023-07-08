@@ -33,21 +33,19 @@ spec:
       - --disable-settings-authorizer
       - --enable-insecure-login
       - --token-ttl=43200
-    ingress:
-      issuer:
-        name: cert-manager
-        scope: cluster
-      annotations:
-        gethomepage.dev/enabled: "true"
-        gethomepage.dev/icon: kubernetes-dashboard.png
-        gethomepage.dev/name: Kubernetes-Dashboard
-        gethomepage.dev/group: Monitoring
-      hosts:
-        - &host "kubernetes.${SECRET_DOMAIN}"
-      tls:
-        - hosts:
-            - *host
-          secretName: kubernetes-dashboard-tls
+    app:
+      ingress:
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/icon: kubernetes-dashboard.png
+          gethomepage.dev/name: Kubernetes-Dashboard
+          gethomepage.dev/group: Monitoring
+        hosts:
+          - &host "kubernetes.${SECRET_DOMAIN}"
+        tls:
+          - hosts:
+              - *host
+            secretName: kubernetes-dashboard-tls
     metricsScraper:
       enabled:
     serviceMonitor:
