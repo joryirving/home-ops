@@ -37,7 +37,6 @@ spec:
     objstoreConfig:
       type: s3
       config:
-        bucket: thanos
         insecure: false
     queryFrontend:
       enabled: true
@@ -107,13 +106,21 @@ spec:
   valuesFrom:
     - kind: Secret
       name: thanos-secret
+      valuesKey: s3-bucket
+      targetPath: objstoreConfig.config.bucket
+    - kind: Secret
+      name: thanos-secret
+      valuesKey: s3-endpoint
+      targetPath: objstoreConfig.config.endpoint
+    - kind: Secret
+      name: thanos-secret
+      valuesKey: s3-region
+      targetPath: objstoreConfig.config.region
+    - kind: Secret
+      name: thanos-secret
       valuesKey: access-key
       targetPath: objstoreConfig.config.access_key
     - kind: Secret
       name: thanos-secret
       valuesKey: secret-key
       targetPath: objstoreConfig.config.secret_key
-    - kind: Secret
-      name: thanos-secret
-      valuesKey: s3-endpoint
-      targetPath: objstoreConfig.config.endpoint
