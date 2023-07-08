@@ -28,16 +28,14 @@ spec:
   values:
     env:
       TZ: "${TIMEZONE}"
-    extraArgs:
-      - --enable-skip-login
-      - --disable-settings-authorizer
-      - --enable-insecure-login
-      - --token-ttl=43200
+    api:
+      containers:
+        args:
+          - --enable-insecure-login=true
+          - --enable-skip-login=true
+          - --disable-settings-authorizer=true
     app:
       ingress:
-        issuer:
-          name: nginx
-          scope: cluster
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/icon: kubernetes-dashboard.png
