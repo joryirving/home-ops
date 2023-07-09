@@ -29,6 +29,13 @@ spec:
     - name: longhorn
       namespace: storage
   values:
+    initContainers:
+      01-init-db:
+        image: ghcr.io/onedr0p/postgres-init:14.8
+        imagePullPolicy: IfNotPresent
+        envFrom: &envFrom
+          - secretRef:
+              name: radarr-secret
     controller:
       type: statefulset
       annotations:
@@ -41,8 +48,8 @@ spec:
       RADARR__INSTANCE_NAME: Radarr
       RADARR__PORT: &port 80
       RADARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_DOMAIN}"
-      RADARR__LOG_LEVEL: info
-      RADARR__API_KEY: ${RADARR_TOKEN}
+      RADARR__LOG _LEVEL: info
+    envFrom: *envFrom
     service:
       main:
         ports:
