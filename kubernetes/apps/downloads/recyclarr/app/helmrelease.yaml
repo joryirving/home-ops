@@ -46,8 +46,9 @@ spec:
       tag: 5.1.1
     env:
       TZ: ${TIMEZONE}
-      RADARR_API_KEY: ${RADARR_TOKEN}
-      SONARR_API_KEY: ${SONARR_TOKEN}
+    envFrom:
+      - secretRef:
+          name: recyclarr-secret
     service:
       main:
         enabled: false
