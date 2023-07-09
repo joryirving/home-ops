@@ -11,7 +11,12 @@ data:
     endpoints:
       - name: prowlarr
         group: downloads
-        url: http://prowlarr.downloads.svc.cluster.local.
+        url: 1.1.1.1
         interval: 1m
-        conditions: ["[STATUS] == 200"]
-        alerts: [{ type: discord }]
+        dns:
+          query-name: prowlarr.${SECRET_DOMAIN}
+          query-type: A
+        conditions:
+          - "len([BODY]) == 0"
+        ui:
+          hide-hostname: true

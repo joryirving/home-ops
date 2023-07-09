@@ -13,7 +13,11 @@ data:
         group: home
         url: https://home.${SECRET_DOMAIN}
         interval: 1m
-        conditions: ["[STATUS] == 200"]
-        alerts: [{ type: discord }]
+        client:
+          dns-resolver: tcp://1.1.1.1:53
+        conditions:
+          - "[STATUS] == 200"
         ui:
           hide-hostname: true
+        alerts:
+          - type: discord

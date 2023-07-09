@@ -11,10 +11,12 @@ data:
     endpoints:
       - name: nas
         group: infrastructure
-        url: http://${NAS_IP}/login
+        url: 1.1.1.1
         interval: 1m
-        conditions: ["[STATUS] == 200"]
-        alerts: [{ type: discord }]
+        dns:
+          query-name: nas.${SECRET_DOMAIN}
+          query-type: A
+        conditions:
+          - "len([BODY]) == 0"
         ui:
-          hide-url: true
           hide-hostname: true
