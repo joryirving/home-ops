@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: readarr-gatus-ep
+  namespace: downloads
+  labels:
+    gatus.io/enabled: "true"
+data:
+  config.yaml: |
+    endpoints:
+      - name: readarr
+        group: downloads
+        url: http://readarr.downloads.svc.cluster.local.
+        interval: 1m
+        conditions: ["[STATUS] == 200"]
+        alerts: [{ type: discord }]

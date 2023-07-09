@@ -29,6 +29,13 @@ spec:
     - name: longhorn
       namespace: storage
   values:
+    initContainers:
+      01-init-db:
+        image: ghcr.io/onedr0p/postgres-init:14.8
+        imagePullPolicy: IfNotPresent
+        envFrom: &envFrom
+          - secretRef:
+              name: readarr-secret
     controller:
       type: statefulset
       annotations:
@@ -41,7 +48,7 @@ spec:
       READARR__INSTANCE_NAME: Readarr
       READARR__PORT: &port 80
       READARR__LOG_LEVEL: info
-      READARR__API_KEY: ${READARR_TOKEN}
+    envFrom: *envFrom
     service:
       main:
         ports:
