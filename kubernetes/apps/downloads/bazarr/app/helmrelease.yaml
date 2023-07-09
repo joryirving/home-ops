@@ -25,7 +25,17 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+  dependsOn:
+    - name: longhorn
+      namespace: storage
   values:
+    initContainers:
+      01-init-db:
+        image: ghcr.io/onedr0p/postgres-init:14.8
+        imagePullPolicy: IfNotPresent
+        envFrom: &envFrom
+          - secretRef:
+              name: bazarr-secret
     controller:
       type: statefulset
       annotations:
@@ -35,10 +45,7 @@ spec:
       tag: 1.2.2
     env:
       TZ: "${TIMEZONE}"
-      BAZARR__INSTANCE_NAME: Bazarr
-      BAZARR__PORT: &port 80
-      BAZARR__LOG_LEVEL: info
-      BAZARR__API_KEY: ${BAZARR_TOKEN}
+    envFrom: *envFrom
     service:
       main:
         ports:
