@@ -86,6 +86,21 @@ spec:
         tls:
           - hosts:
               - *host
+    metrics:
+      enabled: true
+      serviceMonitor:
+        interval: 3m
+        scrapeTimeout: 1m
+      prometheusRule:
+        enabled: true
+      exporter:
+        image:
+          repository: ghcr.io/onedr0p/exportarr
+          tag: v1.5.3
+        env:
+          port: 9794
+          additionalMetrics: true
+          unknownQueueItems: true
     podSecurityContext:
       runAsUser: 568
       runAsGroup: 568
