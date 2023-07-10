@@ -14,7 +14,7 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -27,6 +27,8 @@ spec:
   dependsOn:
     - name: longhorn
       namespace: storage
+    - name: downloads-gateway
+      namespace: vpn
   values:
     controller:
       type: statefulset
@@ -36,7 +38,7 @@ spec:
       repository: ghcr.io/onedr0p/qbittorrent
       tag: 4.5.4
     env:
-      TZ: "${TIMEZONE}"
+      TZ: ${TIMEZONE}
       QBITTORRENT__PORT: &port 8080
       QBITTORRENT__BT_PORT: &port-bt "${SECRET_VPN_FORWARDED_PORT_1}"
     podAnnotations:
@@ -56,7 +58,7 @@ spec:
           gethomepage.dev/name: qBittorrent
           gethomepage.dev/group: Downloads
           gethomepage.dev/widget.type: qbittorrent
-          gethomepage.dev/widget.url: http://qbittorrent.downloads.svc.cluster.local.:8080
+          gethomepage.dev/widget.url: http://qbittorrent.downloads.svc.cluster.local:8080
           gethomepage.dev/widget.username: ${QBITTORRENT_USERNAME}
           gethomepage.dev/widget.password: ${QBITTORRENT_PASSWORD}
           nginx.ingress.kubernetes.io/configuration-snippet: |
@@ -74,14 +76,6 @@ spec:
         tls:
           - hosts:
               - *host
-    ## Remove these once we fix why probes are failing
-    probes:
-      # liveness:
-      #   enabled: false
-      readiness:
-        enabled: false
-      startup:
-        enabled: false
     metrics:
       enabled: true
       exporter:
@@ -128,3 +122,8 @@ spec:
         memory: 1G
       limits:
         memory: 3G
+    sidecars:
+      reannounce:
+        image: ghcr.io/buroa/qbittools:v0.1.1
+        imagePullPolicy: IfNotPresent
+        args: ["reannounce", "-s", "localhost", "-p", "80"]
