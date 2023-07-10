@@ -14,7 +14,7 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     createNamespace: true
     remediation:
@@ -42,7 +42,7 @@ spec:
         reloader.stakater.com/auto: "true"
     image:
       repository: ghcr.io/onedr0p/radarr-develop
-      tag: 4.7.0.7588
+      tag: 4.7.0.7588@sha256:2cd821b4ecf67a69ae16e49cc3321e867c274efdd42096d1fef3bd92dfcf2f46
     env:
       TZ: "${TIMEZONE}"
       RADARR__INSTANCE_NAME: Radarr
@@ -80,11 +80,11 @@ spec:
           gethomepage.dev/name: Radarr
           gethomepage.dev/group: Downloads
           gethomepage.dev/widget.type: radarr
-          gethomepage.dev/widget.url: http://radarr.downloads.svc.cluster.local.
+          gethomepage.dev/widget.url: http://radarr.downloads.svc.cluster.local
           gethomepage.dev/widget.key: ${RADARR_TOKEN}
           nginx.ingress.kubernetes.io/configuration-snippet: |
             proxy_set_header Accept-Encoding "";
-            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/radarr/plex.css"></head>';
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/radarr/nord.css"></head>';
             sub_filter_once on;
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
@@ -128,6 +128,6 @@ spec:
     resources:
       requests:
         cpu: 15m
-        memory: 400M
+        memory: 250Mi
       limits:
-        memory: 725M
+        memory: 1000Mi
