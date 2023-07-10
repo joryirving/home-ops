@@ -14,7 +14,7 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     createNamespace: true
     remediation:
@@ -44,7 +44,7 @@ spec:
       repository: ghcr.io/onedr0p/prowlarr-develop
       tag: 1.7.1.3684@sha256:8f8350415d6ce5905f3e8c7e56e70eadbf5579d58ab7827b5ea3c2a71bf5566b
     env:
-      TZ: "${TIMEZONE}"
+      TZ: ${TIMEZONE}
       PROWLARR__INSTANCE_NAME: Prowlarr
       PROWLARR__PORT: &port 80
       PROWLARR__LOG_LEVEL: info
@@ -69,7 +69,7 @@ spec:
           gethomepage.dev/widget.key: ${PROWLARR_TOKEN}
           nginx.ingress.kubernetes.io/configuration-snippet: |
             proxy_set_header Accept-Encoding "";
-            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/prowlarr/plex.css"></head>';
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/prowlarr/nord.css"></head>';
             sub_filter_once on;
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
@@ -79,21 +79,6 @@ spec:
         tls:
           - hosts:
               - *host
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /ping
-            port: *port
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-      readiness: *probes
-      startup:
-        enabled: false
     podSecurityContext:
       runAsUser: 568
       runAsGroup: 568
@@ -108,6 +93,4 @@ spec:
     resources:
       requests:
         cpu: 10m
-        memory: 1Gi
-      # limits:
-      #   memory: 2Gi
+        memory: 500Mi
