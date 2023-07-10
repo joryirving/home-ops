@@ -63,7 +63,7 @@ resource "authentik_source_oauth" "discord" {
   slug                = "discord"
   authentication_flow = data.authentik_flow.default-source-authentication.id
   enrollment_flow     = authentik_flow.enrollment-invitation.id
-  user_matching_mode  = "email_link"
+  user_matching_mode  = "email_deny"
 
   provider_type   = "discord"
   consumer_key    = data.sops_file.authentik_secrets.data["discord_client_id"]
