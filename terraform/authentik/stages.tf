@@ -1,15 +1,3 @@
-##Oauth
-resource "authentik_source_oauth" "discord" {
-  name                = "Discord"
-  slug                = "discord"
-  authentication_flow = data.authentik_flow.default-source-authentication.id
-  enrollment_flow     = data.authentik_flow.default-source-enrollment.id
-
-  provider_type   = "discord"
-  consumer_key    = data.sops_file.authentik_secrets.data["discord_client_id"]
-  consumer_secret = data.sops_file.authentik_secrets.data["discord_client_secret"]
-}
-
 ## Authorization stages
 resource "authentik_stage_identification" "authentication-identification" {
   name                      = "authentication-identification"
