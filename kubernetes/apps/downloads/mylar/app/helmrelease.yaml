@@ -35,11 +35,11 @@ spec:
         reloader.stakater.com/auto: "true"
     image:
       repository: ghcr.io/linuxserver/mylar3
-      tag: version-v0.7.2
+      tag: version-v0.7.2@sha256:192134f4f8ab3764f859d02c1162f15bcbe2a8dbd3251a32aacb1fae9ca6d28d
     env:
-      TZ: "${TIMEZONE}"
-      UID: "1000"
-      GID: "1000"
+      TZ: ${TIMEZONE}
+      UID: 1000
+      GID: 1000
     service:
       main:
         ports:
@@ -59,7 +59,7 @@ spec:
           gethomepage.dev/widget.key: ${MYLAR_TOKEN}
           nginx.ingress.kubernetes.io/configuration-snippet: |
             proxy_set_header Accept-Encoding "";
-            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/mylar/plex.css"></head>';
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/mylar/nord.css"></head>';
             sub_filter_once on;
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
