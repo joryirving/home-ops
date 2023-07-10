@@ -18,6 +18,12 @@ resource "authentik_group" "infrastructure" {
   is_superuser = false
 }
 
+resource "authentik_policy_binding" "grafana_infra" {
+  target = authentik_application.grafana_application.uuid
+  group  = authentik_group.infrastructure.id
+  order  = 0
+}
+
 resource "authentik_group" "media" {
   name         = "Media"
   is_superuser = false
@@ -29,10 +35,22 @@ resource "authentik_group" "grafana_admin" {
   is_superuser = false
 }
 
+resource "authentik_policy_binding" "grafana_admins" {
+  target = authentik_application.grafana_application.uuid
+  group  = authentik_group.grafana_admin.id
+  order  = 0
+}
+
 resource "authentik_group" "monitoring" {
   name         = "Monitoring"
   is_superuser = false
   parent       = resource.authentik_group.grafana_admin.id
+}
+
+resource "authentik_policy_binding" "portainer_monitoring" {
+  target = authentik_application.portainer_application.uuid
+  group  = authentik_group.monitoring.id
+  order  = 0
 }
 
 data "authentik_group" "admins" {
@@ -43,7 +61,7 @@ data "authentik_group" "admins" {
 resource "authentik_source_oauth" "discord" {
   name                = "Discord"
   slug                = "discord"
-  authentication_flow = authentik_flow.authentication.id
+  authentication_flow = data.authentik_flow.default-source-authentication.id
   enrollment_flow     = authentik_flow.enrollment-invitation.id
   user_matching_mode  = "email_link"
 
