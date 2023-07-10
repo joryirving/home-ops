@@ -55,6 +55,7 @@ spec:
       auth:
         signout_redirect_url: https://authentik.${SECRET_DOMAIN}/application/o/grafana-provider/end-session/
         oauth_auto_login: false
+        oauth_allow_insecure_email_lookup: true
       auth.anonymous:
         enabled: true
         org_name: Main Org.
@@ -69,7 +70,6 @@ spec:
         auth_url: https://authentik.${SECRET_DOMAIN}/application/o/authorize/
         token_url: https://authentik.${SECRET_DOMAIN}/application/o/token/
         api_url: https://authentik.${SECRET_DOMAIN}/application/o/userinfo/
-        oauth_allow_insecure_email_lookup: true
         # Optionally map user groups to Grafana roles
         role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'
       grafana_net:
