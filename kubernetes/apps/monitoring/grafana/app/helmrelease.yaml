@@ -31,9 +31,61 @@ spec:
     - name: ingress-nginx
       namespace: networking
   values:
+    initContainers:
+      01-init-db:
+        image: ghcr.io/onedr0p/postgres-init:14.8
+        imagePullPolicy: IfNotPresent
+        envFrom: &envFrom
+          - secretRef:
+              name: grafana-secret
     replicas: 2
     podAnnotations:
       reloader.stakater.com/auto: "true"
+    envFrom: *envFrom
+    env:
+      GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
+      GF_EXPLORE_ENABLED: true
+      GF_LOG_FILTERS: rendering:debug
+      GF_PANELS_DISABLE_SANITIZE_HTML: true
+
+    grafana.ini:
+      analytics:
+        check_for_updates: false
+      auth:
+        signout_redirect_url: https://authentik.${SECRET_DOMAIN}/application/o/grafana-provider/end-session/
+        oauth_auto_login: false
+      auth.anonymous:
+        enabled: true
+        org_name: Main Org.
+        org_role: Viewer
+        hide_version: true
+      auth.generic_oauth:
+        name: authentik
+        enabled: true
+        client_id: # Set by env vars secret
+        client_secret: # Set by env vars secret
+        scopes: openid email profile
+        auth_url: https://authentik.${SECRET_DOMAIN}/application/o/authorize/
+        token_url: https://authentik.${SECRET_DOMAIN}/application/o/token/
+        api_url: https://authentik.${SECRET_DOMAIN}/application/o/userinfo/
+        oauth_allow_insecure_email_lookup: true
+        # Optionally map user groups to Grafana roles
+        role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'
+      grafana_net:
+        url: https://grafana.net
+      log:
+        mode: console
+      paths:
+        data: /var/lib/grafana/data
+        logs: /var/log/grafana
+        plugins: /var/lib/grafana/plugins
+        provisioning: /etc/grafana/provisioning
+      server:
+        root_url: https://grafana.${SECRET_DOMAIN}
+
+    deploymentStrategy:
+      type: RollingUpdate
+
     resources:
       limits:
         memory: 219M
@@ -42,7 +94,7 @@ spec:
         memory: 127M
 
     admin:
-      existingSecret: grafana-secrets
+      existingSecret: grafana-secret
       passwordKey: adminPass
       userKey: adminUser
 
@@ -64,10 +116,15 @@ spec:
         apiVersion: 1
         datasources:
           - access: proxy
-            isDefault: true
+            isDefault: false
             name: Prometheus
             type: prometheus
-            url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local.:9090
+            url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+          - name: Thanos
+            isDefault: true
+            type: prometheus
+            access: proxy
+            url: http://thanos-query.monitoring.svc.cluster.local:9090
     #       - access: proxy
     #         name: Loki
     #         type: loki
@@ -75,6 +132,12 @@ spec:
     #     deleteDatasources:
     #       - name: Loki
     #         orgId: 1
+          # - name: Alertmanager
+          #   type: alertmanager
+          #   access: proxy
+          #   url: http://prometheus-alertmanager:9093
+          #   jsonData:
+          #     implementation: prometheus
 
     dashboards:
       default:
@@ -148,6 +211,18 @@ spec:
         kubernetes-pods:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
           datasource: Prometheus
+        radarr:
+          url: https://raw.githubusercontent.com/k8s-at-home/grafana-dashboards/main/radarr.json
+          datasource: Prometheus
+        sonarr:
+          url: https://raw.githubusercontent.com/k8s-at-home/grafana-dashboards/main/sonarr.json
+          datasource: Prometheus
+        external-secrets:
+          url: https://raw.githubusercontent.com/external-secrets/external-secrets/main/docs/snippets/dashboard.json
+          datasource: Prometheus
+        qbittorrent:
+          url: https://raw.githubusercontent.com/esanchezm/prometheus-qbittorrent-exporter/master/grafana/dashboard.json
+          datasource: Prometheus
 
     sidecar:
       dashboards:
@@ -169,51 +244,15 @@ spec:
     serviceMonitor:
       enabled: true
 
-    deploymentStrategy:
-      type: RollingUpdate
-
-    env:
-      GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
-      GF_EXPLORE_ENABLED: true
-      GF_LOG_FILTERS: rendering:debug
-      GF_PANELS_DISABLE_SANITIZE_HTML: true
-    envFromSecrets:
-      - name: grafana-authentik-secret
-
-    grafana.ini:
-      analytics:
-        check_for_updates: false
-      auth:
-        signout_redirect_url: https://authentik.${SECRET_DOMAIN}/application/o/grafana-provider/end-session/
-        oauth_auto_login: false
-      auth.anonymous:
+    imageRenderer:
+      enabled: true
+      replicas: 2
+      networkPolicy:
+        limitIngress: false
+      serviceMonitor:
         enabled: true
-        org_name: Main Org.
-        org_role: Viewer
-        hide_version: true
-      auth.generic_oauth:
-        name: authentik
-        enabled: true
-        client_id: # Set by env vars secret
-        client_secret: # Set by env vars secret
-        scopes: openid email profile
-        auth_url: https://authentik.${SECRET_DOMAIN}/application/o/authorize/
-        token_url: https://authentik.${SECRET_DOMAIN}/application/o/token/
-        api_url: https://authentik.${SECRET_DOMAIN}/application/o/userinfo/
-        oauth_allow_insecure_email_lookup: true
-        # Optionally map user groups to Grafana roles
-        role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'
-      grafana_net:
-        url: https://grafana.net
-      log:
-        mode: console
-      paths:
-        data: /var/lib/grafana/data
-        logs: /var/log/grafana
-        plugins: /var/lib/grafana/plugins
-        provisioning: /etc/grafana/provisioning
-      server:
-        root_url: https://grafana.${SECRET_DOMAIN}
+      nodeSelector:
+        kubernetes.io/arch: amd64 ## Does not have an ARM image
 
     ingress:
       enabled: true
@@ -234,15 +273,6 @@ spec:
         - hosts:
             - *host
 
-    imageRenderer:
-      enabled: true
-      replicas: 2
-      networkPolicy:
-        limitIngress: false
-      serviceMonitor:
-        enabled: true
-      nodeSelector:
-        kubernetes.io/arch: amd64 ## Does not have an ARM image
     persistence:
       enabled: false
     topologySpreadConstraints:
