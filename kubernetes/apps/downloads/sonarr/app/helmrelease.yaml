@@ -14,7 +14,7 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     createNamespace: true
     remediation:
@@ -35,13 +35,15 @@ spec:
         reloader.stakater.com/auto: "true"
     image:
       repository: ghcr.io/onedr0p/sonarr-develop
-      tag: 4.0.0.552
+      tag: 4.0.0.551@sha256:be4edc6f2f48716cd3bf76765884cb76783075d36ce001a25e2babde2fa95191
     env:
-      TZ: "${TIMEZONE}"
+      TZ: ${TIMEZONE}
       SONARR__INSTANCE_NAME: Sonarr
       SONARR__PORT: &port 80
       SONARR__LOG_LEVEL: info
-      SONARR__API_KEY: ${SONARR_TOKEN}
+    envFrom:
+      - secretRef:
+          name: sonarr-secret
     service:
       main:
         ports:
@@ -72,11 +74,11 @@ spec:
           gethomepage.dev/name: Sonarr
           gethomepage.dev/group: Downloads
           gethomepage.dev/widget.type: sonarr
-          gethomepage.dev/widget.url: http://sonarr.downloads.svc.cluster.local.
+          gethomepage.dev/widget.url: http://sonarr.downloads.svc.cluster.local
           gethomepage.dev/widget.key: ${SONARR_TOKEN}
           nginx.ingress.kubernetes.io/configuration-snippet: |
             proxy_set_header Accept-Encoding "";
-            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/sonarr/plex.css"></head>';
+            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/sonarr/nord.css"></head>';
             sub_filter_once on;
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
@@ -119,7 +121,7 @@ spec:
         mountPath: /data
     resources:
       requests:
-        cpu: 15m
-        memory: 350M
+        cpu: 10m
+        memory: 250Mi
       limits:
-        memory: 1G
+        memory: 1000Mi
