@@ -53,13 +53,16 @@ spec:
       media:
         enabled: true
         existingClaim: downloads
-        mountPath: /mnt/media
-        subPath: media
-      cache:
-        enabled: true
-        existingClaim: tdarr-cache
-        mountPath: /temp
-        subPath: temp
+        subPath:
+        - path: media
+          mountPath: /mnt/media
+        - path: temp
+          mountPath: /temp
+      # cache:
+      #   enabled: true
+      #   existingClaim: tdarr-cache
+      #   mountPath: /temp
+      #   subPath: temp
     podSecurityContext:
       runAsUser: 0
       runAsGroup: 0
