@@ -41,14 +41,13 @@ spec:
     replicas: 2
     podAnnotations:
       reloader.stakater.com/auto: "true"
-    envFromSecrets:
-      - name: grafana-secret
+    # envFromSecrets:
+    #   - name: grafana-secret
     env:
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
       GF_LOG_FILTERS: rendering:debug
       GF_PANELS_DISABLE_SANITIZE_HTML: true
-
     grafana.ini:
       analytics:
         check_for_updates: false
@@ -83,22 +82,18 @@ spec:
         provisioning: /etc/grafana/provisioning
       server:
         root_url: https://grafana.${SECRET_DOMAIN}
-
     deploymentStrategy:
       type: RollingUpdate
-
     resources:
       limits:
         memory: 219M
       requests:
         cpu: 23m
         memory: 127M
-
     admin:
       existingSecret: grafana-secret
       passwordKey: adminPass
       userKey: adminUser
-
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
@@ -111,7 +106,6 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/default
-
     datasources:
       datasources.yaml:
         apiVersion: 1
@@ -139,7 +133,6 @@ spec:
           #   url: http://prometheus-alertmanager:9093
           #   jsonData:
           #     implementation: prometheus
-
     dashboards:
       default:
        # Ref: https://grafana.com/grafana/dashboards/11315
@@ -222,7 +215,6 @@ spec:
       - vonage-status-panel
     serviceMonitor:
       enabled: true
-
     imageRenderer:
       enabled: true
       replicas: 2
@@ -232,7 +224,6 @@ spec:
         enabled: true
       nodeSelector:
         kubernetes.io/arch: amd64 ## Does not have an ARM image
-
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -251,7 +242,6 @@ spec:
       tls:
         - hosts:
             - *host
-
     persistence:
       enabled: false
     topologySpreadConstraints:
