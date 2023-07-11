@@ -4,3 +4,13 @@ kind: Kustomization
 namespace: kube-system
 resources:
   - ./helmrelease.yaml
+configMapGenerator:
+  - name: kubernetes-coredns-dashboard
+    files:
+      - kubernetes-coredns-dashboard.json=https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+  labels:
+    grafana_dashboard: "true"

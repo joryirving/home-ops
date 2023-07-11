@@ -8,3 +8,13 @@ labels:
   - pairs:
       app.kubernetes.io/name: qbittorrent
       app.kubernetes.io/instance: qbittorrent
+configMapGenerator:
+  - name: qbittorrent-dashboard
+    files:
+      - qbittorrent-dashboard.json=https://raw.githubusercontent.com/esanchezm/prometheus-qbittorrent-exporter/master/grafana/dashboard.json
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+  labels:
+    grafana_dashboard: "true"
