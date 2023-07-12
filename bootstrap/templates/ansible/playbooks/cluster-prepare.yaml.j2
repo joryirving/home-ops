@@ -50,9 +50,10 @@
             key: "https://github.com/{% raw %}{{ github_username }}{% endraw %}.keys"
         - name: User Configuration | Silence login
           ansible.builtin.file:
-            dest: /root/.hushlogin
+            dest: "{% raw %}{{ '/home/' + ansible_user if ansible_user != 'root' else '/root' }}{% endraw %}/.hushlogin"
             state: touch
             owner: "{% raw %}{{ ansible_user }}{% endraw %}"
+            group: "{% raw %}{{ ansible_user }}{% endraw %}"
             mode: "0644"
             modification_time: preserve
             access_time: preserve
