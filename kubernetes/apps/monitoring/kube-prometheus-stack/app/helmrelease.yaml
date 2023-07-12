@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: kube-prometheus-stack
-      version: 47.6.1
+      version: 48.0.0
       sourceRef:
         kind: HelmRepository
         name: prometheus-community
@@ -17,12 +17,10 @@ spec:
   maxHistory: 3
   install:
     createNamespace: true
-    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
     remediation:
       retries: 3
   uninstall:
@@ -31,6 +29,8 @@ spec:
     - name: local-path-provisioner
       namespace: kube-system
   values:
+    crds:
+      enabled: true
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
       ingress:
