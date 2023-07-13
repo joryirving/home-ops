@@ -4,14 +4,3 @@ kind: Kustomization
 namespace: kube-system
 resources:
   - ./helmrelease.yaml
-configMapGenerator:
-  - name: external-secrets-dashboard
-    files:
-      - external-secrets-dashboard.json=https://raw.githubusercontent.com/external-secrets/external-secrets/main/docs/snippets/dashboard.json
-generatorOptions:
-  disableNameSuffixHash: true
-  annotations:
-    kustomize.toolkit.fluxcd.io/substitute: disabled
-    grafana_folder: "System"
-  labels:
-    grafana_dashboard: "true"
