@@ -169,19 +169,12 @@ spec:
             type: prometheus
             access: proxy
             url: http://thanos-query.monitoring.svc.cluster.local:9090
-    #       - access: proxy
-    #         name: Loki
-    #         type: loki
-    #         url: http://loki-gateway.monitoring.svc.cluster.local.:80
-    #     deleteDatasources:
-    #       - name: Loki
-    #         orgId: 1
-          # - name: Alertmanager
-          #   type: alertmanager
-          #   access: proxy
-          #   url: http://prometheus-alertmanager:9093
-          #   jsonData:
-          #     implementation: prometheus
+          - name: Alertmanager
+            type: alertmanager
+            access: proxy
+            url: http://alertmanager-operated.monitoring.svc.cluster.local:9093
+            jsonData:
+              implementation: prometheus
     dashboards:
       cilium:
         cilium-dashboard:
