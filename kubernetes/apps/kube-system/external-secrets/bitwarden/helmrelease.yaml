@@ -38,11 +38,7 @@ spec:
         custom: true
         spec:
           exec:
-            command:
-              - curl
-              - -X POST
-              - -s
-              - http://127.0.0.1:8087/sync
+            command:  ["sh", "-c", "curl -X POST -s http://127.0.0.1:8087/sync | jq -e '.success == true'"]
           initialDelaySeconds: 20
           failureThreshold: 3
           timeoutSeconds: 1
