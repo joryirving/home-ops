@@ -161,10 +161,10 @@ spec:
         datasources:
           - access: proxy
             isDefault: false
-            name: Prometheus
+            name: prom_direct
             type: prometheus
             url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
-          - name: Thanos
+          - name: Prometheus
             isDefault: true
             type: prometheus
             access: proxy
@@ -227,6 +227,11 @@ spec:
           datasource:
             - name: datasource
               value: Prometheus
+        # # Ref: https://grafana.com/grafana/dashboards/13502
+        # minio:
+        #   gnetId: 13502
+        #   revision: 19
+        #   datasource: Prometheus
         # Ref: https://grafana.com/grafana/dashboards/1860
         node-exporter-full:
           gnetId: 1860
@@ -241,22 +246,22 @@ spec:
         # Ref: https://grafana.com/grafana/dashboards/11315
         unifi-client-insights:
           gnetId: 11315
-          revision: 9
+          revision: 8
           datasource: Prometheus
         # Ref: https://grafana.com/grafana/dashboards/11311
         unifi-network-sites:
           gnetId: 11311
-          revision: 5
+          revision: 4
           datasource: Prometheus
         # Ref: https://grafana.com/grafana/dashboards/11314
         unifi-uap-insights:
           gnetId: 11314
-          revision: 10
+          revision: 9
           datasource: Prometheus
         # Ref: https://grafana.com/grafana/dashboards/11312
         unifi-usw-insights:
           gnetId: 11312
-          revision: 9
+          revision: 8
           datasource: Prometheus
     sidecar:
       dashboards:
