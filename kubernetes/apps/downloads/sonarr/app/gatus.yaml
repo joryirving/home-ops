@@ -11,12 +11,7 @@ data:
     endpoints:
       - name: sonarr
         group: downloads
-        url: 1.1.1.1
+        url: http://sonarr.downloads.svc.cluster.local
         interval: 1m
-        dns:
-          query-name: sonarr.${SECRET_DOMAIN}
-          query-type: A
-        conditions:
-          - "len([BODY]) == 0"
-        ui:
-          hide-hostname: true
+        conditions: ["[STATUS] == 200"]
+        alerts: [{ type: discord }]
