@@ -39,10 +39,14 @@ spec:
         spec:
           exec:
             command:
-              - curl
-              - -X POST
-              - -s
+              - wget
+              - -q
               - http://127.0.0.1:8087/sync
+              - --post-data=''
+          initialDelaySeconds: 20
+          failureThreshold: 3
+          timeoutSeconds: 1
+          periodSeconds: 120
       readiness:
         enabled: false
     resources:
