@@ -11,7 +11,9 @@ data:
     endpoints:
       - name: bazarr
         group: downloads
-        url: http://bazarr.downloads.svc.cluster.local/api/system/status
+        url: https://bazarr.${SECRET_DOMAIN}
         interval: 1m
         conditions: ["[STATUS] == 200"]
         alerts: [{ type: discord }]
+        ui:
+          hide-hostname: true

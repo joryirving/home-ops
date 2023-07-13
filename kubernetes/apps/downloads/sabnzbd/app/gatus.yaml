@@ -11,7 +11,9 @@ data:
     endpoints:
       - name: sabnzbd
         group: downloads
-        url: http://sabnzbd.downloads.svc.cluster.local/api?mode=version
+        url: https://sabnzbd.${SECRET_DOMAIN}
         interval: 1m
         conditions: ["[STATUS] == 200"]
         alerts: [{ type: discord }]
+        ui:
+          hide-hostname: true
