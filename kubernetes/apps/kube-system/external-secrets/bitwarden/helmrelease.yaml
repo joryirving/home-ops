@@ -38,7 +38,11 @@ spec:
         custom: true
         spec:
           exec:
-            command:  ["sh", "-c", "curl -X POST -s http://127.0.0.1:8087/sync | jq -e '.success == true'"]
+            command:
+              - curl
+              - -X POST
+              - -s
+              - http://127.0.0.1:8087/sync
       readiness:
         enabled: false
     resources:
@@ -47,4 +51,3 @@ spec:
         cpu: 100m
       limits:
         memory: 512Mi
-        
