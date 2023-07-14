@@ -3,6 +3,8 @@ apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
   name: mc-cname
+  annotations:
+    external-dns.alpha.kubernetes.io/target: mc-ingress.${SECRET_SECONDARY_DOMAIN}
 spec:
   endpoints:
     - dnsName: mc.${SECRET_DOMAIN}
@@ -13,6 +15,8 @@ apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
   name: srv-record
+  annotations:
+    external-dns.alpha.kubernetes.io/target: mc-ingress.${SECRET_SECONDARY_DOMAIN}
 spec:
   endpoints:
   - dnsName: ${SECRET_DOMAIN}
