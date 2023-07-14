@@ -23,26 +23,14 @@ spec:
     - hosts:
         - *host
 ---
-apiVersion: v1
-kind: Endpoints
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
 metadata:
-  name: mc
-  namespace: default
-subsets:
-  - addresses:
-      - ip: ${NAS_IP}
-    ports:
-      - name: http
-        port: 25565
-        protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mc
-  namespace: default
+  name: srv-record
 spec:
-  ports:
-    - name: http
-      port: 25565
-  type: ClusterIP
+  endpoints:
+  - dnsName: ${SECRET_DOMAIN}
+    recordTTL: 300
+    recordType: SRV
+    targets:
+    - "10 5 25565 mc.${SECRET_DOMAIN}"
