@@ -37,19 +37,14 @@ spec:
       main:
         ports:
           http:
+            enabled: false
+          metrics:
+            enabled: true
+            protocol: TCP
             port: 9798
     resources:
       requests:
         cpu: 15m
-        memory: 30Mi
-      limits:
         memory: 50Mi
-    serviceMonitor:
-      main:
-        enabled: true
-        endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 15m
-            scrapeTimeout: 300s
+      limits:
+        memory: 100Mi
