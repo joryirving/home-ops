@@ -13,11 +13,20 @@ terraform {
       version = ">= 0.6.0"
     }
 
+    sops = {
+      source  = "carlpett/sops"
+      version = "0.7.2"
+    }
+
     minio = {
       source  = "aminueza/minio"
       version = "1.16.0"
     }
   }
+}
+
+data "sops_file" "bw_secrets" {
+  source_file = "secret.sops.yaml"
 }
 
 module "secrets_s3" {
