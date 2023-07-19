@@ -1,8 +1,12 @@
 terraform {
   required_providers {
-    minio = {
-      source  = "aminueza/minio"
-      version = "1.16.0"
+    bitwarden = {
+      source  = "maxlaverse/bitwarden"
+      version = ">= 0.6.0"
     }
   }
+}
+
+data "bitwarden_item_login" "item" {
+  id = var.id
 }
