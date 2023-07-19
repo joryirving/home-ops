@@ -1,3 +1,4 @@
+# comment out until I figure out how to do this with OCI
 # variable "bw_password" {
 #   type        = string
 #   description = "Bitwarden Master Key"
