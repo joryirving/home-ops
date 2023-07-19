@@ -1,7 +1,7 @@
 locals {
   buckets = [
     "longhorn",
-    "postgreqls",
+    "postgresql",
     "thanos"
   ]
 }
