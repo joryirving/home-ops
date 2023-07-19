@@ -3,8 +3,8 @@ output "data" {
 
   value = merge(
     {
-      username = data.bitwarden_item_login.item.username
-      password = data.bitwarden_item_login.item.password
+      access-key = data.bitwarden_item_login.item.username
+      secret-key = data.bitwarden_item_login.item.password
     },
 
     merge([
