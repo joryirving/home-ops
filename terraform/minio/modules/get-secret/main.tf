@@ -1,0 +1,8 @@
+terraform {
+  required_providers {
+    minio = {
+      source  = "aminueza/minio"
+      version = "1.16.0"
+    }
+  }
+}
