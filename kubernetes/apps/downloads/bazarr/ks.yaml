@@ -4,8 +4,6 @@ kind: Kustomization
 metadata:
   name: cluster-apps-bazarr
   namespace: flux-system
-  labels:
-    substitution.flux.home.arpa/disabled: "true"
 spec:
   dependsOn:
     - name: cluster-apps-cloudnative-pg-cluster
@@ -19,11 +17,3 @@ spec:
   interval: 30m
   retryInterval: 1m
   timeout: 3m
-  postBuild:
-    substituteFrom:
-      - kind: Secret
-        name: download-namespace-secrets
-      - kind: ConfigMap
-        name: cluster-settings
-      - kind: Secret
-        name: cluster-secrets
