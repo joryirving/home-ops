@@ -42,6 +42,7 @@ Total RAM: 144GB (workers)
 
 ### Networking/UPS Hardware
 
+<<<<<<< HEAD
 | Device         | Purpose             |
 |----------------|---------------------|
 | Smart-UPS 750  | UPS - NAS           |
