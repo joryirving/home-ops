@@ -20,35 +20,45 @@ The purpose here is to learn k8s, while practicing Gitops.
 
 ### Kubernetes Workers
 
-| Name    | Device         | CPU            | OS Disk   | Data Disk   | RAM   | OS       | Purpose           |
-|---------|----------------|----------------|-----------|-------------|-------|----------|-------------------|
-| Raiden  | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 8GB   | Ubuntu   | k8s control-plane |
-| Zhongli | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB   | Ubuntu   | k8s control-plane |
-| Nahida  | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB   | Ubuntu   | k8s control-plane |
-| Eula    | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB  | Ubuntu   | k8s Worker        |
-| Ayaka   | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB  | Ubuntu   | k8s Worker        |
-| Yelan   | Beelink Mini-s | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB  | Ubuntu   | k8s Light Worker  |
+| Name   | Device         | CPU            | OS Disk   | Data Disk   | RAM  | OS       | Purpose                    |
+|--------|----------------|----------------|-----------|-------------|------|----------|----------------------------|
+| Raiden | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 8GB  | Debian   | k8s control-plane          |
+| Nahida | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB  | Debian   | k8s control-plane          |
+| Yelan  | Beelink Mini-S | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB | Debian   | k8s control-plane + worker |
+| Eula   | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB | Debian   | k8s Worker                 |
+| Ayaka  | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian   | k8s Worker                 |
 
 Total CPU: 32 threads (workers)
-
 Total RAM: 144GB (workers)
+
+### [Test Kubernetes Hardware](https://github.com/LilDrunkenSmurf/home-ops)
+
+| Name    | Device        | CPU        | OS Disk   | Data Disk | RAM  | OS       | Purpose                    |
+|---------|---------------|------------|-----------|-----------|------|----------|----------------------------|
+| Venti   | Raspberry Pi4 | Cortex A72 | 240GB SSD | -         | 8GB  | Debian   | k8s control-plane          |
+| Zhongli | Raspberry Pi4 | Cortex A72 | 240GB SSD | -         | 4GB  | Debian   | k8s control-plane          |
+| HuTao   | Lenovo M910q  | i5-7500T   | 240GB SSD | 1TB NBME  | 64GB | Debian   | k8s control-plane + worker |
+| Ganyu   | Dell 7050mff  | i5-7500T   | 240GB SSD | 1TB NVME  | 64GB | Debian   | k8s Worker                 |
+
+Total CPU: 8 threads (workers)
+Total RAM: 128GB (workers)
 
 ### Supporting Hardware
 
 | Name  | Device         | CPU        | OS Disk   | Data Disk | RAM   | OS       | Purpose             |
 |-------|----------------|------------|-----------|-----------|-------|----------|---------------------|
-| NAS   | HP z820        | 2x E5-2680 | 32GB USB  | ZFS 36TB  | 128GB | Unraid   | NAS/NFS/Backup      |
+| NAS   | HP z820        | 2x E5-2680 | 32GB USB  | ZFS 56TB  | 128GB | Unraid   | NAS/NFS/Backup      |
 | Amber | Raspberry Pi3B | Cortex A53 | 120GB mSD | -         | 1GB   | Raspbian | DNS/VPN/MeshCentral |
 
 ### Networking/UPS Hardware
 
-<<<<<<< HEAD
-| Device         | Purpose             |
-|----------------|---------------------|
-| Smart-UPS 750  | UPS - NAS           |
-| Back-UPS 600   | UPS - K8s + Network |
-| Unifi UDM Base | Router              |
-| Netgear GS324P | 24 Port PoE Switch  |
+| Device          | Purpose                          |
+|-----------------|----------------------------------|
+| Back-UPS 600    | UPS - Network                    |
+| Unifi UDM Base  | Router                           |
+| Netgear GS308P  | 8 Port PoE Switch - Network      |
+| Tripp Lite 1500 | UPS - Server Rack                |
+| Netgear GS324P  | 24 Port PoE Switch - Server Rack |
 
 ## 🤝 Thanks
 
