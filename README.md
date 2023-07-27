@@ -47,10 +47,10 @@ Total RAM: 128GB (workers)
 
 ### Supporting Hardware
 
-| Name  | Device         | CPU        | OS Disk   | Data Disk | RAM   | OS       | Purpose             |
-|-------|----------------|------------|-----------|-----------|-------|----------|---------------------|
-| NAS   | HP z820        | 2x E5-2680 | 32GB USB  | ZFS 56TB  | 128GB | Unraid   | NAS/NFS/Backup      |
-| Amber | Raspberry Pi3B | Cortex A53 | 120GB mSD | -         | 1GB   | Raspbian | DNS/VPN/MeshCentral |
+| Name  | Device         | CPU        | OS Disk   | Data Disk | RAM   | OS       | Purpose               |
+|-------|----------------|------------|-----------|-----------|-------|----------|-----------------------|
+| NAS   | HP z820        | 2x E5-2680 | 32GB USB  | ZFS 56TB  | 128GB | Unraid   | NAS/NFS/Backup        |
+| Amber | Raspberry Pi3B | Cortex A53 | 120GB mSD | -         | 1GB   | Raspbian | Wireguard/MeshCentral |
 
 ### Networking/UPS Hardware
 
