@@ -84,7 +84,7 @@ settings:
 
 plex:
   url: http://plex.media.svc.cluster.local:32400
-  token: ${PLEX_TOKEN}
+  token: {{ .PLEX_APIKEY }}
   timeout: 60
   clean_bundles: false
   empty_trash: false
@@ -92,25 +92,11 @@ plex:
 
 tautulli:
   url: http://tautulli.media.svc.cluster.local:8181
-  apikey: ${TAUTULLI_TOKEN}
-
-tmdb:
-  apikey: {{ .TMDB_APIKEY }}  ##TODO
-  language: en
-  cache_expiration: 60
-  region:
-
-omdb:
-  apikey: {{ .OMDB_APIKEY }} ##TODO
-  cache_expiration: 60
-
-mdblist:
-  apikey: {{ .MDBLIST_APIKEY }} ##TODO
-  cache_expiration: 60
+  apikey: {{ .TAUTULLI_APIKEY }}
 
 radarr:
   url: http://radarr.downloads.svc.cluster.local
-  token: ${RADARR_TOKEN}
+  token: {{ .RADARR_APIKEY }}
   add_missing: false
   add_existing: false
   root_folder_path: /data/media/movies
@@ -123,9 +109,9 @@ radarr:
   plex_path:
   upgrade_existing: false
 
-sonarr: ##Figure out multiple instances
+sonarr:
   url: http://sonarr.downloads.svc.cluster.local
-  token: ${SONARR_TOKEN}
+  token: {{ .SONARR_APIKEY }}
   add_missing: false
   add_existing: false
   root_folder_path: "/data/media/tv shows"
@@ -141,14 +127,41 @@ sonarr: ##Figure out multiple instances
   plex_path:
   upgrade_existing: false
 
+tmdb:
+  apikey: {{ .TMDB_APIKEY }}
+  language: en
+  cache_expiration: 60
+  region:
+
 trakt:
-  client_id: {{ .TRAKT_CLIENT_ID }} ## TODO
-  client_secret: {{ .TRAKT_CLIENT_SECRET }} ## TODO
+  client_id: {{ .TRAKT_CLIENT_ID }}
+  client_secret: {{ .TRAKT_CLIENT_SECRET }}
   authorization:
-    access_token: {{ .TRAKT_ACCESS_TOKEN }} ## TODO
+    access_token: {{ .TRAKT_ACCESS_TOKEN }}
     token_type: Bearer
-    expires_in: {{ .TRAKT_EXPIRES_IN }} ## TODO
-    refresh_token: {{ .TRAKT_REFRESH_TOKEN }} ## TODO
+    expires_in: {{ .TRAKT_EXPIRES_IN }}
+    refresh_token: {{ .TRAKT_REFRESH_TOKEN }}
     scope: public
-    created_at: {{ .TRAKT_CREATED_AT }} ## TODO
+    created_at: {{ .TRAKT_CREATED_AT }}
   pin:
+
+mdblist:
+  apikey: {{ .MDBLIST_APIKEY }}
+  cache_expiration: 60
+
+omdb:
+  apikey: {{ .OMDB_APIKEY }}
+  cache_expiration: 60
+
+mal:
+  client_id: {{ .MYANIMELIST_CLIENT_ID }}
+  client_secret: {{ .MYANIMELIST_CLIENT_SECRET }}
+  localhost_url: {{ .MYANIMELIST_LOCALHOST_URL }}
+  authorization:
+    access_token: {{ .MYANIMELIST_ACCESS_TOKEN }}
+    token_type: Bearer
+    expires_in: {{ .MYANIMELIST_EXPIRES_IN }}
+    refresh_token: {{ .MYANIMELIST_REFRESH_TOKEN }}
+
+
+
