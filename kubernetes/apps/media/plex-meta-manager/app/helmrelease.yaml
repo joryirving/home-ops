@@ -43,13 +43,10 @@ spec:
     service:
       main:
         enabled: false
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 5Gi
-        storageClass: longhorn-config
     persistence:
+      config:
+        enabled: true
+        existingClaim: pmm-config
       config-file:
         enabled: true
         type: secret

@@ -11,4 +11,4 @@ pmm () {
 
 pmm "Anime"
 pmm "Movies"
-pmm "TV Shows"
+pmm "TV"
