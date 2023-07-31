@@ -51,6 +51,10 @@ spec:
           - http
         serviceMonitor:
           enabled: true
+        dashboards:
+          enabled: true
+          annotations:
+            grafana_folder: Cilium
       relay:
         enabled: true
         rollOutPods: true
@@ -76,19 +80,28 @@ spec:
     kubeProxyReplacement: strict
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
     operator:
-      rollOutPods: true
       replicas: 2
+      rollOutPods: true
       prometheus:
         enabled: true
         serviceMonitor:
           enabled: true
+      dashboards:
+        enabled: true
+        annotations:
+          grafana_folder: Cilium
     prometheus:
       enabled: true
       serviceMonitor:
         enabled: true
+    dashboards:
+      enabled: true
+      annotations:
+        grafana_folder: Cilium
     rollOutCiliumPods: true
     l2announcements:
       enabled: true
+      # https://github.com/cilium/cilium/issues/26586
       leaseDuration: 120s
       leaseRenewDeadline: 60s
       leaseRetryPeriod: 1s

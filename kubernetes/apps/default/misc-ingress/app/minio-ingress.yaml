@@ -5,7 +5,7 @@ metadata:
   name: minio
   namespace: default
 spec:
-  ingressClassName: nginx
+  ingressClassName: internal
   rules:
     - host: &host minio.${SECRET_DOMAIN}
       http:
@@ -27,14 +27,14 @@ metadata:
   name: minio-api
   namespace: default
   annotations:
-    external-dns.alpha.kubernetes.io/target: ingress.${SECRET_DOMAIN}
+    external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
     nginx.ingress.kubernetes.io/proxy-body-size: 1024m
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
     nginx.ingress.kubernetes.io/configuration-snippet: |
       chunked_transfer_encoding off;
 spec:
-  ingressClassName: nginx
+  ingressClassName: external
   rules:
     - host: &api-host s3.${SECRET_DOMAIN}
       http:
