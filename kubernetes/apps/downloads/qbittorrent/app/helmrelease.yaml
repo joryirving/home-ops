@@ -46,6 +46,9 @@ spec:
     hostname: qbittorrent-0
     service:
       main:
+        type: LoadBalancer
+        annotations:
+          io.cilium/lb-ipam-ips: "${SVC_QBITTTORENT_ADDR}"
         ports:
           http:
             port: *port
@@ -54,7 +57,6 @@ spec:
         enabled: true
         ingressClassName: internal
         annotations:
-          io.cilium/lb-ipam-ips: "${SVC_QBITTTORENT_ADDR}"
           gethomepage.dev/enabled: "true"
           gethomepage.dev/icon: qbittorrent.png
           gethomepage.dev/name: qBittorrent
