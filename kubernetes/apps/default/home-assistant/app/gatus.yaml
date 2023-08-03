@@ -10,10 +10,15 @@ data:
   config.yaml: |
     endpoints:
       - name: home-assistant
-        group: home
+        group: external
         url: https://hass.${SECRET_DOMAIN}
         interval: 1m
-        conditions: ["[STATUS] == 200"]
-        alerts: [{ type: discord }]
+        client:
+          dns-resolver: tcp://1.1.1.1:53
+        conditions:
+          - "[STATUS] == 200"
+        alerts:
+          - type: discord
         ui:
           hide-hostname: true
+          

@@ -10,8 +10,16 @@ data:
   config.yaml: |
     endpoints:
       - name: readarr
-        group: downloads
-        url: http://readarr.downloads.svc.cluster.local
+        group: guarded
+        url: 1.1.1.1
         interval: 1m
-        conditions: ["[STATUS] == 200"]
-        alerts: [{ type: discord }]
+        ui:
+          hide-hostname: true
+          hide-url: true
+        dns:
+          query-name: readarr.${SECRET_DOMAIN}
+          query-type: A
+        conditions:
+          - "len([BODY]) == 0"
+        alerts:
+          - type: discord
