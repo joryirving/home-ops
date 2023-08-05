@@ -54,13 +54,13 @@ Total RAM: 128GB (workers)
 
 ### Networking/UPS Hardware
 
-| Device          | Purpose                          |
-|-----------------|----------------------------------|
-| Back-UPS 600    | UPS - Network                    |
-| Unifi UDM Base  | Router                           |
-| Netgear GS308P  | 8 Port PoE Switch - Network      |
-| Tripp Lite 1500 | UPS - Server Rack                |
-| Netgear GS324P  | 24 Port PoE Switch - Server Rack |
+| Device                | Purpose                          |
+|-----------------------|----------------------------------|
+| Back-UPS 600          | UPS - Network                    |
+| Unifi UDM Base        | Router                           |
+| Netgear GS324P        | 24 Port PoE Switch - Network     |
+| Tripp Lite 1500       | UPS - Server Rack                |
+| Brocade ICX6610-48-PE | 48 Port PoE Switch - Server Rack |
 
 ## 🤝 Thanks
 
