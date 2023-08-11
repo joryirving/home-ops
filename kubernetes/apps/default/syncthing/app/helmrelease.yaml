@@ -1,0 +1,75 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app syncthing
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    global:
+      nameOverride: *app
+    image:
+      repository: syncthing/syncthing
+      tag: 1.23.7
+    service:
+      main:
+        ports:
+          http:
+            port: 8384
+      listen:
+        enabled: true
+        type: LoadBalancer
+        ports:
+          discovery:
+            enabled: true
+            port: 21027
+            protocol: UDP
+          listen:
+            enabled: true
+            port: 22000
+            protocol: TCP
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        hosts:
+          - host: &host syncthing.${SECRET_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+    persistence:
+      data:
+        enabled: true
+        type: nfs
+        server: ${NAS_IP}
+        path: ${SECRET_NFS_SYNCTHING}
+        mountPath: /var/syncthing
+    resources:
+      requests:
+        cpu: 15m
+        memory: 64M
+      limits:
+        cpu: 100m
+        memory: 128M
