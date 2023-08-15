@@ -46,12 +46,27 @@ spec:
     hostname: qbittorrent-0
     service:
       main:
-        type: LoadBalancer
-        annotations:
-          io.cilium/lb-ipam-ips: "${SVC_QBITTTORENT_ADDR}"
         ports:
           http:
             port: *port
+      bittorrent:
+        enabled: true
+        type: LoadBalancer
+        annotations:
+          io.cilium/lb-ipam-ips: ${SVC_QBITTTORENT_ADDR}
+        labels:
+          io.cilium/lb-ipam-layer2: "true"
+        ports:
+          bittorrent-tcp:
+            enabled: true
+            port: *bt-port
+            protocol: TCP
+            targetPort: *bt-port
+          bittorrent-udp:
+            enabled: true
+            port: *bt-port
+            protocol: UDP
+            targetPort: *bt-port
     ingress:
       main:
         enabled: true
