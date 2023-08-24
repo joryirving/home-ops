@@ -40,6 +40,9 @@ spec:
     queryFrontend:
       enabled: true
       replicaCount: 3
+      resources:
+        limits:
+          memory: 1Gi
       ingress:
         enabled: true
         ingressClassName: internal
@@ -58,8 +61,14 @@ spec:
     bucketweb:
       enabled: true
       replicaCount: 3
+      resources:
+        limits:
+          memory: 1Gi
     compactor:
       enabled: true
+      resources:
+        limits:
+          memory: 1Gi
       extraFlags:
         - --compact.concurrency=4
         - --delete-delay=30m
@@ -72,6 +81,9 @@ spec:
         size: 20Gi
     storegateway:
       enabled: true
+      resources:
+        limits:
+          memory: 1Gi
       replicaCount: 3
       persistence:
         enabled: true
@@ -80,6 +92,9 @@ spec:
     ruler:
       enabled: true
       replicaCount: 3
+      resources:
+        limits:
+          memory: 250Mi
       replicaLabel: __replica__
       alertmanagers: ["http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093"]
       extraFlags: ["--web.prefix-header=X-Forwarded-Prefix"]
