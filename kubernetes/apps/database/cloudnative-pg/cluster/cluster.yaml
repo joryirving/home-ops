@@ -5,7 +5,7 @@ metadata:
   name: postgres
   namespace: database
 spec:
-  instances: 2
+  instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:14.8-6
   primaryUpdateStrategy: unsupervised
   storage:
@@ -13,6 +13,9 @@ spec:
     storageClass: local-path
   superuserSecret:
     name: cloudnative-pg-secret
+  bootstrap:
+    recovery:
+      source: &previousCluster postgres-v4
   postgresql:
     parameters:
       max_connections: "600"
@@ -25,13 +28,29 @@ spec:
       wal:
         compression: bzip2
         maxParallel: 8
-      destinationPath: s3://postgresql/
-      endpointURL: https://s3.${SECRET_DOMAIN}
-      serverName: postgres-v4
+      destinationPath:  &destinationPath s3://postgresql/
+      endpointURL: &endpointURL https://s3.${SECRET_DOMAIN}
+      serverName: postgres-v1
       s3Credentials:
         accessKeyId:
-          name: cloudnative-pg-secret
-          key: aws-access-key-id
+          name: &accessKeyname cloudnative-pg-secret
+          key: &accessKeykey aws-access-key-id
         secretAccessKey:
-          name: cloudnative-pg-secret
-          key: aws-secret-access-key
+          name: &secretAccessKeyname cloudnative-pg-secret
+          key: &secretAccessKey aws-secret-access-key
+  # Note: externalClusters is needed when recovering from an existing cnpg cluster
+  externalClusters:
+    - name: *previousCluster
+      barmanObjectStore:
+        wal:
+          compression: bzip2
+          maxParallel: 8
+        destinationPath: *destinationPath
+        endpointURL: *endpointURL
+        s3Credentials:
+          accessKeyId:
+            name: *accessKeyname
+            key: *accessKeykey
+          secretAccessKey:
+            name: *secretAccessKeyname
+            key: *secretAccessKey
