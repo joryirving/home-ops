@@ -28,6 +28,13 @@ spec:
     - name: longhorn
       namespace: storage
   values:
+    initContainers:
+      01-init-db:
+        image: ghcr.io/onedr0p/postgres-init:14.9
+        imagePullPolicy: IfNotPresent
+        envFrom: &envFrom
+          - secretRef:
+              name: sonarr-secret
     controller:
       type: statefulset
       annotations:
@@ -42,9 +49,7 @@ spec:
       SONARR__INSTANCE_NAME: Sonarr
       SONARR__PORT: &port 80
       SONARR__LOG_LEVEL: info
-    envFrom:
-      - secretRef:
-          name: sonarr-secret
+    envFrom: *envFrom
     service:
       main:
         ports:
