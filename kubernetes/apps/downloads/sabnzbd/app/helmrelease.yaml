@@ -109,18 +109,18 @@ spec:
         existingClaim: downloads
         mountPath: /downloads
         subPath: usenet
-      incomplete:
-        enabled: true
-        type: emptyDir
-    # affinity:
-    #   podAntiAffinity:
-    #     requiredDuringSchedulingIgnoredDuringExecution:
-    #       - labelSelector:
-    #           matchExpressions:
-    #             - key: app.kubernetes.io/name
-    #               operator: In
-    #               values: ["qbittorrent"]
-    #         topologyKey: kubernetes.io/hostname
+      # incomplete:
+      #   enabled: true
+      #   type: emptyDir
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values: ["qbittorrent"]
+            topologyKey: kubernetes.io/hostname
     resources:
       requests:
         cpu: 10m
