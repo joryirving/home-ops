@@ -72,13 +72,20 @@ spec:
       fsGroup: 568
       fsGroupChangePolicy: OnRootMismatch
     nodeSelector:
-      feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true"
+      nfd.node.kubernetes.io/feature-labels: "usb-ff_10c4_ea60.present"
     volumeClaimTemplates:
       - name: config
         mountPath: /config
         accessMode: ReadWriteOnce
         size: 5Gi
         storageClass: longhorn-config
+    persistence:
+      usb:
+        enabled: true
+        type: hostPath
+        hostPathType: CharDevice
+        hostPath: /dev/serial/by-id/usb-Silicon_Labs_Sonoff_Zigbee_3.0_USB_Dongle_Plus_0001-if00-port0
+        mountPath: /dev/ttyUSB0
     resources:
       requests:
         cpu: 50m
