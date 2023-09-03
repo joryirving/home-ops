@@ -14,3 +14,19 @@ spec:
     kind: GitRepository
     name: home-kubernetes
   wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-apps-node-feature-discovery-features
+  namespace: flux-system
+  labels:
+    substitution.flux.home.arpa/enabled: "true"
+spec:
+  interval: 10m
+  path: ./kubernetes/apps/kube-tools/node-feature-discovery/features
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: home-kubernetes
+  wait: true
