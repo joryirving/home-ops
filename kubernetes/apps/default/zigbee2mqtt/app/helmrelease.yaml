@@ -28,6 +28,8 @@ spec:
     - name: mosquitto
       namespace: default
   values:
+    controller:
+      type: statefulset
     image:
       repository: ghcr.io/koenkk/zigbee2mqtt
       tag: 1.30.2
@@ -59,22 +61,22 @@ spec:
       ZIGBEE2MQTT_CONFIG_SERIAL_PORT:  &device |-
         /dev/serial/by-id/usb-Silicon_Labs_Sonoff_Zigbee_3.0_USB_Dongle_Plus_0001-if00-port0
       ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_OUTPUT: '["console"]'
-      ZIGBEE2MQTT_CONFIG_DEVICES: devices.yaml
-      ZIGBEE2MQTT_CONFIG_GROUPS: groups.yaml
       ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "true"
       ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: false
-    tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/control-plane
-        operator: Exists
     nodeSelector:
       zigbee.feature.node.kubernetes.io/sonoff: "true"
     podSecurityContext:
-      privileged: true
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
+      fsGroupChangePolicy: OnRootMismatch
+    volumeClaimTemplates:
+      - name: data
+        mountPath: /config
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: longhorn-config
     persistence:
-      config:
-        enabled: true
-        existingClaim: zigbee2mqtt-config
       usb:
         enabled: true
         type: hostPath
