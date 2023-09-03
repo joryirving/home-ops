@@ -1,0 +1,115 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: zigbee2mqtt
+  namespace: default
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+    - name: mosquitto
+      namespace: default
+  values:
+    image:
+      repository: ghcr.io/koenkk/zigbee2mqtt
+      tag: 1.33.0
+    env:
+      TZ: ${TIMEZONE}
+      ZIGBEE2MQTT_DATA: /config
+      ZIGBEE2MQTT_CONFIG_ADVANCED_HOMEASSISTANT_DISCOVERY_TOPIC: homeassistant
+      ZIGBEE2MQTT_CONFIG_ADVANCED_HOMEASSISTANT_LEGACY_ENTITY_ATTRIBUTES: "true"
+      ZIGBEE2MQTT_CONFIG_ADVANCED_HOMEASSISTANT_LEGACY_TRIGGERS: "true"
+      ZIGBEE2MQTT_CONFIG_ADVANCED_HOMEASSISTANT_STATUS_TOPIC: homeassistant/status
+      ZIGBEE2MQTT_CONFIG_ADVANCED_LAST_SEEN: ISO_8601
+      ZIGBEE2MQTT_CONFIG_ADVANCED_LEGACY_API: "false"
+      ZIGBEE2MQTT_CONFIG_ADVANCED_LEGACY_AVAILABILITY_PAYLOAD: "false"
+      ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_LEVEL: info
+      ZIGBEE2MQTT_CONFIG_AVAILABILITY_ACTIVE_TIMEOUT: 60
+      ZIGBEE2MQTT_CONFIG_AVAILABILITY_PASSIVE_TIMEOUT: 2000
+      ZIGBEE2MQTT_CONFIG_DEVICE_OPTIONS_LEGACY: "false"
+      ZIGBEE2MQTT_CONFIG_DEVICE_OPTIONS_RETAIN: "true"
+      ZIGBEE2MQTT_CONFIG_EXPERIMENTAL_NEW_API: "true"
+      ZIGBEE2MQTT_CONFIG_FRONTEND_PORT: &port 80
+      ZIGBEE2MQTT_CONFIG_FRONTEND_URL: https://zigbee.${SECRET_DOMAIN}
+      ZIGBEE2MQTT_CONFIG_HOMEASSISTANT: "true"
+      ZIGBEE2MQTT_CONFIG_MQTT_BASE_TOPIC: zigbee2mqtt
+      ZIGBEE2MQTT_CONFIG_MQTT_INCLUDE_DEVICE_INFORMATION: "true"
+      ZIGBEE2MQTT_CONFIG_MQTT_KEEPALIVE: 60
+      ZIGBEE2MQTT_CONFIG_MQTT_REJECT_UNAUTHORIZED: "false"
+      ZIGBEE2MQTT_CONFIG_MQTT_SERVER: mqtt://mosquitto.default.svc.cluster.local
+      ZIGBEE2MQTT_CONFIG_MQTT_VERSION: 5
+      ZIGBEE2MQTT_CONFIG_SERIAL_PORT:  &device |-
+        /dev/serial/by-id/usb-Silicon_Labs_Sonoff_Zigbee_3.0_USB_Dongle_Plus_0001-if00-port0
+      ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_OUTPUT: '["console"]'
+      ZIGBEE2MQTT_CONFIG_DEVICES: devices.yaml
+      ZIGBEE2MQTT_CONFIG_GROUPS: groups.yaml
+      ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "true"
+      ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: false
+    volumeClaimTemplates:
+      - name: config
+        mountPath: /config
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: longhorn-config
+    tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+    nodeSelector:
+      zigbee.feature.node.kubernetes.io/sonoff: "true"
+    persistence:
+      usb:
+        enabled: true
+        type: hostPath
+        hostPath: *device
+        hostPathType: CharDevice
+    service:
+      main:
+        ports:
+          http:
+            port: *port
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        hosts:
+          - host: &host zigbee.${PUBLIC_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+    serviceMonitor:
+      main:
+        enabled: true
+        endpoints:
+          - port: metrics
+            scheme: http
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 10s
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        memory: 500Mi
