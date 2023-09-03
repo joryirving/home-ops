@@ -29,7 +29,7 @@ spec:
       type: statefulset
     image:
       repository: ghcr.io/onedr0p/home-assistant
-      tag: 2023.8.4@sha256:60777ed79b9cde58621c83fcb8ce8d4d4654bbe65cfeb048b4f5afe91fb407ac
+      tag: 2023.8.3@sha256:c431306c7a24c8d197e907134a905bc1d756bd6e5940ff2af05c60c675bc3192
     env:
       TZ: ${TIMEZONE}
     service:
@@ -71,6 +71,8 @@ spec:
       runAsGroup: 568
       fsGroup: 568
       fsGroupChangePolicy: OnRootMismatch
+    nodeSelector:
+      feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true"
     volumeClaimTemplates:
       - name: config
         mountPath: /config
