@@ -28,8 +28,6 @@ spec:
     - name: mosquitto
       namespace: default
   values:
-    controller:
-      type: statefulset
     image:
       repository: ghcr.io/koenkk/zigbee2mqtt
       tag: 1.33.0
@@ -65,12 +63,6 @@ spec:
       ZIGBEE2MQTT_CONFIG_GROUPS: groups.yaml
       ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "true"
       ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: false
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn-config
     tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/control-plane
@@ -78,6 +70,9 @@ spec:
     nodeSelector:
       zigbee.feature.node.kubernetes.io/sonoff: "true"
     persistence:
+      config:
+        enabled: true
+        existingClaim: zigbee2mqtt-config
       usb:
         enabled: true
         type: hostPath
