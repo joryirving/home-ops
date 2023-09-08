@@ -1,0 +1,43 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: arc-home-ops
+  namespace: actions-runner-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: 0.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: actions-runner-controller
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    runnerScaleSetName: arc-runner-set-home-ops
+    githubConfigUrl: https://github.com/LilDrunkenSmurf/k3s-home-cluster
+    minRunners: 1
+    maxRunners: 3
+    containerMode:
+      type: dind
+    template:
+      spec:
+        containers:
+          - name: runner
+            image: ghcr.io/onedr0p/github-actions-runner:rolling@sha256:b26a89237b699ec87117c42a651029a0e8c2f51f081304c5d1cdf1cfed52b65b
+  valuesFrom:
+    - kind: Secret
+      name: actions-runner-controller-secret
+      valuesKey: github_token
+      targetPath: githubConfigSecret.github_token
