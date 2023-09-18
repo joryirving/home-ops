@@ -34,20 +34,24 @@ spec:
         imagePullPolicy: IfNotPresent
         envFrom:
           - secretRef:
-              name: grafana-secret
+              name: &secret grafana-secret
     replicas: 2
     podAnnotations:
       reloader.stakater.com/auto: "true"
-    envFromSecrets:
-      - name: grafana-secret
     env:
       GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
       GF_EXPLORE_ENABLED: true
-      GF_LOG_FILTERS: rendering:debug
-      GF_PANELS_DISABLE_SANITIZE_HTML: true
+      GF_FEATURE_TOGGLES_ENABLE: publicDashboards
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: natel-discrete-panel,pr0ps-trackmap-panel,panodata-map-panel
+      GF_SECURITY_COOKIE_SAMESITE: grafana
+      GF_SERVER_ROOT_URL: https://grafana.${SECRET_DOMAIN}
+    envFromSecrets:
+      - name: *secret
     grafana.ini:
       analytics:
         check_for_updates: false
+        check_for_plugin_updates: false
+        reporting_enabled: false
       auth:
         signout_redirect_url: https://authentik.${SECRET_DOMAIN}/application/o/grafana-provider/end-session/
         oauth_auto_login: false
@@ -68,25 +72,14 @@ spec:
         api_url: https://authentik.${SECRET_DOMAIN}/application/o/userinfo/
         # Optionally map user groups to Grafana roles
         role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'
-      grafana_net:
-        url: https://grafana.net
-      log:
-        mode: console
-      paths:
-        data: /var/lib/grafana/data
-        logs: /var/log/grafana
-        plugins: /var/lib/grafana/plugins
-        provisioning: /etc/grafana/provisioning
-      server:
-        root_url: https://grafana.${SECRET_DOMAIN}
     deploymentStrategy:
       type: RollingUpdate
     resources:
-      limits:
-        memory: 219M
       requests:
         cpu: 23m
         memory: 127M
+      limits:
+        memory: 219M
     admin:
       existingSecret: grafana-secret
       passwordKey: adminPass
@@ -95,7 +88,7 @@ spec:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-          - name: "default"
+          - name: default
             orgId: 1
             folder: ""
             type: file
@@ -103,50 +96,58 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/default
-          - name: "cilium"
+          - name: cilium
             orgId: 1
-            folder: "Cilium"
+            folder: Cilium
             type: file
             disableDeletion: false
             editable: true
             options:
               path: /var/lib/grafana/dashboards/cilium
-          - name: "data"
+          - name: data
             orgId: 1
-            folder: "Data"
+            folder: Data
             type: file
             disableDeletion: false
             editable: true
             options:
               path: /var/lib/grafana/dashboards/data
-          - name: "flux"
+          - name: flux
             orgId: 1
-            folder: "Flux"
+            folder: Flux
             type: file
             disableDeletion: false
             editable: true
             options:
               path: /var/lib/grafana/dashboards/flux
-          - name: "kubernetes"
+          - name: kubernetes
             orgId: 1
-            folder: "Kubernetes"
+            folder: Kubernetes
             type: file
             disableDeletion: false
             editable: true
             options:
               path: /var/lib/grafana/dashboards/kubernetes
-          - name: "system"
+          - name: nginx
             orgId: 1
-            folder: "System"
+            folder: Nginx
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/nginx
+          - name: system
+            orgId: 1
+            folder: System
             type: file
             disableDeletion: false
             editable: true
             allowUiUpdates: true
             options:
               path: /var/lib/grafana/dashboards/system
-          - name: "thanos"
+          - name: thanos
             orgId: 1
-            folder: "Thanos"
+            folder: Thanos
             type: file
             disableDeletion: false
             editable: true
@@ -164,6 +165,10 @@ spec:
     datasources:
       datasources.yaml:
         apiVersion: 1
+        deleteDatasources:
+          - { name: Alertmanager, orgId: 1 }
+          - { name: prom_direct, orgId: 1 }
+          - { name: Prometheus, orgId: 1 }
         datasources:
           - access: proxy
             isDefault: false
@@ -182,17 +187,14 @@ spec:
             jsonData:
               implementation: prometheus
     dashboards:
+      default:
       cilium:
+      data:
+        longhorn:
+          gnetId: 13032 # https://grafana.com/grafana/dashboards/13032?tab=revisions
+          revision: 6
+          datasource: Prometheus
       flux:
-        flux-cluster:
-          url: https://raw.githubusercontent.com/fluxcd/flux2/main/manifests/monitoring/monitoring-config/dashboards/cluster.json
-          datasource: Prometheus
-        flux-control-plane:
-          url: https://raw.githubusercontent.com/fluxcd/flux2/main/manifests/monitoring/monitoring-config/dashboards/control-plane.json
-          datasource: Prometheus
-        flux-logs:
-          url: https://raw.githubusercontent.com/fluxcd/flux2/main/manifests/monitoring/monitoring-config/dashboards/logs.json
-          datasource: Prometheus
       kubernetes:
         kubernetes-api-server:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json
@@ -213,68 +215,77 @@ spec:
           gnetId: 11454
           revision: 14
           datasource: Prometheus
+      nginx:
       system:
-        external-secrets:
-          url: https://raw.githubusercontent.com/external-secrets/external-secrets/main/docs/snippets/dashboard.json
+        cloudflared:
+          gnetId: 17457 # https://grafana.com/grafana/dashboards/17457?tab=revisions
+          revision: 6
+          datasource:
+            - { name: DS_PROMETHEUS, value: Prometheus }
+        external-dns:
+          gnetId: 15038 # https://grafana.com/grafana/dashboards/15038?tab=revisions
+          revision: 1
           datasource: Prometheus
-        # Ref: https://grafana.com/grafana/dashboards/16541
         speedtest-exporter-hub:
-          gnetId: 16541
+          gnetId: 16541 # https://grafana.com/grafana/dashboards/16541?tab=revisions
           revision: 1
           datasource:
             - name: datasource
               value: Prometheus
-        # # Ref: https://grafana.com/grafana/dashboards/13502
         minio:
-          gnetId: 13502
+          gnetId: 13502 # https://grafana.com/grafana/dashboards/13502?tab=revisions
           revision: 19
           datasource: Prometheus
-        Ref: https://grafana.com/grafana/dashboards/1860
         node-exporter-full:
-          gnetId: 1860
+          gnetId: 1860 # https://grafana.com/grafana/dashboards/1860?tab=revisions
           revision: 31
           datasource: Prometheus
-        # Ref: https://grafana.com/grafana/dashboards/7845
+        redis:
+          gnetId: 763 # https://grafana.com/grafana/dashboards/763?tab=revisions
+          revision: 5
+          datasource: Prometheus
         zfs:
-          gnetId: 7845
+          gnetId: 7845 # https://grafana.com/grafana/dashboards/7845?tab=revisions
           revision: 4
+          datasource: Prometheus
+        miniflux:
+          url: https://raw.githubusercontent.com/miniflux/v2/main/contrib/grafana/dashboard.json
           datasource: Prometheus
       unifi:
-        # Ref: https://grafana.com/grafana/dashboards/11311
         unifi-network-sites:
-          gnetId: 11311
+          gnetId: 11311 # https://grafana.com/grafana/dashboards/11311?tab=revisions
           revision: 4
           datasource: Prometheus
-        # Ref: https://grafana.com/grafana/dashboards/11312
         unifi-usw-insights:
-          gnetId: 11312
+          gnetId: 11312 # https://grafana.com/grafana/dashboards/11312?tab=revisions
           revision: 8
           datasource: Prometheus
-        # Ref: https://grafana.com/grafana/dashboards/11313
         unifi-usg-insights:
-          gnetId: 11313
+          gnetId: 11313 # https://grafana.com/grafana/dashboards/11313?tab=revisions
           revision: 9
           datasource: Prometheus
-        # Ref: https://grafana.com/grafana/dashboards/11314
         unifi-uap-insights:
-          gnetId: 11314
+          gnetId: 11314 # https://grafana.com/grafana/dashboards/11314?tab=revisions
           revision: 9
           datasource: Prometheus
-        # Ref: https://grafana.com/grafana/dashboards/11315
         unifi-client-insights:
-          gnetId: 11315
+          gnetId: 11315 # https://grafana.com/grafana/dashboards/11315?tab=revisions
           revision: 8
           datasource: Prometheus
     sidecar:
       dashboards:
         enabled: true
         searchNamespace: ALL
+        labelValue: ""
+        label: grafana_dashboard
         folderAnnotation: grafana_folder
         provider:
+          disableDelete: true
           foldersFromFilesStructure: true
       datasources:
         enabled: true
         searchNamespace: ALL
+        labelValue: ""
     plugins:
       - grafana-clock-panel
       - grafana-piechart-panel
@@ -284,15 +295,6 @@ spec:
       - vonage-status-panel
     serviceMonitor:
       enabled: true
-    imageRenderer:
-      enabled: true
-      replicas: 2
-      networkPolicy:
-        limitIngress: false
-      serviceMonitor:
-        enabled: true
-      nodeSelector:
-        kubernetes.io/arch: amd64 ## Does not have an ARM image
     ingress:
       enabled: true
       ingressClassName: external

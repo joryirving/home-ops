@@ -4,3 +4,17 @@ kind: Kustomization
 namespace: networking
 resources:
   - ./helmrelease.yaml
+configMapGenerator:
+  - name: nginx-dashboard
+    files:
+      - nginx-dashboard.json=https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+  - name: nginx-request-handling-performance
+    files:
+      - nginx-request-handling-performance.json=https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/request-handling-performance.json
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+    grafana_folder: "Nginx"
+  labels:
+    grafana_dashboard: "true"
