@@ -6,6 +6,7 @@ metadata:
   namespace: monitoring
 spec:
   interval: 30m
+  timeout: 15m
   chart:
     spec:
       chart: kube-prometheus-stack
@@ -14,7 +15,7 @@ spec:
         kind: HelmRepository
         name: prometheus-community
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -35,15 +36,15 @@ spec:
       ingress:
         enabled: true
         ingressClassName: internal
+        pathType: Prefix
         hosts:
           - &host-alert-manager alert-manager.${SECRET_DOMAIN}
         paths:
           - /
-        pathType: Prefix
         tls:
           - hosts:
               - *host-alert-manager
-      alertManagerSpec:
+      alertmanagerSpec:
         replicas: 2
         useExistingSecret: true
         configSecret: alertmanager-secret
@@ -53,26 +54,7 @@ spec:
               storageClassName: longhorn-config
               resources:
                 requests:
-                  storage: 10Gi
-    grafana:
-      enabled: false
-      forceDeployDashboards: true
-      sidecar:
-        dashboards:
-          multicluster:
-            etcd:
-              enabled: true
-    kube-state-metrics:
-      metricLabelsAllowlist: ["persistentvolumeclaims=[*]"]
-      prometheus:
-        monitor:
-          enabled: true
-          relabelings:
-            - action: replace
-              regex: (.*)
-              replacement: $1
-              sourceLabels: ["__meta_kubernetes_pod_node_name"]
-              targetLabel: kubernetes_node
+                  storage: 1Gi
     kubelet:
       enabled: true
       serviceMonitor:
@@ -111,8 +93,8 @@ spec:
       enabled: true
       endpoints: &cp
         - 192.168.1.50
-        - 192.168.1.51
         - 192.168.1.52
+        - 192.168.1.54
       serviceMonitor:
         metricRelabelings:
           # Remove duplicate labels provided by k3s
@@ -148,7 +130,7 @@ spec:
       thanosServiceMonitor:
         enabled: true
       prometheusSpec:
-        replicas: 3
+        replicas: 2
         replicaExternalLabelName: __replica__
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
@@ -175,3 +157,15 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
+    grafana:
+      enabled: false
+      forceDeployDashboards: true
+      sidecar:
+        dashboards:
+          multicluster:
+            etcd:
+              enabled: true
+    nodeExporter:
+      enabled: false
+    kubeStateMetrics:
+      enabled: false
