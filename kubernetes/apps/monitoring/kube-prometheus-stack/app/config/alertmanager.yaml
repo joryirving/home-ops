@@ -5,7 +5,7 @@ route:
   group_by: ["alertname", "job"]
   group_interval: 10m
   group_wait: 1m
-  receiver: dicord
+  receiver: discord
   repeat_interval: 12h
   routes:
     # - receiver: heartbeat
@@ -17,7 +17,7 @@ route:
     - receiver: "null"
       matchers:
         - alertname =~ "InfoInhibitor"
-    - receiver: dicord
+    - receiver: discord
       continue: true
       matchers:
         - severity = "critical"
@@ -29,7 +29,7 @@ inhibit_rules:
       - severity = "warning"
 receivers:
   - name: "null"
-  - name: dicord
+  - name: discord
     discord_configs:
       - send_resolved: true
         webhook_url: "{{ .DISCORD_URL }}"
