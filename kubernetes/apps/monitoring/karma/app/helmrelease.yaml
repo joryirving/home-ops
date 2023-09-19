@@ -41,7 +41,9 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        ingressClassName: external
+      annotations:
+        external-dns.alpha.kubernetes.io/target: "external.${SECRET_DOMAIN}"
         hosts:
           - host: &host karma.${SECRET_DOMAIN}
             paths:
