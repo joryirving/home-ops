@@ -57,13 +57,16 @@ spec:
             env:
               TZ: ${TIMEZONE}
             args:
+              - "/config"
               - --auth
               - "none"
               - --user-data-dir
               - "/config/.vscode"
               - --extensions-dir
               - "/config/.vscode"
-              - "/config"
+            volumeMounts:
+            - name: config
+              mountPath: /config
         statefulset:
           volumeClaimTemplates:
           - name: config
