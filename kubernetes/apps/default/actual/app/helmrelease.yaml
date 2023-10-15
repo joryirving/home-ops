@@ -26,6 +26,13 @@ spec:
         type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
+        statefulset:
+          volumeClaimTemplates:
+            - name: config
+              mountPath: /data
+              accessMode: ReadWriteOnce
+              size: 1Gi
+              storageClass: longhorn-config
         containers:
           main:
             image:
@@ -69,9 +76,3 @@ spec:
         memory: 80M
       limits:
         memory: 256M
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /data
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn-config
