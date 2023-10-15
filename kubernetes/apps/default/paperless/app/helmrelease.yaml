@@ -24,13 +24,6 @@ spec:
     controllers:
       main:
         type: statefulset
-        statefulset:
-          volumeClaimTemplates:
-            - name: data
-              mountPath: /data/local
-              accessMode: ReadWriteOnce
-              size: 15Gi
-              storageClass: longhorn-config
         annotations:
           secret.reloader.stakater.com/reload: &secret paperless-secret
         initContainers:
@@ -62,7 +55,13 @@ spec:
             image:
               repository: public.ecr.aws/docker/library/redis
               tag: 7.2.1
-              imagePullPolicy: IfNotPresent
+        statefulset:
+          volumeClaimTemplates:
+            - name: data
+              mountPath: /data/local
+              accessMode: ReadWriteOnce
+              size: 15Gi
+              storageClass: longhorn-config
     service:
       main:
         ports:
