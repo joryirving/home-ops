@@ -61,8 +61,10 @@ spec:
               accessMode: ReadWriteOnce
               size: 15Gi
               storageClass: longhorn-config
-              globalMounts:
-                - path: /data/local
+              advancedMounts:
+                main:
+                  main:
+                    - path: /data/local
     service:
       main:
         ports:
@@ -93,13 +95,17 @@ spec:
         type: nfs
         server: ${NAS_IP}
         path: ${SECRET_NFS_PAPERLESS}/consume
-        globalMounts:
-          - path: /data/nas/consume
+        advancedMounts:
+          main:
+            main:
+              - path: /data/nas/consume
       nas-export:
         enabled: true
         type: nfs
         server: ${NAS_IP}
         path: ${SECRET_NFS_PAPERLESS}/export
-        globalMounts:
-          - path: /data/nas/export
+        advancedMounts:
+          main:
+            main:
+              - path: /data/nas/export
 
