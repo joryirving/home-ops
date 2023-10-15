@@ -50,6 +50,22 @@ spec:
                 memory: 400Mi
               limits:
                 memory: 700Mi
+          codeserver:
+            image:
+              repository: ghcr.io/coder/code-server
+              tag: 4.17.1
+            env:
+              TZ: ${TIMEZONE}
+            args:
+              - --auth
+              - "none"
+              - --user-data-dir
+              - "/config/.vscode"
+              - --extensions-dir
+              - "/config/.vscode"
+            volumeMounts:
+            - name: config
+              mountPath: /config
         statefulset:
           volumeClaimTemplates:
           - name: config
@@ -66,6 +82,15 @@ spec:
         ports:
           http:
             port: &port 8123
+      codeserver:
+        type: ClusterIP
+        controller: main
+        ports:
+          http:
+            enabled: true
+            port: 12321
+            # protocol: TCP
+            # targetPort: 12321
     ingress:
       main:
         enabled: true
@@ -84,6 +109,20 @@ spec:
                 service:
                   name: main
                   port: *port
+        tls:
+          - hosts:
+              - *host
+      codeserver:
+        enabled: true
+        className: internal
+        hosts:
+          - host: &host hass-code.${SECRET_DOMAIN}
+            paths:
+            - path: /
+              pathType: Prefix
+              service:
+                name: codeserver
+                port: http
         tls:
           - hosts:
               - *host
