@@ -81,7 +81,7 @@ spec:
         externalTrafficPolicy: Cluster
         ports:
           http:
-            port: &port 8123
+            port: 8123
       codeserver:
         type: ClusterIP
         controller: main
@@ -89,8 +89,8 @@ spec:
           http:
             enabled: true
             port: 12321
-            # protocol: TCP
-            # targetPort: 12321
+            protocol: TCP
+            targetPort: 12321
     ingress:
       main:
         enabled: true
@@ -108,7 +108,7 @@ spec:
                 pathType: Prefix
                 service:
                   name: main
-                  port: *port
+                  port: http
         tls:
           - hosts:
               - *host
