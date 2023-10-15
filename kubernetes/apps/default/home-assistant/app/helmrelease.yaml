@@ -24,6 +24,13 @@ spec:
     controllers:
       main:
         type: statefulset
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            mountPath: /config
+            accessMode: ReadWriteOnce
+            size: 5Gi
+            storageClass: longhorn-config
         containers:
           main:
             image:
@@ -73,12 +80,6 @@ spec:
       runAsGroup: 568
       fsGroup: 568
       fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 5Gi
-        storageClass: longhorn-config
     resources:
       requests:
         cpu: 50m
