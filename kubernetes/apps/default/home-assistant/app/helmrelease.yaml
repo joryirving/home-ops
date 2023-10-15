@@ -70,10 +70,11 @@ spec:
         statefulset:
           volumeClaimTemplates:
           - name: config
-            mountPath: /config
             accessMode: ReadWriteOnce
             size: 5Gi
             storageClass: longhorn-config
+            globalMounts:
+              - path: /config
     service:
       main:
         type: LoadBalancer
