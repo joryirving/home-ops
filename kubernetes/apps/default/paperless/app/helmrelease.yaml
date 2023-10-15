@@ -88,22 +88,15 @@ spec:
           - hosts:
               - *host
     persistence:
-      nas-consume:
+      nas:
         enabled: true
         type: nfs
         server: ${NAS_IP}
-        path: ${SECRET_NFS_PAPERLESS}/consume
+        path: ${SECRET_NFS_PAPERLESS}
         advancedMounts:
           main:
             main:
-              - path: /data/nas/consume
-      nas-export:
-        enabled: true
-        type: nfs
-        server: ${NAS_IP}
-        path: ${SECRET_NFS_PAPERLESS}/export
-        advancedMounts:
-          main:
-            main:
-              - path: /data/nas/export
-
+              - subPath: consume
+                path: /data/nas/consume
+              - subPath: export
+                path: /data/nas/export
