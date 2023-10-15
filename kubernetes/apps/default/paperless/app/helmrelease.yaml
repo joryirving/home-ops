@@ -58,10 +58,11 @@ spec:
         statefulset:
           volumeClaimTemplates:
             - name: data
-              mountPath: /data/local
               accessMode: ReadWriteOnce
               size: 15Gi
               storageClass: longhorn-config
+              globalMounts:
+                - path: /data/local
     service:
       main:
         ports:
@@ -89,14 +90,16 @@ spec:
     persistence:
       nas-consume:
         enabled: true
-        mountPath: /data/nas/consume
         type: nfs
         server: ${NAS_IP}
         path: ${SECRET_NFS_PAPERLESS}/consume
+        globalMounts:
+          - path: /data/nas/consume
       nas-export:
         enabled: true
-        mountPath: /data/nas/export
         type: nfs
         server: ${NAS_IP}
         path: ${SECRET_NFS_PAPERLESS}/export
+        globalMounts:
+          - path: /data/nas/export
 
