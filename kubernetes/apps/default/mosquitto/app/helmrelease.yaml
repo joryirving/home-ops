@@ -23,13 +23,24 @@ spec:
   values:
     controllers:
       main:
+        annotations:
+          secret.reloader.stakater.com/reload: &secret mosquitto
         containers:
           main:
             image:
-              repository: eclipse-mosquitto
+              repository: public.ecr.aws/docker/library/eclipse-mosquitto
               tag: 2.0.18
+            resources:
+              requests:
+                cpu: 100m
+                memory: 250Mi
+        pod:
+          securityContext:
+            runAsUser: 1883
+            runAsGroup: 1883
     service:
       main:
+        enabled: true
         ports:
           http:
             enabled: false
@@ -37,22 +48,12 @@ spec:
             enabled: true
             primary: true
             port: 1883
-    securityContext:
-      runAsUser: 1883
-      runAsGroup: 1883
-    configMaps:
-      config:
-        enabled: true
-        data:
-          mosquitto.conf: |
-            listener 1883
-            allow_anonymous true
-            persistence false
-            connection_messages false
     persistence:
       config:
         enabled: true
-        type: configMap
-        name: mosquitto-config
-        mountPath: /mosquitto/config/mosquitto.conf
-        subPath: mosquitto.conf
+        type: custom
+        volumeSpec:
+          secret:
+            secretName: *secret
+        globalMounts:
+          - path: /mosquitto/config
