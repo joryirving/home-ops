@@ -39,11 +39,11 @@ spec:
         externalTrafficPolicy: Cluster
         ports:
           http:
-            port: 8123
+            port: &port 8123
     ingress:
       main:
         enabled: true
-        ingressClassName: external
+        ClassName: external
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/group: Home
@@ -57,7 +57,7 @@ spec:
                 pathType: Prefix
                 service:
                   name: main
-                  port: http
+                  port: *port
         tls:
           - hosts:
               - *host
