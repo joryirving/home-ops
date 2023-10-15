@@ -10,27 +10,26 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
-      retries: 3
+      retries: 5
   upgrade:
-    cleanupOnFail: true
     remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
+      retries: 5
   values:
-    controller:
-      strategy: RollingUpdate
-    image:
-      repository: docker.io/jmalloc/echo-server
-      tag: 0.3.5
+    controllers:
+      main:
+        strategy: RollingUpdate
+        containers:
+          main:
+            image:
+              repository: docker.io/jmalloc/echo-server
+              tag: 0.3.5
     service:
       main:
         ports:
@@ -63,6 +62,9 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host

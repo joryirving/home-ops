@@ -5,33 +5,31 @@ metadata:
   name: discord-template-notifier
   namespace: default
 spec:
-  interval: 15m
+  interval: 30m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
-      interval: 30m
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
-    createNamespace: true
     remediation:
-      retries: 3
+      retries: 5
   upgrade:
-    cleanupOnFail: true
     remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
+      retries: 5
   values:
-    image:
-      repository: ghcr.io/morphy2k/rss-forwarder
-      tag: 0.6.1
-    env:
-      TZ: "${TIMEZONE}"
+    controllers:
+      main:
+        containers:
+          main:
+            image:
+              repository: ghcr.io/morphy2k/rss-forwarder
+              tag: 0.6.1
+            env:
+              TZ: "${TIMEZONE}"
     service:
       main: &disableSvc
         enabled: false
