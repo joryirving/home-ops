@@ -45,6 +45,7 @@ spec:
       listen:
         enabled: true
         type: LoadBalancer
+        controller: main
         annotations:
           io.cilium/lb-ipam-ips: "${SVC_SYNCTHING_ADDR}"
         externalTrafficPolicy: Cluster
@@ -64,7 +65,7 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        className: internal
         hosts:
           - host: &host syncthing.${SECRET_DOMAIN}
             paths:
