@@ -31,6 +31,20 @@ spec:
               tag: 4.4.1
             env:
               THELOUNGE_HOME: /config
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 500Mi
+        statefulset:
+          volumeClaimTemplates:
+            - name: config
+              accessMode: ReadWriteOnce
+              size: 1Gi
+              storageClass: longhorn-config
+              globalMounts:
+                      - path: /config
     service:
       main:
         ports:
@@ -62,16 +76,3 @@ spec:
     #   runAsGroup: 568
     #   fsGroup: 568
     #   fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn-config
-        globalMounts:
-                - path: /config
-    resources:
-      requests:
-        cpu: 10m
-        memory: 250Mi
-      limits:
-        memory: 500Mi
