@@ -22,26 +22,27 @@ spec:
       retries: 5
   values:
     controller:
-      replicas: 2
-      strategy: RollingUpdate
-      annotations:
-        reloader.stakater.com/auto: "true"
-      containers:
-        main:
-          image:
-            repository: ghcr.io/gethomepage/homepage
-            tag: v0.7.3
-          env:
-            TZ: ${TIMEZONE}
-          envFrom:
-            - secretRef:
-                name: homepage-secret
-          resources:
-            requests:
-              cpu: 15m
-              memory: 200M
-            limits:
-              memory: 500Mi
+      main:
+        replicas: 2
+        strategy: RollingUpdate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v0.7.3
+            env:
+              TZ: ${TIMEZONE}
+            envFrom:
+              - secretRef:
+                  name: homepage-secret
+            resources:
+              requests:
+                cpu: 15m
+                memory: 200M
+              limits:
+                memory: 500Mi
     service:
       main:
         ports:
