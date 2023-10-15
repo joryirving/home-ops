@@ -5,33 +5,32 @@ metadata:
   name: &app thelounge
   namespace: default
 spec:
-  interval: 15m
+  interval: 30m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
-      retries: 3
+      retries: 5
   upgrade:
-    cleanupOnFail: true
     remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
+      retries: 5
   values:
-    controller:
-      type: statefulset
-    image:
-      repository: ghcr.io/thelounge/thelounge
-      tag: 4.4.1
-    env:
-      THELOUNGE_HOME: /config
+    controllers:
+      main:
+        type: statefulset
+        containers:
+          main:
+            image:
+              repository: ghcr.io/thelounge/thelounge
+              tag: 4.4.1
+            env:
+              THELOUNGE_HOME: /config
     service:
       main:
         ports:
@@ -40,7 +39,7 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: external
+        className: external
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/group: Home
@@ -52,6 +51,9 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
@@ -62,10 +64,11 @@ spec:
     #   fsGroupChangePolicy: OnRootMismatch
     volumeClaimTemplates:
       - name: config
-        mountPath: /config
         accessMode: ReadWriteOnce
         size: 1Gi
         storageClass: longhorn-config
+        globalMounts:
+                - path: /config
     resources:
       requests:
         cpu: 10m
