@@ -21,16 +21,15 @@ spec:
     remediation:
       retries: 5
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: "OnRootMismatch"
     controllers:
       main:
         type: statefulset
-        statefulset:
-          volumeClaimTemplates:
-          - name: config
-            mountPath: /config
-            accessMode: ReadWriteOnce
-            size: 5Gi
-            storageClass: longhorn-config
         containers:
           main:
             image:
@@ -38,6 +37,26 @@ spec:
               tag: 2023.10.3@sha256:888ca6d7de294d28745c1ff0e9c33593371d4dbb46ba4d6754e0427339aaf71c
             env:
               TZ: ${TIMEZONE}
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 50m
+                memory: 400Mi
+              limits:
+                memory: 700Mi
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            mountPath: /config
+            accessMode: ReadWriteOnce
+            size: 5Gi
+            storageClass: longhorn-config
     service:
       main:
         type: LoadBalancer
@@ -68,21 +87,3 @@ spec:
         tls:
           - hosts:
               - *host
-    probes:
-      liveness:
-        enabled: false
-      readiness:
-        enabled: false
-      startup:
-        enabled: false
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-    resources:
-      requests:
-        cpu: 50m
-        memory: 400M
-      limits:
-        memory: 700M
