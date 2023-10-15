@@ -9,42 +9,59 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
-      interval: 30m
+      version: 2.0.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
-      retries: 3
+      retries: 5
   upgrade:
-    cleanupOnFail: true
     remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
+      retries: 5
   values:
-    initContainers:
-      01-init-db:
-        image: ghcr.io/onedr0p/postgres-init:14.9
-        imagePullPolicy: IfNotPresent
-        envFrom: &envFrom
-          - secretRef:
-              name: paperless-secret
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: ghcr.io/paperless-ngx/paperless-ngx
-      tag: 1.17.4
-    envFrom:
-      - secretRef:
-          name: paperless-secret
-      - configMapRef:
-          name: paperless-configmap
+    controllers:
+      main:
+        type: statefulset
+        statefulset:
+          volumeClaimTemplates:
+            - name: data
+              mountPath: /data/local
+              accessMode: ReadWriteOnce
+              size: 15Gi
+              storageClass: longhorn-config
+        annotations:
+          secret.reloader.stakater.com/reload: &secret paperless-secret
+        initContainers:
+          01-init-db:
+            image:
+              repository: ghcr.io/onedr0p/postgres-init
+              tag: 14.9
+              pullPolicy: IfNotPresent
+            envFrom:
+              - secretRef:
+                  name: *secret
+        containers:
+          main:
+            image:
+              repository: ghcr.io/paperless-ngx/paperless-ngx
+              tag: 1.17.4
+            envFrom:
+              - secretRef:
+                  name: *secret
+              - configMapRef:
+                  name: paperless-configmap
+            resources:
+              requests:
+                cpu: 15m
+                memory: 1000M
+              limits:
+                memory: 1800M
+          redis:
+            image:
+              repository: public.ecr.aws/docker/library/redis
+              tag: 7.2.1
     service:
       main:
         ports:
@@ -63,6 +80,9 @@ spec:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
@@ -79,15 +99,4 @@ spec:
         type: nfs
         server: ${NAS_IP}
         path: ${SECRET_NFS_PAPERLESS}/export
-    resources:
-      requests:
-        cpu: 15m
-        memory: 1000M
-      limits:
-        memory: 1800M
-    volumeClaimTemplates:
-      - name: data
-        mountPath: /data/local
-        accessMode: ReadWriteOnce
-        size: 15Gi
-        storageClass: longhorn-config
+
