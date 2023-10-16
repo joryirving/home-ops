@@ -25,6 +25,8 @@ spec:
       namespace: default
   values:
     defaultPodOptions:
+      nodeSelector:
+        intel.feature.node.kubernetes.io/gpu: "true"
       securityContext:
         runAsUser: 568
         runAsGroup: 568
@@ -75,9 +77,6 @@ spec:
               accessMode: ReadWriteOnce
               size: 1Gi
               storageClass: longhorn-config
-        pod:
-          nodeSelector:
-            zigbee.feature.node.kubernetes.io/sonoff: "true"
     persistence:
       usb:
         enabled: true
