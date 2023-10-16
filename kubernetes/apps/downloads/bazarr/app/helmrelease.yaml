@@ -41,6 +41,11 @@ spec:
             env:
               TZ: ${TIMEZONE}
             envFrom: *envFrom
+            securityContext:
+              runAsUser: 568
+              runAsGroup: 568
+              fsGroup: 568
+              fsGroupChangePolicy: OnRootMismatch
             resources:
               requests:
                 cpu: 10m
@@ -62,14 +67,6 @@ spec:
                 memory: 10M
               limits:
                 memory: 128M
-        pod:
-          securityContext:
-            runAsUser: 568
-            runAsGroup: 568
-            fsGroup: 568
-            fsGroupChangePolicy: OnRootMismatch
-            supplementalGroups:
-              - 10000
         statefulset:
           volumeClaimTemplates:
           - name: config
