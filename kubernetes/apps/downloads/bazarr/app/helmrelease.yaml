@@ -69,12 +69,14 @@ spec:
                 memory: 128M
         statefulset:
           volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 1Gi
-            storageClass: longhorn-config
-            globalMounts:
-              - path: /config
+            - name: config
+              accessMode: ReadWriteOnce
+              size: 1Gi
+              storageClass: longhorn-config
+              advancedMounts:
+                main:
+                  main:
+                    - path: /config
     service:
       main:
         ports:
