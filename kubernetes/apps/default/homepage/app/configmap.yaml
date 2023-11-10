@@ -52,12 +52,12 @@ data:
   kubernetes.yaml: |
     mode: cluster
   services.yaml: |
-    - Media:
+    - Calendar:
         - Calendar:
             widget:
               type: calendar
               firstDayInWeek: sunday # optional - defaults to monday
-              view: monthly # optional - possible values monthly, agenda
+              #view: monthly # optional - possible values monthly, agenda
               maxEvents: 10 # optional - defaults to 10
               integrations: # optional
                 - type: sonarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
@@ -69,6 +69,7 @@ data:
                 - type: readarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
                   service_group: Downloads # group name where widget exists
                   service_name: Readarr # service name for that widget
+    - Media:
         - Tdarr:
             href: https://tdarr.${SECRET_DOMAIN}
             icon: tdarr.png
@@ -138,9 +139,13 @@ data:
     color: slate
     headerStyle: clean
     layout:
+      Calendar:
+        style: row
+        columns: 1
+        icon: mdi-calendar
       Media:
         style: row
-        columns: 2
+        columns: 1
         icon: mdi-play-circle
       Infrastructure:
         style: row
