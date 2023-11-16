@@ -39,11 +39,12 @@ spec:
               GENERIC_TIMEZONE: ${TIMEZONE}
         statefulset:
           volumeClaimTemplates:
-            - name: config
-              mountPath: /data
-              accessMode: ReadWriteOnce
-              size: 1Gi
-              storageClass: longhorn-config
+          - name: config
+            accessMode: ReadWriteOnce
+            size: 1Gi
+            storageClass: longhorn-config
+            globalMounts:
+              - path: /data
             resources:
               requests:
                 cpu: 15m
