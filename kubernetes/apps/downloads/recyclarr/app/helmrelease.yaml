@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -28,49 +29,52 @@ spec:
     - name: longhorn
       namespace: storage
   values:
-    initContainers:
-      01-init-config:
-        image: public.ecr.aws/docker/library/busybox:latest
-        imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "-c", "cp /tmp/config/recyclarr.yml /config/recyclarr.yml"]
-        volumeMounts:
-          - { name: config-file, mountPath: /tmp/config }
-          - { name: config, mountPath: /config }
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: ghcr.io/recyclarr/recyclarr
-      tag: 6.0.2
-    env:
-      TZ: ${TIMEZONE}
-    envFrom:
-      - secretRef:
-          name: recyclarr-secret
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/recyclarr/recyclarr
+              tag: 6.0.2
+            env:
+              TZ: ${TIMEZONE}
+            envFrom:
+              - secretRef:
+                  name: recyclarr-secret
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64M
+              limits:
+                memory: 128M
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            accessMode: ReadWriteOnce
+            size: 1Gi
+            storageClass: longhorn-config
+            globalMounts:
+              - path: /config
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
     service:
       main:
         enabled: false
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn-config
     persistence:
-      config-file:
+      config:
         enabled: true
+        existingClaim: recyclarr
+      config-file:
         type: configMap
         name: recyclarr-configmap
-        mountPath: "-"
-    resources:
-      requests:
-        cpu: 15m
-        memory: 80M
-      limits:
-        memory: 150M
+        globalMounts:
+          - path: /config/recyclarr.yml
+            subPath: recyclarr.yml
+            readOnly: true
+

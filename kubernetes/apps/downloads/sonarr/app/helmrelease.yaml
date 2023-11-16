@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -28,28 +29,52 @@ spec:
     - name: longhorn
       namespace: storage
   values:
-    initContainers:
-      01-init-db:
-        image: ghcr.io/onedr0p/postgres-init:14.9
-        imagePullPolicy: IfNotPresent
-        envFrom: &envFrom
-          - secretRef:
-              name: sonarr-secret
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: ghcr.io/onedr0p/sonarr-develop
-      tag: 4.0.0.720@sha256:f97d7435ebf86a41d0ddc3e300779745e52c89444d2e4465a6d55fb2a1bccece
-    env:
-      TZ: ${TIMEZONE}
-      SONARR__AUTHENTICATION_METHOD: External
-      SONARR__AUTHENTICATION_REQUIRED: DisabledForLocalAddresses
-      SONARR__INSTANCE_NAME: Sonarr
-      SONARR__PORT: &port 80
-      SONARR__LOG_LEVEL: info
-    envFrom: *envFrom
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          init-db:
+            image:
+              repository: ghcr.io/onedr0p/postgres-init
+              tag: 14.9
+              pullPolicy: IfNotPresent
+            envFrom: &envFrom
+              - secretRef:
+                  name: sonarr-secret
+        containers:
+          main:
+            image:
+              repository: ghcr.io/onedr0p/sonarr-develop
+              tag: 4.0.0.720@sha256:f97d7435ebf86a41d0ddc3e300779745e52c89444d2e4465a6d55fb2a1bccece
+            env:
+              TZ: ${TIMEZONE}
+              SONARR__AUTHENTICATION_METHOD: External
+              SONARR__AUTHENTICATION_REQUIRED: DisabledForLocalAddresses
+              SONARR__INSTANCE_NAME: Sonarr
+              SONARR__PORT: &port 80
+              SONARR__LOG_LEVEL: info
+            envFrom: *envFrom
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+              limits:
+                memory: 1000Mi
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            accessMode: ReadWriteOnce
+            size: 2Gi
+            storageClass: longhorn-config
+            globalMounts:
+              - path: /config
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
     service:
       main:
         ports:
@@ -73,12 +98,12 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        className: internal
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: sonarr.png
-          gethomepage.dev/name: Sonarr
           gethomepage.dev/group: Downloads
+          gethomepage.dev/name: Sonarr
+          gethomepage.dev/icon: sonarr.png
           gethomepage.dev/widget.type: sonarr
           gethomepage.dev/widget.url: http://sonarr.downloads
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_SONARR_TOKEN}}"
@@ -90,44 +115,14 @@ spec:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    metrics:
-      enabled: true
-      serviceMonitor:
-        interval: 3m
-        scrapeTimeout: 1m
-      prometheusRule:
-        enabled: true
-      exporter:
-        image:
-          repository: ghcr.io/onedr0p/exportarr
-          tag: v1.6.0
-        env:
-          port: 9794
-          additionalMetrics: true
-          unknownQueueItems: true
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 2Gi
-        storageClass: longhorn-config
     persistence:
       media:
-        enabled: true
         existingClaim: downloads
-        mountPath: /data
-    resources:
-      requests:
-        cpu: 10m
-        memory: 250Mi
-      limits:
-        memory: 1000Mi
+        globalMounts:
+          - path: /data/

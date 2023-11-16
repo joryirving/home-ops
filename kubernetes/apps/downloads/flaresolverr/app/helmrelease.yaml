@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,19 +10,38 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
   values:
-    image:
-      repository: ghcr.io/flaresolverr/flaresolverr
-      tag: v3.3.10
-    controller:
-      replicas: 1 # active nas
-    env:
-      TZ: ${TIMEZONE}
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/flaresolverr/flaresolver
+              tag: v3.3.10
+            resources:
+              requests:
+                cpu: 50m
+                memory: 150Mi
+              limits:
+                cpu: 1
+                memory: 300Mi
     service:
       main:
         enabled: true

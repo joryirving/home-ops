@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,32 +10,27 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.0.3
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
+  maxHistory: 2
   install:
     remediation:
-      retries: 5
+      retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
-      retries: 5
-  dependsOn:
-    - name: mosquitto
-      namespace: default
+      retries: 3
+  uninstall:
+    keepHistory: false
   values:
     defaultPodOptions:
       nodeSelector:
         zigbee.feature.node.kubernetes.io/sonoff: "true"
-      securityContext:
-        runAsUser: 568
-        runAsGroup: 568
-        fsGroup: 568
-        fsGroupChangePolicy: "OnRootMismatch"
     controllers:
       main:
-        type: statefulset
         containers:
           main:
             image:
@@ -70,6 +66,12 @@ spec:
               ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_OUTPUT: '["console"]'
               ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "true"
               ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: false
+            resources:
+              requests:
+                cpu: 10m
+                memory: 100Mi
+              limits:
+                memory: 500Mi
         statefulset:
           volumeClaimTemplates:
             - name: data
@@ -78,6 +80,12 @@ spec:
               storageClass: longhorn-config
               globalMounts:
                 - path: /config
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
     persistence:
       usb:
         enabled: true
@@ -113,9 +121,3 @@ spec:
             path: /metrics
             interval: 1m
             scrapeTimeout: 10s
-    resources:
-      requests:
-        cpu: 10m
-        memory: 100Mi
-      limits:
-        memory: 500Mi

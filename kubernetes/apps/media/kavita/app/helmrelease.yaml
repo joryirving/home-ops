@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,12 +10,12 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -25,15 +26,23 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: kizaing/kavita
-      tag: 0.7.8@sha256:48b3c2c07f90feb4641ddb791f96a1bf6e70a2b27da8c8b2ca0cc2c627b91d72
-    env:
-      TZ: ${TIMEZONE}
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: kizaing/kavita
+              tag: 0.7.8@sha256:48b3c2c07f90feb4641ddb791f96a1bf6e70a2b27da8c8b2ca0cc2c627b91d72
+            env:
+              TZ: ${TIMEZONE}
+            resources:
+              requests:
+                cpu: 15m
+                memory: 300M
+              limits:
+                memory: 700M
     service:
       main:
         ports:
@@ -42,12 +51,12 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: external
+        className: external
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: kavita.png
-          gethomepage.dev/name: Kavita
           gethomepage.dev/group: Media
+          gethomepage.dev/name: Kavita
+          gethomepage.dev/icon: kavita.png
           gethomepage.dev/widget.type: kavita
           gethomepage.dev/widget.url: http://kavita.media:5000
           gethomepage.dev/widget.username: "{{HOMEPAGE_VAR_KAVITA_USERNAME}"
@@ -57,25 +66,23 @@ spec:
           - host: &host comics.${SECRET_DOMAIN}
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            accessMode: ReadWriteOnce
+            size: 1Gi
+            storageClass: longhorn-config
+            globalMounts:
+              - path: /kavita/config
         tls:
           - hosts:
               - *host
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /kavita/config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn-config
     persistence:
       media:
-        enabled: true
         existingClaim: media
-        mountPath: /data
-        subPath: media
-    resources:
-      requests:
-        cpu: 15m
-        memory: 300M
-      limits:
-        memory: 700M
+        globalMounts:
+          - path: /data/
+          subPath: media

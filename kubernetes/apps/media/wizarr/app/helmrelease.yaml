@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,12 +10,12 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -25,15 +26,31 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: ghcr.io/wizarrrr/wizarr
-      tag: 3.4.8
-    env:
-      TZ: ${TIMEZONE}
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository:  ghcr.io/wizarrrr/wizarr
+              tag: 3.4.8
+            env:
+              TZ: ${TIMEZONE}
+            resources:
+              requests:
+                cpu: 15m
+                memory: 180M
+              limits:
+                memory: 300M
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            accessMode: ReadWriteOnce
+            size: 1Gi
+            storageClass: longhorn-config
+            globalMounts:
+              - path: /data/database
     service:
       main:
         ports:
@@ -42,12 +59,12 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: external
+        className: external
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: wizarr.png
-          gethomepage.dev/name: Wizarr
           gethomepage.dev/group: Media
+          gethomepage.dev/name: Wizarr
+          gethomepage.dev/icon: wizarr.png
           # gethomepage.dev/widget.type: wizarr
           # gethomepage.dev/widget.url: http://wizarr.media.svc.cluster.local:5690
           # gethomepage.dev/widget.key: ${WIZARR_TOKEN}
@@ -56,19 +73,9 @@ spec:
           - host: &host "join.${SECRET_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /data/database
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn-config
-    resources:
-      requests:
-        cpu: 15m
-        memory: 180M
-      limits:
-        memory: 300M

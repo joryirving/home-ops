@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -24,37 +25,45 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
-  dependsOn:
-    - name: longhorn
-      namespace: storage
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: mrcas/kapowarr
-      tag: v1.0.0-beta-3
-    env:
-      TZ: ${TIMEZONE}
-      # kapowarr__INSTANCE_NAME: kapowarr
-      # kapowarr__PORT: &port 80
-      # kapowarr__LOG_LEVEL: info
-      # kapowarr__API_KEY: ${kapowarr_TOKEN}
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: mrcas/kapowarr
+              tag: v1.0.0-beta-3
+            env:
+              TZ: ${TIMEZONE}
+            resources:
+              requests:
+                cpu: 15m
+                memory: 350M
+              limits:
+                memory: 600M
+        statefulset:
+          volumeClaimTemplates:
+            - name: config
+              mountPath: /app/db
+              accessMode: ReadWriteOnce
+              size: 2Gi
+              storageClass: longhorn-config
     service:
       main:
         ports:
           http:
-            port: &port 5656
+            port: 5656
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        className: internal
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: calibre-web.png
-          gethomepage.dev/name: Kapowarr
           gethomepage.dev/group: Downloads
+          gethomepage.dev/name: Kapowarr
+          gethomepage.dev/icon: calibre-web.png
           # gethomepage.dev/widget.type: kapowarr
           # gethomepage.dev/widget.url: http://kapowarr.downloads.svc.cluster.local:5656
           # gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_KAPOWARR_TOKEN}}"
@@ -67,28 +76,14 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    # podSecurityContext:
-    #   runAsUser: 568
-    #   runAsGroup: 568
-    #   fsGroup: 568
-    #   fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /app/db
-        accessMode: ReadWriteOnce
-        size: 2Gi
-        storageClass: longhorn-config
     persistence:
       media:
-        enabled: true
         existingClaim: downloads
-        mountPath: /data
-    resources:
-      requests:
-        cpu: 15m
-        memory: 350M
-      limits:
-        memory: 600M
+        globalMounts:
+          - path: /data/

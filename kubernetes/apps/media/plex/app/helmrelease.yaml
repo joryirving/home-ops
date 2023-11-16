@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,12 +10,12 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -25,20 +26,48 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: ghcr.io/onedr0p/plex
-      tag: 1.32.7.7621-871adbd44@sha256:f9f77dc5e17cab9fae5ece663a64d026e3c75142b3b60bb4a52bf061957412be
-    env:
-      TZ: ${TIMEZONE}
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/onedr0p/plex
+              tag: 1.32.7.7621-871adbd44@sha256:f9f77dc5e17cab9fae5ece663a64d026e3c75142b3b60bb4a52bf061957412be
+            env:
+              TZ: ${TIMEZONE}
+            resources:
+              requests:
+                cpu: 100m
+                gpu.intel.com/i915: 1
+                memory: 4G
+              limits:
+                gpu.intel.com/i915: 1
+                memory: 16G
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            accessMode: ReadWriteOnce
+            size: 20Gi
+            storageClass: longhorn-plex
+            globalMounts:
+              - path: /config
+        pod:
+          nodeSelector:
+            node-role.kubernetes.io/worker: "true"
+            intel.feature.node.kubernetes.io/gpu: "true"
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+            supplementalGroups: [105]
     service:
       main:
         type: LoadBalancer
         annotations:
-          io.cilium/lb-ipam-ips: "${SVC_PLEX_ADDR}"
+          io.cilium/lb-ipam-ips: ${SVC_PLEX_ADDR}
         externalTrafficPolicy: Cluster
         ports:
           http:
@@ -46,12 +75,12 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: external
+        className: external
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: plex.png
-          gethomepage.dev/name: Plex Kubernetes
           gethomepage.dev/group: Media
+          gethomepage.dev/name: Plex
+          gethomepage.dev/icon: plex.png
           gethomepage.dev/widget.type: plex
           gethomepage.dev/widget.url: http://plex.media:32400
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
@@ -60,51 +89,17 @@ spec:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-      supplementalGroups:
-        # - 44
-        - 105
-        # - 65539
-
-    nodeSelector:
-      node-role.kubernetes.io/worker: "true"
-      intel.feature.node.kubernetes.io/gpu: "true"
-
-    resources:
-      requests:
-        cpu: 100m
-        gpu.intel.com/i915: 1
-        memory: 4G
-      limits:
-        gpu.intel.com/i915: 1
-        memory: 16G
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 20Gi
-        storageClass: longhorn-plex
     persistence:
       media:
-        enabled: true
         existingClaim: media
-        mountPath: /data
-        subPath: media
+        globalMounts:
+          - path: /data/
+          subPath: media
       transcode:
-        enabled: true
         type: emptyDir
-      plex-profile:
-        enabled: true
-        type: configMap
-        name: plex-profile-configmap
-        subPath: Chromecast.xml
-        mountPath: /usr/lib/plexmediaserver/Resources/Profiles/Chromecast.xml
-        readOnly: true

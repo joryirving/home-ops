@@ -1,15 +1,17 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: qbittorrent
   namespace: downloads
 spec:
-  interval: 10m
+  interval: 30m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
+      interval: 30m
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -27,55 +29,70 @@ spec:
   dependsOn:
     - name: longhorn
       namespace: storage
-    - name: downloads-gateway
-      namespace: vpn
   values:
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: ghcr.io/onedr0p/qbittorrent
-      tag: 4.6.0
-    env:
-      TZ: ${TIMEZONE}
-      QBITTORRENT__PORT: &port 8080
-      QBITTORRENT__BT_PORT: &port-bt "${SECRET_VPN_FORWARDED_PORT_1}"
-    # podAnnotations:
-    #   setGateway: "true"
-    hostname: qbittorrent-0
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/onedr0p/qbittorrent
+              tag: 4.6.0
+            env:
+              TZ: ${TIMEZONE}
+              QBITTORRENT__PORT: &port 8080
+              QBITTORRENT__BT_PORT: &port-bt "${SECRET_VPN_FORWARDED_PORT_1}"
+            resources:
+              requests:
+                cpu: 25m
+                memory: 1G
+              limits:
+                memory: 10G
+          reannounce:
+            image:
+              repository: ghcr.io/buroa/qbittools
+              tag: v0.10.0
+            args: ["reannounce", "-s", "localhost", "-p", "8080"]
+        pod:
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values: ["sabnzbd"]
+                  topologyKey: kubernetes.io/hostname
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
     service:
       main:
         ports:
           http:
             port: *port
       bittorrent:
-        enabled: true
+        controller: main
         type: LoadBalancer
         annotations:
           io.cilium/lb-ipam-ips: ${SVC_QBITTTORENT_ADDR}
-        labels:
-          io.cilium/lb-ipam-layer2: "true"
         ports:
-          bittorrent-tcp:
+          bittorrent:
             enabled: true
             port: *port-bt
             protocol: TCP
-            targetPort: *port-bt
-          bittorrent-udp:
-            enabled: true
-            port: *port-bt
-            protocol: UDP
-            targetPort: *port-bt
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        className: internal
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: qbittorrent.png
-          gethomepage.dev/name: qBittorrent
           gethomepage.dev/group: Downloads
+          gethomepage.dev/name: qBittorrent
+          gethomepage.dev/icon: qbittorrent.png
           gethomepage.dev/widget.type: qbittorrent
           gethomepage.dev/widget.url: http://qbittorrent.downloads:8080
           gethomepage.dev/widget.username: "{{HOMEPAGE_VAR_QBITTORRENT_USERNAME}}"
@@ -91,58 +108,18 @@ spec:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    metrics:
-      enabled: true
-      exporter:
-        image:
-          repository: ghcr.io/k8s-at-home/prometheus-qbittorrent-exporter
-          tag: v1.2.0
-      serviceMonitor:
-        interval: 1m
-        scrapeTimeout: 10s
-      prometheusRule:
-        enabled: true
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 1Gi
-        storageClass: longhorn-config
     persistence:
       media:
         enabled: true
         existingClaim: downloads
-        mountPath: /downloads
-        subPath: torrents
-      # incomplete:
-      #   enabled: true
-      #   type: emptyDir
-    affinity:
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values: ["sabnzbd"]
-            topologyKey: kubernetes.io/hostname
-    resources:
-      requests:
-        cpu: 25m
-        memory: 1G
-      limits:
-        memory: 10G
-    sidecars:
-      reannounce:
-        image: ghcr.io/buroa/qbittools:v0.10.0
-        imagePullPolicy: IfNotPresent
-        args: ["reannounce", "-s", "localhost", "-p", "8080"]
+        advancedMounts:
+          main:
+            main:
+              - path: /downloads
+                subPath: torrents

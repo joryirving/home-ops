@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,23 +10,26 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.0.3
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
+  maxHistory: 2
   install:
     remediation:
-      retries: 5
+      retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
-      retries: 5
+      retries: 3
+  uninstall:
+    keepHistory: false
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
-          secret.reloader.stakater.com/reload: &secret paperless-secret
+          reloader.stakater.com/auto: "true"
         initContainers:
           01-init-db:
             image:
@@ -61,8 +65,10 @@ spec:
               accessMode: ReadWriteOnce
               size: 15Gi
               storageClass: longhorn-config
-              globalMounts:
-                - path: /data/local
+              advancedMounts:
+                main:
+                  main:
+                    - path: /data/local
     service:
       main:
         ports:

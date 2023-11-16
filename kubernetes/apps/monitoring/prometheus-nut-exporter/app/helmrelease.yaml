@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,12 +10,12 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -24,20 +25,29 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
-
   values:
-    nameOverride: *app
-    image:
-      repository: ghcr.io/druggeri/nut_exporter
-      tag: "3.0.0"
-      pullPolicy: IfNotPresent
-    podAnnotations:
-      reloader.stakater.com/auto: "true"
-    env:
-      TZ: ${TIMEZONE}
-    args:
-      # the first time I set this, the first and last entries were ignored, so I have doubled them.
-      - --nut.vars_enable="battery.charge,battery.charge,battery.runtime,battery.voltage,battery.voltage.nominal,input.voltage,input.voltage.nominal,ups.load,ups.status,ups.status"
+    fullnameOverride: *app
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/druggeri/nut_exporter
+                tag: "3.0.0"
+            env:
+              TZ: ${TIMEZONE}
+            args:
+              # the first time I set this, the first and last entries were ignored, so I have doubled them.
+              - --nut.vars_enable="battery.charge,battery.charge,battery.runtime,battery.voltage,battery.voltage.nominal,input.voltage,input.voltage.nominal,ups.load,ups.status,ups.status"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 100Mi
+              limits:
+                cpu: 100m
+                memory: 100Mi
     service:
       main:
         ports:
@@ -47,15 +57,5 @@ spec:
             enabled: true
             protocol: TCP
             port: 9199
-        # type: LoadBalancer
-        # externalTrafficPolicy: Cluster
-        # ipFamilyPolicy: PreferDualStack
         annotations:
           external-dns.alpha.kubernetes.io/hostname: "exporters.${CLUSTER_DOMAIN}"
-    resources:
-      requests:
-        cpu: 50m
-        memory: 100Mi
-      limits:
-        cpu: 100m
-        memory: 100Mi

@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,29 +10,24 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.0.3
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
+  maxHistory: 2
   install:
     remediation:
-      retries: 5
+      retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
-      retries: 5
+      retries: 3
+  uninstall:
+    keepHistory: false
   values:
     controllers:
       main:
-        type: statefulset
-        statefulset:
-          volumeClaimTemplates:
-            - name: config
-              accessMode: ReadWriteOnce
-              size: 1Gi
-              storageClass: longhorn-config
-              globalMounts:
-                - path: /config
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -50,11 +46,6 @@ spec:
             env:
               TZ: ${TIMEZONE}
             envFrom: *envFrom
-            securityContext:
-              runAsUser: 568
-              runAsGroup: 568
-              fsGroup: 568
-              fsGroupChangePolicy: OnRootMismatch
             resources:
               requests:
                 cpu: 10m
@@ -76,6 +67,20 @@ spec:
                 memory: 10M
               limits:
                 memory: 128M
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+        statefulset:
+          volumeClaimTemplates:
+            - name: config
+              accessMode: ReadWriteOnce
+              size: 1Gi
+              storageClass: longhorn-config
+              globalMounts:
+                - path: /config
     service:
       main:
         ports:
@@ -87,9 +92,9 @@ spec:
         className: internal
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: bazarr.png
-          gethomepage.dev/name: Bazarr
           gethomepage.dev/group: Downloads
+          gethomepage.dev/name: Bazarr
+          gethomepage.dev/icon: bazarr.png
           gethomepage.dev/widget.type: bazarr
           gethomepage.dev/widget.url: http://bazarr.downloads:6767
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_BAZARR_TOKEN}}"

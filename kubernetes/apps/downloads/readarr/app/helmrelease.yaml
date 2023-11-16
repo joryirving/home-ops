@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -9,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -28,26 +29,50 @@ spec:
     - name: longhorn
       namespace: storage
   values:
-    initContainers:
-      01-init-db:
-        image: ghcr.io/onedr0p/postgres-init:14.9
-        imagePullPolicy: IfNotPresent
-        envFrom: &envFrom
-          - secretRef:
-              name: readarr-secret
-    controller:
-      type: statefulset
-      annotations:
-        reloader.stakater.com/auto: "true"
-    image:
-      repository: ghcr.io/onedr0p/readarr-develop
-      tag: 0.3.10.2287@sha256:c8e4418f32af29d42d4c277dd3696a4c5d905965053a937f66c2c3773c973466
-    env:
-      TZ: ${TIMEZONE}
-      READARR__INSTANCE_NAME: Readarr
-      READARR__PORT: &port 80
-      READARR__LOG_LEVEL: info
-    envFrom: *envFrom
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          init-db:
+            image:
+              repository: ghcr.io/onedr0p/postgres-init
+              tag: 14.9
+              pullPolicy: IfNotPresent
+            envFrom: &envFrom
+              - secretRef:
+                  name: readarr-secret
+        containers:
+          main:
+            image:
+              repository: ghcr.io/onedr0p/readarr-develop
+              tag: 0.3.10.2287@sha256:c8e4418f32af29d42d4c277dd3696a4c5d905965053a937f66c2c3773c973466
+            env:
+              TZ: ${TIMEZONE}
+              READARR__INSTANCE_NAME: Readarr
+              READARR__PORT: &port 80
+              READARR__LOG_LEVEL: info
+            envFrom: *envFrom
+            resources:
+              requests:
+                cpu: 15m
+                memory: 160M
+              limits:
+                memory: 330M
+        statefulset:
+          volumeClaimTemplates:
+          - name: config
+            accessMode: ReadWriteOnce
+            size: 2Gi
+            storageClass: longhorn-config
+            globalMounts:
+              - path: /config
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
     service:
       main:
         ports:
@@ -56,12 +81,12 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        className: internal
         annotations:
           gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: readarr.png
-          gethomepage.dev/name: Readarr
           gethomepage.dev/group: Downloads
+          gethomepage.dev/name: Readarr
+          gethomepage.dev/icon: readarr.png
           gethomepage.dev/widget.type: readarr
           gethomepage.dev/widget.url: http://readarr.downloads
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_READARR_TOKEN}}"
@@ -73,29 +98,14 @@ spec:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-    volumeClaimTemplates:
-      - name: config
-        mountPath: /config
-        accessMode: ReadWriteOnce
-        size: 2Gi
-        storageClass: longhorn-config
     persistence:
       media:
-        enabled: true
         existingClaim: downloads
-        mountPath: /data
-    resources:
-      requests:
-        cpu: 15m
-        memory: 160M
-      limits:
-        memory: 330M
+        globalMounts:
+          - path: /data/

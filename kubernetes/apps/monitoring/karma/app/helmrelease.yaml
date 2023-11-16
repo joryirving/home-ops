@@ -1,20 +1,21 @@
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: karma
   namespace: monitoring
 spec:
-  interval: 15m
+  interval: 30m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 2.2.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
+  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -25,11 +26,23 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    image:
-      repository: ghcr.io/prymitive/karma
-      tag: v0.116
-    env:
-      ALERTMANAGER_URI: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/prymitive/karma
+              tag: v0.116
+            env:
+              ALERTMANAGER_URI: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
+            resources:
+              requests:
+                cpu: 100m
+                memory: 100Mi
+              limits:
+                memory: 500Mi
     service:
       main:
         ports:
@@ -41,20 +54,16 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: external
+        className: external
         annotations:
           external-dns.alpha.kubernetes.io/target: "external.${SECRET_DOMAIN}"
         hosts:
           - host: &host karma.${SECRET_DOMAIN}
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  name: main
+                  port: http
         tls:
           - hosts:
               - *host
-    resources:
-      requests:
-        cpu: 100m
-        memory: 100Mi
-      limits:
-        memory: 500Mi
