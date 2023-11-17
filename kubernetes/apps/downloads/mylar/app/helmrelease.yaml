@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -46,13 +45,6 @@ spec:
                 memory: 700M
               limits:
                 memory: 1200M
-        statefulset:
-          volumeClaimTemplates:
-            - name: config
-              mountPath: /config
-              accessMode: ReadWriteOnce
-              size: 2Gi
-              storageClass: longhorn-config
     service:
       main:
         ports:
@@ -86,6 +78,9 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: mylar-config
       media:
         existingClaim: downloads
         globalMounts:

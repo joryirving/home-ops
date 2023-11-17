@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -56,13 +55,6 @@ spec:
               requests:
                 cpu: 10m
                 memory: 500Mi
-        statefulset:
-          volumeClaimTemplates:
-            - name: config
-              mountPath: /config
-              accessMode: ReadWriteOnce
-              size: 2Gi
-              storageClass: longhorn-config
         pod:
           securityContext:
             runAsUser: 568
@@ -101,3 +93,7 @@ spec:
         tls:
           - hosts:
               - *host
+    persistence:
+      config:
+        enabled: true
+        existingClaim: prowlarr-config

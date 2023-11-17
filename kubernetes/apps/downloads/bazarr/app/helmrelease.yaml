@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -74,14 +73,6 @@ spec:
             runAsGroup: 568
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
-        statefulset:
-          volumeClaimTemplates:
-            - name: config
-              accessMode: ReadWriteOnce
-              size: 1Gi
-              storageClass: longhorn-config
-              globalMounts:
-                - path: /config
     service:
       main:
         ports:
@@ -120,3 +111,7 @@ spec:
           - path: /data/
       add-ons:
         type: emptyDir
+    persistence:
+      config:
+        enabled: true
+        existingClaim: bazarr-config

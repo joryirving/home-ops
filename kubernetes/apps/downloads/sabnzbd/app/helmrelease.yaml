@@ -31,7 +31,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -73,14 +72,6 @@ spec:
                 memory: 100Mi
               limits:
                 memory: 12Gi
-        statefulset:
-          volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 2Gi
-            storageClass: longhorn-config
-            globalMounts:
-              - path: /config
         pod:
           affinity:
             podAntiAffinity:
@@ -128,6 +119,9 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: sabnzbd-config
       media:
         existingClaim: downloads
         globalMounts:

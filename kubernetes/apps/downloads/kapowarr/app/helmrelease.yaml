@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -44,13 +43,6 @@ spec:
                 memory: 350M
               limits:
                 memory: 600M
-        statefulset:
-          volumeClaimTemplates:
-            - name: config
-              mountPath: /app/db
-              accessMode: ReadWriteOnce
-              size: 2Gi
-              storageClass: longhorn-config
     service:
       main:
         ports:
@@ -84,6 +76,13 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: kapowarr-config
+        advancedMounts:
+          main:
+            main:
+              - path: /app/db
       media:
         existingClaim: downloads
         globalMounts:

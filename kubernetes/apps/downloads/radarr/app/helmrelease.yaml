@@ -77,14 +77,6 @@ spec:
                 memory: 256M
               limits:
                 memory: 1Gi
-        statefulset:
-          volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 2Gi
-            storageClass: longhorn-config
-            globalMounts:
-              - path: /config
         pod:
           securityContext:
             runAsUser: 568
@@ -123,6 +115,9 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: radarr-config
       media:
         existingClaim: downloads
         globalMounts:

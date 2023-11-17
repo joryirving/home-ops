@@ -62,14 +62,6 @@ spec:
                 memory: 250Mi
               limits:
                 memory: 1000Mi
-        statefulset:
-          volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 2Gi
-            storageClass: longhorn-config
-            globalMounts:
-              - path: /config
         pod:
           securityContext:
             runAsUser: 568
@@ -123,6 +115,9 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: sonarr-config
       media:
         existingClaim: downloads
         globalMounts:
