@@ -1,9 +1,9 @@
 ---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/postgresql.cnpg.io/cluster_v1.json
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: postgres
-  namespace: database
+  name: postgres16
 spec:
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:16.0-10
@@ -13,46 +13,28 @@ spec:
     storageClass: local-path
   superuserSecret:
     name: cloudnative-pg-secret
+  enableSuperuserAccess: true
   bootstrap:
-    recovery:
-      source: &previousCluster postgres-v1
+    initdb:
+      import:
+        type: monolith
+        databases: ["*"]
+        roles: ["*"]
+        source:
+          externalCluster: postgres-v1
   postgresql:
     parameters:
       max_connections: "600"
       shared_buffers: 512MB
   monitoring:
     enablePodMonitor: true
-  backup:
-    retentionPolicy: 30d
-    barmanObjectStore:
-      wal:
-        compression: bzip2
-        maxParallel: 8
-      data:
-        compression: bzip2
-      destinationPath:  &destinationPath s3://postgresql/
-      endpointURL: &endpointURL https://s3.${SECRET_DOMAIN}
-      serverName: postgres-v2
-      s3Credentials:
-        accessKeyId:
-          name: &accessKeyname cloudnative-pg-secret
-          key: &accessKeykey aws-access-key-id
-        secretAccessKey:
-          name: &secretAccessKeyname cloudnative-pg-secret
-          key: &secretAccessKey aws-secret-access-key
-  # Note: externalClusters is needed when recovering from an existing cnpg cluster
   externalClusters:
-    - name: *previousCluster
-      barmanObjectStore:
-        wal:
-          compression: bzip2
-          maxParallel: 8
-        destinationPath: *destinationPath
-        endpointURL: *endpointURL
-        s3Credentials:
-          accessKeyId:
-            name: *accessKeyname
-            key: *accessKeykey
-          secretAccessKey:
-            name: *secretAccessKeyname
-            key: *secretAccessKey
+    - name: postgres-v1
+      connectionParameters:
+        host: postgres-rw.database.svc.cluster.local
+        user: postgres
+        dbname: postgres
+        sslmode: require
+      password:
+        name: cloudnative-pg-secret
+        key: password
