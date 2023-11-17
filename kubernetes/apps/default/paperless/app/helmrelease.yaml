@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -60,14 +59,6 @@ spec:
             image:
               repository: public.ecr.aws/docker/library/redis
               tag: 7.2.3
-        statefulset:
-          volumeClaimTemplates:
-            - name: data
-              accessMode: ReadWriteOnce
-              size: 15Gi
-              storageClass: longhorn-config
-              globalMounts:
-                - path: /data/local
     service:
       main:
         ports:
@@ -93,6 +84,9 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: paperless-config
       nas:
         enabled: true
         type: nfs

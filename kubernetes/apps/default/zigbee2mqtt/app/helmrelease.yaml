@@ -31,7 +31,6 @@ spec:
         zigbee.feature.node.kubernetes.io/sonoff: "true"
     controllers:
       main:
-        type: statefulset
         containers:
           main:
             image:
@@ -73,14 +72,6 @@ spec:
                 memory: 100Mi
               limits:
                 memory: 500Mi
-        statefulset:
-          volumeClaimTemplates:
-            - name: data
-              accessMode: ReadWriteOnce
-              size: 1Gi
-              storageClass: longhorn-config
-              globalMounts:
-                - path: /config
         pod:
           securityContext:
             runAsUser: 568
@@ -122,3 +113,7 @@ spec:
             path: /metrics
             interval: 1m
             scrapeTimeout: 10s
+    persistence:
+      config:
+        enabled: true
+        existingClaim: zigbee2mqtt-config
