@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -70,18 +69,17 @@ spec:
                 service:
                   name: main
                   port: http
-        statefulset:
-          volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 1Gi
-            storageClass: longhorn-config
-            globalMounts:
-              - path: /kavita/config
         tls:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: kavita-config
+        advancedMounts:
+          main:
+            main:
+              - path: /kavita/config
       media:
         existingClaim: media
         globalMounts:

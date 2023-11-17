@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -44,14 +43,6 @@ spec:
                 memory: 100M
               limits:
                 memory: 250M
-        statefulset:
-          volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 5Gi
-            storageClass: longhorn-config
-            globalMounts:
-              - path: /config
         pod:
           securityContext:
             runAsUser: 568
@@ -86,3 +77,7 @@ spec:
         tls:
           - hosts:
               - *host
+    persistence:
+      config:
+        enabled: true
+        existingClaim: tautulli-config

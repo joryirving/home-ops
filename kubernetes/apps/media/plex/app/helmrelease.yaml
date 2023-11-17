@@ -28,7 +28,6 @@ spec:
   values:
     controllers:
       main:
-        type: statefulset
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -46,14 +45,6 @@ spec:
               limits:
                 gpu.intel.com/i915: 1
                 memory: 16G
-        statefulset:
-          volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 20Gi
-            storageClass: longhorn-plex
-            globalMounts:
-              - path: /config
         pod:
           nodeSelector:
             node-role.kubernetes.io/worker: "true"
@@ -96,6 +87,9 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        existingClaim: plex-config
       media:
         existingClaim: media
         globalMounts:
