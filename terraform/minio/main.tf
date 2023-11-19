@@ -2,7 +2,8 @@ locals {
   buckets = [
     "longhorn",
     "postgresql",
-    "thanos"
+    "thanos",
+    "volsync"
   ]
 }
 
