@@ -13,7 +13,7 @@ metadata:
 spec:
   targetNamespace: default
   path: ./kubernetes/apps/default/home-assistant/app
-  prune: false
+  prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
