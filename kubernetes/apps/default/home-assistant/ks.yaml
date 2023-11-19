@@ -2,7 +2,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: home-assistant
+  name: &app home-assistant
   namespace: flux-system
 spec:
   path: ./kubernetes/apps/default/home-assistant/app
@@ -13,9 +13,12 @@ spec:
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2beta1
       kind: HelmRelease
-      name: home-assistant
-      namespace: default
+      name: *app
   wait: false # no flux ks dependents
   interval: 30m
   retryInterval: 1m
   timeout: 3m
+  postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_CAPACITY: 5Gi
