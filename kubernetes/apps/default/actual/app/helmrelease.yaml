@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: actual
+  name: &app actual
   namespace: default
 spec:
   interval: 30m
@@ -77,4 +77,4 @@ spec:
     persistence:
       data:
         enabled: true
-        existingClaim: actual-config
+        existingClaim: *app
