@@ -2,9 +2,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: plex-auto-languages
+  name: &app plex-auto-languages
   namespace: flux-system
 spec:
+  targetNamespace: media
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
   path: ./kubernetes/apps/media/plex-auto-languages/app
@@ -12,12 +16,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
-      kind: HelmRelease
-      name: plex-auto-languages
-      namespace: media
   wait: false # no flux ks dependents
   interval: 30m
   retryInterval: 1m
-  timeout: 3m
+  timeout: 5m

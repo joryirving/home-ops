@@ -2,9 +2,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: misc-gatus
+  name: &app misc-gatus
   namespace: flux-system
 spec:
+  targetNamespace: default
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
   dependsOn:
     - name: gatus
   path: ./kubernetes/apps/default/misc-gatus/app
@@ -15,4 +19,4 @@ spec:
   wait: false # no flux ks dependents
   interval: 30m
   retryInterval: 1m
-  timeout: 3m
+  timeout: 5m

@@ -2,11 +2,15 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: qbittorrent-pod-gateway-downloads
+  name: &app qbittorrent-pod-gateway-downloads
   namespace: flux-system
   labels:
     substitution.flux.home.arpa/enabled: "true"
 spec:
+  targetNamespace: monitoring
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
   path: ./kubernetes/apps/vpn/pod-gateway/downloads
   prune: true
   sourceRef:
@@ -15,4 +19,4 @@ spec:
   wait: false # no flux ks dependents
   interval: 30m
   retryInterval: 1m
-  timeout: 3m
+  timeout: 5m

@@ -2,9 +2,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: longhorn-recurring-jobs
+  name: &app longhorn-recurring-jobs
   namespace: flux-system
 spec:
+  targetNamespace: storage
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
   dependsOn:
     - name: longhorn
   path: ./kubernetes/apps/storage/longhorn-recurring-jobs/app
@@ -20,5 +24,4 @@ spec:
   wait: false # no flux ks dependents
   interval: 30m
   retryInterval: 1m
-  timeout: 3m
----
+  timeout: 5m
