@@ -3,7 +3,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: nginx-external
-  namespace: networking
+  namespace: &namespace networking
 spec:
   interval: 30m
   chart:
@@ -24,9 +24,6 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
-  dependsOn:
-    - name: cloudflared
-      namespace: networking
   values:
     fullnameOverride: nginx-external
     controller:
@@ -46,6 +43,7 @@ spec:
               operator: In
               values: ["external"]
       config:
+        block-user-agents: "GPTBot,~*GPTBot*,ChatGPT-User,~*ChatGPT-User*,Google-Extended,~*Google-Extended*,CCBot,~*CCBot*,Omgilibot,~*Omgilibot*,FacebookBot,~*FacebookBot*" # taken from https://github.com/superseriousbusiness/gotosocial/blob/main/internal/web/robots.go
         client-body-buffer-size: 100M
         client-body-timeout: 120
         client-header-timeout: 120
@@ -68,7 +66,7 @@ spec:
         enabled: true
         serviceMonitor:
           enabled: true
-          namespace: networking
+          namespace: *namespace
           namespaceSelector:
             any: true
       extraArgs:
