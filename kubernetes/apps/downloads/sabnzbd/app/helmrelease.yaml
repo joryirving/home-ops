@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: sabnzbd
+  name: &app sabnzbd
   namespace: downloads
 spec:
   interval: 30m
@@ -121,7 +121,7 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: sabnzbd-config
+        existingClaim: *app
       media:
         existingClaim: downloads
         globalMounts:

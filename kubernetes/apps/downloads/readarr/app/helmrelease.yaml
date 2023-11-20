@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: readarr
+  name: &app readarr
   namespace: downloads
 spec:
   interval: 30m
@@ -99,7 +99,7 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: readarr-config
+        existingClaim: *app
       media:
         existingClaim: downloads
         globalMounts:

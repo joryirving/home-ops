@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: kapowarr
+  name: &app kapowarr
   namespace: downloads
 spec:
   interval: 30m
@@ -78,7 +78,7 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: kapowarr-config
+        existingClaim: *app
         advancedMounts:
           main:
             main:
