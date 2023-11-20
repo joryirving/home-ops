@@ -9,6 +9,9 @@ x-task-vars: &task-vars
   ts: '{{.ts}}'
   ks: '{{.ks}}'
   previous: '{{.previous}}'
+  ruid: '{{.ruid}}'
+  rgid: '{{.rgid}}'
+  rfsg: '{{.rfsg}}'
 
 vars:
   destinationTemplate: "{{.ROOT_DIR}}/.taskfiles/VolSync/ReplicationDestination.tmpl.yaml"
@@ -112,7 +115,16 @@ tasks:
           else
             echo "statefulset.apps/$app"
           fi
-      previous: "{{.previous | default 2}}"
+      previous: "{{.previous | default 0}}"
+      ruid:
+        sh: |
+          kubectl get replicationsource -n {{.ns}} {{.rsrc}} -o jsonpath='{.spec.restic.moverSecurityContext.runAsUser}' || echo 0
+      rgid:
+        sh: |
+          kubectl get replicationsource -n {{.ns}} {{.rsrc}} -o jsonpath='{.spec.restic.moverSecurityContext.runAsGroup}' || echo 0
+      rfsg:
+        sh: |
+          kubectl get replicationsource -n {{.ns}} {{.rsrc}} -o jsonpath='{.spec.restic.moverSecurityContext.fsGroup}' || echo 0
     env: *task-vars
     preconditions:
       - sh: test -f {{.wipeJobTemplate}}

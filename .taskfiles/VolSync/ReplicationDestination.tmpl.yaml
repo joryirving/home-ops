@@ -11,9 +11,13 @@ spec:
     repository: "${rsrc}-volsync"
     destinationPVC: "${claim}"
     copyMethod: Direct
-    storageClassName: longhorn-config
+    storageClassName: longhorn
     # IMPORTANT NOTE:
     #   Set to the last X number of snapshots to restore from
+    moverSecurityContext:
+      runAsUser: ${ruid}
+      runAsGroup: ${rgid}
+      fsGroup: ${rfsg}
     previous: ${previous}
     # OR;
     # IMPORTANT NOTE:
