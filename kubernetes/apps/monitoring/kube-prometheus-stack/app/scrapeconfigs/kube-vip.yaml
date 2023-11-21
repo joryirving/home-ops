@@ -2,8 +2,11 @@
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
 metadata:
-  name: kube-dns
+  name: kube-vip
 spec:
   staticConfigs:
-    - targets: ["kube-dns.kube-system.svc.cluster.local:9153"]
+    - targets:
+        - 192.168.1.50:2112
+        - 192.168.1.52:2112
+        - 192.168.1.54:2112
   metricsPath: /metrics

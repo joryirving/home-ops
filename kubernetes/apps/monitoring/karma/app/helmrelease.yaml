@@ -55,9 +55,13 @@ spec:
         enabled: true
         className: external
         annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/icon: karma.png
+          gethomepage.dev/name: Karma
+          gethomepage.dev/group: Monitoring
           external-dns.alpha.kubernetes.io/target: "external.${SECRET_DOMAIN}"
         hosts:
-          - host: &host karma.${SECRET_DOMAIN}
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
                 service:
