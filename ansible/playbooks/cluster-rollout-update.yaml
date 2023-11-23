@@ -33,30 +33,21 @@
           delegate_to: "{{ groups['master'][0] }}"
 
         - name: Drain
-          ansible.builtin.command: "kubectl drain --pod-selector='app!=rook-ceph-osd,app!=csi-attacher,app!=csi-provisioner' --ignore-daemonsets --delete-emptydir-data --force --grace-period=300 {{ inventory_hostname }}"
+          kubernetes.core.k8s_drain:
+            kubeconfig: /etc/rancher/k3s/k3s.yaml
+            state: drain
+            delete_options:
+              delete_emptydir_data: true
+              ignore_daemonsets: true
+              terminate_grace_period: 600
+              wait_timeout: 900
+            pod_selectors:
+             # Rook Ceph
+             - app!=rook-ceph-osd
+             # Longhorn
+             - app!=csi-attacher
+             - app!=csi-provisioner
           delegate_to: "{{ groups['master'][0] }}"
-          changed_when: false
-    
-        ### pod_selectors feature in upcoming kubernetes.core 2.5.0 ###
-        # - name: Drain
-        #   kubernetes.core.k8s_drain:
-        #     name: "{{ inventory_hostname }}"
-        #     kubeconfig: /etc/rancher/k3s/k3s.yaml
-        #     state: drain
-        #     delete_options:
-        #       delete_emptydir_data: true
-        #       ignore_daemonsets: true
-        #       terminate_grace_period: 600
-        #       wait_timeout: 900
-        #       force: true
-        #     pod_selectors:
-        #       # Rook Ceph
-        #      - app!=rook-ceph-osd
-        #       # Longhorn
-        #      - app!=csi-attacher
-        #       # Longhorn
-        #      - app!=csi-provisioner
-        #   delegate_to: "{{ groups['master'][0] }}"
 
         - name: Update
           ansible.builtin.apt:
@@ -74,7 +65,6 @@
             msg: Rebooting node
             post_reboot_delay: 120
             reboot_timeout: 3600
-          when: reboot_required.stat.exists
 
         - name: Uncordon
           kubernetes.core.k8s_drain:

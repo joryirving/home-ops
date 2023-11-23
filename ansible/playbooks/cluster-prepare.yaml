@@ -8,6 +8,8 @@
     - name: Pausing for 5 seconds...
       ansible.builtin.pause:
         seconds: 5
+    - name: Populate service facts
+      service_facts:
   tasks:
     - name: Locale
       block:
@@ -86,6 +88,19 @@
             dest: /etc/systemd/networkd.conf
             regexp: ManageForeignRoutes
             line: ManageForeignRoutes=no
+        # https://github.com/onedr0p/flux-cluster-template/discussions/635
+        - name: Network Configuration | Remove /etc/resolv.conf
+          ansible.builtin.file:
+            path: /etc/resolv.conf
+            state: absent
+        - name: Network Configuration | Remove search domain
+          ansible.builtin.copy:
+            attributes: +i
+            mode: 644
+            dest: /etc/resolv.conf
+            content: |
+              search .
+              nameserver 1.1.1.1
 
     - name: System Configuration
       notify: Reboot
@@ -96,6 +111,7 @@
             mode: "0755"
             content: neofetch --config none
         - name: System Configuration | Disable apparmor
+          when: ansible_facts.services['apparmor.service'] is defined
           ansible.builtin.systemd:
             name: apparmor
             state: stopped
