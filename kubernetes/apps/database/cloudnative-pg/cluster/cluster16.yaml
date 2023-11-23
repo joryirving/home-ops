@@ -14,7 +14,7 @@ spec:
   superuserSecret:
     name: cloudnative-pg-secret
   enableSuperuserAccess: true
-  Note: Bootstrap is needed when recovering from an existing cnpg cluster
+  # Note: Bootstrap is needed when recovering from an existing cnpg cluster
   bootstrap:
     recovery:
       source: &previousCluster postgres16-v1
@@ -55,6 +55,8 @@ spec:
         wal:
           compression: bzip2
           maxParallel: 8
+        data:
+          compression: bzip2
         destinationPath: *destinationPath
         endpointURL: *endpointURL
         s3Credentials:
