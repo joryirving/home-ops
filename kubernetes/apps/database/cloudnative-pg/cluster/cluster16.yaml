@@ -14,10 +14,10 @@ spec:
   superuserSecret:
     name: cloudnative-pg-secret
   enableSuperuserAccess: true
-  # Note: Bootstrap is needed when recovering from an existing cnpg cluster
-  # bootstrap:
-  #   recovery:
-  #     source: &previousCluster postgres16-v1
+  Note: Bootstrap is needed when recovering from an existing cnpg cluster
+  bootstrap:
+    recovery:
+      source: &previousCluster postgres16-v1
   postgresql:
     parameters:
       max_connections: "600"
@@ -40,7 +40,7 @@ spec:
         compression: bzip2
       destinationPath:  &destinationPath s3://postgresql/
       endpointURL: &endpointURL https://s3.${SECRET_DOMAIN}
-      serverName: &currentCluster postgres16-v1
+      serverName: &currentCluster postgres16-v2
       s3Credentials:
         accessKeyId:
           name: &accessKeyname cloudnative-pg-secret
@@ -48,19 +48,21 @@ spec:
         secretAccessKey:
           name: &secretAccessKeyname cloudnative-pg-secret
           key: &secretAccessKey aws-secret-access-key
-  # # Note: externalClusters is needed when recovering from an existing cnpg cluster
-  # externalClusters:
-  #   - name: *previousCluster
-      # barmanObjectStore:
-      #   wal:
-      #     compression: bzip2
-      #     maxParallel: 8
-      #   destinationPath: *destinationPath
-      #   endpointURL: *endpointURL
-      #   s3Credentials:
-      #     accessKeyId:
-      #       name: *accessKeyname
-      #       key: *accessKeykey
-      #     secretAccessKey:
-      #       name: *secretAccessKeyname
-      #       key: *secretAccessKey
+  # Note: externalClusters is needed when recovering from an existing cnpg cluster
+  externalClusters:
+    - name: *previousCluster
+      barmanObjectStore:
+        wal:
+          compression: bzip2
+          maxParallel: 8
+        data:
+          compression: bzip2
+        destinationPath: *destinationPath
+        endpointURL: *endpointURL
+        s3Credentials:
+          accessKeyId:
+            name: *accessKeyname
+            key: *accessKeykey
+          secretAccessKey:
+            name: *secretAccessKeyname
+            key: *secretAccessKey
