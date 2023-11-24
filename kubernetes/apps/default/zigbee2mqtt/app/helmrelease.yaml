@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: zigbee2mqtt
+  name: &app zigbee2mqtt
 spec:
   interval: 30m
   chart:
@@ -25,9 +25,6 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    defaultPodOptions:
-      nodeSelector:
-        zigbee.feature.node.kubernetes.io/sonoff: "true"
     controllers:
       main:
         containers:
@@ -72,6 +69,8 @@ spec:
               limits:
                 memory: 500Mi
         pod:
+          nodeSelector:
+            zigbee.feature.node.kubernetes.io/sonoff: "true"
           securityContext:
             runAsUser: 568
             runAsGroup: 568
@@ -80,7 +79,7 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: zigbee2mqtt-config
+        existingClaim: *app
       usb:
         enabled: true
         type: hostPath
@@ -94,12 +93,11 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        className: internal
         hosts:
           - host: &host zigbee.${SECRET_DOMAIN}
             paths:
               - path: /
-                pathType: Prefix
                 service:
                   name: main
                   port: http
