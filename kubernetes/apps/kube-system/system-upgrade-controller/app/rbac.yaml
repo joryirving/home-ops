@@ -3,7 +3,16 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: system-upgrade
-  labels: app.kubernetes.io/managed-by: Helm
+secrets:
+  - name: system-upgrade
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: system-upgrade
+  annotations:
+    kubernetes.io/service-account.name: system-upgrade
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -16,4 +25,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: system-upgrade
-    namespace: system-upgrade
+    namespace: kube-system

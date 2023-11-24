@@ -38,7 +38,7 @@ spec:
               SYSTEM_UPGRADE_JOB_ACTIVE_DEADLINE_SECONDS: 900
               SYSTEM_UPGRADE_JOB_BACKOFF_LIMIT: 99
               SYSTEM_UPGRADE_JOB_IMAGE_PULL_POLICY: IfNotPresent
-              SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE: docker.io/rancher/kubectl:v1.28.4
+              SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE: docker.io/rancher/kubectl:v1.28.3
               SYSTEM_UPGRADE_JOB_PRIVILEGED: true
               SYSTEM_UPGRADE_JOB_TTL_SECONDS_AFTER_FINISH: 900
               SYSTEM_UPGRADE_PLAN_POLLING_INTERVAL: 15m
@@ -65,13 +65,12 @@ spec:
                       - key: node-role.kubernetes.io/control-plane
                         operator: Exists
           tolerations:
-            - { key: CriticalAddonsOnly, operator: Exists }
-            - { key: node-role.kubernetes.io/master, operator: Exists, effect: NoSchedule }
-            - { key: node-role.kubernetes.io/controlplane, operator: Exists, effect: NoSchedule }
-            - { key: node-role.kubernetes.io/control-plane, operator: Exists, effect: NoSchedule }
-            - { key: node-role.kubernetes.io/etcd, operator: Exists, effect: NoExecute }
+            - {key: CriticalAddonsOnly, operator: Exists}
+            - {key: node-role.kubernetes.io/master, operator: Exists, effect: NoSchedule}
+            - {key: node-role.kubernetes.io/controlplane, operator: Exists, effect: NoSchedule}
+            - {key: node-role.kubernetes.io/control-plane, operator: Exists, effect: NoSchedule}
+            - {key: node-role.kubernetes.io/etcd, operator: Exists, effect: NoExecute}
     serviceAccount:
-      create: true
       name: system-upgrade
     service:
       main:
