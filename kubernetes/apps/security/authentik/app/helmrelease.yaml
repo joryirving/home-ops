@@ -14,7 +14,9 @@ spec:
         name: authentik-charts
         namespace: flux-system
       interval: 5m
-  values:
+  dependsOn:
+    - name: cloudnative-pg
+      namespace: database
     initContainers:
       init-db:
         image: ghcr.io/onedr0p/postgres-init:15
