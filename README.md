@@ -30,9 +30,9 @@ The purpose here is to learn k8s, while practicing Gitops.
 | HuTao  | Lenovo M910q   | i5-7500T       | 240GB SSD | 1TB NBME    | 64GB | Debian | k8s Worker        |
 | Ganyu  | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s Worker        |
 
-Total CPU: 32 threads (workers)
+Total CPU: 36 threads (workers)
 
-Total RAM: 144GB (workers)
+Total RAM: 256GB (workers)
 
 ### [Test Kubernetes Hardware](https://github.com/LilDrunkenSmurf/home-ops)
 
@@ -41,9 +41,9 @@ Total RAM: 144GB (workers)
 | Venti   | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 8GB  | Debian | k8s control-plane |
 | Kazuha  | Beelink Mini-S | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB | Debian | k8s Worker        |
 
-Total CPU: 8 threads (workers)
+Total CPU: 2 threads (workers)
 
-Total RAM: 128GB (workers)
+Total RAM: 16GB (workers)
 
 ### Supporting Hardware
 
