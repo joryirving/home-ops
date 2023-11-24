@@ -62,7 +62,7 @@ spec:
               ZIGBEE2MQTT_CONFIG_MQTT_SERVER: mqtt://mosquitto.default.svc.cluster.local
               ZIGBEE2MQTT_CONFIG_MQTT_VERSION: 5
               ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "false"
-              #ZIGBEE2MQTT_CONFIG_SERIAL_BAUDRATE: 115200
+              ZIGBEE2MQTT_CONFIG_SERIAL_BAUDRATE: 115200
               ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: "false"
               ZIGBEE2MQTT_CONFIG_SERIAL_PORT:  &usbdevice /dev/ttyUSB0
               ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: ezsp
@@ -81,21 +81,8 @@ spec:
               limits:
                 memory: 512Mi
         pod:
-          # securityContext:
-          #   runAsUser: 568
-          #   runAsGroup: 568
-          #   fsGroup: 568
-          #   fsGroupChangePolicy: OnRootMismatch
-          affinity:
-            nodeAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                nodeSelectorTerms:
-                  - matchExpressions:
-                        # Bus 001 Device 003: ID 1a86:55d4 QinHeng Electronics SONOFF Zigbee 3.0 USB Dongle Plus V2
-                      - key: feature.node.kubernetes.io/usb-ff_10c4_ea60.present
-                        operator: In
-                        values:
-                          - "true"
+          nodeSelector:
+            zigbee.feature.node.kubernetes.io/sonoff: "true"
     persistence:
       config:
         enabled: true
