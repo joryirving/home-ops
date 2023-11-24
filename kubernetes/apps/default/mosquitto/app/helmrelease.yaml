@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd-community/flux2-schemas/main/helmrelease-helm-v2beta1.json
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/helm.toolkit.fluxcd.io/helmrelease_v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
@@ -24,11 +24,22 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+  dependsOn:
+    - name: longhorn
+      namespace: storage
   values:
     controllers:
       main:
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          init-config:
+            image:
+              repository: public.ecr.aws/docker/library/eclipse-mosquitto
+              tag: 2.0.18
+              pullPolicy: IfNotPresent
+            command: ["/bin/sh", "-c"]
+            args: ["cp /tmp/secret/* /mosquitto/external_config/ && mosquitto_passwd -U /mosquitto/external_config/mosquitto_pwd"]
         containers:
           main:
             image:
@@ -36,28 +47,41 @@ spec:
               tag: 2.0.18
             resources:
               requests:
-                cpu: 100m
-                memory: 250Mi
+                cpu: 5m
+                memory: 4Mi
+              limits:
+                memory: 16Mi
         pod:
           securityContext:
-            runAsUser: 1883
-            runAsGroup: 1883
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
     service:
       main:
-        enabled: true
         ports:
           http:
-            enabled: false
-          mqtt:
-            enabled: true
-            primary: true
             port: 1883
     persistence:
-      config:
+      data:
         enabled: true
-        type: custom
-        volumeSpec:
-          secret:
-            secretName: mosquitto-secret
+        existingClaim: mosquitto
+      config-file:
+        type: configMap
+        name: mosquitto-configmap # overriden by kustomizeconfig
+        advancedMounts:
+          main:
+            main:
+              - path: /mosquitto/config/mosquitto.conf
+                subPath: mosquitto.conf
+      secret-file:
+        type: secret
+        name: mosquitto-secret
+        advancedMounts:
+          main:
+            init-config:
+              - path: /tmp/secret
+      external-config:
+        type: emptyDir
         globalMounts:
-          - path: /mosquitto/config
+          - path: /mosquitto/external_config
