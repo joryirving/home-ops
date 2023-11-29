@@ -133,7 +133,7 @@ resource "authentik_application" "gitops_application" {
   group              = authentik_group.infrastructure.name
   open_in_new_tab    = true
   meta_icon          = "https://docs.gitops.weave.works/img/weave-logo.png"
-  meta_launch_url    = "https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"
+  meta_launch_url    = "https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/oauth2/callback"
   policy_engine_mode = "all"
 }
 
@@ -145,7 +145,7 @@ resource "authentik_provider_oauth2" "grafana_oauth2" {
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_scope_mapping.oauth2.ids
   access_token_validity = "hours=4"
-  redirect_uris         = ["https://grafana.${data.sops_file.authentik_secrets.data["cluster_domain"]}/oauth2/callback"]
+  redirect_uris         = ["https://grafana.${data.sops_file.authentik_secrets.data["cluster_domain"]}/login/generic_oauth"]
 }
 
 resource "authentik_application" "grafana_application" {
