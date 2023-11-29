@@ -123,7 +123,7 @@ resource "authentik_provider_oauth2" "gitops_oauth2" {
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_scope_mapping.oauth2.ids
   access_token_validity = "hours=4"
-  redirect_uris         = ["https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"]
+  redirect_uris         = ["https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/oauth2/callback"]
 }
 
 resource "authentik_application" "gitops_application" {
@@ -133,7 +133,7 @@ resource "authentik_application" "gitops_application" {
   group              = authentik_group.infrastructure.name
   open_in_new_tab    = true
   meta_icon          = "https://docs.gitops.weave.works/img/weave-logo.png"
-  meta_launch_url    = "https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/oauth2/callback"
+  meta_launch_url    = "https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"
   policy_engine_mode = "all"
 }
 
