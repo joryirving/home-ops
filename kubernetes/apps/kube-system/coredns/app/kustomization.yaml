@@ -4,14 +4,3 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ./helmrelease.yaml
-configMapGenerator:
-  - name: kubernetes-coredns-dashboard
-    files:
-      - kubernetes-coredns-dashboard.json=https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
-generatorOptions:
-  disableNameSuffixHash: true
-  annotations:
-    kustomize.toolkit.fluxcd.io/substitute: disabled
-    grafana_folder: "Kubernetes"
-  labels:
-    grafana_dashboard: "true"
