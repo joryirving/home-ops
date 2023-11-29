@@ -18,6 +18,12 @@ resource "authentik_group" "infrastructure" {
   is_superuser = false
 }
 
+resource "authentik_policy_binding" "gitops_infra" {
+  target = authentik_application.gitops_application.uuid
+  group  = authentik_group.infrastructure.id
+  order  = 0
+}
+
 resource "authentik_policy_binding" "grafana_infra" {
   target = authentik_application.grafana_application.uuid
   group  = authentik_group.infrastructure.id

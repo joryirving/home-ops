@@ -115,6 +115,28 @@
 # }
 
 ### Oauth2 Providers ###
+## Weave-Gitops ##
+resource "authentik_provider_oauth2" "gitops_oauth2" {
+  name                  = "gitops-provider"
+  client_id             = data.sops_file.authentik_secrets.data["gitops_id"]
+  client_secret         = data.sops_file.authentik_secrets.data["gitops_secret"]
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  property_mappings     = data.authentik_scope_mapping.oauth2.ids
+  access_token_validity = "hours=4"
+  redirect_uris         = ["https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"]
+}
+
+resource "authentik_application" "gitops_application" {
+  name               = "gitops"
+  slug               = authentik_provider_oauth2.gitops_oauth2.name
+  protocol_provider  = authentik_provider_oauth2.gitops_oauth2.id
+  group              = authentik_group.infrastructure.name
+  open_in_new_tab    = true
+  meta_icon          = "https://docs.gitops.weave.works/img/weave-logo.png"
+  meta_launch_url    = "https://gitops.${data.sops_file.authentik_secrets.data["cluster_domain"]}/"
+  policy_engine_mode = "all"
+}
+
 ## Grafana ##
 resource "authentik_provider_oauth2" "grafana_oauth2" {
   name                  = "grafana-provider"
