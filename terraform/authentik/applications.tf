@@ -127,7 +127,7 @@ resource "authentik_provider_oauth2" "gitops_oauth2" {
 }
 
 resource "authentik_application" "gitops_application" {
-  name               = "gitops"
+  name               = "Gitops"
   slug               = authentik_provider_oauth2.gitops_oauth2.name
   protocol_provider  = authentik_provider_oauth2.gitops_oauth2.id
   group              = authentik_group.infrastructure.name
