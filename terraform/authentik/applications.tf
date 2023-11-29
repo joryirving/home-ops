@@ -145,7 +145,7 @@ resource "authentik_provider_oauth2" "grafana_oauth2" {
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_scope_mapping.oauth2.ids
   access_token_validity = "hours=4"
-  redirect_uris         = ["https://grafana.${data.sops_file.authentik_secrets.data["cluster_domain"]}/login/generic_oauth"]
+  redirect_uris         = ["https://grafana.${data.sops_file.authentik_secrets.data["cluster_domain"]}/oauth2/callback"]
 }
 
 resource "authentik_application" "grafana_application" {
