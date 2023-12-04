@@ -1,10 +1,11 @@
 ---
-apiVersion: monitoring.coreos.com/v1alpha1
+apiVersion: monitoring.coreos.com/v1
 kind: ScrapeConfig
 metadata:
   name: minio
 spec:
-  bearer_token: ${MINIO_TOKEN}
+  SafeAuthorization:
+    credentials: ${MINIO_TOKEN}
   scheme: https
   staticConfigs:
     - targets: ["s3.${SECRET_DOMAIN}"]
