@@ -36,20 +36,22 @@ spec:
   rules:
     - host: &host minio.${SECRET_DOMAIN}
       paths:
-        - pathType: Prefix
-          path: "/"
-          backend:
-            service:
-              name: minio
-              port: http
+        http:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: minio
+                port: 9769
     - host: &s3host s3.${SECRET_DOMAIN}
       paths:
-        - pathType: Prefix
-          path: "/"
-          backend:
-            service:
-              name: minio
-              port: api
+        http:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: minio
+                port: 9768
   tls:
     - hosts:
         - *host
