@@ -27,30 +27,30 @@ spec:
       port: 9768
   type: ClusterIP
 ---
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: minio
-# spec:
-#   ingressClassName: internal
-#   rules:
-#     - host: &host minio.${SECRET_DOMAIN}
-#         paths:
-#           - pathType: Prefix
-#             path: "/"
-#             backend:
-#               service:
-#                 name: minio
-#                 port: http
-#     - host: &s3host s3.${SECRET_DOMAIN}
-#         paths:
-#           - pathType: Prefix
-#             path: "/"
-#             backend:
-#               service:
-#                 name: minio
-#                 port: api
-#   tls:
-#     - hosts:
-#         - *host
-#         - *s3host
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio
+spec:
+  ingressClassName: internal
+  rules:
+    - host: &host minio.${SECRET_DOMAIN}
+      paths:
+        - pathType: Prefix
+          path: "/"
+          backend:
+            service:
+              name: minio
+              port: http
+    - host: &s3host s3.${SECRET_DOMAIN}
+      paths:
+        - pathType: Prefix
+          path: "/"
+          backend:
+            service:
+              name: minio
+              port: api
+  tls:
+    - hosts:
+        - *host
+        - *s3host
