@@ -35,8 +35,8 @@ spec:
   ingressClassName: internal
   rules:
     - host: &host minio.${SECRET_DOMAIN}
-      paths:
-        http:
+      http:
+        paths:
           - pathType: Prefix
             path: "/"
             backend:
@@ -44,9 +44,9 @@ spec:
                 name: minio
                 port:
                   number: 9769
-      host: &s3host s3.${SECRET_DOMAIN}
-      paths:
-        http:
+    - host: &s3host s3.${SECRET_DOMAIN}
+      http:
+        paths:
           - pathType: Prefix
             path: "/"
             backend:
