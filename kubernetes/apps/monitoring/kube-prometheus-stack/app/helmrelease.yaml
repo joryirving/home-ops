@@ -164,6 +164,13 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
+        additionalScrapeConfigs:
+          - job_name: minio-job
+            bearer_token: ${MINIO_TOKEN}
+            metrics_path: /minio/v2/metrics/cluster
+            scheme: https
+            static_configs:
+            - targets: ['s3.${SECRET_DOMAIN}']
     grafana:
       enabled: false
       forceDeployDashboards: true
