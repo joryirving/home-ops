@@ -169,16 +169,22 @@ spec:
           - { name: prom_direct, orgId: 1 }
           - { name: Prometheus, orgId: 1 }
         datasources:
-          - access: proxy
-            isDefault: false
-            name: prom_direct
-            type: prometheus
-            url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
           - name: Prometheus
+            type: prometheus
+            uid: prometheus
             isDefault: true
+            access: proxy
+            url: http://thanos-query-frontend.monitoring.svc.cluster.local:9090
+            jsonData:
+              prometheusType: Thanos
+          - name: prom_direct
             type: prometheus
             access: proxy
-            url: http://thanos-query.monitoring.svc.cluster.local:9090
+            uid: prom_direct
+            isDefault: false
+            url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+            jsonData:
+              implementation: prometheus
           - name: Alertmanager
             type: alertmanager
             access: proxy
@@ -187,6 +193,8 @@ spec:
               implementation: prometheus
     dashboards:
       default:
+      cilium:
+      data:
         cloudnative-pg:
           url: https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/docs/src/samples/monitoring/grafana-dashboard.json
           datasource: Prometheus
@@ -196,8 +204,6 @@ spec:
         external-secrets:
           url: https://raw.githubusercontent.com/external-secrets/external-secrets/main/docs/snippets/dashboard.json
           datasource: Prometheus
-      cilium:
-      data:
       flux:
         flux-cluster:
           url: https://raw.githubusercontent.com/fluxcd/flux2/main/manifests/monitoring/monitoring-config/dashboards/cluster.json
