@@ -1,3 +1,31 @@
+
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: minio
+subsets:
+  - addresses:
+      - ip: ${NAS_IP}
+    ports:
+      - name: http
+        port: 9769
+        protocol: TCP
+      - name: api
+        port: 9768
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+spec:
+  ports:
+    - name: http
+      port: 9769
+    - name: api
+      port: 9768
+  type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -14,27 +42,8 @@ spec:
             backend:
               service:
                 name: minio
-                port:
-                  number: 9769
-  tls:
-    - hosts:
-        - *host
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: minio-api
-  annotations:
-    external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
-    nginx.ingress.kubernetes.io/proxy-body-size: 1024m
-    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      chunked_transfer_encoding off;
-spec:
-  ingressClassName: external
-  rules:
-    - host: &api-host s3.${SECRET_DOMAIN}
+                port: http
+    - host: &s3host s3.${SECRET_DOMAIN}
       http:
         paths:
           - pathType: Prefix
@@ -42,35 +51,8 @@ spec:
             backend:
               service:
                 name: minio
-                port:
-                  number: 9768
+                port: api
   tls:
     - hosts:
-        - *api-host
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: minio
-subsets:
-  - addresses:
-      - ip: ${NAS_IP}
-    ports:
-      - name: api
-        port: 9768
-        protocol: TCP
-      - name: http
-        port: 9769
-        protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: minio
-spec:
-  ports:
-    - name: api
-      port: 9768
-    - name: http
-      port: 9769
-  type: ClusterIP
+        - *host
+        - *s3host
