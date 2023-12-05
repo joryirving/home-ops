@@ -70,6 +70,26 @@ tasks:
     env:
       ANSIBLE_DISPLAY_SKIPPED_HOSTS: "false"
 
+  run:
+    desc: Run an Ansible playbook for configuring a cluster
+    summary: |
+      Args:
+        cluster: Cluster to run command against (required)
+        playbook: Playbook to run (required)
+    prompt: Run Ansible playbook '{{.playbook}}' against the '{{.cluster}}' cluster... continue?
+    deps: ["deps"]
+    cmd: |
+      .venv/bin/ansible-playbook \
+        --inventory {{.ANSIBLE_DIR}}/{{.cluster}}/inventory/hosts.yaml \
+        {{.ANSIBLE_DIR}}/{{.cluster}}/playbooks/{{.playbook}}.yaml {{.CLI_ARGS}}
+    vars:
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
+      playbook: '{{ or .playbook (fail "Argument (playbook) is required") }}'
+    preconditions:
+      - { msg: "Venv not found",      sh: "test -d {{.ROOT_DIR}}/.venv" }
+      - { msg: "Inventory not found", sh: "test -f {{.ANSIBLE_DIR}}/{{.cluster}}/inventory/hosts.yaml" }
+      - { msg: "Playbook not found",  sh: "test -f {{.ANSIBLE_DIR}}/{{.cluster}}/playbooks/{{.playbook}}.yaml" }
+
   update-template:
     desc: Update from the upstream flux-cluster-template repository
     summary: task {{.TASK}}
