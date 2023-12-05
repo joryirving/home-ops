@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 NAMESPACE=${1:-default}
-kubectl get statefulset -n $NAMESPACE -o custom-columns=NAME:.metadata.name|grep -iv NAME|while read LINE; do kubectl scale --replicas=1 sts/$LINE -n $NAMESPACE; done;
-kubectl get deployment -n $NAMESPACE -o custom-columns=NAME:.metadata.name|grep -iv NAME|while read LINE; do kubectl scale --replicas=1 deployment/$LINE -n $NAMESPACE; done;
+cluster=${1:-default}
+kubectl get statefulset -n $NAMESPACE -o custom-columns=NAME:.metadata.name --context $cluster|grep -iv NAME|while read LINE; do kubectl scale --replicas=1 sts/$LINE -n $NAMESPACE --context $cluster; done;
+kubectl get deployment -n $NAMESPACE -o custom-columns=NAME:.metadata.name --context $cluster|grep -iv NAME|while read LINE; do kubectl scale --replicas=1 deployment/$LINE -n $NAMESPACE --context $cluster; done;
 
 #Restart Daemonset
-kubectl get daemonset -n $NAMESPACE -o custom-columns=NAME:.metadata.name|grep -iv NAME|while read LINE; do kubectl rollout restart daemonset $LINE -n $NAMESPACE; done;
+kubectl get daemonset -n $NAMESPACE -o custom-columns=NAME:.metadata.name --context $cluster|grep -iv NAME|while read LINE; do kubectl rollout restart daemonset $LINE -n $NAMESPACE --context $cluster; done;
