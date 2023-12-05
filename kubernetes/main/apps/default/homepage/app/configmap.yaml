@@ -1,0 +1,209 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  labels:
+    app.kubernetes.io/name: homepage
+data:
+  bookmarks.yaml: |
+    - Communitcate:
+        - Discord:
+            - icon: discord.png
+              href: 'https://discord.com/app'
+        - Gmail:
+            - icon: gmail.png
+              href: 'http://gmail.com'
+        - Google Calendar:
+            - icon: google-calendar.png
+              href: 'https://calendar.google.com'
+        - Outlook:
+            - icon: https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/outlook.png
+              href: 'https://outlook.com'
+    - Media:
+        - YouTube:
+            - icon: youtube.png
+              href: 'https://youtube.com/feed/subscriptions'
+        - Spotify:
+            - icon: spotify.png
+              href: 'http://open.spotify.com'
+        - Youtube Music:
+            - icon: https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/youtube-music.png
+              href: 'https://music.youtube.com'
+    - Reading:
+        - Beyond:
+            - icon: https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/beyond.png
+              href: 'https://forums.beyond.ca/search.php?do=getnew&contenttype=vBForum_Post'
+        - Western Subaru Club:
+            - icon: https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/wsc.png
+              href: 'http://westernsubaruclub.com/smf/index.php?action=unread'
+        - Reddit:
+            - icon: reddit.png
+              href: 'https://reddit.com'
+    - Git:
+        - k8s-at-home:
+            - icon: kubernetes-dashboard.png
+              href: 'https://nanne.dev/k8s-at-home-search/'
+        - k3s-home-cluster:
+            - icon: github.png
+              href: 'https://github.com/LilDrunkenSmurf/k3s-home-cluster'
+  docker.yaml: ""
+  kubernetes.yaml: |
+    mode: cluster
+  services.yaml: |
+    - Calendar:
+        # - Calendar:
+        #     widget:
+        #       type: calendar
+        #       firstDayInWeek: sunday # optional - defaults to monday
+        #       view: monthly # optional - possible values monthly, agenda
+        #       maxEvents: 10 # optional - defaults to 10
+        #       integrations: # optional
+        #         - type: sonarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
+        #           service_group: Downloads # group name where widget exists
+        #           service_name: Sonarr # service name for that widget
+        #         - type: radarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
+        #           service_group: Downloads # group name where widget exists
+        #           service_name: Radarr # service name for that widget
+        #         - type: readarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
+        #           service_group: Downloads # group name where widget exists
+        #           service_name: Readarr # service name for that
+        - Agenda:
+            widget:
+              type: calendar
+              view: agenda # optional - possible values monthly, agenda
+              maxEvents: 20 # optional - defaults to 10
+              integrations: # optional
+                - type: sonarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr>
+                  service_group: Downloads # group name where widget exists
+                  service_name: Sonarr # service name for that widget
+                - type: radarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr>
+                  service_group: Downloads # group name where widget exists
+                  service_name: Radarr # service name for that widget
+                - type: readarr # active widget type that is currently enabled on homepage - possible values: radarr, sonar>
+                  service_group: Downloads # group name where widget exists
+                  service_name: Readarr # service name for that widget
+    - Infrastructure:
+        - Cloudflared:
+            href: https://dash.cloudflare.com/
+            icon: cloudflare-zero-trust.png
+            description: Cloudflared Tunnel
+            widget:
+              type: cloudflared
+              accountid: {{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNTID}}
+              tunnelid: {{HOMEPAGE_VAR_CLOUDFLARED_TUNNELID}}
+              key: {{HOMEPAGE_VAR_CLOUDFLARED_API_TOKEN}}
+        - Unifi:
+            href: https://unifi.ui.com
+            icon: unifi.png
+            description: Unifi Dashboard
+            widget:
+              type: unifi
+              url: https://192.168.1.1:443
+              username: {{HOMEPAGE_VAR_UNIFI_USERNAME}}
+              password: {{HOMEPAGE_VAR_UNIFI_PASSWORD}}
+        - NextDNS:
+            icon: nextdns.png
+            description: NextDNS
+            widget:
+              type: nextdns
+              profile: {{HOMEPAGE_VAR_NEXTDNS_ID}}
+              key: {{HOMEPAGE_VAR_NEXTDNS_API}}
+    - Minecraft:
+        - Vibecraft:
+            icon: minecraft.png
+            widget:
+              type: minecraft
+              url: udp://${NAS_IP}:25565
+        - Skyblock:
+            icon: minecraft.png
+            widget:
+              type: minecraft
+              url: udp://${NAS_IP}:25566
+        - Create:
+            icon: minecraft.png
+            widget:
+              type: minecraft
+              url: udp://${NAS_IP}:25567
+  settings.yaml: |
+    title: Dashboard
+    favicon: https://github.com/walkxcode/dashboard-icons/blob/main/png/heimdall.png
+    theme: dark
+    color: slate
+    headerStyle: clean
+    layout:
+      Calendar:
+        style: column
+        icon: mdi-calendar
+      Media:
+        style: column
+        icon: mdi-play-circle
+      Infrastructure:
+        style: row
+        columns: 3
+        icon: mdi-server
+      Storage:
+        style: row
+        columns: 2
+        icon: mdi-desktop-tower
+      Home:
+        style: column
+        icon: mdi-home-analytics
+      Monitoring:
+        style: column
+        icon: mdi-chart-line
+      Minecraft:
+        style: row
+        columns: 3
+        icon: mdi-minecraft
+      Downloads:
+        style: row
+        columns: 3
+        icon: mdi-download-circle
+    providers:
+      longhorn:
+        url: http://longhorn-frontend.storage
+  widgets.yaml: |
+    # - resources:
+    #     backend: kubernetes
+    #     cpu: true
+    #     expanded: true
+    #     memory: truehttps://github.com/walkxcode/dashboard-icons/blob/main/png/homepage.png?raw=true
+    - logo:
+        icon: https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/lds-transparent.png
+    - search:
+        provider: [duckduckgo, google]
+        focus: false
+        target: _blank
+    - greeting:
+        text_size: xl
+        text: "Howdy Hey!"
+    - kubernetes:
+        cluster:
+          cpu: true
+          label: cluster
+          memory: true
+          show: true
+          showLabel: true
+        nodes:
+          cpu: true
+          memory: true
+          show: false
+          showLabel: true
+    - openmeteo:
+        label: Home
+        latitude: ${LATITUDE}
+        longitude: ${LONGITUDE}
+        units: metric
+        cache: 5
+    - longhorn:
+        expanded: false
+        total: true
+        labels: true
+        nodes: false
+    - datetime:
+        text_size: l
+        format:
+          dateStyle: long
+          timeStyle: short
+          hourCycle: h23

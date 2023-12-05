@@ -1,0 +1,81 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: downloads-gateway
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: pod-gateway
+      version: 6.5.1
+      interval: 30m
+      sourceRef:
+        kind: HelmRepository
+        name: angelnu
+        namespace: flux-system
+  values:
+    image:
+      repository: ghcr.io/angelnu/pod-gateway
+      tag: v1.9.0@sha256:eeb60f1910693e24287c7140e6eca781f50c62caded082a290fb33440c9ba229
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
+    DNS: 172.16.1.1
+    addons:
+      vpn:
+        enabled: true
+        type: gluetun
+        gluetun:
+          image:
+            repository: ghcr.io/qdm12/gluetun
+            tag: v3.36.0@sha256:011bea4f0743864d4eda5a569217a6fe18e3a52f5d6df31b4ceb9f7763bfbf6b
+        env:
+          - name: VPN_SERVICE_PROVIDER
+            value: mullvad
+          - name: VPN_TYPE
+            value: wireguard
+          - name: VPN_INTERFACE
+            value: wg0
+          - name: FIREWALL
+            value: "off"
+          - name: DOT
+            value: "off"
+        envFrom:
+          - secretRef:
+              name: downloads-gateway-vpnconfig
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+
+      netshoot:
+        enabled: true
+
+    publicPorts:
+      - IP: 10
+        hostname: qbittorrent-0
+        ports:
+          - port: ${SECRET_VPN_FORWARDED_PORT_1}
+            type: udp
+          - port: ${SECRET_VPN_FORWARDED_PORT_1}
+            type: tcp
+
+    routed_namespaces:
+      - downloads
+
+    settings:
+      NOT_ROUTED_TO_GATEWAY_CIDRS: 10.0.0.0/8 192.168.0.0/16
+      VPN_BLOCK_OTHER_TRAFFIC: true
+      VPN_INTERFACE: wg0
+      VPN_LOCAL_CIDRS: 10.0.0.0/8 192.168.0.0/16
+      VPN_TRAFFIC_PORT: "51820"
+      VXLAN_ID: 43
+      VXLAN_IP_NETWORK: 172.16.1
+
+    webhook:
+      gatewayAnnotation: setGateway
+      gatewayDefault: false
+      gatewayLabel: setGateway
+      image:
+        repository: ghcr.io/angelnu/gateway-admision-controller
+        tag: v3.10.0
