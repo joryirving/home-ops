@@ -46,3 +46,16 @@ tasks:
         sh: flux --context {{.cluster}} --namespace {{.ns}} get kustomizations $(basename {{.path}}) 2>&1
     preconditions:
       - { msg: "Kustomization file not found", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/apps/{{.path}}/ks.yaml" }
+
+  reconcile:
+    desc: Force update Flux to pull in changes from your Git repository
+    cmd: flux reconcile -n flux-system kustomization cluster --with-source --context {{.cluster}}
+    vars:
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
+  hr-restart:
+    desc: Restart all failed Helm Releases
+    cmds:
+      - kubectl --context {{.cluster}} get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L1 bash -c 'flux suspend hr $0 -n $1 --context {{.cluster}}'
+      - kubectl --context {{.cluster}} get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L1 bash -c 'flux resume hr $0 -n $1 --context {{.cluster}}'
+    vars:
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
