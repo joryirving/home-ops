@@ -8,12 +8,12 @@ spec:
   interval: 30m
   ref:
     branch: main
-  url: "https://github.com/LilDrunkenSmurf/home-ops.git"
+  url: "https://github.com/LilDrunkenSmurf/k3s-home-cluster.git"
   ignore: |
     # exclude all
     /*
     # include kubernetes directory
-    !/kubernetes
+    !/kubernetes/test
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -22,7 +22,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  path: ./kubernetes/flux
+  path: ./kubernetes/test/flux
   prune: true
   wait: false
   sourceRef:
