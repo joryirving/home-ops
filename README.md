@@ -18,7 +18,7 @@ The purpose here is to learn k8s, while practicing Gitops.
 
 ## 🔧 Hardware
 
-### Kubernetes Workers
+### Main Kubernetes Cluster
 
 | Name   | Device         | CPU            | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
 |--------|----------------|----------------|-----------|-------------|------|--------|-------------------|
@@ -34,7 +34,7 @@ Total CPU: 36 threads (workers)
 
 Total RAM: 256GB (workers)
 
-### [Test Kubernetes Hardware](https://github.com/LilDrunkenSmurf/home-ops)
+### Test Kubernetes Cluster
 
 | Name    | Device         | CPU            | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
 |---------|----------------|----------------|-----------|-------------|------|--------|-------------------|

@@ -1,0 +1,49 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: signoz
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: signoz
+      version: 48.1.2
+      sourceRef:
+        kind: HelmRepository
+        name: signoz
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+    - name: local-path-provisioner
+      namespace: kube-system
+    - name: ingress-nginx
+      namespace: networking
+  values:
+    frontend:
+      ingress:
+        enabled: true
+        ingressClassName: internal
+        annotations:
+          hajimari.io/appName: Signoz
+          hajimari.io/icon: simple-icons:signoz
+        pathType: Prefix
+        hosts:
+          - &host "signoz.${SECRET_DOMAIN}"
+        tls:
+          - hosts:
+              - *host
