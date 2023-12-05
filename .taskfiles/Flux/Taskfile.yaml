@@ -11,9 +11,11 @@ tasks:
     prompt: Bootstrap Flux into the '{{.cluster}}' cluster... continue?
     cmds:
       - kubectl --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap
-      - sops --decrypt {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-secrets.sops.yaml | kubectl apply -f -
-      - sops --decrypt {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-secrets-user.sops.yaml | kubectl apply -f -
-      - kubectl --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars
+      - cat {{.SOPS_AGE_KEY_FILE}} | kubectl --context {{.cluster}} -n flux-system create secret generic sops-age --from-file=age.agekey=/dev/stdin
+      - sops --decrypt {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-secrets.sops.yaml | kubectl --context {{.cluster}} apply -f -
+      - sops --decrypt {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-secrets-user.sops.yaml | kubectl --context {{.cluster}} apply -f -
+      - kubectl --context {{.cluster}} apply -f {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-settings.yaml
+      - kubectl --context {{.cluster}} apply -f {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-settings-user.yaml
       - kubectl --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/flux/config
     vars:
       cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
