@@ -2,15 +2,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "wipe-${rsrc}-${claim}-${ts}"
+  name: "wipe-${app}-${ts}"
   namespace: "${ns}"
 spec:
   ttlSecondsAfterFinished: 3600
   template:
-    metadata:
-      labels:
-        setGateway: "false"
-        app.kubernetes.io/created-by: volsync
     spec:
       automountServiceAccountToken: false
       restartPolicy: OnFailure

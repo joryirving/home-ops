@@ -1,0 +1,87 @@
+---
+version: "3"
+
+tasks:
+
+  privileged:
+    desc: Run a privileged pod
+    interactive: true
+    cmds:
+      - |
+        kubectl --context {{.cluster}} run -n {{.namespace}} debug-privileged -i --tty --rm --image=null --privileged --overrides='
+          {
+            "apiVersion": "v1",
+            "spec": {
+              "containers": [
+                {
+                  "name": "debug",
+                  "image": "ghcr.io/onedr0p/alpine:rolling",
+                  "command": [
+                    "/bin/bash"
+                  ],
+                  "stdin": true,
+                  "stdinOnce": true,
+                  "tty": true
+                }
+              ],
+              {{- if .node }}
+              "nodeName": "{{.node}}",
+              {{- end }}
+              {{- if .hostnetwork }}
+              "hostNetwork": true,
+              {{- end }}
+              "restartPolicy": "Never"
+            }
+          }'
+    vars:
+      node: "{{.node | default nil}}"
+      namespace: '{{.namespace | default "default"}}'
+      hostnetwork: "{{.hostnetwork | default false}}"
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
+
+  mount:
+    desc: Mount a PersistentVolumeClaim to a temporary pod for a cluster
+    summary: |
+      Args:
+        cluster: Cluster to run command against (required)
+        ns: Namespace the PVC is in (default: default)
+        claim: PVC to mount (required)
+    interactive: true
+    cmd: |
+      kubectl --context {{.cluster}} run -n {{.ns}} debug-{{.claim}} -i --tty --rm --image=null --privileged --overrides='
+        {
+          "apiVersion": "v1",
+          "spec": {
+            "containers": [
+              {
+                "name": "debug",
+                "image": "ghcr.io/onedr0p/alpine:rolling",
+                "command": ["/bin/bash"],
+                "stdin": true,
+                "stdinOnce": true,
+                "tty": true,
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/config"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "{{.claim}}"
+                }
+              }
+            ],
+            "restartPolicy": "Never"
+          }
+        }'
+    vars:
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
+      ns: '{{.ns | default "default"}}'
+      claim: '{{ or .claim (fail "Argument (claim) is required") }}'
+    preconditions:
+      - { msg: "PVC not found", sh: "kubectl --context {{.cluster}} -n {{.ns}} get persistentvolumeclaim {{.claim}}" }

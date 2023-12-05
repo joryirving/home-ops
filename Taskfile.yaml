@@ -1,44 +1,30 @@
 ---
 version: "3"
 
-vars:
-  PYTHON_BIN: python3
-  BOOTSTRAP_DIR: "{{.ROOT_DIR}}/bootstrap"
-  ANSIBLE_DIR: "{{.ROOT_DIR}}/ansible"
-  KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
-
 env:
-  KUBECONFIG: "{{.ROOT_DIR}}/kubeconfig"
   SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/age.key"
-  PATH: "{{.ROOT_DIR}}/.venv/bin:$PATH"
-  VIRTUAL_ENV: "{{.ROOT_DIR}}/.venv"
-  ANSIBLE_COLLECTIONS_PATH: "{{.ROOT_DIR}}/.venv/galaxy"
-  ANSIBLE_ROLES_PATH: "{{.ROOT_DIR}}/.venv/galaxy/ansible_roles"
-  ANSIBLE_VARS_ENABLED: "host_group_vars,community.sops.sops"
-  K8S_AUTH_KUBECONFIG: "{{.ROOT_DIR}}/kubeconfig"
+
+vars:
+  KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
+  ANSIBLE_DIR: "{{.ROOT_DIR}}/ansible"
+  TERRAFORM_DIR: "{{.ROOT_DIR}}/terraform"
 
 includes:
-  ansible: .taskfiles/AnsibleTasks.yaml
-  brew: .taskfiles/BrewTasks.yaml
-  cluster: .taskfiles/ClusterTasks.yaml
-  es: .taskfiles/ExternalSecretTasks.yaml
-  k8s: .taskfiles/k8stasks.yaml
-  volsync: .taskfiles/VolSync/Tasks.yaml
+  ansible: .taskfiles/Ansible/Taskfile.yaml
+  brew: .taskfiles/Brew/Taskfile.yaml
+  external-secrets: .taskfiles/ExternalSecrets/Taskfile.yaml
+  flux: .taskfiles/Flux/Taskfile.yaml
+  kubernetes: .taskfiles/Kubernetes/Taskfile.yaml
+  sops: .taskfiles/Sops/Taskfile.yaml
+  volsync: .taskfiles/VolSync/Taskfile.yaml
 
 tasks:
 
   default:
     silent: true
-    cmds: ["task -l"]
+    cmd: task -l
 
-  deps:
-    desc: Create a Python virtual env and install required packages
-    summary: task {{.TASK}}
-    cmds:
-      - "{{.PYTHON_BIN}} -m venv {{.ROOT_DIR}}/.venv"
-      - .venv/bin/python3 -m pip install --upgrade pip setuptools wheel
-      - .venv/bin/python3 -m pip install --upgrade --requirement "{{.ROOT_DIR}}/requirements.txt"
-      - .venv/bin/ansible-galaxy install --role-file "{{.ROOT_DIR}}/requirements.yaml" --force
+
 
   init:
     desc: Initialize configuration files
@@ -106,43 +92,4 @@ tasks:
       - { msg: "Git repository not up-to-date", sh: "git diff --exit-code" }
       - { msg: "Git repository not up-to-date", sh: "git diff --cached --exit-code" }
 
-  mount:
-    desc: Mount a PersistentVolumeClaim to a temporary pod
-    interactive: true
-    vars:
-      claim: '{{ or .claim (fail "PersistentVolumeClaim `claim` is required") }}'
-      namespace: '{{.namespace | default "default"}}'
-    cmd: |
-      kubectl run -n {{.namespace}} debug-{{.claim}} -i --tty --rm --image=null --privileged --overrides='
-        {
-          "apiVersion": "v1",
-          "spec": {
-            "containers": [
-              {
-                "name": "debug",
-                "image": "ghcr.io/onedr0p/alpine:rolling",
-                "command": ["/bin/bash"],
-                "stdin": true,
-                "stdinOnce": true,
-                "tty": true,
-                "volumeMounts": [
-                  {
-                    "name": "config",
-                    "mountPath": "/config"
-                  }
-                ]
-              }
-            ],
-            "volumes": [
-              {
-                "name": "config",
-                "persistentVolumeClaim": {
-                  "claimName": "{{.claim}}"
-                }
-              }
-            ],
-            "restartPolicy": "Never"
-          }
-        }'
-    preconditions:
-      - kubectl -n {{.namespace}} get pvc {{.claim}}
+
