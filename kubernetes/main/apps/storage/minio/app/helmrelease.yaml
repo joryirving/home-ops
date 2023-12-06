@@ -28,10 +28,8 @@ spec:
     controllers:
       main:
         type: statefulset
-
         annotations:
           reloader.stakater.com/auto: "true"
-
         containers:
           main:
             image:
@@ -47,7 +45,7 @@ spec:
               MINIO_UPDATE: "off"
             envFrom:
               - secretRef:
-                  name: minio-secret
+                  name: *app
             args:
               - server
               - /data
