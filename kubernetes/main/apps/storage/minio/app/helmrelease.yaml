@@ -90,13 +90,13 @@ spec:
         enabled: true
         className: internal
         hosts:
-          - host: &host "{{ .Release.Name }}.turbo.ac"
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
                 service:
                   name: main
                   port: http
-          - host: &s3Host s3.turbo.ac
+          - host: &s3Host s3.${SECRET_DOMAIN}
             paths:
               - path: /
                 service:
@@ -108,6 +108,7 @@ spec:
               - *s3Host
     persistence:
       data:
+        enabled: true
         type: nfs
         server: ${NAS_IP}
         path: ${SECRET_NFS_MINIO}
