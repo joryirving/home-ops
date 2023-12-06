@@ -96,6 +96,12 @@ spec:
                 service:
                   name: main
                   port: http
+        tls:
+          - hosts:
+              - *host
+      api:
+        enabled: true
+        className: external
           - host: &s3Host s3.${SECRET_DOMAIN}
             paths:
               - path: /
@@ -104,7 +110,6 @@ spec:
                   port: s3
         tls:
           - hosts:
-              - *host
               - *s3Host
     persistence:
       data:
