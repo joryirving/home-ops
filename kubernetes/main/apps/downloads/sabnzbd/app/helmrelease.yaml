@@ -121,10 +121,13 @@ spec:
       config:
         enabled: true
         existingClaim: *app
-      media:
-        existingClaim: downloads
+      downloads:
+        enabled: true
+        type: nfs
+        server: ${NAS_IP}
+        path: ${SECRET_NFS_DATA}
         globalMounts:
-          - path: /downloads/
+          - path: /downloads
             subPath: usenet
       incomplete:
         type: emptyDir
