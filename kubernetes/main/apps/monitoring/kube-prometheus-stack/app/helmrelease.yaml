@@ -33,28 +33,7 @@ spec:
       enabled: true
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
-      ingress:
-        enabled: true
-        ingressClassName: internal
-        pathType: Prefix
-        hosts:
-          - &host-alert-manager alert-manager.${SECRET_DOMAIN}
-        paths:
-          - /
-        tls:
-          - hosts:
-              - *host-alert-manager
-      alertmanagerSpec:
-        replicas: 2
-        useExistingSecret: true
-        configSecret: alertmanager-secret
-        storage:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: local-path
-              resources:
-                requests:
-                  storage: 1Gi
+      enabled: false
     kubelet:
       enabled: true
       serviceMonitor:
