@@ -2,17 +2,17 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: prometheus-nut-exporter
+  name: nut-exporter
 spec:
   groups:
-    - name: prometheus-nut-exporter.rules
+    - name: nut-exporter.rules
       rules:
         - alert: NutExporterAbsent
           annotations:
             description: NUT exporter has disappeared from Prometheus target discovery.
             summary: NUT Exporter is down.
           expr: |
-            absent(up{job=~".*prometheus-nut-exporter.*"} == 1)
+            absent(up{job=~".*nut-exporter.*"} == 1)
           for: 5m
           labels:
             severity: critical
@@ -61,9 +61,9 @@ metadata:
   labels:
     app.kubernetes.io/component: metrics
     app.kubernetes.io/instance: servers
-    app.kubernetes.io/name: prometheus-nut-exporter
+    app.kubernetes.io/name: nut-exporter
     prometheus: kube-prometheus
-  name: prometheus-nut-exporter-nas
+  name: nut-exporter-nas
 spec:
   endpoints:
     - interval: 30s
@@ -85,14 +85,14 @@ spec:
       port: metrics
       scheme: http
       scrapeTimeout: 30s
-  jobLabel: prometheus-nut-exporter
+  jobLabel: nut-exporter
   namespaceSelector:
     matchNames:
       - monitoring
   selector:
     matchLabels:
-      app.kubernetes.io/instance: prometheus-nut-exporter
-      app.kubernetes.io/name: prometheus-nut-exporter
+      app.kubernetes.io/instance: nut-exporter
+      app.kubernetes.io/name: nut-exporter
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -100,9 +100,9 @@ metadata:
   labels:
     app.kubernetes.io/component: metrics
     app.kubernetes.io/instance: servers
-    app.kubernetes.io/name: prometheus-nut-exporter
+    app.kubernetes.io/name: nut-exporter
     prometheus: kube-prometheus
-  name: prometheus-nut-exporter-network
+  name: nut-exporter-network
 spec:
   endpoints:
     - interval: 30s
@@ -124,11 +124,11 @@ spec:
       port: metrics
       scheme: http
       scrapeTimeout: 30s
-  jobLabel: prometheus-nut-exporter
+  jobLabel: nut-exporter
   namespaceSelector:
     matchNames:
       - monitoring
   selector:
     matchLabels:
-      app.kubernetes.io/instance: prometheus-nut-exporter
-      app.kubernetes.io/name: prometheus-nut-exporter
+      app.kubernetes.io/instance: nut-exporter
+      app.kubernetes.io/name: nut-exporter
