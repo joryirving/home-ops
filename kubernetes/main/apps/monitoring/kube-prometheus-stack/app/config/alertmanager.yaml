@@ -16,7 +16,7 @@ route:
     #   repeat_interval: 5m
     - receiver: "null"
       matchers:
-        - alertname =~ "InfoInhibitor"
+        - alertname =~ "InfoInhibitor|Watchdog"
     - receiver: discord
       continue: true
       matchers:
@@ -48,11 +48,8 @@ receivers:
               Alert description not available
             {{ "{{-" }} end {{ "}}" }}
             {{ "{{-" }} if gt (len .Labels.SortedPairs) 0 {{ "}}" }}
-              <small>
               {{ "{{-" }} range .Labels.SortedPairs {{ "}}" }}
-                <b>{{ "{{" }} .Name {{ "}}" }}:</b> {{ "{{" }} .Value {{ "}}" }}
+                > **{{ "{{" }} .Name {{ "}}" }}:** {{ "{{" }} .Value {{ "}}" }}
               {{ "{{-" }} end {{ "}}" }}
-              </small>
             {{ "{{-" }} end {{ "}}" }}
           {{ "{{-" }} end {{ "}}" }}
-        # url_title: View in Alertmanager
