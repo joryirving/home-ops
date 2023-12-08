@@ -35,7 +35,7 @@ spec:
               repository: ghcr.io/prymitive/karma
               tag: v0.118
             env:
-              CONFIG_FILE: /etc/karma/karma.yaml
+              CONFIG_FILE: &config /etc/karma/karma.yaml
             resources:
               requests:
                 cpu: 100m
@@ -76,4 +76,4 @@ spec:
         type: configMap
         name: karma-configmap
         globalMounts:
-          - path: /etc/karma
+          - path: *config
