@@ -35,7 +35,7 @@ spec:
               repository: ghcr.io/prymitive/karma
               tag: v0.118
             env:
-              CONFIG_FILE: &config /etc/karma/karma.yaml
+              CONFIG_FILE: &config /config/config.yaml
             resources:
               requests:
                 cpu: 100m
@@ -71,10 +71,13 @@ spec:
           - hosts:
               - *host
     persistence:
+      config:
+        enabled: true
+        type: emptyDir
       config-file:
         type: configMap
-        name: gatus-configmap
+        name: karma-configmap
         globalMounts:
           - path: *config
-            subPath: karma.yaml
+            subPath: config.yaml
             readOnly: true
