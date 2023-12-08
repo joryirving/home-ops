@@ -35,7 +35,7 @@ spec:
               repository: ghcr.io/prymitive/karma
               tag: v0.118
             env:
-              ALERTMANAGER_URI: http://alertmanager.monitoring.svc.cluster.local:9093
+              CONFIG_FILE: /etc/karma/karma.yaml
             resources:
               requests:
                 cpu: 100m
@@ -70,3 +70,10 @@ spec:
         tls:
           - hosts:
               - *host
+    persistence:
+      config:
+        enabled: true
+        type: configMap
+        name: karma-configmap
+        globalMounts:
+          - path: /etc/karma
