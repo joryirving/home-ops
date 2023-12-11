@@ -1,5 +1,6 @@
 locals {
   buckets = [
+    "loki",
     "longhorn",
     "postgresql",
     "thanos",
