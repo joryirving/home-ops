@@ -166,6 +166,7 @@ spec:
         apiVersion: 1
         deleteDatasources:
           - { name: Alertmanager, orgId: 1 }
+          - { name: Loki, orgId: 1 }
           - { name: prom_direct, orgId: 1 }
           - { name: Prometheus, orgId: 1 }
         datasources:
@@ -177,14 +178,13 @@ spec:
             url: http://thanos-query-frontend.monitoring.svc.cluster.local:9090
             jsonData:
               prometheusType: Thanos
-          - name: prom_direct
-            type: prometheus
+          - name: Loki
+            type: loki
+            uid: loki
             access: proxy
-            uid: prom_direct
-            isDefault: false
-            url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+            url: http://loki-gateway.monitoring.svc.cluster.local
             jsonData:
-              implementation: prometheus
+              maxLines: 250
           - name: Alertmanager
             type: alertmanager
             access: proxy
@@ -192,8 +192,6 @@ spec:
             jsonData:
               implementation: prometheus
     dashboards:
-      default:
-      cilium:
       data:
         cloudnative-pg:
           url: https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/docs/src/samples/monitoring/grafana-dashboard.json
