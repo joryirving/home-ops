@@ -138,6 +138,25 @@ tasks:
       - { msg: "ReplicationDestination script not found", sh: "test -f {{.templatesDir}}/replicationdestination.tmpl.yaml" }
       - { msg: "Wipe template not found",                 sh: "test -f {{.templatesDir}}/wipe.tmpl.yaml" }
 
+  unstick:
+    desc: Unstick a hung backup job
+    summary: |
+      Args:
+        cluster: Cluster to run command against (required)
+        ns: Namespace the PVC is in (default: default)
+        app: Application to unstick (required)
+    cmds:
+      - kubectl --context {{.cluster}} -n {{.ns}} patch pvc volsync-{{.app}}-src --type=merge -p '{"metadata":{"finalizers":null}}'
+      - kubectl --context {{.cluster}} -n {{.ns}} delete pvc/volsync-{{.app}}-src
+      - kubectl --context {{.cluster}} -n {{.ns}} delete job/volsync-src-{{.app}}
+    env: *env
+    vars:
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
+      ns: '{{.ns | default "default"}}'
+      app: '{{ or .app (fail "Argument (app) is required") }}'
+      controller:
+        sh: "{{.scriptsDir}}/controller.sh {{.app}} {{.ns}}"
+
   # Suspend the Flux ks and hr
   .suspend:
     internal: true
