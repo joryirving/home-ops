@@ -154,8 +154,11 @@ tasks:
       cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
       ns: '{{.ns | default "default"}}'
       app: '{{ or .app (fail "Argument (app) is required") }}'
-      controller:
-        sh: "{{.scriptsDir}}/controller.sh {{.app}} {{.ns}}"
+    preconditions:
+      - { msg: "RepositorySource not found",  sh: "kubectl --context {{.cluster}} -n {{.ns}} get replicationsources {{.app}}" }
+      - { msg: "PVC not found",  sh: "kubectl --context {{.cluster}} -n {{.ns}} get pvc volsync-{{.app}}-src" }
+      - { msg: "Job not found",  sh: "kubectl --context {{.cluster}} -n {{.ns}} get job volsync-src-{{.app}}}" }
+
 
   # Suspend the Flux ks and hr
   .suspend:
