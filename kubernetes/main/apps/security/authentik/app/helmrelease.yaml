@@ -28,6 +28,16 @@ spec:
               name: authentik-secrets
     podAnnotations:
       secret.reloader.stakater.com/reload: authentik-secrets
+    autoscaling:
+      server:
+        enabled: true
+      worker:
+        enabled: true
+    strategy:
+      type: RollingUpdate
+    worker:
+      strategy:
+        type: RollingUpdate
     ingress:
       enabled: true
       ingressClassName: external
