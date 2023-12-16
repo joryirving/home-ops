@@ -25,6 +25,8 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 [![Status-Page](https://img.shields.io/uptimerobot/status/m795944990-a8ddb996473e2d17d455d4d1?color=brightgreeen&label=Status%20Page&style=for-the-badge&logo=statuspage&logoColor=white)](https://status.jory.dev)&nbsp;&nbsp;
 [![Plex](https://img.shields.io/uptimerobot/status/m795945113-909dba6cc3701c4b18fdde53?label=Plex&style=for-the-badge&logo=plex&logoColor=white)](https://status.jory.dev/endpoints/external_plex)
 
+</div>
+
 <div align="center">
 
 [![Age-Days](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_age_days&style=flat-square&label=Age)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
