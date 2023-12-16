@@ -2,19 +2,137 @@
 
 <div align="center">
 
-[![Discord](https://img.shields.io/discord/673534664354430999?color=7289da&label=DISCORD&style=for-the-badge&logo=discord)](https://discord.gg/k8s-at-home 'k8s at home Discord Community')
-[![GitHub stars](https://img.shields.io/github/stars/lildrunkensmurf/k3s-home-cluster?color=green&style=for-the-badge)](https://github.com/lildrunkensmurf/k3s-home-cluster/stargazers 'This repo star count')
-[![GitHub last commit](https://img.shields.io/github/last-commit/lildrunkensmurf/k3s-home-cluster?color=purple&style=for-the-badge)](https://github.com/LilDrunkenSmurf/k3s-home-cluster/commits/main 'Commit History')\
-[![Release](https://img.shields.io/github/v/release/lildrunkensmurf/k3s-home-cluster?style=for-the-badge)](https://github.com/lildrunkensmurf/k3s-home-cluster/releases 'Repo releases')
+<img src="https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/icons/logo.png" align="center" width="144px" height="144px"/>
+
+
+### My Homelab Repository :snowflake:
+
+_... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/renovatebot/renovate) and [GitHub Actions](https://github.com/features/actions)_ 🤖
 
 </div>
 
+<div align="center">
+[![Discord](https://img.shields.io/discord/673534664354430999?style=for-the-badge&label&logo=discord&logoColor=white&color=blue)](https://discord.gg/home-operations)&nbsp;&nbsp;
+[![Kubernetes](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FLilDrunkenSmurf%2Fk3s-home-cluster%2Fmain%2Fkubernetes%2Fmain%2Fapps%2Fkube-system%2Fsystem-upgrade-controller%2Fplans%2Fserver.yaml&query=%24.spec.version&style=for-the-badge&logo=kubernetes&logoColor=white&label=%20)](https://k3s.io/)&nbsp;&nbsp;
+[![Renovate](https://img.shields.io/github/actions/workflow/status/LilDrunkenSmurf/k3s-home-cluster/renovate.yaml?branch=main&label=&logo=renovatebot&style=for-the-badge&color=blue)](https://github.com/LilDrunkenSmurf/k3s-home-cluster/actions/workflows/renovate.yaml)
+
+</div>
+
+<div align="center">
+
+[![Home-Internet](https://img.shields.io/uptimerobot/status/m795944990-a8ddb996473e2d17d455d4d1?color=brightgreeen&label=Home%20Internet&style=for-the-badge&logo=ubiquiti&logoColor=white)](https://status.jory.dev)&nbsp;&nbsp;
+[![Status-Page](https://img.shields.io/uptimerobot/status/m795944990-a8ddb996473e2d17d455d4d1?color=brightgreeen&label=Status%20Page&style=for-the-badge&logo=statuspage&logoColor=white)](https://status.jory.dev)&nbsp;&nbsp;
+[![Plex](https://img.shields.io/uptimerobot/status/m795945113-909dba6cc3701c4b18fdde53?label=Plex&style=for-the-badge&logo=plex&logoColor=white)](https://status.jory.dev/endpoints/external_plex)
+
+<div align="center">
+
+[![Age-Days](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_age_days&style=flat-square&label=Age)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Uptime-Days](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_uptime_days&style=flat-square&label=Uptime)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Node-Count](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_node_count&style=flat-square&label=Nodes)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Pod-Count](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_pod_count&style=flat-square&label=Pods)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![CPU-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_cpu_usage&style=flat-square&label=CPU)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Memory-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_memory_usage&style=flat-square&label=Memory)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Power-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_power_usage&style=flat-square&label=Power)](https://github.com/kashalls/kromgo/)
+
+</div>
+
+---
+
 ## Overview
 
-This repository is for my home K3s cluster, which is a lightweight version of K8s. It's based off of the k8s-at-home [flux template](https://github.com/onedr0p/flux-cluster-template).
-It's supported by [k3s](https://k3s.io) cluster with [Ansible](https://www.ansible.com) backed by [Flux](https://toolkit.fluxcd.io/) and [SOPS](https://toolkit.fluxcd.io/guides/mozilla-sops/).
+This is a monorepository is for my home k3s clusters.
+I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like [Ansible](https://www.ansible.com/), [Terraform](https://www.terraform.io/), [Kubernetes](https://kubernetes.io/), [Flux](https://github.com/fluxcd/flux2), [Renovate](https://github.com/renovatebot/renovate), and [GitHub Actions](https://github.com/features/actions).
 
 The purpose here is to learn k8s, while practicing Gitops.
+
+---
+
+## ⛵ Kubernetes
+
+There is a template over at [onedr0p/flux-cluster-template](https://github.com/onedr0p/flux-cluster-template) if you want to try and follow along with some of the practices I use here.
+
+### Installation
+
+My cluster is [k3s](https://k3s.io/) provisioned overtop bare-metal Debian using the [Ansible](https://www.ansible.com/) galaxy role [ansible-role-k3s](https://github.com/PyratLabs/ansible-role-k3s). This is a semi-hyper-converged cluster, workloads and block storage are sharing the same available resources on my nodes while I have a separate NAS server with ZFS for NFS/SMB shares, bulk file storage and backups.
+
+### Core Components
+
+- [actions-runner-controller](https://github.com/actions/actions-runner-controller): self-hosted Github runners
+- [cilium](https://github.com/cilium/cilium): internal Kubernetes networking plugin
+- [cert-manager](https://cert-manager.io/docs/): creates SSL certificates for services in my cluster
+- [external-dns](https://github.com/kubernetes-sigs/external-dns): automatically syncs DNS records from my cluster ingresses to a DNS provider
+- [external-secrets](https://github.com/external-secrets/external-secrets/): managed Kubernetes secrets using [Bitwarden](https://bitwarden.com/).
+- [ingress-nginx](https://github.com/kubernetes/ingress-nginx/): ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer
+- [longhorn](https://longhorn.io/): Cloud native distributed block storage for Kubernetes
+- [sops](https://toolkit.fluxcd.io/guides/mozilla-sops/): managed secrets for Kubernetes, Ansible, and Terraform which are committed to Git
+- [spegel](https://github.com/XenitAB/spegel): stateless cluster local OCI registry mirror
+- [tf-controller](https://github.com/weaveworks/tf-controller): additional Flux component used to run Terraform from within a Kubernetes cluster.
+- [volsync](https://github.com/backube/volsync): backup and recovery of persistent volume claims
+
+### GitOps
+
+[Flux](https://github.com/fluxcd/flux2) watches the clusters in my [kubernetes](./kubernetes/) folder (see Directories below) and makes the changes to my clusters based on the state of my Git repository.
+
+The way Flux works for me here is it will recursively search the `kubernetes/${cluster}/apps` folder until it finds the most top level `kustomization.yaml` per directory and then apply all the resources listed in it. That aforementioned `kustomization.yaml` will generally only have a namespace resource and one or many Flux kustomizations. Those Flux kustomizations will generally have a `HelmRelease` or other resources related to the application underneath it which will be applied.
+
+[Renovate](https://github.com/renovatebot/renovate) watches my **entire** repository looking for dependency updates, when they are found a PR is automatically created. When some PRs are merged Flux applies the changes to my cluster.
+
+### Directories
+
+This Git repository contains the following directories under [Kubernetes](./kubernetes/).
+
+```sh
+📁 kubernetes
+├── 📁 main            # main cluster
+│   ├── 📁 apps           # applications
+│   ├── 📁 bootstrap      # bootstrap procedures
+│   ├── 📁 flux           # core flux configuration
+│   └── 📁 templates      # re-useable components
+└── 📁 test           # test cluster
+    ├── 📁 apps           # applications
+    ├── 📁 bootstrap      # bootstrap procedures
+    └── 📁 flux           # core flux configuration
+```
+
+### Flux Workflow
+
+This is a high-level look how Flux deploys my applications with dependencies. Below there are 3 apps `postgres`, `authentik` and `weave-gitops`. `postgres` is the first app that needs to be running and healthy before `authentik` and `weave-gitops`. Once `postgres` is healthy `authentik` will be deployed and after that is healthy `weave-gitops` will be deployed.
+
+```mermaid
+graph TD;
+  id1>Kustomization: cluster] -->|Creates| id2>Kustomization: cluster-apps];
+  id2>Kustomization: cluster-apps] -->|Creates| id3>Kustomization: postgres];
+  id2>Kustomization: cluster-apps] -->|Creates| id6>Kustomization: authentik]
+  id2>Kustomization: cluster-apps] -->|Creates| id8>Kustomization: weave-gitops]
+  id2>Kustomization: cluster-apps] -->|Creates| id5>Kustomization: postgres-cluster]
+  id3>Kustomization: postgres] -->|Creates| id4[HelmRelease: postgres];
+  id5>Kustomization: postgres-cluster] -->|Depends on| id3>Kustomization: postgres];
+  id5>Kustomization: postgres-cluster] -->|Creates| id10[Postgres Cluster];
+  id6>Kustomization: authentik] -->|Creates| id7(HelmRelease: authentik);
+  id6>Kustomization: authentik] -->|Depends on| id5>Kustomization: postgres-cluster];
+  id8>Kustomization: weave-gitops] -->|Creates| id9(HelmRelease: weave-gitops);
+  id8>Kustomization: weave-gitops] -->|Depends on| id5>Kustomization: postgres-cluster];
+  id9(HelmRelease: weave-gitops) -->|Depends on| id7(HelmRelease: authentik);
+```
+
+---
+
+## ☁️ Cloud Dependencies
+
+While most of my infrastructure and workloads are self-hosted I do rely upon the cloud for certain key parts of my setup. This saves me from having to worry about two things. (1) Dealing with chicken/egg scenarios and (2) services I critically need whether my cluster is online or not.
+
+The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), [ntfy](https://ntfy.sh/), and [Gatus](https://gatus.io/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
+
+| Service                                         | Use                                                               | Cost           |
+|-------------------------------------------------|-------------------------------------------------------------------|----------------|
+| [Bitwarden](https://bitwarden.com/)             | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
+| [Cloudflare](https://www.cloudflare.com/)       | Domain and S3                                                     | ~$30/yr        |
+| [GitHub](https://github.com/)                   | Hosting this repository and continuous integration/deployments    | Free           |
+| [NextDNS](https://nextdns.io/)                  | My router DNS server which includes AdBlocking                    | ~$20/yr        |
+| [UptimeRobot](https://uptimerobot.com/)         | Monitoring internet connectivity and external facing applications | Free           |
+|                                                 |                                                                   | Total: ~$5/mo  |
+
+---
 
 ## 🔧 Hardware
 
@@ -62,8 +180,32 @@ Total RAM: 16GB (workers)
 | Tripp Lite 1500       | UPS - Server Rack                |
 | Brocade ICX6610-48-PE | 48 Port PoE Switch - Server Rack |
 
+---
+
+## ⭐ Stargazers
+
+<div align="center">
+
+[![Star History Chart](https://api.star-history.com/svg?repos=LilDrunkenSmurf/k3s-home-cluster&type=Date)](https://star-history.com/#LilDrunkenSmurf/k3s-home-cluster&Date)
+
+</div>
+
+---
+
 ## 🤝 Thanks
 
-Big shout out to original flux template, and the k8s-at-home discord.
+Big shout out to original [flux-cluster-template](https://github.com/onedr0p/flux-cluster-template), and the [Home Operations](https://discord.gg/home-operations) Discord community.
 
-[@whazor](https://github.com/whazor) created [this website](https://nanne.dev/k8s-at-home-search/) as a creative way to search Helm Releases across GitHub. You may use it as a means to get ideas on how to configure an applications' Helm values.
+Be sure to check out [kubesearch.dev](https://kubesearch.dev/) for ideas on how to deploy applications or get ideas on what you may deploy.
+
+---
+
+## 📜 Changelog
+
+See my _awful_ [commit history](https://github.com/LilDrunkenSmurf/k3s-home-cluster/commits/main)
+
+---
+
+## 🔏 License
+
+See [LICENSE](./LICENSE)
