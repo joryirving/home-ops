@@ -20,6 +20,7 @@ spec:
   postgresql:
     parameters:
       max_connections: "600"
+      max_slot_wal_keep_size: 10GB
       shared_buffers: 512MB
   resources:
     requests:
@@ -32,11 +33,11 @@ spec:
   backup:
     retentionPolicy: 30d
     barmanObjectStore:
+      data:
+        compression: bzip2
       wal:
         compression: bzip2
         maxParallel: 8
-      data:
-        compression: bzip2
       destinationPath:  &destinationPath s3://postgresql/
       endpointURL: &endpointURL https://s3.${SECRET_DOMAIN}
       serverName: &currentCluster postgres-v1
