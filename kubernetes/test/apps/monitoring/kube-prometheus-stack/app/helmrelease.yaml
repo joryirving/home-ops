@@ -35,6 +35,8 @@ spec:
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
       enabled: false
+    defaultRules:
+      create: true
     kubelet:
       enabled: true
       serviceMonitor:
@@ -108,6 +110,12 @@ spec:
       thanosServiceMonitor:
         enabled: true
       prometheusSpec:
+        additionalAlertManagerConfigs:
+          - static_configs:
+              - targets:
+                  - alertmanager.${SECRET_PRIMARY_DOMAIN}
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
         replicas: 1
         replicaExternalLabelName: __replica__
         ruleSelectorNilUsesHelmValues: false
@@ -115,11 +123,6 @@ spec:
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false
-        alertingEndpoints:
-          - namespace: monitoring
-            name: alertmanager
-            port: 9093
-            apiVersion: v2
         enableAdminAPI: true
         walCompression: true
         enableFeatures:
