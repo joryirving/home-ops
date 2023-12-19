@@ -26,9 +26,17 @@ metrics:
     query: round((network_ups_tools_ups_load{server="nas"}) * 0.01 * 900)
     suffix: "W"
     colors:
-      - { color: "green", min: 0, max: 400 }
-      - { color: "orange", min: 401, max: 750 }
-      - { color: "red", min: 751, max: 9999 }
+      - { color: "green", min: 0, max: 600 }
+      - { color: "orange", min: 601, max: 900 }
+      - { color: "red", min: 901, max: 9999 }
+
+  - name: network_power_usage
+    query: round((network_ups_tools_ups_load{server="network"}) * 0.01 * 600)
+    suffix: "W"
+    colors:
+      - { color: "green", min: 0, max: 200 }
+      - { color: "orange", min: 201, max: 600 }
+      - { color: "red", min: 601, max: 9999 }
 
   - name: cluster_age_days
     query: round((time() - max(kube_node_created{}) ) / 86400)

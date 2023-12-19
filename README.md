@@ -33,7 +33,8 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 [![Pod-Count](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_pod_count&style=flat-square&label=Pods)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
 [![CPU-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_cpu_usage&style=flat-square&label=CPU)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
 [![Memory-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_memory_usage&style=flat-square&label=Memory)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
-[![Power-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_power_usage&style=flat-square&label=Power)](https://github.com/kashalls/kromgo/)
+[![Cluster-Power-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dcluster_power_usage&style=flat-square&label="Cluster-Power")](https://github.com/kashalls/kromgo/)
+[![Network-Power-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fquery%3Fformat%3Dendpoint%26metric%3Dnetwork_power_usage&style=flat-square&label="Network-Power")](https://github.com/kashalls/kromgo/)
 
 </div>
 
