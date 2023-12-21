@@ -8,7 +8,11 @@ spec:
   version: "v1.28.4+k3s2"
   serviceAccountName: system-upgrade
   concurrency: 1
-  cordon: true
+  drain:
+    deleteLocalData: true
+    ignoreDaemonSets: true
+    force: true
+  #cordon: true
   nodeSelector:
     matchExpressions:
       - { key: node-role.kubernetes.io/control-plane, operator: Exists }
