@@ -52,7 +52,9 @@ jobs:
         id: generate-tag
         shell: bash
         #run: echo "tag=ghcr.io/${{ github.repository_owner }}/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
-        run: echo "tag=ghcr.io/lildrunkensmurf/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}" #repo owner needs to be lowercase
+        run: |
+          echo "REPO=${{ github.repository_owner }}"
+          echo "tag=ghcr.io/${REPO,,}/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
 
       - name: Publish manifests
         shell: bash
