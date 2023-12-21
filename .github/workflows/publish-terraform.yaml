@@ -51,7 +51,8 @@ jobs:
       - name: Generate tag
         id: generate-tag
         shell: bash
-        run: echo "tag=ghcr.io/${{ github.repository_owner }}/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
+        run: |
+          echo "tag=ghcr.io/${{ github.repository_owner,, }}/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
 
       - name: Publish manifests
         shell: bash
