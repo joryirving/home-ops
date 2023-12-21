@@ -54,7 +54,8 @@ jobs:
         #run: echo "tag=ghcr.io/${{ github.repository_owner }}/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
         run: |
           echo "REPO=${{ github.repository_owner }}"
-          echo "tag=ghcr.io/${REPO,,}/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
+          echo "repo_name=${REPO,,}"
+          echo "tag=ghcr.io/${repo_name}/manifests/terraform:$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
 
       - name: Publish manifests
         shell: bash
