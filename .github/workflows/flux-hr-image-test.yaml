@@ -8,11 +8,11 @@ on:
     paths: ["kubernetes/**/helmrelease.yaml"]
 
 env:
-  DEBCONF_NONINTERACTIVE_SEEN: "true"
-  DEBIAN_FRONTEND: noninteractive
-  APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE: DontWarn
-  WORKFLOW_RESOURCE_DIR: ./.github/workflows/resources
   WORKFLOW_KUBERNETES_DIR: ./kubernetes
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   changed-files:
@@ -22,21 +22,21 @@ jobs:
       matrix: ${{ steps.changed-files.outputs.all_changed_and_modified_files }}
     steps:
       - name: Generate Token
-        uses: actions/create-github-app-token@2986852ad836768dfea7781f31828eb3e17990fa # v1.6.2
+        uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: "${{ secrets.BOT_APP_ID }}"
           private-key: "${{ secrets.BOT_APP_PRIVATE_KEY }}"
 
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@v4
         with:
           token: "${{ steps.app-token.outputs.token }}"
           fetch-depth: 0
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@56284d80811fb5963a972b438f2870f175e5b7c8 # v40.2.3
+        uses: tj-actions/changed-files@v40
         with:
           files: kubernetes/**/helmrelease.yaml
           json: true
@@ -47,6 +47,7 @@ jobs:
         run: echo "${{ steps.changed-files.outputs.all_changed_and_modified_files }}"
 
   extract-images:
+    if: ${{ needs.changed-files.outputs.matrix != '[]' }}
     name: Extract images from Helm Release
     runs-on: ubuntu-latest
     needs: ["changed-files"]
@@ -59,40 +60,41 @@ jobs:
       matrix: ${{ steps.extract-images.outputs.images }}
     steps:
       - name: Generate Token
-        uses: actions/create-github-app-token@2986852ad836768dfea7781f31828eb3e17990fa # v1.6.2
+        uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: "${{ secrets.BOT_APP_ID }}"
           private-key: "${{ secrets.BOT_APP_PRIVATE_KEY }}"
 
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@v4
         with:
           token: "${{ steps.app-token.outputs.token }}"
           fetch-depth: 0
 
-      - name: Install OS Deps
+      - name: Setup System Tools
         shell: bash
-        run: sudo apt-get update && sudo apt-get install -y curl git xz-utils
+        run: sudo apt-get -qq update && sudo apt-get -qq install --no-install-recommends -y curl git
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@7ac1ec25491415c381d9b62f0657c7a028df52a7 # v24
+      - name: Setup Workflow Tools
+        uses: jdx/rtx-action@v1
         with:
-          github_access_token: "${{ steps.app-token.outputs.token }}"
-
-      - name: Switch to Nix devShell
-        uses: nicknovitski/nix-develop@a2060d116a50b36dfab02280af558e73ab52427d # v1.1.0
-        with:
-          arguments: "${{ env.WORKFLOW_RESOURCE_DIR }}"
+          install: true
+          cache: true
+          rtx_toml: |
+            [tools]
+            helm = "latest"
+            kustomize = "latest"
 
       - name: Extract Images from Helm Release
         id: extract-images
         run: |
-          images=$(npx zx ${{ env.WORKFLOW_RESOURCE_DIR }}/extract-images.mjs --kubernetes-dir "${{ env.WORKFLOW_KUBERNETES_DIR }}" --helmrelease "${{ matrix.files }}")
+          images=$(npx zx ./.github/scripts/extract-images.mjs --kubernetes-dir "${{ env.WORKFLOW_KUBERNETES_DIR }}" --helmrelease "${{ matrix.files }}")
           echo "images=${images}" >> $GITHUB_OUTPUT
           echo "${images}"
 
   test-images:
+    if: ${{ needs.extract-images.outputs.matrix != '[]' }}
     name: Test images from Helm Release
     runs-on: ubuntu-latest
     needs: ["extract-images"]
@@ -104,3 +106,14 @@ jobs:
     steps:
       - name: Test Images from Helm Release
         run: docker pull ${{ matrix.images }}
+
+  # Summarize matrix https://github.community/t/status-check-for-a-matrix-jobs/127354/7
+  test-images-success:
+    if: ${{ always() }}
+    needs: ["test-images"]
+    name: Test images from Helm Release successful
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        name: Check matrix status
+        run: exit 1
