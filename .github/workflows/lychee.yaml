@@ -30,8 +30,9 @@ jobs:
       - name: Scan for broken links
         uses: lycheeverse/lychee-action@v1
         id: lychee
+        env:
+          GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
-          token: "${{ steps.app-token.outputs.token }}"
           args: --verbose --no-progress --exclude-mail './**/*.md'
           output: /tmp/results.md
 
