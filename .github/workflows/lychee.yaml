@@ -34,7 +34,6 @@ jobs:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
           args: --verbose --no-progress --exclude-mail './**/*.md'
-          output: /tmp/results.md
 
       - name: Find Link Checker Issue
         id: issue-number
@@ -42,7 +41,7 @@ jobs:
         with:
           token: "${{ steps.app-token.outputs.token }}"
           state: open
-          labels: "${{ env.WORKFLOW_ISSUE_LABEL }}"
+          labels: "${{ env.ISSUE_LABEL }}"
 
       - name: Update Issue
         uses: peter-evans/create-issue-from-file@v4
@@ -50,5 +49,5 @@ jobs:
           token: "${{ steps.app-token.outputs.token }}"
           title: Link Checker Dashboard 🔗
           issue-number: "${{ steps.issue-number.outputs.issue-number }}"
-          content-filepath: /tmp/results.md
-          labels: "${{ env.WORKFLOW_ISSUE_LABEL }}"
+          content-filepath: ./lychee/out.md
+          labels: "${{ env.ISSUE_LABEL }}"
