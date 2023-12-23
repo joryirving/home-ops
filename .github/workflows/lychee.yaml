@@ -9,7 +9,7 @@ on:
 
 env:
   WORKFLOW_ISSUE_NUMBER: 1309
-  LYCHEE_TMP: lychee/out.md
+  LYCHEE_OUTPUT: lychee/out.md
 
 jobs:
   lychee:
@@ -34,10 +34,11 @@ jobs:
         with:
           token: "${{ steps.app-token.outputs.token }}"
           args: --verbose --no-progress --exclude-mail './**/*.md'
+          output: "${{ env.LYCHEE_OUTPUT }}"
           debug: true
 
       - name: Print Output
-        run: cat "${{ env.LYCHEE_TMP }}"
+        run: cat "${{ env.LYCHEE_OUTPUT }}"
 
       - name: Update Issue
         uses: peter-evans/create-issue-from-file@v4
@@ -45,4 +46,4 @@ jobs:
           token: "${{ steps.app-token.outputs.token }}"
           title: Link Checker Dashboard 🔗
           issue-number: "${{ env.WORKFLOW_ISSUE_NUMBER }}"
-          content-filepath: "${{ env.LYCHEE_TMP }}"
+          content-filepath: "${{ env.LYCHEE_OUTPUT }}"
