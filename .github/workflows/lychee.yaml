@@ -33,7 +33,11 @@ jobs:
         with:
           token: "${{ steps.app-token.outputs.token }}"
           args: --verbose --no-progress --exclude-mail './**/*.md'
-          output: ./lychee/out.md
+          output: lychee/out.md
+          debug: true
+
+      - name: Print Output
+        run: cat lychee/out.md
 
       - name: Update Issue
         uses: peter-evans/create-issue-from-file@v4
@@ -41,4 +45,4 @@ jobs:
           token: "${{ steps.app-token.outputs.token }}"
           title: Link Checker Dashboard 🔗
           issue-number: "${{ env.WORKFLOW_ISSUE_NUMBER }}"
-          content-filepath: ./lychee/out.md
+          content-filepath: lychee/out.md
