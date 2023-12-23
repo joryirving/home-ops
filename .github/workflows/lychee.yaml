@@ -30,10 +30,10 @@ jobs:
       - name: Scan for broken links
         uses: lycheeverse/lychee-action@v1
         id: lychee
-        env:
-          GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
+          token: "${{ steps.app-token.outputs.token }}"
           args: --verbose --no-progress --exclude-mail './**/*.md'
+          output: ./lychee/out.md
 
       - name: Update Issue
         uses: peter-evans/create-issue-from-file@v4
@@ -42,4 +42,3 @@ jobs:
           title: Link Checker Dashboard 🔗
           issue-number: "${{ env.WORKFLOW_ISSUE_NUMBER }}"
           content-filepath: ./lychee/out.md
-          labels: "${{ env.ISSUE_LABEL }}"
