@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: "Flux Image Test"
 
@@ -66,16 +67,11 @@ jobs:
 
       - name: Setup System Tools
         shell: bash
-        run: sudo apt-get -qq update && sudo apt-get -qq install --no-install-recommends -y curl git jo
+        run: sudo apt-get -qq update && sudo apt-get -qq install --no-install-recommends -y curl jo
 
-      - name: Setup Workflow Tools
-        uses: jdx/rtx-action@v1
-        with:
-          install: true
-          rtx_toml: |
-            [tools]
-            flux2 = "latest"
-            yq = "latest"
+      - name: Setup yq
+        uses: frenck/action-setup-yq@v1
+
       - name: Checkout Default Branch
         uses: actions/checkout@v4
         with:
@@ -90,7 +86,7 @@ jobs:
           path: pull
 
       - name: Gather Images in Default Branch
-        uses: docker://ghcr.io/allenporter/flux-local:pr-472
+        uses: docker://ghcr.io/allenporter/flux-local:main
         with:
           args: >-
             get cluster
@@ -98,8 +94,9 @@ jobs:
             --enable-images
             --output yaml
             --output-file default.yaml
+
       - name: Gather Images in Pull Request Branch
-        uses: docker://ghcr.io/allenporter/flux-local:pr-472
+        uses: docker://ghcr.io/allenporter/flux-local:main
         with:
           args: >-
             get cluster
@@ -107,16 +104,19 @@ jobs:
             --enable-images
             --output yaml
             --output-file pull.yaml
+
       - name: Filter Default Branch Results
         shell: bash
         run: |
           yq -r '[.. | .images? | select(. != null)] | flatten | sort | unique | .[]' \
               default.yaml > default.txt
+
       - name: Filter Pull Request Branch Results
         shell: bash
         run: |
           yq -r '[.. | .images? | select(. != null)] | flatten | sort | unique | .[]' \
               pull.yaml > pull.txt
+
       - name: Compare Default and Pull Request Images
         id: extract-images
         shell: bash
@@ -124,6 +124,7 @@ jobs:
           images=$(jo -a $(grep -vf default.txt pull.txt))
           echo "images=${images}" >> $GITHUB_OUTPUT
           echo "${images}"
+
   test-images:
     if: ${{ needs.extract-images.outputs.matrix != '[]' }}
     name: Test images
