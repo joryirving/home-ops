@@ -145,7 +145,7 @@ tasks:
       Args:
         cluster: Cluster to run command against (required)
     cmds:
-      - kubectl --context {{.cluster}} get pvc --all-namespaces --no-headers | grep "dst-bootstrap" | awk '{print $2, $1}' | xargs -l bash -c 'kubectl --context {{.cluster}} delete pvc -n $1 $0'
+      - kubectl --context {{.cluster}} get pvc --all-namespaces --no-headers | grep "bootstrap" | awk '{print $2, $1}' | xargs -l bash -c 'kubectl --context {{.cluster}} delete pvc -n $1 $0'
       - kubectl --context {{.cluster}} get pvc --all-namespaces --no-headers | grep "dst-cache" | awk '{print $2, $1}' | xargs -l bash -c 'kubectl --context {{.cluster}} delete pvc -n $1 $0'
     env: *env
     preconditions:
