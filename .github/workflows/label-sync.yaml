@@ -8,7 +8,7 @@ on:
     branches: ["main"]
     paths: [".github/labels.yaml"]
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * *" # Every day at midnight
 
 jobs:
   label-sync:
@@ -31,4 +31,5 @@ jobs:
         uses: EndBug/label-sync@v2
         with:
           token: "${{ steps.app-token.outputs.token }}"
+          config-file: .github/labels.yaml
           delete-other-labels: true
