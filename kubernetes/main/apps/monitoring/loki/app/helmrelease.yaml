@@ -27,7 +27,7 @@ spec:
     keepHistory: false
   dependsOn:
     - name: local-path-provisioner
-      namespace: kube-system
+      namespace: storage
   values:
     loki:
       structuredConfig:
@@ -120,7 +120,7 @@ spec:
     read:
       replicas: 2
       persistence:
-        storageClass: local-path
+        storageClass: local-hostpath
       extraVolumeMounts:
         - name: rules
           mountPath: /rules
@@ -130,11 +130,11 @@ spec:
     write:
       replicas: 2
       persistence:
-        storageClass: local-path
+        storageClass: local-hostpath
     backend:
       replicas: 2
       persistence:
-        storageClass: local-path
+        storageClass: local-hostpath
       extraVolumeMounts:
         - name: rules
           mountPath: /rules/fake
