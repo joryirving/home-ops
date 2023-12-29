@@ -78,15 +78,15 @@ spec:
           - name: hutao
             devices:
               - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_230314800616
-      # placement:
-      #   mgr: &placement
-      #     nodeAffinity:
-      #       requiredDuringSchedulingIgnoredDuringExecution:
-      #         nodeSelectorTerms:
-      #           - matchExpressions:
-      #               - key: node-role.kubernetes.io/worker
-      #                 operator: Exists
-      #   mon: *placement
+      placement:
+        mgr: &placement
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: node-role.kubernetes.io/worker
+                      operator: Exists
+        mon: *placement
       resources:
         mgr:
           requests:
