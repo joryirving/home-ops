@@ -5,14 +5,12 @@ kind: Kustomization
 metadata:
   name: &app local-path-provisioner
   namespace: flux-system
-  labels:
-    substitution.flux.home.arpa/disabled: "true"
 spec:
-  targetNamespace: kube-system
+  targetNamespace: storage
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/test/apps/kube-system/local-path-provisioner/app
+  path: ./kubernetes/main/apps/storage/local-path-provisioner/app
   prune: true
   sourceRef:
     kind: GitRepository
