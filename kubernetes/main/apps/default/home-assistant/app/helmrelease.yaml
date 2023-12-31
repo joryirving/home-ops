@@ -104,13 +104,7 @@ spec:
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_HASS_TOKEN}}"
           external-dns.alpha.kubernetes.io/target: "external.${SECRET_DOMAIN}"
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  name: main
-                  port: http
-          - host: &customHost hass.${SECRET_DOMAIN}
+          - host: &host hass.${SECRET_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -120,7 +114,6 @@ spec:
         tls:
           - hosts:
               - *host
-              - *customHost
       codeserver:
         enabled: true
         className: internal

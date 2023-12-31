@@ -64,13 +64,7 @@ spec:
           # gethomepage.dev/widget.key: ${WIZARR_TOKEN}
           external-dns.alpha.kubernetes.io/target: "external.${SECRET_DOMAIN}"
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  name: main
-                  port: http
-          - host: &customHost join.${SECRET_DOMAIN}
+          - host: &host join.${SECRET_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -80,7 +74,6 @@ spec:
         tls:
           - hosts:
               - *host
-              - *customHost
     persistence:
       config:
         enabled: true
