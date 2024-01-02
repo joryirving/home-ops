@@ -183,20 +183,20 @@ spec:
             uid: prometheus
             isDefault: true
             access: proxy
-            url: http://thanos-query-frontend.monitoring.svc.cluster.local:9090
+            url: http://thanos-query-frontend.observability.svc.cluster.local:9090
             jsonData:
               prometheusType: Thanos
           - name: Loki
             type: loki
             uid: loki
             access: proxy
-            url: http://loki-gateway.monitoring.svc.cluster.local
+            url: http://loki-gateway.observability.svc.cluster.local
             jsonData:
               maxLines: 250
           - name: Alertmanager
             type: alertmanager
             access: proxy
-            url: http://alertmanager.monitoring.svc.cluster.local:9093
+            url: http://alertmanager.observability.svc.cluster.local:9093
             jsonData:
               implementation: prometheus
     dashboards:
@@ -407,9 +407,9 @@ spec:
         gethomepage.dev/enabled: "true"
         gethomepage.dev/icon: grafana.png
         gethomepage.dev/name: Grafana
-        gethomepage.dev/group: Monitoring
+        gethomepage.dev/group: Observability
         gethomepage.dev/widget.type: grafana
-        gethomepage.dev/widget.url: http://grafana.monitoring
+        gethomepage.dev/widget.url: http://grafana.observability
         gethomepage.dev/widget.username: '{{`{{HOMEPAGE_VAR_GRAFANA_USERNAME}}`}}'
         gethomepage.dev/widget.password: '{{`{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}`}}'
         external-dns.alpha.kubernetes.io/target: "external.${SECRET_DOMAIN}"

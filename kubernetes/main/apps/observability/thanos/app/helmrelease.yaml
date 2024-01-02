@@ -57,7 +57,7 @@ spec:
       replicaLabel: ["__replica__"]
       dnsDiscovery:
         sidecarsService: kube-prometheus-stack-thanos-discovery
-        sidecarsNamespace: monitoring
+        sidecarsNamespace: observability
       stores:
         - "thanos-svc.${SECRET_SECONDARY_DOMAIN}:10901"
     bucketweb:
@@ -98,7 +98,7 @@ spec:
         limits:
           memory: 250Mi
       replicaLabel: __replica__
-      alertmanagers: ["http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093"]
+      alertmanagers: ["http://kube-prometheus-stack-alertmanager.observability.svc.cluster.local:9093"]
       extraFlags: ["--web.prefix-header=X-Forwarded-Prefix"]
       config: |-
         groups:
