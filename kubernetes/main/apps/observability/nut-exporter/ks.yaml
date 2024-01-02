@@ -3,18 +3,14 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app authentik
+  name: &app nut-exporter
   namespace: flux-system
 spec:
-  targetNamespace: security
+  targetNamespace: observability
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  dependsOn:
-    - name: authentik-redis
-    - name: cloudnative-pg-cluster
-    - name: external-secrets-bitwarden
-  path: ./kubernetes/main/apps/security/authentik/app
+  path: ./kubernetes/main/apps/observability/nut-exporter/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -23,27 +19,24 @@ spec:
   interval: 30m
   retryInterval: 1m
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app authentik-redis
+  name: &app nut-exporter-dashboard
   namespace: flux-system
 spec:
-  targetNamespace: security
+  targetNamespace: observability
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/main/apps/security/authentik/redis
+  path: ./kubernetes/main/apps/observability/nut-exporter/app/dashboard
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  wait: true
+  wait: false # no flux ks dependents
   interval: 30m
   retryInterval: 1m
   timeout: 5m

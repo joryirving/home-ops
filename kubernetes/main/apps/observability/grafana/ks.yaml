@@ -3,20 +3,17 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app plex-meta-manager
+  name: &app grafana
   namespace: flux-system
 spec:
-  targetNamespace: media
+  targetNamespace: observability
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: rook-ceph-cluster
-    - name: plex
-    - name: tautulli
-    - name: radarr
-    - name: sonarr
-  path: ./kubernetes/main/apps/media/plex-meta-manager/app
+    - name: cloudnative-pg-cluster
+    - name: external-secrets-bitwarden
+  path: ./kubernetes/main/apps/observability/grafana/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -28,4 +25,3 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      VOLSYNC_CAPACITY: 2Gi
