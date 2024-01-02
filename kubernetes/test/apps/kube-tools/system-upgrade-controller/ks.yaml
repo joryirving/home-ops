@@ -3,19 +3,19 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app intel-device-plugins-operator
+  name: &app system-upgrade-controller
   namespace: flux-system
 spec:
-  targetNamespace: kube-system
+  targetNamespace: kube-tools
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/main/apps/kube-system/intel-device-plugins/operator
+  path: ./kubernetes/test/apps/kube-tools/system-upgrade-controller/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  wait: false
+  wait: true
   interval: 30m
   retryInterval: 1m
   timeout: 5m
@@ -24,14 +24,16 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app intel-device-plugins-gpu
+  name: &app system-upgrade-controller-plans
   namespace: flux-system
 spec:
-  targetNamespace: kube-system
+  targetNamespace: kube-tools
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/main/apps/kube-system/intel-device-plugins/gpu
+  dependsOn:
+    - name: system-upgrade-controller
+  path: ./kubernetes/test/apps/kube-tools/system-upgrade-controller/plans
   prune: true
   sourceRef:
     kind: GitRepository
