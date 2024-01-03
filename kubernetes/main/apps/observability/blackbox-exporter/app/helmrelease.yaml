@@ -51,6 +51,10 @@ spec:
           timeout: 5s
           tcp:
             preferred_ip_protocol: "ip4"
+    dnsConfig:
+      options:
+        - name: ndots
+          value: "1"
     ingress:
       enabled: true
       className: internal
@@ -86,6 +90,22 @@ spec:
         app: prometheus-operator
         release: prometheus
       rules:
+        - alert: BlackboxSslCertificateWillExpireSoon
+          expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 3
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            description: |-
+              The SSL certificate for {{"{{ $labels.target }}"}} will expire in less than 3 days
+        - alert: BlackboxSslCertificateExpired
+          expr: probe_ssl_earliest_cert_expiry - time() <= 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            description: |-
+              The SSL certificate for {{"{{ $labels.target }}"}} has expired
         - alert: BlackboxProbeFailed
           expr: probe_success == 0
           for: 5m
@@ -93,10 +113,10 @@ spec:
             severity: critical
           annotations:
             description: |-
-              The host "{{ $labels.target }}" is currently unreachable
+              The host {{"{{ $labels.target }}"}} is currently unreachable
         - alert: SlowResponseTime
           annotations:
-            message: The response time for "{{ $labels.target }}" has been greater than 30 seconds for 5 minutes.
+            message: The response time for {{"{{ $labels.target }}"}} has been greater than 30 seconds for 5 minutes.
           expr: probe_duration_seconds > 30
           for: 5m
           labels:
