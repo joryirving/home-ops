@@ -5,5 +5,10 @@ kind: Kustomization
 resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
-  - ./scrapeconfigs
   - ./prometheusrules
+configMapGenerator:
+  - name: kube-state-metrics-configmap
+    files:
+      - kube-state-metrics.yaml=./resources/kube-state-metrics.yaml
+generatorOptions:
+  disableNameSuffixHash: true
