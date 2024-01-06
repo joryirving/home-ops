@@ -21,7 +21,7 @@ spec:
       }
   backendConfigsFrom:
   - kind: Secret
-    name: terraform-minio-secret
+    name: terraform-backend-secret
   path: ./minio
   sourceRef:
     kind: OCIRepository
@@ -30,14 +30,6 @@ spec:
   runnerPodTemplate:
     spec:
       image: ghcr.io/lildrunkensmurf/tf-runner-bitwarden:sha-97d0062f5da0b436bcef8653d43e0f7a29e2509c
-      volumeMounts:
-        - name: tf-controller-sops-key
-          mountPath: /home/runner/.config/sops/age/keys.txt
-          subPath: keys.txt
-      volumes:
-        - name: tf-controller-sops-key
-          secret:
-            secretName: sops-age
-            items:
-            - key: age.agekey
-              path: keys.txt
+  varsFrom:
+    - kind: Secret
+      name: minio-terraform-secret
