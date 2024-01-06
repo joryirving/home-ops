@@ -40,13 +40,13 @@ variable "portainer_secret" {
   sensitive   = true
 }
 
-variable "discord_id" {
+variable "discord_client_id" {
   type        = string
   description = "Discord Client ID"
   sensitive   = true
 }
 
-variable "discord_secret" {
+variable "discord_client_secret" {
   type        = string
   description = "Discord Client Secret"
   sensitive   = true
