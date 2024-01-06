@@ -72,6 +72,6 @@ resource "authentik_source_oauth" "discord" {
   user_matching_mode  = "email_deny"
 
   provider_type   = "discord"
-  consumer_key    = data.sops_file.authentik_secrets.data["discord_client_id"]
-  consumer_secret = data.sops_file.authentik_secrets.data["discord_client_secret"]
+  consumer_key    = var.discord_client_id
+  consumer_secret = var.discord_client_secret
 }

@@ -3,7 +3,7 @@ data "authentik_certificate_key_pair" "generated" {
 }
 
 resource "authentik_tenant" "home" {
-  domain           = data.sops_file.authentik_secrets.data["cluster_domain"]
+  domain           = var.cluster_domain
   default          = false
   branding_title   = "Home"
   branding_logo    = "/static/dist/assets/icons/icon_left_brand.svg"
