@@ -39,11 +39,22 @@ spec:
               tag: 1.32.8.7639-fb6452ebf@sha256:637fe10cef736f249d96cb004c12f81646c81ca17ddce22374ea8782aa6646c2
             env:
               TZ: ${TIMEZONE}
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /identity
+                    port: 32400
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
             resources:
               requests:
                 cpu: 100m
-                gpu.intel.com/i915: 1
-                memory: 4G
               limits:
                 gpu.intel.com/i915: 1
                 memory: 16G
