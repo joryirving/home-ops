@@ -14,10 +14,6 @@ spec:
   superuserSecret:
     name: cloudnative-pg-secret
   enableSuperuserAccess: true
-  # Note: Bootstrap is needed when recovering from an existing cnpg cluster
-  # bootstrap:
-  #   recovery:
-  #     source: &previousCluster postgres-v2
   postgresql:
     parameters:
       max_connections: "600"
@@ -31,39 +27,37 @@ spec:
       memory: "4Gi"
   monitoring:
     enablePodMonitor: true
+    # https://github.com/cloudnative-pg/cloudnative-pg/issues/2501
+    podMonitorMetricRelabelings:
+      - { sourceLabels: ["cluster"], targetLabel: cnpg_cluster, action: replace }
+      - { regex: cluster, action: labeldrop }
   backup:
     retentionPolicy: 30d
-    barmanObjectStore:
+    barmanObjectStore: &barmanObjectStore
       data:
         compression: bzip2
       wal:
         compression: bzip2
         maxParallel: 8
-      destinationPath:  &destinationPath s3://postgresql/
-      endpointURL: &endpointURL https://s3.${SECRET_DOMAIN}
+      destinationPath:  s3://postgresql/
+      endpointURL: https://s3.${SECRET_DOMAIN}
+      # Note: serverName version needs to be incremented or changed
+      # when recovering from an existing cnpg cluster
       serverName: &currentCluster postgres-v3
       s3Credentials:
         accessKeyId:
-          name: &accessKeyname cloudnative-pg-secret
-          key: &accessKeykey aws-access-key-id
+          name: cloudnative-pg-secret
+          key: aws-access-key-id
         secretAccessKey:
-          name: &secretAccessKeyname cloudnative-pg-secret
-          key: &secretAccessKey aws-secret-access-key
-  # Note: externalClusters is needed when recovering from an existing cnpg cluster
+          name: cloudnative-pg-secret
+          key: aws-secret-access-key
+  # # Note: previousCluster needs to be set to the name of the previous
+  # # cluster when recovering from an existing cnpg cluster
+  # bootstrap:
+  #   recovery:
+  #     source: &previousCluster postgres-v2
   # externalClusters:
   #   - name: *previousCluster
   #     barmanObjectStore:
-  #       wal:
-  #         compression: bzip2
-  #         maxParallel: 8
-  #       data:
-  #         compression: bzip2
-  #       destinationPath: *destinationPath
-  #       endpointURL: *endpointURL
-  #       s3Credentials:
-  #         accessKeyId:
-  #           name: *accessKeyname
-  #           key: *accessKeykey
-  #         secretAccessKey:
-  #           name: *secretAccessKeyname
-  #           key: *secretAccessKey
+  #       <<: *barmanObjectStore
+  #       serverName: *previousCluster
