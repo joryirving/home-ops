@@ -14,7 +14,6 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -107,7 +106,6 @@ spec:
           - host: &host hass.${SECRET_DOMAIN}
             paths:
               - path: /
-                pathType: Prefix
                 service:
                   name: main
                   port: http
@@ -121,7 +119,6 @@ spec:
           - host: &host hass-code.${SECRET_DOMAIN}
             paths:
             - path: /
-              pathType: Prefix
               service:
                 name: codeserver
                 port: http
