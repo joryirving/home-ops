@@ -20,8 +20,8 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 <div align="center">
 
 [![Home-Internet](https://img.shields.io/uptimerobot/status/m795944990-a8ddb996473e2d17d455d4d1?color=brightgreeen&label=Home%20Internet&style=for-the-badge&logo=ubiquiti&logoColor=white)](https://status.jory.dev)&nbsp;&nbsp;
-[![Status-Page](https://img.shields.io/uptimerobot/status/m795944990-a8ddb996473e2d17d455d4d1?color=brightgreeen&label=Status%20Page&style=for-the-badge&logo=statuspage&logoColor=white)](https://status.jory.dev/endpoints/_gatus)&nbsp;&nbsp;
-[![Plex](https://img.shields.io/uptimerobot/status/m795945113-909dba6cc3701c4b18fdde53?label=Plex&style=for-the-badge&logo=plex&logoColor=white)](https://status.jory.dev/endpoints/external_plex)
+[![Status-Page](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2F_gatus%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Status%20Page)](https://status.jory.dev/endpoints/_gatus)&nbsp;&nbsp;
+[![Plex](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2F_plex%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=plex&logoColor=white&label=Plex)](https://status.jory.dev/endpoints/external_plex)
 
 </div>
 
