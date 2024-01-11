@@ -39,12 +39,12 @@ tasks:
       - kubectl --context {{.cluster}} -n {{.ns}} delete job list-{{.app}}-{{.ts}}
     env: *env
     vars:
-      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
       ns: '{{.ns | default "default"}}'
       app: '{{ or .app (fail "Argument (app) is required") }}'
     preconditions:
-      - { msg: "Wait script not found",   sh: "test -f {{.scriptsDir}}/wait.sh" }
-      - { msg: "List template not found", sh: "test -f {{.templatesDir}}/list.tmpl.yaml" }
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Wait script not found",          sh: "test -f {{.scriptsDir}}/wait.sh" }
+      - { msg: "List template not found",        sh: "test -f {{.templatesDir}}/list.tmpl.yaml" }
     silent: true
 
   unlock:
@@ -63,12 +63,12 @@ tasks:
       - kubectl --context {{.cluster}} -n {{.ns}} delete job unlock-{{.app}}-{{.ts}}
     env: *env
     vars:
-      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
       ns: '{{.ns | default "default"}}'
       app: '{{ or .app (fail "Argument (app) is required") }}'
     preconditions:
-      - { msg: "Wait script not found",     sh: "test -f {{.scriptsDir}}/wait.sh" }
-      - { msg: "Unlock template not found", sh: "test -f {{.templatesDir}}/unlock.tmpl.yaml" }
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Wait script not found",          sh: "test -f {{.scriptsDir}}/wait.sh" }
+      - { msg: "Unlock template not found",      sh: "test -f {{.templatesDir}}/unlock.tmpl.yaml" }
     silent: true
 
   # To run backup jobs in parallel for all replicationsources:
@@ -82,7 +82,7 @@ tasks:
         app: Application to snapshot (required)
     cmds:
       # # TODO: Only suspend when a arg is passed to the task
-      # # https://github.com/go-task/task/issues/608
+      # # Ref: https://github.com/go-task/task/issues/608
       # - task: .suspend
       #   vars: *env
       - kubectl --context {{.cluster}} -n {{.ns}} patch replicationsources {{.app}} --type merge -p '{"spec":{"trigger":{"manual":"{{.ts}}"}}}'
@@ -96,9 +96,10 @@ tasks:
       controller:
         sh: true && {{.scriptsDir}}/controller.sh {{.app}} {{.ns}} {{.cluster}}
     preconditions:
-      - { msg: "Controller script not found", sh: "test -f {{.scriptsDir}}/controller.sh" }
-      - { msg: "Wait script not found",       sh: "test -f {{.scriptsDir}}/wait.sh" }
-      - { msg: "RepositorySource not found",  sh: "kubectl --context {{.cluster}} -n {{.ns}} get replicationsources {{.app}}" }
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Controller script not found",    sh: "test -f {{.scriptsDir}}/controller.sh" }
+      - { msg: "Wait script not found",          sh: "test -f {{.scriptsDir}}/wait.sh" }
+      - { msg: "RepositorySource not found",     sh: "kubectl --context {{.cluster}} -n {{.ns}} get replicationsources {{.app}}" }
 
   # To run restore jobs in parallel for all replicationdestinations:
   #    - kubectl get replicationsources --all-namespaces --no-headers | awk '{print $2, $1}' | xargs --max-procs=4 -l bash -c 'task volsync:restore app=$0 ns=$1'
@@ -121,7 +122,6 @@ tasks:
         vars: *env
     env: *env
     vars:
-      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
       ns: '{{.ns | default "default"}}'
       app: '{{ or .app (fail "Argument (app) is required") }}'
       previous: '{{.previous | default 2}}'
@@ -134,6 +134,7 @@ tasks:
       pgid:
         sh: kubectl --context {{.cluster}} -n {{.ns}} get replicationsources/{{.app}} -o jsonpath="{.spec.restic.moverSecurityContext.runAsGroup}"
     preconditions:
+      - { msg: "Argument (cluster) is required",          sh: "test -n {{.cluster}}" }
       - { msg: "Controller script not found",             sh: "test -f {{.scriptsDir}}/controller.sh" }
       - { msg: "Wait script not found",                   sh: "test -f {{.scriptsDir}}/wait.sh" }
       - { msg: "ReplicationDestination script not found", sh: "test -f {{.templatesDir}}/replicationdestination.tmpl.yaml" }
@@ -150,28 +151,6 @@ tasks:
     env: *env
     preconditions:
       - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
-
-  unstick:
-    desc: Unstick a hung backup job
-    summary: |
-      Args:
-        cluster: Cluster to run command against (required)
-        ns: Namespace the PVC is in (default: default)
-        app: Application to unstick (required)
-    cmds:
-      - kubectl --context {{.cluster}} -n {{.ns}} patch pvc volsync-{{.app}}-src --type=merge -p '{"metadata":{"finalizers":null}}'
-      - kubectl --context {{.cluster}} -n {{.ns}} delete pvc/volsync-{{.app}}-src
-      - kubectl --context {{.cluster}} -n {{.ns}} delete job/volsync-src-{{.app}}
-    env: *env
-    vars:
-      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
-      ns: '{{.ns | default "default"}}'
-      app: '{{ or .app (fail "Argument (app) is required") }}'
-    preconditions:
-      - { msg: "RepositorySource not found",  sh: "kubectl --context {{.cluster}} -n {{.ns}} get replicationsources {{.app}}" }
-      - { msg: "PVC not found",  sh: "kubectl --context {{.cluster}} -n {{.ns}} get pvc volsync-{{.app}}-src" }
-      - { msg: "Job not found",  sh: "kubectl --context {{.cluster}} -n {{.ns}} get job volsync-src-{{.app}}" }
-
 
   # Suspend the Flux ks and hr
   .suspend:
