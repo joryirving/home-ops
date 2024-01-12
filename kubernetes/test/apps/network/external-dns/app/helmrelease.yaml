@@ -34,14 +34,14 @@ spec:
             name: external-dns-secret
             key: api-token
     extraArgs:
-      - --annotation-filter=external-dns.alpha.kubernetes.io/target
+      - --ingress-class=external
       - --cloudflare-proxied
       - --crd-source-apiversion=externaldns.k8s.io/v1alpha1
       - --crd-source-kind=DNSEndpoint
     policy: sync
     sources: ["crd", "ingress", "service"]
     txtPrefix: k8s.
-    txtOwnerId: default
+    txtOwnerId: homelab
     domainFilters: ["${SECRET_DOMAIN}"]
     serviceMonitor:
       enabled: true
