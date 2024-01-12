@@ -13,7 +13,6 @@ spec:
         bucket = "terraform-state"
         key    = "minio/minio.tfstate"
 
-        endpoint                    = "https://s3.${SECRET_DOMAIN}"
         region                      = "main"
         skip_credentials_validation = true
         skip_metadata_api_check     = true
@@ -30,7 +29,7 @@ spec:
     namespace: flux-system
   runnerPodTemplate:
     spec:
-      image: ghcr.io/lildrunkensmurf/tf-runner-bitwarden:0.15.1@sha256:3e00ec453396c6d69d37fa0e464dfbb50d4f0643b8c2cbef4fdb6b332330960d
+      image: ghcr.io/lildrunkensmurf/tf-runner-bitwarden:sha-97d0062f5da0b436bcef8653d43e0f7a29e2509c
   varsFrom:
     - kind: Secret
       name: terraform-minio-secret
