@@ -11,7 +11,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: intel-device-plugins-gpu
+    - name: external-secrets-bitwarden
   path: ./kubernetes/main/apps/media/plex/app
   prune: true
   sourceRef:
@@ -54,7 +54,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app plex-meta-manager
+  name: &app plex-image-cleanup
   namespace: flux-system
 spec:
   targetNamespace: media
@@ -62,12 +62,9 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: rook-ceph-cluster
     - name: plex
-    - name: tautulli
-    - name: radarr
-    - name: sonarr
-  path: ./kubernetes/main/apps/media/plex/plex-meta-manager
+    - name: external-secrets-bitwarden
+  path: ./kubernetes/main/apps/media/plex/plex-image-cleanup
   prune: true
   sourceRef:
     kind: GitRepository
@@ -80,12 +77,13 @@ spec:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 2Gi
+
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app plex-image-cleanup
+  name: &app plex-meta-manager
   namespace: flux-system
 spec:
   targetNamespace: media
@@ -94,7 +92,11 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
-  path: ./kubernetes/main/apps/media/plex/plex-image-cleanup
+    - name: tautulli
+    - name: radarr
+    - name: sonarr
+    - name: external-secrets-bitwarden
+  path: ./kubernetes/main/apps/media/plex/plex-meta-manager
   prune: true
   sourceRef:
     kind: GitRepository

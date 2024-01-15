@@ -12,21 +12,21 @@ spec:
       version: 0.15.0
       sourceRef:
         kind: HelmRepository
-        name: kubernetes-sigs-nfd
+        name: node-feature-discovery
         namespace: flux-system
-      interval: 30m
   install:
     crds: CreateReplace
+    remediation:
+      retries: 3
   upgrade:
+    cleanupOnFail: true
     crds: CreateReplace
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
   values:
     worker:
-      resources:
-        requests:
-          cpu: 15m
-          memory: 64M
-        limits:
-          memory: 64M
       config:
         core:
           sources: ["custom", "pci", "usb"]
