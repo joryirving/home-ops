@@ -93,7 +93,8 @@ This Git repository contains the following directories under [Kubernetes](./kube
 └── 📁 teyvat             # teyvat cluster
     ├── 📁 apps           # applications
     ├── 📁 bootstrap      # bootstrap procedures
-    └── 📁 flux           # core flux configuration
+    ├── 📁 flux           # core flux configuration
+    └── 📁 templates      # re-useable components
 ```
 
 ### Flux Workflow
@@ -155,8 +156,8 @@ Total RAM: 24GB
 | Name   | Device         | CPU           | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
 |--------|----------------|---------------|-----------|-------------|------|--------|-------------------|
 | Navia | Beelink Mini-S | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB | Debian | k8s control-plane |
-| HuTao | Lenovo M910q   | i5-7500T       | 240GB SSD | 1TB NBME    | 64GB | Debian | k8s control-plane |
 | Ganyu | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s control-plane |
+| HuTao | Lenovo M910q   | i5-7500T       | 240GB SSD | 1TB NBME    | 64GB | Debian | k8s control-plane |
 | Ayaka | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
 | Eula  | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
 
