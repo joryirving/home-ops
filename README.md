@@ -65,6 +65,7 @@ My cluster is [k3s](https://k3s.io/) provisioned overtop bare-metal Debian using
 - [external-secrets](https://github.com/external-secrets/external-secrets/): managed Kubernetes secrets using [Bitwarden](https://bitwarden.com/).
 - [ingress-nginx](https://github.com/kubernetes/ingress-nginx/): ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer
 - [longhorn](https://longhorn.io/): Cloud native distributed block storage for Kubernetes
+- [rook-ceph](https://rook.io/): Cloud native distributed block storage for Kubernetes
 - [sops](https://toolkit.fluxcd.io/guides/mozilla-sops/): managed secrets for Kubernetes, Ansible, and Terraform which are committed to Git
 - [spegel](https://github.com/XenitAB/spegel): stateless cluster local OCI registry mirror
 - [tf-controller](https://github.com/weaveworks/tf-controller): additional Flux component used to run Terraform from within a Kubernetes cluster.
@@ -84,12 +85,12 @@ This Git repository contains the following directories under [Kubernetes](./kube
 
 ```sh
 📁 kubernetes
-├── 📁 main            # main cluster
+├── 📁 pi                 # pi cluster
 │   ├── 📁 apps           # applications
 │   ├── 📁 bootstrap      # bootstrap procedures
 │   ├── 📁 flux           # core flux configuration
 │   └── 📁 templates      # re-useable components
-└── 📁 test           # test cluster
+└── 📁 teyvat             # teyvat cluster
     ├── 📁 apps           # applications
     ├── 📁 bootstrap      # bootstrap procedures
     └── 📁 flux           # core flux configuration
@@ -137,32 +138,30 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 ## 🔧 Hardware
 
-### Main Kubernetes Cluster
+### Pi Kubernetes Cluster
 
-| Name   | Device         | CPU            | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
-|--------|----------------|----------------|-----------|-------------|------|--------|-------------------|
-| Raiden | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 8GB  | Debian | k8s control-plane |
-| Nahida | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB  | Debian | k8s control-plane |
-| Furina | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 4GB  | Debian | k8s control-plane |
-| Eula   | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
-| Ayaka  | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
-| HuTao  | Lenovo M910q   | i5-7500T       | 240GB SSD | 1TB NBME    | 64GB | Debian | k8s Worker        |
-| Ganyu  | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s Worker        |
+| Name    | Device         | CPU        | OS Disk   | RAM | OS     | Purpose           |
+|---------|----------------|------------|-----------|-----|--------|-------------------|
+| FuXuan   | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s control-plane |
+| Jingliu  | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s Worker        |
+| Kafka    | Raspberry Pi4 | Cortex A72 | 240GB SSD | 4GB | Debian | k8s Worker        |
+| Seele    | Raspberry Pi4 | Cortex A72 | 240GB SSD | 4GB | Debian | k8s Worker        |
 
-Total CPU: 36 threads (workers)
+Total CPU: 20 threads
+Total RAM: 24GB
 
-Total RAM: 256GB (workers)
+### Teyvat Kubernetes Cluster
 
-### Test Kubernetes Cluster
+| Name   | Device         | CPU           | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
+|--------|----------------|---------------|-----------|-------------|------|--------|-------------------|
+| Navia | Beelink Mini-S | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB | Debian | k8s control-plane |
+| HuTao | Lenovo M910q   | i5-7500T       | 240GB SSD | 1TB NBME    | 64GB | Debian | k8s control-plane |
+| Ganyu | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s control-plane |
+| Ayaka | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
+| Eula  | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
 
-| Name    | Device         | CPU            | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
-|---------|----------------|----------------|-----------|-------------|------|--------|-------------------|
-| Venti   | Raspberry Pi4  | Cortex A72     | 240GB SSD | -           | 8GB  | Debian | k8s control-plane |
-| Kazuha  | Beelink Mini-S | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB | Debian | k8s Worker        |
-
-Total CPU: 2 threads (workers)
-
-Total RAM: 16GB (workers)
+Total CPU: 40 threads
+Total RAM: 272GB
 
 ### Supporting Hardware
 

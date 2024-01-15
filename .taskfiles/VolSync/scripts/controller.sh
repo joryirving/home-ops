@@ -2,7 +2,7 @@
 
 APP=$1
 NAMESPACE="${2:-default}"
-CLUSTER="${3:-main}"
+CLUSTER="${3:-teyvat}"
 
 is_deployment() {
     kubectl --context "${CLUSTER}" -n "${NAMESPACE}" get deployment "${APP}" >/dev/null 2>&1
