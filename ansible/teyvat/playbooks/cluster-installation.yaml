@@ -73,17 +73,6 @@
         group: root
         mode: "0644"
 
-    ## This doesn't work as the kube-context doesn't exist yet.
-    # - name: Taint nodes
-    #   when: "'master' in group_names"
-    #   kubernetes.core.k8s_taint:
-    #     state: present
-    #     name: "{{ inventory_hostname }}"
-    #     taints:
-    #       - effect: NoSchedule
-    #         key: "node-role.kubernetes.io/control-plane"
-    #         value: "true"
-
   handlers:
     - name: Restart Kubernetes
       ansible.builtin.systemd:
