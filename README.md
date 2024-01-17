@@ -12,8 +12,8 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 <div align="center">
 
 [![Discord](https://img.shields.io/discord/673534664354430999?style=for-the-badge&label&logo=discord&logoColor=white&color=blue)](https://discord.gg/home-operations)&nbsp;&nbsp;
-[![Kubernetes](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FLilDrunkenSmurf%2Fk3s-home-cluster%2Fmain%2Fkubernetes%2Fmain%2Fapps%2Fkube-tools%2Fsystem-upgrade-controller%2Fplans%2Fserver.yaml&query=%24.spec.version&style=for-the-badge&logo=kubernetes&logoColor=white&label=%20)](https://k3s.io/)&nbsp;&nbsp;
-[![Renovate](https://img.shields.io/github/actions/workflow/status/LilDrunkenSmurf/k3s-home-cluster/renovate.yaml?branch=main&label=&logo=renovatebot&style=for-the-badge&color=blue)](https://github.com/LilDrunkenSmurf/k3s-home-cluster/actions/workflows/renovate.yaml)
+[![Kubernetes](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FLilDrunkenSmurf%2Fk3s-home-cluster%2Fmain%2Fkubernetes%2Fteyvat%2Fapps%2Fkube-tools%2Fsystem-upgrade-controller%2Fplans%2Fserver.yaml&query=%24.spec.version&style=for-the-badge&logo=kubernetes&logoColor=white&label=%20)](https://k3s.io/)&nbsp;&nbsp;
+[![Renovate](https://img.shields.io/github/actions/workflow/status/LilDrunkenSmurf/LilDrunkenSmurf/scheduled-renovate.yaml?branch=main&label=&logo=renovatebot&style=for-the-badge&color=blue)](https://github.com/LilDrunkenSmurf/LilDrunkenSmurf/actions/workflows/scheduled-renovate.yaml)
 
 </div>
 
