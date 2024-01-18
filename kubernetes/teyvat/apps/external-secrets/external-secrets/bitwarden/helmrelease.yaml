@@ -33,7 +33,7 @@ spec:
           main:
             image:
               repository: ghcr.io/lildrunkensmurf/bitwarden-cli
-              tag: 2024.1.0@sha256:b61dc1b0b73b4f6bb23cfb942b4920b59d65d84b7326a900e67f7ac4ea2c2ef8
+              tag: 2024.1.0@sha256:1a3967acfff488f1df77640e1a9c8430868aff8c59a8b5ff00ac06a580be24da
             envFrom:
               - secretRef:
                   name: bitwarden-cli
@@ -43,7 +43,7 @@ spec:
                 custom: true
                 spec:
                   exec:
-                    command:  ["sh", "-c", "curl -X POST -s http://127.0.0.1:8087/sync | jq -e '.success == true'"]
+                    command:  ["wget", "-q", "http://127.0.0.1:8087/sync", "--post-data=''"]
                   timeoutSeconds: 5
               readiness:
                 enabled: false
