@@ -1,0 +1,29 @@
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+deletionPolicy: Delete
+driver: driver.longhorn.io
+parameters:
+  # needed for successful VolumeSnapshots
+  # see: https://github.com/longhorn/longhorn/issues/2534#issuecomment-1010508714
+  type: snap
+metadata:
+  annotations:
+    snapshot.storage.kubernetes.io/is-default-class: "true"
+  name: longhorn-snapclass
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+reclaimPolicy: Delete
+provisioner: driver.longhorn.io
+parameters:
+  # used for volsync to copy from.
+  # we set this to 1 replica for faster restores from the snapclass
+  dataLocality: disabled
+  numberOfReplicas: "1"
+  replicaAutoBalance: best-effort
+  staleReplicaTimeout: "30"
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+metadata:
+  name: longhorn-snapshot
