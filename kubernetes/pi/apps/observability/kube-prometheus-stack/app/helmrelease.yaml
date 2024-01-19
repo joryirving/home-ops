@@ -100,7 +100,7 @@ spec:
         ingressClassName: internal
         pathType: Prefix
         hosts:
-          - &host prometheus.pi.${SECRET_DOMAIN}
+          - &host prometheus.${SECRET_DOMAIN}
         tls:
           - hosts:
               - *host
@@ -112,7 +112,7 @@ spec:
         additionalAlertManagerConfigs:
           - static_configs:
               - targets:
-                  - alert-manager.${SECRET_DOMAIN}
+                  - alert-manager.${SECRET_PRIMARY_DOMAIN}
         externalLabels:
           cluster: ${CLUSTER_NAME}
         replicas: 1
