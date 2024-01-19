@@ -35,8 +35,6 @@ spec:
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
       enabled: false
-    defaultRules:
-      create: true
     kubelet:
       enabled: true
       serviceMonitor:
@@ -100,7 +98,7 @@ spec:
         ingressClassName: internal
         pathType: Prefix
         hosts:
-          - &host prometheus.pi.${SECRET_DOMAIN}
+          - &host prometheus.${SECRET_DOMAIN}
         tls:
           - hosts:
               - *host
@@ -112,9 +110,7 @@ spec:
         additionalAlertManagerConfigs:
           - static_configs:
               - targets:
-                  - alert-manager.${SECRET_DOMAIN}
-        externalLabels:
-          cluster: ${CLUSTER_NAME}
+                  - alert-manager.${SECRET_PRIMARY_DOMAIN}
         replicas: 1
         replicaExternalLabelName: __replica__
         ruleSelectorNilUsesHelmValues: false
@@ -128,6 +124,8 @@ spec:
           - auto-gomaxprocs
           - memory-snapshot-on-shutdown
           - new-service-discovery-manager
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
         thanos:
           image: quay.io/thanos/thanos:v0.33.0
           objectStorageConfig:
@@ -151,15 +149,6 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
-        additionalScrapeConfigs:
-          - job_name: kube-vip
-            scrape_interval: 1m
-            scrape_timeout: 10s
-            honor_timestamps: true
-            metrics_path: /metrics
-            static_configs:
-              - targets:
-                  - 192.168.1.50:2112
     grafana:
       enabled: false
     nodeExporter:
