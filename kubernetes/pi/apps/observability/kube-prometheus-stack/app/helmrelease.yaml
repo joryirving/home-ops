@@ -100,7 +100,7 @@ spec:
         ingressClassName: internal
         pathType: Prefix
         hosts:
-          - &host prometheus.${SECRET_DOMAIN}
+          - &host prometheus.pi.${SECRET_DOMAIN}
         tls:
           - hosts:
               - *host
@@ -112,7 +112,7 @@ spec:
         additionalAlertManagerConfigs:
           - static_configs:
               - targets:
-                  - alert-manager.${SECRET_PRIMARY_DOMAIN}
+                  - alert-manager.${SECRET_DOMAIN}
         externalLabels:
           cluster: ${CLUSTER_NAME}
         replicas: 1
@@ -140,7 +140,7 @@ spec:
         enabled: true
         type: LoadBalancer
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: "thanos-svc.${SECRET_DOMAIN}"
+          external-dns.alpha.kubernetes.io/hostname: "thanos-svc.pi.${SECRET_DOMAIN}"
         externalTrafficPolicy: Cluster
         retention: 2d
         retentionSize: 15GB
