@@ -29,12 +29,17 @@ spec:
     fullnameOverride: k8s-gateway
     domain: "${SECRET_DOMAIN}"
     ttl: 1
+    fallthrough:
+      enabled: true
     service:
       type: LoadBalancer
       port: 53
       annotations:
-        io.cilium/lb-ipam-ips: "192.168.1.220"
+        io.cilium/lb-ipam-ips: ${K8S_GW}
       externalTrafficPolicy: Cluster
+    extraZonePlugins:
+      - name: forward
+        parameters: ${SECRET_DOMAIN} ${OTHER_K8S_GW}
     topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
