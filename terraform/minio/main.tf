@@ -3,8 +3,7 @@ locals {
     "loki",
     "longhorn",
     "postgresql",
-    "thanos",
-    "volsync"
+    "thanos"
   ]
 }
 
