@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: arc-containers
+  name: arc-home-ops
 spec:
   interval: 30m
   chart:
@@ -25,18 +25,18 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    runnerScaleSetName: arc-runner-set-containers-amd64
-    githubConfigUrl: https://github.com/LilDrunkenSmurf/containers
+    runnerScaleSetName: arc-runner-set-home-ops
+    githubConfigUrl: https://github.com/LilDrunkenSmurf/k3s-home-cluster
     minRunners: 1
     maxRunners: 2
     containerMode:
       type: dind
-    # template:
-    #   spec:
-    #     containers:
-    #       - name: runner
-    #         image: ghcr.io/lildrunkensmurf/actions-runner:2.312.0
-    #         command: ["/home/runner/run.sh"]
+    template:
+      spec:
+        containers:
+          - name: runner
+            image: ghcr.io/lildrunkensmurf/actions-runner:2.312.0
+            command: ["/home/runner/run.sh"]
     controllerServiceAccount:
       name: actions-runner-controller-gha-rs-controller
       namespace: actions-runner-system
