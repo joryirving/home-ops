@@ -1,0 +1,46 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mesh
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/proxy-ssl-verify: 'off'
+spec:
+  ingressClassName: internal
+  rules:
+    - host: &host mesh.${SECRET_DOMAIN}
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: mesh
+                port:
+                  number: 8086
+  tls:
+    - hosts:
+        - *host
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: mesh
+subsets:
+  - addresses:
+      - ip: ${PI_IP}
+    ports:
+      - name: http
+        port: 8086
+        protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mesh
+spec:
+  ports:
+    - name: http
+      port: 8086
+  type: ClusterIP
