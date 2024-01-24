@@ -1,0 +1,19 @@
+---
+version: "3"
+
+tasks:
+
+  push:
+    desc: Push Kubeconfig to Secrets Manager
+    cmds:
+      - bws secret edit 700d272e-0e47-4ecb-853b-b101004459c8 --value "$(kubectl config view --flatten)"
+      - bws secret edit 1c493889-1e30-4156-a937-b10100433300 --value "$(kubectl config view --flatten | base64)"
+    preconditions:
+      - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
+
+  pull:
+    desc: Pull Kubeconfig from Secrets Manager
+    cmd: bws secret get 700d272e-0e47-4ecb-853b-b101004459c8 | jq -r '.value' >> ~/.kube/config
+    preconditions:
+      - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
+      - { msg: "JQ not found", sh: "test jq" }
