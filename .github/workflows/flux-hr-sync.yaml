@@ -38,8 +38,8 @@ jobs:
         uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: "${{ env.BOT_APP_ID }}"
-          private-key: "${{ env.BOT_APP_PRIVATE_KEY }}"
+          app-id: "$BOT_APP_ID"
+          private-key: "$BOT_APP_PRIVATE_KEY"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
         id: kubeconfig
         uses: timheuer/base64-to-file@v1
         with:
-          encodedString: "${{ env.KUBECONFIG }}"
+          encodedString: "$KUBECONFIG"
           fileName: kubeconfig
 
       - if: ${{ github.event.inputs.clusterName == '' && github.event.inputs.helmRepoNamespace == '' && github.event.inputs.helmRepoName == '' }}
