@@ -1,0 +1,64 @@
+---
+  # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+  name: "Deployment Restart"
+
+  on:
+    workflow_dispatch:
+
+  jobs:
+    sync:
+      name: Deployment Restart
+      runs-on: ["arc-runner-set-home-ops"]
+      strategy:
+        matrix:
+          cluster: ["teyvat"]
+      steps:
+        - name: Get Secrets
+          uses: bitwarden/sm-action@v2
+          with:
+            access_token: ${{ secrets.BW_ACCESS_TOKEN }}
+            secrets: |
+              1c493889-1e30-4156-a937-b10100433300 > KUBECONFIG
+              e062dcb9-8cd7-471e-b9be-b10100497102 > BOT_APP_ID
+              5856238d-3fae-4a0f-9847-b1010049f697 > BOT_APP_PRIVATE_KEY
+
+        - name: Generate Token
+          uses: actions/create-github-app-token@v1
+          id: app-token
+          with:
+            app-id: "$BOT_APP_ID"
+            private-key: "$BOT_APP_PRIVATE_KEY"
+
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            token: "${{ steps.app-token.outputs.token }}"
+
+        - name: Setup Homebrew
+          uses: Homebrew/actions/setup-homebrew@master
+
+        - name: Setup Workflow Tools
+          shell: bash
+          run: brew install kubernetes-cli
+
+        - name: Write kubeconfig
+          id: kubeconfig
+          uses: timheuer/base64-to-file@v1
+          with:
+            encodedString: "$KUBECONFIG"
+            fileName: kubeconfig
+
+        - name: Restart NFS Deployments
+          env:
+            KUBECONFIG: "${{ steps.kubeconfig.outputs.filePath }}"
+          shell: bash
+          run: |
+            kubectl \
+                --context "${{ matrix.cluster }}" \
+                get deployments \
+                --all-namespaces \
+                -l nfsMount=true \
+                -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name" \
+                --no-headers | \
+                awk '{print "kubectl --context ${{ matrix.cluster }} rollout restart deployment/"$2" -n "$1}' | \
+                sh
