@@ -25,6 +25,13 @@ jobs:
     name: Flux Helm Repository Sync
     runs-on: ["arc-runner-set-home-ops"]
     steps:
+      - name: Get Secrets
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BW_ACCESS_TOKEN }}
+          secrets: |
+            1c493889-1e30-4156-a937-b10100433300 > KUBECONFIG
+
       - name: Generate Token
         uses: actions/create-github-app-token@v1
         id: app-token
@@ -49,7 +56,7 @@ jobs:
         id: kubeconfig
         uses: timheuer/base64-to-file@v1
         with:
-          encodedString: "${{ secrets.KUBECONFIG }}"
+          encodedString: "${{ env.KUBECONFIG }}"
           fileName: kubeconfig
 
       - if: ${{ github.event.inputs.clusterName == '' && github.event.inputs.helmRepoNamespace == '' && github.event.inputs.helmRepoName == '' }}
