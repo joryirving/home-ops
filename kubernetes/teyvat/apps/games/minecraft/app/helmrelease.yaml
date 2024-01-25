@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
@@ -27,10 +26,10 @@ spec:
   uninstall:
     keepHistory: false
   dependsOn:
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
-    - name: volsync
-      namespace: storage
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: volsync
+    namespace: storage
   values:
     deploymentAnnotations:
       secret.reloader.stakater.com/reload: &secret minecraft
@@ -80,42 +79,42 @@ spec:
       worldSaveName: Vibecraft
       viewDistance: 12
       spigetResources:
-        - 36618 #Prom Exporter
+      - 36618 #Prom Exporter
       rcon:
         enabled: true
         serviceType: ClusterIP
       serviceType: LoadBalancer
       extraPorts:
-        - name: metrics
-          containerPort: 9225
-          protocol: TCP
-          service:
-            enabled: true
-            embedded: false
-            type: ClusterIP
-            port: 9225
-          ingress:
-            enabled: false
-        - name: map
-          containerPort: 8123
-          protocol: TCP
-          service:
-            enabled: true
-            embedded: false
-            type: ClusterIP
-            port: 8123
-          ingress:
-            ingressClassName: public
-            enabled: true
+      - name: metrics
+        containerPort: 9225
+        protocol: TCP
+        service:
+          enabled: true
+          embedded: false
+          type: ClusterIP
+          port: 9225
+        ingress:
+          enabled: false
+      - name: map
+        containerPort: 8123
+        protocol: TCP
+        service:
+          enabled: true
+          embedded: false
+          type: ClusterIP
+          port: 8123
+        ingress:
+          ingressClassName: external
+          enabled: true
+          hosts:
+          - name: &host "minecraft.${SECRET_DOMAIN}"
+            path: /
+          tls:
+          - secretName: *host
             hosts:
-              - name: &host "minecraft.${SECRET_DOMAIN}"
-                path: /
-            tls:
-              - secretName: *host
-                hosts:
-                  - *host
+            - *host
   valuesFrom:
-    - kind: Secret
-      name: *secret
-      valuesKey: RCON_PASSWORD
-      targetPath: minecraftServer.rcon.password
+  - kind: Secret
+    name: *secret
+    valuesKey: RCON_PASSWORD
+    targetPath: minecraftServer.rcon.password

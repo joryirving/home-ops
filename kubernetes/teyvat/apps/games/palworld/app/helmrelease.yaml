@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app palworld-server
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: volsync
+    namespace: storage
+  values:
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: jammsen/palworld-dedicated-server
+              tag: latest
+            env:
+              TZ: ${TIMEZONE}
+              ALWAYS_UPDATE_ON_START: true
+              MAX_PLAYERS: 32
+              MULTITHREAD_ENABLED: true
+              COMMUNITY_SERVER: false
+              RCON_ENABLED: false
+              #RCON_PORT: 25575
+              PUBLIC_PORT: 8211
+              SERVER_NAME: LDS-Palworld-Server
+              SERVER_DESCRIPTION: Palworld Server Running on Kubernetes
+            envFrom:
+            - secretRef:
+                name: palworld
+            resources:
+              requests:
+                cpu: 1000m
+              limits:
+                memory: 20Gi
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+    service:
+      main:
+        ports:
+          http:
+            port: 8211
+    ingress:
+      main:
+        enabled: true
+        className: external
+        annotations:
+          external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
+        hosts:
+        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          paths:
+          - path: /
+            service:
+              name: main
+              port: http
+        tls:
+        - hosts:
+          - *host
+    persistence:
+      config:
+        enabled: true
+        existingClaim: *app
