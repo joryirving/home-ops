@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
@@ -29,8 +28,8 @@ spec:
         containers:
           main:
             image:
-              repository: ghcr.io/lildrunkensmurf/rss-forwarder
-              tag: 0.6.1@sha256:2f5f2afd770125dd2e7b1db3cf08c5f097db31d9ae3adf3bf0508357b6c4c6b0
+              repository: ghcr.io/morphy2k/rss-forwarder
+              tag: 0.7.0-beta.3@sha256:51391a60196d5c07f97b4efa59743bc08fe87302047869553fa49bda900fb8a8
             env:
               TZ: "${TIMEZONE}"
             probes:
@@ -53,6 +52,6 @@ spec:
         type: secret
         name: discord-rss-notifier-secret
         globalMounts:
-          - path: /data/config.toml
-            subPath: config.toml
-            readOnly: true
+        - path: /data/config.toml
+          subPath: config.toml
+          readOnly: true
