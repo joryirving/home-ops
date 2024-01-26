@@ -12,12 +12,12 @@ terraform {
   required_providers {
     bitwarden = {
       source  = "maxlaverse/bitwarden"
-      version = ">= 0.6.0"
+      version = ">= 0.7.0"
     }
 
     minio = {
       source  = "aminueza/minio"
-      version = "2.0.1"
+      version = ">= 2.0.1"
     }
   }
 }
