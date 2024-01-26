@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: free-game-notifier
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.5.0
+      interval: 30m
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
+  values:
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/lildrunkensmurf/free-game-notifier
+              tag: rolling
+            env:
+              TZ: "${TIMEZONE}"
+            envFrom:
+              secretRef:
+                name: free-game-notifier-secrets
+            resources:
+              requests:
+                cpu: 5m
+              limits:
+                memory: 128M
+    service:
+      main: *disabled
+    ingress:
+      main: *disabled
