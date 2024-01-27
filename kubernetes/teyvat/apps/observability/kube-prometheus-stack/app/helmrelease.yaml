@@ -15,12 +15,13 @@ spec:
         kind: HelmRepository
         name: prometheus-community
         namespace: flux-system
-  maxHistory: 2
   install:
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
+    crds: CreateReplace
     remediation:
       retries: 3
   uninstall:
@@ -138,18 +139,16 @@ spec:
           - auto-gomaxprocs
           - memory-snapshot-on-shutdown
           - new-service-discovery-manager
-        externalLabels:
-          cluster: ${CLUSTER_NAME}
         thanos:
           image: quay.io/thanos/thanos:v0.34.0
           objectStorageConfig:
             existingSecret:
               name: kube-prometheus-stack
               key: objstore.yml
-          # renovate: datasource=docker depName=quay.io/thanos/thanos
-          version: v0.34.0
         retention: 2d
         retentionSize: 15GB
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -175,6 +174,22 @@ spec:
                   - 192.168.1.50:2112
                   - 192.168.1.51:2112
                   - 192.168.1.52:2112
+    nodeExporter:
+      enabled: true
+    prometheus-node-exporter:
+      fullnameOverride: node-exporter
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels:
+                - __meta_kubernetes_pod_node_name
+              targetLabel: kubernetes_node
+    kubeStateMetrics:
+      enabled: true
     grafana:
       enabled: false
       forceDeployDashboards: true
@@ -183,10 +198,6 @@ spec:
           multicluster:
             etcd:
               enabled: true
-    nodeExporter:
-      enabled: false
-    kubeStateMetrics:
-      enabled: true
   postRenderers:
     - kustomize:
         patches:
