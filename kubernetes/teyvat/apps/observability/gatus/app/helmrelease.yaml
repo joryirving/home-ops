@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
@@ -37,8 +36,8 @@ spec:
               tag: 16
               pullPolicy: IfNotPresent
             envFrom: &envFrom
-              - secretRef:
-                  name: gatus-secret
+            - secretRef:
+                name: gatus-secret
           init-config:
             order: 2
             image: &configSyncImage
@@ -108,17 +107,19 @@ spec:
           gethomepage.dev/group: Observability
           gethomepage.dev/name: Gatus
           gethomepage.dev/icon: gatus.png
+          gethomepage.dev/type: gatus
+          gethomepage.dev/url: gatus.observability.svc.cluster.local
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-          - host: &host status.${SECRET_DOMAIN}
-            paths:
-              - path: /
-                service:
-                  name: main
-                  port: http
+        - host: &host status.${SECRET_DOMAIN}
+          paths:
+          - path: /
+            service:
+              name: main
+              port: http
         tls:
-          - hosts:
-              - *host
+        - hosts:
+          - *host
     serviceAccount:
       create: true
       name: gatus
@@ -130,6 +131,6 @@ spec:
         type: configMap
         name: gatus-configmap
         globalMounts:
-          - path: /config/config.yaml
-            subPath: config.yaml
-            readOnly: true
+        - path: /config/config.yaml
+          subPath: config.yaml
+          readOnly: true
