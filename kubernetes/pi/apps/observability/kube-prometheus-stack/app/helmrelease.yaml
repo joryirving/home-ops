@@ -15,12 +15,13 @@ spec:
         kind: HelmRepository
         name: prometheus-community
         namespace: flux-system
-  maxHistory: 2
   install:
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
+    crds: CreateReplace
     remediation:
       retries: 3
   uninstall:
@@ -28,14 +29,10 @@ spec:
   dependsOn:
     - name: local-path-provisioner
       namespace: storage
-  valuesFrom:
-    - kind: ConfigMap
-      name: kube-state-metrics-configmap
-      valuesKey: kube-state-metrics.yaml
   values:
+    cleanPrometheusOperatorObjectNames: true
     crds:
       enabled: true
-    cleanPrometheusOperatorObjectNames: true
     alertmanager:
       enabled: false
     kubelet:
@@ -126,18 +123,10 @@ spec:
           - auto-gomaxprocs
           - memory-snapshot-on-shutdown
           - new-service-discovery-manager
-        externalLabels:
-          cluster: ${CLUSTER_NAME}
-        thanos:
-          image: quay.io/thanos/thanos:v0.34.0
-          objectStorageConfig:
-            existingSecret:
-              name: kube-prometheus-stack
-              key: objstore.yml
-          # renovate: datasource=docker depName=quay.io/thanos/thanos
-          version: v0.34.0
         retention: 2d
         retentionSize: 15GB
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -156,20 +145,55 @@ spec:
                   - 192.168.3.10:2112
                   - 192.168.3.11:2112
                   - 192.168.3.12:2112
+        thanos:
+          image: quay.io/thanos/thanos:v0.34.0
+          objectStorageConfig:
+            existingSecret:
+              name: kube-prometheus-stack
+              key: objstore.yml
+          # renovate: datasource=docker depName=quay.io/thanos/thanos
+          version: v0.34.0
       thanosService:
         enabled: true
       thanosServiceExternal:
         enabled: true
         type: LoadBalancer
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: "thanos-svc-${CLUSTER_NAME}.${SECRET_DOMAIN}"
+          external-dns.alpha.kubernetes.io/hostname: thanos-svc.${SECRET_DOMAIN}
         externalTrafficPolicy: Cluster
       thanosServiceMonitor:
         enabled: true
-    grafana:
-      enabled: false
     nodeExporter:
-      enabled: false
+      enabled: true
+    prometheus-node-exporter:
+      fullnameOverride: node-exporter
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels:
+                - __meta_kubernetes_pod_node_name
+              targetLabel: kubernetes_node
     kubeStateMetrics:
       enabled: true
-
+    kube-state-metrics:
+      fullnameOverride: kube-state-metrics
+      metricLabelsAllowlist:
+        - pods=[*]
+        - deployments=[*]
+        - persistentvolumeclaims=[*]
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels:
+                - __meta_kubernetes_pod_node_name
+              targetLabel: kubernetes_node
+    grafana:
+      enabled: false
