@@ -1,51 +1,51 @@
-# ---
-# apiVersion: external-secrets.io/v1beta1
-# kind: ExternalSecret
-# metadata:
-#   name: "${APP}-volsync-r2"
-# spec:
-#   target:
-#     deletionPolicy: Delete
-#     template:
-#       type: Opaque
-#       data:
-#         RESTIC_REPOSITORY: "{{ .REPOSITORY_TEMPLATE }}/${APP}"
-#         RESTIC_PASSWORD: "{{ .RESTIC_PASSWORD }}"
-#         AWS_ACCESS_KEY_ID: "{{ .AWS_ACCESS_KEY_ID }}"
-#         AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
-#   data:
-#     - secretKey: REPOSITORY_TEMPLATE
-#       sourceRef:
-#         storeRef:
-#           name: bitwarden-fields
-#           kind: ClusterSecretStore
-#       remoteRef:
-#         key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
-#         property: r2_restic_endpoint
-#     - secretKey: RESTIC_PASSWORD
-#       sourceRef:
-#         storeRef:
-#           name: bitwarden-fields
-#           kind: ClusterSecretStore
-#       remoteRef:
-#         key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
-#         property: restic_password
-#     - secretKey: AWS_ACCESS_KEY_ID
-#       sourceRef:
-#         storeRef:
-#           name: bitwarden-fields
-#           kind: ClusterSecretStore
-#       remoteRef:
-#         key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
-#         property: r2_access_key_id
-#     - secretKey: AWS_SECRET_ACCESS_KEY
-#       sourceRef:
-#         storeRef:
-#           name: bitwarden-fields
-#           kind: ClusterSecretStore
-#       remoteRef:
-#         key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
-#         property: r2_secret_key
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: "${APP}-volsync-r2"
+spec:
+  target:
+    deletionPolicy: Delete
+    template:
+      type: Opaque
+      data:
+        RESTIC_REPOSITORY: "{{ .REPOSITORY_TEMPLATE }}/${APP}"
+        RESTIC_PASSWORD: "{{ .RESTIC_PASSWORD }}"
+        AWS_ACCESS_KEY_ID: "{{ .AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
+  data:
+    - secretKey: REPOSITORY_TEMPLATE
+      sourceRef:
+        storeRef:
+          name: bitwarden-fields
+          kind: ClusterSecretStore
+      remoteRef:
+        key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
+        property: r2_restic_endpoint
+    - secretKey: RESTIC_PASSWORD
+      sourceRef:
+        storeRef:
+          name: bitwarden-fields
+          kind: ClusterSecretStore
+      remoteRef:
+        key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
+        property: restic_password
+    - secretKey: AWS_ACCESS_KEY_ID
+      sourceRef:
+        storeRef:
+          name: bitwarden-fields
+          kind: ClusterSecretStore
+      remoteRef:
+        key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
+        property: r2_access_key_id
+    - secretKey: AWS_SECRET_ACCESS_KEY
+      sourceRef:
+        storeRef:
+          name: bitwarden-fields
+          kind: ClusterSecretStore
+      remoteRef:
+        key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
+        property: r2_secret_key
 ---
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
