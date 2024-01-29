@@ -1,0 +1,84 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app palworld-tools
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+    - name: palworld
+      namespace: games
+  values:
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        type: cronjob
+        cronjob:
+          schedule: "0 */6 * * *"
+          timeZone: ${TIMEZONE}
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+        containers:
+          main:
+            image:
+              repository: docker.io/outdead/rcon
+              tag: latest@sha256:8bf03935771ae6b44449eb8e74e1f4d249ead591e9c1e4e43539d33be1a3ac67
+            command: ["./rcon"]
+            args: [
+              "-c",
+              "/config/rcon.yaml",
+              "-e",
+              "palworld",
+              "command",
+              "Shutdown 300"
+            ]
+            resources:
+              limits:
+                memory: 256Mi
+              requests:
+                cpu: 5m
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+              readOnlyRootFilesystem: true
+        pod:
+          automountServiceAccountToken: false
+          securityContext:
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+            runAsGroup: 568
+            runAsNonRoot: true
+            runAsUser: 568
+            seccompProfile: { type: RuntimeDefault }
+    persistence:
+      rcon-config:
+        type: secret
+        name: *app
+        globalMounts:
+          - path: /config/rcon.yaml
+            subPath: rcon.yaml
+            readOnly: true
+    service:
+      main:
+        enabled: false

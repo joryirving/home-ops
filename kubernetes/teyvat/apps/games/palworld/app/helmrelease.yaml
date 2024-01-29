@@ -43,15 +43,17 @@ spec:
               MAX_PLAYERS: 32
               MULTITHREAD_ENABLED: true
               COMMUNITY_SERVER: false
-              RCON_ENABLED: false
-              #RCON_PORT: 25575
+              RCON_ENABLED: true
+              RCON_PORT: 25575
               PUBLIC_PORT: 8211
+              PUBLIC_IP: palworld.${SECRET_SECONDARY_DOMAIN}
               SERVER_NAME: LDS-Palworld-Server
               SERVER_DESCRIPTION: Palworld Server Running on Kubernetes
               BACKUP_ENABLED: false #volsync is backing up the PVC
               ## Server Gameplay Settings
+              BASE_CAMP_WORKER_MAXNUM: "20"
+              DEATH_PENALTY: "None"
               PAL_EGG_DEFAULT_HATCHING_TIME: "2.000000" #Default for Normal Mode
-              DEATH_PENALTY: ItemAndEquipment #Default for Normal Mode
             envFrom:
             - secretRef:
                 name: *app
@@ -78,7 +80,12 @@ spec:
           io.cilium/lb-ipam-ips: "${SVC_PALWORLD_ADDR}"
         ports:
           http:
+            enabled: false
+          game:
+            protocol: UDP
             port: 8211
+          rcon:
+            port: 25575
     ingress:
       main:
         enabled: true
@@ -91,7 +98,7 @@ spec:
           - path: /
             service:
               name: main
-              port: http
+              port: game
         tls:
         - hosts:
           - *host
