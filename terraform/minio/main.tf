@@ -24,9 +24,3 @@ module "secrets_s3" {
   source = "./modules/get-secret"
   id     = "5a98804c-6c54-4e09-817e-afd8012c70ad"
 }
-
-import {
-  for_each = toset(local.buckets)
-  to       = module.buckets[each.key].minio_s3_bucket.bucket
-  id       = each.key
-}
