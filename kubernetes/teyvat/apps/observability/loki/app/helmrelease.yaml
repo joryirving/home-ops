@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
@@ -26,27 +25,27 @@ spec:
   uninstall:
     keepHistory: false
   dependsOn:
-    - name: local-path-provisioner
-      namespace: storage
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
+  - name: local-path-provisioner
+    namespace: storage
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
   valuesFrom:
-    - targetPath: loki.structuredConfig.common.storage.s3.bucketnames
-      kind: ConfigMap
-      name: loki-bucket
-      valuesKey: BUCKET_NAME
-    - targetPath: loki.structuredConfig.common.storage.s3.endpoint
-      kind: ConfigMap
-      name: loki-bucket
-      valuesKey: BUCKET_HOST
-    - targetPath: loki.structuredConfig.common.storage.s3.access_key_id
-      kind: Secret
-      name: loki-bucket
-      valuesKey: AWS_ACCESS_KEY_ID
-    - targetPath: loki.structuredConfig.common.storage.s3.secret_access_key
-      kind: Secret
-      name: loki-bucket
-      valuesKey: AWS_SECRET_ACCESS_KEY
+  - targetPath: loki.structuredConfig.common.storage.s3.bucketnames
+    kind: ConfigMap
+    name: loki-bucket
+    valuesKey: BUCKET_NAME
+  - targetPath: loki.structuredConfig.common.storage.s3.endpoint
+    kind: ConfigMap
+    name: loki-bucket
+    valuesKey: BUCKET_HOST
+  - targetPath: loki.structuredConfig.common.storage.s3.access_key_id
+    kind: Secret
+    name: loki-bucket
+    valuesKey: AWS_ACCESS_KEY_ID
+  - targetPath: loki.structuredConfig.common.storage.s3.secret_access_key
+    kind: Secret
+    name: loki-bucket
+    valuesKey: AWS_SECRET_ACCESS_KEY
   values:
     loki:
       structuredConfig:
@@ -63,22 +62,27 @@ spec:
           reject_old_samples: true
           reject_old_samples_max_age: 168h
           max_cache_freshness_per_query: 10m
-          split_queries_by_interval: 15m
+          split_queries_by_interval: 1h
+          max_query_parallelism: 100
           ingestion_rate_mb: 50
           ingestion_burst_size_mb: 1000
           per_stream_rate_limit: 5MB
           per_stream_rate_limit_burst: 20MB
           shard_streams:
             enabled: true
+        query_scheduler:
+          max_outstanding_requests_per_tenant: 4096
+        frontend:
+          max_outstanding_per_tenant: 4096
         schema_config:
           configs:
-            - from: "2022-01-11" # quote
-              store: boltdb-shipper
-              object_store: s3
-              schema: v12
-              index:
-                prefix: loki_index_
-                period: 24h
+          - from: "2022-01-11" # quote
+            store: boltdb-shipper
+            object_store: s3
+            schema: v12
+            index:
+              prefix: loki_index_
+              period: 24h
         common:
           path_prefix: /var/loki
           replication_factor: 2
@@ -129,23 +133,23 @@ spec:
         enabled: true
         ingressClassName: internal
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                pathType: Prefix
+        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          paths:
+          - path: /
+            pathType: Prefix
         tls:
-          - hosts:
-              - *host
+        - hosts:
+          - *host
     read:
       replicas: 2
       persistence:
         storageClass: local-hostpath
       extraVolumeMounts:
-        - name: rules
-          mountPath: /rules
+      - name: rules
+        mountPath: /rules
       extraVolumes:
-        - name: rules
-          emptyDir: {}
+      - name: rules
+        emptyDir: {}
     write:
       replicas: 2
       persistence:
@@ -155,16 +159,16 @@ spec:
       persistence:
         storageClass: local-hostpath
       extraVolumeMounts:
-        - name: rules
-          mountPath: /rules/fake
-        - name: scratch
-          mountPath: /tmp/scratch
+      - name: rules
+        mountPath: /rules/fake
+      - name: scratch
+        mountPath: /tmp/scratch
       extraVolumes:
-        - name: rules
-          configMap:
-            name: loki-alerting-rules
-        - name: scratch
-          emptyDir: {}
+      - name: rules
+        configMap:
+          name: loki-alerting-rules
+      - name: scratch
+        emptyDir: {}
     monitoring:
       dashboards:
         annotations:
