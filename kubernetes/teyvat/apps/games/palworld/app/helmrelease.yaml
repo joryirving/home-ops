@@ -36,24 +36,27 @@ spec:
           main:
             image:
               repository: jammsen/palworld-dedicated-server
-              tag: 7afab27
+              tag: 3f555b9
             env:
+              ## Container Settings
               TZ: ${TIMEZONE}
               ALWAYS_UPDATE_ON_START: true
-              MAX_PLAYERS: 32
               MULTITHREAD_ENABLED: true
               COMMUNITY_SERVER: false
-              RCON_ENABLED: true
-              RCON_PORT: 25575
-              PUBLIC_PORT: 8211
-              PUBLIC_IP: pal.${SECRET_SECONDARY_DOMAIN}
-              SERVER_NAME: LDS-Palworld-Server
-              SERVER_DESCRIPTION: Palworld Server Running on Kubernetes
               BACKUP_ENABLED: false #volsync is backing up the PVC
               ## Server Gameplay Settings
-              BASE_CAMP_WORKER_MAXNUM: "20"
-              DEATH_PENALTY: "None"
+              DEATH_PENALTY: None
+              BASE_CAMP_WORKER_MAXNUM: 20
               PAL_EGG_DEFAULT_HATCHING_TIME: "2.000000" #Default for Normal Mode
+              ## Server Settings
+              SERVER_NAME: Platonically Pals
+              SERVER_DESCRIPTION: Smurf's Palworld. Come in, have a tako!
+              PUBLIC_PORT: &port 8211
+              RCON_ENABLED: true
+              RCON_PORT: &rcon-port 25575
+              PUBLIC_IP: pal.${SECRET_SECONDARY_DOMAIN}
+              ## Webhook Settings
+              WEBHOOK_ENABLED: true
             envFrom:
             - secretRef:
                 name: *app
@@ -83,12 +86,12 @@ spec:
             enabled: false
           game:
             protocol: UDP
-            port: 8211
+            port: *port
           rcon:
-            port: 25575
+            port: *rcon-port
     ingress:
       main:
-        enabled: true
+        enabled: false #nginx doesn't support non-https
         className: external
         annotations:
           external-dns.alpha.kubernetes.io/target: ipv4.${SECRET_SECONDARY_DOMAIN}
