@@ -25,26 +25,27 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    monitoring:
+    networkPolicies:
       enabled: true
-      createPrometheusRules: true
+      type: "k3s"
     defaultSettings:
       # backupTarget: s3://longhorn@ca-west-1/
       # backupTargetCredentialSecret: longhorn-secret
-      defaultReplicaCount: 3
-      backupstorePollInterval: 0
       createDefaultDiskLabeledNodes: true
-      restoreVolumeRecurringJobs: true
-      storageOverProvisioningPercentage: 100
+      defaultDataLocality: true
+      replicaAutoBalance: true
       storageMinimalAvailablePercentage: 1
-      guaranteedEngineManagerCPU: 20
-      guaranteedReplicaManagerCPU: 20
-      orphanAutoDeletion: true
-      concurrentAutomaticEngineUpgradePerNodeLimit: 3
       defaultLonghornStaticStorageClass: longhorn
+      # restoreVolumeRecurringJobs: true
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
+      concurrentAutomaticEngineUpgradePerNodeLimit: 3
+      guaranteedInstanceManagerCPU: 20
+      orphanAutoDeletion: true
     ingress:
       enabled: true
       ingressClassName: internal
       host: longhorn.${SECRET_DOMAIN}
       tls: true
+    metrics:
+      serviceMonitor:
+        enabled: true
