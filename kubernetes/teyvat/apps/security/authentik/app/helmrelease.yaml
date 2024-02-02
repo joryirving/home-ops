@@ -19,6 +19,11 @@ spec:
     - name: dragonfly
       namespace: database
   values:
+    strategy:
+      type: RollingUpdate
+    worker:
+      strategy:
+        type: RollingUpdate
     initContainers:
       init-db:
         image: ghcr.io/onedr0p/postgres-init:16
@@ -26,18 +31,6 @@ spec:
         envFrom:
           - secretRef:
               name: authentik-secrets
-    podAnnotations:
-      secret.reloader.stakater.com/reload: authentik-secrets
-    autoscaling:
-      server:
-        enabled: true
-      worker:
-        enabled: true
-    strategy:
-      type: RollingUpdate
-    worker:
-      strategy:
-        type: RollingUpdate
     ingress:
       enabled: true
       ingressClassName: external
@@ -59,26 +52,25 @@ spec:
         - hosts:
             - *host
           secretName: *host
+    podAnnotations:
+      secret.reloader.stakater.com/reload: authentik-secrets
+    authentik:
+      redis:
+        host: dragonfly.database.svc.cluster.local
+    env:
+      AUTHENTIK_REDIS__DB: "1"
     envFrom:
       - secretRef:
           name: authentik-secrets
-    postgresql:
-      enabled: false
-    redis:
-      enabled: false
-    geoip:
-      enabled: false
     autoscaling:
       server:
         enabled: true
+        minReplicas: 2
       worker:
         enabled: true
+        minReplicas: 2
     prometheus:
-      rules:
-        create: true
       serviceMonitor:
         create: true
-    authentik:
-      log_level: info
-      outposts:
-        docker_image_base: ghcr.io/goauthentik/%(type)s:%(version)s
+      rules:
+        create: true
