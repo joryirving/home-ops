@@ -68,16 +68,17 @@ spec:
       enabled: false
     geoip:
       enabled: false
+    autoscaling:
+      server:
+        enabled: true
+      worker:
+        enabled: true
     prometheus:
       rules:
         create: true
       serviceMonitor:
         create: true
     authentik:
-      email:
-        from: id@${SECRET_DOMAIN}
-        host: smtp.gmail.com
-        port: 465
-        use_ssl: true
+      log_level: info
       outposts:
         docker_image_base: ghcr.io/goauthentik/%(type)s:%(version)s
