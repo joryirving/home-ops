@@ -35,7 +35,10 @@ spec:
               repository: ghcr.io/mendhak/http-https-echo
               tag: 31
             env:
-              PORT: &port 8080
+              HTTP_PORT: &port 8080
+              LOG_WITHOUT_NEWLINE: true
+              LOG_IGNORE_PATH: /healthz
+              PROMETHEUS_ENABLED: true
             probes:
               liveness: &probes
                 enabled: true
@@ -59,9 +62,9 @@ spec:
                 type: RuntimeDefault
             resources:
               requests:
-                cpu: 5m
+                cpu: 10m
               limits:
-                memory: 64M
+                memory: 64Mi
         pod:
           securityContext:
             runAsUser: 65534
