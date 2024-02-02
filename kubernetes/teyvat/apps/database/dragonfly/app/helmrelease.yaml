@@ -1,0 +1,70 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app dragonfly
+spec:
+  interval: 35m
+  chart:
+    spec:
+      chart: dragonfly
+      version: v1.14.1
+      sourceRef:
+        kind: HelmRepository
+        name: dragonfly
+        namespace: flux-system
+  maxHistory: 3
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+    - name: local-path-provisioner
+      namespace: storage
+  values:
+    storage:
+      enabled: true
+      requests: 1Gi
+      storageClass: local-hostpath
+    extraArgs:
+      - --dbfilename=dump
+      - --snapshot_cron=* * * * * # cron format
+    service:
+      annotations:
+        io.cilium/lb-ipam-ips: ${SVC_DRAGONFLY_ADDR}
+      type: LoadBalancer
+    podSecurityContext:
+      fsGroup: 2000
+    securityContext:
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    serviceMonitor:
+      enabled: true
+    prometheusRule:
+      enabled: true
+      spec:
+        - alert: DragonflyMissing
+          expr: absent(dragonfly_uptime_in_seconds) == 1
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: Dragonfly is missing
+            description: "Dragonfly is missing"
