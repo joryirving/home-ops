@@ -1,16 +1,21 @@
----
-#
-# Below vars are for the xanmanning.k3s role
-# ...see https://github.com/PyratLabs/ansible-role-k3s
-#
-
-# renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_release_version: v1.29.0+k3s1
-k3s_install_hard_links: true
 k3s_become: true
 k3s_etcd_datastore: true
+k3s_install_hard_links: true
 k3s_use_unsupported_config: true
 k3s_registration_address: "{{ kube_vip_addr }}"
+k3s_registries:
+  mirrors:
+    docker.io:
+    gcr.io:
+    ghcr.io:
+    k8s.gcr.io:
+    lscr.io:
+    mcr.microsoft.com:
+    public.ecr.aws:
+    quay.io:
+    registry.k8s.io:
+# renovate: datasource=github-releases depName=k3s-io/k3s
+k3s_release_version: v1.29.0+k3s1
 k3s_server_manifests_urls:
   # Kube-vip RBAC
   - url: https://raw.githubusercontent.com/kube-vip/website/main/content/manifests/rbac.yaml
