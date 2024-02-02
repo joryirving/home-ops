@@ -25,10 +25,10 @@ spec:
   uninstall:
     keepHistory: false
   dependsOn:
-    - name: local-path-provisioner
-      namespace: storage
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
   values:
-    replicaCount: 2
+    replicaCount: 1
     podSecurityContext:
       fsGroup: 2000
     securityContext:
@@ -56,7 +56,7 @@ spec:
     storage:
       enabled: true
       requests: 1Gi
-      storageClassName: local-hostpath
+      storageClassName: ceph-block
     extraArgs:
       - --dbfilename=dump
       - --snapshot_cron=* * * * * # cron format
