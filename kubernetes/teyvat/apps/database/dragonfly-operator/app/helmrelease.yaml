@@ -1,0 +1,129 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app dragonfly-operator
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    serviceAccount:
+      create: false
+      name: dragonfly-operator-controller-manager
+    controllers:
+      main:
+        containers:
+          rbac-proxy:
+            image:
+              repository: gcr.io/kubebuilder/kube-rbac-proxy
+              tag: v0.13.1
+            args:
+              - "--secure-listen-address=0.0.0.0:8443"
+              - "--upstream=http://127.0.0.1:8080/"
+              - "--logtostderr=true"
+              - "--v=0"
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 5m
+                memory: 64Mi
+              limits:
+                cpu: 500m
+                memory: 128Mi
+          main:
+            image:
+              repository: docker.dragonflydb.io/dragonflydb/operator
+              tag: v1.1.0
+            args:
+              - "--health-probe-bind-address=:8081"
+              - "--metrics-bind-address=127.0.0.1:8080"
+              - "--leader-elect"
+            command:
+              - "/manager"
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: &port 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /readyz
+                    port: *port
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                cpu: 500m
+                memory: 128Mi
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                          - amd64
+                          - arm64
+                          - ppc64le
+                          - s390x
+                      - key: kubernetes.io/os
+                        operator: In
+                        values:
+                          - linux
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: *app
+    service:
+      main:
+        ports:
+          http:
+            port: *port
