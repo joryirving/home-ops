@@ -132,7 +132,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 | [Cloudflare](https://www.cloudflare.com/)       | Domain and S3                                                     | ~$30/yr        |
 | [GitHub](https://github.com/)                   | Hosting this repository and continuous integration/deployments    | Free           |
 | [NextDNS](https://nextdns.io/)                  | My router DNS server which includes AdBlocking                    | ~$20/yr        |
-| [UptimeRobot](https://uptimerobot.com/)         | Monitoring internet connectivity and external facing applications | Free           |
+| [UptimeRobot](https://healthcheck.io/)         | Monitoring internet connectivity and external facing applications | Free           |
 |                                                 |                                                                   | Total: ~$5/mo  |
 
 ---
@@ -159,7 +159,7 @@ Total RAM: 24GB
 | Ganyu | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s control-plane |
 | HuTao | Lenovo M910q   | i5-7500T       | 240GB SSD | 1TB NBME    | 64GB | Debian | k8s control-plane |
 | Ayaka | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s worker        |
-| Eula  | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s worker        |
+| Eula  | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.5TB NVME  | 64GB | Debian | k8s worker        |
 
 Total CPU: 40 threads
 Total RAM: 272GB
