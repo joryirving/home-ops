@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/recyclarr/recyclarr/master/schemas/config-schema.json
 sonarr:
-  standard:
+  sonarr:
     base_url: http://sonarr.downloads.svc.cluster.local
     api_key: !env_var SONARR_API_KEY
 
@@ -23,10 +23,29 @@ sonarr:
         min_format_score: 0
         quality_sort: top
         qualities:
+          - name: Bluray-2160p
+            qualities:
+              - Bluray-2160p Remux
+              - Bluray-2160p
           - name: WEB 2160p
             qualities:
               - WEBDL-2160p
               - WEBRip-2160p
+          - name: Bluray-1080p
+            qualities:
+              - Bluray-1080p Remux
+              - Bluray-1080p
+          - name: WEB 1080p
+            qualities:
+              - WEBDL-1080p
+              - WEBRip-1080p
+              - HDTV-1080p
+          - name: Bluray-720p
+          - name: WEB 720p
+            qualities:
+              - WEBDL-720p
+              - WEBRip-720p
+              - HDTV-720p
       - name: HD
         reset_unmatched_scores:
           enabled: true
@@ -355,7 +374,7 @@ sonarr:
             score: -10000  # Adjust scoring as desired
 
 radarr:
-  standard:
+  radarr:
     base_url: http://radarr.downloads.svc.cluster.local
     api_key: !env_var RADARR_API_KEY
 
@@ -378,6 +397,9 @@ radarr:
         quality_sort: top
         qualities:
           - name: Remux-2160p
+            qualities:
+              - Bluray-2160p
+              - Remux-2160p
           - name: WEB 2160p
             qualities:
               - WEBDL-2160p
@@ -427,7 +449,7 @@ radarr:
           enabled: true
         upgrade:
           allowed: true
-          until_quality: WEB 720p
+          until_quality: Bluray-720p
           until_score: 10000
         min_format_score: 0
         quality_sort: top
