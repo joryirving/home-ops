@@ -12,3 +12,10 @@ spec:
     limits:
       cpu: 600m
       memory: 750Mi
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: dragonfly
