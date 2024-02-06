@@ -141,12 +141,12 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 ### Pi Kubernetes Cluster
 
-| Name    | Device         | CPU        | OS Disk   | RAM | OS     | Purpose           |
-|---------|----------------|------------|-----------|-----|--------|-------------------|
-| FuXuan   | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s control-plane |
-| Jingliu  | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s Worker        |
-| Kafka    | Raspberry Pi4 | Cortex A72 | 240GB SSD | 4GB | Debian | k8s Worker        |
-| Seele    | Raspberry Pi4 | Cortex A72 | 240GB SSD | 4GB | Debian | k8s Worker        |
+| Name    | Device        | CPU        | OS Disk   | RAM | OS     | Purpose           |
+|---------|---------------|------------|-----------|-----|--------|-------------------|
+| Jingliu | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
+| Kafka   | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
+| Himeko  | Raspberry Pi4 | Cortex A72 | 256GB SSD | 8GB | Debian | k8s control-plane |
+| Bronya  | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s worker        |
 
 Total CPU: 20 threads
 Total RAM: 24GB
@@ -158,8 +158,8 @@ Total RAM: 24GB
 | Navia | Beelink Mini-S | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB | Debian | k8s control-plane |
 | Ganyu | Dell 7050mff   | i5-7500T       | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s control-plane |
 | HuTao | Lenovo M910q   | i5-7500T       | 240GB SSD | 1TB NBME    | 64GB | Debian | k8s control-plane |
-| Ayaka | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
-| Eula  | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s Worker        |
+| Ayaka | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s worker        |
+| Eula  | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s worker        |
 
 Total CPU: 40 threads
 Total RAM: 272GB
@@ -180,6 +180,7 @@ Total RAM: 272GB
 | Netgear GS324P        | 24 Port PoE Switch - Network     |
 | Tripp Lite 1500       | UPS - Server Rack                |
 | Brocade ICX6610-48-PE | 48 Port PoE Switch - Server Rack |
+| YuanLey YS25-0801P    | 9 Port PoE 2.5G Switch           |
 
 ---
 
