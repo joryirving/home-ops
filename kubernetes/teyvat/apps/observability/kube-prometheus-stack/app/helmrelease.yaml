@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: kube-prometheus-stack
+  name: &app kube-prometheus-stack
 spec:
   interval: 30m
   timeout: 15m
@@ -35,9 +35,34 @@ spec:
       valuesKey: kube-state-metrics.yaml
   values:
     crds:
-      enabled: true
     alertmanager:
-      enabled: false
+      ingress:
+        enabled: true
+        pathType: Prefix
+        ingressClassName: internal
+        hosts:
+          - &host alertmanager.${SECRET_DOMAIN}
+        tls:
+          - hosts:
+              - *host
+      alertmanagerSpec:
+        replicas: 2
+        useExistingSecret: true
+        configSecret: alertmanager-secret
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: ceph-block
+              resources:
+                requests:
+                  storage: 1Gi
+      affinity: &affinity
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
     grafana:
       enabled: false
       forceDeployDashboards: true
@@ -123,13 +148,7 @@ spec:
                 - __meta_kubernetes_pod_node_name
               targetLabel: kubernetes_node
     prometheusOperator:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: node-role.kubernetes.io/control-plane
-                    operator: Exists
+      affinity: *affinity
     prometheus:
       thanosService:
         enabled: true
@@ -157,11 +176,6 @@ spec:
           - auto-gomaxprocs
           - memory-snapshot-on-shutdown
           - new-service-discovery-manager
-        alertingEndpoints:
-          - namespace: observability
-            name: alertmanager
-            port: 9093
-            apiVersion: v2
         externalLabels:
           cluster: ${CLUSTER_NAME}
         replicaExternalLabelName: __replica__
@@ -173,13 +187,7 @@ spec:
         retention: 2d
         retentionSize: 15GB
         replicas: 2
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: node-role.kubernetes.io/control-plane
-                      operator: Exists
+        affinity: *affinity
         storageSpec:
           volumeClaimTemplate:
             spec:
