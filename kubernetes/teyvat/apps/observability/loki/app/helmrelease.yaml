@@ -125,21 +125,17 @@ spec:
                 store: memberlist
         analytics:
           reporting_enabled: false
-    gateway:
+    write:
       replicas: 2
-      image:
-        registry: ghcr.io
-      ingress:
-        enabled: true
-        ingressClassName: internal
-        hosts:
-        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          paths:
-          - path: /
-            pathType: Prefix
-        tls:
-        - hosts:
-          - *host
+      persistence:
+        storageClass: local-hostpath
+      affinity: &affinity |
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
     read:
       replicas: 2
       persistence:
@@ -150,10 +146,7 @@ spec:
       extraVolumes:
       - name: rules
         emptyDir: {}
-    write:
-      replicas: 2
-      persistence:
-        storageClass: local-hostpath
+      affinity: *affinity
     backend:
       replicas: 2
       persistence:
@@ -169,6 +162,23 @@ spec:
           name: loki-alerting-rules
       - name: scratch
         emptyDir: {}
+      affinity: *affinity
+    gateway:
+      replicas: 2
+      image:
+        registry: ghcr.io
+      affinity: *affinity
+      ingress:
+        enabled: true
+        ingressClassName: internal
+        hosts:
+        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          paths:
+          - path: /
+            pathType: Prefix
+        tls:
+        - hosts:
+          - *host
     monitoring:
       dashboards:
         annotations:
@@ -188,10 +198,3 @@ spec:
         repository: ghcr.io/kiwigrid/k8s-sidecar
     test:
       enabled: false
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: Exists

@@ -44,6 +44,14 @@ spec:
               limits:
                 cpu: 100m
                 memory: 100Mi
+        pod:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
     service:
       main:
         ports:

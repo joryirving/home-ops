@@ -40,6 +40,14 @@ spec:
             envFrom:
               - secretRef:
                   name: unifi-poller-credentials
+        pod:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
     service:
       main:
         ports:
@@ -54,10 +62,3 @@ spec:
             path: /metrics
             interval: 2m
             scrapeTimeout: 30s
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: Exists
