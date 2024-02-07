@@ -89,3 +89,10 @@ spec:
           - path: /kromgo/config.yaml
             subPath: config.yaml
             readOnly: true
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists

@@ -188,3 +188,10 @@ spec:
         repository: ghcr.io/kiwigrid/k8s-sidecar
     test:
       enabled: false
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists

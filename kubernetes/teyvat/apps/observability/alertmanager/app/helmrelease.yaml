@@ -83,3 +83,10 @@ spec:
         existingClaim: *app
         globalMounts:
           - path: /alertmanager
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists

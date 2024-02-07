@@ -87,3 +87,10 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /usr/share/GeoIP
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists
