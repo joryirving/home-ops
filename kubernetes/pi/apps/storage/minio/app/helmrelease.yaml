@@ -1,0 +1,138 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app minio
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      main:
+        labels:
+          nfsMount: "true"
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: quay.io/minio/minio
+              tag: RELEASE.2024-02-06T21-36-22Z
+            env:
+              MINIO_API_CORS_ALLOW_ORIGIN: https://minio.${SECRET_DOMAIN},https://s3.${SECRET_DOMAIN}
+              MINIO_BROWSER_REDIRECT_URL: https://minio.${SECRET_DOMAIN}
+              MINIO_PROMETHEUS_JOB_ID: minio
+              MINIO_PROMETHEUS_URL: https://prometheus.${SECRET_PRIMARY_DOMAIN}
+              MINIO_PROMETHEUS_AUTH_TYPE: public
+              MINIO_SERVER_URL: https://s3.${SECRET_DOMAIN}
+              MINIO_UPDATE: "off"
+            envFrom:
+              - secretRef:
+                  name: *app
+            args:
+              - server
+              - /data
+              - --console-address
+              - :9001
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /minio/health/live
+                    port: 9000
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 10
+                  failureThreshold: 6
+              readiness: *probes
+              startup:
+                enabled: false
+            securityContext:
+              privileged: true
+              runAsUser: 99
+            resources:
+              requests:
+                memory: 100Mi
+                cpu: 100m
+              limits:
+                memory: 3Gi
+    service:
+      main:
+        ports:
+          http:
+            port: 9001
+          s3:
+            port: 9000
+    serviceMonitor:
+      main:
+        enabled: true
+        endpoints:
+          - port: s3
+            scheme: http
+            path: /minio/v2/metrics/cluster
+            interval: 1m
+            scrapeTimeout: 10s
+    ingress:
+      main:
+        enabled: true
+        className: internal
+        annotations:
+          nginx.ingress.kubernetes.io/configuration-snippet: |
+            more_set_headers "Host $host";
+            more_set_headers "X-Forwarded-For $remote_addr"
+        hosts:
+          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  name: main
+                  port: http
+        tls:
+          - hosts:
+              - *host
+      api:
+        enabled: true
+        className: external
+        annotations:
+          external-dns.alpha.kubernetes.io/target: network.${SECRET_DOMAIN}
+          nginx.ingress.kubernetes.io/configuration-snippet: |
+            more_set_headers "Host $host";
+            more_set_headers "X-Forwarded-For $remote_addr"
+        hosts:
+          - host: &s3Host s3.${SECRET_DOMAIN}
+            paths:
+              - path: /
+                service:
+                  name: main
+                  port: s3
+        tls:
+          - hosts:
+              - *s3Host
+    persistence:
+      data:
+        enabled: true
+        type: nfs
+        server: ${NAS_IP:=temp}
+        path: ${SECRET_NFS_MINIO:=temp}
+        globalMounts:
+          - path: /data
