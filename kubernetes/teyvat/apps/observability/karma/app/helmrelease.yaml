@@ -45,6 +45,14 @@ spec:
                 memory: 100Mi
               limits:
                 memory: 500Mi
+        pod:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
     service:
       main:
         ports:
@@ -84,10 +92,3 @@ spec:
           - path: *config
             subPath: config.yaml
             readOnly: true
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: Exists
