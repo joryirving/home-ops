@@ -1,4 +1,3 @@
----
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
@@ -14,38 +13,38 @@ spec:
         AWS_ACCESS_KEY_ID: "{{ .AWS_ACCESS_KEY_ID }}"
         AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
   data:
-    - secretKey: REPOSITORY_TEMPLATE
-      sourceRef:
-        storeRef:
-          name: bitwarden-fields
-          kind: ClusterSecretStore
-      remoteRef:
-        key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
-        property: restic_endpoint
-    - secretKey: RESTIC_PASSWORD
-      sourceRef:
-        storeRef:
-          name: bitwarden-fields
-          kind: ClusterSecretStore
-      remoteRef:
-        key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
-        property: restic_password
-    - secretKey: AWS_ACCESS_KEY_ID
-      sourceRef:
-        storeRef:
-          name: bitwarden-login
-          kind: ClusterSecretStore
-      remoteRef:
-        key: be779808-b3ed-469b-a27f-b0fe011a54e2
-        property: username
-    - secretKey: AWS_SECRET_ACCESS_KEY
-      sourceRef:
-        storeRef:
-          name: bitwarden-login
-          kind: ClusterSecretStore
-      remoteRef:
-        key: be779808-b3ed-469b-a27f-b0fe011a54e2
-        property: password
+  - secretKey: REPOSITORY_TEMPLATE
+    sourceRef:
+      storeRef:
+        name: bitwarden-fields
+        kind: ClusterSecretStore
+    remoteRef:
+      key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
+      property: restic_endpoint
+  - secretKey: RESTIC_PASSWORD
+    sourceRef:
+      storeRef:
+        name: bitwarden-fields
+        kind: ClusterSecretStore
+    remoteRef:
+      key: fb121da5-ecd8-4e94-a5a0-b0fe011aef94
+      property: restic_password
+  - secretKey: AWS_ACCESS_KEY_ID
+    sourceRef:
+      storeRef:
+        name: bitwarden-login
+        kind: ClusterSecretStore
+    remoteRef:
+      key: be779808-b3ed-469b-a27f-b0fe011a54e2
+      property: username
+  - secretKey: AWS_SECRET_ACCESS_KEY
+    sourceRef:
+      storeRef:
+        name: bitwarden-login
+        kind: ClusterSecretStore
+    remoteRef:
+      key: be779808-b3ed-469b-a27f-b0fe011a54e2
+      property: password
 ---
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
@@ -58,7 +57,7 @@ spec:
     repository: "${APP}-volsync"
     copyMethod: Snapshot
     volumeSnapshotClassName: "${VOLSYNC_SNAPSHOTCLASS:-csi-ceph-blockpool}"
-    cacheStorageClassName: "${VOLSYNC_CACHE_SNAPSHOTCLASS:-local-hostpath}"
+    cacheStorageClassName: "${VOLSYNC_CACHE_SNAPSHOTCLASS:-ceph-block}" #was local-hostpath
     cacheAccessModes: ["${VOLSYNC_CACHE_ACCESSMODES:-ReadWriteOnce}"]
     cacheCapacity: "${VOLSYNC_CACHE_CAPACITY:-8Gi}"
     storageClassName: "${VOLSYNC_STORAGECLASS:-ceph-block}"
@@ -83,7 +82,7 @@ spec:
     repository: "${APP}-volsync"
     volumeSnapshotClassName: "${VOLSYNC_SNAPSHOTCLASS:-csi-ceph-blockpool}"
     cacheCapacity: "${VOLSYNC_CACHE_CAPACITY:-8Gi}"
-    cacheStorageClassName: "${VOLSYNC_CACHE_SNAPSHOTCLASS:-local-hostpath}"
+    cacheStorageClassName: "${VOLSYNC_CACHE_SNAPSHOTCLASS:-ceph-block}" #was local-hostpath
     cacheAccessModes: ["${VOLSYNC_CACHE_ACCESSMODES:-ReadWriteOnce}"]
     storageClassName: "${VOLSYNC_STORAGECLASS:-ceph-block}"
     accessModes: ["${VOLSYNC_ACCESSMODES:-ReadWriteOnce}"]
