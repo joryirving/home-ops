@@ -1,9 +1,10 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/external-secrets.io/externalsecret_v1beta1.json
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
   name: "${APP}-volsync"
 spec:
-  refreshInterval: "1h"
   secretStoreRef:
     name: bitwarden-secrets-manager
     kind: ClusterSecretStore
@@ -18,11 +19,10 @@ spec:
         AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
   dataFrom:
   - extract:
-      key: minio
+      key: volsync-bucket
   - extract:
       key: volsync-minio-template
       property: RESTIC_REPOSITORY
-
 ---
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination

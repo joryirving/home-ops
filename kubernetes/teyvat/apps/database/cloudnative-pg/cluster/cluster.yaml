@@ -12,7 +12,7 @@ spec:
     size: 20Gi
     storageClass: local-hostpath
   superuserSecret:
-    name: cloudnative-pg-secret
+    name: cloudnative-pg
   enableSuperuserAccess: true
   postgresql:
     parameters:
@@ -46,10 +46,10 @@ spec:
       serverName: &currentCluster postgres-v4
       s3Credentials:
         accessKeyId:
-          name: cloudnative-pg-secret
+          name: &secret cloudnative-pg-secret
           key: aws-access-key-id
         secretAccessKey:
-          name: cloudnative-pg-secret
+          name: *secret
           key: aws-secret-access-key
   # # Note: previousCluster needs to be set to the name of the previous
   # # cluster when recovering from an existing cnpg cluster

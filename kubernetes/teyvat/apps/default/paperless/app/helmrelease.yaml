@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
@@ -25,10 +24,10 @@ spec:
   uninstall:
     keepHistory: false
   dependsOn:
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
-    - name: volsync
-      namespace: storage
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: volsync
+    namespace: storage
   values:
     controllers:
       main:
@@ -43,8 +42,8 @@ spec:
               tag: 16
               pullPolicy: IfNotPresent
             envFrom:
-              - secretRef:
-                  name: &secret paperless-secret
+            - secretRef:
+                name: &secret paperless-secret
         containers:
           main:
             image:
@@ -53,10 +52,10 @@ spec:
             env:
               PAPERLESS_REDIS_PREFIX: pngx
             envFrom:
-              - secretRef:
-                  name: *secret
-              - configMapRef:
-                  name: paperless-configmap
+            - secretRef:
+                name: *secret
+            - configMapRef:
+                name: paperless-configmap
             resources:
               requests:
                 cpu: 15m
@@ -77,15 +76,15 @@ spec:
           gethomepage.dev/name: Paperless
           gethomepage.dev/icon: paperless.png
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  name: main
-                  port: http
+        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          paths:
+          - path: /
+            service:
+              name: main
+              port: http
         tls:
-          - hosts:
-              - *host
+        - hosts:
+          - *host
     persistence:
       config:
         enabled: true
@@ -93,7 +92,7 @@ spec:
         advancedMounts:
           main:
             main:
-              - path: /data/local
+            - path: /data/local
       nas:
         enabled: true
         type: nfs
@@ -102,4 +101,4 @@ spec:
         advancedMounts:
           main:
             main:
-              - path: /data/nas
+            - path: /data/nas

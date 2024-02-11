@@ -29,10 +29,6 @@ spec:
   dependsOn:
     - name: local-path-provisioner
       namespace: storage
-  valuesFrom:
-    - kind: ConfigMap
-      name: kube-state-metrics-configmap
-      valuesKey: kube-state-metrics.yaml
   values:
     crds:
     alertmanager:
@@ -133,6 +129,12 @@ spec:
       enabled: false
     kubeStateMetrics:
       enabled: true
+    kube-state-metrics:
+      fullnameOverride: kube-state-metrics
+      metricLabelsAllowlist:
+        - pods=[*]
+        - deployments=[*]
+        - persistentvolumeclaims=[*]
     nodeExporter:
       enabled: true
     prometheus-node-exporter:
@@ -217,7 +219,7 @@ spec:
           image: quay.io/thanos/thanos:v0.34.0
           objectStorageConfig:
             existingSecret:
-              name: kube-prometheus-stack
+              name: thanos-objstore-secret
               key: objstore.yml
     cleanPrometheusOperatorObjectNames: true
   postRenderers:
