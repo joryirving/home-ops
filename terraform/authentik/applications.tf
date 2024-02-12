@@ -171,7 +171,7 @@ resource "authentik_provider_oauth2" "paperless_oauth2" {
 }
 
 resource "authentik_application" "paperless_application" {
-  name               = "paperless"
+  name               = "Paperless"
   slug               = authentik_provider_oauth2.paperless_oauth2.name
   protocol_provider  = authentik_provider_oauth2.paperless_oauth2.id
   group              = authentik_group.home.name
