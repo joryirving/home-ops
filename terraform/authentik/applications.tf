@@ -167,7 +167,7 @@ resource "authentik_provider_oauth2" "paperless_oauth2" {
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_scope_mapping.oauth2.ids
   access_token_validity = "hours=4"
-  redirect_uris         = ["https://paperless.${var.cluster_domain}/"]
+  redirect_uris         = ["https://paperless.${var.cluster_domain}/accounts/oidc/authentik/login/callback/"]
 }
 
 resource "authentik_application" "paperless_application" {
