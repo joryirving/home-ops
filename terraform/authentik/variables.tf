@@ -28,6 +28,18 @@ variable "grafana_secret" {
   sensitive   = true
 }
 
+variable "paperless_id" {
+  type        = string
+  description = "Paperless Client ID"
+  sensitive   = true
+}
+
+variable "paperless_secret" {
+  type        = string
+  description = "Paperless Client Secret"
+  sensitive   = true
+}
+
 variable "portainer_id" {
   type        = string
   description = "Portainer Client ID"
