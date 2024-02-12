@@ -32,7 +32,7 @@
 ## Downloads ##
 # resource "authentik_provider_proxy" "download_proxy" {
 #   for_each              = local.download_applications
-#   name                  = "${each.value}-provider"
+#   name                  = "${each.value}"
 #   external_host         = "http://${each.value}.${var.cluster_domain}"
 #   mode                  = "forward_single"
 #   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
@@ -53,7 +53,7 @@
 ## Infra ##
 # resource "authentik_provider_proxy" "infra_proxy" {
 #   for_each              = local.infra_applications
-#   name                  = "${each.value}-provider"
+#   name                  = "${each.value}"
 #   external_host         = "http://${each.value}.${var.cluster_domain}"
 #   mode                  = "forward_single"
 #   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
@@ -74,7 +74,7 @@
 ## Media ##
 # resource "authentik_provider_proxy" "media_proxy" {
 #   for_each                      = local.media_applications
-#   name                          = "${each.value}-provider"
+#   name                          = "${each.value}"
 #   basic_auth_enabled            = true
 #   basic_auth_username_attribute = var.[each.value]_username #I don't know if this works
 #   basic_auth_password_attribute = var.[each.value]_password
@@ -97,7 +97,7 @@
 
 ## HASS ##
 # resource "authentik_provider_proxy" "hass_proxy" {
-#   name                  = "home-assistant-provider"
+#   name                  = "home-assistant"
 #   external_host         = "http://hass.${var.cluster_domain}"
 #   mode                  = "forward_single"
 #   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
@@ -117,7 +117,7 @@
 ### Oauth2 Providers ###
 ## Weave-Gitops ##
 resource "authentik_provider_oauth2" "gitops_oauth2" {
-  name                  = "gitops-provider"
+  name                  = "gitops"
   client_id             = var.gitops_id
   client_secret         = var.gitops_secret
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
@@ -139,7 +139,7 @@ resource "authentik_application" "gitops_application" {
 
 ## Grafana ##
 resource "authentik_provider_oauth2" "grafana_oauth2" {
-  name                  = "grafana-provider"
+  name                  = "grafana"
   client_id             = var.grafana_id
   client_secret         = var.grafana_secret
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
@@ -161,7 +161,7 @@ resource "authentik_application" "grafana_application" {
 
 ## Paperless ##
 resource "authentik_provider_oauth2" "paperless_oauth2" {
-  name                  = "paperless-provider"
+  name                  = "paperless"
   client_id             = var.paperless_id
   client_secret         = var.paperless_secret
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
@@ -183,7 +183,7 @@ resource "authentik_application" "paperless_application" {
 
 ## Portainer ##
 resource "authentik_provider_oauth2" "portainer_oauth2" {
-  name                  = "portainer-provider"
+  name                  = "portainer"
   client_id             = var.portainer_id
   client_secret         = var.portainer_secret
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
