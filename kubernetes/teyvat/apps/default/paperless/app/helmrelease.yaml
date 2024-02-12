@@ -50,17 +50,41 @@ spec:
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.5.0
             env:
+              # Configure application
+              PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
               PAPERLESS_REDIS_PREFIX: pngx
+              PAPERLESS_URL: https://paperless.${SECRET_DOMAIN}
+              PAPERLESS_PORT: "8000"
+              PAPERLESS_TIME_ZONE: ${TIMEZONE}
+              PAPERLESS_WEBSERVER_WORKERS: "2"
+              PAPERLESS_TASK_WORKERS: "2"
+              # Configure Remote User auth
+              PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
+              PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "false"
+              # Configure folders
+              PAPERLESS_CONSUMPTION_DIR: /data/nas/consume
+              PAPERLESS_DATA_DIR: /data/local/data
+              PAPERLESS_EXPORT_DIR: /data/nas/export
+              PAPERLESS_MEDIA_ROOT: /data/local/media
+              # Configure folder importer
+              PAPERLESS_CONSUMER_POLLING: "60"
+              PAPERLESS_CONSUMER_RECURSIVE: "true"
+              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
+              # Configure OCR
+              PAPERLESS_OCR_LANGUAGES: nld
+              PAPERLESS_OCR_LANGUAGE: nld
+              # Configure redis integration
+              PAPERLESS_REDIS: redis://dragonfly.database.svc.cluster.local:6379
+              # Configure user permissions
+              USERMAP_GID: "65542"
             envFrom:
             - secretRef:
                 name: *secret
-            - configMapRef:
-                name: paperless-configmap
             resources:
               requests:
                 cpu: 15m
               limits:
-                memory: 1800M
+                memory: 2048Mi
     service:
       main:
         ports:
