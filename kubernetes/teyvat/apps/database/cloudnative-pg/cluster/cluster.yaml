@@ -12,7 +12,7 @@ spec:
     size: 20Gi
     storageClass: local-hostpath
   superuserSecret:
-    name: cloudnative-pg
+    name: &secret cloudnative-pg-secret
   enableSuperuserAccess: true
   postgresql:
     parameters:
@@ -46,7 +46,7 @@ spec:
       serverName: &currentCluster postgres-v4
       s3Credentials:
         accessKeyId:
-          name: &secret cloudnative-pg-secret
+          name: *secret
           key: aws-access-key-id
         secretAccessKey:
           name: *secret
