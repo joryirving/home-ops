@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app palworld-test
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: volsync
+    namespace: storage
+  values:
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/jammsen/docker-palworld-dedicated-server
+              tag: master@sha256:8edee2aa167b8d1f11629902d6a5f2cdc678542c37052b02bf1e62dffb96ac83
+            env:
+              ## Container Settings
+              TZ: ${TIMEZONE}
+              ALWAYS_UPDATE_ON_START: true
+              MULTITHREAD_ENABLED: true
+              COMMUNITY_SERVER: false
+              BACKUP_ENABLED: false #volsync is backing up the PVC
+              ## Server Gameplay Settings
+              DEATH_PENALTY: None
+              BASE_CAMP_WORKER_MAXNUM: 20
+              PAL_EGG_DEFAULT_HATCHING_TIME: "2.000000" #Default for Normal Mode
+              ## Server Settings
+              SERVER_NAME: Platonically Pals
+              SERVER_DESCRIPTION: Smurf's Palworld. Come in, have a tako!
+              PUBLIC_PORT: &port 8211
+              RCON_ENABLED: true
+              RCON_PORT: &rcon-port 25575
+              PUBLIC_IP: pal.${SECRET_SECONDARY_DOMAIN}
+              ## Webhook Settings
+              WEBHOOK_ENABLED: true
+            envFrom:
+            - secretRef:
+                name: palworld-test-secret
+            probes:
+              liveness: &disabled
+                enabled: false
+              readiness: *disabled
+              startup: *disabled
+            resources:
+              requests:
+                cpu: 100m
+              limits:
+                memory: 4Gi
+        # pod:
+        #   securityContext:
+        #     runAsUser: 1000
+        #     runAsGroup: 1000
+        #     fsGroup: 1000
+        #     fsGroupChangePolicy: OnRootMismatch
+    service:
+      main:
+        ports:
+          http:
+            enabled: false
+          game:
+            protocol: UDP
+            port: *port
+          rcon:
+            port: *rcon-port
+    persistence:
+      config:
+        type: emptyDir
+        globalMounts:
+        - path: /palworld
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /palworld/Pal/Binaries
+            subPath: binaries
+          - path: /palworld/Pal/Content
+            subPath: content
+      tmp:
+        type: emptyDir
