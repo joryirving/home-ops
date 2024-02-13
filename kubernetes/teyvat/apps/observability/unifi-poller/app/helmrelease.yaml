@@ -39,7 +39,15 @@ spec:
               UP_INFLUXDB_DISABLE: true
             envFrom:
               - secretRef:
-                  name: unifi-poller-credentials
+                  name: unifi-poller-secret
+        pod:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
     service:
       main:
         ports:

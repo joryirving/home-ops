@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: gatus
+  name: &app gatus
 spec:
   interval: 30m
   chart:
@@ -26,6 +26,8 @@ spec:
   values:
     controllers:
       main:
+        replicas: 2
+        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -42,7 +44,7 @@ spec:
             order: 2
             image: &configSyncImage
               repository: ghcr.io/kiwigrid/k8s-sidecar
-              tag: 1.25.3
+              tag: 1.25.4
               pullPolicy: IfNotPresent
             env:
               FOLDER: /config
@@ -62,7 +64,7 @@ spec:
             image:
               # TODO: move to semver once available
               repository: ghcr.io/twin/gatus
-              tag: latest@sha256:f53490a6e52c32ce566bc3d56628fde86f9d5bbe51850582034b3a5825b66b16
+              tag: latest@sha256:b3d4e715e29f028b576c782a5e89367ccef0674695f89eec99f76c03fe5c5b31
             env:
               TZ: ${TIMEZONE}
               GATUS_CONFIG_PATH: /config
@@ -90,6 +92,20 @@ spec:
             runAsGroup: 568
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: *app
     service:
       main:
         ports:

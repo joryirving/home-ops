@@ -36,7 +36,7 @@ spec:
           main:
             image:
               repository: ghcr.io/jammsen/docker-palworld-dedicated-server
-              tag: master@sha256:1677ec7ecf9f26a909248643507fbe04d81dfa03fed8baffcccda6e688b0df84
+              tag: master@sha256:8edee2aa167b8d1f11629902d6a5f2cdc678542c37052b02bf1e62dffb96ac83
             env:
               ## Container Settings
               TZ: ${TIMEZONE}
@@ -44,6 +44,7 @@ spec:
               MULTITHREAD_ENABLED: true
               COMMUNITY_SERVER: false
               BACKUP_ENABLED: false #volsync is backing up the PVC
+              SERVER_SETTINGS_MODE: auto
               ## Server Gameplay Settings
               DEATH_PENALTY: None
               BASE_CAMP_WORKER_MAXNUM: 20
@@ -59,7 +60,7 @@ spec:
               WEBHOOK_ENABLED: true
             envFrom:
             - secretRef:
-                name: *app
+                name: palworld-secret
             probes:
               liveness: &disabled
                 enabled: false
@@ -70,12 +71,12 @@ spec:
                 cpu: 1000m
               limits:
                 memory: 24Gi
-        pod:
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            fsGroup: 1000
-            fsGroupChangePolicy: OnRootMismatch
+        # pod:
+        #   securityContext:
+        #     runAsUser: 1000
+        #     runAsGroup: 1000
+        #     fsGroup: 1000
+        #     fsGroupChangePolicy: OnRootMismatch
     service:
       main:
         type: LoadBalancer

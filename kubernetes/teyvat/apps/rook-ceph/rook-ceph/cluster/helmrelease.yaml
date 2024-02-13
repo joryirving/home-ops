@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: rook-ceph-cluster
-      version: v1.13.3
+      version: v1.13.4
       sourceRef:
         kind: HelmRepository
         name: rook-ceph
@@ -54,6 +54,31 @@ spec:
         provider: host
         connections:
           requireMsgr2: true
+      resources:
+        mgr:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+        mon:
+          requests:
+            cpu: 50m
+            memory: 512Mi
+          limits:
+            memory: 1Gi
+        osd:
+          requests:
+            cpu: 400m
+            memory: 2Gi
+          limits:
+            memory: 6Gi
+        mgr-sidecar:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
       crashCollector:
         disable: false
       dashboard:
@@ -69,9 +94,11 @@ spec:
           - name: ayaka
             devices:
               - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_23026Y802292
+              - name: /dev/disk/by-id/nvme-Samsung_SSD_960_EVO_250GB_S3ESNX0J107591J
           - name: eula
             devices:
               - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22501H800457
+              - name: /dev/disk/by-id/nvme-WDS500G3X0C-00SJG0_2021A2441108
           - name: ganyu
             devices:
               - name: /dev/disk/by-id/nvme-CT1000P3SSD8_2314E6C52009
@@ -87,28 +114,6 @@ spec:
                     - key: node-role.kubernetes.io/worker
                       operator: Exists
         mon: *placement
-      resources:
-        mgr:
-          requests:
-            cpu: 125m
-            memory: 512Mi
-          limits:
-            cpu: 2000m
-            memory: 2Gi
-        mon:
-          requests:
-            cpu: 50m
-            memory: 512Mi
-          limits:
-            cpu: 4000m
-            memory: 2Gi
-        osd:
-          requests:
-            cpu: 400m
-            memory: 2Gi
-          limits:
-            cpu: 4000m
-            memory: 6Gi
     cephBlockPools:
       - name: ceph-blockpool
         spec:
@@ -121,6 +126,7 @@ spec:
           isDefault: true
           reclaimPolicy: Delete
           allowVolumeExpansion: true
+          volumeBindingMode: Immediate
           parameters:
             imageFormat: "2"
             imageFeatures: layering
@@ -152,10 +158,11 @@ spec:
             activeStandby: true
             resources:
               requests:
-                cpu: 35m
+                cpu: 100m
                 memory: 1Gi
               limits:
                 memory: 4Gi
+            priorityClassName: system-cluster-critical
         storageClass:
           enabled: true
           isDefault: false
@@ -163,6 +170,7 @@ spec:
           pool: data0
           reclaimPolicy: Delete
           allowVolumeExpansion: true
+          volumeBindingMode: Immediate
           parameters:
             csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
             csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
@@ -194,10 +202,11 @@ spec:
             resources:
               requests:
                 cpu: 100m
-                memory: 256Mi
+                memory: 1Gi
               limits:
                 memory: 2Gi
             instances: 2
+            priorityClassName: system-cluster-critical
           healthCheck:
             bucket:
               interval: 60s
@@ -205,5 +214,15 @@ spec:
           enabled: true
           name: ceph-bucket
           reclaimPolicy: Delete
+          volumeBindingMode: Immediate
           parameters:
             region: ca-west-1
+        ingress:
+          enabled: true
+          ingressClassName: internal
+          host:
+            name: &host rgw.${SECRET_DOMAIN}
+            path: /
+          tls:
+            - hosts:
+                - *host

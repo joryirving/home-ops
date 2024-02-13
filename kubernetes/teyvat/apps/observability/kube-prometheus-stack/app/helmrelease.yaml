@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: kube-prometheus-stack
+  name: &app kube-prometheus-stack
 spec:
   interval: 30m
   timeout: 15m
@@ -29,16 +29,59 @@ spec:
   dependsOn:
     - name: local-path-provisioner
       namespace: storage
-  valuesFrom:
-    - kind: ConfigMap
-      name: kube-state-metrics-configmap
-      valuesKey: kube-state-metrics.yaml
   values:
     crds:
-      enabled: true
-    cleanPrometheusOperatorObjectNames: true
     alertmanager:
+      ingress:
+        enabled: true
+        pathType: Prefix
+        ingressClassName: internal
+        hosts:
+          - &host alertmanager.${SECRET_DOMAIN}
+        tls:
+          - hosts:
+              - *host
+      alertmanagerSpec:
+        replicas: 2
+        useExistingSecret: true
+        configSecret: alertmanager-secret
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: ceph-block
+              resources:
+                requests:
+                  storage: 1Gi
+      affinity: &affinity
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+    grafana:
       enabled: false
+      forceDeployDashboards: true
+      sidecar:
+        dashboards:
+          multicluster:
+            etcd:
+              enabled: true
+    kubeApiServer:
+      enabled: true
+      serviceMonitor:
+        metricRelabelings:
+          # Remove duplicate labels provided by k3s
+          - action: keep
+            sourceLabels: ["__name__"]
+            regex: (aggregator_openapi|aggregator_unavailable|apiextensions_openapi|apiserver_admission|apiserver_audit|apiserver_cache|apiserver_cel|apiserver_client|apiserver_crd|apiserver_current|apiserver_envelope|apiserver_flowcontrol|apiserver_init|apiserver_kube|apiserver_longrunning|apiserver_request|apiserver_requested|apiserver_response|apiserver_selfrequest|apiserver_storage|apiserver_terminated|apiserver_tls|apiserver_watch|apiserver_webhooks|authenticated_user|authentication|disabled_metric|etcd_bookmark|etcd_lease|etcd_request|field_validation|get_token|go|grpc_client|hidden_metric|kube_apiserver|kubernetes_build|kubernetes_feature|node_authorizer|pod_security|process_cpu|process_max|process_open|process_resident|process_start|process_virtual|registered_metric|rest_client|scrape_duration|scrape_samples|scrape_series|serviceaccount_legacy|serviceaccount_stale|serviceaccount_valid|watch_cache|workqueue)_(.+)
+          # Drop high cardinality labels
+          - action: drop
+            sourceLabels: ["__name__"]
+            regex: (apiserver|etcd|rest_client)_request(|_sli|_slo)_duration_seconds_bucket
+          - action: drop
+            sourceLabels: ["__name__"]
+            regex: (apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket)
     kubelet:
       enabled: true
       serviceMonitor:
@@ -58,21 +101,6 @@ spec:
           - action: drop
             sourceLabels: ["__name__"]
             regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
-    kubeApiServer:
-      enabled: true
-      serviceMonitor:
-        metricRelabelings:
-          # Remove duplicate labels provided by k3s
-          - action: keep
-            sourceLabels: ["__name__"]
-            regex: (aggregator_openapi|aggregator_unavailable|apiextensions_openapi|apiserver_admission|apiserver_audit|apiserver_cache|apiserver_cel|apiserver_client|apiserver_crd|apiserver_current|apiserver_envelope|apiserver_flowcontrol|apiserver_init|apiserver_kube|apiserver_longrunning|apiserver_request|apiserver_requested|apiserver_response|apiserver_selfrequest|apiserver_storage|apiserver_terminated|apiserver_tls|apiserver_watch|apiserver_webhooks|authenticated_user|authentication|disabled_metric|etcd_bookmark|etcd_lease|etcd_request|field_validation|get_token|go|grpc_client|hidden_metric|kube_apiserver|kubernetes_build|kubernetes_feature|node_authorizer|pod_security|process_cpu|process_max|process_open|process_resident|process_start|process_virtual|registered_metric|rest_client|scrape_duration|scrape_samples|scrape_series|serviceaccount_legacy|serviceaccount_stale|serviceaccount_valid|watch_cache|workqueue)_(.+)
-          # Drop high cardinality labels
-          - action: drop
-            sourceLabels: ["__name__"]
-            regex: (apiserver|etcd|rest_client)_request(|_sli|_slo)_duration_seconds_bucket
-          - action: drop
-            sourceLabels: ["__name__"]
-            regex: (apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket)
     kubeControllerManager:
       enabled: true
       endpoints: &cp
@@ -99,7 +127,35 @@ spec:
             regex: "(apiserver_audit|apiserver_client|apiserver_delegated|apiserver_envelope|apiserver_storage|apiserver_webhooks|authenticated_user|authentication|disabled_metric|go|hidden_metric|kubernetes_build|kubernetes_feature|leader_election|process_cpu|process_max|process_open|process_resident|process_start|process_virtual|registered_metric|rest_client|scheduler|scrape_duration|scrape_samples|scrape_series|workqueue)_(.+)"
     kubeProxy:
       enabled: false
+    kubeStateMetrics:
+      enabled: true
+    kube-state-metrics:
+      fullnameOverride: kube-state-metrics
+      metricLabelsAllowlist:
+        - pods=[*]
+        - deployments=[*]
+        - persistentvolumeclaims=[*]
+    nodeExporter:
+      enabled: true
+    prometheus-node-exporter:
+      fullnameOverride: node-exporter
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels:
+                - __meta_kubernetes_pod_node_name
+              targetLabel: kubernetes_node
+    prometheusOperator:
+      affinity: *affinity
     prometheus:
+      thanosService:
+        enabled: true
+      thanosServiceMonitor:
+        enabled: true
       ingress:
         enabled: true
         ingressClassName: internal
@@ -116,39 +172,24 @@ spec:
         tls:
           - hosts:
               - *host
-      thanosService:
-        enabled: true
-      thanosServiceMonitor:
-        enabled: true
       prometheusSpec:
-        replicas: 2
+        enableAdminAPI: true
+        enableFeatures:
+          - auto-gomaxprocs
+          - memory-snapshot-on-shutdown
+          - new-service-discovery-manager
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
         replicaExternalLabelName: __replica__
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false
-        alertingEndpoints:
-          - namespace: observability
-            name: alertmanager
-            port: 9093
-            apiVersion: v2
-        enableAdminAPI: true
-        walCompression: true
-        enableFeatures:
-          - auto-gomaxprocs
-          - memory-snapshot-on-shutdown
-          - new-service-discovery-manager
-        thanos:
-          image: quay.io/thanos/thanos:v0.34.0
-          objectStorageConfig:
-            existingSecret:
-              name: kube-prometheus-stack
-              key: objstore.yml
         retention: 2d
         retentionSize: 15GB
-        externalLabels:
-          cluster: ${CLUSTER_NAME}
+        replicas: 2
+        affinity: *affinity
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -174,30 +215,13 @@ spec:
                   - 192.168.1.50:2112
                   - 192.168.1.51:2112
                   - 192.168.1.52:2112
-    nodeExporter:
-      enabled: true
-    prometheus-node-exporter:
-      fullnameOverride: node-exporter
-      prometheus:
-        monitor:
-          enabled: true
-          relabelings:
-            - action: replace
-              regex: (.*)
-              replacement: $1
-              sourceLabels:
-                - __meta_kubernetes_pod_node_name
-              targetLabel: kubernetes_node
-    kubeStateMetrics:
-      enabled: true
-    grafana:
-      enabled: false
-      forceDeployDashboards: true
-      sidecar:
-        dashboards:
-          multicluster:
-            etcd:
-              enabled: true
+        thanos:
+          image: quay.io/thanos/thanos:v0.34.0
+          objectStorageConfig:
+            existingSecret:
+              name: thanos-objstore-secret
+              key: objstore.yml
+    cleanPrometheusOperatorObjectNames: true
   postRenderers:
     - kustomize:
         patches:

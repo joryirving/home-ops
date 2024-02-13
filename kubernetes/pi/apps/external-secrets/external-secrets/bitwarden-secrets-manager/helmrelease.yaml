@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: bitwarden-secrets-manager
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      main:
+        labels:
+          vector.dev/exclude: "true"
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/ripplefcl/bws-cache
+              tag: pr-28@sha256:8dfea444a1e0426135b97ee6f7bc7716c6cc259282707302b29f979b71eb6d15
+            env:
+              SECRET_TTL: 3600
+              DEBUG: "false"
+              ORG_ID:
+                valueFrom:
+                  secretKeyRef:
+                    name: bws-secret
+                    key: ORG_ID
+            # probes:
+            #   liveness:
+            #     enabled: false
+            # #     custom: false
+            # #     spec:
+            # #       httpGet:
+            # #         path: /heartbeat
+            # #         port: 5000
+            # #       initialDelaySeconds: 15
+            # #       periodSeconds: 30
+            # #       failureThreshold: 3
+            #   readiness:
+            #     enabled: false
+            # #     custom: true
+            # #     spec:
+            # #       httpGet:
+            # #         path: /health
+            # #         port: 5000
+            # #       initialDelaySeconds: 15
+            #   startup:
+            #     enabled: false
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources: &resources
+              requests:
+                cpu: 10m
+                memory: 10Mi
+              limits:
+                memory: 100Mi
+    service:
+      main:
+        ports:
+          http:
+            port: 5000

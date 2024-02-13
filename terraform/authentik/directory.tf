@@ -13,6 +13,12 @@ resource "authentik_group" "home" {
   is_superuser = false
 }
 
+resource "authentik_policy_binding" "paperless_monitoring" {
+  target = authentik_application.paperless_application.uuid
+  group  = authentik_group.home.id
+  order  = 0
+}
+
 resource "authentik_group" "infrastructure" {
   name         = "Infrastructure"
   is_superuser = false
@@ -24,8 +30,8 @@ resource "authentik_policy_binding" "gitops_infra" {
   order  = 0
 }
 
-resource "authentik_policy_binding" "grafana_infra" {
-  target = authentik_application.grafana_application.uuid
+resource "authentik_policy_binding" "portainer_infra" {
+  target = authentik_application.portainer_application.uuid
   group  = authentik_group.infrastructure.id
   order  = 0
 }
@@ -53,8 +59,8 @@ resource "authentik_group" "monitoring" {
   parent       = resource.authentik_group.grafana_admin.id
 }
 
-resource "authentik_policy_binding" "portainer_monitoring" {
-  target = authentik_application.portainer_application.uuid
+resource "authentik_policy_binding" "grafana_infra" {
+  target = authentik_application.grafana_application.uuid
   group  = authentik_group.monitoring.id
   order  = 0
 }

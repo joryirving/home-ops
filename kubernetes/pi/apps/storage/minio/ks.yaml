@@ -3,16 +3,16 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app alertmanager
+  name: &app minio
   namespace: flux-system
 spec:
-  targetNamespace: observability
+  targetNamespace: storage
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: external-secrets-bitwarden
-  path: ./kubernetes/teyvat/apps/observability/alertmanager/app
+    - name: external-secrets-bitwarden-secrets-manager
+  path: ./kubernetes/pi/apps/storage/minio/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -24,4 +24,5 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      VOLSYNC_CAPACITY: 50Mi
+      GATUS_SUBDOMAIN: s3
+      GATUS_STATUS: "403"

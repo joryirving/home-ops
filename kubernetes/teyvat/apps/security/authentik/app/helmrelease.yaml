@@ -25,9 +25,9 @@ spec:
       init-db:
         image: ghcr.io/onedr0p/postgres-init:16
         imagePullPolicy: IfNotPresent
-        envFrom:
+        envFrom: &envFrom
           - secretRef:
-              name: authentik-secrets
+              name: authentik-secret
     ingress:
       enabled: true
       ingressClassName: external
@@ -56,9 +56,7 @@ spec:
         host: dragonfly.database.svc.cluster.local
     env:
       AUTHENTIK_REDIS__DB: "1"
-    envFrom:
-      - secretRef:
-          name: authentik-secrets
+    envFrom: *envFrom
     autoscaling:
       server:
         enabled: true

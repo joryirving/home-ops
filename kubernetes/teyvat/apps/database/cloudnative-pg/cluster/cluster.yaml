@@ -5,14 +5,14 @@ kind: Cluster
 metadata:
   name: postgres
 spec:
-  instances: 4
-  imageName: ghcr.io/cloudnative-pg/postgresql:16.1-18
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.1-19
   primaryUpdateStrategy: unsupervised
   storage:
     size: 20Gi
     storageClass: local-hostpath
   superuserSecret:
-    name: cloudnative-pg-secret
+    name: &secret cloudnative-pg-secret
   enableSuperuserAccess: true
   postgresql:
     parameters:
@@ -40,16 +40,16 @@ spec:
         compression: bzip2
         maxParallel: 8
       destinationPath:  s3://postgresql/
-      endpointURL: https://s3.${SECRET_DOMAIN}
+      endpointURL: https://s3.${PI_DOMAIN}
       # Note: serverName version needs to be incremented or changed
       # when recovering from an existing cnpg cluster
       serverName: &currentCluster postgres-v4
       s3Credentials:
         accessKeyId:
-          name: cloudnative-pg-secret
+          name: *secret
           key: aws-access-key-id
         secretAccessKey:
-          name: cloudnative-pg-secret
+          name: *secret
           key: aws-secret-access-key
   # # Note: previousCluster needs to be set to the name of the previous
   # # cluster when recovering from an existing cnpg cluster

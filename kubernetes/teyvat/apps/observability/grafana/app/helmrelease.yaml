@@ -53,7 +53,7 @@ spec:
         check_for_plugin_updates: false
         reporting_enabled: false
       auth:
-        signout_redirect_url: https://authentik.${SECRET_DOMAIN}/application/o/grafana-provider/end-session/
+        signout_redirect_url: https://authentik.${SECRET_DOMAIN}/application/o/grafana/end-session/
         oauth_auto_login: false
         oauth_allow_insecure_email_lookup: true
       auth.anonymous:
@@ -255,7 +255,7 @@ spec:
         kubernetes-namespaces:
           # renovate: depName="Kubernetes / Views / Namespaces"
           gnetId: 15758
-          revision: 32
+          revision: 33
           datasource: Prometheus
         kubernetes-nodes:
           # renovate: depName="Kubernetes / Views / Nodes"
@@ -425,3 +425,10 @@ spec:
         labelSelector:
           matchLabels:
             app.kubernetes.io/name: *app
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: Exists

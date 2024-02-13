@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: karma
+  name: &app karma
 spec:
   interval: 30m
   chart:
@@ -25,11 +25,13 @@ spec:
   uninstall:
     keepHistory: false
   dependsOn:
-    - name: alertmanager
+    - name: kube-prometheus-stack
       namespace: observability
   values:
     controllers:
       main:
+        replicas: 2
+        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -45,6 +47,21 @@ spec:
                 memory: 100Mi
               limits:
                 memory: 500Mi
+        pod:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: Exists
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: *app
     service:
       main:
         ports:
