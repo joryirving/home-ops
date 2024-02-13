@@ -86,31 +86,9 @@ spec:
             requiredDuringSchedulingIgnoredDuringExecution:
               nodeSelectorTerms:
                 - matchExpressions:
-                    - key: node-role.kubernetes.io/worker
+                    - key: node-role.kubernetes.io/control-plane
                       operator: Exists
         mon: *placement
-      resources:
-        mgr:
-          requests:
-            cpu: 125m
-            memory: 512Mi
-          limits:
-            cpu: 2000m
-            memory: 2Gi
-        mon:
-          requests:
-            cpu: 50m
-            memory: 512Mi
-          limits:
-            cpu: 4000m
-            memory: 2Gi
-        osd:
-          requests:
-            cpu: 400m
-            memory: 2Gi
-          limits:
-            cpu: 4000m
-            memory: 6Gi
     cephBlockPools:
       - name: ceph-blockpool
         spec:
@@ -123,6 +101,7 @@ spec:
           isDefault: true
           reclaimPolicy: Delete
           allowVolumeExpansion: true
+          volumeBindingMode: Immediate
           parameters:
             imageFormat: "2"
             imageFeatures: layering
@@ -158,6 +137,7 @@ spec:
                 memory: 1Gi
               limits:
                 memory: 4Gi
+            priorityClassName: system-cluster-critical
         storageClass:
           enabled: true
           isDefault: false
@@ -165,6 +145,7 @@ spec:
           pool: data0
           reclaimPolicy: Delete
           allowVolumeExpansion: true
+          volumeBindingMode: Immediate
           parameters:
             csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
             csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
@@ -200,6 +181,7 @@ spec:
               limits:
                 memory: 2Gi
             instances: 2
+            priorityClassName: system-cluster-critical
           healthCheck:
             bucket:
               interval: 60s
@@ -207,5 +189,15 @@ spec:
           enabled: true
           name: ceph-bucket
           reclaimPolicy: Delete
+          volumeBindingMode: Immediate
           parameters:
             region: ca-west-1
+        ingress:
+          enabled: true
+          ingressClassName: internal
+          host:
+            name: &host rgw.${SECRET_DOMAIN}
+            path: /
+          tls:
+            - hosts:
+                - *host
