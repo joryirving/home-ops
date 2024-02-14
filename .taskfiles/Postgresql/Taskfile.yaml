@@ -1,0 +1,114 @@
+---
+version: "3"
+
+vars:
+  PG: '{{.PG | default "postgres"}}' #postgres cluster name
+  NS: '{{.NS | default "database"}}' #database namespace
+
+tasks:
+  rw:
+    desc: Get current CloudNativePG master (writable) instance to run command against.
+    dir: "{{.USER_WORKING_DIR}}"
+    vars:
+      APP: "{{.APP}}"
+      PG: &pg-default
+        sh: |-
+          [[ -n "{{.PG}}" ]] && ( echo -n "{{.PG}}" && exit 0 ) || ( [[ -n "{{.APP}}" ]] && echo -n "pg-{{.APP}}" || echo -n "postgres" )
+      NS: &ns-default
+        sh: |-
+          [[ -n "{{.NS}}" ]] && echo -n "{{.NS}}" || ( [[ -n "{{.APP}}" ]] && echo -n "{{.APP}}" || echo -n "database" )
+      # PG: '{{ or .PG (fail "Missing `PG` environment variable!") }}'
+      # NS: &ns-default '{{.NS | default "pg"}}'
+    cmds:
+      - kubectl get clusters.postgresql.cnpg.io -n {{.NS}} {{.PG}} -o yaml | yq '.status.currentPrimary' | xargs -o -I% kubectl -n {{.NS}} {{.CLI_ARGS}}
+
+  adminer:
+    desc: Use kubectl netshoot krew plugin to deploy adminer as sidecar to the current primary CNPG replica pod.
+    dir: "{{.USER_WORKING_DIR}}"
+    vars:
+      APP: "{{.APP}}"
+      PG: *pg-default
+      NS: *ns-default
+      PF_ADDR: '{{ .PF_ADDR | default "127.0.0.1" }}'
+      PF_PORT: '{{ .PF_PORT | default "8080" }}'
+    cmds:
+      - |
+        kubectl get clusters.postgresql.cnpg.io -n {{.NS}} {{.PG}} -o yaml | yq '.status.currentPrimary' | xargs -o -I% bash -c "while kubectl netshoot debug -n {{.NS}} % --image-name adminer --image-tag 4.8.1-standalone; do kubectl port-forward -n {{.NS}} % --address {{.PF_ADDR}} {{.PF_PORT}}:8080; break; done"
+
+  crunchy-owner:
+    desc: Restore a pg_dump to a CrunchyData Postgres cluster, writing to the master instance.
+    dir: "{{.USER_WORKING_DIR}}"
+    vars: &crunchy-vars
+      APP: "{{.APP}}"
+      PG: *pg-default
+      NS: *ns-default
+      CRUNCHY_PRIMARY: &crunchy-primary
+        sh: |-
+          kubectl get pods -n {{.NS}} -l postgres-operator.crunchydata.com/role=master,postgres-operator.crunchydata.com/cluster={{.PG}} -o jsonpath='{.items[0].metadata.name}'
+      DBNAME: &dbname
+        sh: |-
+          [[ -n "{{.DBNAME}}" ]] && echo -n "{{.DBNAME}}" || ( [[ -n "{{.APP}}" ]] && echo -n "{{.APP}}" ) || ( echo "Missing `DB` environment variable for specifying database name!" && exit 1 )
+      DBUSER: &dbuser
+        sh: |-
+          [[ -n "{{.DBUSER}}" ]] && echo -n "{{.DBUSER}}" || [[ -n "{{.APP}}" ]] && echo -n "{{.APP}}" || ( echo "Missing `USER` environment variable for specifying user name!" && exit 1 )
+    env:
+      DBUSER: '{{.DBUSER}}'
+    cmds:
+      - kubectl exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'echo "ALTER DATABASE \"{{.DBNAME}}\" OWNER TO \"{{.DBUSER}}\";" | psql'
+
+  crunchy-restore:
+    desc: Restore a pg_dump to a CrunchyData Postgres cluster, writing to the master instance.
+    dir: "{{.USER_WORKING_DIR}}"
+    vars: &crunchy-vars
+      APP: "{{.APP}}"
+      NS: *ns-default
+      CRUNCHY_PRIMARY: *crunchy-primary
+      DBNAME: *dbname
+      DBUSER: "{{.DBUSER}}"
+      DUMP: &dump '{{ or .DUMP (fail "Missing `DUMP` environment variable for specifying pg_dump file location!") }}'
+      CP_DIR: &cpdir '{{ .CP_DIR | default "/pgdata" }}' # would've been /tmp or /run if Crunchy replica container didn't crash and restart when files are copied there for some reason, maybe small tmpfs size?
+      ARGS: # TODO: (for other users) these are my personal defaults, please check and change accordingly if copying this task before running it!
+        sh: |-
+          [[ -n "{{.ARGS}}" ]] && echo -n "{{.ARGS}}" || echo -n "--verbose --format=c --clean --if-exists --no-owner --role {{.DBUSER}}"
+    env:
+      DBUSER: '{{.DBUSER}}'
+    cmds:
+      - kubectl cp --container database {{.DUMP}} {{.NS}}/{{.CRUNCHY_PRIMARY}}:{{.CP_DIR}}/restore-dump.psql
+      - |-
+        kubectl exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'echo "ALTER DATABASE \"{{.DBNAME}}\" OWNER TO \"{{.DBUSER}}\";" | psql'
+      - kubectl exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'pg_restore --dbname {{.DBNAME}} {{.ARGS}} {{.CP_DIR}}/restore-dump.psql'
+      - defer: kubectl exec -it -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/restore-dump.psql'
+
+  crunchy-dump:
+    desc: Run pg_dump on the master instance of a CrunchyData Postgres cluster.
+    dir: "{{.USER_WORKING_DIR}}"
+    vars:
+      APP: "{{.APP}}"
+      NS: *ns-default
+      CRUNCHY_PRIMARY: *crunchy-primary
+      DUMP: *dump
+      CP_DIR: *cpdir
+      DBNAME: *dbname
+      DBUSER: *dbuser
+      ARGS:
+        sh: |-
+          [[ -n "{{.ARGS}}" ]] && echo "{{.ARGS}}" || echo "--verbose --format=c --clean --if-exists --no-owner"
+    cmds:
+      - kubectl exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/dump.psql && pg_dump --dbname {{.DBNAME}} {{.ARGS}} --file {{.CP_DIR}}/dump.psql'
+      - kubectl cp --container database {{.NS}}/{{.CRUNCHY_PRIMARY}}:{{.CP_DIR}}/dump.psql {{.DUMP}}
+
+  cnpg-dump:
+    desc: Run pg_dump on the master instance of a CNPG Postgres cluster.
+    dir: "{{.USER_WORKING_DIR}}"
+    vars:
+      APP: "{{.APP}}"
+      NS: "{{.NS}}"
+      CNPG: "{{.CNPG}}"
+      DUMP: *dump
+      CP_DIR: "/var/lib/postgresql/data/pgdata"
+      ARGS:
+        sh: |-
+          [[ -n "{{.ARGS}}" ]] && echo "{{.ARGS}}" || echo "--verbose --format=c --clean --if-exists --no-owner"
+    cmds:
+      - kubectl exec -it --container postgres -n {{.NS}} {{.CNPG}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/dump.psql && pg_dump --dbname {{.APP}} {{.ARGS}} --file {{.CP_DIR}}/dump.psql'
+      - kubectl cp --container postgres {{.NS}}/{{.CNPG}}:{{.CP_DIR}}/dump.psql {{.DUMP}}

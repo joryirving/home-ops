@@ -10,8 +10,6 @@ spec:
       synchronous_mode: true
       postgresql:
         synchronous_commit: "on"
-  service:
-    type: LoadBalancer
   instances:
     - name: postgres
       metadata:
@@ -46,14 +44,15 @@ spec:
     - name: "paperless"
       databases: ["paperless"]
     - name: "postgres"
+      databases: []
     - name: "prowlarr"
-      databases: ["prowlarr_main, prowlarr_log"]
+      databases: ["prowlarr_main", "prowlarr_log"]
     - name: "radarr"
-      databases: ["radarr_main, radarr_log"]
+      databases: ["radarr_main", "radarr_log"]
     - name: "readarr"
-      databases: ["readarr_cache, readarr_main, readarr_log"]
+      databases: ["readarr_cache", "readarr_main", "readarr_log"]
     - name: "sonarr"
-      databases: ["sonarr_main, sonarr_log"]
+      databases: ["sonarr_main", "sonarr_log"]
   backups:
     pgbackrest:
       configuration: &backupConfig
@@ -120,6 +119,8 @@ spec:
   #       s3: *minio
   proxy:
     pgBouncer:
+      service:
+        type: LoadBalancer
       port: 5432
       replicas: *replica
       # config:
@@ -133,7 +134,3 @@ spec:
             matchLabels:
               postgres-operator.crunchydata.com/cluster: *name
               postgres-operator.crunchydata.com/role: "pgbouncer"
-  metadata:
-    annotations:
-      replicator.v1.mittwald.de/replication-allowed: "true"
-      replicator.v1.mittwald.de/replication-allowed-namespaces: "*"
