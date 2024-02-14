@@ -35,14 +35,6 @@ spec:
           nfsMount: "true"
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          01-init-db:
-            image:
-              repository: ghcr.io/onedr0p/postgres-init
-              tag: 16
-            envFrom: &envFrom
-            - secretRef:
-                name: bazarr-secret
         containers:
           main:
             image:
@@ -50,7 +42,11 @@ spec:
               tag: 1.4.1@sha256:835ad0f07a95fbef05c009d866b90b50bd7a0d08dae3c94111eac6f2562f6800
             env:
               TZ: ${TIMEZONE}
-            envFrom: *envFrom
+            envFrom:
+            - secretRef:
+                name: bazarr-secret
+            - secretRef:
+                name: bazarr-db-secret
             resources:
               requests:
                 cpu: 10m
