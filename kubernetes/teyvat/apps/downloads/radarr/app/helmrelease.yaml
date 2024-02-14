@@ -35,15 +35,6 @@ spec:
           nfsMount: "true"
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          init-db:
-            image:
-              repository: ghcr.io/onedr0p/postgres-init
-              tag: 16
-              pullPolicy: IfNotPresent
-            envFrom: &envFrom
-            - secretRef:
-                name: radarr-secret
         containers:
           main:
             image:
@@ -56,7 +47,11 @@ spec:
               RADARR__INSTANCE_NAME: Radarr
               RADARR__PORT: &port 80
               RADARR__LOG_LEVEL: info
-            envFrom: *envFrom
+            envFrom:
+            - secretRef:
+                name: radarr-secret
+            - secretRef:
+                name: radarr-db-secret
             probes:
               liveness: &probes
                 enabled: true
