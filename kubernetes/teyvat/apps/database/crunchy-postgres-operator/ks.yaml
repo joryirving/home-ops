@@ -48,7 +48,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app crunchy-postgres-operator-secretstore
+  name: &app crunchy-postgres-operator-clustersecretstore
   namespace: flux-system
 spec:
   targetNamespace: database
@@ -56,9 +56,8 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: crunchy-postgres-operator-cluster
     - name: external-secrets
-  path: ./kubernetes/teyvat/apps/database/crunchy-postgres-operator/secretstore
+  path: ./kubernetes/teyvat/apps/database/crunchy-postgres-operator/clustersecretstore
   prune: true
   sourceRef:
     kind: GitRepository
