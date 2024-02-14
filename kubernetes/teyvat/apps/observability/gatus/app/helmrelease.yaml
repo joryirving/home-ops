@@ -31,15 +31,6 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
-          init-db:
-            order: 1
-            image:
-              repository: ghcr.io/onedr0p/postgres-init
-              tag: 16
-              pullPolicy: IfNotPresent
-            envFrom: &envFrom
-            - secretRef:
-                name: gatus-secret
           init-config:
             order: 2
             image: &configSyncImage
@@ -69,7 +60,11 @@ spec:
               TZ: ${TIMEZONE}
               GATUS_CONFIG_PATH: /config
               CUSTOM_WEB_PORT: &port 80
-            envFrom: *envFrom
+            envFrom:
+            - secretRef:
+                name: gatus-secret
+            - secretRef:
+                name: gatus-db-secret
             resources:
               requests:
                 cpu: 10m
