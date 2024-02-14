@@ -21,13 +21,6 @@ spec:
     worker:
       strategy:
         type: RollingUpdate
-    initContainers:
-      init-db:
-        image: ghcr.io/onedr0p/postgres-init:16
-        imagePullPolicy: IfNotPresent
-        envFrom: &envFrom
-          - secretRef:
-              name: authentik-secret
     ingress:
       enabled: true
       ingressClassName: external
@@ -50,13 +43,17 @@ spec:
             - *host
           secretName: *host
     podAnnotations:
-      secret.reloader.stakater.com/reload: authentik-secrets
+      secret.reloader.stakater.com/reload: authentik-secret, authentik-db-secret
     authentik:
       redis:
         host: dragonfly.database.svc.cluster.local
     env:
       AUTHENTIK_REDIS__DB: "1"
-    envFrom: *envFrom
+    envFrom:
+      - secretRef:
+          name: authentik-secret
+      - secretRef:
+          name: authentik-db-secret
     autoscaling:
       server:
         enabled: true
