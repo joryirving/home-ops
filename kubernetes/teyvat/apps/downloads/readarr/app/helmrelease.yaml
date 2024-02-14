@@ -35,15 +35,6 @@ spec:
           nfsMount: "true"
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          init-db:
-            image:
-              repository: ghcr.io/onedr0p/postgres-init
-              tag: 16
-              pullPolicy: IfNotPresent
-            envFrom: &envFrom
-            - secretRef:
-                name: readarr-secret
         containers:
           main:
             image:
@@ -54,7 +45,11 @@ spec:
               READARR__INSTANCE_NAME: Readarr
               READARR__PORT: &port 80
               READARR__LOG_LEVEL: info
-            envFrom: *envFrom
+            envFrom:
+            - secretRef:
+                name: readarr-secret
+            - secretRef:
+                name: readarr-db-secret
             resources:
               requests:
                 cpu: 15m
