@@ -33,26 +33,49 @@ spec:
   users:
     - name: "atuin"
       databases: ["atuin"]
+      password:
+        type: AlphaNumeric
     - name: "authentik"
       databases: ["authentik"]
+      password:
+        type: AlphaNumeric
     - name: "bazarr"
       databases: ["bazarr"]
+      password:
+        type: AlphaNumeric
     - name: "gatus"
       databases: ["gatus"]
+      password:
+        type: AlphaNumeric
     - name: "grafana"
       databases: ["grafana"]
+      password:
+        type: AlphaNumeric
     - name: "paperless"
       databases: ["paperless"]
+      password:
+        type: AlphaNumeric
     - name: "postgres"
       databases: []
+      options: "SUPERUSER"
+      password:
+        type: AlphaNumeric
     - name: "prowlarr"
       databases: ["prowlarr_main", "prowlarr_log"]
+      password:
+        type: AlphaNumeric
     - name: "radarr"
       databases: ["radarr_main", "radarr_log"]
+      password:
+        type: AlphaNumeric
     - name: "readarr"
       databases: ["readarr_cache", "readarr_main", "readarr_log"]
+      password:
+        type: AlphaNumeric
     - name: "sonarr"
       databases: ["sonarr_main", "sonarr_log"]
+      password:
+        type: AlphaNumeric
   backups:
     pgbackrest:
       configuration: &backupConfig
@@ -76,13 +99,6 @@ spec:
         repo2-retention-full: "2"
         repo2-retention-diff: "7"
         repo2-cipher-type: "aes-256-cbc"
-        repo3-bundle: "y"
-        repo3-block: "y"
-        repo3-s3-uri-style: "path"
-        repo3-retention-full-type: "time"
-        repo3-retention-full: "5"
-        repo3-retention-diff: "30"
-        repo3-cipher-type: "aes-256-cbc"
         archive-push-queue-max: 4GiB
       manual:
         repoName: repo1
