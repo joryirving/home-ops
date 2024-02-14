@@ -28,13 +28,6 @@ spec:
     - name: cloudnative-pg
       namespace: database
   values:
-    extraInitContainers:
-      - name: init-db
-        image: ghcr.io/onedr0p/postgres-init:16
-        imagePullPolicy: IfNotPresent
-        envFrom:
-          - secretRef:
-              name: &secret grafana-secret
     replicas: 2
     podAnnotations:
       reloader.stakater.com/auto: "true"
@@ -46,7 +39,8 @@ spec:
       GF_SECURITY_COOKIE_SAMESITE: *app
       GF_SERVER_ROOT_URL: https://grafana.${SECRET_DOMAIN}
     envFromSecrets:
-      - name: *secret
+      - name: grafana-secret
+      - name: grafana-db-secret
     grafana.ini:
       analytics:
         check_for_updates: false
