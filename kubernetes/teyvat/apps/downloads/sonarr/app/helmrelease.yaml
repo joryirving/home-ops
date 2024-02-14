@@ -35,15 +35,6 @@ spec:
           nfsMount: "true"
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          init-db:
-            image:
-              repository: ghcr.io/onedr0p/postgres-init
-              tag: 16
-              pullPolicy: IfNotPresent
-            envFrom: &envFrom
-            - secretRef:
-                name: sonarr-secret
         containers:
           main:
             image:
@@ -56,7 +47,11 @@ spec:
               SONARR__INSTANCE_NAME: Sonarr
               SONARR__PORT: &port 80
               SONARR__LOG_LEVEL: info
-            envFrom: *envFrom
+            envFrom:
+            - secretRef:
+                name: sonarr-secret
+            - secretRef:
+                name: sonarr-db-secret
             resources:
               requests:
                 cpu: 10m
