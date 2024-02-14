@@ -141,7 +141,7 @@ spec:
       replicas: *replica
       config:
         global:
-          pool_mode: "transaction"
+          pool_mode: "transaction" #pgBouncer is set to transaction for Authentik. Grafana requires session https://github.com/grafana/grafana/issues/74260#issuecomment-1702795311. Everything else is happy with transaction
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: "kubernetes.io/hostname"
