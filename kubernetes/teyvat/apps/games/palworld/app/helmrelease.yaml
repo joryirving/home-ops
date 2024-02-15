@@ -71,6 +71,27 @@ spec:
                 cpu: 1000m
               limits:
                 memory: 24Gi
+          exporter:
+            image:
+              repository: docker.io/bostrt/palworld-exporter
+              tag: v1.3.0
+            env:
+              ## Container Settings
+              TZ: ${TIMEZONE}
+              RCON_HOST: localhost
+              RCON_PORT: *rcon-port
+              SAVE_DIRECTORY: /palworld
+            envFrom:
+            - secretRef:
+                name: palworld-secret
+            resources:
+              limits:
+                memory: 256Mi
+              requests:
+                cpu: 5m
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
         # pod:
         #   securityContext:
         #     runAsUser: 1000
@@ -84,12 +105,15 @@ spec:
           io.cilium/lb-ipam-ips: "${SVC_PALWORLD_ADDR}"
         ports:
           http:
-            enabled: false
+            port: 9877
           game:
             protocol: UDP
             port: *port
           rcon:
             port: *rcon-port
+    serviceMonitor:
+      main:
+        enabled: true
     ingress:
       main:
         enabled: false #nginx doesn't support non-https
