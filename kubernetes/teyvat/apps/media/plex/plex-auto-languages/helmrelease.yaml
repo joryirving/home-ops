@@ -37,7 +37,9 @@ spec:
             env:
               TZ: ${TIMEZONE}
               PLEX_URL: "http://plex.media.svc.cluster.local:32400"
-              PLEX_TOKEN: ${PLEX_TOKEN}
+            envFrom:
+              - secretRef:
+                  name: plex-secret
             resources:
               requests:
                 cpu: 150m
