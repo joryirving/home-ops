@@ -93,13 +93,13 @@ spec:
         repo1-retention-full-type: time
         repo1-retention-full: "14"
         repo1-retention-diff: "30"
-        # repo2-bundle: "y"
-        # repo2-block: "y"
-        # repo2-path: "/pgdata/crunchy-pgo/repo2"
-        # repo2-s3-uri-style: path
-        # repo2-retention-full-type: time
-        # repo2-retention-full: "2"
-        # repo2-retention-diff: "7"
+        repo2-bundle: "y"
+        repo2-block: "y"
+        repo2-path: "/pgdata/crunchy-pgo/repo2"
+        repo2-s3-uri-style: path
+        repo2-retention-full-type: time
+        repo2-retention-full: "2"
+        repo2-retention-diff: "7"
       manual:
         repoName: repo1
         options:
@@ -117,14 +117,14 @@ spec:
             full: "0 1 * * 0" # Sunday at 01:00
             differential: "0 1 * * 1-6" # Mon-Sat at 01:00
             incremental: "0 2-23 * * *" # Every hour except 01:00
-        # - name: "repo2" # Cloudflare R2
-        #   s3: &r2
-        #     bucket: "postgresql"
-        #     endpoint: "${SECRET_R2_ENDPONT}"
-        #     region: "ca-west-1"
-        #   schedules:
-        #     full: "0 2 * * 0" # Sunday at 02:00
-        #     differential: "0 2 * * 1-6" # Mon-Sat at 02:00
+        - name: "repo2" # Cloudflare R2
+          s3: &r2
+            bucket: "postgresql"
+            endpoint: "${SECRET_R2_ENDPONT}"
+            region: "ca-west-1"
+          schedules:
+            full: "0 2 * * 0" # Sunday at 02:00
+            differential: "0 2 * * 1-6" # Mon-Sat at 02:00
   dataSource:
     pgbackrest:
       stanza: "db"
