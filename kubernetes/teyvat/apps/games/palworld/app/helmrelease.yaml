@@ -55,7 +55,7 @@ spec:
               PUBLIC_PORT: &port 8211
               RCON_ENABLED: true
               RCON_PORT: &rcon-port 25575
-              PUBLIC_IP: pal.${SECRET_SECONDARY_DOMAIN}
+              PUBLIC_IP: pal.${SECONDARY_DOMAIN}
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
@@ -119,7 +119,7 @@ spec:
         enabled: false #nginx doesn't support non-https
         className: external
         annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.${SECRET_SECONDARY_DOMAIN}
+          external-dns.alpha.kubernetes.io/target: ipv4.${SECONDARY_DOMAIN}
         hosts:
         - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
