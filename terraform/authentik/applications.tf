@@ -115,28 +115,6 @@
 # }
 
 ### Oauth2 Providers ###
-## Weave-Gitops ##
-resource "authentik_provider_oauth2" "gitops_oauth2" {
-  name                  = "gitops"
-  client_id             = var.gitops_id
-  client_secret         = var.gitops_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
-  property_mappings     = data.authentik_scope_mapping.oauth2.ids
-  access_token_validity = "hours=4"
-  redirect_uris         = ["https://gitops.${var.cluster_domain}/oauth2/callback"]
-}
-
-resource "authentik_application" "gitops_application" {
-  name               = "Gitops"
-  slug               = authentik_provider_oauth2.gitops_oauth2.name
-  protocol_provider  = authentik_provider_oauth2.gitops_oauth2.id
-  group              = authentik_group.infrastructure.name
-  open_in_new_tab    = true
-  meta_icon          = "https://docs.gitops.weave.works/img/weave-logo.png"
-  meta_launch_url    = "https://gitops.${var.cluster_domain}/"
-  policy_engine_mode = "all"
-}
-
 ## Grafana ##
 resource "authentik_provider_oauth2" "grafana_oauth2" {
   name                  = "grafana"
@@ -156,6 +134,28 @@ resource "authentik_application" "grafana_application" {
   open_in_new_tab    = true
   meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/grafana.png"
   meta_launch_url    = "https://grafana.${var.cluster_domain}/login/generic_oauth"
+  policy_engine_mode = "all"
+}
+
+## LubeLog ##
+resource "authentik_provider_oauth2" "grafana_oauth2" {
+  name                  = "lubelog"
+  client_id             = var.lubelog_id
+  client_secret         = var.lubelog_secret
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  property_mappings     = data.authentik_scope_mapping.oauth2.ids
+  access_token_validity = "hours=4"
+  redirect_uris         = ["https://lubelog.${var.cluster_domain}/login/generic_oauth"]
+}
+
+resource "authentik_application" "lubelog_application" {
+  name               = "lubelog"
+  slug               = authentik_provider_oauth2.lubelog_oauth2.name
+  protocol_provider  = authentik_provider_oauth2.lubelog_oauth2.id
+  group              = authentik_group.monitoring.name
+  open_in_new_tab    = true
+  meta_icon          = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
+  meta_launch_url    = "https://grafana.${var.cluster_domain}"
   policy_engine_mode = "all"
 }
 
@@ -200,6 +200,28 @@ resource "authentik_application" "portainer_application" {
   open_in_new_tab    = true
   meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/portainer.png"
   meta_launch_url    = "https://portainer.${var.pi_cluster_domain}/"
+  policy_engine_mode = "all"
+}
+
+## Weave-Gitops ##
+resource "authentik_provider_oauth2" "gitops_oauth2" {
+  name                  = "gitops"
+  client_id             = var.gitops_id
+  client_secret         = var.gitops_secret
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  property_mappings     = data.authentik_scope_mapping.oauth2.ids
+  access_token_validity = "hours=4"
+  redirect_uris         = ["https://gitops.${var.cluster_domain}/oauth2/callback"]
+}
+
+resource "authentik_application" "gitops_application" {
+  name               = "Gitops"
+  slug               = authentik_provider_oauth2.gitops_oauth2.name
+  protocol_provider  = authentik_provider_oauth2.gitops_oauth2.id
+  group              = authentik_group.infrastructure.name
+  open_in_new_tab    = true
+  meta_icon          = "https://docs.gitops.weave.works/img/weave-logo.png"
+  meta_launch_url    = "https://gitops.${var.cluster_domain}/"
   policy_engine_mode = "all"
 }
 
