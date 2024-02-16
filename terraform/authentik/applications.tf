@@ -138,14 +138,14 @@ resource "authentik_application" "grafana_application" {
 }
 
 ## LubeLog ##
-resource "authentik_provider_oauth2" "grafana_oauth2" {
+resource "authentik_provider_oauth2" "lubelog_oauth2" {
   name                  = "lubelog"
   client_id             = var.lubelog_id
   client_secret         = var.lubelog_secret
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_scope_mapping.oauth2.ids
   access_token_validity = "hours=4"
-  redirect_uris         = ["https://lubelog.${var.cluster_domain}/login/generic_oauth"]
+  redirect_uris         = ["https://lubelog.${var.cluster_domain}/Login/RemoteAuth"]
 }
 
 resource "authentik_application" "lubelog_application" {
@@ -155,7 +155,7 @@ resource "authentik_application" "lubelog_application" {
   group              = authentik_group.monitoring.name
   open_in_new_tab    = true
   meta_icon          = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
-  meta_launch_url    = "https://grafana.${var.cluster_domain}"
+  meta_launch_url    = "https://lubelog.${var.cluster_domain}"
   policy_engine_mode = "all"
 }
 

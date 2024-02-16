@@ -41,21 +41,21 @@ spec:
               tag: v1.1.9
             env:
               TZ: ${TIMEZONE}
-            # envFrom:
-            #   - secretRef:
-            #       name: "{{ .Release.Name }}-secret"
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 15m
                 memory: 80M
               limits:
                 memory: 256M
-        pod:
-          securityContext:
-            runAsUser: 568
-            runAsGroup: 568
-            fsGroup: 568
-            fsGroupChangePolicy: OnRootMismatch
+        # pod:
+        #   securityContext:
+        #     runAsUser: 568
+        #     runAsGroup: 568
+        #     fsGroup: 568
+        #     fsGroupChangePolicy: OnRootMismatch
     service:
       main:
         ports:
@@ -87,7 +87,21 @@ spec:
         enabled: true
         existingClaim: *app
         globalMounts:
-          - path: /App
+          - path: /App/config
             subPath: config
-          - path: /App
+          - path: /App/data
             subPath: data
+          - path: /App/wwwroot/translations
+            subPath: translations
+          - path: /App/wwwroot/documents
+            subPath: documents
+          - path: /App/wwwroot/images
+            subPath: images
+          - path: /App/log
+            subPath: log
+          - path: /root/.aspnet/DataProtection-Keys
+            subPath: keys
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /App/wwwroot/temp

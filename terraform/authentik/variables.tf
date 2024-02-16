@@ -35,6 +35,18 @@ variable "grafana_secret" {
   sensitive   = true
 }
 
+variable "lubelog_id" {
+  type        = string
+  description = "Lubelog Client ID"
+  sensitive   = true
+}
+
+variable "lubelog_secret" {
+  type        = string
+  description = "Lubelog Client Secret"
+  sensitive   = true
+}
+
 variable "paperless_id" {
   type        = string
   description = "Paperless Client ID"
