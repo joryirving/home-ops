@@ -43,7 +43,7 @@ spec:
             - *host
           secretName: *host
     podAnnotations:
-      secret.reloader.stakater.com/reload: authentik-secret, authentik-db-secret
+      secret.reloader.stakater.com/reload: authentik-secret
     authentik:
       redis:
         host: dragonfly.database.svc.cluster.local
@@ -52,8 +52,6 @@ spec:
     envFrom:
       - secretRef:
           name: authentik-secret
-      - secretRef:
-          name: authentik-db-secret
     autoscaling:
       server:
         enabled: true
