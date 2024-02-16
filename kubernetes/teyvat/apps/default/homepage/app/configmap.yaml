@@ -83,11 +83,19 @@ data:
                 - type: readarr # active widget type that is currently enabled on homepage - possible values: radarr, sonar>
                   service_group: Downloads # group name where widget exists
                   service_name: Readarr # service name for that widget
+    - Media:
+        - Tdarr:
+            href: &url https://tdarr.${PI_DOMAIN}
+            icon: tdarr.png
+            description: Media Transcoding
+            widget:
+              type: tdarr
+              url: *url
     - Infrastructure:
         - Cloudflared:
             href: https://dash.cloudflare.com/
             icon: cloudflare-zero-trust.png
-            description: Cloudflared Tunnel
+            description: Cloudflared Tunnel Status
             widget:
               type: cloudflared
               accountid: {{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNTID}}
@@ -102,13 +110,32 @@ data:
               url: https://192.168.1.1:443
               username: {{HOMEPAGE_VAR_UNIFI_USERNAME}}
               password: {{HOMEPAGE_VAR_UNIFI_PASSWORD}}
+        - MeshCentral:
+            href: https://mesh.${PI_DOMAIN}
+            icon: meshcentral.png
+            description: MeshCentral Dashboard
         - NextDNS:
+            href: https://my.nextdns.io
             icon: nextdns.png
             description: NextDNS
             widget:
               type: nextdns
               profile: {{HOMEPAGE_VAR_NEXTDNS_ID}}
               key: {{HOMEPAGE_VAR_NEXTDNS_API}}
+        - Portainer:
+            href: &url https://portainer.${PI_DOMAIN}
+            icon: portainer.png
+            description: Docker Container Management
+            widget:
+              type: portainer
+              url: *url
+              env: 1
+              key: {{HOMEPAGE_VAR_PORTAINER_TOKEN}}
+    - Storage:
+        - Unraid:
+            href: https://nas.${PI_DOMAIN}
+            icon: unraid.png
+            description: Unraid NAS
     - Minecraft:
         - Vibecraft:
             icon: minecraft.png

@@ -189,7 +189,7 @@ resource "authentik_provider_oauth2" "portainer_oauth2" {
   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_scope_mapping.oauth2.ids
   access_token_validity = "hours=4"
-  redirect_uris         = ["https://portainer.${var.cluster_domain}/"]
+  redirect_uris         = ["https://portainer.${var.pi_cluster_domain}/"]
 }
 
 resource "authentik_application" "portainer_application" {
@@ -199,7 +199,7 @@ resource "authentik_application" "portainer_application" {
   group              = authentik_group.infrastructure.name
   open_in_new_tab    = true
   meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/portainer.png"
-  meta_launch_url    = "https://portainer.${var.cluster_domain}/"
+  meta_launch_url    = "https://portainer.${var.pi_cluster_domain}/"
   policy_engine_mode = "all"
 }
 
