@@ -153,14 +153,14 @@ Total RAM: 24GB
 
 ### Teyvat Kubernetes Cluster
 
-| Name   | Device         | CPU           | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
-|--------|----------------|---------------|-----------|-------------|------|--------|-------------------|
-| Navia | Beelink Mini-S | Celetron N5095 | 256GB SSD | 1TB M.2 SSD | 16GB | Debian | k8s control-plane |
-| Ganyu | Dell 3080mff   | i5-10500T      | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s control-plane |
-| Yelan | Dell 3080mff   | i5-10500T      | 240GB SSD | 1TB NVME    | 40GB | Debian | k8s control-plane |
-| HuTao | Dell 3080mff   | i5-10500T      | 480GB SSD | 1TB NBME    | 40GB | Debian | k8s worker        |
-| Ayaka | Dell 7080mff   | i5-10500T      | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s worker        |
-| Eula  | Dell 7080mff   | i7-10700T      | 480GB SSD | 1.5TB NVME  | 64GB | Debian | k8s worker        |
+| Name  | Device         | CPU       | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
+|-------|----------------|-----------|-----------|-------------|------|--------|-------------------|
+| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | N/A         | 16GB | Debian | k8s control-plane |
+| Ganyu | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s control-plane |
+| Yelan | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME    | 40GB | Debian | k8s control-plane |
+| HuTao | Dell 3080mff   | i5-10500T | 480GB SSD | 1TB NBME    | 40GB | Debian | k8s worker        |
+| Ayaka | Dell 7080mff   | i5-10500T | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s worker        |
+| Eula  | Dell 7080mff   | i7-10700T | 480GB SSD | 1.5TB NVME  | 64GB | Debian | k8s worker        |
 
 Total CPU: 68 threads
 Total RAM: 288GB
