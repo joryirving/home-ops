@@ -16,52 +16,48 @@ spec:
         namespace: flux-system
       interval: 5m
   values:
-    strategy:
-      type: RollingUpdate
-    worker:
-      strategy:
+    global:
+      podAnnotations:
+        secret.reloader.stakater.com/reload: authentik-secret
+      deploymentStrategy:
         type: RollingUpdate
-    ingress:
-      enabled: true
-      ingressClassName: external
-      annotations:
-        gethomepage.dev/enabled: "true"
-        gethomepage.dev/icon: authentik.png
-        gethomepage.dev/name: Authentik
-        gethomepage.dev/group: Infrastructure
-        gethomepage.dev/description: OIDC User Management
-        gethomepage.dev/widget.type: authentik
-        gethomepage.dev/widget.url: https://authentik.${SECRET_DOMAIN}
-        gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_AUTHENTIK_TOKEN}}"
-        external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
-      hosts:
-        - host: &host authentik.${SECRET_DOMAIN}
-          paths:
-            - path: /
-              pathType: Prefix
+      envFrom:
+        - secretRef:
+            name: authentik-secret
+    authentik:
+      redis:
+        host: dragonfly.database.svc.cluster.local
+    server:
+      autoscaling:
+        enabled: true
+        minReplicas: 2
+      metrics:
+        prometheus:
+          serviceMonitor:
+            enabled: true
+      ingress:
+        enabled: true
+        ingressClassName: external
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/icon: authentik.png
+          gethomepage.dev/name: Authentik
+          gethomepage.dev/group: Infrastructure
+          gethomepage.dev/description: OIDC User Management
+          gethomepage.dev/widget.type: authentik
+          gethomepage.dev/widget.url: https://authentik.${SECRET_DOMAIN}
+          gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_AUTHENTIK_TOKEN}}"
+          external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
+        hosts:
+          - host: &host authentik.${SECRET_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
       tls:
         - hosts:
             - *host
           secretName: *host
-    podAnnotations:
-      secret.reloader.stakater.com/reload: authentik-secret
-    authentik:
-      redis:
-        host: dragonfly.database.svc.cluster.local
-    env:
-      AUTHENTIK_REDIS__DB: "1"
-    envFrom:
-      - secretRef:
-          name: authentik-secret
-    autoscaling:
-      server:
+    worker:
+      autoscaling:
         enabled: true
         minReplicas: 2
-      worker:
-        enabled: true
-        minReplicas: 2
-    prometheus:
-      serviceMonitor:
-        create: true
-      rules:
-        create: true
