@@ -8,6 +8,6 @@ terraform {
 }
 
 provider "authentik" {
-  url   = "https://authentik.${var.cluster_domain}"
+  url   = "https://sso.${var.cluster_domain}"
   token = var.authentik_token
 }

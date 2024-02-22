@@ -232,7 +232,7 @@ resource "authentik_application" "gitops_application" {
 #   service_connection = authentik_service_connection_kubernetes.local.id
 #   protocol_providers = local.proxy_list
 #   config = jsonencode({
-#     authentik_host          = "https://authentik.${var.cluster_domain}",
+#     authentik_host          = "https://sso.${var.cluster_domain}",
 #     authentik_host_insecure = false,
 #     authentik_host_browser  = "",
 #     log_level               = "debug",
