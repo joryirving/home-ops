@@ -52,13 +52,6 @@ spec:
               resources:
                 requests:
                   storage: 1Gi
-      affinity: &affinity
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: node-role.kubernetes.io/control-plane
-                    operator: Exists
     grafana:
       enabled: false
       forceDeployDashboards: true
@@ -149,8 +142,6 @@ spec:
               sourceLabels:
                 - __meta_kubernetes_pod_node_name
               targetLabel: kubernetes_node
-    prometheusOperator:
-      affinity: *affinity
     prometheus:
       thanosService:
         enabled: true
@@ -190,7 +181,6 @@ spec:
         retention: 2d
         retentionSize: 15GB
         replicas: 2
-        affinity: *affinity
         storageSpec:
           volumeClaimTemplate:
             spec:

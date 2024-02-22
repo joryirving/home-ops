@@ -71,13 +71,6 @@ spec:
         extraTls:
           - hosts:
               - *host
-      affinity: &affinity
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: node-role.kubernetes.io/control-plane
-                    operator: Exists
     query:
       enabled: true
       replicaCount: 2
@@ -86,11 +79,9 @@ spec:
         sidecarsService: kube-prometheus-stack-thanos-discovery
         sidecarsNamespace: observability
       stores: ["thanos-svc.${PI_DOMAIN}:10901"] #["${SVC_PI_THANOS_ADDR}:10901"]
-      affinity: *affinity
     bucketweb:
       enabled: true
       replicaCount: 2
-      affinity: *affinity
     compactor:
       enabled: true
       extraFlags:
@@ -103,7 +94,6 @@ spec:
         enabled: true
         storageClass: local-hostpath
         size: 10Gi
-      affinity: *affinity
     storegateway:
       enabled: true
       replicaCount: 2
@@ -111,7 +101,6 @@ spec:
         enabled: true
         storageClass: local-hostpath
         size: 10Gi
-      affinity: *affinity
     ruler:
       enabled: true
       replicaCount: 2
@@ -133,7 +122,6 @@ spec:
         enabled: true
         storageClass: local-hostpath
         size: 10Gi
-      affinity: *affinity
     metrics:
       enabled: true
       serviceMonitor:
