@@ -46,7 +46,7 @@
 #   protocol_provider  = authentik_provider_proxy.download_proxy[each.value].id
 #   group              = authentik_group.downloads.name
 #   open_in_new_tab    = true
-#   meta_icon          = "https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/${each.value}.png"
+#   meta_icon          = "https://raw.githubusercontent.com/joryirving/k3s-home-cluster/main/icons/${each.value}.png"
 #   policy_engine_mode = "all"
 # }
 
@@ -67,7 +67,7 @@
 #   protocol_provider  = authentik_provider_proxy.infra_proxy[each.value].id
 #   group              = authentik_group.infrastructure.name
 #   open_in_new_tab    = true
-#   meta_icon          = "https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/${each.value}.png"
+#   meta_icon          = "https://raw.githubusercontent.com/joryirving/k3s-home-cluster/main/icons/${each.value}.png"
 #   policy_engine_mode = "all"
 # }
 
@@ -91,7 +91,7 @@
 #   protocol_provider  = authentik_provider_proxy.media_proxy[each.value].id
 #   group              = authentik_group.media.name
 #   open_in_new_tab    = true
-#   meta_icon          = "https://raw.githubusercontent.com/LilDrunkenSmurf/k3s-home-cluster/main/icons/${each.value}.png"
+#   meta_icon          = "https://raw.githubusercontent.com/joryirving/k3s-home-cluster/main/icons/${each.value}.png"
 #   policy_engine_mode = "all"
 # }
 
