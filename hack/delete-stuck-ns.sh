@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
 ns=$1
-cluster=${1:-default}
+cluster=${2:-default}
 
 function delete_namespace () {
     echo "Deleting namespace $ns"
-    kubectl get namespace $ns -o json > tmp.json --context $cluster
+    kubectl --context $cluster get namespace $ns -o json > tmp.json
     sed -i 's/"kubernetes"//g' tmp.json
-    kubectl replace --raw "/api/v1/namespaces/$1/finalize" -f ./tmp.json --context $cluster
+    kubectl --context $cluster replace --raw "/api/v1/namespaces/$1/finalize" -f ./tmp.json
     rm ./tmp.json
 }
 
-TERMINATING_NS=$(kubectl get ns | awk '$2=="Terminating" {print $1}' --context $cluster)
+TERMINATING_NS=$(kubectl --context $cluster get ns | awk '$2=="Terminating" {print $1}')
 
 for ns in $TERMINATING_NS
 do
