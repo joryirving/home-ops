@@ -1,0 +1,210 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+---
+# renovate: datasource=docker depName=ghcr.io/siderolabs/installer
+talosVersion: v1.6.5
+# renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
+kubernetesVersion: v1.29.2
+
+clusterName: &cluster teyvat
+endpoint: https://192.168.2.10:6443
+clusterPodNets:
+  - "10.69.0.0/16"
+clusterSvcNets:
+  - "10.96.0.0/16"
+additionalApiServerCertSans: &sans
+  - "192.168.2.10"
+  - 127.0.0.1 # KubePrism
+additionalMachineCertSans: *sans
+cniConfig:
+  name: none
+
+nodes:
+  - hostname: "ayaka"
+    ipAddress: "192.168.2.11"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
+    controlPlane: true
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: 00:e0:4c:68:06:69
+        dhcp: true
+        vip:
+          ip: "192.168.2.10"
+  - hostname: "eula"
+    ipAddress: "192.168.2.12"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
+    controlPlane: true
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: 1c:fd:08:75:15:63
+        dhcp: true
+        vip:
+          ip: "192.168.2.10"
+  - hostname: "ganyu"
+    ipAddress: "192.168.2.13"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
+    controlPlane: true
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: 1c:fd:08:75:15:6f
+        dhcp: true
+        vip:
+          ip: "192.168.2.10"
+  - hostname: "hutao"
+    ipAddress: "192.168.2.14"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
+    controlPlane: false
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:43:c4
+        dhcp: true
+  - hostname: "navia"
+    ipAddress: "192.168.2.15"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
+    controlPlane: false
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:0f:d7
+        dhcp: true
+  - hostname: "yelan"
+    ipAddress: "192.168.2.16"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
+    controlPlane: false
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:35:fa
+        dhcp: true
+
+patches:
+  # Configure containerd
+  - |-
+    machine:
+      files:
+        - op: create
+          path: /etc/cri/conf.d/20-customization.part
+          content: |-
+            [plugins."io.containerd.grpc.v1.cri"]
+              enable_unprivileged_ports = true
+              enable_unprivileged_icmp = true
+            [plugins."io.containerd.grpc.v1.cri".containerd]
+              discard_unpacked_layers = false
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+              discard_unpacked_layers = false
+
+  # Disable search domain everywhere
+  - |-
+    machine:
+      network:
+        disableSearchDomain: true
+
+  # Enable cluster discovery
+  - |-
+    cluster:
+      discovery:
+        registries:
+          kubernetes:
+            disabled: false
+          service:
+            disabled: false
+
+  # Configure kubelet
+  - |-
+    machine:
+      kubelet:
+        extraArgs:
+          image-gc-low-threshold: 50
+          image-gc-high-threshold: 55
+          rotate-server-certificates: true
+        nodeIP:
+          validSubnets:
+            - "192.168.2.0/24"
+
+  # Force nameserver
+  - |-
+    machine:
+      network:
+        nameservers:
+          - 192.168.1.1
+          - 1.1.1.1
+
+  # Configure NTP
+  - |-
+    machine:
+      time:
+        disabled: false
+        servers:
+          - time.cloudflare.com
+
+  # Custom sysctl settings
+  - |-
+    machine:
+      sysctls:
+        fs.inotify.max_queued_events: 65536
+        fs.inotify.max_user_watches: 524288
+        fs.inotify.max_user_instances: 8192
+
+  # Mount openebs-hostpath in kubelet
+  - |-
+    machine:
+      kubelet:
+        extraMounts:
+          - destination: /var/openebs/local
+            type: bind
+            source: /var/openebs/local
+            options:
+              - bind
+              - rshared
+              - rw
+
+  # # Disable predictable NIC naming
+  # - |-
+  #   machine:
+  #     install:
+  #       extraKernelArgs:
+  #         - net.ifnames=0
+
+
+controlPlane:
+  patches:
+    # Cluster configuration
+    - |-
+      cluster:
+        allowSchedulingOnMasters: true
+        controllerManager:
+          extraArgs:
+            bind-address: 0.0.0.0
+        proxy:
+          disabled: true
+        scheduler:
+          extraArgs:
+            bind-address: 0.0.0.0
+
+    # ETCD configuration
+    - |-
+      cluster:
+        etcd:
+          extraArgs:
+            listen-metrics-urls: http://0.0.0.0:2381
+          advertisedSubnets:
+            - "192.168.2.0/24"
+
+    # Disable default API server admission plugins.
+    - |-
+      - op: remove
+        path: /cluster/apiServer/admissionControl
+
+    # Enable K8s Talos API Access
+    - |-
+      machine:
+        features:
+          kubernetesTalosAPIAccess:
+            enabled: true
+            allowedRoles:
+              - os:admin
+            allowedKubernetesNamespaces:
+              - system-upgrade

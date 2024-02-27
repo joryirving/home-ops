@@ -3,15 +3,15 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app local-path-provisioner
+  name: &app kubelet-csr-approver
   namespace: flux-system
 spec:
-  targetNamespace: storage
+  targetNamespace: kube-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/teyvat/apps/storage/local-path-provisioner/app
-  prune: true
+  path: ./kubernetes/teyvat/apps/kube-system/kubelet-csr-approver/app
+  prune: false # never should be deleted
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
