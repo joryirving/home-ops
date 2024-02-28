@@ -31,28 +31,8 @@ spec:
     manageCRDs: true
     image: &image
       repository: ghcr.io/joryirving/volsync
-      tag: 0.8.0@sha256:b9169c5510983cd5010a95f75dd2a02d0278a157e2bd6990295d6d068f37cd66
+      tag: 0.8.0
     restic:
       <<: *image
     metrics:
       disableAuth: true
-  postRenderers:
-    - kustomize:
-        patchesStrategicMerge:
-          - apiVersion: apps/v1
-            kind: Deployment
-            metadata:
-              name: volsync
-            spec:
-              template:
-                spec:
-                  containers:
-                    - name: manager
-                      volumeMounts:
-                        - name: tz-config
-                          mountPath: /etc/localtime
-                  volumes:
-                    - name: tz-config
-                      hostPath:
-                        path: /usr/share/zoneinfo/${TIMEZONE}
-                        type: File
