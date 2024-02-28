@@ -21,14 +21,12 @@ tasks:
       - kubectl --context {{.cluster}} apply --server-side --filename https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/{{.PROMETHEUS_OPERATOR_VERSION}}/example/prometheus-operator-crd/monitoring.coreos.com_scrapeconfigs.yaml
       - kubectl --context {{.cluster}} apply --server-side --filename https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/{{.PROMETHEUS_OPERATOR_VERSION}}/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
       # Install Flux
-      - kubectl  --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/flux
+      - kubectl --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/flux
       # Install Secrets and Kustomizations
       - cat {{.ROOT_DIR}}/age.key | kubectl --context {{.cluster}} -n flux-system create secret generic sops-age --from-file=age.agekey=/dev/stdin
       - kubectl --context {{.cluster}} apply --server-side --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/flux
       - sops --decrypt {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-secrets.sops.yaml | kubectl apply --context {{.cluster}} --server-side --filename -
-      - sops --decrypt {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-secrets-user.sops.yaml | kubectl apply --context {{.cluster}} --server-side --filename -
       - kubectl apply --context {{.cluster}} --server-side --filename {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-settings.yaml
-      - kubectl apply --context {{.cluster}} --server-side --filename {{.KUBERNETES_DIR}}/{{.cluster}}/flux/vars/cluster-settings-user.yaml
       - kubectl apply --context {{.cluster}} --server-side --kustomize {{.KUBERNETES_DIR}}/{{.cluster}}/flux/config
 
     preconditions:
