@@ -1,0 +1,109 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+vars:
+  TALOS_DIR: "{{.KUBERNETES_DIR}}/teyvat/bootstrap/talos"
+  TALHELPER_SECRET_FILE: "{{.TALOS_DIR}}/talhelper.sops.yaml"
+  TALHELPER_CONFIG_FILE: "{{.TALOS_DIR}}/talconfig.yaml"
+
+env:
+  TALOSCONFIG: "{{.TALOS_DIR}}/clusterconfig/talosconfig"
+
+tasks:
+
+  bootstrap:
+    desc: Bootstrap the Talos cluster
+    dir: "{{.TALOS_DIR}}"
+    cmds:
+      - task: bootstrap-gensecret
+      - task: bootstrap-genconfig
+      - task: bootstrap-apply
+      - task: bootstrap-install
+      - task: fetch-kubeconfig
+      - task: bootstrap-apps
+      - talosctl health --server=false
+
+  bootstrap-gensecret:
+    desc: Generate the Talos secrets
+    dir: "{{.TALOS_DIR}}"
+    cmds:
+      - talhelper gensecret > {{.TALHELPER_SECRET_FILE}}
+      - task: :sops:.encrypt-file
+        vars:
+          file: "{{.TALHELPER_SECRET_FILE}}"
+    preconditions:
+      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+    status:
+      - test -f "{{.TALHELPER_SECRET_FILE}}"
+
+  bootstrap-genconfig:
+    desc: Generate the Talos configs
+    dir: "{{.TALOS_DIR}}"
+    cmd: talhelper genconfig
+    preconditions:
+      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+
+  bootstrap-apply:
+    desc: Apply the Talos config on a node
+    dir: "{{.TALOS_DIR}}"
+    cmd: talhelper gencommand apply --extra-flags=--insecure | bash
+    preconditions:
+      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+
+  bootstrap-install:
+    desc: Install the Talos cluster
+    dir: "{{.TALOS_DIR}}"
+    cmds:
+      - echo "Installing Talos... ignore the errors and be patient"
+      - until talhelper gencommand bootstrap | bash; do sleep 10; done
+      - sleep 10
+    preconditions:
+      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+
+  bootstrap-apps:
+    desc: Bootstrap core apps needed for Talos
+    dir: "{{.TALOS_DIR}}"
+    cmds:
+      - until kubectl --kubeconfig {{.KUBECONFIG_FILE}} wait --for=condition=Ready=False nodes --all --timeout=600s; do sleep 10; done
+      - helmfile --file ./apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
+      - until kubectl --kubeconfig {{.KUBECONFIG_FILE}} wait --for=condition=Ready nodes --all --timeout=600s; do sleep 10; done
+    preconditions:
+      - { msg: "Missing kubeconfig", sh: "test -f {{.KUBECONFIG_FILE}}" }
+
+  upgrade-talos:
+    desc: Upgrade talos on a node
+    cmd: talosctl --nodes {{.node}} upgrade --image {{.image}} --preserve=true --reboot-mode=default
+    requires:
+      vars: ["node", "image"]
+    preconditions:
+      - { msg: "Node not found", sh: "talosctl --nodes {{.node}} get machineconfig" }
+
+  upgrade-k8s:
+    desc: Upgrade k8s on a node
+    cmd: talosctl --nodes {{.node}} upgrade-k8s --to {{.to}}
+    requires:
+      vars: ["node", "to"]
+    preconditions:
+      - { msg: "Node not found", sh: "talosctl --nodes {{.node}} get machineconfig" }
+
+  fetch-kubeconfig:
+    desc: Generate talos kubeconfig
+    dir: "{{.TALOS_DIR}}"
+    cmd: until talhelper gencommand kubeconfig --extra-flags "--force --force-context-name teyvat {{.KUBERNETES_DIR}}/teyvat" | bash; do sleep 10; done
+
+  soft-nuke:
+    desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
+    prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
+    dir: "{{.TALOS_DIR}}"
+    cmd: talhelper gencommand reset --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
+
+  hard-nuke:
+    desc: Resets nodes back completely and reboots them
+    prompt: This will destroy your cluster and reset the nodes... continue?
+    dir: "{{.TALOS_DIR}}"
+    cmd: talhelper gencommand reset --extra-flags "--reboot --graceful=false --wait=false" | bash
+
+  .reset:
+    internal: true
+    cmd: rm -rf {{.TALOS_DIR}}
