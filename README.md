@@ -12,7 +12,7 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 <div align="center">
 
 [![Discord](https://img.shields.io/discord/673534664354430999?style=for-the-badge&label&logo=discord&logoColor=white&color=blue)](https://discord.gg/home-operations)&nbsp;&nbsp;
-[![Kubernetes](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjoryirving%2Fhome-ops%2Fmain%2Fkubernetes%2Fteyvat%2Fapps%2Fkube-tools%2Fsystem-upgrade-controller%2Fplans%2Fserver.yaml&query=%24.spec.version&style=for-the-badge&logo=kubernetes&logoColor=white&label=%20)](https://k3s.io/)&nbsp;&nbsp;
+[![Kubernetes](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjoryirving%2Fhome-ops%2Fmain%2Fkubernetes%2Fteyvat%2Fbootstrap%2Ftalos%2Ftalconfig.yaml&query=%24.kubernetesVersion&style=for-the-badge&logo=kubernetes&logoColor=white&label=%20)](https://www.talos.dev/)&nbsp;&nbsp;
 [![Renovate](https://img.shields.io/github/actions/workflow/status/joryirving/joryirving/scheduled-renovate.yaml?branch=main&label=&logo=renovatebot&style=for-the-badge&color=blue)](https://github.com/joryirving/joryirving/actions/workflows/scheduled-renovate.yaml)
 
 </div>
@@ -41,7 +41,7 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 
 ## Overview
 
-This is a monorepository is for my home k3s clusters.
+This is a monorepository is for my home kubernetes clusters.
 I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like [Ansible](https://www.ansible.com/), [Terraform](https://www.terraform.io/), [Kubernetes](https://kubernetes.io/), [Flux](https://github.com/fluxcd/flux2), [Renovate](https://github.com/renovatebot/renovate), and [GitHub Actions](https://github.com/features/actions).
 
 The purpose here is to learn k8s, while practicing Gitops.
@@ -54,7 +54,7 @@ There is a template over at [onedr0p/flux-cluster-template](https://github.com/o
 
 ### Installation
 
-My cluster is [k3s](https://k3s.io/) provisioned overtop bare-metal Debian using the [Ansible](https://www.ansible.com/) galaxy role [ansible-role-k3s](https://github.com/PyratLabs/ansible-role-k3s). This is a semi-hyper-converged cluster, workloads and block storage are sharing the same available resources on my nodes while I have a separate NAS server with ZFS for NFS/SMB shares, bulk file storage and backups.
+My clusters are a mix of [k3s](https://k3s.io/) provisioned overtop bare-metal Debian using the [Ansible](https://www.ansible.com/) galaxy role [ansible-role-k3s](https://github.com/PyratLabs/ansible-role-k3s), and [talos linux](https://www.talos.dev) immutable kubernetes OS. This is a semi-hyper-converged cluster, workloads and block storage are sharing the same available resources on my nodes while I have a separate NAS server with ZFS for NFS/SMB shares, bulk file storage and backups.
 
 ### Core Components
 
@@ -126,14 +126,14 @@ While most of my infrastructure and workloads are self-hosted I do rely upon the
 
 The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), [ntfy](https://ntfy.sh/), and [Gatus](https://gatus.io/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
 
-| Service                                         | Use                                                               | Cost           |
-|-------------------------------------------------|-------------------------------------------------------------------|----------------|
-| [Bitwarden](https://bitwarden.com/)             | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
-| [Cloudflare](https://www.cloudflare.com/)       | Domain and S3                                                     | ~$30/yr        |
-| [GitHub](https://github.com/)                   | Hosting this repository and continuous integration/deployments    | Free           |
-| [NextDNS](https://nextdns.io/)                  | My router DNS server which includes AdBlocking                    | ~$20/yr        |
-| [UptimeRobot](https://healthcheck.io/)         | Monitoring internet connectivity and external facing applications | Free           |
-|                                                 |                                                                   | Total: ~$5/mo  |
+| Service                                   | Use                                                               | Cost           |
+|-------------------------------------------|-------------------------------------------------------------------|----------------|
+| [Bitwarden](https://bitwarden.com/)       | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
+| [Cloudflare](https://www.cloudflare.com/) | Domain and S3                                                     | ~$30/yr        |
+| [GitHub](https://github.com/)             | Hosting this repository and continuous integration/deployments    | Free           |
+| [NextDNS](https://nextdns.io/)            | My router DNS server which includes AdBlocking                    | ~$20/yr        |
+| [Healthcheck.io](https://healthcheck.io/) | Monitoring internet connectivity and external facing applications | Free           |
+|                                           |                                                                   | Total: ~$5/mo  |
 
 ---
 
@@ -149,18 +149,18 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 | Bronya  | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s worker        |
 
 Total CPU: 16 threads
-Total RAM: 24GB
+Total RAM: 32GB
 
 ### Teyvat Kubernetes Cluster
 
-| Name  | Device         | CPU       | OS Disk   | Data Disk   | RAM  | OS     | Purpose           |
-|-------|----------------|-----------|-----------|-------------|------|--------|-------------------|
-| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | N/A         | 16GB | Debian | k8s control-plane |
-| Ganyu | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME    | 64GB | Debian | k8s control-plane |
-| Yelan | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME    | 40GB | Debian | k8s control-plane |
-| HuTao | Dell 3080mff   | i5-10500T | 480GB SSD | 1TB NBME    | 40GB | Debian | k8s worker        |
-| Ayaka | Dell 7080mff   | i5-10500T | 480GB SSD | 1.25TB NVME | 64GB | Debian | k8s worker        |
-| Eula  | Dell 7080mff   | i7-10700T | 480GB SSD | 1.5TB NVME  | 64GB | Debian | k8s worker        |
+| Name  | Device         | CPU       | OS Disk   | Data Disk | RAM  | OS    | Purpose           |
+|-------|----------------|-----------|-----------|-----------|------|-------|-------------------|
+| Ayaka | Dell 7080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
+| Eula  | Dell 7080mff   | i7-10700T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
+| Ganyu | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
+| HuTao | Dell 3080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 40GB | Talos | k8s worker        |
+| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | N/A       | 16GB | Talos | k8s worker        |
+| Yelan | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 40GB | Talos | k8s worker        |
 
 Total CPU: 76 threads
 Total RAM: 288GB
