@@ -6,35 +6,6 @@ vars:
   NS: '{{.NS | default "database"}}' #database namespace
 
 tasks:
-  rw:
-    desc: Get current CloudNativePG master (writable) instance to run command against.
-    dir: "{{.USER_WORKING_DIR}}"
-    vars:
-      APP: "{{.APP}}"
-      PG: &pg-default
-        sh: |-
-          [[ -n "{{.PG}}" ]] && ( echo -n "{{.PG}}" && exit 0 ) || ( [[ -n "{{.APP}}" ]] && echo -n "pg-{{.APP}}" || echo -n "postgres" )
-      NS: &ns-default
-        sh: |-
-          [[ -n "{{.NS}}" ]] && echo -n "{{.NS}}" || ( [[ -n "{{.APP}}" ]] && echo -n "{{.APP}}" || echo -n "database" )
-      # PG: '{{ or .PG (fail "Missing `PG` environment variable!") }}'
-      # NS: &ns-default '{{.NS | default "pg"}}'
-    cmds:
-      - kubectl get clusters.postgresql.cnpg.io -n {{.NS}} {{.PG}} -o yaml | yq '.status.currentPrimary' | xargs -o -I% kubectl -n {{.NS}} {{.CLI_ARGS}}
-
-  adminer:
-    desc: Use kubectl netshoot krew plugin to deploy adminer as sidecar to the current primary CNPG replica pod.
-    dir: "{{.USER_WORKING_DIR}}"
-    vars:
-      APP: "{{.APP}}"
-      PG: *pg-default
-      NS: *ns-default
-      PF_ADDR: '{{ .PF_ADDR | default "127.0.0.1" }}'
-      PF_PORT: '{{ .PF_PORT | default "8080" }}'
-    cmds:
-      - |
-        kubectl get clusters.postgresql.cnpg.io -n {{.NS}} {{.PG}} -o yaml | yq '.status.currentPrimary' | xargs -o -I% bash -c "while kubectl netshoot debug -n {{.NS}} % --image-name adminer --image-tag 4.8.1-standalone; do kubectl port-forward -n {{.NS}} % --address {{.PF_ADDR}} {{.PF_PORT}}:8080; break; done"
-
   crunchy-owner:
     desc: Restore a pg_dump to a CrunchyData Postgres cluster, writing to the master instance.
     dir: "{{.USER_WORKING_DIR}}"
