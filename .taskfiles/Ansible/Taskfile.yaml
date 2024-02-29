@@ -18,6 +18,13 @@ tasks:
     cmds:
       - task: .venv
 
+  brew:
+    desc: Install workstation dependencies with Brew
+    cmd: brew bundle --file {{.BREWFILE}}
+    preconditions:
+      - { msg: "Missing Homebrew", sh: "command -v brew" }
+      - { msg: "Missing Brewfile", sh: "test -f {{.BREWFILE}}" }
+
   run:
     desc: Run an Ansible playbook for configuring a cluster
     summary: |
