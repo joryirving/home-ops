@@ -102,8 +102,8 @@ spec:
       enabled: true
       endpoints: &cp
         - 192.168.2.11
-        - 192.168.1.50
-        - 192.168.1.51
+        - 192.168.2.12
+        - 192.168.2.13
       serviceMonitor:
         metricRelabelings:
           # Remove duplicate labels provided by k3s
@@ -201,16 +201,6 @@ spec:
             static_configs:
               - targets:
                   - ${NAS_IP}:9100
-          - job_name: kube-vip
-            scrape_interval: 1m
-            scrape_timeout: 10s
-            honor_timestamps: true
-            metrics_path: /metrics
-            static_configs:
-              - targets:
-                  - 192.168.2.11:2112
-                  - 192.168.1.50:2112
-                  - 192.168.1.51:2112
         thanos:
           image: quay.io/thanos/thanos:v0.34.1
           objectStorageConfig:
