@@ -220,7 +220,7 @@ resource "authentik_application" "gitops_application" {
   protocol_provider  = authentik_provider_oauth2.gitops_oauth2.id
   group              = authentik_group.infrastructure.name
   open_in_new_tab    = true
-  meta_icon          = "https://docs.gitops.weave.works/img/weave-logo.png"
+  meta_icon          = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/weave.png"
   meta_launch_url    = "https://gitops.${var.cluster_domain}/"
   policy_engine_mode = "all"
 }
