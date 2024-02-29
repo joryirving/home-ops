@@ -11,8 +11,12 @@ tasks:
     dir: "{{.USER_WORKING_DIR}}"
     vars: &crunchy-vars
       APP: "{{.APP}}"
-      PG: *pg-default
-      NS: *ns-default
+      PG: &pg-default
+        sh: |-
+          [[ -n "{{.PG}}" ]] && ( echo -n "{{.PG}}" && exit 0 ) || ( [[ -n "{{.APP}}" ]] && echo -n "pg-{{.APP}}" || echo -n "postgres" )
+      NS: &ns-default
+        sh: |-
+          [[ -n "{{.NS}}" ]] && echo -n "{{.NS}}" || ( [[ -n "{{.APP}}" ]] && echo -n "{{.APP}}" || echo -n "database" )
       CRUNCHY_PRIMARY: &crunchy-primary
         sh: |-
           kubectl get pods -n {{.NS}} -l postgres-operator.crunchydata.com/role=master,postgres-operator.crunchydata.com/cluster={{.PG}} -o jsonpath='{.items[0].metadata.name}'
