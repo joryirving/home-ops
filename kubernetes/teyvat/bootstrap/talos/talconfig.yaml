@@ -27,7 +27,13 @@ nodes:
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:69
-        dhcp: true
+        dhcp: false
+        addresses:
+          - "192.168.2.11/24"
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: "192.168.1.1"
         vip:
           ip: "192.168.2.10"
   - hostname: "eula"
@@ -38,7 +44,13 @@ nodes:
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 1c:fd:08:75:15:63
-        dhcp: true
+        dhcp: false
+        addresses:
+          - "192.168.2.12/24"
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: "192.168.1.1"
         vip:
           ip: "192.168.2.10"
   - hostname: "ganyu"
@@ -49,7 +61,13 @@ nodes:
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 1c:fd:08:75:15:6f
-        dhcp: true
+        dhcp: false
+        addresses:
+          - "192.168.2.13/24"
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: "192.168.1.1"
         vip:
           ip: "192.168.2.10"
   - hostname: "hutao"
@@ -59,8 +77,14 @@ nodes:
     controlPlane: false
     networkInterfaces:
       - deviceSelector:
-          hardwareAddr: 70:b5:e8:6d:43:c4
-        dhcp: true
+          hardwareAddr: 00:e0:4c:68:06:dd
+        dhcp: false
+        addresses:
+          - "192.168.2.14/24"
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: "192.168.1.1"
   - hostname: "navia"
     ipAddress: "192.168.2.15"
     installDisk: /dev/sda
@@ -68,8 +92,14 @@ nodes:
     controlPlane: false
     networkInterfaces:
       - deviceSelector:
-          hardwareAddr: 70:b5:e8:6d:0f:d7
-        dhcp: true
+          hardwareAddr: 00:e0:4c:68:05:e6
+        dhcp: false
+        addresses:
+          - "192.168.2.15/24"
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: "192.168.1.1"
   - hostname: "yelan"
     ipAddress: "192.168.2.16"
     installDisk: /dev/sda
@@ -78,7 +108,13 @@ nodes:
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:3a
-        dhcp: true
+        dhcp: false
+        addresses:
+          - "192.168.2.16/24"
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: "192.168.1.1"
 
 patches:
   # Configure containerd
@@ -178,6 +214,8 @@ controlPlane:
         controllerManager:
           extraArgs:
             bind-address: 0.0.0.0
+        coreDNS:
+          disabled: true
         proxy:
           disabled: true
         scheduler:
