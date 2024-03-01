@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: coredns
+    meta.helm.sh/release-namespace: kube-system
+  creationTimestamp: "2024-02-05T18:43:26Z"
+  labels:
+    app.kubernetes.io/instance: coredns
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: coredns
+    helm.sh/chart: coredns-1.29.0
+    helm.toolkit.fluxcd.io/name: coredns
+    helm.toolkit.fluxcd.io/namespace: kube-system
+    k8s-app: kube-dns
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: CoreDNS
+  name: kube-dns
+  namespace: kube-system
+  resourceVersion: "15392"
+  uid: 94f523f9-5037-4466-9956-8cbcdf4efe37
+spec:
+  clusterIP: 10.43.0.10
+  clusterIPs:
+  - 10.43.0.10
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: udp-53
+    port: 53
+    protocol: UDP
+    targetPort: 53
+  - name: tcp-53
+    port: 53
+    protocol: TCP
+    targetPort: 53
+  selector:
+    app.kubernetes.io/instance: coredns
+    app.kubernetes.io/name: coredns
+    k8s-app: kube-dns
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
