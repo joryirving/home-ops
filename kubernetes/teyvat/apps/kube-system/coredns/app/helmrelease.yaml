@@ -14,7 +14,6 @@ spec:
         kind: HelmRepository
         name: coredns
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -24,70 +23,6 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
-  values:
-    fullnameOverride: coredns
-    replicaCount: 3
-    resources:
-      limits:
-        cpu: 250m
-        memory: 256Mi
-    k8sAppLabelOverride: kube-dns
-    service:
-      name: kube-dns
-      clusterIP: 10.96.0.10
-    serviceAccount:
-      create: true
-    deployment:
-      annotations:
-        reloader.stakater.com/auto: "true"
-    servers:
-      - zones:
-          - zone: .
-            scheme: dns://
-            use_tcp: true
-        port: 53
-        plugins:
-          - name: log
-          - name: errors
-          - name: health
-            configBlock: |-
-              lameduck 5s
-          - name: ready
-          - name: kubernetes
-            parameters: cluster.local in-addr.arpa ip6.arpa
-            configBlock: |-
-              pods insecure
-              fallthrough in-addr.arpa ip6.arpa
-              ttl 30
-          - name: prometheus
-            parameters: 0.0.0.0:9153
-          - name: forward
-            parameters: . /etc/resolv.conf
-          - name: cache
-            parameters: 30
-          - name: loop
-          - name: reload
-          - name: loadbalance
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: Exists
-    tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/instance: coredns
+  valuesFrom:
+    - kind: ConfigMap
+      name: coredns-helm-values

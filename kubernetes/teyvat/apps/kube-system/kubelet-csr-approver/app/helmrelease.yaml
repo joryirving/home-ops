@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -22,9 +23,10 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+  valuesFrom:
+    - kind: ConfigMap
+      name: kubelet-csr-approver-helm-values
   values:
-    providerRegex: ^(ayaka|eula|ganyu|hutao|navia|yelan)$
-    bypassDnsResolution: true
     metrics:
       enable: true
       serviceMonitor:

@@ -1,28 +1,29 @@
 ---
 autoDirectNodeRoutes: true
-bgpControlPlane:
+bandwidthManager:
   enabled: true
+  bbr: true
 bpf:
-  masquerade: false
+  masquerade: true
+  tproxy: true
 cgroup:
   automount:
     enabled: false
   hostRoot: /sys/fs/cgroup
 cluster:
+  name: main
   id: 1
-  name: home-kubernetes
 containerRuntime:
   integration: containerd
-# NOTE: This might need to be set if you have more than one active NIC on your hosts
-# devices:
-#   - eno0
+devices: enp+
+enableRuntimeDeviceDetection: true
 endpointRoutes:
   enabled: true
 hubble:
   enabled: false
 ipam:
   mode: kubernetes
-ipv4NativeRoutingCIDR: "10.69.0.0/16"
+ipv4NativeRoutingCIDR: 10.42.0.0/16
 k8sServiceHost: 127.0.0.1
 k8sServicePort: 7445
 kubeProxyReplacement: true
@@ -34,7 +35,6 @@ loadBalancer:
   mode: dsr
 localRedirectPolicy: true
 operator:
-  replicas: 1
   rollOutPods: true
 rollOutCiliumPods: true
 routingMode: native
