@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: &app minecraft
+  name: &app vibecraft
 spec:
   interval: 30m
   chart:
@@ -51,15 +51,15 @@ spec:
     startupProbe:
       enabled: false
     extraEnv:
-      TZ: "${TIMEZONE}"
-      ENABLE_AUTOPAUSE: FALSE
+      TZ: ${TIMEZONE}
+      ENABLE_AUTOPAUSE: true
     persistence:
       dataDir:
         enabled: true
         existingClaim: *app
     serviceAnnotations:
       io.cilium/lb-ipam-ips: "${SVC_MINECRAFT_ADDR}"
-      mc-router.itzg.me/externalServerName: "mcsv.${SECRET_DOMAIN}"
+      mc-router.itzg.me/externalServerName: "vibecraft.${SECRET_DOMAIN}"
     minecraftServer:
       eula: true
       version: 1.20.2
@@ -73,13 +73,14 @@ spec:
       gameMode: survival
       pvp: false
       onlineMode: false
-      whitelist: "joryirving"
-      ops: "joryirving"
+      #whitelist: "LilDrunkenSmurf"
+      ops: "LilDrunkenSmurf"
       motd: "Vibecraft. Come hang out and Vibe"
       worldSaveName: Vibecraft
       viewDistance: 12
       spigetResources:
       - 36618 #Prom Exporter
+      - 18494 #DiscordSRV
       rcon:
         enabled: true
         serviceType: ClusterIP
