@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: &app minecraft-vibecraft
+  name: &app minecraft-create
 spec:
   interval: 30m
   chart:
@@ -32,7 +32,7 @@ spec:
     namespace: storage
   values:
     deploymentAnnotations:
-      secret.reloader.stakater.com/reload: minecraft-vibecraft-secret, minecraft-vibecraft-discord-secret
+      secret.reloader.stakater.com/reload: minecraft-create-secret
     image:
       repository: ghcr.io/itzg/minecraft-server
       tag: java17
@@ -57,20 +57,12 @@ spec:
       dataDir:
         enabled: true
         existingClaim: *app
-      config-file:
-        enabled: true
-        type: secret
-        name: vibecraft-discord-secret
-        globalMounts:
-        - path: /data/plugins/DiscordSRV/config.yml
-          subPath: config.yml
-          readOnly: true
     serviceAnnotations:
-      mc-router.itzg.me/externalServerName: "vibecraft.${SECONDARY_DOMAIN}" ## Manual DNS management
+      mc-router.itzg.me/externalServerName: "create.${SECONDARY_DOMAIN}" ## Manual DNS management
     minecraftServer:
       eula: true
-      version: 1.20.4
-      type: SPIGOT
+      version: 1.20.1
+      type: FORGE
       forceReDownload: true
       jvmXXOpts: "-XX:MaxRAMPercentage=75"
       memory: 8192M
@@ -82,12 +74,14 @@ spec:
       onlineMode: false
       #whitelist: "LilDrunkenSmurf"
       ops: "LilDrunkenSmurf"
-      motd: "Vibecraft. Come hang out and Vibe"
-      worldSaveName: Vibecraft
+      motd: "Create Server test"
+      worldSaveName: create
       viewDistance: 12
-      spigetResources:
-      - 36618 #Prom Exporter
-      - 18494 #DiscordSRV
+      modUrls:
+      - "https://edge.forgecdn.net/files/4835/191/create-1.20.1-0.5.1.f.jar?api-key=267C6CA3"
+      # spigetResources:
+      # - 36618 #Prom Exporter
+      # - 18494 #DiscordSRV
       rcon:
         enabled: true
         serviceType: ClusterIP
@@ -115,7 +109,7 @@ spec:
           enabled: true
           ingressClassName: internal
           hosts:
-          - name: &host "vibecraft.${SECRET_DOMAIN}"
+          - name: &host "create.${SECRET_DOMAIN}"
             path: /
           tls:
           - secretName: *host
@@ -123,6 +117,6 @@ spec:
             - *host
   valuesFrom:
   - kind: Secret
-    name: minecraft-vibecraft-secret
+    name: minecraft-create-secret
     valuesKey: RCON_PASSWORD
     targetPath: minecraftServer.rcon.password

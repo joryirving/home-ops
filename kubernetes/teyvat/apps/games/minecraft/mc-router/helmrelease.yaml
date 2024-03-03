@@ -25,4 +25,17 @@ spec:
     services:
       minecraft:
         type: LoadBalancer
-    simplifySrv: true
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Service
+              name: mc-router
+            patch: |
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: ignored
+                annotations:
+                  io.cilium/lb-ipam-ips: "${SVC_MINECRAFT_ADDR}"
+                  external-dns.alpha.kubernetes.io/hostname: mc.${SECONDARY_DOMAIN}
