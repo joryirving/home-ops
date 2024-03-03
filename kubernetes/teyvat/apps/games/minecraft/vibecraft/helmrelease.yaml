@@ -32,7 +32,7 @@ spec:
     namespace: storage
   values:
     deploymentAnnotations:
-      secret.reloader.stakater.com/reload: &secret minecraft
+      secret.reloader.stakater.com/reload: vibecraft-secret, vibecraft-discord-secret
     image:
       repository: ghcr.io/itzg/minecraft-server
       tag: java17
@@ -52,11 +52,19 @@ spec:
       enabled: false
     extraEnv:
       TZ: ${TIMEZONE}
-      ENABLE_AUTOPAUSE: true
+      ENABLE_AUTOPAUSE: FALSE # Doesn't work in Kubes
     persistence:
       dataDir:
         enabled: true
         existingClaim: *app
+      config-file:
+        enabled: true
+        type: secret
+        name: vibecraft-discord-secret
+        globalMounts:
+        - path: /data/plugins/DiscordSRV/config.yml
+          subPath: config.yml
+          readOnly: true
     serviceAnnotations:
       io.cilium/lb-ipam-ips: "${SVC_MINECRAFT_ADDR}"
       mc-router.itzg.me/externalServerName: "vibecraft.${SECRET_DOMAIN}"
@@ -108,7 +116,7 @@ spec:
           ingressClassName: external
           enabled: true
           hosts:
-          - name: &host "minecraft.${SECRET_DOMAIN}"
+          - name: &host "vibecraft.${SECRET_DOMAIN}"
             path: /
           tls:
           - secretName: *host
@@ -116,6 +124,6 @@ spec:
             - *host
   valuesFrom:
   - kind: Secret
-    name: *secret
+    name: vibecraft-secret
     valuesKey: RCON_PASSWORD
     targetPath: minecraftServer.rcon.password
