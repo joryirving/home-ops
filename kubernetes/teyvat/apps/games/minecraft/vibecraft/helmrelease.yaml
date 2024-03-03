@@ -113,10 +113,12 @@ spec:
           type: ClusterIP
           port: 8123
         ingress:
-          ingressClassName: external
           enabled: true
+          ingressClassName: internal
+          # annotations:
+          #   external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
           hosts:
-          - name: &host "vibecraft.${SECRET_DOMAIN}"
+          - name: &host "vibecraft-map.${SECRET_DOMAIN}"
             path: /
           tls:
           - secretName: *host
