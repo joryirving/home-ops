@@ -1,0 +1,68 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.haraldkoch.ca/monitoring.coreos.com/servicemonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: &app tplink-exporter-rack
+  labels: &labels
+    app.kubernetes.io/instance: *app
+    app.kubernetes.io/name: *app
+spec:
+  selector:
+    matchLabels:
+      <<: *labels
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 30s
+      path: /scrape
+      metricRelabelings:
+        - action: replace
+          replacement: k8s
+          sourceLabels:
+            - instance
+          targetLabel: instance
+        - action: replace
+          replacement: kp-125m-rack
+          sourceLabels:
+            - target
+          targetLabel: target
+      params:
+        target:
+          - 192.168.2.120
+      scheme: http
+  jobLabel: *app
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.haraldkoch.ca/monitoring.coreos.com/servicemonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: &app tplink-exporter-spare
+  labels: &labels
+    app.kubernetes.io/instance: *app
+    app.kubernetes.io/name: *app
+spec:
+  selector:
+    matchLabels:
+      <<: *labels
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 30s
+      path: /scrape
+      metricRelabelings:
+        - action: replace
+          replacement: k8s
+          sourceLabels:
+            - instance
+          targetLabel: instance
+        - action: replace
+          replacement: kp-125m-spare
+          sourceLabels:
+            - target
+          targetLabel: target
+      params:
+        target:
+          - 192.168.2.121
+      scheme: http
+  jobLabel: *app
