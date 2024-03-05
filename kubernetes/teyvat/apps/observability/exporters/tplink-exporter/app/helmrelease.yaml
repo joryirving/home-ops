@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: unifi-poller
+  name: &app tplink-exporter
 spec:
   interval: 30m
   chart:
@@ -14,7 +14,6 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -25,6 +24,7 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    fullnameOverride: *app
     controllers:
       main:
         annotations:
@@ -32,25 +32,22 @@ spec:
         containers:
           main:
             image:
-              repository: golift/unifi-poller
-              tag: v2.10.0
+              repository: fffonion/tplink-plug-exporter
+              tag: 0.4.0
             env:
-              UP_UNIFI_DEFAULT_URL: https://${UNIFI_CONTROLLER_IP}
-              UP_INFLUXDB_DISABLE: true
-            envFrom:
-              - secretRef:
-                  name: unifi-poller-secret
+              TZ: ${TIMEZONE}
+            resources:
+              limits:
+                cpu: 50m
+                memory: 100Mi
     service:
       main:
         ports:
           http:
-            port: 9130
-    serviceMonitor:
-      main:
-        enabled: true
-        endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 2m
-            scrapeTimeout: 30s
+            enabled: false
+          metrics:
+            enabled: true
+            protocol: TCP
+            port: 9233
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: "exporters.${CLUSTER_DOMAIN}"
