@@ -85,3 +85,26 @@ tasks:
       claim: '{{ or .claim (fail "Argument (claim) is required") }}'
     preconditions:
       - { msg: "PVC not found", sh: "kubectl --context {{.cluster}} -n {{.ns}} get persistentvolumeclaim {{.claim}}" }
+
+  browse-pvc:
+    desc: Browse PersistentVolumeClaims
+    summary: |
+      Args:
+        cluster: Cluster to run command against (required)
+        ns: Namespace to browse PersistentVolumeClaims in (default: default)
+        claim: PersistentVolumeClaim to browse (required)
+    interactive: true
+    cmd: kubectl browse-pvc --context {{.cluster}} --namespace {{.ns}} {{.claim}}
+    requires:
+      vars: ["cluster", "claim"]
+
+  delete-failed-pods:
+    desc: Deletes pods with a fucked status
+    summary: |
+      Args:
+        cluster: Cluster to run command against (required)
+    cmds:
+      - for: ["Evicted", "Failed", "Succeeded"]
+        cmd: kubectl --context {{.cluster}} delete pods --field-selector status.phase={{.ITEM}} -A --ignore-not-found=true
+    requires:
+      vars: ["cluster"]
