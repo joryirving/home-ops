@@ -7,6 +7,11 @@ vars:
   TALHELPER_SECRET_FILE: "{{.TALOS_DIR}}/talhelper.sops.yaml"
   TALHELPER_CONFIG_FILE: "{{.TALOS_DIR}}/talconfig.yaml"
   KUBECONFIG_FILE: "{{.KUBERNETES_DIR}}/teyvat/kubeconfig"
+  # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
+  TALOS_VERSION: v1.6.6
+  TALOS_SCHEMATIC_ID: 5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
+  # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
+  KUBERNETES_VERSION: v1.29.2
 
 env:
   TALOSCONFIG: "{{.TALOS_DIR}}/clusterconfig/talosconfig"
@@ -74,17 +79,17 @@ tasks:
 
   upgrade-talos:
     desc: Upgrade talos on a node
-    cmd: talosctl --nodes {{.node}} upgrade --image {{.image}} --preserve=true --reboot-mode=default
+    cmd: talosctl --nodes {{.node}} upgrade --image ghcr.io/siderolabs/installer:{{.TALOS_VERSION}} --preserve=true --reboot-mode=default
     requires:
-      vars: ["node", "image"]
+      vars: ["node"]
     preconditions:
       - { msg: "Node not found", sh: "talosctl --nodes {{.node}} get machineconfig" }
 
   upgrade-k8s:
     desc: Upgrade k8s on a node
-    cmd: talosctl --nodes {{.node}} upgrade-k8s --to {{.to}}
+    cmd: talosctl --nodes {{.node}} upgrade-k8s --to {{.KUBERNETES_VERSION}}
     requires:
-      vars: ["node", "to"]
+      vars: ["node"]
     preconditions:
       - { msg: "Node not found", sh: "talosctl --nodes {{.node}} get machineconfig" }
 
