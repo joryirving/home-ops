@@ -1,0 +1,78 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app metube
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 2.6.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  dependsOn:
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: volsync
+    namespace: storage
+  values:
+    controllers:
+      main:
+        labels:
+          nfsMount: "true"
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            image:
+              repository: ghcr.io/alexta69/metube
+              tag: "2024-01-26"
+            env:
+              DOWNLOAD_DIR: "/downloads"
+              STATE_DIR: "/config"
+              YTDL_OPTIONS: '{"http_headers":{"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"}}'
+    service:
+      main:
+        ports:
+          http:
+            port: 8081
+    ingress:
+      main:
+        enabled: true
+        className: internal
+        hosts:
+        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          paths:
+          - path: /
+            service:
+              name: main
+              port: http
+        tls:
+        - hosts:
+          - *host
+    persistence:
+      config:
+        enabled: true
+        existingClaim: *app
+      downloads:
+        enabled: true
+        type: nfs
+        server: ${NAS_IP:=temp}
+        path: ${SECRET_NFS_DATA:=temp}
+        globalMounts:
+        - path: /downloads
+          subPath: metube
