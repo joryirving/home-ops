@@ -146,11 +146,22 @@ tasks:
       Args:
         cluster: Cluster to run command against (required)
     cmds:
-      - kubectl --context {{.cluster}} get pvc --all-namespaces --no-headers | grep "bootstrap" | awk '{print $2, $1}' | xargs -l bash -c 'kubectl --context {{.cluster}} delete pvc -n $1 $0'
-      - kubectl --context {{.cluster}} get pvc --all-namespaces --no-headers | grep "dst-cache" | awk '{print $2, $1}' | xargs -l bash -c 'kubectl --context {{.cluster}} delete pvc -n $1 $0'
+      - for: { var: dest }
+        cmd: |
+          {{- $items := (split "/" .ITEM) }}
+          kubectl --context {{.cluster}} delete pvc -n {{ $items._0 }} {{ $items._1 }}
+      - for: { var: cache }
+        cmd: |
+          {{- $items := (split "/" .ITEM) }}
+          kubectl --context {{.cluster}} delete pvc -n {{ $items._0 }} {{ $items._1 }}
     env: *env
-    preconditions:
-      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+    requires:
+      vars: ["cluster"]
+    vars:
+      dest:
+        sh: kubectl --context {{.cluster}} get pvc --all-namespaces --no-headers | grep "bootstrap-dest" | awk '{print $1 "/" $2}'
+      cache:
+        sh: kubectl --context {{.cluster}} get pvc --all-namespaces --no-headers | grep "bootstrap-cache" | awk '{print $1 "/" $2}'
 
   # Suspend the Flux ks and hr
   .suspend:
