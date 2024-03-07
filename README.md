@@ -159,18 +159,18 @@ Total RAM: 32GB
 | Eula  | Dell 7080mff   | i7-10700T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
 | Ganyu | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
 | HuTao | Dell 3080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 40GB | Talos | k8s worker        |
-| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | N/A       | 16GB | Talos | k8s worker        |
+| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | N/A       | 64GB | Talos | k8s worker        |
 | Yelan | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 40GB | Talos | k8s worker        |
 
 Total CPU: 76 threads
-Total RAM: 288GB
+Total RAM: 336GB
 
 ### Supporting Hardware
 
 | Name  | Device         | CPU        | OS Disk   | Data Disk | RAM   | OS       | Purpose               |
 |-------|----------------|------------|-----------|-----------|-------|----------|-----------------------|
 | NAS   | HP z820        | 2x E5-2680 | 32GB USB  | ZFS 56TB  | 128GB | Unraid   | NAS/NFS/Backup        |
-| Amber | Raspberry Pi3B | Cortex A53 | 120GB mSD | -         | 1GB   | Raspbian | Wireguard/MeshCentral |
+| Amber | Raspberry P43  | Cortex A72 | 120GB mSD | -         | 4GB   | Raspbian | Wireguard/MeshCentral |
 
 ### Networking/UPS Hardware
 
