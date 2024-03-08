@@ -118,6 +118,14 @@ graph TD;
   id9(HelmRelease: weave-gitops) -->|Depends on| id7(HelmRelease: authentik);
 ```
 
+### Networking
+
+<details>
+  <summary>Click to see a high-level network diagram</summary>
+
+  <img src="https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/assets/network-topology.png" align="center" alt="dns"/>
+</details>
+
 ---
 
 ## ☁️ Cloud Dependencies
