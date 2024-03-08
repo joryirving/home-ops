@@ -64,8 +64,13 @@ spec:
           gethomepage.dev/name: Kapowarr
           gethomepage.dev/icon: calibre-web.png
           gethomepage.dev/description: Comic Downloads
+          gethomepage.dev/widget.type: customapi
+          gethomepage.dev/widget.url: "http://kapowarr.downloads:5656/api/volumes/stats"
+          gethomepage.dev/widget.headers: "X-API-Token: {{ .HOMEPAGE_VAR_KAPOWARR_TOKEN }}"
+          gethomepage.dev/widget.mappings.label: '["Volumes", "Issues", "Files"]'
+          gethomepage.dev/widget.mappings.field.result: '["result.volumes", "result.issues", "result.files"]'
           # gethomepage.dev/widget.type: kapowarr
-          # gethomepage.dev/widget.url: http://kapowarr.downloads.svc.cluster.local:5656
+          # gethomepage.dev/widget.url: http://kapowarr.downloads:5656
           # gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_KAPOWARR_TOKEN}}"
           nginx.ingress.kubernetes.io/configuration-snippet: |
             proxy_set_header Accept-Encoding "";

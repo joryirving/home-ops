@@ -51,12 +51,48 @@ data:
   kubernetes.yaml: |
     mode: cluster
   services.yaml: |
+    - Network:
+        - Cloudflared:
+            href: https://dash.cloudflare.com/
+            icon: cloudflare-zero-trust.png
+            description: Cloudflared Tunnel Status
+            widget:
+              type: cloudflared
+              accountid: {{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNTID}}
+              tunnelid: {{HOMEPAGE_VAR_CLOUDFLARED_TUNNELID}}
+              key: {{HOMEPAGE_VAR_CLOUDFLARED_API_TOKEN}}
+        - Healthchecks:
+            href: https://healthchecks.io/
+            icon: healthchecks.png
+            description: Healthchecks Internet Uptime
+            widget:
+              type: healthchecks
+              url: https://healthchecks.io/
+              key: {{HOMEPAGE_VAR_HEALTHCHECK_TOKEN}}
+              uuid: {{HOMEPAGE_VAR_HEALTHCHECK_UUID}}
+        - NextDNS:
+            href: https://my.nextdns.io
+            icon: nextdns.png
+            description: NextDNS
+            widget:
+              type: nextdns
+              profile: {{HOMEPAGE_VAR_NEXTDNS_ID}}
+              key: {{HOMEPAGE_VAR_NEXTDNS_API}}
+        - Unifi:
+            href: https://unifi.ui.com
+            icon: unifi.png
+            description: Unifi Dashboard
+            widget:
+              type: unifi
+              url: https://192.168.1.1:443
+              username: {{HOMEPAGE_VAR_UNIFI_USERNAME}}
+              password: {{HOMEPAGE_VAR_UNIFI_PASSWORD}}
     - Calendar:
         - Agenda:
             widget:
               type: calendar
               view: agenda # optional - possible values monthly, agenda
-              maxEvents: 20 # optional - defaults to 10
+              maxEvents: 15 # optional - defaults to 10
               integrations: # optional
                 - type: sonarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr>
                   service_group: Downloads # group name where widget exists
@@ -68,36 +104,10 @@ data:
                   service_group: Downloads # group name where widget exists
                   service_name: Readarr # service name for that widget
     - Infrastructure:
-        - Cloudflared:
-            href: https://dash.cloudflare.com/
-            icon: cloudflare-zero-trust.png
-            description: Cloudflared Tunnel Status
-            widget:
-              type: cloudflared
-              accountid: {{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNTID}}
-              tunnelid: {{HOMEPAGE_VAR_CLOUDFLARED_TUNNELID}}
-              key: {{HOMEPAGE_VAR_CLOUDFLARED_API_TOKEN}}
-        - Unifi:
-            href: https://unifi.ui.com
-            icon: unifi.png
-            description: Unifi Dashboard
-            widget:
-              type: unifi
-              url: https://192.168.1.1:443
-              username: {{HOMEPAGE_VAR_UNIFI_USERNAME}}
-              password: {{HOMEPAGE_VAR_UNIFI_PASSWORD}}
         - MeshCentral:
             href: https://mesh.${PI_DOMAIN}
             icon: meshcentral.png
             description: MeshCentral Dashboard
-        - NextDNS:
-            href: https://my.nextdns.io
-            icon: nextdns.png
-            description: NextDNS
-            widget:
-              type: nextdns
-              profile: {{HOMEPAGE_VAR_NEXTDNS_ID}}
-              key: {{HOMEPAGE_VAR_NEXTDNS_API}}
         - Portainer:
             href: &url https://portainer.${PI_DOMAIN}
             icon: portainer.png
@@ -111,16 +121,6 @@ data:
             href: https://nas.${PI_DOMAIN}
             icon: unraid.png
             description: Unraid NAS
-    - Observability:
-        - Healthchecks:
-            href: https://healthchecks.io/
-            icon: healthchecks.png
-            description: Healthchecks Internet Uptime
-            widget:
-              type: healthchecks
-              url: https://healthchecks.io/
-              key: {{HOMEPAGE_VAR_HEALTHCHECK_TOKEN}}
-              uuid: {{HOMEPAGE_VAR_HEALTHCHECK_UUID}}
   settings.yaml: |
     title: Dashboard
     favicon: https://github.com/walkxcode/dashboard-icons/blob/main/png/heimdall.png
@@ -131,12 +131,24 @@ data:
     color: slate
     headerStyle: clean
     layout:
+      Network:
+        style: row
+        columns: 4
+        icon: mdi-network
+      Games:
+        style: row
+        columns: 2
+        icon: mdi-minecraft
       Calendar:
         style: column
         icon: mdi-calendar
-      Media:
+      Video:
         style: column
         icon: mdi-play-circle
+      Books:
+        style: row
+        columns: 2
+        icon: mdi-book
       Infrastructure:
         style: row
         columns: 4
@@ -149,17 +161,10 @@ data:
         style: row
         columns: 5
         icon: mdi-home-analytics
-      Games:
-        style: row
-        columns: 2
-        icon: mdi-minecraft
       Downloads:
         style: row
         columns: 3
         icon: mdi-download-circle
-    # providers:
-    #   longhorn:
-    #     url: http://longhorn-frontend.storage
   widgets.yaml: |
     - logo:
         icon: https://raw.githubusercontent.com/joryirving/home-ops/main/icons/lds-transparent.png
