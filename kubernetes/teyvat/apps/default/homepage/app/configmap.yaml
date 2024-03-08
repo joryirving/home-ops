@@ -52,22 +52,6 @@ data:
     mode: cluster
   services.yaml: |
     - Calendar:
-        # - Calendar:
-        #     widget:
-        #       type: calendar
-        #       firstDayInWeek: sunday # optional - defaults to monday
-        #       view: monthly # optional - possible values monthly, agenda
-        #       maxEvents: 10 # optional - defaults to 10
-        #       integrations: # optional
-        #         - type: sonarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
-        #           service_group: Downloads # group name where widget exists
-        #           service_name: Sonarr # service name for that widget
-        #         - type: radarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
-        #           service_group: Downloads # group name where widget exists
-        #           service_name: Radarr # service name for that widget
-        #         - type: readarr # active widget type that is currently enabled on homepage - possible values: radarr, sonarr, lidarr, readarr
-        #           service_group: Downloads # group name where widget exists
-        #           service_name: Readarr # service name for that
         - Agenda:
             widget:
               type: calendar
@@ -123,27 +107,20 @@ data:
               url: http://${NAS_IP}:9000
               env: 1
               key: {{HOMEPAGE_VAR_PORTAINER_TOKEN}}
-    - Storage:
         - Unraid:
             href: https://nas.${PI_DOMAIN}
             icon: unraid.png
             description: Unraid NAS
-    - Minecraft:
-        - Vibecraft:
-            icon: minecraft.png
+    - Observability:
+        - Healthchecks:
+            href: https://healthchecks.io/
+            icon: healthchecks.png
+            description: Healthchecks Internet Uptime
             widget:
-              type: minecraft
-              url: udp://${NAS_IP}:25565
-        - Skyblock:
-            icon: minecraft.png
-            widget:
-              type: minecraft
-              url: udp://${NAS_IP}:25566
-        - Create:
-            icon: minecraft.png
-            widget:
-              type: minecraft
-              url: udp://${NAS_IP}:25567
+              type: healthchecks
+              url: https://healthchecks.io/
+              key: {{HOMEPAGE_VAR_HEALTHCHECK_TOKEN}}
+              uuid: {{HOMEPAGE_VAR_HEALTHCHECK_UUID}}
   settings.yaml: |
     title: Dashboard
     favicon: https://github.com/walkxcode/dashboard-icons/blob/main/png/heimdall.png
@@ -162,21 +139,19 @@ data:
         icon: mdi-play-circle
       Infrastructure:
         style: row
-        columns: 3
+        columns: 4
         icon: mdi-server
-      Storage:
+      Observability:
+        style: row
+        columns: 5
+        icon: mdi-chart-line
+      Home:
+        style: row
+        columns: 5
+        icon: mdi-home-analytics
+      Games:
         style: row
         columns: 2
-        icon: mdi-desktop-tower
-      Home:
-        style: column
-        icon: mdi-home-analytics
-      Observability:
-        style: column
-        icon: mdi-chart-line
-      Minecraft:
-        style: row
-        columns: 3
         icon: mdi-minecraft
       Downloads:
         style: row
@@ -186,11 +161,6 @@ data:
     #   longhorn:
     #     url: http://longhorn-frontend.storage
   widgets.yaml: |
-    # - resources:
-    #     backend: kubernetes
-    #     cpu: true
-    #     expanded: true
-    #     memory: true
     - logo:
         icon: https://raw.githubusercontent.com/joryirving/home-ops/main/icons/lds-transparent.png
     - search:
@@ -218,11 +188,6 @@ data:
         longitude: ${LONGITUDE}
         units: metric
         cache: 5
-    # - longhorn:
-    #     expanded: false
-    #     total: true
-    #     labels: true
-    #     nodes: false
     - datetime:
         text_size: l
         format:
