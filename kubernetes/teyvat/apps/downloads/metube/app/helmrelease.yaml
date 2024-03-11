@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -9,12 +9,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -22,8 +21,6 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-  uninstall:
-    keepHistory: false
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
@@ -31,13 +28,13 @@ spec:
     namespace: storage
   values:
     controllers:
-      main:
+      metube:
         labels:
           nfsMount: "true"
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/alexta69/metube
               tag: "2024-01-26"
@@ -46,30 +43,28 @@ spec:
               STATE_DIR: "/config"
               YTDL_OPTIONS: '{"http_headers":{"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"}}'
     service:
-      main:
+      app:
+        controller: *app
         ports:
           http:
             port: 8081
     ingress:
-      main:
-        enabled: true
+      app:
         className: internal
         hosts:
         - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
           - path: /
             service:
-              name: main
+              identifier: app
               port: http
         tls:
         - hosts:
           - *host
     persistence:
       config:
-        enabled: true
         existingClaim: *app
       downloads:
-        enabled: true
         type: nfs
         server: ${NAS_IP:=temp}
         path: ${SECRET_NFS_DATA:=temp}

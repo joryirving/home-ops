@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -8,12 +8,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -21,8 +20,6 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-  uninstall:
-    keepHistory: false
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
@@ -30,13 +27,13 @@ spec:
     namespace: storage
   values:
     controllers:
-      main:
+      paperless:
         labels:
           nfsMount: "true"
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.6.2
@@ -77,13 +74,13 @@ spec:
               limits:
                 memory: 2048Mi
     service:
-      main:
+      app:
+        controller: *app
         ports:
           http:
             port: 8000
     ingress:
-      main:
-        enabled: true
+      app:
         className: internal
         annotations:
           gethomepage.dev/enabled: "true"
@@ -99,21 +96,19 @@ spec:
           paths:
           - path: /
             service:
-              name: main
+              identifier: app
               port: http
         tls:
         - hosts:
           - *host
     persistence:
       config:
-        enabled: true
         existingClaim: *app
         advancedMounts:
           main:
             main:
             - path: /data/local
       nas:
-        enabled: true
         type: nfs
         server: ${NAS_IP:=temp}
         path: ${SECRET_NFS_PAPERLESS:=temp}

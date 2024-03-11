@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -9,12 +9,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -22,18 +21,16 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
     controllers:
-      main:
+      plex-image-cleanup:
         type: cronjob
         annotations:
           reloader.stakater.com/auto: "true"
         cronjob:
           schedule: "0 8 * * *"
         containers:
-          main:
+          app:
             image:
               repository: docker.io/meisnate12/plex-image-cleanup
               tag: v1.0.2
@@ -79,23 +76,12 @@ spec:
               capabilities:
                 drop:
                   - ALL
-    service:
-      main:
-        enabled: false
-    ingress:
-      main:
-        enabled: false
     persistence:
       config:
-        enabled: true
         type: emptyDir
-        advancedMounts:
-          main:
-            main:
-              - path: /config
+        globalMounts:
+          - path: /config
       plex-config:
         existingClaim: plex
-        advancedMounts:
-          main:
-            main:
-              - path: /data/plex_config
+        globalMounts:
+          - path: /data/plex_config
