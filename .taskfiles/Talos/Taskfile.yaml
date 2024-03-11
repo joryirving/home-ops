@@ -3,10 +3,10 @@
 version: "3"
 
 vars:
-  TALOS_DIR: "{{.KUBERNETES_DIR}}/teyvat/bootstrap/talos"
+  TALOS_DIR: "{{.KUBERNETES_DIR}}/main/bootstrap/talos"
   TALHELPER_SECRET_FILE: "{{.TALOS_DIR}}/talsecret.sops.yaml"
   TALHELPER_CONFIG_FILE: "{{.TALOS_DIR}}/talconfig.yaml"
-  KUBECONFIG_FILE: "{{.KUBERNETES_DIR}}/teyvat/kubeconfig"
+  KUBECONFIG_FILE: "{{.KUBERNETES_DIR}}/main/kubeconfig"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
   TALOS_VERSION: v1.6.6
   TALOS_SCHEMATIC_ID: 5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
@@ -96,7 +96,7 @@ tasks:
   fetch-kubeconfig:
     desc: Generate talos kubeconfig
     dir: "{{.TALOS_DIR}}"
-    cmd: until talhelper gencommand kubeconfig --extra-flags "--force --force-context-name teyvat {{.KUBERNETES_DIR}}/teyvat" | bash; do sleep 10; done
+    cmd: until talhelper gencommand kubeconfig --extra-flags "--force --force-context-name main {{.KUBERNETES_DIR}}/main" | bash; do sleep 10; done
 
   soft-nuke:
     desc: Resets nodes back to maintenance mode so you can re-deploy again straight after

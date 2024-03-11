@@ -1,0 +1,151 @@
+version: v1alpha1
+debug: false
+persist: true
+machine:
+  type: controlplane
+  token: qigsz8.ahx5n5dq7kab1apw
+  ca:
+    crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJQakNCOGFBREFnRUNBaEFyWUszZHJDMWFONGNWUGFKU2thOUFNQVVHQXl0bGNEQVFNUTR3REFZRFZRUUsKRXdWMFlXeHZjekFlRncweU5EQXpNREV4TlRRek1EZGFGdzB6TkRBeU1qY3hOVFF6TURkYU1CQXhEakFNQmdOVgpCQW9UQlhSaGJHOXpNQ293QlFZREsyVndBeUVBbjZTSFpiMVR4WmxHdDM2bStobCs1b1RxYlhsOUpWYkV1SlV2CjA5TVNQMCtqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDaERBZEJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjREFRWUkKS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFkQmdOVkhRNEVGZ1FVcS94MUh1RTNJSk9Hd0F1YgowMlhJNlMzNExvSXdCUVlESzJWd0EwRUFqZE94a0JsekMwOUNocHdVeGNXcWdoc0czT2JQdGxyUzVyU1M2NzRNCnU0QmdxMVgvT0RwU2Y2Y1FaU1FtR2hNZmQ2bDlXMzEvVUNTbFp3NXZ5WndUQWc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    key: LS0tLS1CRUdJTiBFRDI1NTE5IFBSSVZBVEUgS0VZLS0tLS0KTUM0Q0FRQXdCUVlESzJWd0JDSUVJR2pUZDJTVmcwQkVobjhaYzBEd2gyTFFHSEhLb2kzaU94ZHIzcU1ndUZLNgotLS0tLUVORCBFRDI1NTE5IFBSSVZBVEUgS0VZLS0tLS0K
+  certSANs:
+    - 192.168.2.10
+    - 127.0.0.1
+  kubelet:
+    image: ghcr.io/siderolabs/kubelet:v1.29.2
+    extraArgs:
+      image-gc-high-threshold: "55"
+      image-gc-low-threshold: "50"
+      rotate-server-certificates: "true"
+    extraMounts:
+      - destination: /var/openebs/local
+        type: bind
+        source: /var/openebs/local
+        options:
+          - bind
+          - rshared
+          - rw
+    defaultRuntimeSeccompProfileEnabled: true
+    nodeIP:
+      validSubnets:
+        - 192.168.2.0/24
+    disableManifestsDirectory: true
+  network:
+    hostname: ayaka
+    interfaces:
+      - deviceSelector:
+          hardwareAddr: 00:e0:4c:68:06:69
+        addresses:
+          - 192.168.2.11/22
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.1.1
+        mtu: 1500
+        dhcp: false
+        vip:
+          ip: 192.168.2.10
+    nameservers:
+      - 192.168.1.1
+      - 1.1.1.1
+    disableSearchDomain: true
+  install:
+    disk: /dev/sda
+    image: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1:v1.6.5
+    wipe: false
+  files:
+    - content: |-
+        [plugins."io.containerd.grpc.v1.cri"]
+          enable_unprivileged_ports = true
+          enable_unprivileged_icmp = true
+        [plugins."io.containerd.grpc.v1.cri".containerd]
+          discard_unpacked_layers = false
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          discard_unpacked_layers = false
+      permissions: 0o0
+      path: /etc/cri/conf.d/20-customization.part
+      op: create
+  time:
+    disabled: false
+    servers:
+      - time.cloudflare.com
+  sysctls:
+    fs.inotify.max_queued_events: "65536"
+    fs.inotify.max_user_instances: "8192"
+    fs.inotify.max_user_watches: "524288"
+  features:
+    rbac: true
+    stableHostname: true
+    kubernetesTalosAPIAccess:
+      enabled: true
+      allowedRoles:
+        - os:admin
+      allowedKubernetesNamespaces:
+        - system-upgrade
+    apidCheckExtKeyUsage: true
+    diskQuotaSupport: true
+    kubePrism:
+      enabled: true
+      port: 7445
+cluster:
+  id: cljxHKqeA9hxCCx2myyXAcl6ZRX4Q6vGrTMtsmFQVYs=
+  secret: ygCAGQr/W0tJcUvfpChOPLfH/DEOp56oxcdl6BTM3fQ=
+  controlPlane:
+    endpoint: https://192.168.2.10:6443
+  clusterName: main
+  network:
+    cni:
+      name: none
+    dnsDomain: cluster.local
+    podSubnets:
+      - 10.42.0.0/16
+    serviceSubnets:
+      - 10.43.0.0/16
+  token: ocmp46.0sh5ctuqe516yc7x
+  secretboxEncryptionSecret: 879qHsJoQ/XnKPUeIRsWA3vANI0tVVGjK2hf6k1hpUs=
+  ca:
+    crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJpRENDQVMrZ0F3SUJBZ0lRYUd4S3Y2ZjZ5T1NJOUQyQlZWUUt6REFLQmdncWhrak9QUVFEQWpBVk1STXcKRVFZRFZRUUtFd3ByZFdKbGNtNWxkR1Z6TUI0WERUSTBNRE13TVRFMU5ETXdOMW9YRFRNME1ESXlOekUxTkRNdwpOMW93RlRFVE1CRUdBMVVFQ2hNS2EzVmlaWEp1WlhSbGN6QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VICkEwSUFCQnZJdVdoMnhyQmhLMkZ0bng5SmkyN05lejBpem9iNm4yQVJiU0lLdXJPa1R0d3l6SWpYNWR4K3dkWDUKNmlyVm5oYUx0eVdXWWxKdUpiNjJlV2FEWmh5allUQmZNQTRHQTFVZER3RUIvd1FFQXdJQ2hEQWRCZ05WSFNVRQpGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBZEJnTlZIUTRFCkZnUVVVbzk1NlBzS0ZRRUsxQlE5bndRNTRXOUgyNmt3Q2dZSUtvWkl6ajBFQXdJRFJ3QXdSQUlnUE9ONldqK0wKVFRvUloxOWtoWHZIbG1CRiswZk1TNUV3UXNUakFRVEsySVFDSUNqdGZpNG9RQy9LeUxhbnQ4c3hwT09wTVRxTQpDaHU4bFp1bmxvZDNCRC80Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSU0wY3NKTktEK2hFdkpnd1MxUjZGazZWTVJKSkhrd2JoWjZKYjd1Sy8rbktvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFRzhpNWFIYkdzR0VyWVcyZkgwbUxiczE3UFNMT2h2cWZZQkZ0SWdxNnM2Uk8zRExNaU5mbAozSDdCMWZucUt0V2VGb3UzSlpaaVVtNGx2clo1Wm9ObUhBPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
+  aggregatorCA:
+    crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJYekNDQVFXZ0F3SUJBZ0lRRjlaWWh5RVUzazFBTHpockdaTExKakFLQmdncWhrak9QUVFEQWpBQU1CNFgKRFRJME1ETXdNVEUxTkRNd04xb1hEVE0wTURJeU56RTFORE13TjFvd0FEQlpNQk1HQnlxR1NNNDlBZ0VHQ0NxRwpTTTQ5QXdFSEEwSUFCUEF3QlBvRkZqTFY2cFVSdWkzM1JBblByY3FQSzRZVDR6d3F2c3MzUEpzMDdFWmFkc0hHCmYwKyt4c0Y3dDNuRlJWZGNWVUhTaWFSTFFiMkU5YTJCbzB1allUQmZNQTRHQTFVZER3RUIvd1FFQXdJQ2hEQWQKQmdOVkhTVUVGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBZApCZ05WSFE0RUZnUVVrenk2eDBZcG1OUlJWNU5Ba2x1NnJwT3R2OTR3Q2dZSUtvWkl6ajBFQXdJRFNBQXdSUUloCkFOWVUva3czOVJlZ1JYM3RLVXBPVXNqMk9pRXpEZ0ZxVm0rYStsQUhxUXlGQWlCcXNZZU9UZkR4bXpxaVREZDcKaW5oZFFnd0JVdUVaZTZVY2V1cnIxWjUxUVE9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUliODUyVUdEdXBhaVV6R01uamhvVlpXK2I2N3l5NzdmeHlvTzJoZGNEWlhvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFOERBRStnVVdNdFhxbFJHNkxmZEVDYyt0eW84cmhoUGpQQ3EreXpjOG16VHNSbHAyd2NaLwpUNzdHd1h1M2VjVkZWMXhWUWRLSnBFdEJ2WVQxcllHalN3PT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
+  serviceAccount:
+    key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUFPc1lqWlBEV01jVkRLWlo2S2xMa3pNZ3poZ3A2U2FKQmFiUDVNS0dsT2FvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFWlhFSkpOdDRBSHdhV25wVEJXeGZsZWNqSlZsaW5JaWZDR09vRkg2S0JiN1ZVQy84R21hTApuVlNXSUp5T0Rqd3lwRjNMWUFlM3gxWTlZanNoaWZDb2lBPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
+  apiServer:
+    image: registry.k8s.io/kube-apiserver:v1.29.2
+    certSANs:
+      - 192.168.2.10
+      - 127.0.0.1
+    disablePodSecurityPolicy: true
+    auditPolicy:
+      apiVersion: audit.k8s.io/v1
+      kind: Policy
+      rules:
+        - level: Metadata
+  controllerManager:
+    image: registry.k8s.io/kube-controller-manager:v1.29.2
+    extraArgs:
+      bind-address: 0.0.0.0
+  proxy:
+    disabled: true
+    image: registry.k8s.io/kube-proxy:v1.29.2
+  scheduler:
+    image: registry.k8s.io/kube-scheduler:v1.29.2
+    extraArgs:
+      bind-address: 0.0.0.0
+  discovery:
+    enabled: true
+    registries:
+      kubernetes:
+        disabled: false
+      service:
+        disabled: false
+  etcd:
+    ca:
+      crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJmRENDQVNPZ0F3SUJBZ0lRZWxoejhlL2MybGpwTnh6b2tyNzM1REFLQmdncWhrak9QUVFEQWpBUE1RMHcKQ3dZRFZRUUtFd1JsZEdOa01CNFhEVEkwTURNd01URTFORE13TjFvWERUTTBNREl5TnpFMU5ETXdOMW93RHpFTgpNQXNHQTFVRUNoTUVaWFJqWkRCWk1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQk9BdlBQa0xXbmxuCmxBazZyczdMdmViUitkV2FBbzdaSytMRlJ0NVpBNjdJdlFCS09SdXFxSTYvTGxhVG5MV0Y5eG5ETEFXNDQzb1IKQ0p3V0NIOGhVV1NqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDaERBZEJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjRApBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFkQmdOVkhRNEVGZ1FVRU1FaXliWUx6Z0NpCnZ4aDJvQjJVOXBEMklLWXdDZ1lJS29aSXpqMEVBd0lEUndBd1JBSWdNMjJucnBsM1VCd2lsS080NTdGSmZ3bEQKenlReXIveXY2alZ3STgyRDg3RUNJRCtrNTc0MXpnWldUYUl2TnQwdE1pMlkva2dXd3gzaGxDc0ZkNWtSSW1icQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSU9BWnN1ZkRQU1hLMFcvWWNuWHdNcWlGYjlZQUdleGdBSkY2UUpiVUZtSTVvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFNEM4OCtRdGFlV2VVQ1RxdXpzdTk1dEg1MVpvQ2p0a3I0c1ZHM2xrRHJzaTlBRW81RzZxbwpqcjh1VnBPY3RZWDNHY01zQmJqamVoRUluQllJZnlGUlpBPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381
+    advertisedSubnets:
+      - 192.168.2.0/24
+  coreDNS:
+    disabled: true
+  allowSchedulingOnMasters: true

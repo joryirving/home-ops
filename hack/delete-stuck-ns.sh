@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 NAMESPACE=$1
-CLUSTER=${2:-teyvat}
+CLUSTER=${2:-main}
 
 function delete_namespace () {
     echo "Deleting namespace $NAMESPACE"

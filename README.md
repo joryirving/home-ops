@@ -12,7 +12,7 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 <div align="center">
 
 [![Discord](https://img.shields.io/discord/673534664354430999?style=for-the-badge&label&logo=discord&logoColor=white&color=blue)](https://discord.gg/home-operations)&nbsp;&nbsp;
-[![Kubernetes](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjoryirving%2Fhome-ops%2Fmain%2Fkubernetes%2Fteyvat%2Fbootstrap%2Ftalos%2Ftalconfig.yaml&query=%24.kubernetesVersion&style=for-the-badge&logo=kubernetes&logoColor=white&label=%20)](https://www.talos.dev/)&nbsp;&nbsp;
+[![Kubernetes](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjoryirving%2Fhome-ops%2Fmain%2Fkubernetes%2Fmain%2Fbootstrap%2Ftalos%2Ftalconfig.yaml&query=%24.kubernetesVersion&style=for-the-badge&logo=kubernetes&logoColor=white&label=%20)](https://www.talos.dev/)&nbsp;&nbsp;
 [![Renovate](https://img.shields.io/github/actions/workflow/status/joryirving/joryirving/scheduled-renovate.yaml?branch=main&label=&logo=renovatebot&style=for-the-badge&color=blue)](https://github.com/joryirving/joryirving/actions/workflows/scheduled-renovate.yaml)
 
 </div>
@@ -85,12 +85,12 @@ This Git repository contains the following directories under [Kubernetes](./kube
 
 ```sh
 📁 kubernetes
-├── 📁 pi                 # pi cluster
+├── 📁 main               # main cluster
 │   ├── 📁 apps           # applications
 │   ├── 📁 bootstrap      # bootstrap procedures
 │   ├── 📁 flux           # core flux configuration
 │   └── 📁 templates      # re-useable components
-└── 📁 teyvat             # teyvat cluster
+└── 📁 pi                 # pi cluster
     ├── 📁 apps           # applications
     ├── 📁 bootstrap      # bootstrap procedures
     ├── 📁 flux           # core flux configuration
@@ -147,19 +147,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 ## 🔧 Hardware
 
-### Pi Kubernetes Cluster
-
-| Name    | Device        | CPU        | OS Disk   | RAM | OS     | Purpose           |
-|---------|---------------|------------|-----------|-----|--------|-------------------|
-| Jingliu | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
-| Kafka   | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
-| Himeko  | Raspberry Pi4 | Cortex A72 | 256GB SSD | 8GB | Debian | k8s control-plane |
-| Bronya  | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s worker        |
-
-Total CPU: 16 threads
-Total RAM: 32GB
-
-### Teyvat Kubernetes Cluster
+### Main Kubernetes Cluster
 
 | Name  | Device         | CPU       | OS Disk   | Data Disk | RAM  | OS    | Purpose           |
 |-------|----------------|-----------|-----------|-----------|------|-------|-------------------|
@@ -173,12 +161,25 @@ Total RAM: 32GB
 Total CPU: 76 threads
 Total RAM: 336GB
 
+### Pi Kubernetes Cluster
+
+| Name    | Device        | CPU        | OS Disk   | RAM | OS     | Purpose           |
+|---------|---------------|------------|-----------|-----|--------|-------------------|
+| Jingliu | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
+| Kafka   | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
+| Himeko  | Raspberry Pi4 | Cortex A72 | 256GB SSD | 8GB | Debian | k8s control-plane |
+| Bronya  | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s worker        |
+
+Total CPU: 16 threads
+Total RAM: 32GB
+
 ### Supporting Hardware
 
-| Name  | Device         | CPU        | OS Disk   | Data Disk | RAM   | OS       | Purpose               |
-|-------|----------------|------------|-----------|-----------|-------|----------|-----------------------|
-| NAS   | HP z820        | 2x E5-2680 | 32GB USB  | ZFS 56TB  | 128GB | Unraid   | NAS/NFS/Backup        |
-| Amber | Raspberry P43  | Cortex A72 | 120GB mSD | -         | 4GB   | Raspbian | Wireguard/MeshCentral |
+| Name  | Device         | CPU           | OS Disk      | Data Disk | RAM   | OS       | Purpose               |
+|-------|----------------|---------------|--------------|-----------|-------|----------|-----------------------|
+| NAS   | HP z820        | 2x E5-2680    | 32GB USB     | ZFS 56TB  | 128GB | Unraid   | NAS/NFS/Backup        |
+| Amber | Raspberry Pi4  | Cortex A72    | 120GB mSD    | -         | 4GB   | Raspbian | Wireguard/MeshCentral |
+| Mika  | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | -         | 16GB  | Debian   | Omni (test)           |
 
 ### Networking/UPS Hardware
 

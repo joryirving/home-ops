@@ -8,16 +8,16 @@ tasks:
     cmds:
       - bws secret edit 700d272e-0e47-4ecb-853b-b101004459c8 --value "$(kubectl config view --flatten)"
       - bws secret edit 1c493889-1e30-4156-a937-b10100433300 --value "$(kubectl config view --flatten | base64)"
-      - task: push-teyvat
+      - task: push-main
       - task: push-pi
     preconditions:
       - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
 
-  push-teyvat:
-    desc: Push Teyvat kubeconfig/talosconfig to Secrets Manager
+  push-main:
+    desc: Push main kubeconfig/talosconfig to Secrets Manager
     cmds:
-      - bws secret edit a0934c41-ae5d-410d-9d9f-b12601502428 --value "$(cat {{.KUBERNETES_DIR}}/teyvat/kubeconfig)"
-      - bws secret edit 7022c46d-537a-4c93-9366-b12601503c07 --value "$(cat {{.KUBERNETES_DIR}}/teyvat/bootstrap/talos/clusterconfig/talosconfig)"
+      - bws secret edit a0934c41-ae5d-410d-9d9f-b12601502428 --value "$(cat {{.KUBERNETES_DIR}}/main/kubeconfig)"
+      - bws secret edit 7022c46d-537a-4c93-9366-b12601503c07 --value "$(cat {{.KUBERNETES_DIR}}/main/bootstrap/talos/clusterconfig/talosconfig)"
     preconditions:
       - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
 
@@ -34,9 +34,9 @@ tasks:
       - mkdir -p ~/.kube
       - mkdir -p ~/.talos
       - bws secret get 700d272e-0e47-4ecb-853b-b101004459c8 | jq -r '.value' > ~/.kube/config # Generic kubeconfig
-      - bws secret get a0934c41-ae5d-410d-9d9f-b12601502428 | jq -r '.value' > {{.KUBERNETES_DIR}}/teyvat/kubeconfig # Teyvat kubeconfig
-      - bws secret get 7022c46d-537a-4c93-9366-b12601503c07 | jq -r '.value' > {{.KUBERNETES_DIR}}/teyvat/bootstrap/talos/clusterconfig/talosconfig # Teyvat talosconfig
-      - bws secret get 7022c46d-537a-4c93-9366-b12601503c07 | jq -r '.value' > ~/.talos/config # Teyvat talosconfig
+      - bws secret get a0934c41-ae5d-410d-9d9f-b12601502428 | jq -r '.value' > {{.KUBERNETES_DIR}}/main/kubeconfig # Main kubeconfig
+      - bws secret get 7022c46d-537a-4c93-9366-b12601503c07 | jq -r '.value' > {{.KUBERNETES_DIR}}/main/bootstrap/talos/clusterconfig/talosconfig # Main talosconfig
+      - bws secret get 7022c46d-537a-4c93-9366-b12601503c07 | jq -r '.value' > ~/.talos/config # Main talosconfig
       - bws secret get bf0c9041-3997-42be-8c6a-b12601503135 | jq -r '.value' > {{.KUBERNETES_DIR}}/pi/kubeconfig # Pi kubeconfig
     preconditions:
       - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
