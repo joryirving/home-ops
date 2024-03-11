@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -9,12 +9,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -22,21 +21,19 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-  uninstall:
-    keepHistory: false
   dependsOn:
     - name: rook-ceph-cluster
       namespace: rook-ceph
   values:
     controllers:
-      main:
+      plex-meta-manager:
         type: cronjob
         annotations:
           reloader.stakater.com/auto: "true"
         cronjob:
           schedule: 0 6 * * *
         containers:
-          main:
+          app:
             image:
               repository: meisnate12/plex-meta-manager
               tag: v1.20.0
@@ -58,15 +55,10 @@ spec:
             runAsGroup: 568
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
-    service:
-      main:
-        enabled: false
     persistence:
       config:
-        enabled: true
         existingClaim: *app
       config-file:
-        enabled: true
         type: secret
         name: plex-meta-manager-secret
         globalMounts:
@@ -74,7 +66,6 @@ spec:
             subPath: config.yml
             readOnly: true
       config-prerolls:
-        enabled: true
         type: configMap
         name: pmm-prerolls
         globalMounts:
@@ -82,7 +73,6 @@ spec:
             subPath: Pre-rolls.yml
             readOnly: true
       scripts:
-        enabled: true
         type: configMap
         name: pmm-scripts
         defaultMode: 0775

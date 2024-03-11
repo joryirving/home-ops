@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -9,12 +9,11 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
@@ -22,8 +21,6 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-  uninstall:
-    keepHistory: false
   dependsOn:
     - name: intel-device-plugin-gpu
       namespace: kube-tools
@@ -33,13 +30,13 @@ spec:
       namespace: storage
   values:
     controllers:
-      main:
+      plex:
         labels:
           nfsMount: "true"
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/joryirving/plex
               tag: 1.40.0.7998-c29d4c0c8@sha256:f1af525aac22006c5b32d40766995f3000e7a3fbf0fe527f77006780513423b1
@@ -83,7 +80,8 @@ spec:
             fsGroupChangePolicy: OnRootMismatch
             supplementalGroups: [44, 10000, 109]
     service:
-      main:
+      app:
+        controller: *app
         type: LoadBalancer
         annotations:
           io.cilium/lb-ipam-ips: ${SVC_PLEX_ADDR}
@@ -91,8 +89,7 @@ spec:
           http:
             port: 32400
     ingress:
-      main:
-        enabled: true
+      app:
         className: external
         annotations:
           gethomepage.dev/enabled: "true"
@@ -110,14 +107,13 @@ spec:
             paths:
               - path: /
                 service:
-                  name: main
+                  identifier: app
                   port: http
         tls:
           - hosts:
               - *host
     persistence:
       config:
-        enabled: true
         existingClaim: *app
       # Separate PVC for cache to avoid backing up cache files
       plex-cache:
@@ -129,7 +125,6 @@ spec:
       transcode:
         type: emptyDir
       media:
-        enabled: true
         type: nfs
         server: ${NAS_IP:=temp}
         path: ${SECRET_NFS_DATA:=temp}

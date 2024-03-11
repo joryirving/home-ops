@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -20,8 +20,7 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-  uninstall:
-    keepHistory: false
+      strategy: uninstall
   dependsOn:
   - name: rook-ceph-cluster
     namespace: rook-ceph
@@ -29,11 +28,11 @@ spec:
     namespace: storage
   values:
     controllers:
-      main:
+      palworld:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/jammsen/docker-palworld-dedicated-server
               tag: master@sha256:efe60e9d4f246394b59723090875ed1a468745a2eb8f1ea0652cb43e943d68ef
@@ -102,7 +101,8 @@ spec:
         #     fsGroup: 1000
         #     fsGroupChangePolicy: OnRootMismatch
     service:
-      main:
+      app:
+        controller: *app
         type: LoadBalancer
         annotations:
           io.cilium/lb-ipam-ips: "${SVC_PALWORLD_ADDR}"
@@ -115,8 +115,14 @@ spec:
           rcon:
             port: *rcon-port
     serviceMonitor:
-      main:
-        enabled: true
+      app:
+        serviceName: *app
+        endpoints:
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 10s
     ingress:
       main:
         enabled: false #nginx doesn't support non-https
@@ -128,20 +134,17 @@ spec:
           paths:
           - path: /
             service:
-              name: main
+              identifier: app
               port: game
         tls:
         - hosts:
           - *host
     persistence:
       config:
-        enabled: true
         existingClaim: *app
         globalMounts:
         - path: /palworld
       cache:
-        config:
-        enabled: true
         existingClaim: palworld-cache
         globalMounts:
           - path: /palworld/Pal/Binaries
