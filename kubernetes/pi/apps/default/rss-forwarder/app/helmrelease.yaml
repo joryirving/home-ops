@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       interval: 30m
       sourceRef:
         kind: HelmRepository
@@ -22,11 +22,11 @@ spec:
       retries: 5
   values:
     controllers:
-      main:
+      rss-forwarder:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/morphy2k/rss-forwarder
               tag: 0.7.0-beta.3@sha256:51391a60196d5c07f97b4efa59743bc08fe87302047869553fa49bda900fb8a8
@@ -42,13 +42,8 @@ spec:
                 cpu: 5m
               limits:
                 memory: 128M
-    service:
-      main: *disabled
-    ingress:
-      main: *disabled
     persistence:
       config:
-        enabled: true
         type: secret
         name: rss-forwarder
         globalMounts:

@@ -1,14 +1,14 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: bitwarden-secrets-manager
+  name: &app bitwarden-secrets-manager
 spec:
   interval: 5m
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -25,12 +25,12 @@ spec:
     keepHistory: false
   values:
     controllers:
-      main:
+      bitwarden-secrets-manager:
         strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/ripplefcl/bws-cache
               tag: 1.0.0@sha256:84f278595e2e32ba79727ed620e218381c36351137f5c4d5b7b8e0303a00e128
@@ -74,7 +74,8 @@ spec:
               limits:
                 memory: 100Mi
     service:
-      main:
+      app:
+        controller: *app
         ports:
           http:
             port: 5000

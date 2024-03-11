@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.0.1/charts/library/common/values.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 2.6.0
+      version: 3.0.1
       interval: 30m
       sourceRef:
         kind: HelmRepository
@@ -22,12 +22,12 @@ spec:
       retries: 5
   values:
     controllers:
-      main:
+      free-game-notifier:
         type: cronjob
         cronjob:
           schedule: '0 10 * 1-11 THU'
         containers: &container
-          main:
+          app:
             image:
               repository: ghcr.io/joryirving/free-game-notifier
               tag: 1.2.0@sha256:8ef7781d2991484c82b0103ea07e34e4bb27301b4bafffa12c6048d875728ed3
@@ -52,8 +52,3 @@ spec:
         cronjob:
           schedule: '0 10 1-3 1 *'
         containers: *container
-    service:
-      main: &disabled
-        enabled: false
-    ingress:
-      main: *disabled
