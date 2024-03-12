@@ -21,6 +21,10 @@
         k3s_server_manifests_templates: []
         k3s_server_manifests_urls: []
 
+    - name: Prevent downgrades
+      when: k3s_installed.stat.exists
+      ansible.builtin.include_tasks: tasks/version-check.yaml
+
     - name: Install Kubernetes
       ansible.builtin.include_role:
         name: xanmanning.k3s
@@ -48,9 +52,8 @@
         wait_timeout: 360
       loop:
         - { name: cilium, kind: HelmChart, namespace: kube-system }
+        - { name: kube-vip, kind: DaemonSet, namespace: kube-system }
         - { name: coredns, kind: HelmChart, namespace: kube-system }
-        - { name: policy, kind: CiliumL2AnnouncementPolicy }
-        - { name: pool, kind: CiliumLoadBalancerIPPool }
 
     - name: Coredns
       when: k3s_primary_control_node
