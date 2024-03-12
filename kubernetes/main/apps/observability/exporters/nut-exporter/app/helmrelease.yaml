@@ -24,7 +24,7 @@ spec:
   values:
     fullnameOverride: *app
     controllers:
-      mnut-exporterain:
+      nut-exporter:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -37,6 +37,13 @@ spec:
             args:
               # the first time I set this, the first and last entries were ignored, so I have doubled them.
               - --nut.vars_enable="battery.charge,battery.charge,battery.runtime,battery.voltage,battery.voltage.nominal,input.voltage,input.voltage.nominal,output.voltage,output.voltage.nominal,ups.realpower,ups.load,ups.status,ups.status"
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
             resources:
               limits:
                 cpu: 50m
@@ -51,12 +58,3 @@ spec:
             port: 9199
         annotations:
           external-dns.alpha.kubernetes.io/hostname: "exporters.${CLUSTER_DOMAIN}"
-    serviceMonitor:
-      app:
-        serviceName: *app
-        endpoints:
-          - port: metrics
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
