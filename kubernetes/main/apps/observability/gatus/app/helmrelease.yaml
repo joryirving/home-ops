@@ -33,14 +33,14 @@ spec:
               repository: ghcr.io/kiwigrid/k8s-sidecar
               tag: 1.26.1
               pullPolicy: IfNotPresent
-            env:
+            env: &configSyncEnv
               FOLDER: /config
               LABEL: gatus.io/enabled
               NAMESPACE: ALL
               RESOURCE: both
               UNIQUE_FILENAMES: true
               METHOD: LIST
-            resources: &configSyncResources
+            resources: &resources
               requests:
                 cpu: 10m
                 memory: 10Mi
@@ -53,28 +53,37 @@ spec:
               repository: ghcr.io/twin/gatus
               tag: latest@sha256:7b51ab732fa3a4a0e1f9023272e2b5bf69982be879ac5047028b7f9d4b571fff
             env:
-              TZ: ${TIMEZONE}
+              TZ: ${TIMEZONE:=temp}
               GATUS_CONFIG_PATH: /config
               CUSTOM_WEB_PORT: &port 80
             envFrom:
             - secretRef:
                 name: gatus-secret
-            resources:
-              requests:
-                cpu: 10m
-                memory: 256M
-              limits:
-                memory: 512M
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources: *resources
           config-sync:
             image: *configSyncImage
             env:
-              FOLDER: /config
-              LABEL: gatus.io/enabled
-              NAMESPACE: ALL
-              RESOURCE: both
-              UNIQUE_FILENAMES: true
+              <<: *configSyncEnv
               METHOD: WATCH
-            resources: *configSyncResources
+            securityContext: *securityContext
+            resources: *resources
         pod:
           securityContext:
             runAsUser: 568
