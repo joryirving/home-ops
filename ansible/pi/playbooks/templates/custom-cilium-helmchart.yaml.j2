@@ -9,7 +9,7 @@ spec:
   # renovate: datasource=helm
   repo: https://helm.cilium.io/
   chart: cilium
-  version: 1.15.0-rc.1
+  version: 1.15.1
   targetNamespace: kube-system
   bootstrap: true
   valuesContent: |-
@@ -17,7 +17,7 @@ spec:
     bpf:
       masquerade: true
     cluster:
-      name: home-cluster
+      name: pi
       id: 1
     containerRuntime:
       integration: containerd
@@ -35,10 +35,6 @@ spec:
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
     l2announcements:
       enabled: true
-      # https://github.com/cilium/cilium/issues/26586
-      leaseDuration: 120s
-      leaseRenewDeadline: 60s
-      leaseRetryPeriod: 1s
     loadBalancer:
       algorithm: maglev
       mode: dsr

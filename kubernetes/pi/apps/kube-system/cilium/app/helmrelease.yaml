@@ -30,8 +30,13 @@ spec:
       bbr: true
     bpf:
       masquerade: true
+      tproxy: true
+    cgroup:
+      automount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
     cluster:
-      name: kubernetes
+      name: pi
       id: 1
     containerRuntime:
       integration: containerd
@@ -67,8 +72,6 @@ spec:
         ingress:
           enabled: true
           className: internal
-          annotations:
-            hajimari.io/icon: simple-icons:cilium
           hosts:
             - &host hubble.${SECRET_DOMAIN}
           tls:
@@ -83,9 +86,6 @@ spec:
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
     l2announcements:
       enabled: true
-      leaseDuration: 120s
-      leaseRenewDeadline: 60s
-      leaseRetryPeriod: 1s
     loadBalancer:
       algorithm: maglev
       mode: dsr
@@ -111,6 +111,4 @@ spec:
       annotations:
         grafana_folder: Cilium
     rollOutCiliumPods: true
-    securityContext:
-      privileged: true
     routingMode: native
