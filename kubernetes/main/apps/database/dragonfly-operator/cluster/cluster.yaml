@@ -4,11 +4,24 @@ kind: Dragonfly
 metadata:
   name: dragonfly
 spec:
+  image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.15.1
   replicas: 6
   resources:
     requests:
-      cpu: 500m
-      memory: 500Mi
+      cpu: 100m
+      memory: 128Mi
     limits:
-      cpu: 600m
-      memory: 750Mi
+      cpu: 500m
+      memory: 1280Mi
+  args:
+    - "--maxmemory=1128Mi"
+    - "--proactor_threads=4"
+    - "--cluster_mode=emulated"
+  snapshot:
+    cron: "* * * * *"
+    persistentVolumeClaimSpec:
+      storageClassName: local-hostpath
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
