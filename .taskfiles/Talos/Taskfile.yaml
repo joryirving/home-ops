@@ -3,9 +3,9 @@
 version: "3"
 
 vars:
-  TALOS_DIR: "{{.KUBERNETES_DIR}}/main/bootstrap/talos"
-  TALHELPER_SECRET_FILE: "{{.TALOS_DIR}}/talsecret.sops.yaml"
-  TALHELPER_CONFIG_FILE: "{{.TALOS_DIR}}/talconfig.yaml"
+  TALOS_DIR: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos"
+  TALHELPER_SECRET_FILE: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talsecret.sops.yaml"
+  TALHELPER_CONFIG_FILE: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml"
   KUBECONFIG_FILE: "{{.KUBERNETES_DIR}}/main/kubeconfig"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
   TALOS_VERSION: v1.6.6
@@ -14,25 +14,25 @@ vars:
   KUBERNETES_VERSION: v1.29.2
 
 env:
-  TALOSCONFIG: "{{.TALOS_DIR}}/clusterconfig/talosconfig"
+  TALOSCONFIG: "{{.KUBERNETES_DIR}}/{{.cluster}}//bootstrap/talos//clusterconfig/talosconfig"
 
 tasks:
 
   bootstrap:
     desc: Bootstrap the Talos cluster
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}//bootstrap/talos/"
     cmds:
-      - task: bootstrap-gensecret
-      - task: bootstrap-genconfig
+      - task: gensecret
+      - task: genconfig
       - task: bootstrap-apply
       - task: bootstrap-install
       - task: fetch-kubeconfig
       - task: bootstrap-apps
       - talosctl health --server=false
 
-  bootstrap-gensecret:
+  gensecret:
     desc: Generate the Talos secrets
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
       - talhelper gensecret > {{.TALHELPER_SECRET_FILE}}
       - task: :sops:.encrypt-file
@@ -43,23 +43,23 @@ tasks:
     status:
       - test -f "{{.TALHELPER_SECRET_FILE}}"
 
-  bootstrap-genconfig:
+  genconfig:
     desc: Generate the Talos configs
-    dir: "{{.TALOS_DIR}}"
-    cmd: talhelper genconfig
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
+    cmd: talhelper genconfig  -s {{.TALHELPER_SECRET_FILE}}
     preconditions:
       - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
 
   bootstrap-apply:
     desc: Apply the Talos config on a node
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand apply --extra-flags=--insecure | bash
     preconditions:
       - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
 
   bootstrap-install:
     desc: Install the Talos cluster
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
       - echo "Installing Talos... ignore the errors and be patient"
       - until talhelper gencommand bootstrap | bash; do sleep 10; done
@@ -69,7 +69,7 @@ tasks:
 
   bootstrap-apps:
     desc: Bootstrap core apps needed for Talos
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
       - until kubectl --kubeconfig {{.KUBECONFIG_FILE}} wait --for=condition=Ready=False nodes --all --timeout=600s; do sleep 10; done
       - helmfile --file ./apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
@@ -79,51 +79,83 @@ tasks:
 
   update-genconfig:
     desc: Generate the Talos configs
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper genconfig -s {{.TALHELPER_SECRET_FILE}}
     preconditions:
       - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
 
-  apply-config:
-    desc: Apply the Talos config on a node
-    dir: "{{.TALOS_DIR}}"
+  apply-rollout:
+    desc: Apply the Talos config on all nodes
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand apply | bash
     preconditions:
       - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
 
-  upgrade-talos:
-    desc: Upgrade talos on a node
-    cmd: talosctl --nodes {{.node}} upgrade --image ghcr.io/siderolabs/installer:{{.TALOS_VERSION}} --preserve=true --reboot-mode=default
-    requires:
-      vars: ["node"]
-    preconditions:
-      - { msg: "Node not found", sh: "talosctl --nodes {{.node}} get machineconfig" }
-
   upgrade-k8s:
-    desc: Upgrade k8s on a node
-    cmd: talosctl --nodes {{.node}} upgrade-k8s --to {{.KUBERNETES_VERSION}}
+    desc: Upgrade the clusters k8s version
+    cmd: talosctl --context {{.cluster}} --nodes {{.controller}} upgrade-k8s --to {{.KUBERNETES_VERSION}}
+    vars:
+      controller:
+        sh: talosctl --context {{.cluster}} config info --output json | jq --raw-output '.endpoints[0]'
     requires:
-      vars: ["node"]
+      vars: ["cluster"]
     preconditions:
-      - { msg: "Node not found", sh: "talosctl --nodes {{.node}} get machineconfig" }
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talosconfig
+      - talosctl --context {{.cluster}} config info >/dev/null 2>&1
+      - talosctl --context {{.cluster}} --nodes {{.node}} get machineconfig >/dev/null 2>&1
 
   fetch-kubeconfig:
     desc: Generate talos kubeconfig
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: until talhelper gencommand kubeconfig --extra-flags "--force --force-context-name main {{.KUBERNETES_DIR}}/main" | bash; do sleep 10; done
 
   soft-nuke:
     desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
     prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand reset --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
 
   hard-nuke:
     desc: Resets nodes back completely and reboots them
     prompt: This will destroy your cluster and reset the nodes... continue?
-    dir: "{{.TALOS_DIR}}"
+    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand reset --extra-flags "--reboot --graceful=false --wait=false" | bash
 
   .reset:
     internal: true
-    cmd: rm -rf {{.TALOS_DIR}}
+    cmd: rm -rf {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/
+
+  upgrade-rollout:
+    desc: Rollout Talos upgrade on all nodes
+    cmds:
+      - flux --context {{.cluster}} suspend kustomization --all
+      - for: { var: nodes }
+        task: upgrade
+        vars:
+          cluster: "{{.cluster}}"
+          node: "{{.ITEM}}"
+          rollout: "true"
+      - flux --context {{.cluster}} resume kustomization --all
+      - task: :kubernetes:delete-failed-pods
+        vars:
+          cluster: "{{.cluster}}"
+    vars:
+      nodes:
+        sh: talosctl --context {{.cluster}} config info --output json | jq --join-output '[.nodes[]] | join(" ")'
+    requires:
+      vars: ["cluster"]
+    preconditions:
+      - test -f {{.TALOS_DIR }}/talosconfig
+      - talosctl --context {{.cluster}} config info >/dev/null 2>&1
+
+  upgrade:
+    desc: Upgrade Talos on a node
+    cmd: bash {{.TALOS_SCRIPTS_DIR}}/upgrade.sh "{{.cluster}}" "{{.node}}" "{{.TALOS_SCHEMATIC_ID}}:{{.TALOS_VERSION}}" "{{.rollout}}"
+    vars:
+      rollout: '{{.rollout | default "false"}}'
+    requires:
+      vars: ["cluster", "node"]
+    preconditions:
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/talosconfig
+      - talosctl --context {{.cluster}} config info >/dev/null 2>&1
+      - talosctl --context {{.cluster}} --nodes {{.node}} get machineconfig >/dev/null 2>&1
