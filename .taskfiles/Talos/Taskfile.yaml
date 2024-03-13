@@ -77,6 +77,20 @@ tasks:
     preconditions:
       - { msg: "Missing kubeconfig", sh: "test -f {{.KUBECONFIG_FILE}}" }
 
+  update-genconfig:
+    desc: Generate the Talos configs
+    dir: "{{.TALOS_DIR}}"
+    cmd: talhelper genconfig -s {{.TALHELPER_SECRET_FILE}}
+    preconditions:
+      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+
+  apply-config:
+    desc: Apply the Talos config on a node
+    dir: "{{.TALOS_DIR}}"
+    cmd: talhelper gencommand apply | bash
+    preconditions:
+      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+
   upgrade-talos:
     desc: Upgrade talos on a node
     cmd: talosctl --nodes {{.node}} upgrade --image ghcr.io/siderolabs/installer:{{.TALOS_VERSION}} --preserve=true --reboot-mode=default
