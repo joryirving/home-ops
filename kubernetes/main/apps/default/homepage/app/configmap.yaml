@@ -61,6 +61,7 @@ data:
               accountid: {{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNTID}}
               tunnelid: {{HOMEPAGE_VAR_CLOUDFLARED_TUNNELID}}
               key: {{HOMEPAGE_VAR_CLOUDFLARED_API_TOKEN}}
+              fields: ["status"]
         - Healthchecks:
             href: https://healthchecks.io/
             icon: healthchecks.png
@@ -78,15 +79,15 @@ data:
               type: nextdns
               profile: {{HOMEPAGE_VAR_NEXTDNS_ID}}
               key: {{HOMEPAGE_VAR_NEXTDNS_API}}
-        - Unifi:
-            href: https://unifi.ui.com
-            icon: unifi.png
-            description: Unifi Dashboard
-            widget:
-              type: unifi
-              url: https://192.168.1.1:443
-              username: {{HOMEPAGE_VAR_UNIFI_USERNAME}}
-              password: {{HOMEPAGE_VAR_UNIFI_PASSWORD}}
+        # - Unifi:
+        #     href: https://unifi.ui.com
+        #     icon: unifi.png
+        #     description: Unifi Dashboard
+        #     widget:
+        #       type: unifi
+        #       url: https://192.168.1.1:443
+        #       username: {{HOMEPAGE_VAR_UNIFI_USERNAME}}
+        #       password: {{HOMEPAGE_VAR_UNIFI_PASSWORD}}
     - Calendar:
         - Agenda:
             widget:
@@ -124,16 +125,22 @@ data:
   settings.yaml: |
     title: Dashboard
     favicon: https://github.com/walkxcode/dashboard-icons/blob/main/png/heimdall.png
+    useEqualHeights: true
     theme: dark
     background:
-      image: https://raw.githubusercontent.com/smbonn2005/homeops/main/icons/moon.jpg
-      opacity: 50
+      image: https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/assets/101518784_p0.jpg
+      opacity: 20
     color: slate
     headerStyle: clean
+    quicklaunch:
+      searchDescriptions: true
+      hideInternetSearch: true
+      showSearchSuggestions: true
+      hideVisitURL: true
     layout:
       Network:
         style: row
-        columns: 4
+        columns: 3
         icon: mdi-network
       Games:
         style: row
@@ -151,7 +158,7 @@ data:
         icon: mdi-book
       Infrastructure:
         style: row
-        columns: 4
+        columns: 5
         icon: mdi-server
       Observability:
         style: row
@@ -178,7 +185,6 @@ data:
     - kubernetes:
         cluster:
           cpu: true
-          label: cluster
           memory: true
           show: true
           showLabel: true
@@ -196,6 +202,10 @@ data:
     - datetime:
         text_size: l
         format:
-          dateStyle: long
           timeStyle: short
+          dateStyle: short
           hourCycle: h23
+    - unifi_console:
+        url: https://192.168.1.1:443
+        username: {{HOMEPAGE_VAR_UNIFI_USERNAME}}
+        password: {{HOMEPAGE_VAR_UNIFI_PASSWORD}}
