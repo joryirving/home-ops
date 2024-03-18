@@ -47,3 +47,14 @@ spec:
         ports:
           metrics:
             port: 9798
+    serviceMonitor:
+      app:
+        serviceName: *app
+        endpoints:
+          - port: metrics
+            metricRelabelings:
+              - action: labeldrop
+                regex: (pod)
+              - action: replace
+                sourceLabels: ["service"]
+                targetLabel: instance
