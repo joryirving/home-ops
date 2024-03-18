@@ -58,14 +58,3 @@ spec:
             port: 9199
         annotations:
           external-dns.alpha.kubernetes.io/hostname: "exporters.${CLUSTER_DOMAIN}"
-    serviceMonitor:
-      app:
-        serviceName: *app
-        endpoints:
-          - port: metrics
-            metricRelabelings:
-              - action: labeldrop
-                regex: (pod)
-              - action: replace
-                sourceLabels: ["service"]
-                targetLabel: instance
