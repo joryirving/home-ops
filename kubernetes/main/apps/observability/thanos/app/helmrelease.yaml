@@ -28,6 +28,8 @@ spec:
   dependsOn:
     - name: openebs
       namespace: storage
+    - name: dragonfly-operator
+      namespace: database
     - name: rook-ceph-cluster
       namespace: rook-ceph
   valuesFrom:
@@ -63,6 +65,11 @@ spec:
     queryFrontend:
       enabled: true
       replicaCount: 2
+      config: &config |-
+        type: REDIS
+        config:
+          addr: dragonfly.database.svc.cluster.local:6379
+          db: 2
       ingress:
         enabled: true
         ingressClassName: internal
@@ -97,6 +104,7 @@ spec:
     storegateway:
       enabled: true
       replicaCount: 2
+      config: *config
       persistence:
         enabled: true
         storageClass: local-hostpath
