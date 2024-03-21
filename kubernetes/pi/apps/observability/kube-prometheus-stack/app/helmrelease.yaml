@@ -115,8 +115,7 @@ spec:
             - action: replace
               regex: (.*)
               replacement: $1
-              sourceLabels:
-                - __meta_kubernetes_pod_node_name
+              sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: kubernetes_node
     prometheus:
       thanosService:
@@ -137,8 +136,7 @@ spec:
         hosts:
           - &host prometheus.${SECRET_DOMAIN}
         tls:
-          - hosts:
-              - *host
+                    - hosts: [*host]
       prometheusSpec:
         scrapeInterval: 1m # Must match interval in Grafana Helm chart
         enableAdminAPI: true
@@ -148,8 +146,7 @@ spec:
           - new-service-discovery-manager
         additionalAlertManagerConfigs:
           - static_configs:
-              - targets:
-                  - alertmanager.${PRIMARY_DOMAIN}
+              - targets: ["alertmanager.${PRIMARY_DOMAIN}"]
         image:
           registry: quay.io
           repository: prometheus/prometheus
