@@ -200,13 +200,14 @@ spec:
                 requests:
                   storage: 20Gi
         additionalScrapeConfigs:
-          - job_name: node-exporter
+          - job_name: NAS
             scrape_interval: 1m
             scrape_timeout: 10s
             honor_timestamps: true
             static_configs:
               - targets:
                   - ${NAS_IP}:9100
+                  - ${NAS_IP}:9633
         thanos:
           image: quay.io/thanos/thanos:v0.34.1
           objectStorageConfig:
