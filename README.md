@@ -177,7 +177,8 @@ Total RAM: 32GB
 
 | Name  | Device         | CPU           | OS Disk      | Data Disk | RAM   | OS       | Purpose               |
 |-------|----------------|---------------|--------------|-----------|-------|----------|-----------------------|
-| NAS   | HP z820        | 2x E5-2680    | 32GB USB     | ZFS 56TB  | 128GB | Unraid   | NAS/NFS/Backup        |
+| NAS   | HP z820        | E5-2680v2     | 32GB USB     | -         | 128GB | Unraid   | NAS/NFS/Backup        |
+| DAS   | Lenovo SA120   | -             | -            | 72TB      | -     | -        | DAS w/ Parity         |
 | Amber | Raspberry Pi4  | Cortex A72    | 120GB mSD    | -         | 4GB   | Raspbian | Wireguard/MeshCentral |
 | Mika  | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | -         | 16GB  | Debian   | Omni (test)           |
 
@@ -189,8 +190,7 @@ Total RAM: 32GB
 | Unifi UDM Base        | Router                           |
 | Netgear GS324P        | 24 Port PoE Switch - Network     |
 | Tripp Lite 1500       | UPS - Server Rack                |
-| Brocade ICX6610-48-PE | 48 Port PoE Switch - Server Rack |
-| YuanLey YS25-0801P    | 9 Port PoE 2.5G Switch           |
+| YuanLey YS25-0801P    | 9 Port PoE 2.5G Switch - Rack    |
 
 ---
 
