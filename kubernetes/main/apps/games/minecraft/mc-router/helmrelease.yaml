@@ -5,7 +5,7 @@ kind: HelmRelease
 metadata:
   name: mc-router
 spec:
-  interval: 5m
+  interval: 30m
   chart:
     spec:
       chart: mc-router
@@ -14,13 +14,13 @@ spec:
         kind: HelmRepository
         name: itzg-charts
         namespace: flux-system
-      interval: 5m
   install:
-    createNamespace: true
     remediation:
       retries: 3
   upgrade:
+    cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
   values:
     services:

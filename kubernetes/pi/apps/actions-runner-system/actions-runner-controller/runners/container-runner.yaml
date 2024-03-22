@@ -14,16 +14,14 @@ spec:
         kind: HelmRepository
         name: actions-runner-controller
         namespace: flux-system
-  maxHistory: 2
   install:
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
     runnerScaleSetName: arc-runner-set-containers-arm64
     githubConfigUrl: https://github.com/joryirving/containers

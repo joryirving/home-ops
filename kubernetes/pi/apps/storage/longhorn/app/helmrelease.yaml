@@ -14,16 +14,14 @@ spec:
         kind: HelmRepository
         name: longhorn
         namespace: flux-system
-  maxHistory: 3
   install:
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
     defaultSettings:
       # backupTarget: s3://longhorn@ca-west-1/

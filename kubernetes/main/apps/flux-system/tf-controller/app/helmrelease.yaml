@@ -14,7 +14,14 @@ spec:
         kind: HelmRepository
         name: tf-controller
         namespace: flux-system
-      interval: 30m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
   values:
     metrics:
       enabled: true
