@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://lds-schemas.pages.dev/upgrade.cattle.io/plan_v1.json
 apiVersion: upgrade.cattle.io/v1
 kind: Plan
 metadata:
@@ -11,13 +12,13 @@ spec:
   cordon: true
   nodeSelector:
     matchExpressions:
-      - { key: node-role.kubernetes.io/control-plane, operator: Exists }
+      - {key: node-role.kubernetes.io/control-plane, operator: Exists}
   tolerations:
-    - { effect: NoSchedule, operator: Exists }
-    - { effect: NoExecute, operator: Exists }
-    - { key: node-role.kubernetes.io/control-plane, effect: NoSchedule, operator: Exists }
-    - { key: node-role.kubernetes.io/master, effect: NoSchedule, operator: Exists }
-    - { key: node-role.kubernetes.io/etcd, effect: NoExecute, operator: Exists }
-    - { key: CriticalAddonsOnly, operator: Exists }
+    - {effect: NoSchedule, operator: Exists}
+    - {effect: NoExecute, operator: Exists}
+    - {key: node-role.kubernetes.io/control-plane, effect: NoSchedule, operator: Exists}
+    - {key: node-role.kubernetes.io/master, effect: NoSchedule, operator: Exists}
+    - {key: node-role.kubernetes.io/etcd, effect: NoExecute, operator: Exists}
+    - {key: CriticalAddonsOnly, operator: Exists}
   upgrade:
     image: rancher/k3s-upgrade
