@@ -30,32 +30,31 @@ spec:
           reloader.stakater.com/auto: "true"
         initContainers:
           init-config:
-            image: &configSyncImage
+            image:
               repository: ghcr.io/kiwigrid/k8s-sidecar
-              tag: 1.26.1
-              pullPolicy: IfNotPresent
-            env: &configSyncEnv
+              tag: 1.26.1@sha256:b8d5067137fec093cf48670dc3a1dbb38f9e734f3a6683015c2e89a45db5fd16
+            env:
               FOLDER: /config
               LABEL: gatus.io/enabled
               NAMESPACE: ALL
               RESOURCE: both
               UNIQUE_FILENAMES: true
-              METHOD: LIST
+              METHOD: WATCH
+            restartPolicy: Always
             resources: &resources
               requests:
                 cpu: 10m
-                memory: 10Mi
               limits:
-                memory: 128Mi
+                memory: 256Mi
         containers:
           app:
             image:
-              # TODO: move to semver once available
               repository: ghcr.io/twin/gatus
-              tag: v5.8.0
+              tag: v5.8.0@sha256:fecb4c38722df59f5e00ab4fcf2393d9b8dad9161db208d8d79386dc86da8a55
             env:
               TZ: ${TIMEZONE}
               GATUS_CONFIG_PATH: /config
+              GATUS_DELAY_START_SECONDS: 5
               CUSTOM_WEB_PORT: &port 80
             envFrom:
             - secretRef:
@@ -73,22 +72,19 @@ spec:
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
-            securityContext: &securityContext
+            securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
             resources: *resources
-          config-sync:
-            image: *configSyncImage
-            env:
-              <<: *configSyncEnv
-              METHOD: WATCH
-            securityContext: *securityContext
-            resources: *resources
         pod:
+          dnsConfig:
+            options:
+              - { name: ndots, value: "1" }
           securityContext:
             runAsUser: 568
             runAsGroup: 568
+            runAsNonRoot: true
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
           topologySpreadConstraints:
@@ -132,15 +128,14 @@ spec:
           gethomepage.dev/widget.url: http://gatus.observability
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-        - host: &host status.${SECRET_DOMAIN}
-          paths:
-          - path: /
-            service:
-              identifier: app
-              port: http
+          - host: &host status.${SECRET_DOMAIN}
+            paths:
+            - path: /
+              service:
+                identifier: app
+                port: http
         tls:
-        - hosts:
-          - *host
+          - hosts: [*host]
     serviceAccount:
       create: true
       name: *app
@@ -151,6 +146,6 @@ spec:
         type: configMap
         name: gatus-configmap
         globalMounts:
-        - path: /config/config.yaml
-          subPath: config.yaml
-          readOnly: true
+          - path: /config/config.yaml
+            subPath: config.yaml
+            readOnly: true

@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
@@ -29,41 +28,9 @@ spec:
           reloader.stakater.com/auto: "true"
         initContainers:
           init-config:
-            image: &configSyncImage
-              repository: ghcr.io/kiwigrid/k8s-sidecar
-              tag: 1.26.1
-              pullPolicy: IfNotPresent
-            env:
-              FOLDER: /config
-              LABEL: gatus.io/enabled
-              NAMESPACE: ALL
-              RESOURCE: both
-              UNIQUE_FILENAMES: true
-              METHOD: LIST
-            resources: &configSyncResources
-              requests:
-                cpu: 10m
-                memory: 10Mi
-              limits:
-                memory: 128Mi
-        containers:
-          app:
             image:
-              # TODO: move to semver once available
-              repository: ghcr.io/twin/gatus
-              tag: v5.8.0
-            env:
-              TZ: ${TIMEZONE}
-              GATUS_CONFIG_PATH: /config
-              CUSTOM_WEB_PORT: &port 80
-            resources:
-              requests:
-                cpu: 10m
-                memory: 256M
-              limits:
-                memory: 512M
-          config-sync:
-            image: *configSyncImage
+              repository: ghcr.io/kiwigrid/k8s-sidecar
+              tag: 1.26.1@sha256:b8d5067137fec093cf48670dc3a1dbb38f9e734f3a6683015c2e89a45db5fd16
             env:
               FOLDER: /config
               LABEL: gatus.io/enabled
@@ -71,11 +38,48 @@ spec:
               RESOURCE: both
               UNIQUE_FILENAMES: true
               METHOD: WATCH
-            resources: *configSyncResources
+            restartPolicy: Always
+            resources: &resources
+              requests:
+                cpu: 10m
+              limits:
+                memory: 256Mi
+        containers:
+          app:
+            image:
+              repository: ghcr.io/twin/gatus
+              tag: v5.8.0@sha256:fecb4c38722df59f5e00ab4fcf2393d9b8dad9161db208d8d79386dc86da8a55
+            env:
+              TZ: ${TIMEZONE}
+              GATUS_CONFIG_PATH: /config
+              GATUS_DELAY_START_SECONDS: 15
+              CUSTOM_WEB_PORT: &port 80
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources: *resources
         pod:
+          dnsConfig:
+            options:
+              - { name: ndots, value: "1" }
           securityContext:
             runAsUser: 568
             runAsGroup: 568
+            runAsNonRoot: true
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
     service:
@@ -93,14 +97,16 @@ spec:
             path: /metrics
             interval: 1m
             scrapeTimeout: 10s
+            metricRelabelings:
+              - action: labeldrop
+                regex: (pod)
+              - action: replace
+                sourceLabels: ["service"]
+                targetLabel: instance
     ingress:
       app:
         className: external
         annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/group: Observability
-          gethomepage.dev/name: Gatus
-          gethomepage.dev/icon: gatus.png
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
           - host: &host status.${SECRET_DOMAIN}
