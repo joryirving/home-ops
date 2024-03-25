@@ -20,10 +20,12 @@ releases:
     chart: coredns/coredns
     version: 1.29.0
     values: ["../../../apps/kube-system/coredns/app/helm-values.yaml"]
+    needs: ["cilium"]
     wait: true
   - name: kubelet-csr-approver
     namespace: kube-system
     chart: postfinance/kubelet-csr-approver
     version: 1.0.7
     values: ["../../../apps/kube-system/kubelet-csr-approver/app/helm-values.yaml"]
+    needs: ["cilium", "coredns"]
     wait: true
