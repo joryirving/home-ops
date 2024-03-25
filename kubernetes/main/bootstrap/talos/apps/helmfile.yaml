@@ -29,3 +29,10 @@ releases:
     values: ["../../../apps/kube-system/kubelet-csr-approver/app/helm-values.yaml"]
     needs: ["cilium", "coredns"]
     wait: true
+  - name: spegel
+    namespace: kube-system
+    chart: oci://ghcr.io/xenitab/helm-charts/spegel
+    version: v0.0.18
+    values: ["../../../apps/kube-tools/spegel/app/helm-values.yaml"]
+    needs: ["cilium", "coredns", "kubelet-csr-approver"]
+    wait: true
