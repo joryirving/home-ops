@@ -1,0 +1,127 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2beta2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app home-assistant
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.0.4
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  dependsOn:
+    - name: longhorn
+      namespace: storage
+    - name: volsync
+      namespace: storage
+  values:
+    controllers:
+      home-assistant:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/home-assistant
+              tag: 2024.3.3@sha256:19b35d21d78264eb5a29daa2ff898eb0507d4f227f7293fd6d2e37f5fddf03d8
+            env:
+              TZ: ${TIMEZONE}
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 50m
+                memory: 400Mi
+              limits:
+                memory: 700Mi
+          codeserver:
+            image:
+              repository: ghcr.io/coder/code-server
+              tag: 4.22.1
+            env:
+              TZ: ${TIMEZONE}
+            args:
+              - "/config"
+              - --auth
+              - "none"
+              - --user-data-dir
+              - "/config/.vscode"
+              - --extensions-dir
+              - "/config/.vscode"
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        controller: *app
+        nameOverride: *app
+        type: LoadBalancer
+        annotations:
+          io.cilium/lb-ipam-ips: ${SVC_HOME_ASSISTANT_ADDR}
+        ports:
+          http:
+            port: 8123
+      codeserver:
+        controller: *app
+        type: ClusterIP
+        ports:
+          http:
+            enabled: true
+            port: 8080
+    ingress:
+      app:
+        className: external
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/group: Home
+          gethomepage.dev/name: Home-Assistant
+          gethomepage.dev/icon: home-assistant.png
+          gethomepage.dev/description: Home Automation Software
+          gethomepage.dev/widget.type: homeassistant
+          gethomepage.dev/widget.url: http://home-assistant.default:8123
+          gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_HASS_TOKEN}}"
+          external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
+        hosts:
+          - host: &host hass.${SECRET_DOMAIN}
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+        tls:
+          - hosts: [*host]
+      codeserver:
+        className: internal
+        hosts:
+          - host: &host hass-code.${SECRET_DOMAIN}
+            paths:
+            - path: /
+              service:
+                identifier: codeserver
+                port: http
+        tls:
+          - hosts: [*host]
+    persistence:
+      config:
+        existingClaim: *app
