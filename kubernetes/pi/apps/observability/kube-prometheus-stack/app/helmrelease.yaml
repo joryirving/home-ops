@@ -173,7 +173,7 @@ spec:
                 requests:
                   storage: 20Gi
         additionalScrapeConfigs:
-          - job_name: kube-vip
+          - job_name: &jobName kube-vip
             scrape_interval: 1m
             scrape_timeout: 10s
             honor_timestamps: true
@@ -183,6 +183,10 @@ spec:
                   - 192.168.3.11:2112
                   - 192.168.3.12:2112
                   - 192.168.3.13:2112
+            relabelings:
+              - action: replace
+                targetLabel: job
+                replacement: *jobName
         thanos:
           image: quay.io/thanos/thanos:v0.34.1
           objectStorageConfig:
