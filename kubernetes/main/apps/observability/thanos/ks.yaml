@@ -11,13 +11,14 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
+    - name: dragonfly-cluster
     - name: external-secrets-bitwarden-secrets-manager
   path: ./kubernetes/main/apps/observability/thanos/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  wait: true
+  wait: false
   interval: 30m
   retryInterval: 1m
-  timeout: 5m
+  timeout: 15m
