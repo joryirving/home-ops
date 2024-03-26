@@ -136,6 +136,9 @@ spec:
         tls:
                     - hosts: [*host]
       prometheusSpec:
+        podMetadata:
+          annotations:
+            secret.reloader.stakater.com/reload: &secret thanos-objstore-config
         scrapeInterval: 1m # Must match interval in Grafana Helm chart
         enableAdminAPI: true
         enableFeatures:
@@ -188,9 +191,10 @@ spec:
             #     targetLabel: job
             #     replacement: *jobName
         thanos:
-          image: quay.io/thanos/thanos:v0.34.1
+          image: "quay.io/thanos/thanos:${THANOS_VERSION}"
+          version: "${THANOS_VERSION#v}"
           objectStorageConfig:
             existingSecret:
-              name: thanos-objstore-config
+              name: *secret
               key: config
     cleanPrometheusOperatorObjectNames: true
