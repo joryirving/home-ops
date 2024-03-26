@@ -214,9 +214,10 @@ spec:
             #     targetLabel: job
             #     replacement: *jobName
         thanos:
-          image: quay.io/thanos/thanos:v0.34.1
+          image: quay.io/thanos/thanos:${THANOS_VERSION}
+          version: "${THANOS_VERSION#v}"
           objectStorageConfig:
             existingSecret:
-              name: thanos-objstore-secret
-              key: objstore.yml
+              name: thanos-objstore-config
+              key: config
     cleanPrometheusOperatorObjectNames: true
