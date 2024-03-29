@@ -25,13 +25,13 @@ spec:
   values:
     controllers:
       echo-server:
-        replicas: 1
+        replicas: 2
         strategy: RollingUpdate
         containers:
           app:
             image:
-              repository: ghcr.io/mendhak/http-https-echo
-              tag: 32
+              repository: docker.io/jmalloc/echo-server
+              tag: 0.3.6
             env:
               HTTP_PORT: &port 8080
               LOG_WITHOUT_NEWLINE: true
@@ -43,7 +43,7 @@ spec:
                 custom: true
                 spec:
                   httpGet:
-                    path: /healthz
+                    path: /health
                     port: *port
                   initialDelaySeconds: 0
                   periodSeconds: 10
@@ -52,12 +52,6 @@ spec:
               readiness: *probes
               startup:
                 enabled: false
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-              seccompProfile:
-                type: RuntimeDefault
             resources:
               requests:
                 cpu: 10m
@@ -65,9 +59,8 @@ spec:
                 memory: 64Mi
         pod:
           securityContext:
-            runAsUser: 65534
-            runAsGroup: 65534
-            runAsNonRoot: true
+            runAsUser: 568
+            runAsGroup: 568
           topologySpreadConstraints:
             - maxSkew: 1
               topologyKey: kubernetes.io/hostname
