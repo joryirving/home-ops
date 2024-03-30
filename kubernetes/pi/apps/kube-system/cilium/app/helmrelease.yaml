@@ -22,8 +22,6 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
     autoDirectNodeRoutes: true
     bandwidthManager:
@@ -31,9 +29,16 @@ spec:
       bbr: true
     bpf:
       masquerade: true
+    cgroup:
+      automount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
     cluster:
+      id: 2
       name: pi
-      id: 1
+    cni:
+      binPath: /var/lib/rancher/k3s/data/current/bin
+      confPath: /var/lib/rancher/k3s/agent/etc/cni/net.d
     containerRuntime:
       integration: containerd
       socketPath: /var/run/k3s/containerd/containerd.sock
@@ -71,13 +76,12 @@ spec:
           hosts:
             - &host hubble.${SECRET_DOMAIN}
           tls:
-            - hosts:
-                - *host
+            - hosts: [*host]
     ipam:
       mode: kubernetes
     ipv4NativeRoutingCIDR: "${CLUSTER_CIDR}"
-    k8sServiceHost: "${KUBE_VIP_ADDR}"
-    k8sServicePort: 6443
+    k8sServiceHost: 127.0.0.1
+    k8sServicePort: 6444
     kubeProxyReplacement: true
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
     l2announcements:
@@ -87,8 +91,8 @@ spec:
       mode: dsr
     localRedirectPolicy: true
     operator:
-      replicas: 1
       rollOutPods: true
+      replicas: 1
       prometheus:
         enabled: true
         serviceMonitor:
@@ -107,6 +111,22 @@ spec:
       annotations:
         grafana_folder: Cilium
     rollOutCiliumPods: true
-    securityContext:
-      privileged: true
     routingMode: native
+    securityContext:
+      capabilities:
+        ciliumAgent:
+          - CHOWN
+          - KILL
+          - NET_ADMIN
+          - NET_RAW
+          - IPC_LOCK
+          - SYS_ADMIN
+          - SYS_RESOURCE
+          - DAC_OVERRIDE
+          - FOWNER
+          - SETGID
+          - SETUID
+        cleanCiliumState:
+          - NET_ADMIN
+          - SYS_ADMIN
+          - SYS_RESOURCE
