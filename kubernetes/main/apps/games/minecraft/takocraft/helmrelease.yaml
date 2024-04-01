@@ -35,7 +35,7 @@ spec:
       tag: java17
     resources:
       requests:
-        cpu: 500m
+        cpu: 1000m
       limits:
         memory: 8Gi
     securityContext:
@@ -43,10 +43,28 @@ spec:
       fsGroup: *uid
     livenessProbe:
       enabled: false
+      command:
+        - echo
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      failureThreshold: 20
+      successThreshold: 1
+      timeoutSeconds: 1
     readinessProbe:
       enabled: false
+      command:
+        - echo
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      failureThreshold: 20
+      successThreshold: 1
+      timeoutSeconds: 1
     startupProbe:
+      command:
+        - echo
       enabled: false
+      failureThreshold: 30
+      periodSeconds: 10
     extraEnv:
       TZ: ${TIMEZONE}
       ENABLE_AUTOPAUSE: TRUE # Doesn't work in Kubes
