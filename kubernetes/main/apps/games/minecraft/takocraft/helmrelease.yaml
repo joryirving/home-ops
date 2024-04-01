@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=https://lds-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: &app minecraft-takocraft
+spec:
+  interval: 30m
+  chart:
+    spec:
+      # renovate: registryUrl=https://itzg.github.io/minecraft-server-charts/
+      chart: minecraft
+      version: 4.15.0
+      sourceRef:
+        kind: HelmRepository
+        name: itzg-charts
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  dependsOn:
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: volsync
+    namespace: storage
+  values:
+    deploymentAnnotations:
+      secret.reloader.stakater.com/reload: minecraft-takocraft-secret, minecraft-takocraft-discord-secret
+    image:
+      repository: ghcr.io/itzg/minecraft-server
+      tag: java17
+    resources:
+      requests:
+        cpu: 500m
+      limits:
+        memory: 8Gi
+    securityContext:
+      runAsUser: &uid 568
+      fsGroup: *uid
+    livenessProbe:
+      enabled: false
+    readinessProbe:
+      enabled: false
+    startupProbe:
+      enabled: false
+    extraEnv:
+      TZ: ${TIMEZONE}
+      ENABLE_AUTOPAUSE: FALSE # Doesn't work in Kubes
+    persistence:
+      dataDir:
+        enabled: true
+        existingClaim: *app
+      config-file:
+        enabled: true
+        type: secret
+        name: takocraft-discord-secret
+        globalMounts:
+        - path: /data/plugins/DiscordSRV/config.yml
+          subPath: config.yml
+          readOnly: true
+    serviceAnnotations:
+      mc-router.itzg.me/externalServerName: "takocraft.${SECONDARY_DOMAIN}" ## Manual DNS management
+    minecraftServer:
+      eula: true
+      version: 1.20.4
+      type: SPIGOT
+      forceReDownload: true
+      jvmXXOpts: "-XX:MaxRAMPercentage=75"
+      memory: 8192M
+      difficulty: normal
+      spawnProtection: 0
+      maxTickTime: -1
+      gameMode: survival
+      pvp: false
+      onlineMode: false
+      #whitelist: "LilDrunkenSmurf"
+      ops: "LilDrunkenSmurf"
+      motd: "Takocraft. Come hang out and Vibe"
+      worldSaveName: takocraft
+      viewDistance: 12
+      spigetResources:
+      - 36618 #Prom Exporter
+      - 18494 #DiscordSRV
+      rcon:
+        enabled: true
+        serviceType: ClusterIP
+      serviceType: ClusterIP
+      extraPorts:
+      - name: metrics
+        containerPort: 9225
+        protocol: TCP
+        service:
+          enabled: true
+          embedded: false
+          type: ClusterIP
+          port: 9225
+        ingress:
+          enabled: false
+      - name: map
+        containerPort: 8123
+        protocol: TCP
+        service:
+          enabled: true
+          embedded: false
+          type: ClusterIP
+          port: 8123
+        ingress:
+          enabled: true
+          ingressClassName: internal
+          annotations:
+            gethomepage.dev/enabled: "true"
+            gethomepage.dev/icon: minecraft.png
+            gethomepage.dev/name: Takocraft
+            gethomepage.dev/group: Games
+            gethomepage.dev/description: Takocraft Server
+            gethomepage.dev/widget.type: minecraft
+            gethomepage.dev/widget.url: udp://minecraft-takocraft-minecraft.games:25565
+          hosts:
+          - name: &host "takocraft.${SECRET_DOMAIN}"
+            path: /
+          tls:
+          - secretName: *host
+            hosts:
+            - *host
+  valuesFrom:
+  - kind: Secret
+    name: minecraft-takocraft-secret
+    valuesKey: RCON_PASSWORD
+    targetPath: minecraftServer.rcon.password
