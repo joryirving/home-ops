@@ -49,32 +49,22 @@ spec:
       enabled: false
     extraEnv:
       TZ: ${TIMEZONE}
-      ENABLE_AUTOPAUSE: FALSE # Doesn't work in Kubes
+      ENABLE_AUTOPAUSE: TRUE # Doesn't work in Kubes
     persistence:
       dataDir:
         enabled: true
         existingClaim: *app
-      config-file:
-        enabled: true
-        type: secret
-        name: takocraft-discord-secret
-        globalMounts:
-        - path: /data/plugins/DiscordSRV/config.yml
-          subPath: config.yml
-          readOnly: true
     serviceAnnotations:
       mc-router.itzg.me/externalServerName: takocraft.${SECONDARY_DOMAIN}
     minecraftServer:
       eula: true
       version: LATEST
       type: SPIGOT
-      forceReDownload: true
       overrideServerProperties: true
       jvmXXOpts: "-XX:MaxRAMPercentage=75"
       memory: 8192M
       difficulty: normal
       spawnProtection: 0
-      maxTickTime: -1
       gameMode: survival
       pvp: false
       onlineMode: true
@@ -88,8 +78,6 @@ spec:
       - 18494 #DiscordSRV
       rcon:
         enabled: true
-        serviceType: ClusterIP
-      serviceType: ClusterIP
       extraPorts:
       - name: metrics
         containerPort: 9225
@@ -97,36 +85,9 @@ spec:
         service:
           enabled: true
           embedded: false
-          type: ClusterIP
           port: 9225
         ingress:
           enabled: false
-      - name: map
-        containerPort: 8123
-        protocol: TCP
-        service:
-          enabled: true
-          embedded: false
-          type: ClusterIP
-          port: 8123
-        ingress:
-          enabled: true
-          ingressClassName: internal
-          annotations:
-            gethomepage.dev/enabled: "true"
-            gethomepage.dev/icon: minecraft.png
-            gethomepage.dev/name: Takocraft
-            gethomepage.dev/group: Games
-            gethomepage.dev/description: Takocraft Server
-            gethomepage.dev/widget.type: minecraft
-            gethomepage.dev/widget.url: udp://minecraft-takocraft-minecraft.games:25565
-          hosts:
-          - name: &host "takocraft.${SECRET_DOMAIN}"
-            path: /
-          tls:
-          - secretName: *host
-            hosts:
-            - *host
   valuesFrom:
   - kind: Secret
     name: minecraft-takocraft-secret
