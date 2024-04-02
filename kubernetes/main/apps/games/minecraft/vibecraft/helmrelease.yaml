@@ -81,7 +81,7 @@ spec:
       #     subPath: config.yml
       #     readOnly: true
     serviceAnnotations:
-      mc-router.itzg.me/externalServerName: vibecraft.${SECONDARY_DOMAIN},vibecraft.${SECRET_DOMAIN}
+      mc-router.itzg.me/externalServerName: vibecraft.${SECONDARY_DOMAIN}
     minecraftServer:
       eula: true
       version: LATEST
@@ -111,32 +111,10 @@ spec:
         service:
           enabled: true
           embedded: false
-          port: 9225
-      - name: map
-        containerPort: 8123
-        protocol: TCP
-        service:
-          enabled: true
-          embedded: false
           type: ClusterIP
-          port: 8123
+          port: 9225
         ingress:
-          enabled: true
-          ingressClassName: internal
-          annotations:
-            gethomepage.dev/enabled: "true"
-            gethomepage.dev/icon: minecraft.png
-            gethomepage.dev/name: Vibecraft
-            gethomepage.dev/group: Games
-            gethomepage.dev/description: Vibecraft Server
-            gethomepage.dev/widget.type: minecraft
-            gethomepage.dev/widget.url: udp://minecraft-vibecraft-minecraft.games:25565
-            external-dns.alpha.kubernetes.io/target: ipv4.${SECONDARY_DOMAIN}
-          hosts:
-          - name: &host "vibecraft.${SECRET_DOMAIN}"
-            path: /
-          tls:
-            - hosts: [*host]
+          enabled: false
   valuesFrom:
   - kind: Secret
     name: minecraft-vibecraft-secret
