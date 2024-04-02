@@ -35,7 +35,7 @@ spec:
       tag: java17@sha256:7945975f0592086f6382aefb2b913dcab78fa1e665665101c4e455d4c02a343e
     resources:
       requests:
-        cpu: 1000m
+        cpu: 500m
       limits:
         memory: 8Gi
     securityContext:
@@ -104,8 +104,31 @@ spec:
           enabled: true
           embedded: false
           port: 9225
+      - name: map
+        containerPort: 8123
+        protocol: TCP
+        service:
+          enabled: true
+          embedded: false
+          type: ClusterIP
+          port: 8123
         ingress:
-          enabled: false
+          enabled: true
+          ingressClassName: internal
+          annotations:
+            gethomepage.dev/enabled: "true"
+            gethomepage.dev/icon: minecraft.png
+            gethomepage.dev/name: Takocraft
+            gethomepage.dev/group: Games
+            gethomepage.dev/description: Takocraft Server
+            gethomepage.dev/widget.type: minecraft
+            gethomepage.dev/widget.url: udp://minecraft-takocraft-minecraft.games:25565
+            external-dns.alpha.kubernetes.io/target: ipv4.${SECONDARY_DOMAIN}
+          hosts:
+          - name: &host "takocraft.${SECRET_DOMAIN}"
+            path: /
+          tls:
+            - hosts: [*host]
   valuesFrom:
   - kind: Secret
     name: minecraft-takocraft-secret

@@ -32,7 +32,7 @@ spec:
       secret.reloader.stakater.com/reload: minecraft-vibecraft-secret, minecraft-vibecraft-discord-secret
     image:
       repository: ghcr.io/itzg/minecraft-server
-      tag: java17
+      tag: java17@sha256:7945975f0592086f6382aefb2b913dcab78fa1e665665101c4e455d4c02a343e
     resources:
       requests:
         cpu: 500m
@@ -43,38 +43,54 @@ spec:
       fsGroup: *uid
     livenessProbe:
       enabled: false
+      command:
+        - echo
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      failureThreshold: 20
+      successThreshold: 1
+      timeoutSeconds: 1
     readinessProbe:
       enabled: false
+      command:
+        - echo
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      failureThreshold: 20
+      successThreshold: 1
+      timeoutSeconds: 1
     startupProbe:
+      command:
+        - echo
       enabled: false
+      failureThreshold: 30
+      periodSeconds: 10
     extraEnv:
       TZ: ${TIMEZONE}
-      ENABLE_AUTOPAUSE: FALSE # Doesn't work in Kubes
+      ENABLE_AUTOPAUSE: TRUE # Doesn't work in Kubes
     persistence:
       dataDir:
         enabled: true
         existingClaim: *app
-      config-file:
-        enabled: true
-        type: secret
-        name: vibecraft-discord-secret
-        globalMounts:
-        - path: /data/plugins/DiscordSRV/config.yml
-          subPath: config.yml
-          readOnly: true
+      # config-file:
+      #   enabled: true
+      #   type: secret
+      #   name: vibecraft-discord-secret
+      #   globalMounts:
+      #   - path: /data/plugins/DiscordSRV/config.yml
+      #     subPath: config.yml
+      #     readOnly: true
     serviceAnnotations:
-      mc-router.itzg.me/externalServerName: "vibecraft.${SECONDARY_DOMAIN}" ## Manual DNS management
+      mc-router.itzg.me/externalServerName: vibecraft.${SECONDARY_DOMAIN},vibecraft.${SECRET_DOMAIN}
     minecraftServer:
       eula: true
       version: LATEST
       type: SPIGOT
-      forceReDownload: true
       overrideServerProperties: true
       jvmXXOpts: "-XX:MaxRAMPercentage=75"
       memory: 8192M
       difficulty: normal
       spawnProtection: 0
-      maxTickTime: -1
       gameMode: survival
       pvp: false
       onlineMode: true
@@ -88,8 +104,6 @@ spec:
       - 18494 #DiscordSRV
       rcon:
         enabled: true
-        serviceType: ClusterIP
-      serviceType: ClusterIP
       extraPorts:
       - name: metrics
         containerPort: 9225
@@ -97,10 +111,7 @@ spec:
         service:
           enabled: true
           embedded: false
-          type: ClusterIP
           port: 9225
-        ingress:
-          enabled: false
       - name: map
         containerPort: 8123
         protocol: TCP
@@ -120,13 +131,12 @@ spec:
             gethomepage.dev/description: Vibecraft Server
             gethomepage.dev/widget.type: minecraft
             gethomepage.dev/widget.url: udp://minecraft-vibecraft-minecraft.games:25565
+            external-dns.alpha.kubernetes.io/target: ipv4.${SECONDARY_DOMAIN}
           hosts:
           - name: &host "vibecraft.${SECRET_DOMAIN}"
             path: /
           tls:
-          - secretName: *host
-            hosts:
-            - *host
+            - hosts: [*host]
   valuesFrom:
   - kind: Secret
     name: minecraft-vibecraft-secret
