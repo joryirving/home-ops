@@ -72,8 +72,6 @@ spec:
       dataDir:
         enabled: true
         existingClaim: *app
-    serviceAnnotations:
-      mc-router.itzg.me/externalServerName: takocraft.${SECONDARY_DOMAIN}
     minecraftServer:
       eula: true
       version: LATEST
@@ -91,6 +89,10 @@ spec:
       motd: "Takocraft. Come hang out and Vibe"
       worldSaveName: takocraft
       viewDistance: 12
+      serviceAnnotations:
+        mc-router.itzg.me/externalServerName: takocraft.${SECONDARY_DOMAIN}
+        io.cilium/lb-ipam-ips: ${SVC_TAKOCRAFT_ADDR}
+      serviceType: LoadBalancer
       spigetResources:
       - 36618 #Prom Exporter
       - 18494 #DiscordSRV
