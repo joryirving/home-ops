@@ -23,7 +23,6 @@ spec:
       strategy: rollback
       retries: 3
   values:
-    replicas: 2
     kind: Deployment
     deschedulerPolicyAPIVersion: descheduler/v1alpha2
     deschedulerPolicy:
@@ -59,7 +58,7 @@ spec:
                 targetThresholds:
                   cpu: 75
                   memory: 75
-                  pods: 80
+                  pods: 50
           plugins:
             balance:
               enabled:
@@ -73,6 +72,4 @@ spec:
     service:
       enabled: true
     serviceMonitor:
-      enabled: true
-    leaderElection:
       enabled: true
