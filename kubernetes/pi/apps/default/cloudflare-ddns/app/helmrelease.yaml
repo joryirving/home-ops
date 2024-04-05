@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: free-game-notifier
+  name: cloudflare-ddns
 spec:
   interval: 30m
   chart:
@@ -24,36 +24,28 @@ spec:
       retries: 3
   values:
     controllers:
-      free-game-notifier:
+      cloudflare-ddns:
         type: cronjob
         cronjob:
-          schedule: '0 10 * 1-11 THU'
+          schedule: "@hourly"
           successfulJobsHistory: 0
         containers: &container
           app:
             image:
-              repository: ghcr.io/joryirving/free-game-notifier
-              tag: 1.2.0@sha256:6844938732d483bed3702e1606e26dab2d5a9eadab6a0cc62bbd810c7cf64ebc
-            env:
-              TZ: ${TIMEZONE}
-              SEND_UPCOMING: false
-            envFrom:
-              - secretRef:
-                  name: free-game-notifier
+              repository: ghcr.io/onedr0p/kubernetes-kubectl
+              tag: 1.29.2@sha256:6324f99979877f3ded7647f4efa4df6d73f11bb9d8302dc81ab4a5d38e406867
+            command: ["/app/cloudflare-ddns.sh"]
             resources:
               requests:
                 cpu: 5m
               limits:
-                memory: 128M
-      dec:
-        type: cronjob
-        cronjob:
-          schedule: '0 10 13-31 12 *'
-          successfulJobsHistory: 0
-        containers: *container
-      jan:
-        type: cronjob
-        cronjob:
-          schedule: '0 10 1-3 1 *'
-          successfulJobsHistory: 0
-        containers: *container
+                memory: 16Mi
+    persistence:
+      config:
+        type: secret
+        name: cloudflare-ddns-secret
+        defaultMode: 0775
+        globalMounts:
+          - path: /app/cloudflare-ddns.sh
+            subPath: cloudflare-ddns.sh
+            readOnly: true

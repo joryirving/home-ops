@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app mosquitto
+  name: &app cloudflare-ddns
   namespace: flux-system
 spec:
   targetNamespace: default
@@ -12,15 +12,12 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: external-secrets-stores
-  path: ./kubernetes/pi/apps/default/mosquitto/app
+  path: ./kubernetes/pi/apps/default/cloudflare-ddns/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  wait: false # no flux ks dependents
+  wait: false
   interval: 30m
   retryInterval: 1m
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
