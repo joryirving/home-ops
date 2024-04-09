@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app tf-controller
+  name: &app tofu-controller
   namespace: flux-system
 spec:
   targetNamespace: flux-system
@@ -12,7 +12,7 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: external-secrets-stores
-  path: ./kubernetes/main/apps/flux-system/tf-controller/app
+  path: ./kubernetes/main/apps/flux-system/tofu-controller/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -26,7 +26,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app tf-controller-terraforms
+  name: &app tofu-controller-terraforms
   namespace: flux-system
 spec:
   targetNamespace: flux-system
@@ -34,8 +34,8 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: tf-controller
-  path: ./kubernetes/main/apps/flux-system/tf-controller/terraform
+    - name: tofu-controller
+  path: ./kubernetes/main/apps/flux-system/tofu-controller/terraform
   prune: true
   sourceRef:
     kind: GitRepository
