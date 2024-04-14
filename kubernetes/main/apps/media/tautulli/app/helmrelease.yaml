@@ -35,10 +35,16 @@ spec:
         containers:
           app:
             image:
-              repository:  ghcr.io/joryirving/tautulli
-              tag: 2.13.4@sha256:1619f40c718cec26116ddeb016aacc197df5fd678da4f6d1999c109d8c785811
+              repository: ghcr.io/tautulli/tautulli
+              tag: v2.13.4@sha256:fb5e22c7a4d9e770703a30d145f355786fecb28dfca6df56c5073c457f3c8a8e
             env:
               TZ: ${TIMEZONE}
+            command: ["/usr/local/bin/python", "Tautulli.py"]
+            args: [
+              "--config", "/config/config.ini",
+              "--datadir", "/config",
+              "--port", "80"
+            ]
             resources:
               requests:
                 cpu: 20m
@@ -56,7 +62,7 @@ spec:
         controller: *app
         ports:
           http:
-            port: 8181
+            port: 80
     ingress:
       app:
         className: external
