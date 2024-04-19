@@ -137,6 +137,28 @@ resource "authentik_application" "grafana_application" {
   policy_engine_mode = "all"
 }
 
+## Kyoo ##
+resource "authentik_provider_oauth2" "kyoo_oauth2" {
+  name                  = "kyoo"
+  client_id             = var.kyoo_id
+  client_secret         = var.kyoo_secret
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  property_mappings     = data.authentik_scope_mapping.oauth2.ids
+  access_token_validity = "hours=4"
+  redirect_uris         = ["https://kyoo.${var.cluster_domain}/api/auth/logged/authentik"]
+}
+
+resource "authentik_application" "kyoo_application" {
+  name               = "kyoo"
+  slug               = authentik_provider_oauth2.kyoo_oauth2.name
+  protocol_provider  = authentik_provider_oauth2.kyoo_oauth2.id
+  group              = authentik_group.monitoring.name
+  open_in_new_tab    = true
+  meta_icon          = "hhttps://raw.githubusercontent.com/zoriya/Kyoo/blob/master/icons/icon-256x256.png"
+  meta_launch_url    = "https://kyoo.${var.cluster_domain}"
+  policy_engine_mode = "all"
+}
+
 ## LubeLog ##
 resource "authentik_provider_oauth2" "lubelog_oauth2" {
   name                  = "lubelog"
