@@ -25,7 +25,6 @@ spec:
   values:
     controllers:
       back:
-        replicas: 1
         strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
@@ -43,14 +42,14 @@ spec:
               repository: ghcr.io/zoriya/kyoo_back
               tag: master@sha256:e0e4384cb861b6f7eeb5a9c206bfb4b291d562c9287812a0add95fe5c2056daa
             env:
-              TRANSCODER_URL: http://kyoo-transcoder.media.svc:7666
-              MEILI_HOST: http://kyoo-meilisearch.media.svc:7700
+              TRANSCODER_URL: http://kyoo-transcoder.media.svc.cluster.local:7666
+              MEILI_HOST: http://kyoo-meilisearch.media.svc.cluster.local:7700
               OIDC_AUTHENTIK_NAME: Authentik
-              OIDC_AUTHENTIK_LOGO: https://sso.${SECRET_DOMAIN}/static/dist/assets/icons/icon_left_brand.svg
-              OIDC_AUTHENTIK_AUTHORIZATION: https://sso.${SECRET_DOMAIN}/api/oidc/authorization
-              OIDC_AUTHENTIK_TOKEN: https://sso.${SECRET_DOMAIN}/api/oidc/token
-              OIDC_AUTHENTIK_PROFILE: https://sso.${SECRET_DOMAIN}/api/oidc/userinfo
-              OIDC_AUTHENTIK_SCOPE: "openid profile groups email"
+              OIDC_AUTHENTIK_LOGO: https://sso.${SECRET_DOMAIN}/static/dist/assets/icons/icon.png
+              OIDC_AUTHENTIK_AUTHORIZATION: https://sso.${SECRET_DOMAIN}/application/o/authorize/
+              OIDC_AUTHENTIK_TOKEN: https://sso.${SECRET_DOMAIN}/application/o/token/
+              OIDC_AUTHENTIK_PROFILE: https://sso.${SECRET_DOMAIN}/application/o/userinfo/
+              OIDC_AUTHENTIK_SCOPE: openid email profile
             envFrom: &envFrom
               - secretRef:
                   name: kyoo-secret
@@ -59,20 +58,21 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 512Mi
+                memory: 1Gi
               limits:
-                memory: 5Gi
+                memory: 8Gi
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
         pod: &pod
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
+            runAsUser: 568
+            runAsGroup: 568
             runAsNonRoot: true
-            fsGroup: 1000
+            fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
+            supplementalGroups: [44, 10000, 109]
       front:
         replicas: 2
         strategy: RollingUpdate
@@ -84,7 +84,7 @@ spec:
               repository: ghcr.io/zoriya/kyoo_front
               tag: master@sha256:6e06c78a5e0a9e95936d0af9990a9036888aca23b2894f398e8b118540e40bc9
             env: &env
-              KYOO_URL: http://kyoo-back.media.svc:5000
+              KYOO_URL: http://kyoo-back.media.svc.cluster.local:5000
             resources:
               requests:
                 cpu: 5m
@@ -103,13 +103,12 @@ spec:
               tag: master@sha256:037faf7e4cef05b56aaf04b488e45562e1c8652be2d6a807ed58ecd5f3c9919e
             args: ["scanner"]
             env:
-              KYOO_URL: http://kyoo-back.media.svc:5000
-              SCANNER_LIBRARY_ROOT: /media
+              KYOO_URL: http://kyoo-back.media.svc.cluster.local:5000
+              SCANNER_LIBRARY_ROOT: &library /data
             envFrom: *envFrom
             resources:
               requests:
                 cpu: 5m
-                memory: 356Mi
               limits:
                 memory: 1Gi
             securityContext: *securityContext
@@ -130,9 +129,8 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 356Mi
               limits:
-                memory: 356Mi
+                memory: 400Mi
             securityContext: *securityContext
         pod: *pod
       autosync:
@@ -147,7 +145,6 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 100Mi
               limits:
                 memory: 100Mi
             securityContext: *securityContext
@@ -171,9 +168,8 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 356Mi
               limits:
-                memory: 356Mi
+                memory: 400Mi
             securityContext: *securityContext
         pod: *pod
       rabbitmq:
@@ -196,12 +192,10 @@ spec:
             resources:
               requests:
                 cpu: 5m
-                memory: 300Mi
               limits:
                 memory: 300Mi
             securityContext: *securityContext
         pod: *pod
-
       transcoder:
         annotations:
           reloader.stakater.com/auto: "true"
@@ -219,22 +213,21 @@ spec:
                   name: kyoo-config
             resources:
               requests:
-                gpu.intel.com/i915: 1
                 cpu: 10m
-                memory: 356Mi
               limits:
                 gpu.intel.com/i915: 1
-                memory: 356Mi
+                memory: 400Mi
             securityContext: *securityContext
         pod:
           nodeSelector:
             intel.feature.node.kubernetes.io/gpu: "true"
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            fsGroup: 1000
+            runAsUser: 568
+            runAsGroup: 568
+            runAsNonRoot: true
+            fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
-            supplementalGroups: [44, 105]
+            supplementalGroups: [44, 10000, 109]
     service:
       back:
         controller: back
@@ -267,8 +260,8 @@ spec:
         annotations:
           nginx.ingress.kubernetes.io/configuration-snippet: |
             rewrite /api/(.*) /$1 break;
-          nignx.ingress.kubernetes.io/force-ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/proxy-body-size: "0"
+        #   nignx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        #   nginx.ingress.kubernetes.io/proxy-body-size: "0"
         hosts:
           - host: &host kyoo.${SECRET_DOMAIN}
             paths:
@@ -315,7 +308,6 @@ spec:
         server: ${NAS_IP:=temp}
         path: ${SECRET_NFS_DATA:=temp}
         globalMounts:
-          - path: /data
+          - path: *library
             subPath: media
             readOnly: true
-

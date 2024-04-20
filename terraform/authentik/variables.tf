@@ -35,6 +35,18 @@ variable "grafana_secret" {
   sensitive   = true
 }
 
+variable "kyoo_id" {
+  type        = string
+  description = "Kyoo Client ID"
+  sensitive   = true
+}
+
+variable "kyoo_secret" {
+  type        = string
+  description = "Kyoo Client Secret"
+  sensitive   = true
+}
+
 variable "lubelog_id" {
   type        = string
   description = "Lubelog Client ID"

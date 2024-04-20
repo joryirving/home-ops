@@ -149,12 +149,12 @@ resource "authentik_provider_oauth2" "kyoo_oauth2" {
 }
 
 resource "authentik_application" "kyoo_application" {
-  name               = "kyoo"
+  name               = "Kyoo"
   slug               = authentik_provider_oauth2.kyoo_oauth2.name
   protocol_provider  = authentik_provider_oauth2.kyoo_oauth2.id
-  group              = authentik_group.monitoring.name
+  group              = authentik_group.home.name
   open_in_new_tab    = true
-  meta_icon          = "hhttps://raw.githubusercontent.com/zoriya/Kyoo/blob/master/icons/icon-256x256.png"
+  meta_icon          = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
   meta_launch_url    = "https://kyoo.${var.cluster_domain}"
   policy_engine_mode = "all"
 }
@@ -171,10 +171,10 @@ resource "authentik_provider_oauth2" "lubelog_oauth2" {
 }
 
 resource "authentik_application" "lubelog_application" {
-  name               = "lubelog"
+  name               = "Lubelog"
   slug               = authentik_provider_oauth2.lubelog_oauth2.name
   protocol_provider  = authentik_provider_oauth2.lubelog_oauth2.id
-  group              = authentik_group.monitoring.name
+  group              = authentik_group.home.name
   open_in_new_tab    = true
   meta_icon          = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
   meta_launch_url    = "https://lubelog.${var.cluster_domain}"
