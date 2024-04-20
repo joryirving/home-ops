@@ -94,10 +94,6 @@ spec:
     ingress:
       app:
         className: internal
-        annotations:
-          nginx.ingress.kubernetes.io/configuration-snippet: |
-            more_set_headers "Host $host";
-            more_set_headers "X-Forwarded-For $remote_addr"
         hosts:
           - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
@@ -112,9 +108,6 @@ spec:
         className: external
         annotations:
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
-          nginx.ingress.kubernetes.io/configuration-snippet: |
-            more_set_headers "Host $host";
-            more_set_headers "X-Forwarded-For $remote_addr"
         hosts:
           - host: &s3Host s3.${SECRET_DOMAIN}
             paths:
