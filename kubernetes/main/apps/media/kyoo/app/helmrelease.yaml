@@ -205,7 +205,7 @@ spec:
               repository: ghcr.io/zoriya/kyoo_transcoder
               tag: master@sha256:fc39a1f4aa2671e74d1011b72600165e0db4669c8b2ec76401d4fc08eeebdd45
             env:
-              GOCODER_HWACCEL: qsv
+              GOCODER_HWACCEL: vaapi
               GOCODER_PRESET: fast
               GOCODER_VAAPI_RENDERER: /dev/dri/renderD128
             envFrom:
@@ -260,8 +260,8 @@ spec:
         annotations:
           nginx.ingress.kubernetes.io/configuration-snippet: |
             rewrite /api/(.*) /$1 break;
-        #   nignx.ingress.kubernetes.io/force-ssl-redirect: "true"
-        #   nginx.ingress.kubernetes.io/proxy-body-size: "0"
+          nignx.ingress.kubernetes.io/force-ssl-redirect: "true"
+          nginx.ingress.kubernetes.io/proxy-body-size: "0"
         hosts:
           - host: &host kyoo.${SECRET_DOMAIN}
             paths:
