@@ -42,7 +42,7 @@ spec:
               repository: ghcr.io/zoriya/kyoo_back
               tag: master@sha256:6d380d3c8df8480a8ea8b685bb3e96501777fb20e4cf70073ef520fb1a37f5d2
             env:
-              TRANSCODER_URL: http://kyoo-transcoder.media.svc.cluster.local:7666
+              TRANSCODER_URL: http://kyoo-transcoder:7666
             envFrom: &envFrom
               - secretRef:
                   name: kyoo-secret
@@ -263,6 +263,12 @@ spec:
           - hosts:
               - *host
     persistence:
+      kyoo:
+        existingClaim: *app
+        advancedMounts:
+          back:
+            app:
+              - path: /metadata
       search:
         existingClaim: kyoo-meilisearch
         advancedMounts:
@@ -281,12 +287,6 @@ spec:
           transcoder:
             app:
               - path: /cache
-      backend-metadata:
-        existingClaim: kyoo-backend-metadata
-        advancedMounts:
-          back:
-            app:
-              - path: /metadata
       media:
         type: nfs
         server: ${NAS_IP:=temp}
