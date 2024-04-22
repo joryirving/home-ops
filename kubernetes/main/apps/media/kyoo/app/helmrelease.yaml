@@ -43,13 +43,6 @@ spec:
               tag: master@sha256:3518927b12b85777c90e786445ca0d06b06baff4b59090a82a53c16958e3a65a
             env:
               TRANSCODER_URL: http://kyoo-transcoder.media.svc.cluster.local:7666
-              MEILI_HOST: http://kyoo-meilisearch.media.svc.cluster.local:7700
-              OIDC_AUTHENTIK_NAME: Authentik
-              OIDC_AUTHENTIK_LOGO: https://sso.${SECRET_DOMAIN}/static/dist/assets/icons/icon.png
-              OIDC_AUTHENTIK_AUTHORIZATION: https://sso.${SECRET_DOMAIN}/application/o/authorize/
-              OIDC_AUTHENTIK_TOKEN: https://sso.${SECRET_DOMAIN}/application/o/token/
-              OIDC_AUTHENTIK_PROFILE: https://sso.${SECRET_DOMAIN}/application/o/userinfo/
-              OIDC_AUTHENTIK_SCOPE: openid email profile
             envFrom: &envFrom
               - secretRef:
                   name: kyoo-secret
@@ -73,6 +66,7 @@ spec:
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
             supplementalGroups: [44, 10000, 109]
+
       front:
         replicas: 2
         strategy: RollingUpdate
@@ -83,8 +77,7 @@ spec:
             image:
               repository: ghcr.io/zoriya/kyoo_front
               tag: master@sha256:8f4975e4abe543111cc355d3a175903f71d34a4b70e4fd8fd487d2fa85dd9fc2
-            env: &env
-              KYOO_URL: http://kyoo-back.media.svc.cluster.local:5000
+            envFrom: *envFrom
             resources:
               requests:
                 cpu: 5m
@@ -93,6 +86,7 @@ spec:
                 memory: 1Gi
             securityContext: *securityContext
         pod: *pod
+
       scanner:
         annotations:
           reloader.stakater.com/auto: "true"
@@ -102,9 +96,6 @@ spec:
               repository: ghcr.io/zoriya/kyoo_scanner
               tag: master@sha256:6c276e8a638b328c21d7afe2be8f2999e68cc56382982d023e14cc5e35b4c297
             args: ["scanner"]
-            env:
-              KYOO_URL: http://kyoo-back.media.svc.cluster.local:5000
-              SCANNER_LIBRARY_ROOT: &library /data
             envFrom: *envFrom
             resources:
               requests:
@@ -113,6 +104,7 @@ spec:
                 memory: 1Gi
             securityContext: *securityContext
         pod: *pod
+
       matcher:
         replicas: 2
         strategy: RollingUpdate
@@ -124,7 +116,6 @@ spec:
               repository: ghcr.io/zoriya/kyoo_scanner
               tag: master@sha256:6c276e8a638b328c21d7afe2be8f2999e68cc56382982d023e14cc5e35b4c297
             args: ["matcher"]
-            env: *env
             envFrom: *envFrom
             resources:
               requests:
@@ -133,6 +124,7 @@ spec:
                 memory: 400Mi
             securityContext: *securityContext
         pod: *pod
+
       autosync:
         annotations:
           reloader.stakater.com/auto: "true"
@@ -149,6 +141,7 @@ spec:
                 memory: 100Mi
             securityContext: *securityContext
         pod: *pod
+
       meilisearch:
         annotations:
           reloader.stakater.com/auto: "true"
@@ -172,6 +165,7 @@ spec:
                 memory: 400Mi
             securityContext: *securityContext
         pod: *pod
+
       rabbitmq:
         annotations:
           reloader.stakater.com/auto: "true"
@@ -188,6 +182,7 @@ spec:
                 memory: 300Mi
             securityContext: *securityContext
         pod: *pod
+
       transcoder:
         annotations:
           reloader.stakater.com/auto: "true"
@@ -196,10 +191,6 @@ spec:
             image:
               repository: ghcr.io/zoriya/kyoo_transcoder
               tag: master@sha256:0eae6c00c4841d28910867be935d566b4617c0e9f99cdfeba84564c94a6e2e67
-            env:
-              GOCODER_HWACCEL: vaapi
-              GOCODER_PRESET: fast
-              GOCODER_VAAPI_RENDERER: /dev/dri/renderD128
             envFrom: *envFrom
             resources:
               requests:
@@ -219,6 +210,7 @@ spec:
             fsGroup: 568
             fsGroupChangePolicy: OnRootMismatch
             supplementalGroups: [44, 10000, 109]
+
     service:
       back:
         controller: back
@@ -245,6 +237,7 @@ spec:
         ports:
           http:
             port: 7666
+
     ingress:
       main:
         className: internal
@@ -299,6 +292,6 @@ spec:
         server: ${NAS_IP:=temp}
         path: ${SECRET_NFS_DATA:=temp}
         globalMounts:
-          - path: *library
+          - path: /data
             subPath: media
             readOnly: true
