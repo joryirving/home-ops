@@ -159,6 +159,24 @@ spec:
                   secretKeyRef:
                     name: kyoo-secret
                     key: MEILI_MASTER_KEY
+            probes:
+              liveness: &searchprobes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &searchport 7700
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *searchprobes
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 10
             resources:
               requests:
                 cpu: 5m
@@ -232,7 +250,7 @@ spec:
         controller: meilisearch
         ports:
           http:
-            port: 7700
+            port: *searchport
       transcoder:
         controller: transcoder
         ports:
