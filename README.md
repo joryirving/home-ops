@@ -135,14 +135,14 @@ While most of my infrastructure and workloads are self-hosted I do rely upon the
 
 The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), [ntfy](https://ntfy.sh/), and [Gatus](https://gatus.io/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
 
-| Service                                   | Use                                                               | Cost           |
-|-------------------------------------------|-------------------------------------------------------------------|----------------|
-| [Bitwarden](https://bitwarden.com/)       | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
-| [Cloudflare](https://www.cloudflare.com/) | Domain and S3                                                     | ~$30/yr        |
-| [GitHub](https://github.com/)             | Hosting this repository and continuous integration/deployments    | Free           |
-| [NextDNS](https://nextdns.io/)            | My router DNS server which includes AdBlocking                    | ~$20/yr        |
-| [Healthcheck.io](https://healthcheck.io/) | Monitoring internet connectivity and external facing applications | Free           |
-|                                           |                                                                   | Total: ~$5/mo  |
+| Service                                     | Use                                                               | Cost           |
+|---------------------------------------------|-------------------------------------------------------------------|----------------|
+| [Bitwarden](https://bitwarden.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
+| [Cloudflare](https://www.cloudflare.com/)   | Domain and S3                                                     | ~$30/yr        |
+| [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free           |
+| [NextDNS](https://nextdns.io/)              | My router DNS server which includes AdBlocking                    | ~$20/yr        |
+| [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free           |
+|                                             |                                                                   | Total: ~$5/mo  |
 
 ---
 
