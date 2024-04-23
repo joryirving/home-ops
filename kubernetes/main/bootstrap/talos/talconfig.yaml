@@ -6,13 +6,13 @@ talosVersion: v1.7.0
 kubernetesVersion: v1.30.0
 
 clusterName: &cluster main
-endpoint: https://192.168.2.10:6443
+endpoint: https://10.69.1.20:6443
 clusterPodNets:
   - "10.42.0.0/16"
 clusterSvcNets:
   - "10.43.0.0/16"
 additionalApiServerCertSans: &sans
-  - "192.168.2.10"
+  - "10.69.1.20"
   - 127.0.0.1 # KubePrism
 additionalMachineCertSans: *sans
 cniConfig:
@@ -20,101 +20,101 @@ cniConfig:
 
 nodes:
   - hostname: "ayaka"
-    ipAddress: "192.168.2.11"
+    ipAddress: "10.69.1.21"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
     controlPlane: true
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:69
-        dhcp: false
         addresses:
-          - "192.168.2.11/22"
+          - "10.69.1.21/24"
+        dhcp: false
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: "192.168.1.1"
+            gateway: "10.69.1.1"
         vip:
-          ip: "192.168.2.10"
+          ip: "10.69.1.20"
   - hostname: "eula"
-    ipAddress: "192.168.2.12"
+    ipAddress: "10.69.1.22"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
     controlPlane: true
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 1c:fd:08:75:15:63
-        dhcp: false
         addresses:
-          - "192.168.2.12/22"
+          - "10.69.1.22/24"
+        dhcp: false
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: "192.168.1.1"
+            gateway: "10.69.1.1"
         vip:
-          ip: "192.168.2.10"
+          ip: "10.69.1.20"
   - hostname: "ganyu"
-    ipAddress: "192.168.2.13"
+    ipAddress: "10.69.1.23"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
     controlPlane: true
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 1c:fd:08:75:15:6f
-        dhcp: false
         addresses:
-          - "192.168.2.13/22"
+          - "10.69.1.23/24"
+        dhcp: false
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: "192.168.1.1"
+            gateway: "10.69.1.1"
         vip:
-          ip: "192.168.2.10"
+          ip: "10.69.1.20"
   - hostname: "hutao"
-    ipAddress: "192.168.2.14"
+    ipAddress: "10.69.1.24"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
     controlPlane: false
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:dd
-        dhcp: false
         addresses:
-          - "192.168.2.14/22"
+          - "10.69.1.24/24"
+        dhcp: false
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: "192.168.1.1"
+            gateway: "10.69.1.1"
   - hostname: "navia"
-    ipAddress: "192.168.2.15"
+    ipAddress: "10.69.1.25"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
     controlPlane: false
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:05:e6
-        dhcp: false
         addresses:
-          - "192.168.2.15/22"
+          - "10.69.1.25/24"
+        dhcp: false
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: "192.168.1.1"
+            gateway: "10.69.1.1"
   - hostname: "yelan"
-    ipAddress: "192.168.2.16"
+    ipAddress: "10.69.1.26"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
     controlPlane: false
     networkInterfaces:
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:3a
-        dhcp: false
         addresses:
-          - "192.168.2.16/22"
+          - "10.69.1.26/24"
+        dhcp: false
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: "192.168.1.1"
+            gateway: "10.69.1.1"
 
 patches:
   # Configure containerd
@@ -175,14 +175,14 @@ patches:
           rotate-server-certificates: true
         nodeIP:
           validSubnets:
-            - "192.168.2.0/24"
+            - "10.69.1.0/24"
 
   # Force nameserver
   - |-
     machine:
       network:
         nameservers:
-          - 192.168.1.1
+          - 10.69.1.1
           - 1.1.1.1
 
   # Configure NTP
@@ -248,7 +248,7 @@ controlPlane:
           extraArgs:
             listen-metrics-urls: http://0.0.0.0:2381
           advertisedSubnets:
-            - "192.168.2.0/24"
+            - "10.69.1.0/24"
 
     # Disable default API server admission plugins.
     - |-
