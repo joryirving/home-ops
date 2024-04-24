@@ -204,6 +204,7 @@ tasks:
   .resume:
     internal: true
     cmds:
+      - kubectl --context {{.cluster}} -n {{.ns}} scale {{.controller}} --replicas 1
       - flux --context {{.cluster}} -n {{.ns}} resume helmrelease {{.app}}
       - flux --context {{.cluster}} -n flux-system resume kustomization {{.app}}
     env: *env
