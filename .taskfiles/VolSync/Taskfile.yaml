@@ -126,7 +126,7 @@ tasks:
       app: '{{ or .app (fail "Argument (app) is required") }}'
       previous: '{{.previous | default 2}}'
       controller:
-        sh: "{{.scriptsDir}}/controller.sh {{.app}} {{.ns}}"
+        sh: "{{.scriptsDir}}/controller.sh {{.app}} {{.ns}} {{.cluster}}"
       claim:
         sh: kubectl --context {{.cluster}} -n {{.ns}} get replicationsources/{{.app}} -o jsonpath="{.spec.sourcePVC}"
       puid:
