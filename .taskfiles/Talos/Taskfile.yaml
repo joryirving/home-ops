@@ -3,10 +3,8 @@
 version: "3"
 
 vars:
-  TALOS_DIR: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos"
-  TALHELPER_SECRET_FILE: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talsecret.sops.yaml"
-  TALHELPER_CONFIG_FILE: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml"
-  KUBECONFIG_FILE: "{{.KUBERNETES_DIR}}/main/kubeconfig"
+  TALHELPER_SECRET_FILE: "talsecret.sops.yaml"
+  TALHELPER_CONFIG_FILE: "talconfig.yaml"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
   TALOS_VERSION: v1.7.0
   TALOS_SCHEMATIC_ID: 5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
@@ -14,7 +12,7 @@ vars:
   KUBERNETES_VERSION: v1.30.0
 
 env:
-  TALOSCONFIG: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/talosconfig"
+  TALOSCONFIG: "talosconfig"
 
 tasks:
   bootstrap:
@@ -25,9 +23,11 @@ tasks:
     prompt: Bootstrap Talos on the '{{.cluster}}' cluster ... continue?
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}//bootstrap/talos/"
     cmds:
-      - task: bootstrap-install
+      - task: config-apply
         vars: &vars
           cluster: "{{.cluster}}"
+      - task: bootstrap-install
+        vars: *vars
       - task: fetch-kubeconfig
         vars: *vars
       - task: bootstrap-apps
@@ -40,29 +40,32 @@ tasks:
     desc: Generate the Talos secrets
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
-      - talhelper gensecret > {{.TALHELPER_SECRET_FILE}}
+      - talhelper gensecret > {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_SECRET_FILE}}
       - task: :sops:.encrypt-file
         vars:
           file: "{{.TALHELPER_SECRET_FILE}}"
     preconditions:
-      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
     status:
       - test -f "{{.TALHELPER_SECRET_FILE}}"
 
   genconfig:
     desc: Generate the Talos configs
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
-    cmd: talhelper genconfig -s {{.TALHELPER_SECRET_FILE}}
+    cmd: talhelper genconfig -s {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_SECRET_FILE}}
     preconditions:
-      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
-      - { msg: "Missing talhelper secret file", sh: "test -f {{.TALHELPER_SECRET_FILE}}" }
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
+      - { msg: "Missing talhelper secret file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_SECRET_FILE}}" }
 
   config-apply:
     desc: Apply the Talos config on a node
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand apply --extra-flags=--insecure | bash
     preconditions:
-      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
 
   bootstrap-install:
     desc: Install the Talos cluster
@@ -73,20 +76,22 @@ tasks:
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -f {{.TALOSCONFIG }}
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
 
   bootstrap-apps:
     desc: Bootstrap core apps needed for Talos
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
-      - until kubectl --kubeconfig {{.KUBECONFIG_FILE}} wait --for=condition=Ready=False nodes --all --timeout=600s; do sleep 10; done
+      - until kubectl --kubeconfig {{.KUBERNETES_DIR}}/{{.cluster}}/kubeconfig wait --for=condition=Ready=False nodes --all --timeout=600s; do sleep 10; done
       - helmfile --file ./apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
-      - until kubectl --kubeconfig {{.KUBECONFIG_FILE}} wait --for=condition=Ready nodes --all --timeout=600s; do sleep 10; done
+      - until kubectl --kubeconfig {{.KUBERNETES_DIR}}/{{.cluster}}/kubeconfig wait --for=condition=Ready nodes --all --timeout=600s; do sleep 10; done
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -f {{.TALOSCONFIG }}
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
       - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/apps/helmfile.yaml
 
@@ -101,7 +106,8 @@ tasks:
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -f {{.TALOSCONFIG }}
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
 
   apply-config:
@@ -109,7 +115,8 @@ tasks:
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand apply | bash
     preconditions:
-      - { msg: "Missing talhelper config file", sh: "test -f {{.TALHELPER_CONFIG_FILE}}" }
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
 
   upgrade:
     desc: Upgrade Talos on a node
@@ -119,7 +126,8 @@ tasks:
     requires:
       vars: ["cluster", "node"]
     preconditions:
-      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/talosconfig
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
       - talosctl --context {{.cluster}} --nodes {{.node}} get machineconfig >/dev/null 2>&1
 
@@ -145,7 +153,8 @@ tasks:
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -f {{.TALOSCONFIG}}
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
       - talosctl --context {{.cluster}} --nodes {{.nodes}} get machineconfig >/dev/null 2>&1
 
@@ -158,7 +167,8 @@ tasks:
     requires:
       vars: ["cluster"]
     preconditions:
-      - test -f {{.TALOSCONFIG}}
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
       - talosctl --context {{.cluster}} --nodes {{.node}} get machineconfig >/dev/null 2>&1
 
@@ -167,9 +177,13 @@ tasks:
     prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand reset --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
+    preconditions:
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
 
   hard-nuke:
     desc: Resets nodes back completely and reboots them
     prompt: This will destroy your cluster and reset the nodes... continue?
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand reset --extra-flags "--reboot --graceful=false --wait=false" | bash
+    preconditions:
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
