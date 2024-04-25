@@ -38,7 +38,11 @@
             flush: true
             ip_version: ipv6
           loop: ["filter", "nat", "mangle", "raw"]
-        - name: Networking | Delete CNI directory
+        - name: Networking | Delete CNI bin link
+          ansible.builtin.file:
+            path: /opt/cni/bin
+            state: absent
+        - name: Networking | Delete CNI conf link
           ansible.builtin.file:
             path: /etc/cni/net.d
             state: absent
@@ -77,6 +81,16 @@
         path: "{{ k3s_install_dir }}/{{ item }}"
         state: absent
       loop: ["kubectl", "crictl", "ctr"]
+
+    - name: Remove local storage path
+      ansible.builtin.file:
+        path: /var/openebs/local
+        state: absent
+
+    - name: Remove local storage path
+      ansible.builtin.file:
+        path: /var/lib/longhorn
+        state: absent
 
     - name: Reboot
       ansible.builtin.reboot:
