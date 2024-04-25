@@ -23,8 +23,6 @@ spec:
       strategy: rollback
       retries: 3
   dependsOn:
-    - name: nginx-external
-      namespace: network
     - name: nginx-internal
       namespace: network
   values:
@@ -108,9 +106,9 @@ spec:
           - hosts: [*host]
       api:
         enabled: true
-        className: external
-        annotations:
-          external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
+        className: internal
+        # annotations:
+        #   external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
           - host: &s3Host s3.${SECRET_DOMAIN}
             paths:
