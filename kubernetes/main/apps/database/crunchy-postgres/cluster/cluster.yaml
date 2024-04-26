@@ -31,6 +31,13 @@ spec:
             matchLabels:
               postgres-operator.crunchydata.com/data: postgres
   users:
+    # Superuser
+    - name: "postgres"
+      databases: ["postgres"]
+      options: "SUPERUSER"
+      password:
+        type: AlphaNumeric
+    # Applications
     - name: "atuin"
       databases: ["atuin"]
       password:
@@ -61,11 +68,6 @@ spec:
         type: AlphaNumeric
     - name: "paperless"
       databases: ["paperless"]
-      password:
-        type: AlphaNumeric
-    - name: "postgres"
-      databases: []
-      options: "SUPERUSER"
       password:
         type: AlphaNumeric
     - name: "prowlarr"
