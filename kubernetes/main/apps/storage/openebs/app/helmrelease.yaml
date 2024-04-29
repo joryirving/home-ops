@@ -15,6 +15,7 @@ spec:
         name: openebs
         namespace: flux-system
   install:
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
@@ -26,14 +27,8 @@ spec:
     keepHistory: false
   values:
     localpv-provisioner:
-      rbac:
-        create: true
-      localpv:
-        hostpathClass:
-          enabled: true
-          name: local-hostpath
-          isDefaultClass: false
-          basePath: /var/openebs/local
+      hostpathClass:
+        name: local-hostpath
     openebs-crds:
       csi:
         volumeSnapshots:
@@ -42,6 +37,8 @@ spec:
     zfs-localpv:
       enabled: false
     lvm-localpv:
+      enabled: false
+    mayastor:
       enabled: false
     engines:
       local:
