@@ -3,8 +3,8 @@ libraries:
   Anime:     # this library overrides sonarr root path and profile
     metadata_path:
       - repo: Anime.yml
-      - pmm: basic
-      - pmm: anilist
+      - default: basic
+      - default: anilist
     overlay_path:
       - remove_overlays: false
       - repo: Anime - Overlays - Charts.yml
@@ -19,9 +19,6 @@ libraries:
       mass_audience_rating_update: mdb_tomatoesaudience
       mass_critic_rating_update: mdb_metacritic
       mass_user_rating_update: imdb
-      mass_episode_audience_rating_update: mdb_tomatoesaudience
-      mass_episode_critic_rating_update: mdb_metacritic
-      mass_episode_user_rating_update: imdb
     sonarr:
       root_folder_path: /data/media/anime
       quality_profile: HD - Anime
@@ -29,12 +26,12 @@ libraries:
 
   Movies:
     metadata_path:
-      - file: config/Pre-rolls.yml #Mounted by Kustomization
+      # - file: config/Pre-rolls.yml #Mounted by Kustomization
       - repo: Movies.yml
       - repo: Movies - Holidays by Drazzizzi.yml
       - repo: Movies - Trakt (Unplayed) by Magic815.yml
-      - pmm: basic
-      - pmm: imdb
+      - default: basic
+      - default: imdb
     overlay_path:
       - remove_overlays: false
       - repo: Movies - Overlays - Charts.yml
@@ -69,9 +66,6 @@ libraries:
       mass_audience_rating_update: mdb_tomatoesaudience
       mass_critic_rating_update: mdb_metacritic
       mass_user_rating_update: imdb
-      mass_episode_audience_rating_update: mdb_tomatoesaudience
-      mass_episode_critic_rating_update: mdb_metacritic
-      mass_episode_user_rating_update: imdb
 
 settings:
   cache: true
@@ -93,7 +87,6 @@ settings:
   delete_not_scheduled: false
   run_again_delay: 2
   missing_only_released: false
-  missing_path: config/missing
   only_filter_missing: false
   show_unmanaged: false
   show_filtered: false
@@ -109,26 +102,40 @@ settings:
   playlist_exclude_user:
   playlist_report: false
   verify_ssl: true
-  custom_repo: https://github.com/joryirving/home-ops/tree/main/kubernetes/main/apps/media/plex/plex-meta-manager/custom/
+  custom_repo: https://github.com/joryirving/home-ops/tree/main/kubernetes/main/apps/media/plex/kometa/custom/
   check_nightly: false
   show_unconfigured: true
   playlist_exclude_users:
 
-plex:
-  url: http://plex.media.svc.cluster.local:32400
-  token: {{ .PLEX_TOKEN }}
-  timeout: 60
-  clean_bundles: true
-  empty_trash: true
-  optimize: true
+mal:
+  client_id: <<MYANIMELIST_CLIENT_ID>>
+  client_secret: <<MYANIMELIST_CLIENT_SECRET>>
+  localhost_url: <<MYANIMELIST_LOCALHOST_URL>>
+  authorization:
+    access_token: <<MYANIMELIST_ACCESS_TOKEN>>
+    token_type: Bearer
+    expires_in: <<MYANIMELIST_EXPIRES_IN>>
+    refresh_token: <<MYANIMELIST_REFRESH_TOKEN>>
 
-tautulli:
-  url: http://tautulli.media.svc.cluster.local:8181
-  apikey: {{ .TAUTULLI_API_KEY }}
+mdblist:
+  apikey: <<MDBLIST_API_KEY>>
+  cache_expiration: 60
+
+omdb:
+  apikey: <<OMDB_API_KEY>>
+  cache_expiration: 60
+
+plex:
+  url: http://plex.media:32400
+  token: <<PLEX_API_KEY>>
+  timeout: 60
+  clean_bundles: false
+  empty_trash: false
+  optimize: false
 
 radarr:
-  url: http://radarr.downloads.svc.cluster.local
-  token: {{ .RADARR_API_KEY }}
+  url: http://radarr.downloads
+  token: <<RADARR_API_KEY>>
   add_missing: false
   add_existing: false
   root_folder_path: /data/media/movies
@@ -142,8 +149,8 @@ radarr:
   upgrade_existing: false
 
 sonarr:
-  url: http://sonarr.downloads.svc.cluster.local
-  token: {{ .SONARR_API_KEY }}
+  url: http://sonarr.downloads
+  token: <<SONARR_API_KEY>>
   add_missing: false
   add_existing: false
   root_folder_path: /data/media/tv
@@ -159,38 +166,27 @@ sonarr:
   plex_path:
   upgrade_existing: false
 
+tautulli:
+  url: http://tautulli.media:8181
+  apikey: <<TAUTULLI_API_KEY>>
+
 tmdb:
-  apikey: {{ .TMDB_API_KEY }}
+  apikey: <<TMDB_API_KEY>>
   language: en
   cache_expiration: 60
   region:
 
 trakt:
-  client_id: {{ .TRAKT_CLIENT_ID }}
-  client_secret: {{ .TRAKT_CLIENT_SECRET }}
+  client_id: <<TRAKT_CLIENT_ID>>
+  client_secret: <<TRAKT_CLIENT_SECRET>>
   authorization:
-    access_token: {{ .TRAKT_ACCESS_TOKEN }}
+    access_token: <<TRAKT_ACCESS_TOKEN>>
     token_type: Bearer
-    expires_in: {{ .TRAKT_EXPIRES_IN }}
-    refresh_token: {{ .TRAKT_REFRESH_TOKEN }}
+    expires_in: <<TRAKT_EXPIRES_IN>>
+    refresh_token: <<TRAKT_REFRESH_TOKEN>>
     scope: public
-    created_at: {{ .TRAKT_CREATED_AT }}
+    created_at: <<TRAKT_CREATED_AT>>
   pin:
 
-mdblist:
-  apikey: {{ .MDBLIST_API_KEY }}
-  cache_expiration: 60
 
-omdb:
-  apikey: {{ .OMDB_API_KEY }}
-  cache_expiration: 60
 
-mal:
-  client_id: {{ .MYANIMELIST_CLIENT_ID }}
-  client_secret: {{ .MYANIMELIST_CLIENT_SECRET }}
-  localhost_url: {{ .MYANIMELIST_LOCALHOST_URL }}
-  authorization:
-    access_token: {{ .MYANIMELIST_ACCESS_TOKEN }}
-    token_type: Bearer
-    expires_in: {{ .MYANIMELIST_EXPIRES_IN }}
-    refresh_token: {{ .MYANIMELIST_REFRESH_TOKEN }}
