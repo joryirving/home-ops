@@ -36,15 +36,17 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/joryirving/sonarr
-              tag: 4.0.4.1491@sha256:06b56d1e0fc14fe51cc5c30d88b9d979f249dca22506fa611a049ec16f4a07ed
+              repository: ghcr.io/joryirving/sonarr-develop
+              tag: 4.0.4.1572@sha256:a26e0aec10c229c57dbbee280b9cb127d2ba68ddde92552d94f92658d8a52c34
             env:
               TZ: ${TIMEZONE}
-              SONARR__AUTHENTICATION_METHOD: External
-              SONARR__AUTHENTICATION_REQUIRED: DisabledForLocalAddresses
-              SONARR__INSTANCE_NAME: Sonarr
-              SONARR__PORT: &port 80
-              SONARR__LOG_LEVEL: info
+              SONARR__APP__INSTANCENAME: Sonarr
+              SONARR__APP__THEME: dark
+              SONARR__AUTH__METHOD: External
+              SONARR__AUTH__REQUIRED: DisabledForLocalAddresses
+              SONARR__LOG__LEVEL: info
+              SONARR__SERVER__PORT: &port 80
+              SONARR__UPDATE__BRANCH: develop
             envFrom:
             - secretRef:
                 name: sonarr-secret
