@@ -60,7 +60,12 @@ templates:
       votes_min: 50000
       limit: 100
     imdb_search:
-      url: https://www.imdb.com/search/title/?title_type=<<type>>,&genres=<<genre>>,&release_date=<<year_min>>-01-01,&user_rating=<<rating_min>>,10&num_votes=<<votes_min>>,&sort=user_rating,desc
+      type: <<type>>
+      genre: <<genre>>
+      release.after: <<year_min>>-01-01
+      rating.gte: <<rating_min>>
+      votes.gte: <<votes_min>>
+      sort_by: rating.desc
       limit: <<limit>>
     sort_title: "!08_<<collection_name>>"
     sync_mode: sync
@@ -76,7 +81,11 @@ templates:
       votes_min: 50000
       limit: 100
     imdb_search:
-      url: https://www.imdb.com/search/keyword/?keywords=<<keyword>>&title_type=<<type>>,&release_date=<<year_min>>-01-01,&user_rating=<<rating_min>>,10&num_votes=<<votes_min>>,&sort=user_rating,desc
+      type: <<type>>
+      release.after: <<year_min>>-01-01
+      rating.gte: <<rating_min>>
+      votes.gte: <<votes_min>>
+      sort_by: rating.desc
       limit: <<limit>>
     sort_title: "!09_<<collection_name>>"
     sync_mode: sync
@@ -162,7 +171,9 @@ collections:
     imdb_chart: popular_shows
   IMDb Top 250:
     template: {name: Charts}
-    imdb_list: https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=50000,&sort=user_rating,desc
+    imdb_search:
+      type: tv_series,tv_miniseries
+      votes.gte: 50000
     limit: 250
   TMDb Most Popular:
     template: {name: Charts}

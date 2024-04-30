@@ -60,7 +60,12 @@ templates:
       votes_min: 50000
       limit: 100
     imdb_search:
-      url: https://www.imdb.com/search/title/?title_type=<<type>>,&genres=<<genre>>,&release_date=<<year_min>>-01-01,&user_rating=<<rating_min>>,10&num_votes=<<votes_min>>,&sort=user_rating,desc
+      type: <<type>>
+      genre: <<genre>>
+      release.after: <<year_min>>-01-01
+      rating.gte: <<rating_min>>
+      votes.gte: <<votes_min>>
+      sort_by: rating.desc
       limit: <<limit>>
     sort_title: "!08_<<collection_name>>"
     sync_mode: sync
@@ -76,7 +81,10 @@ templates:
       votes_min: 50000
       limit: 100
     imdb_search:
-      url: https://www.imdb.com/search/keyword/?keywords=<<keyword>>&title_type=<<type>>,&release_date=<<year_min>>-01-01,&user_rating=<<rating_min>>,10&num_votes=<<votes_min>>,&sort=user_rating,desc
+      type: <<type>>
+      release.after: <<year_min>>-01-01
+      rating.gte: <<rating_min>>
+      votes.gte: <<votes_min>>
       limit: <<limit>>
     sort_title: "!09_<<collection_name>>"
     sync_mode: sync
@@ -160,9 +168,13 @@ collections:
   IMDb Most Popular:
     template: {name: Charts}
     imdb_chart: popular_movies
+    collection_order: custom
+    sync_mode: sync
   IMDb Top 250:
     template: {name: Charts}
-    imdb_search: https://www.imdb.com/search/title/?title_type=feature&groups=top_250&sort=user_rating,desc
+    imdb_chart: top_movies
+    collection_order: custom
+    sync_mode: sync
   TMDb Most Popular:
     template: {name: Charts}
     tmdb_popular: 30
@@ -481,7 +493,11 @@ collections:
   Documentary:
     template: {name: IMDb Genres, genre: documentary}
     imdb_search:
-      url: https://www.imdb.com/search/title/?genres=documentary,&release_date=1990-01-01,&user_rating=7,10&num_votes=50000,&sort=user_rating,desc
+      genres: documentary
+      release.after: 1990-01-01
+      rating.gte: 7
+      votes.gte: 50000
+      sort_by: rating.desc
       limit: 100
     summary: A collection of documentary movies from 1990 to now, with a minimum rating of 7 and at least 50000 votes from IMDb.
   Drama:
