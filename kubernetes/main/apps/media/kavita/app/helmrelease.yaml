@@ -68,14 +68,12 @@ spec:
           gethomepage.dev/widget.password: "{{HOMEPAGE_VAR_KAVITA_PASSWORD}}"
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-          - host: &host comics.${SECRET_DOMAIN}
+          - host: comics.${SECRET_DOMAIN}
             paths:
               - path: /
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         existingClaim: *app

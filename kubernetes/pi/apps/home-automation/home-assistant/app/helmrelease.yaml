@@ -93,25 +93,21 @@ spec:
         annotations:
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-          - host: &host hass.${SECRET_DOMAIN}
+          - host: hass.${SECRET_DOMAIN}
             paths:
               - path: /
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts: [*host]
       codeserver:
         className: internal
         hosts:
-          - host: &host hass-code.${SECRET_DOMAIN}
+          - host: hass-code.${SECRET_DOMAIN}
             paths:
             - path: /
               service:
                 identifier: codeserver
                 port: http
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         existingClaim: *app

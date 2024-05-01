@@ -67,15 +67,13 @@ spec:
           gethomepage.dev/icon: actual.png
           gethomepage.dev/description: Budget Management Software
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts: [*host]
     persistence:
       data:
         existingClaim: *app

@@ -76,15 +76,13 @@ spec:
             sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/prowlarr/nord.css"></head>';
             sub_filter_once on;
         hosts:
-        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
           - path: /
             pathType: Prefix
             service:
               identifier: app
               port: http
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         type: emptyDir

@@ -130,14 +130,12 @@ spec:
         annotations:
           external-dns.alpha.kubernetes.io/target: ipv4.${SECONDARY_DOMAIN}
         hosts:
-        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
           - path: /
             service:
               identifier: app
               port: game
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         existingClaim: *app

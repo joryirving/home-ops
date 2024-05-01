@@ -71,15 +71,13 @@ spec:
           gethomepage.dev/icon: https://demo.lubelogger.com/defaults/lubelogger_icon_72.png
           gethomepage.dev/description: Car Service Tracking
         hosts:
-          - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts: [*host]
     persistence:
       app:
         existingClaim: *app

@@ -265,7 +265,7 @@ spec:
           nginx.ingress.kubernetes.io/proxy-body-size: "0"
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-          - host: &host kyoo.${SECRET_DOMAIN}
+          - host: kyoo.${SECRET_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -277,9 +277,6 @@ spec:
                 service:
                   identifier: back
                   port: http
-        tls:
-          - hosts:
-              - *host
     persistence:
       kyoo:
         existingClaim: *app

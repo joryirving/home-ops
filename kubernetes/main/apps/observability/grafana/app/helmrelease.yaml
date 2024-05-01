@@ -419,10 +419,7 @@ spec:
         gethomepage.dev/widget.password: '{{`{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}`}}'
         external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
       hosts:
-        - &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
-      tls:
-        - hosts:
-            - *host
+        - "{{ .Release.Name }}.${SECRET_DOMAIN}"
     persistence:
       enabled: false
     topologySpreadConstraints:

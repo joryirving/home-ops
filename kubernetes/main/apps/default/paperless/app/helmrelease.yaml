@@ -93,14 +93,12 @@ spec:
           gethomepage.dev/widget.url: http://paperless.default:8000
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_PAPERLESS_TOKEN}}"
         hosts:
-        - host: &host "{{ .Release.Name }}.${SECRET_DOMAIN}"
+        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
           - path: /
             service:
               identifier: app
               port: http
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         existingClaim: *app

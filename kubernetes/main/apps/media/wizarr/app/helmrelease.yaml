@@ -65,14 +65,12 @@ spec:
           # gethomepage.dev/widget.key: ${WIZARR_TOKEN}
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-          - host: &host join.${SECRET_DOMAIN}
+          - host: join.${SECRET_DOMAIN}
             paths:
               - path: /
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         existingClaim: *app

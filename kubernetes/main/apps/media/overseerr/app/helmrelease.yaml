@@ -71,14 +71,12 @@ spec:
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_OVERSEERR_TOKEN}}"
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-          - host: &host requests.${SECRET_DOMAIN}
+          - host: requests.${SECRET_DOMAIN}
             paths:
               - path: /
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         existingClaim: *app

@@ -62,14 +62,12 @@ spec:
           gethomepage.dev/description: IRC Web Client
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
-          - host: &host "tl.${SECRET_DOMAIN}"
+          - host: "tl.${SECRET_DOMAIN}"
             paths:
               - path: /
                 service:
                   identifier: app
                   port: http
-        tls:
-          - hosts: [*host]
     persistence:
       config:
         existingClaim: *app
