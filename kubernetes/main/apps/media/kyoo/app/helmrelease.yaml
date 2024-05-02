@@ -24,6 +24,80 @@ spec:
       retries: 3
   values:
     controllers:
+      meilisearch:
+        labels:
+          nfsMount: "true"
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/getmeili/meilisearch
+              tag: v1.7
+            env:
+              MEILI_ENV: production
+              MEILI_MASTER_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: kyoo-secret
+                    key: MEILI_MASTER_KEY
+            probes:
+              liveness: &searchprobes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &searchport 7700
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *searchprobes
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 5m
+              limits:
+                memory: 400Mi
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+        pod: &pod
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            runAsNonRoot: true
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+            supplementalGroups: [44, 10000, 109]
+
+      rabbitmq:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/rabbitmq
+              tag: 3-alpine
+            envFrom: &envFrom
+              - secretRef:
+                  name: kyoo-secret
+              - configMapRef:
+                  name: kyoo-config
+            resources:
+              requests:
+                cpu: 5m
+              limits:
+                memory: 300Mi
+            securityContext: *securityContext
+        pod: *pod
+
       back:
         labels:
           nfsMount: "true"
@@ -45,11 +119,7 @@ spec:
               tag: 4.5.0@sha256:b23ea7bf3e84eb2f8d55b45f01a206edb7700a8814141359f3e791eb32e3a8ae
             env:
               TRANSCODER_URL: http://kyoo-transcoder:7666
-            envFrom: &envFrom
-              - secretRef:
-                  name: kyoo-secret
-              - configMapRef:
-                  name: kyoo-config
+            envFrom: *envFrom
             resources:
               requests:
                 cpu: 10m
@@ -57,18 +127,8 @@ spec:
               limits:
                 cpu: 2000m
                 memory: 8Gi
-            securityContext: &securityContext
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-        pod: &pod
-          securityContext:
-            runAsUser: 568
-            runAsGroup: 568
-            runAsNonRoot: true
-            fsGroup: 568
-            fsGroupChangePolicy: OnRootMismatch
-            supplementalGroups: [44, 10000, 109]
+            securityContext: *securityContext
+        pod: *pod
 
       front:
         labels:
@@ -149,66 +209,6 @@ spec:
                 cpu: 5m
               limits:
                 memory: 100Mi
-            securityContext: *securityContext
-        pod: *pod
-
-      meilisearch:
-        labels:
-          nfsMount: "true"
-        annotations:
-          reloader.stakater.com/auto: "true"
-        containers:
-          app:
-            image:
-              repository: docker.io/getmeili/meilisearch
-              tag: v1.7
-            env:
-              MEILI_ENV: production
-              MEILI_MASTER_KEY:
-                valueFrom:
-                  secretKeyRef:
-                    name: kyoo-secret
-                    key: MEILI_MASTER_KEY
-            probes:
-              liveness: &searchprobes
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /health
-                    port: &searchport 7700
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
-              readiness: *searchprobes
-              startup:
-                enabled: true
-                spec:
-                  failureThreshold: 30
-                  periodSeconds: 10
-            resources:
-              requests:
-                cpu: 5m
-              limits:
-                memory: 400Mi
-            securityContext: *securityContext
-        pod: *pod
-
-      rabbitmq:
-        annotations:
-          reloader.stakater.com/auto: "true"
-        containers:
-          app:
-            image:
-              repository: docker.io/rabbitmq
-              tag: 3-alpine
-            envFrom: *envFrom
-            resources:
-              requests:
-                cpu: 5m
-              limits:
-                memory: 300Mi
             securityContext: *securityContext
         pod: *pod
 
