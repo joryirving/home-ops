@@ -1,6 +1,5 @@
 locals {
   buckets = [
-    "longhorn",
     "postgresql",
     "volsync"
   ]
