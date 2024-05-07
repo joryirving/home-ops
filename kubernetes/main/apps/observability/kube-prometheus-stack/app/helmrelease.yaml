@@ -39,10 +39,6 @@ spec:
           - alertmanager.${SECRET_DOMAIN}
       alertmanagerSpec:
         replicas: 2
-        image:
-          registry: quay.io
-          repository: prometheus/alertmanager
-          tag: v0.27.0-rc.0
         useExistingSecret: true
         configSecret: alertmanager-secret
         storage:
@@ -199,20 +195,6 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
-        additionalScrapeConfigs:
-          - job_name: &jobName node-exporter
-            scrape_interval: 1m
-            scrape_timeout: 10s
-            honor_timestamps: true
-            static_configs:
-              - targets:
-                  - ${NAS_IP}:9100
-                  - ${NAS_IP}:9633
-                  - ${PI_IP}:9100
-            # relabelings:
-            #   - action: replace
-            #     targetLabel: job
-            #     replacement: *jobName
         thanos:
           image: quay.io/thanos/thanos:${THANOS_VERSION}
           version: "${THANOS_VERSION#v}"
