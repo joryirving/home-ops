@@ -140,7 +140,6 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 | [Bitwarden](https://bitwarden.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
 | [Cloudflare](https://www.cloudflare.com/)   | Domain and S3                                                     | ~$30/yr        |
 | [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free           |
-| [NextDNS](https://nextdns.io/)              | My router DNS server which includes AdBlocking                    | ~$20/yr        |
 | [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free           |
 |                                             |                                                                   | Total: ~$5/mo  |
 
@@ -155,43 +154,43 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 | Ayaka | Dell 7080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
 | Eula  | Dell 7080mff   | i7-10700T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
 | Ganyu | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| HuTao | Dell 3080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 40GB | Talos | k8s worker        |
-| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | N/A       | 64GB | Talos | k8s worker        |
-| Yelan | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 40GB | Talos | k8s worker        |
+| HuTao | Dell 3080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
+| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
+| Yelan | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
 
 Total CPU: 76 threads
-Total RAM: 336GB
+Total RAM: 384GB
 
 ### Pi Kubernetes Cluster
 
 | Name    | Device        | CPU        | OS Disk   | RAM | OS     | Purpose           |
 |---------|---------------|------------|-----------|-----|--------|-------------------|
-| Jingliu | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
-| Kafka   | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
-| Himeko  | Raspberry Pi4 | Cortex A72 | 256GB SSD | 8GB | Debian | k8s control-plane |
-| Bronya  | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s worker        |
+| Acheron | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
+| Himeko  | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
+| Jingliu | Raspberry Pi4 | Cortex A72 | 256GB SSD | 8GB | Debian | k8s control-plane |
+| Kafka   | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s worker        |
 
 Total CPU: 16 threads
 Total RAM: 32GB
 
 ### Supporting Hardware
 
-| Name  | Device         | CPU           | OS Disk      | Data Disk | RAM   | OS       | Purpose               |
-|-------|----------------|---------------|--------------|-----------|-------|----------|-----------------------|
-| NAS   | HP z820        | E5-2680v2     | 32GB USB     | -         | 128GB | Unraid   | NAS/NFS/Backup        |
-| DAS   | Lenovo SA120   | -             | -            | 72TB      | -     | -        | DAS w/ Parity         |
-| Amber | Raspberry Pi4  | Cortex A72    | 120GB mSD    | -         | 4GB   | Raspbian | Wireguard/MeshCentral |
-| Mika  | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | -         | 16GB  | Debian   | Omni (test)           |
+| Name   | Device         | CPU           | OS Disk      | Data Disk  | RAM   | OS         | Purpose           |
+|--------|----------------|---------------|--------------|------------|-------|------------|-------------------|
+| NAS    | HP z820        | E5-2680v2     | 32GB USB     | 500GB NVMe | 128GB | Unraid     | NAS/NFS/Backup    |
+| DAS    | Lenovo SA120   | -             | -            | 56TB       | -     | -          | DAS w/ Parity     |
+| Nahida | Raspberry Pi4  | Cortex A72    | 120GB SSD    | -          | 4GB   | Fedora IoT | DNS/NUT/BWS-Cache |
+| Mika   | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | 500GB SSD  | 16GB  | Debian     | "Crash cart"      |
 
 ### Networking/UPS Hardware
 
-| Device                | Purpose                          |
-|-----------------------|----------------------------------|
-| Back-UPS 600          | UPS - Network                    |
-| Unifi UDM Base        | Router                           |
-| Netgear GS324P        | 24 Port PoE Switch - Network     |
-| Tripp Lite 1500       | UPS - Server Rack                |
-| YuanLey YS25-0801P    | 9 Port PoE 2.5G Switch - Rack    |
+| Device                      | Purpose          |
+|-----------------------------|------------------|
+| Unifi UDM-SE                | Network - Router |
+| USW-Pro-24-POE              | Network - Switch |
+| Back-UPS 600                | Network - UPS    |
+| Unifi USW-Enterprise-24-PoE | Server - Switch  |
+| Tripp Lite 1500             | Server - UPS     |
 
 ---
 
