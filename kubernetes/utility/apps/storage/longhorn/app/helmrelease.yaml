@@ -1,0 +1,49 @@
+---
+# yaml-language-server: $schema=https://lds-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2beta2.json
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: longhorn
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: longhorn
+      version: 1.6.1
+      sourceRef:
+        kind: HelmRepository
+        name: longhorn
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    csi:
+      attacherReplicaCount: &replicas 1
+      provisionerReplicaCount: *replicas
+      resizerReplicaCount: *replicas
+      snapshotterReplicaCount: *replicas
+    defaultSettings:
+      createDefaultDiskLabeledNodes: true
+      defaultDataLocality: true
+      replicaAutoBalance: true
+      storageMinimalAvailablePercentage: 1
+      defaultReplicaCount: 1 #single node
+      defaultLonghornStaticStorageClass: longhorn
+      nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
+      concurrentAutomaticEngineUpgradePerNodeLimit: 3
+      guaranteedInstanceManagerCPU: 20
+      orphanAutoDeletion: true
+    ingress:
+      enabled: true
+      ingressClassName: internal
+      host: longhorn.${SECRET_DOMAIN}
+      tls: true
+    metrics:
+      serviceMonitor:
+        enabled: true
