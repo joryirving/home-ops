@@ -3,9 +3,10 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: kube-prometheus-stack
+  name: &app kube-prometheus-stack
 spec:
   interval: 30m
+  timeout: 15m
   chart:
     spec:
       chart: kube-prometheus-stack
@@ -29,7 +30,6 @@ spec:
       namespace: storage
   values:
     crds:
-      enabled: true
     alertmanager:
       enabled: false
     grafana:
@@ -71,7 +71,7 @@ spec:
     kubeControllerManager:
       enabled: true
       endpoints: &cp
-        - 10.69.1.141
+        - 10.69.1.121
       serviceMonitor:
         metricRelabelings:
           # Remove duplicate labels provided by k3s
@@ -168,7 +168,7 @@ spec:
                 requests:
                   storage: 20Gi
         thanos:
-          image: "quay.io/thanos/thanos:${THANOS_VERSION}"
+          image: quay.io/thanos/thanos:${THANOS_VERSION}
           version: "${THANOS_VERSION#v}"
           objectStorageConfig:
             existingSecret:
