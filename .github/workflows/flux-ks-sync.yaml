@@ -5,7 +5,7 @@ name: "Flux Kustomization Sync"
 on:
   push:
     branches: ["main"]
-    paths: ["kubernetes/pi/**"]
+    paths: ["kubernetes/pi/**", "kubernetes/utility/**"]
 
 jobs:
   sync:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ["gha-runner-scale-set"]
     strategy:
       matrix:
-        cluster: ["pi"]
+         cluster: ["pi", "utility"]
     steps:
       - name: Get Secrets
         uses: bitwarden/sm-action@v2
