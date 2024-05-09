@@ -32,7 +32,7 @@ tasks:
         vars: *vars
       - task: bootstrap-apps
         vars: *vars
-      - talosctl health --server=false
+      - talosctl health --server=false --context {{.cluster}}
     requires:
       vars: ["cluster"]
 
@@ -85,7 +85,7 @@ tasks:
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
       - until kubectl --kubeconfig {{.KUBERNETES_DIR}}/{{.cluster}}/kubeconfig wait --for=condition=Ready=False nodes --all --timeout=600s; do sleep 10; done
-      - helmfile --file ./apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
+      - helmfile --file ./apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.cluster}}
       - until kubectl --kubeconfig {{.KUBERNETES_DIR}}/{{.cluster}}/kubeconfig wait --for=condition=Ready nodes --all --timeout=600s; do sleep 10; done
     requires:
       vars: ["cluster"]
