@@ -71,9 +71,7 @@ spec:
     kubeControllerManager:
       enabled: true
       endpoints: &cp
-        - 10.69.1.121
-        - 10.69.1.122
-        - 10.69.1.123
+        - 10.69.1.131
       serviceMonitor:
         metricRelabelings:
           # Remove duplicate labels provided by k3s
@@ -169,21 +167,6 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
-        additionalScrapeConfigs:
-          - job_name: &jobName kube-vip
-            scrape_interval: 1m
-            scrape_timeout: 10s
-            honor_timestamps: true
-            metrics_path: /metrics
-            static_configs:
-              - targets:
-                  - 10.69.1.121:2112
-                  - 10.69.1.122:2112
-                  - 10.69.1.123:2112
-            # relabelings:
-            #   - action: replace
-            #     targetLabel: job
-            #     replacement: *jobName
         thanos:
           image: "quay.io/thanos/thanos:${THANOS_VERSION}"
           version: "${THANOS_VERSION#v}"
