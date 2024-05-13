@@ -90,9 +90,17 @@ spec:
                 memory: 128Mi
               limits:
                 memory: 512Mi
-        pod:
-          nodeSelector:
-            zigbee.feature.node.kubernetes.io/sonoff: "true"
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: { type: RuntimeDefault }
+    defaultPodOptions:
+      nodeSelector:
+        zigbee.feature.node.kubernetes.io/sonoff: "true"
     service:
       app:
         controller: *app

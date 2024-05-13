@@ -64,18 +64,6 @@ spec:
                 cpu: 5m
               limits:
                 memory: 400Mi
-            securityContext: &securityContext
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-        pod: &pod
-          securityContext:
-            runAsUser: 568
-            runAsGroup: 568
-            runAsNonRoot: true
-            fsGroup: 568
-            fsGroupChangePolicy: OnRootMismatch
-            supplementalGroups: [44, 10000, 109]
 
       rabbitmq:
         annotations:
@@ -95,8 +83,6 @@ spec:
                 cpu: 5m
               limits:
                 memory: 300Mi
-            securityContext: *securityContext
-        pod: *pod
 
       back:
         labels:
@@ -127,8 +113,6 @@ spec:
               limits:
                 cpu: 4000m
                 memory: 8Gi
-            securityContext: *securityContext
-        pod: *pod
 
       front:
         labels:
@@ -149,8 +133,6 @@ spec:
                 memory: 100Mi
               limits:
                 memory: 1Gi
-            securityContext: *securityContext
-        pod: *pod
 
       scanner:
         labels:
@@ -168,8 +150,6 @@ spec:
                 cpu: 5m
               limits:
                 memory: 1Gi
-            securityContext: *securityContext
-        pod: *pod
 
       matcher:
         labels:
@@ -190,8 +170,6 @@ spec:
                 cpu: 5m
               limits:
                 memory: 400Mi
-            securityContext: *securityContext
-        pod: *pod
 
       autosync:
         labels:
@@ -209,8 +187,6 @@ spec:
                 cpu: 5m
               limits:
                 memory: 100Mi
-            securityContext: *securityContext
-        pod: *pod
 
       transcoder:
         labels:
@@ -230,18 +206,17 @@ spec:
               limits:
                 gpu.intel.com/i915: 1
                 memory: 8Gi
-            securityContext: *securityContext
-        pod:
-          nodeSelector:
-            intel.feature.node.kubernetes.io/gpu: "true"
-          securityContext:
-            runAsUser: 568
-            runAsGroup: 568
-            runAsNonRoot: true
-            fsGroup: 568
-            fsGroupChangePolicy: OnRootMismatch
-            supplementalGroups: [44, 10000, 109]
-
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+        supplementalGroups: [44, 10000]
+        seccompProfile: { type: RuntimeDefault }
+      nodeSelector:
+        intel.feature.node.kubernetes.io/gpu: "true"
     service:
       back:
         controller: back

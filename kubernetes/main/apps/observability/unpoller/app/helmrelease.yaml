@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
 kind: HelmRelease
 metadata:
-  name: &app unifi-poller
+  name: &app unpoller
 spec:
   interval: 30m
   chart:
@@ -24,20 +24,39 @@ spec:
       retries: 3
   values:
     controllers:
-      unifi-poller:
+      unpoller:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: golift/unifi-poller
-              tag: v2.11.2
+              repository: ghcr.io/unpoller/unpoller
+              tag: v2.11.1@sha256:1e54332b769bda9359f30d72e5924a526cded25699eb5e3c2a4c486161010834
             env:
               UP_UNIFI_DEFAULT_URL: https://${UNIFI_CONTROLLER_IP}
               UP_INFLUXDB_DISABLE: true
             envFrom:
               - secretRef:
-                  name: unifi-poller-secret
+                  name: unpoller-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 128Mi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
     service:
       app:
         controller: *app
@@ -51,5 +70,5 @@ spec:
           - port: http
             scheme: http
             path: /metrics
-            interval: 1m
+            interval: 2m # Unifi API only polls at 2m intervals
             scrapeTimeout: 10s

@@ -49,6 +49,15 @@ spec:
                 memory: 700M
               limits:
                 memory: 1200M
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+        supplementalGroups: [10000]
+        seccompProfile: { type: RuntimeDefault }
     service:
       app:
         controller: *app
@@ -67,10 +76,6 @@ spec:
           gethomepage.dev/widget.type: mylar
           gethomepage.dev/widget.url: http://mylar.downloads:8090
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_MYLAR_TOKEN}}"
-          nginx.ingress.kubernetes.io/configuration-snippet: |
-            proxy_set_header Accept-Encoding "";
-            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/mylar/nord.css"></head>';
-            sub_filter_once on;
         hosts:
           - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
