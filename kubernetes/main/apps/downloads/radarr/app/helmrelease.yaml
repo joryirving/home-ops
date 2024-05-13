@@ -40,11 +40,15 @@ spec:
               tag: 5.5.2.8781@sha256:956bd8b68e3baab4f2aeada6ff1eef01b836fdf35c14d607a878552495500685
             env:
               TZ: ${TIMEZONE}
-              RADARR__AUTHENTICATION_METHOD: External
+              RADARR__APP__INSTANCENAME: Radarr
+              RADARR__APP__THEME: dark
+              RADARR__AUTH__METHOD: External
               RADARR__AUTHENTICATION_REQUIRED: DisabledForLocalAddresses
-              RADARR__INSTANCE_NAME: Radarr
-              RADARR__PORT: &port 80
-              RADARR__LOG_LEVEL: info
+              RADARR__AUTH__REQUIRED: Radarr
+              RADARR__LOG__DBENABLED: "False"
+              RADARR__LOG__LEVEL: info
+              RADARR__SERVER__PORT: &port 80
+              RADARR__UPDATE__BRANCH: develop
             envFrom:
             - secretRef:
                 name: radarr-secret
@@ -91,10 +95,6 @@ spec:
           gethomepage.dev/widget.type: radarr
           gethomepage.dev/widget.url: http://radarr.downloads
           gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_RADARR_TOKEN}}"
-          nginx.ingress.kubernetes.io/configuration-snippet: |
-            proxy_set_header Accept-Encoding "";
-            sub_filter '</head>' '<link rel="stylesheet" type="text/css" href="https://theme-park.${SECRET_DOMAIN}/css/base/radarr/nord.css"></head>';
-            sub_filter_once on;
         hosts:
         - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
