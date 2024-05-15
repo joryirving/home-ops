@@ -91,7 +91,7 @@ This Git repository contains the following directories under [Kubernetes](./kube
 │   ├── 📁 bootstrap      # bootstrap procedures
 │   ├── 📁 flux           # core flux configuration
 │   └── 📁 templates      # re-useable components
-└── 📁 pi                 # pi cluster
+└── 📁 utility            # utility cluster
     ├── 📁 apps           # applications
     ├── 📁 bootstrap      # bootstrap procedures
     ├── 📁 flux           # core flux configuration
@@ -145,6 +145,20 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 ---
 
+## 🌐 DNS
+
+### Home DNS
+
+On my [home-services](https://github.com/joryirving/home-services) I have [Bind9](https://github.com/isc-projects/bind9), [blocky](https://github.com/0xERR0R/blocky/) and [dnsdist](https://dnsdist.org/) deployed. In my cluster `external-dns` is deployed with the `RFC2136` provider which syncs DNS records to `bind9`.
+
+`dnsdist` is a DNS loadbalancer and has "downstream" DNS servers configured such as `bind9` and `blocky`. All my clients use `dnsdist` as the upstream DNS server, this allows for more granularity with configuring DNS across my networks such as having all requests for my domain forward to `bind9` on certain networks, or only using `1.1.1.1` instead of `blocky` on certain networks where adblocking isn't required.
+
+### Public DNS
+
+Outside the `external-dns` instance mentioned above another instance is deployed in my cluster and configured to sync DNS records to [Cloudflare](https://www.cloudflare.com/). The only ingress this `external-dns` instance looks at to gather DNS records to put in `Cloudflare` are ones that have an ingress class name of `external` and contain an ingress annotation `external-dns.alpha.kubernetes.io/target`.
+
+---
+
 ## 🔧 Hardware
 
 ### Main Kubernetes Cluster
@@ -161,26 +175,24 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 Total CPU: 76 threads
 Total RAM: 384GB
 
-### Pi Kubernetes Cluster
+### Utility Kubernetes Cluster
 
-| Name    | Device        | CPU        | OS Disk   | RAM | OS     | Purpose           |
-|---------|---------------|------------|-----------|-----|--------|-------------------|
-| Acheron | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
-| Himeko  | Raspberry Pi5 | Cortex A76 | 240GB SSD | 8GB | Debian | k8s control-plane |
-| Jingliu | Raspberry Pi4 | Cortex A72 | 256GB SSD | 8GB | Debian | k8s control-plane |
-| Kafka   | Raspberry Pi4 | Cortex A72 | 240GB SSD | 8GB | Debian | k8s worker        |
+| Name     | Device         | CPU           | OS Disk      | RAM  | OS    | Purpose           |
+|----------|----------------|---------------|--------------|------|-------|-------------------|
+| Celestia | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | 16GB | Talos | k8s control-plane |
 
-Total CPU: 16 threads
-Total RAM: 32GB
+Total CPU: 4 threads
+Total RAM: 16GB
 
 ### Supporting Hardware
 
-| Name   | Device         | CPU           | OS Disk      | Data Disk  | RAM   | OS         | Purpose           |
-|--------|----------------|---------------|--------------|------------|-------|------------|-------------------|
-| NAS    | HP z820        | E5-2680v2     | 32GB USB     | 500GB NVMe | 128GB | Unraid     | NAS/NFS/Backup    |
-| DAS    | Lenovo SA120   | -             | -            | 56TB       | -     | -          | DAS w/ Parity     |
-| Nahida | Raspberry Pi4  | Cortex A72    | 120GB SSD    | -          | 4GB   | Fedora IoT | DNS/NUT/BWS-Cache |
-| Mika   | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | 500GB SSD  | 16GB  | Debian     | "Crash cart"      |
+| Name   | Device         | CPU           | OS Disk   | Data Disk  | RAM   | OS           | Purpose           |
+|--------|----------------|---------------|-----------|------------|-------|--------------|-------------------|
+| NAS    | HP z820        | E5-2680v2     | 32GB USB  | 500GB NVMe | 128GB | Unraid       | NAS/NFS/Backup    |
+| DAS    | Lenovo SA120   | -             | -         | 56TB       | -     | -            | DAS w/ Parity     |
+| Amber  | Raspberry Pi5  | Cortex A76    | 120GB SSD | -          | 8GB   | Raspbian     | Linux workstation |
+| Nahida | Raspberry Pi4  | Cortex A72    | 240GB SSD | -          | 4GB   | Fedora IoT   | DNS/NUT/BWS-Cache |
+| PiKVM  | Raspberry Pi4  | Cortex A72    | 64GB mSD  | -          | 8GB   | PiKVM (Arch) | KVM               |
 
 ### Networking/UPS Hardware
 
