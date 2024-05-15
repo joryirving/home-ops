@@ -11,6 +11,7 @@ tasks:
     dir: "{{.USER_WORKING_DIR}}"
     vars: &crunchy-vars
       APP: "{{.APP}}"
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
       PG: &pg-default
         sh: |-
           [[ -n "{{.PG}}" ]] && ( echo -n "{{.PG}}" && exit 0 ) || ( [[ -n "{{.APP}}" ]] && echo -n "pg-{{.APP}}" || echo -n "postgres" )
@@ -19,7 +20,7 @@ tasks:
           [[ -n "{{.NS}}" ]] && echo -n "{{.NS}}" || ( [[ -n "{{.APP}}" ]] && echo -n "{{.APP}}" || echo -n "database" )
       CRUNCHY_PRIMARY: &crunchy-primary
         sh: |-
-          kubectl get pods -n {{.NS}} -l postgres-operator.crunchydata.com/role=master,postgres-operator.crunchydata.com/cluster={{.PG}} -o jsonpath='{.items[0].metadata.name}'
+          kubectl --context {{ .cluster }} get pods -n {{.NS}} -l postgres-operator.crunchydata.com/role=master,postgres-operator.crunchydata.com/cluster={{.PG}} -o jsonpath='{.items[0].metadata.name}'
       DBNAME: &dbname
         sh: |-
           [[ -n "{{.DBNAME}}" ]] && echo -n "{{.DBNAME}}" || ( [[ -n "{{.APP}}" ]] && echo -n "{{.APP}}" ) || ( echo "Missing `DB` environment variable for specifying database name!" && exit 1 )
@@ -36,6 +37,7 @@ tasks:
     dir: "{{.USER_WORKING_DIR}}"
     vars: &crunchy-vars
       APP: "{{.APP}}"
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
       NS: *ns-default
       CRUNCHY_PRIMARY: *crunchy-primary
       DBNAME: *dbname
@@ -48,17 +50,18 @@ tasks:
     env:
       DBUSER: '{{.DBUSER}}'
     cmds:
-      - kubectl cp --container database {{.DUMP}} {{.NS}}/{{.CRUNCHY_PRIMARY}}:{{.CP_DIR}}/restore-dump.psql
+      - kubectl --context {{ .cluster }} cp --container database {{.DUMP}} {{.NS}}/{{.CRUNCHY_PRIMARY}}:{{.CP_DIR}}/restore-dump.psql
       - |-
-        kubectl exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'echo "ALTER DATABASE \"{{.DBNAME}}\" OWNER TO \"{{.DBUSER}}\";" | psql'
-      - kubectl exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'pg_restore --dbname {{.DBNAME}} {{.ARGS}} {{.CP_DIR}}/restore-dump.psql'
-      - defer: kubectl exec -it -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/restore-dump.psql'
+        kubectl --context {{ .cluster }} exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'echo "ALTER DATABASE \"{{.DBNAME}}\" OWNER TO \"{{.DBUSER}}\";" | psql'
+      - kubectl --context {{ .cluster }} exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'pg_restore --dbname {{.DBNAME}} {{.ARGS}} {{.CP_DIR}}/restore-dump.psql'
+      - defer: kubectl --context {{ .cluster }} exec -it -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/restore-dump.psql'
 
   crunchy-dump:
     desc: Run pg_dump on the master instance of a CrunchyData Postgres cluster.
     dir: "{{.USER_WORKING_DIR}}"
     vars:
       APP: "{{.APP}}"
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
       NS: *ns-default
       CRUNCHY_PRIMARY: *crunchy-primary
       DUMP: *dump
@@ -69,21 +72,5 @@ tasks:
         sh: |-
           [[ -n "{{.ARGS}}" ]] && echo "{{.ARGS}}" || echo "--verbose --format=c --clean --if-exists --no-owner"
     cmds:
-      - kubectl exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/dump.psql && pg_dump --dbname {{.DBNAME}} {{.ARGS}} --file {{.CP_DIR}}/dump.psql'
-      - kubectl cp --container database {{.NS}}/{{.CRUNCHY_PRIMARY}}:{{.CP_DIR}}/dump.psql {{.DUMP}}
-
-  cnpg-dump:
-    desc: Run pg_dump on the master instance of a CNPG Postgres cluster.
-    dir: "{{.USER_WORKING_DIR}}"
-    vars:
-      APP: "{{.APP}}"
-      NS: "{{.NS}}"
-      CNPG: "{{.CNPG}}"
-      DUMP: *dump
-      CP_DIR: "/var/lib/postgresql/data/pgdata"
-      ARGS:
-        sh: |-
-          [[ -n "{{.ARGS}}" ]] && echo "{{.ARGS}}" || echo "--verbose --format=c --clean --if-exists --no-owner"
-    cmds:
-      - kubectl exec -it --container postgres -n {{.NS}} {{.CNPG}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/dump.psql && pg_dump --dbname {{.APP}} {{.ARGS}} --file {{.CP_DIR}}/dump.psql'
-      - kubectl cp --container postgres {{.NS}}/{{.CNPG}}:{{.CP_DIR}}/dump.psql {{.DUMP}}
+      - kubectl --context {{ .cluster }} exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/dump.psql && pg_dump --dbname {{.DBNAME}} {{.ARGS}} --file {{.CP_DIR}}/dump.psql'
+      - kubectl --context {{ .cluster }} cp --container database {{.NS}}/{{.CRUNCHY_PRIMARY}}:{{.CP_DIR}}/dump.psql {{.DUMP}}
