@@ -149,7 +149,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 ### Home DNS
 
-On my [home-services](https://github.com/joryirving/home-services) I have [Bind9](https://github.com/isc-projects/bind9), [blocky](https://github.com/0xERR0R/blocky/) and [dnsdist](https://dnsdist.org/) deployed. In my cluster `external-dns` is deployed with the `RFC2136` provider which syncs DNS records to `bind9`.
+On my [home-service](https://github.com/joryirving/home-service) I have [Bind9](https://github.com/isc-projects/bind9), [blocky](https://github.com/0xERR0R/blocky/) and [dnsdist](https://dnsdist.org/) deployed. In my cluster `external-dns` is deployed with the `RFC2136` provider which syncs DNS records to `bind9`.
 
 `dnsdist` is a DNS loadbalancer and has "downstream" DNS servers configured such as `bind9` and `blocky`. All my clients use `dnsdist` as the upstream DNS server, this allows for more granularity with configuring DNS across my networks such as having all requests for my domain forward to `bind9` on certain networks, or only using `1.1.1.1` instead of `blocky` on certain networks where adblocking isn't required.
 
