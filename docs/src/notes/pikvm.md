@@ -1,8 +1,28 @@
 # PiKVM
 
+## Hardware notes
+
+Since I'm using a DiY PiKVM V2, there's a few notes:
+* [HDMI-CSI Bridge](https://www.amazon.ca/dp/B0CYPVQRCW) is about $10 more than an [HDMI dongle](https://www.amazon.ca/dp/B08F6ZD2RK), but is far superior. It also works with most PoE hats that have a cutout
+* If you're powering via PoE, like I am, you need a [power blocker](https://www.amazon.ca/dp/B094FYL9QT) for the USB-C -> USB-A cable.
+* `HDMI Backpower` is a known issue with DiY PiKVM models, where it gets stuck on reboot until you unplug the HDMI cable. Apparently there's a few models that address this, but I don't know what they are.
+
+<details>
+  <summary>Click to see the Diy PiKVM!</summary>
+
+  <img src="https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/pikvm.png" align="center" width="400px" alt="rack"/>
+</details>
+
 ## Load TESmart KVM
 
-1. Add or replace the file `/etc/kvmd/override.yaml`
+1. Update local root password
+    ```sh
+    rw
+    passwd root
+    ro
+    ```
+
+2. Add or replace the file `/etc/kvmd/override.yaml`
 
     ```yaml
     ---
@@ -193,7 +213,7 @@
             - ["#7", "server7_led", "server7_btn | KVM"]
     ```
 
-2. Restart kvmd
+3. Restart kvmd
 
     ```sh
     systemctl restart kvmd.service
