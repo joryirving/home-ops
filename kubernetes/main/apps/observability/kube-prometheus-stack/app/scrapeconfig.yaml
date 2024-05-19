@@ -9,7 +9,8 @@ spec:
     - targets:
         - voyager.internal:9100
         - pikvm.internal:9100
-        - nahida.internal:9100
+        - pompom.internal:9100
+        - amber.internal:9100
   metricsPath: /metrics
   relabelings:
     - action: replace
@@ -37,7 +38,7 @@ metadata:
   name: &name blocky
 spec:
   staticConfigs:
-    - targets: ["blocky.jory.casa::4000"]
+    - targets: ["blocky.jory.casa:4000"]
   metricsPath: /metrics
   relabelings:
     - action: replace
@@ -53,20 +54,6 @@ spec:
   staticConfigs:
     - targets: ["s3.jory.dev"]
   metricsPath: /minio/v2/metrics/cluster
-  relabelings:
-    - action: replace
-      targetLabel: job
-      replacement: *name
----
-# yaml-language-server: $schema=https://lds-schemas.pages.dev/monitoring.coreos.com/scrapeconfig_v1alpha1.json
-apiVersion: monitoring.coreos.com/v1alpha1
-kind: ScrapeConfig
-metadata:
-  name: &name podman-exporter
-spec:
-  staticConfigs:
-    - targets: ["nahida.internal:9882"]
-  metricsPath: /metrics
   relabelings:
     - action: replace
       targetLabel: job

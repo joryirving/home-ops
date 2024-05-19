@@ -186,13 +186,13 @@ Total RAM: 16GB
 
 ### Supporting Hardware
 
-| Name   | Device         | CPU           | OS Disk   | Data Disk  | RAM   | OS           | Purpose           |
-|--------|----------------|---------------|-----------|------------|-------|--------------|-------------------|
-| NAS    | HP z820        | E5-2680v2     | 32GB USB  | 500GB NVMe | 128GB | Unraid       | NAS/NFS/Backup    |
-| DAS    | Lenovo SA120   | -             | -         | 56TB       | -     | -            | DAS w/ Parity     |
-| Amber  | Raspberry Pi5  | Cortex A76    | 120GB SSD | -          | 8GB   | Raspbian     | Linux workstation |
-| Nahida | Raspberry Pi4  | Cortex A72    | 240GB SSD | -          | 4GB   | Fedora IoT   | DNS/NUT/BWS-Cache |
-| PiKVM  | Raspberry Pi4  | Cortex A72    | 64GB mSD  | -          | 8GB   | PiKVM (Arch) | KVM               |
+| Name   | Device         | CPU           | OS Disk    | Data Disk  | RAM   | OS           | Purpose        |
+|--------|----------------|---------------|------------|------------|-------|--------------|----------------|
+| NAS    | HP z820        | E5-2680v2     | 32GB USB   | 500GB NVMe | 128GB | Unraid       | NAS/NFS/Backup |
+| DAS    | Lenovo SA120   | -             | -          | 56TB       | -     | -            | DAS w/ Parity  |
+| Pompom | Raspberry Pi5  | Cortex A76    | 256GB NVMe | -          | 8GB   | Raspbian     | Primary DNS    |
+| Amber  | Raspberry Pi5  | Cortex A76    | 256GB NVMe | -          | 8GB   | Raspbian     | Secondary DNS  |
+| PiKVM  | Raspberry Pi4  | Cortex A72    | 64GB mSD   | -          | 4GB   | PiKVM (Arch) | KVM            |
 
 ### Networking/UPS Hardware
 
