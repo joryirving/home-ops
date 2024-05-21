@@ -140,7 +140,7 @@ tasks:
     vars:
       cluster_nodes:
         sh: |-
-          cat {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml | grep -oP 'ipAddress: "\K[0-9.]+'
+          grep -oP 'ipAddress: "\K[0-9.]+' {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml
     cmds:
       - for: { var: cluster_nodes }
         cmd: talosctl reboot -n {{.ITEM}}
@@ -157,7 +157,7 @@ tasks:
     vars:
       cluster_nodes:
         sh: |-
-          cat {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml | grep -oP 'ipAddress: "\K[0-9.]+'
+          grep -oP 'ipAddress: "\K[0-9.]+' {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml
     cmds:
       - for: { var: CLUSTER_NODES }
         cmd: talosctl shutdown --wait=false -n {{.ITEM}}
