@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/icons/logo.png" align="center" width="144px" height="144px"/>
+<img src="https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/logo.png" align="center" width="144px" height="144px"/>
 
 
 ### My Homelab Repository :snowflake:
@@ -124,7 +124,7 @@ graph TD;
 <details>
   <summary>Click to see a high-level network diagram</summary>
 
-  <img src="https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/assets/network-topology.png" align="center" alt="dns"/>
+  <img src="https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/network-topology.png" align="center" alt="dns"/>
 </details>
 
 ---

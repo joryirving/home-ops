@@ -46,7 +46,7 @@
 #   protocol_provider  = authentik_provider_proxy.download_proxy[each.value].id
 #   group              = authentik_group.downloads.name
 #   open_in_new_tab    = true
-#   meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/icons/${each.value}.png"
+#   meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/${each.value}.png"
 #   policy_engine_mode = "all"
 # }
 
@@ -67,7 +67,7 @@
 #   protocol_provider  = authentik_provider_proxy.infra_proxy[each.value].id
 #   group              = authentik_group.infrastructure.name
 #   open_in_new_tab    = true
-#   meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/icons/${each.value}.png"
+#   meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/${each.value}.png"
 #   policy_engine_mode = "all"
 # }
 
@@ -91,7 +91,7 @@
 #   protocol_provider  = authentik_provider_proxy.media_proxy[each.value].id
 #   group              = authentik_group.media.name
 #   open_in_new_tab    = true
-#   meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/icons/${each.value}.png"
+#   meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/${each.value}.png"
 #   policy_engine_mode = "all"
 # }
 
@@ -242,7 +242,7 @@ resource "authentik_application" "gitops_application" {
   protocol_provider  = authentik_provider_oauth2.gitops_oauth2.id
   group              = authentik_group.infrastructure.name
   open_in_new_tab    = true
-  meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/.docs/icons/weave.png"
+  meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/weave.png"
   meta_launch_url    = "https://gitops.${var.cluster_domain}/"
   policy_engine_mode = "all"
 }
