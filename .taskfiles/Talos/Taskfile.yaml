@@ -60,7 +60,7 @@ tasks:
       - { msg: "Missing talhelper secret file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_SECRET_FILE}}" }
 
   config-apply:
-    desc: Apply the Talos config on a node
+    desc: Apply the Talos config on a nodes for a new cluster
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand apply --extra-flags=--insecure | bash
     preconditions:
@@ -111,66 +111,12 @@ tasks:
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
 
   apply-config:
-    desc: Apply the Talos config on all nodes
+    desc: Apply the Talos config on all nodes for an existing cluster
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmd: talhelper gencommand apply | bash
     preconditions:
       - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
       - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
-
-  upgrade:
-    desc: Upgrade Talos on a node
-    cmd: bash {{.TALOS_SCRIPTS_DIR}}/upgrade.sh "{{.cluster}}" "{{.node}}" "{{.TALOS_SCHEMATIC_ID}}:{{.TALOS_VERSION}}" "{{.rollout}}"
-    vars:
-      rollout: '{{.rollout | default "false"}}'
-    requires:
-      vars: ["cluster", "node"]
-    preconditions:
-      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
-      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
-      - talosctl --context {{.cluster}} config info >/dev/null 2>&1
-      - talosctl --context {{.cluster}} --nodes {{.node}} get machineconfig >/dev/null 2>&1
-
-  upgrade-rollout:
-    desc: Rollout Talos upgrade on all nodes
-    cmds:
-      - flux --context {{.cluster}} suspend kustomization --all
-      - kubectl cnpg --context {{.cluster}} maintenance set --reusePVC --all-namespaces
-      - for: { var: nodes, split: "," }
-        task: upgrade
-        vars:
-          cluster: "{{.cluster}}"
-          node: "{{.ITEM}}"
-          rollout: "true"
-      - kubectl cnpg --context {{.cluster}} maintenance unset --reusePVC --all-namespaces
-      - flux --context {{.cluster}} resume kustomization --all
-      - task: :kubernetes:delete-failed-pods
-        vars:
-          cluster: "{{.cluster}}"
-    vars:
-      nodes:
-        sh: talosctl --context {{.cluster}} config info --output json | jq --join-output '[.nodes[]] | join(",")'
-    requires:
-      vars: ["cluster"]
-    preconditions:
-      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
-      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
-      - talosctl --context {{.cluster}} config info >/dev/null 2>&1
-      - talosctl --context {{.cluster}} --nodes {{.nodes}} get machineconfig >/dev/null 2>&1
-
-  upgrade-k8s:
-    desc: Upgrade the clusters k8s version
-    cmd: talosctl --context {{.cluster}} --nodes {{.controller}} upgrade-k8s --to {{.KUBERNETES_VERSION}}
-    vars:
-      controller:
-        sh: talosctl --context {{.cluster}} config info --output json | jq --raw-output '.endpoints[0]'
-    requires:
-      vars: ["cluster"]
-    preconditions:
-      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
-      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
-      - talosctl --context {{.cluster}} config info >/dev/null 2>&1
-      - talosctl --context {{.cluster}} --nodes {{.node}} get machineconfig >/dev/null 2>&1
 
   soft-nuke:
     desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
@@ -187,3 +133,34 @@ tasks:
     cmd: talhelper gencommand reset --extra-flags "--reboot --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+
+  cluster-reboot:
+    desc: Reboot all Talos nodes.
+    prompt: This will reboot all of the cluster nodes. Are you sure you want to continue?
+    vars:
+      cluster_nodes:
+        sh: |-
+          cat {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml | grep -oP 'ipAddress: "\K[0-9.]+'
+    cmds:
+      - for: { var: cluster_nodes }
+        cmd: talosctl reboot -n {{.ITEM}}
+      - task: :kubernetes:delete-failed-pods
+        vars:
+          cluster: "{{.cluster}}"
+    preconditions:
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
+      
+  cluster-shutdown:
+    desc: Shutdown all Talos nodes.
+    prompt: This will shutdown all of the cluster nodes. Are you sure you want to continue?
+    vars:
+      cluster_nodes:
+        sh: |-
+          cat {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml | grep -oP 'ipAddress: "\K[0-9.]+'
+    cmds:
+      - for: { var: CLUSTER_NODES }
+        cmd: talosctl shutdown --wait=false -n {{.ITEM}}
+    preconditions:
+      - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
