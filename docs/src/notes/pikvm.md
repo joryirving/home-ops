@@ -203,13 +203,13 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             title: Devices
           table:
             - ["#pikvm", "pikvm_led|green", "restart_service_button|confirm|Service", "reboot_button|confirm|Reboot"]
-            - ["#0", "server0_led", "server0_btn | KVM", "server0_wol | WOL"]
-            - ["#1", "server1_led", "server1_btn | KVM", "server1_wol | WOL"]
-            - ["#2", "server2_led", "server2_btn | KVM", "server2_wol | WOL"]
-            - ["#3", "server3_led", "server3_btn | KVM", "server3_wol | WOL"]
-            - ["#4", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
-            - ["#5", "server5_led", "server5_btn | KVM", "server5_wol | WOL"]
-            - ["#6", "server6_led", "server6_btn | KVM", "server6_wol | WOL"]
+            - ["#Ayaka", "server0_led", "server0_btn | KVM", "server0_wol | WOL"]
+            - ["#Eula", "server1_led", "server1_btn | KVM", "server1_wol | WOL"]
+            - ["#Ganyu", "server2_led", "server2_btn | KVM", "server2_wol | WOL"]
+            - ["#Hutao", "server3_led", "server3_btn | KVM", "server3_wol | WOL"]
+            - ["#Navia", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
+            - ["#Yelan", "server5_led", "server5_btn | KVM", "server5_wol | WOL"]
+            - ["#Amber", "server6_led", "server6_btn | KVM", "server6_wol | WOL"]
             - ["#7", "server7_led", "server7_btn | KVM"]
     ```
 
