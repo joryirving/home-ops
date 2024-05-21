@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: powertune
+  namespace: kube-tools
+  labels:
+    app.kubernetes.io/name: powertune
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: powertune
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: powertune
+    spec:
+      containers:
+      - image: ghcr.io/runningman84/powertune:main@sha256:a237892804d5883536e19681455f8ad0980d08499694df828af5f0e2571642b1
+        imagePullPolicy: IfNotPresent
+        name: powertune
+        command: ["/bin/sh", "-c", "sleep 86400"]
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: true
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /host
+          name: hostfs
+      dnsPolicy: ClusterFirstWithHostNet
+      hostIPC: true
+      hostNetwork: true
+      hostPID: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        runAsNonRoot: false
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - hostPath:
+          path: /
+          type: ""
+        name: hostfs
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
