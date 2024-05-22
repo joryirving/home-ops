@@ -41,7 +41,7 @@ spec:
               tag: 4.6.4@sha256:4882982cf03f450d34e0a4a1d610b3a166a3ab13cb698cdbdc6c117838e87c26
             env:
               TZ: ${TIMEZONE}
-              QBITTORRENT__PORT: &port 8080
+              QBITTORRENT__PORT: &port 80
               QBITTORRENT__BT_PORT: &port-bt "${SECRET_VPN_FORWARDED_PORT_1:=54321}"
             resources:
               requests:
@@ -49,11 +49,6 @@ spec:
                 memory: 1G
               limits:
                 memory: 12G
-          reannounce:
-            image:
-              repository: ghcr.io/buroa/qbtools
-              tag: v0.15.2
-            args: ["reannounce", "-s", "localhost", "-p", "8080"]
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
