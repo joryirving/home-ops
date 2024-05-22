@@ -11,6 +11,8 @@ spec:
       synchronous_mode: true
       postgresql:
         synchronous_commit: "on"
+        parameters:
+          max_connections: 500
   instances:
     - name: postgres
       metadata:
@@ -159,7 +161,8 @@ spec:
           # Ref: https://github.com/grafana/grafana/issues/74260
           pool_mode: session
           client_tls_sslmode: prefer
-          default_pool_size: "50"
+          default_pool_size: "100"
+          max_client_conn: "500"
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
