@@ -16,20 +16,23 @@ spec:
         name: prometheus-community
         namespace: flux-system
   install:
-    crds: CreateReplace
+    crds: Skip
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
+    crds: Skip
     remediation:
       strategy: rollback
       retries: 3
   dependsOn:
-    - name: openebs
+    - name: prometheus-operator-crds
+      namespace: observability
+    - name: longhorn
       namespace: storage
   values:
     crds:
+      enabled: false
     alertmanager:
       enabled: false
     grafana:

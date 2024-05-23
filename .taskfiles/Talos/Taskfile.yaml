@@ -82,10 +82,9 @@ tasks:
 
   bootstrap-apps:
     desc: Bootstrap core apps needed for Talos
-    dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
       - until kubectl --kubeconfig {{.KUBERNETES_DIR}}/{{.cluster}}/kubeconfig wait --for=condition=Ready=False nodes --all --timeout=600s; do sleep 10; done
-      - helmfile --file ./apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.cluster}}
+      - helmfile --file {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.cluster}}
       - until kubectl --kubeconfig {{.KUBERNETES_DIR}}/{{.cluster}}/kubeconfig wait --for=condition=Ready nodes --all --timeout=600s; do sleep 10; done
     requires:
       vars: ["cluster"]
@@ -93,7 +92,7 @@ tasks:
       - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
       - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/clusterconfig/{{.TALOSCONFIG }}
       - talosctl --context {{.cluster}} config info >/dev/null 2>&1
-      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/apps/helmfile.yaml
+      - test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/helmfile.yaml
 
   fetch-kubeconfig:
     desc: Fetch kubeconfig from Talos controllers
@@ -150,7 +149,7 @@ tasks:
     preconditions:
       - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
       - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
-      
+
   cluster-shutdown:
     desc: Shutdown all Talos nodes.
     prompt: This will shutdown all of the cluster nodes. Are you sure you want to continue?
