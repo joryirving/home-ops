@@ -4,13 +4,6 @@ variable "cluster_domain" {
   sensitive   = true
 }
 
-variable "pi_cluster_domain" {
-  type        = string
-  description = "Domain for Authentik"
-  sensitive   = true
-  default     = null
-}
-
 variable "gitops_id" {
   type        = string
   description = "Weave-Gitops Client ID"
