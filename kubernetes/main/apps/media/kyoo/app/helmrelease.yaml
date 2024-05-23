@@ -206,6 +206,19 @@ spec:
               limits:
                 gpu.intel.com/i915: 1
                 memory: 8Gi
+        pod:
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values: ["plex"]
+                topologyKey: kubernetes.io/hostname
+          nodeSelector:
+            intel.feature.node.kubernetes.io/gpu: "true"
+            
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -215,8 +228,6 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         supplementalGroups: [44, 10000]
         seccompProfile: { type: RuntimeDefault }
-      nodeSelector:
-        intel.feature.node.kubernetes.io/gpu: "true"
     service:
       back:
         controller: back
@@ -243,7 +254,6 @@ spec:
         ports:
           http:
             port: 7666
-
     ingress:
       main:
         className: external
