@@ -46,6 +46,10 @@ spec:
               secretKeyRef:
                 name: *secret
                 key: EXTERNAL_DNS_UNIFI_PASS
+          - name: LOG_LEVEL
+            value: "debug"
+          - name: UNIFI_SKIP_TLS_VERIFY
+            value: "true"
     policy: sync
     sources: ["ingress", "service"]
     txtOwnerId: default
@@ -53,6 +57,6 @@ spec:
     domainFilters: ["${SECRET_DOMAIN}"]
     excludeDomains: ["internal"]
     serviceMonitor:
-      enabled: false
+      enabled: true
     podAnnotations:
       secret.reloader.stakater.com/reload: *secret
