@@ -37,6 +37,8 @@ spec:
     ingress:
       dashboard:
         ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
         host:
           name: rook.${SECRET_DOMAIN}
           path: /
@@ -218,6 +220,8 @@ spec:
         ingress:
           enabled: true
           ingressClassName: internal
+          annotations:
+            external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
           host:
             name: rgw.${SECRET_DOMAIN}
             path: /

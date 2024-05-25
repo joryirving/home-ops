@@ -39,7 +39,7 @@ spec:
               __HOST: &host "clickops.${SECRET_DOMAIN}"
             probes:
               liveness: &probe
-                enabled: true          
+                enabled: true
                 custom: true
                 spec:
                   httpGet:
@@ -82,6 +82,8 @@ spec:
     ingress:
       app:
         className: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
         hosts:
           - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:

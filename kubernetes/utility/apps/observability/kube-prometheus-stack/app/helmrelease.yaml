@@ -131,9 +131,11 @@ spec:
       ingress:
         enabled: true
         ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: utility-internal.${SECRET_DOMAIN}
         pathType: Prefix
         hosts:
-          - prometheus.${SECRET_DOMAIN}
+          - prometheus-utility.${SECRET_DOMAIN}
       prometheusSpec:
         podMetadata:
           annotations:

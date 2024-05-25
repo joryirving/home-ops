@@ -101,6 +101,7 @@ spec:
           gethomepage.dev/widget.type: sabnzbd
           gethomepage.dev/widget.url: http://sabnzbd.downloads:8080
           gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_SABNZBD_TOKEN}}` }}"
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
         hosts:
         - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
@@ -124,4 +125,4 @@ spec:
           - path: /config/logs
       # incomplete:
       #   type: emptyDir
-    
+
