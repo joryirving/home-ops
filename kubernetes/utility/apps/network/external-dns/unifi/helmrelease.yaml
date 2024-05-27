@@ -48,12 +48,22 @@ spec:
                 key: EXTERNAL_DNS_UNIFI_PASS
           - name: LOG_LEVEL
             value: "debug"
-          - name: UNIFI_SKIP_TLS_VERIFY
-            value: "true"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http-wh-metrics
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: http-wh-metrics
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
     policy: sync
     sources: ["ingress", "service"]
     txtOwnerId: utility
-    txtPrefix: k8s.
+    txtPrefix: k8s.utility.
     domainFilters: ["${SECRET_DOMAIN}"]
     serviceMonitor:
       enabled: true
