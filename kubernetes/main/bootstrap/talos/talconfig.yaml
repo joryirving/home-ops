@@ -167,13 +167,12 @@ patches:
             source: /var/openebs/local
             options: ["bind", "rshared", "rw"]
 
-  # # Disable predictable NIC naming
-  # - |-
-  #   machine:
-  #     install:
-  #       extraKernelArgs:
-  #         - net.ifnames=0
-
+  # Blacklist e1000e driver
+  - |-
+    machine:
+      install:
+        extraKernelArgs:
+          - module_blacklist=e1000e
 
 controlPlane:
   patches:
