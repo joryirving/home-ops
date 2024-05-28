@@ -25,10 +25,20 @@ nodes:
     talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
     controlPlane: true
     networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: a4:bb:6d:6e:ec:75
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:69
         dhcp: true
         mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
         vip:
           ip: "10.69.1.20"
   - hostname: "eula"
@@ -37,10 +47,20 @@ nodes:
     talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
     controlPlane: true
     networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 8c:04:ba:a5:51:20
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
       - deviceSelector:
           hardwareAddr: 1c:fd:08:75:15:63
         dhcp: true
         mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
         vip:
           ip: "10.69.1.20"
   - hostname: "ganyu"
@@ -49,10 +69,20 @@ nodes:
     talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
     controlPlane: true
     networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:37:14
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
       - deviceSelector:
           hardwareAddr: 1c:fd:08:75:15:6f
         dhcp: true
         mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
         vip:
           ip: "10.69.1.20"
   - hostname: "hutao"
@@ -61,30 +91,60 @@ nodes:
     talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
     controlPlane: false
     networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:43:c4
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:dd
         dhcp: true
         mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
   - hostname: "navia"
     ipAddress: "10.69.1.25"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
     controlPlane: false
     networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:0f:d7
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:05:e6
         dhcp: true
         mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
   - hostname: "yelan"
     ipAddress: "10.69.1.26"
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
     controlPlane: false
     networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:35:fa
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
       - deviceSelector:
           hardwareAddr: 00:e0:4c:68:06:3a
         dhcp: true
         mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
 
 patches:
   # Configure containerd
@@ -166,13 +226,6 @@ patches:
             type: bind
             source: /var/openebs/local
             options: ["bind", "rshared", "rw"]
-
-  # Blacklist e1000e driver
-  - |-
-    machine:
-      install:
-        extraKernelArgs:
-          - module_blacklist=e1000e
 
 controlPlane:
   patches:
