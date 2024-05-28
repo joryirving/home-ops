@@ -142,7 +142,7 @@ tasks:
           grep -oP 'ipAddress: "\K[0-9.]+' {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml
     cmds:
       - for: { var: cluster_nodes }
-        cmd: talosctl reboot -n {{.ITEM}}
+        cmd: talosctl reboot -n {{.ITEM}} --context {{.cluster}}
       - task: :kubernetes:delete-failed-pods
         vars:
           cluster: "{{.cluster}}"
@@ -159,7 +159,7 @@ tasks:
           grep -oP 'ipAddress: "\K[0-9.]+' {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/talconfig.yaml
     cmds:
       - for: { var: CLUSTER_NODES }
-        cmd: talosctl shutdown --wait=false -n {{.ITEM}}
+        cmd: talosctl shutdown --wait=false -n {{.ITEM}} --context {{.cluster}}
     preconditions:
       - { msg: "Argument (cluster) is required", sh: "test -n {{.cluster}}" }
       - { msg: "Missing talhelper config file", sh: "test -f {{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
