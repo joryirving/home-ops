@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app bws-cache
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.2.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      bws-cache:
+        replicas: 1
+        strategy: RollingUpdate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ripplefcl/bws-cache
+              tag: v1.1.0@sha256:bcee868971c14cf9180249059c386706b8ab2ad3f3749762006aa261f6490744
+            env:
+              SECRET_TTL: 3600
+              DEBUG: "true"
+              ORG_ID:
+                valueFrom:
+                  secretKeyRef:
+                    name: bws-secret
+                    key: ORG_ID
+            # probes:
+            #   liveness:
+            #     enabled: false
+            # #     custom: false
+            # #     spec:
+            # #       httpGet:
+            # #         path: /heartbeat
+            # #         port: 5000
+            # #       initialDelaySeconds: 15
+            # #       periodSeconds: 30
+            # #       failureThreshold: 3
+            #   readiness:
+            #     enabled: false
+            # #     custom: true
+            # #     spec:
+            # #       httpGet:
+            # #         path: /health
+            # #         port: 5000
+            # #       initialDelaySeconds: 15
+            #   startup:
+            #     enabled: false
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources: &resources
+              requests:
+                cpu: 10m
+                memory: 10Mi
+              limits:
+                memory: 100Mi
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 5000
+    ingress:
+      app:
+        className: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal-utility.${SECRET_DOMAIN}
+        hosts:
+          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
