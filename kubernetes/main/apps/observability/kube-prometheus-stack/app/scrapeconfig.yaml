@@ -9,8 +9,21 @@ spec:
     - targets:
         - voyager.internal:9100
         - pikvm.internal:9100
-        # - pompom.internal:9100
-        # - amber.internal:9100
+  metricsPath: /metrics
+  relabelings:
+    - action: replace
+      targetLabel: job
+      replacement: *name
+---
+# yaml-language-server: $schema=https://lds-schemas.pages.dev/monitoring.coreos.com/scrapeconfig_v1alpha1.json
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: &name smartctl-exporter
+spec:
+  staticConfigs:
+    - targets:
+        - voyager.internal:9633
   metricsPath: /metrics
   relabelings:
     - action: replace
@@ -24,7 +37,8 @@ metadata:
   name: &name pikvm
 spec:
   staticConfigs:
-    - targets: ["pikvm.internal"]
+    - targets:
+        - pikvm.internal
   metricsPath: /api/export/prometheus/metrics
   relabelings:
     - action: replace
@@ -53,7 +67,8 @@ metadata:
   name: &name minio-job
 spec:
   staticConfigs:
-    - targets: ["s3.jory.dev"]
+    - targets:
+        - s3.${SECRET_DOMAIN}
   metricsPath: /minio/v2/metrics/cluster
   relabelings:
     - action: replace
