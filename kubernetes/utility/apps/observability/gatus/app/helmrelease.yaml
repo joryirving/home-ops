@@ -70,13 +70,8 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                add: ["NET_RAW"]
+              capabilities: { drop: ["ALL"] }
             resources: *resources
-    podSecurityContext:
-      sysctls:
-        - name: net.ipv4.ping_group_range
-          value: "0 65536"
     defaultPodOptions:
       dnsConfig:
         options:
