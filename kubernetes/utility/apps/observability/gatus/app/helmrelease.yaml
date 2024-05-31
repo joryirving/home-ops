@@ -27,7 +27,7 @@ spec:
         strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
-          security.alpha.kubernetes.io/sysctls: net.ipv4.ping_group_range=0 2147483647
+          # security.alpha.kubernetes.io/sysctls: net.ipv4.ping_group_range=0 2147483647
         initContainers:
           init-config:
             image:
@@ -49,8 +49,10 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/twin/gatus
-              tag: v5.11.0@sha256:eb0374eb55e3ff84ec8f9ea10342ddb623cfba23e5836138896cde01f11cf23d
+              repository: twinproduction/gatus
+              tag: experimental
+              # repository: ghcr.io/twin/gatus
+              # tag: v5.11.0@sha256:eb0374eb55e3ff84ec8f9ea10342ddb623cfba23e5836138896cde01f11cf23d
             env:
               TZ: ${TIMEZONE}
               GATUS_CONFIG_PATH: /config
