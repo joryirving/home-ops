@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
-vars:
+vars: &vars
   TALHELPER_SECRET_FILE: "talsecret.sops.yaml"
   TALHELPER_CONFIG_FILE: "talconfig.yaml"
   TALOS_VERSION:
@@ -11,6 +11,8 @@ vars:
     sh: yq 'select(document_index == 1).spec.postBuild.substitute.TALOS_SCHEMATIC_ID' {{.KUBERNETES_DIR}}/{{.cluster}}/apps/kube-tools/system-upgrade-controller/ks.yaml
   KUBERNETES_VERSION:
     sh: yq 'select(document_index == 1).spec.postBuild.substitute.KUBERNETES_VERSION' {{.KUBERNETES_DIR}}/{{.cluster}}/apps/kube-tools/system-upgrade-controller/ks.yaml
+  CONTROLLER:
+    sh: talosctl --context {{.cluster}} config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
 
 env:
   TALOSCONFIG: "talosconfig"
@@ -69,10 +71,8 @@ tasks:
 
   bootstrap-install:
     desc: Install the Talos cluster
-    cmd: until talosctl --context {{.cluster}} --nodes {{.controller}} bootstrap; do sleep 10; done
-    vars:
-      controller:
-        sh: talosctl --context {{.cluster}} config info --output json | jq --raw-output '.endpoints[0]'
+    cmd: until talosctl --context {{.cluster}} --nodes {{.CONTROLLER}} bootstrap; do sleep 10; done
+    vars: *vars
     requires:
       vars: ["cluster"]
     preconditions:
@@ -97,11 +97,9 @@ tasks:
   fetch-kubeconfig:
     desc: Fetch kubeconfig from Talos controllers
     cmd: |
-      talosctl --context {{.cluster}} kubeconfig --nodes {{.controller}} \
+      talosctl --context {{.cluster}} kubeconfig --nodes {{.CONTROLLER}} \
           --force --force-context-name {{.cluster}} {{.KUBERNETES_DIR}}/{{.cluster}}/
-    vars:
-      controller:
-        sh: talosctl --context {{.cluster}} config info --output json | jq --raw-output '.endpoints[0]'
+    vars: *vars
     requires:
       vars: ["cluster"]
     preconditions:
