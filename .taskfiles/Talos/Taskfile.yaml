@@ -5,11 +5,12 @@ version: "3"
 vars:
   TALHELPER_SECRET_FILE: "talsecret.sops.yaml"
   TALHELPER_CONFIG_FILE: "talconfig.yaml"
-  # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-  TALOS_VERSION: v1.7.4
-  TALOS_SCHEMATIC_ID: 5b3717ebb1bc80ddea39bb8ae3cfd3294bfcfb13e05dcd6f1aa54b8e8f9dbcc1
-  # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
-  KUBERNETES_VERSION: v1.30.1
+  TALOS_VERSION:
+    sh: yq 'select(document_index == 1).spec.postBuild.substitute.TALOS_VERSION' {{.KUBERNETES_DIR}}/{{.cluster}}/apps/kube-tools/system-upgrade-controller/ks.yaml
+  TALOS_SCHEMATIC_ID:
+    sh: yq 'select(document_index == 1).spec.postBuild.substitute.TALOS_SCHEMATIC_ID' {{.KUBERNETES_DIR}}/{{.cluster}}/apps/kube-tools/system-upgrade-controller/ks.yaml
+  KUBERNETES_VERSION:
+    sh: yq 'select(document_index == 1).spec.postBuild.substitute.KUBERNETES_VERSION' {{.KUBERNETES_DIR}}/{{.cluster}}/apps/kube-tools/system-upgrade-controller/ks.yaml
 
 env:
   TALOSCONFIG: "talosconfig"
@@ -24,14 +25,13 @@ tasks:
     dir: "{{.KUBERNETES_DIR}}/{{.cluster}}/bootstrap/talos/"
     cmds:
       - task: config-apply
-        vars: &vars
-          cluster: "{{.cluster}}"
+        vars: { cluster: "{{.cluster}}" }
       - task: bootstrap-install
-        vars: *vars
+        vars: { cluster: "{{.cluster}}" }
       - task: fetch-kubeconfig
-        vars: *vars
+        vars: { cluster: "{{.cluster}}" }
       - task: bootstrap-apps
-        vars: *vars
+        vars: { cluster: "{{.cluster}}" }
       - talosctl health --server=false --context {{.cluster}}
     requires:
       vars: ["cluster"]
