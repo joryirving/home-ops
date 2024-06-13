@@ -2,9 +2,7 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
-vars: &vars
-  TALHELPER_SECRET_FILE: "talsecret.sops.yaml"
-  TALHELPER_CONFIG_FILE: "talconfig.yaml"
+x-vars: &vars
   TALOS_VERSION:
     sh: yq 'select(document_index == 1).spec.postBuild.substitute.TALOS_VERSION' {{.KUBERNETES_DIR}}/{{.cluster}}/apps/kube-tools/system-upgrade-controller/ks.yaml
   TALOS_SCHEMATIC_ID:
@@ -13,6 +11,10 @@ vars: &vars
     sh: yq 'select(document_index == 1).spec.postBuild.substitute.KUBERNETES_VERSION' {{.KUBERNETES_DIR}}/{{.cluster}}/apps/kube-tools/system-upgrade-controller/ks.yaml
   CONTROLLER:
     sh: talosctl --context {{.cluster}} config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
+
+vars:
+  TALHELPER_SECRET_FILE: "talsecret.sops.yaml"
+  TALHELPER_CONFIG_FILE: "talconfig.yaml"
 
 env:
   TALOSCONFIG: "talosconfig"
