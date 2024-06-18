@@ -82,22 +82,6 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/default
-          - name: ceph
-            orgId: 1
-            folder: Ceph
-            type: file
-            disableDeletion: false
-            editable: true
-            options:
-              path: /var/lib/grafana/dashboards/ceph
-          - name: cilium
-            orgId: 1
-            folder: Cilium
-            type: file
-            disableDeletion: false
-            editable: true
-            options:
-              path: /var/lib/grafana/dashboards/cilium
           - name: data
             orgId: 1
             folder: Data
@@ -114,6 +98,14 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/flux
+          - name: games
+            orgId: 1
+            folder: Games
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/games
           - name: kubernetes
             orgId: 1
             folder: Kubernetes
@@ -130,14 +122,14 @@ spec:
             editable: true
             options:
               path: /var/lib/grafana/dashboards/network
-          - name: nginx
+          - name: storage
             orgId: 1
-            folder: Nginx
+            folder: Storage
             type: file
             disableDeletion: false
             editable: true
             options:
-              path: /var/lib/grafana/dashboards/nginx
+              path: /var/lib/grafana/dashboards/storage
           - name: system
             orgId: 1
             folder: System
@@ -179,25 +171,6 @@ spec:
             jsonData:
               implementation: prometheus
     dashboards:
-      ceph:
-        ceph-cluster:
-          # renovate: depName="Ceph Cluster"
-          gnetId: 2842
-          revision: 17
-          datasource: Prometheus
-        ceph-osd:
-          # renovate: depName="Ceph - OSD (Single)"
-          gnetId: 5336
-          revision: 9
-          datasource: Prometheus
-        ceph-pools:
-          # renovate: depName="Ceph - Pools"
-          gnetId: 5342
-          revision: 9
-          datasource: Prometheus
-        host-overview:
-          url: https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/hosts-overview.json
-          datasource: Prometheus
       data:
         crunchy-pgbackrest:
           url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/pgbackrest.json
@@ -238,13 +211,6 @@ spec:
           gnetId: 7845
           revision: 4
           datasource: Prometheus
-      default:
-        palworld:
-          # renovate: depName="Palworld"
-          gnetId: 20421
-          revision: 3
-          datasource:
-            - { name: DS_PROMETHEUS, value: Prometheus }
       flux:
         flux-cluster:
           url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/cluster.json
@@ -255,6 +221,13 @@ spec:
         flux-logs:
           url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/main/monitoring/configs/dashboards/logs.json
           datasource: Prometheus
+      games:
+        palworld:
+          # renovate: depName="Palworld"
+          gnetId: 20421
+          revision: 3
+          datasource:
+            - { name: DS_PROMETHEUS, value: Prometheus }
       kubernetes:
         kubernetes-api-server:
           # renovate: depName="Kubernetes / System / API Server"
@@ -323,6 +296,12 @@ spec:
           gnetId: 15038
           revision: 3
           datasource: Prometheus
+        nginx:
+          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+          datasource: Prometheus
+        nginx-request-handling-performance:
+          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/request-handling-performance.json
+          datasource: Prometheus
         speedtest-exporter-hub:
           # renovate: depName="Speedtest Exporter"
           gnetId: 16541
@@ -344,26 +323,32 @@ spec:
           gnetId: 11312
           revision: 9
           datasource: Prometheus
-      nginx:
-        nginx:
-          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+      storage:
+        ceph-cluster:
+          # renovate: depName="Ceph Cluster"
+          gnetId: 2842
+          revision: 17
           datasource: Prometheus
-        nginx-request-handling-performance:
-          url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/request-handling-performance.json
+        ceph-osd:
+          # renovate: depName="Ceph - OSD (Single)"
+          gnetId: 5336
+          revision: 9
           datasource: Prometheus
-      system:
-        kasa:
-          # renovate: depName="Kasa"
-          gnetId: 10957
-          revision: 3
-          datasource:
-            - { name: DS_PROMETHEUS, value: Prometheus }
+        ceph-pools:
+          # renovate: depName="Ceph - Pools"
+          gnetId: 5342
+          revision: 9
+          datasource: Prometheus
+        host-overview:
+          url: https://raw.githubusercontent.com/ceph/ceph/main/monitoring/ceph-mixin/dashboards_out/hosts-overview.json
+          datasource: Prometheus
         minio:
           # renovate: depName="MinIO Dashboard"
           gnetId: 13502
           revision: 26
           datasource:
             - { name: DS_PROMETHEUS, value: Prometheus }
+      system:
         node-exporter-full:
           # renovate: depName="Node Exporter Full"
           gnetId: 1860
