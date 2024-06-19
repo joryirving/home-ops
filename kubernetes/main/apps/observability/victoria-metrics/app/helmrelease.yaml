@@ -119,6 +119,10 @@ spec:
       enabled: true
       spec:
         replicaCount: 2
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
+        extraArgs:
+          external.url: https://vmalert.${SECRET_DOMAIN}
         resources:
           requests:
             cpu: 50m
@@ -133,10 +137,6 @@ spec:
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: vmalert
-        extraArgs:
-          external.url: https://vmalert.${SECRET_DOMAIN}
-        # notifiers:
-        #   - url: http://alertmanager-operated.observability.svc.cluster.local:9093
       ingress:
         enabled: true
         ingressClassName: internal
@@ -153,6 +153,9 @@ spec:
         scrapeInterval: 30s
         externalLabels:
           cluster: ${CLUSTER_NAME}
+        additionalScrapeConfigs:
+          name: vm-additional-scrape-configs
+          key: prometheus-additional.yaml
         resources:
           requests:
             cpu: 50m
@@ -167,9 +170,6 @@ spec:
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: vmagent
-        additionalScrapeConfigs:
-          name: vm-additional-scrape-configs
-          key: prometheus-additional.yaml
       ingress:
         enabled: true
         ingressClassName: internal
@@ -191,6 +191,8 @@ spec:
           multicluster:
             etcd:
               enabled: true
+      ingress:
+        hosts: ["grafana.${SECRET_DOMAIN}"]
 
     prometheus-node-exporter:
       enabled: true
@@ -219,13 +221,26 @@ spec:
       enabled: *kubeApiserver
     kubeControllerManager:
       enabled: true
+      service:
+        selector:
+          k8s-app: kube-controller-manager
     kubeDns:
       enabled: false #Use either this or coreDns
     coreDns:
       enabled: true
     kubeEtcd:
       enabled: true
+      endpoints:
+        - 10.69.1.21
+        - 10.69.1.22
+        - 10.69.1.23
+      service:
+        port: 2381
+        targetport: 2381
     kubeScheduler:
       enabled: *kubeScheduler
+      service:
+        selector:
+          k8s-app: kube-scheduler
     kubeProxy:
       enabled: false
