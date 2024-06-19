@@ -22,8 +22,13 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
+  dependsOn:
+    - name: prometheus-operator-crds
+      namespace: observability
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
   values:
-    fullnameOverride: *app
+    # fullnameOverride: *app
     victoria-metrics-operator:
       enabled: true
       operator:
