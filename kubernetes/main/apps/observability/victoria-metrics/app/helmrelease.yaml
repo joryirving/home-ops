@@ -1,0 +1,231 @@
+---
+# yaml-language-server: $schema=https://lds-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app victoria-metrics
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: victoria-metrics-k8s-stack
+      version: 0.23.3
+      sourceRef:
+        kind: HelmRepository
+        name: victoria-metrics
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    fullnameOverride: *app
+    victoria-metrics-operator:
+      enabled: true
+      operator:
+        disable_prometheus_converter: false # Ensure we keep enabled the converter to sync prom rules to VM rules
+        enable_converter_ownership: true # Required to allow VM to remove VM rules it imports if a prometheus rule is deleted
+
+   # Prepared sets of default rules
+    # Adjust to what scraping functions you have enabled
+    # i.e. if you dont have kubeapisever setup & enabled, disable
+    #   the kubeApiserver rules below
+    defaultRules:
+      create: true
+      rules:
+        etcd: true
+        general: true
+        k8s: true
+        kubeApiserver: &kubeApiserver true
+        kubeApiserverAvailability: true
+        kubeApiserverBurnrate: true
+        kubeApiserverHistogram: true
+        kubeApiserverSlos: true
+        kubelet: &kubelet true
+        kubePrometheusGeneral: true
+        kubePrometheusNodeRecording: true
+        kubernetesApps: true
+        kubernetesResources: true
+        kubernetesStorage: true
+        kubernetesSystem: true
+        kubeScheduler: &kubeScheduler true
+        kubeStateMetrics: &kubeStateMetrics true
+        network: true
+        node: true
+        vmagent: &vmagent true
+        vmsingle: &vmsingle true
+        vmhealth: true
+        alertmanager: &alertmanager true
+
+    defaultDashboardsEnabled: true
+    experimentalDashboardsEnabled: true
+
+    vmsingle:
+      enabled: *vmsingle
+      spec:
+        extraArgs:
+          dedup.minScrapeInterval: 30s
+          maxLabelsPerTimeseries: "90"
+          search.minStalenessInterval: 5m
+          vmalert.proxyURL: http://vmalert-victoria-metrics.observability.svc.cluster.local:8080
+        retentionPeriod: 1y
+        storage:
+          storageClassName: ceph-block
+          resources:
+            requests:
+              storage: 50Gi
+          accessModes:
+            - ReadWriteOnce
+      ingress:
+        enabled: true
+        ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
+        hosts:
+          - victoria-metrics.${SECRET_DOMAIN}
+
+    alertmanager:
+      enabled: *alertmanager
+      ingress:
+        enabled: true
+        pathType: Prefix
+        ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
+        hosts:
+          - alertmanager.${SECRET_DOMAIN}
+      spec:
+        replicaCount: 2
+        configSecret: alertmanager-secret
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: ceph-block
+              resources:
+                requests:
+                  storage: 1Gi
+
+    vmalert:
+      enabled: true
+      spec:
+        replicaCount: 2
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 150m
+            memory: 256Mi
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: vmalert
+        extraArgs:
+          external.url: https://vmalert.${SECRET_DOMAIN}
+        # notifiers:
+        #   - url: http://alertmanager-operated.observability.svc.cluster.local:9093
+      ingress:
+        enabled: true
+        ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
+        hosts:
+          - vmalert.${SECRET_DOMAIN}
+
+    vmagent:
+      enabled: *vmagent
+      spec:
+        replicaCount: 1 #total pod count is replicaCount * shardCount
+        shardCount: 2
+        scrapeInterval: 30s
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 400m
+            memory: 512Mi
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: vmagent
+        additionalScrapeConfigs:
+          name: vm-additional-scrape-configs
+          key: prometheus-additional.yaml
+      ingress:
+        enabled: true
+        ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
+        hosts:
+          - vmagent.${SECRET_DOMAIN}
+
+    ######################
+    ### dependencies #####
+    ######################
+    grafana:
+      enabled: false
+      forceDeployDashboards: true
+      sidecar:
+        dashboards:
+          annotations:
+            grafana_folder: Kubernetes
+          multicluster:
+            etcd:
+              enabled: true
+
+    prometheus-node-exporter:
+      enabled: true
+      fullnameOverride: node-exporter
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels: ["__meta_kubernetes_pod_node_name"]
+              targetLabel: kubernetes_node
+
+    kube-state-metrics:
+      enabled: *kubeStateMetrics
+      fullnameOverride: kube-state-metrics
+      metricLabelsAllowlist:
+        - pods=[*]
+        - deployments=[*]
+        - persistentvolumeclaims=[*]
+
+    kubelet:
+      enabled: *kubelet
+    kubeApiServer:
+      enabled: *kubeApiserver
+    kubeControllerManager:
+      enabled: true
+      endpoints: &cp
+        - 10.69.1.21
+        - 10.69.1.22
+        - 10.69.1.23
+    kubeDns:
+      enabled: false #Use either this or coreDns
+    coreDns:
+      enabled: true
+    kubeEtcd:
+      enabled: true
+      endpoints: *cp
+    kubeScheduler:
+      enabled: *kubeScheduler
+      endpoints: *cp
+    kubeProxy:
+      enabled: false
