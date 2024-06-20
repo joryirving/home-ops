@@ -45,32 +45,32 @@ spec:
         etcd: true
         general: true
         k8s: true
-        kubeApiserver: &kubeApiserver true
+        kubeApiserver: true
         kubeApiserverAvailability: true
         kubeApiserverBurnrate: true
         kubeApiserverHistogram: true
         kubeApiserverSlos: true
-        kubelet: &kubelet true
+        kubelet: true
         kubePrometheusGeneral: true
         kubePrometheusNodeRecording: true
         kubernetesApps: true
         kubernetesResources: true
         kubernetesStorage: true
         kubernetesSystem: true
-        kubeScheduler: &kubeScheduler false
-        kubeStateMetrics: &kubeStateMetrics true
+        kubeScheduler: true
+        kubeStateMetrics: true
         network: true
         node: true
-        vmagent: &vmagent true
-        vmsingle: &vmsingle true
+        vmagent: true
+        vmsingle: true
         vmhealth: true
-        alertmanager: &alertmanager true
+        alertmanager: true
 
     defaultDashboardsEnabled: true
     experimentalDashboardsEnabled: true
 
     vmsingle:
-      enabled: *vmsingle
+      enabled: true
       spec:
         extraArgs:
           dedup.minScrapeInterval: 30s
@@ -94,7 +94,7 @@ spec:
           - victoria-metrics.${SECRET_DOMAIN}
 
     alertmanager:
-      enabled: *alertmanager
+      enabled: true
       externalURL: "alertmanager.${SECRET_DOMAIN}"
       ingress:
         enabled: true
@@ -146,7 +146,7 @@ spec:
           - vmalert.${SECRET_DOMAIN}
 
     vmagent:
-      enabled: *vmagent
+      enabled: true
       spec:
         replicaCount: 1 #total pod count is replicaCount * shardCount
         shardCount: 2
@@ -208,7 +208,7 @@ spec:
               targetLabel: kubernetes_node
 
     kube-state-metrics:
-      enabled: *kubeStateMetrics
+      enabled: true
       fullnameOverride: kube-state-metrics
       metricLabelsAllowlist:
         - pods=[*]
@@ -216,7 +216,7 @@ spec:
         - persistentvolumeclaims=[*]
 
     kubelet:
-      enabled: *kubelet
+      enabled: true
       spec:
         metricRelabelConfigs:
           # Drop high cardinality labels
@@ -229,7 +229,7 @@ spec:
             regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
 
     kubeApiServer:
-      enabled: *kubeApiserver
+      enabled: true
       spec:
         metricRelabelConfigs:
           # Drop high cardinality labels
@@ -241,27 +241,28 @@ spec:
             action: drop
 
     kubeControllerManager:
-      enabled: false
+      enabled: true
       endpoints: &cp
         - 10.69.1.21
         - 10.69.1.22
         - 10.69.1.23
-
+      spec: &spec
+        endpoints:
+          - tlsConfig:
+              insecureSkipVerify: true
     kubeDns:
       enabled: false #Use either this or coreDns
-
     coreDns:
       enabled: true
-
     kubeEtcd:
       enabled: true
       endpoints: *cp
       service:
         port: 2381
         targetport: 2381
-
     kubeScheduler:
-      enabled: *kubeScheduler
-      
+      enabled: true
+      endpoints: *cp
+      spec: *spec
     kubeProxy:
       enabled: false

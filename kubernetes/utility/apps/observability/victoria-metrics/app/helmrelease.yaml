@@ -8,8 +8,8 @@ spec:
   interval: 30m
   chart:
     spec:
-      chart: victoria-metrics-agent
-      version: 0.10.9
+      chart: victoria-metrics-k8s-stack
+      version: 0.23.2
       sourceRef:
         kind: HelmRepository
         name: victoria-metrics
@@ -22,25 +22,139 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
+  dependsOn:
+    - name: prometheus-operator-crds
+      namespace: observability
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
   values:
-    replicaCount: 1
-    externalLabels:
-      cluster: ${CLUSTER_NAME}
-    deployment:
+    fullnameOverride: *app
+    victoria-metrics-operator:
       enabled: true
-    remoteWriteUrls:
-      - https://victoria-metrics.${SECRET_DOMAIN}/api/v1/write
-    service:
+      operator:
+        disable_prometheus_converter: false # Ensure we keep enabled the converter to sync prom rules to VM rules
+        enable_converter_ownership: true # Required to allow VM to remove VM rules it imports if a prometheus rule is deleted
+
+    defaultRules:
+      create: false
+    defaultDashboardsEnabled: true
+    experimentalDashboardsEnabled: true
+    vmsingle:
+      enabled: false
+    alertmanager:
+      enabled: false
+    vmalert:
+      enabled: false
+
+    vmagent:
       enabled: true
-    ingress:
+      spec:
+        replicaCount: 1 #total pod count is replicaCount * shardCount
+        shardCount: 2
+        scrapeInterval: 30s
+        externalLabels:
+          cluster: ${CLUSTER_NAME}
+        remoteWrite:
+            - url: https://victoria-metrics.${SECRET_DOMAIN}/api/v1/write
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 400m
+            memory: 512Mi
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: vmagent
+      ingress:
+        enabled: true
+        ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal-utlility.${SECRET_DOMAIN}
+        hosts:
+          - vmagent-utility.${SECRET_DOMAIN}
+
+    ######################
+    ### dependencies #####
+    ######################
+    grafana:
+      enabled: false
+      ingress:
+        hosts: ["grafana.${SECRET_DOMAIN}"]
+
+    prometheus-node-exporter:
       enabled: true
-      ingressClassName: internal
-      annotations:
-        external-dns.alpha.kubernetes.io/target: internal-utility.${SECRET_DOMAIN}
-      hosts:
-        - name: vmagent-utility.${SECRET_DOMAIN}
-          path: /
-          port: http
-    config:
-      global:
-        scrape_interval: 30s
+      fullnameOverride: node-exporter
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels: ["__meta_kubernetes_pod_node_name"]
+              targetLabel: kubernetes_node
+
+    kube-state-metrics:
+      enabled: *kubeStateMetrics
+      fullnameOverride: kube-state-metrics
+      metricLabelsAllowlist:
+        - pods=[*]
+        - deployments=[*]
+        - persistentvolumeclaims=[*]
+
+    kubelet:
+      enabled: true
+      spec:
+        interval: 30s
+        metricRelabelConfigs:
+          # Drop high cardinality labels
+          - action: labeldrop
+            regex: (uid)
+          - action: labeldrop
+            regex: (id|name)
+          - action: drop
+            source_labels: ["__name__"]
+            regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
+
+    kubeApiServer:
+      enabled: true
+      spec:
+        interval: 30s
+        metricRelabelConfigs:
+          # Drop high cardinality labels
+          - sourceLabels: ["__name__"]
+            regex: (apiserver|etcd|rest_client)_request(|_sli|_slo)_duration_seconds_bucket
+            action: drop
+          - sourceLabels: ["__name__"]
+            regex: (apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket)
+            action: drop
+
+    kubeControllerManager:
+      enabled: true
+      endpoints: &cp
+        - 10.69.1.121
+      spec: &spec
+        endpoints:
+          - tlsConfig:
+              insecureSkipVerify: true
+    kubeDns:
+      enabled: false #Use either this or coreDns
+    coreDns:
+      enabled: true
+    kubeEtcd:
+      enabled: true
+      endpoints: *cp
+      service:
+        port: 2381
+        targetport: 2381
+    kubeScheduler:
+      enabled: true
+      endpoints: *cp
+      spec: *spec
+    kubeProxy:
+      enabled: false
