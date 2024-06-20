@@ -87,7 +87,7 @@ spec:
         hosts: ["grafana.${SECRET_DOMAIN}"]
 
     prometheus-node-exporter:
-      enabled: true
+      enabled: false
       fullnameOverride: node-exporter
       prometheus:
         monitor:
@@ -100,7 +100,7 @@ spec:
               targetLabel: kubernetes_node
 
     kube-state-metrics:
-      enabled: *kubeStateMetrics
+      enabled: false
       fullnameOverride: kube-state-metrics
       metricLabelsAllowlist:
         - pods=[*]
@@ -140,7 +140,8 @@ spec:
         - 10.69.1.121
       spec: &spec
         endpoints:
-          - tlsConfig:
+          - port: http-metrics
+            tlsConfig:
               insecureSkipVerify: true
     kubeDns:
       enabled: false #Use either this or coreDns

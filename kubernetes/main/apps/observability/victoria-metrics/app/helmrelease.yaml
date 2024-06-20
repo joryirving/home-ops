@@ -95,18 +95,9 @@ spec:
 
     alertmanager:
       enabled: true
-      externalURL: "alertmanager.${SECRET_DOMAIN}"
-      ingress:
-        enabled: true
-        pathType: Prefix
-        ingressClassName: internal
-        annotations:
-          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
-        hosts:
-          - alertmanager.${SECRET_DOMAIN}
       spec:
         replicaCount: 2
-        configSecret: alertmanager-secret
+        # configSecret: vm-alertmanager-secret
         storage:
           volumeClaimTemplate:
             spec:
@@ -114,6 +105,14 @@ spec:
               resources:
                 requests:
                   storage: 1Gi
+      ingress:
+        enabled: true
+        pathType: Prefix
+        ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
+        hosts:
+          - vmalertmanager.${SECRET_DOMAIN}
 
     vmalert:
       enabled: true
@@ -195,7 +194,7 @@ spec:
         hosts: ["grafana.${SECRET_DOMAIN}"]
 
     prometheus-node-exporter:
-      enabled: true
+      enabled: false
       fullnameOverride: node-exporter
       prometheus:
         monitor:
@@ -208,7 +207,7 @@ spec:
               targetLabel: kubernetes_node
 
     kube-state-metrics:
-      enabled: true
+      enabled: false
       fullnameOverride: kube-state-metrics
       metricLabelsAllowlist:
         - pods=[*]
@@ -248,7 +247,8 @@ spec:
         - 10.69.1.23
       spec: &spec
         endpoints:
-          - tlsConfig:
+          - port: http-metrics
+            tlsConfig:
               insecureSkipVerify: true
     kubeDns:
       enabled: false #Use either this or coreDns
