@@ -57,7 +57,7 @@ spec:
         kubernetesResources: true
         kubernetesStorage: true
         kubernetesSystem: true
-        kubeScheduler: &kubeScheduler true
+        kubeScheduler: &kubeScheduler false
         kubeStateMetrics: &kubeStateMetrics true
         network: true
         node: true
@@ -217,30 +217,51 @@ spec:
 
     kubelet:
       enabled: *kubelet
+      spec:
+        metricRelabelConfigs:
+          # Drop high cardinality labels
+          - action: labeldrop
+            regex: (uid)
+          - action: labeldrop
+            regex: (id|name)
+          - action: drop
+            source_labels: ["__name__"]
+            regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
+
     kubeApiServer:
       enabled: *kubeApiserver
+      spec:
+        metricRelabelConfigs:
+          # Drop high cardinality labels
+          - sourceLabels: ["__name__"]
+            regex: (apiserver|etcd|rest_client)_request(|_sli|_slo)_duration_seconds_bucket
+            action: drop
+          - sourceLabels: ["__name__"]
+            regex: (apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket)
+            action: drop
+
     kubeControllerManager:
-      enabled: true
-      service:
-        selector:
-          k8s-app: kube-controller-manager
-    kubeDns:
-      enabled: false #Use either this or coreDns
-    coreDns:
-      enabled: true
-    kubeEtcd:
-      enabled: true
-      endpoints:
+      enabled: false
+      endpoints: &cp
         - 10.69.1.21
         - 10.69.1.22
         - 10.69.1.23
+
+    kubeDns:
+      enabled: false #Use either this or coreDns
+
+    coreDns:
+      enabled: true
+
+    kubeEtcd:
+      enabled: true
+      endpoints: *cp
       service:
         port: 2381
         targetport: 2381
+
     kubeScheduler:
       enabled: *kubeScheduler
-      service:
-        selector:
-          k8s-app: kube-scheduler
+      
     kubeProxy:
       enabled: false
