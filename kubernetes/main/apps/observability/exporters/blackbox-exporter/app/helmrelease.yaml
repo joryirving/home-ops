@@ -22,40 +22,22 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
-    fullnameOverride: *app
-    podSecurityContext:
-      sysctls:
-        - name: net.ipv4.ping_group_range
-          value: "0 65536"
-    pspEnabled: false
+    fullnameOverride: blackbox-exporter
     config:
       modules:
         http_2xx:
           prober: http
           timeout: 5s
           http:
-            valid_http_versions:
-              - "HTTP/1.1"
-              - "HTTP/2.0"
+            valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
             follow_redirects: true
-            preferred_ip_protocol: "ip4"
+            preferred_ip_protocol: ip4
         icmp:
           prober: icmp
           timeout: 30s
           icmp:
-            preferred_ip_protocol: "ip4"
-        tcp_connect:
-          prober: tcp
-          timeout: 5s
-          tcp:
-            preferred_ip_protocol: "ip4"
-    dnsConfig:
-      options:
-        - name: ndots
-          value: "1"
+            preferred_ip_protocol: ip4
     ingress:
       enabled: true
       className: internal
@@ -66,70 +48,30 @@ spec:
           paths:
             - path: /
               pathType: Prefix
-    podAnnotations:
-      reloader.stakater.com/auto: "true"
-    resources:
-      requests:
-        cpu: 15m
-        memory: 64M
-      limits:
-        cpu: 100m
-        memory: 64M
+    prometheusRule:
+      enabled: true
+      rules:
+        - alert: BlackboxProbeFailed
+          expr: probe_success == 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: |-
+              The host {{ $labels.target }} is currently unreachable
+    pspEnabled: false
+    securityContext:
+      capabilities:
+        add: ["NET_RAW"]
+    podSecurityContext:
+      sysctls:
+        - name: net.ipv4.ping_group_range
+          value: "0 2147483647"
     serviceMonitor:
       enabled: true
       defaults:
-        labels:
-          release: prometheus
-        interval: 30s
-        scrapeTimeout: 30s
-        additionalRelabeling:
-          - action: labeldrop
-            regex: (pod)
+        interval: 1m
       targets:
-        - module: icmp
-          name: unifi-dream-machine
-          url: unifi.internal
-        - module: icmp
-          name: unraid-nas
-          url: voyager.internal
-        - module: icmp
-          name: pikvm
-          url: pikvm.internal
-    prometheusRule:
-      enabled: true
-      additionalLabels:
-        app: prometheus-operator
-        release: prometheus
-      rules:
-        - alert: BlackboxSslCertificateWillExpireSoon
-          expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 3
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            description: |-
-              The SSL certificate for {{"{{ $labels.target }}"}} will expire in less than 3 days
-        - alert: BlackboxSslCertificateExpired
-          expr: probe_ssl_earliest_cert_expiry - time() <= 0
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            description: |-
-              The SSL certificate for {{"{{ $labels.target }}"}} has expired
-        - alert: BlackboxProbeFailed
-          expr: probe_success == 0
-          for: 5m
-          labels:
-            severity: critical
-          annotations:
-            description: |-
-              The host {{"{{ $labels.target }}"}} is currently unreachable
-        - alert: SlowResponseTime
-          annotations:
-            message: The response time for {{"{{ $labels.target }}"}} has been greater than 30 seconds for 5 minutes.
-          expr: probe_duration_seconds > 30
-          for: 5m
-          labels:
-            severity: warning
-
+        - { name: &name unifi.internal, module: icmp, url: *name }
+        - { name: &name voyager.internal, module: icmp, url: *name }
+        - { name: &name pikvm.internal, module: icmp, url: *name }
