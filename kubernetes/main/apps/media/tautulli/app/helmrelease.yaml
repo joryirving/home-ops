@@ -45,12 +45,28 @@ spec:
               "--datadir", "/config",
               "--port", "80"
             ]
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /status
+                    port: &port 80
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
-                cpu: 20m
-                memory: 100M
+                cpu: 10m
               limits:
-                memory: 300M
+                memory: 1Gi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -88,3 +104,13 @@ spec:
     persistence:
       config:
         existingClaim: *app
+      cache:
+        existingClaim: tautulli-cache
+        globalMounts:
+          - path: /config/cache
+      logs:
+        type: emptyDir
+        globalMounts:
+          - path: /config/logs
+      tmp:
+        type: emptyDir
