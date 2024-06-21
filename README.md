@@ -98,27 +98,6 @@ This Git repository contains the following directories under [Kubernetes](./kube
     └── 📁 templates      # re-useable components
 ```
 
-### Flux Workflow
-
-This is a high-level look how Flux deploys my applications with dependencies. Below there are 3 apps `postgres`, `authentik` and `weave-gitops`. `postgres` is the first app that needs to be running and healthy before `authentik` and `weave-gitops`. Once `postgres` is healthy `authentik` will be deployed and after that is healthy `weave-gitops` will be deployed.
-
-```mermaid
-graph TD;
-  id1>Kustomization: cluster] -->|Creates| id2>Kustomization: cluster-apps];
-  id2>Kustomization: cluster-apps] -->|Creates| id3>Kustomization: postgres];
-  id2>Kustomization: cluster-apps] -->|Creates| id6>Kustomization: authentik]
-  id2>Kustomization: cluster-apps] -->|Creates| id8>Kustomization: weave-gitops]
-  id2>Kustomization: cluster-apps] -->|Creates| id5>Kustomization: postgres-cluster]
-  id3>Kustomization: postgres] -->|Creates| id4[HelmRelease: postgres];
-  id5>Kustomization: postgres-cluster] -->|Depends on| id3>Kustomization: postgres];
-  id5>Kustomization: postgres-cluster] -->|Creates| id10[Postgres Cluster];
-  id6>Kustomization: authentik] -->|Creates| id7(HelmRelease: authentik);
-  id6>Kustomization: authentik] -->|Depends on| id5>Kustomization: postgres-cluster];
-  id8>Kustomization: weave-gitops] -->|Creates| id9(HelmRelease: weave-gitops);
-  id8>Kustomization: weave-gitops] -->|Depends on| id5>Kustomization: postgres-cluster];
-  id9(HelmRelease: weave-gitops) -->|Depends on| id7(HelmRelease: authentik);
-```
-
 ### Networking
 
 <details>
