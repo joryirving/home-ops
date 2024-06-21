@@ -110,7 +110,6 @@ spec:
     kubelet:
       enabled: true
       spec:
-        interval: 30s
         metricRelabelConfigs:
           # Drop high cardinality labels
           - action: labeldrop
@@ -125,6 +124,13 @@ spec:
       enabled: true
       spec:
         interval: 30s
+        endpoints:
+          - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+            port: https
+            scheme: https
+            tlsConfig:
+              caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              servername: kubernetes
         metricRelabelConfigs:
           # Drop high cardinality labels
           - sourceLabels: ["__name__"]
@@ -138,10 +144,14 @@ spec:
       enabled: true
       endpoints: &cp
         - 10.69.1.121
-      spec: &spec
+      spec:
         endpoints:
-          - port: http-metrics
+          - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+            port: http-metrics
+            scheme: https
             tlsConfig:
+              caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              serverName: kubernetes
               insecureSkipVerify: true
     kubeDns:
       enabled: false #Use either this or coreDns
@@ -151,11 +161,22 @@ spec:
       enabled: true
       endpoints: *cp
       service:
+        enabled: true
         port: 2381
-        targetport: 2381
+        targetPort: 2381
+      spec:
+        endpoints:
+          - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+            port: http-metrics
     kubeScheduler:
       enabled: true
       endpoints: *cp
-      spec: *spec
+      spec:
+        endpoints:
+          - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+            port: http-metrics
+            scheme: https
+            tlsConfig:
+              insecureSkipVerify: true
     kubeProxy:
       enabled: false
