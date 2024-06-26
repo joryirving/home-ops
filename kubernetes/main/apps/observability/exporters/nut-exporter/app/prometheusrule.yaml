@@ -65,18 +65,18 @@ metadata:
     app.kubernetes.io/instance: servers
     app.kubernetes.io/name: nut-exporter
     prometheus: kube-prometheus
-  name: nut-exporter-nas
+  name: nut-exporter-server
 spec:
   endpoints:
     - interval: 30s
       metricRelabelings:
         - action: replace
-          replacement: nas
+          replacement: server
           sourceLabels:
             - instance
           targetLabel: instance
         - action: replace
-          replacement: nas
+          replacement: server
           sourceLabels:
             - server
           targetLabel: server
@@ -84,7 +84,7 @@ spec:
           regex: (pod)
       params:
         server:
-          - voyager.internal
+          - network-ups-tools.observability
       path: /ups_metrics
       port: metrics
       scheme: http
@@ -126,7 +126,7 @@ spec:
           regex: (pod)
       params:
         server:
-          - ${SVC_NUT_ADDR}
+          - network-nut.${SECRET_DOMAIN}
       path: /ups_metrics
       port: metrics
       scheme: http
