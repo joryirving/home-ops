@@ -36,10 +36,6 @@ spec:
             value: https://192.168.1.1
           - name: SERVER_HOST
             value: 0.0.0.0
-          - name: EXTERNAL_DNS_INGRESS_CLASS
-            value: internal
-          - name: EXTERNAL_DNS_DEFAULT_TARGETS
-            value: "internal.${SECRET_DOMAIN}"
           - name: UNIFI_USER
             valueFrom:
               secretKeyRef:
@@ -66,6 +62,11 @@ spec:
           timeoutSeconds: 5
     extraArgs:
       - --ignore-ingress-tls-spec
+    env:
+      - name: EXTERNAL_DNS_INGRESS_CLASS
+        value: internal
+      - name: EXTERNAL_DNS_DEFAULT_TARGETS
+        value: internal.${SECRET_DOMAIN}
     policy: sync
     sources: ["ingress", "service"]
     txtOwnerId: main
