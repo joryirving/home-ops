@@ -167,8 +167,6 @@ Total RAM: 16GB
 |--------|----------------|---------------|------------|------------|-------|--------------|----------------|
 | NAS    | HP z820        | E5-2680v2     | 32GB USB   | 500GB NVMe | 128GB | Unraid       | NAS/NFS/Backup |
 | DAS    | Lenovo SA120   | -             | -          | 56TB       | -     | -            | DAS w/ Parity  |
-| Pompom | Raspberry Pi5  | Cortex A76    | 256GB NVMe | -          | 8GB   | Raspbian     | Primary DNS    |
-| Amber  | Raspberry Pi5  | Cortex A76    | 256GB NVMe | -          | 8GB   | Raspbian     | Secondary DNS  |
 | PiKVM  | Raspberry Pi4  | Cortex A72    | 64GB mSD   | -          | 4GB   | PiKVM (Arch) | KVM            |
 
 ### Networking/UPS Hardware
