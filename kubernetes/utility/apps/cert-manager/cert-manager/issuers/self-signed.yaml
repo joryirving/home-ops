@@ -1,0 +1,65 @@
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: home-selfsigned-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: home-selfsigned-ca
+  subject:
+    organizations:
+      - ${SECRET_DOMAIN}
+  secretName: root-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: home-ca-issuer
+  namespace: cert-manager
+spec:
+  ca:
+    secretName: root-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: strong-selfsigned-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: strong-selfsigned-ca
+  subject:
+    organizations:
+      - ${SECRET_DOMAIN}
+  secretName: strong-root-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: strong-ca-issuer
+  namespace: cert-manager
+spec:
+  ca:
+    secretName: strong-root-secret

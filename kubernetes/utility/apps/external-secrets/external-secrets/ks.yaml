@@ -3,6 +3,29 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: &app external-secrets-certificates
+  namespace: flux-system
+spec:
+  targetNamespace: external-secrets
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  path: ./kubernetes/utility/apps/external-secrets/external-secrets/certs
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: home-kubernetes
+  wait: true
+  dependsOn:
+    - name: cert-manager-issuers
+  interval: 120m
+  retryInterval: 1m
+  timeout: 5m
+---
+# yaml-language-server: $schema=https://lds-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: &app external-secrets
   namespace: flux-system
 spec:
@@ -10,6 +33,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  dependsOn:
+    - name: external-secrets-certificates
   path: ./kubernetes/utility/apps/external-secrets/external-secrets/app
   prune: true
   sourceRef:
