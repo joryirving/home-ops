@@ -39,10 +39,15 @@ spec:
               repository: ghcr.io/joryirving/readarr-develop
               tag: 0.3.32.2587@sha256:aa19eb5874d18df0df2538b3fd33a33d395ac7173229b4e10303634e0b3a56d7
             env:
+              READARR__APP__INSTANCENAME: Readarr
+              READARR__APP__THEME: dark
+              READARR__AUTH__METHOD: External
+              READARR__AUTH__REQUIRED: DisabledForLocalAddresses
+              READARR__LOG__DBENABLED: "False"
+              READARR__LOG__LEVEL: info
+              READARR__SERVER__PORT: &port 80
+              READARR__UPDATE__BRANCH: develop
               TZ: ${TIMEZONE}
-              READARR__INSTANCE_NAME: Readarr
-              READARR__PORT: &port 80
-              READARR__LOG_LEVEL: info
             envFrom:
             - secretRef:
                 name: readarr-secret
