@@ -68,7 +68,7 @@ spec:
               ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "false"
               ZIGBEE2MQTT_CONFIG_SERIAL_BAUDRATE: 115200
               ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: "false"
-              ZIGBEE2MQTT_CONFIG_SERIAL_PORT:  &usbdevice /dev/sonoff-zigbee
+              ZIGBEE2MQTT_CONFIG_SERIAL_PORT: &usbdevice /dev/ttyACM0
             envFrom:
               - secretRef:
                   name: zigbee2mqtt
@@ -123,7 +123,7 @@ spec:
       usb:
         enabled: true
         type: hostPath
-        hostPath: *usbdevice
+        hostPath: /dev/sonoff-zigbee
         hostPathType: CharDevice
         globalMounts:
           - path: *usbdevice
