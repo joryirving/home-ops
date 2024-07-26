@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/nfd.k8s-sigs.io/nodefeaturerule_v1alpha1.json
+apiVersion: nfd.k8s-sigs.io/v1alpha1
+kind: NodeFeatureRule
+metadata:
+  name: rtl-sdr-device
+spec:
+  rules:
+    - # RTL-SDR Blog R860 (R820T2) RTL2832U 1PPM TCXO SMA
+      name: rtl-sdr.rtlamr
+      labels:
+        rtl.feature.node.kubernetes.io/rtlsdr: "true"
+      matchFeatures:
+        - feature: usb.device
+          matchExpressions:
+            vendor: { op: In, value: ["0bda", "2838"] }
