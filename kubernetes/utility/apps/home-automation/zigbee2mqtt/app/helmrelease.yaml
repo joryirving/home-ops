@@ -68,7 +68,7 @@ spec:
               ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "false"
               ZIGBEE2MQTT_CONFIG_SERIAL_BAUDRATE: 115200
               ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: "false"
-              # ZIGBEE2MQTT_CONFIG_SERIAL_PORT:  &usbdevice /dev/ttyUSB0
+              ZIGBEE2MQTT_CONFIG_SERIAL_PORT:  &usbdevice /dev/bus/usb/001/007
             envFrom:
               - secretRef:
                   name: zigbee2mqtt
@@ -87,7 +87,6 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 128Mi
               limits:
                 memory: 512Mi
     defaultPodOptions:
@@ -121,3 +120,10 @@ spec:
     persistence:
       config:
         existingClaim: *app
+      usb:
+        enabled: true
+        type: hostPath
+        hostPath: *usbdevice
+        hostPathType: CharDevice
+        globalMounts:
+          - path: *usbdevice
