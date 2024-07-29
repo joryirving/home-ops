@@ -43,27 +43,43 @@ spec:
             envFrom:
             - secretRef:
                 name: bazarr-secret
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 6767
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
-                memory: 256M
               limits:
-                memory: 1024M
+                memory: 1Gi
           subcleaner:
             image:
               repository: registry.k8s.io/git-sync/git-sync
-              tag: v4.2.4
-            args:
-            - --repo=https://github.com/KBlixt/subcleaner
-            - --branch=master
-            - --wait=86400 # 1 day
-            - --root=/add-ons
+              tag: v4.2.3@sha256:19cc7c317d125c5737ecb9a9159d00b5d97f39c45225c6483de365d62fc09fa8
+            env:
+              GITSYNC_REPO: https://github.com/KBlixt/subcleaner
+              GITSYNC_REF: master
+              GITSYNC_PERIOD: 24h
+              GITSYNC_ROOT: /add-ons
             resources:
               requests:
                 cpu: 10m
-                memory: 10M
               limits:
-                memory: 128M
+                memory: 128Mi
+            securityContext: *securityContext
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -75,10 +91,10 @@ spec:
         seccompProfile: { type: RuntimeDefault }
     service:
       app:
-        controller: *app
+        controller: bazarr
         ports:
           http:
-            port: 6767
+            port: *port
     ingress:
       app:
         className: internal
@@ -100,6 +116,12 @@ spec:
               identifier: app
               port: http
     persistence:
+      add-ons:
+        type: emptyDir
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /config/cache
       config:
         existingClaim: *app
       data:
@@ -108,5 +130,15 @@ spec:
         path: ${SECRET_NFS_DATA:=temp}
         globalMounts:
         - path: /data
-      add-ons:
+      log:
+        type: emptyDir
+        globalMounts:
+          - path: /config/log
+      scripts:
+        type: configMap
+        name: bazarr-scripts
+        defaultMode: 0775
+        globalMounts:
+          - readOnly: true
+      tmp:
         type: emptyDir
