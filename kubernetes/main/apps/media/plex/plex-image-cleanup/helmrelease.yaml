@@ -29,8 +29,8 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         cronjob:
-          schedule: "0 8 * * *"
-          successfulJobsHistory: 0
+          schedule: "30 8 * * *"
+          successfulJobsHistory: 1
         containers:
           app:
             image:
@@ -87,3 +87,7 @@ spec:
         existingClaim: plex
         globalMounts:
           - path: /data/plex_config
+      plex-cache:
+        existingClaim: plex-cache
+        globalMounts:
+          - path: /data/plex_config/Library/Application Support/Plex Media Server/Cache
