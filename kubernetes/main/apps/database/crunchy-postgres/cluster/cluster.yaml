@@ -6,6 +6,14 @@ metadata:
   name: &name postgres
 spec:
   postgresVersion: 16
+  monitoring:
+    pgmonitor:
+      exporter:
+        resources:
+          requests:
+            cpu: 10m
+          limits:
+            memory: 512M
   patroni: # turn on sync writes to at least 1 other replica
     dynamicConfiguration:
       synchronous_mode: true
@@ -97,21 +105,23 @@ spec:
         archive-timeout: "60"
         compress-type: bz2
         compress-level: "9"
-        delta: "y"
-        repo1-bundle: "y"
-        repo1-block: "y"
+        repo1-block: y
+        repo1-bundle: y
+        repo1-bundle-size: 100MiB
         repo1-path: /pgdata/crunchy-pgo/repo1
-        repo1-s3-uri-style: path
-        repo1-retention-full-type: time
         repo1-retention-full: "30" #30 days
-        # repo2-bundle: "y"
-        # repo2-block: "y"
+        repo1-retention-full-type: time
+        repo1-s3-uri-style: path
+        # repo2-block: n
+        # repo2-bundle: y
+        # repo2-bundle-size: 100MiB
         # repo2-path: /pgdata/crunchy-pgo/repo2
-        # repo2-s3-uri-style: path
         # repo2-retention-archive: "1"
-        # repo2-retention-archive-type: diff
+        # repo2-retention-archive-type: full
+        # repo2-retention-full: "7"
         # repo2-retention-full-type: time
-        # repo2-retention-full: "30" #30 days
+        # repo2-retention-history: "0"
+        # repo2-s3-uri-style: path
       manual:
         repoName: repo1
         options:
