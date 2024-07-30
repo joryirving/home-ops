@@ -102,6 +102,7 @@ spec:
         - secret:
             name: crunchy-pgo-secret
       global: &backupFlag
+        # Minio
         archive-timeout: "60"
         compress-type: bz2
         compress-level: "9"
@@ -112,16 +113,17 @@ spec:
         repo1-retention-full: "30" #30 days
         repo1-retention-full-type: time
         repo1-s3-uri-style: path
-        # repo2-block: n
-        # repo2-bundle: y
-        # repo2-bundle-size: 100MiB
-        # repo2-path: /pgdata/crunchy-pgo/repo2
-        # repo2-retention-archive: "1"
-        # repo2-retention-archive-type: full
-        # repo2-retention-full: "7"
-        # repo2-retention-full-type: time
-        # repo2-retention-history: "0"
-        # repo2-s3-uri-style: path
+        # R2
+        repo2-block: n
+        repo2-bundle: y
+        repo2-bundle-size: 100MiB
+        repo2-path: /pgdata/crunchy-pgo/repo2
+        repo2-retention-archive: "1"
+        repo2-retention-archive-type: full
+        repo2-retention-full: "7"
+        repo2-retention-full-type: time
+        repo2-retention-history: "0"
+        repo2-s3-uri-style: path
       manual:
         repoName: repo1
         options:
@@ -139,14 +141,14 @@ spec:
             full: "30 1 * * 0"           # Sunday at 1:30am
             differential: "30 1 * * 1-6" # Mon-Sat at 1:30am
             incremental: "30 3-23 * * *" # Every hour except 1-2am
-        # - name: repo2
-        #   s3: &r2
-        #     bucket: crunchy-pgo
-        #     endpoint: ${CLUSTER_SECRET_CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com
-        #     region: us-east-1 #https://developers.cloudflare.com/r2/api/s3/api/#bucket-region
-        #   schedules:
-        #     full: "30 2 * * 0"           # Sunday at 2:30am
-        #     differential: "30 2 * * 1-6/2" # Mon-Sat at 2:30am, every 2nd day.
+        - name: repo2
+          s3: &r2
+            bucket: crunchy-pgo
+            endpoint: ${CLUSTER_SECRET_CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com
+            region: us-east-1 #https://developers.cloudflare.com/r2/api/s3/api/#bucket-region
+          schedules:
+            full: "30 2 * * 0"           # Sunday at 2:30am
+            differential: "30 2 * * 1-6/2" # Mon-Sat at 2:30am, every 2nd day.
   dataSource:
     pgbackrest:
       stanza: db
