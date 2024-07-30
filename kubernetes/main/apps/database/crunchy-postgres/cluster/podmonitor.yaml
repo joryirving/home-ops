@@ -1,0 +1,38 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: &name postgres-master
+  namespace: &namespace database
+spec:
+  jobLabel: *name
+  namespaceSelector:
+    matchNames:
+      - *namespace
+  podMetricsEndpoints:
+    - honorLabels: true
+      path: /metrics
+      port: exporter
+  selector:
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: postgres
+      postgres-operator.crunchydata.com/role: master
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: &name postgres-replica
+  namespace: &namespace database
+spec:
+  jobLabel: *name
+  namespaceSelector:
+    matchNames:
+      - *namespace
+  podMetricsEndpoints:
+    - honorLabels: true
+      path: /metrics
+      port: exporter
+  selector:
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: postgres
+      postgres-operator.crunchydata.com/role: replica
