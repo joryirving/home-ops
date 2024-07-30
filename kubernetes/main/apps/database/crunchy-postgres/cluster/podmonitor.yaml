@@ -3,12 +3,11 @@ apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: &name postgres
-  namespace: &namespace database
 spec:
   jobLabel: *name
   namespaceSelector:
     matchNames:
-      - *namespace
+      - database
   podMetricsEndpoints:
     - honorLabels: true
       path: /metrics
@@ -28,3 +27,4 @@ spec:
     matchLabels:
       postgres-operator.crunchydata.com/cluster: postgres
       postgres-operator.crunchydata.com/crunchy-postgres-exporter: "true"
+      
