@@ -74,3 +74,13 @@ tasks:
     cmds:
       - kubectl --context {{ .cluster }} exec -it --container database -n {{.NS}} {{.CRUNCHY_PRIMARY}} -- /bin/bash -c 'rm -rf {{.CP_DIR}}/dump.psql && pg_dump --dbname {{.DBNAME}} {{.ARGS}} --file {{.CP_DIR}}/dump.psql'
       - kubectl --context {{ .cluster }} cp --container database {{.NS}}/{{.CRUNCHY_PRIMARY}}:{{.CP_DIR}}/dump.psql {{.DUMP}}
+
+  crunchy-restart:
+    desc: Gracefully restart a CrunchyData Postgres Cluster.
+    dir: "{{.USER_WORKING_DIR}}"
+    vars:
+      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
+      PG: *pg-default
+      NS: *ns-default
+    cmds:
+      - kubectl --context {{ .cluster }} patch -n {{.NS}} postgrescluster/{{.PG}} --type merge --patch '{"spec":{"metadata":{"annotations":{"restarted":"'"$(date)"'"}}}}'
