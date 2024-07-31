@@ -103,26 +103,22 @@ spec:
         - secret:
             name: crunchy-pgo-secret
       global: &backupFlag
-        # Minio
+        # Global
         compress-type: bz2
         compress-level: "9"
-        repo1-block: y
-        repo1-bundle: y
-        repo1-bundle-size: 100MiB
+        # Minio
+        repo1-block: "y"
+        repo1-bundle: "y"
         repo1-path: /pgdata/crunchy-pgo/repo1
         repo1-retention-full: "30" #30 days
         repo1-retention-full-type: time
         repo1-s3-uri-style: path
         # R2
-        repo2-block: n
+        repo2-block: y
         repo2-bundle: y
-        repo2-bundle-size: 100MiB
         repo2-path: /pgdata/crunchy-pgo/repo2
-        repo2-retention-archive: "1"
-        repo2-retention-archive-type: full
-        repo2-retention-full: "7"
+        repo2-retention-full: "7" # days
         repo2-retention-full-type: time
-        repo2-retention-history: "0"
         repo2-s3-uri-style: path
       manual:
         repoName: repo1
@@ -148,7 +144,7 @@ spec:
             region: us-east-1 #https://developers.cloudflare.com/r2/api/s3/api/#bucket-region
           schedules:
             full: "30 2 * * 0"           # Sunday at 2:30am
-            differential: "30 2 * * 1-6/2" # Mon-Sat at 2:30am, every 2nd day.
+            incremental: "30 2 * * 1-6/2" # Mon-Sat at 2:30am, every 2nd day.
   dataSource:
     pgbackrest:
       stanza: db
