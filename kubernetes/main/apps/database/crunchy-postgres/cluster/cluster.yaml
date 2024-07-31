@@ -110,14 +110,14 @@ spec:
         # Minio
         repo1-block: "y"
         repo1-bundle: "y"
-        repo1-path: /crunchy-pgo/minio
+        repo1-path: /crunchy-pgo
         repo1-retention-full: "30" # days
         repo1-retention-full-type: "time"
         repo1-s3-uri-style: path
         # R2
         repo2-block: "y"
         repo2-bundle: "y"
-        repo2-path: /crunchy-pgo
+        repo2-path: /crunchy-pgo/r2
         repo2-retention-full: "7" # days
         repo2-retention-full-type: time
         repo2-s3-uri-style: path
@@ -129,8 +129,8 @@ spec:
         labels:
           app.kubernetes.io/name: crunchy-postgres-backup
       repos:
-        - name: &minio repo1
-          s3:
+        - name: repo1
+          s3: &minio
             bucket: postgresql
             endpoint: s3.jory.dev
             region: ca-west-1
@@ -138,8 +138,8 @@ spec:
             full: "30 1 * * 0" # Sunday at 01:30
             differential: "30 1 * * 1-6" # Mon-Sat at 01:30
             incremental: "30 2-23 * * *" # Every hour except 01:30
-        - name: &r2 repo2
-          s3:
+        - name: repo2
+          s3: &r2
             bucket: crunchy-pgo
             endpoint: ${CLUSTER_SECRET_CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com
             region: us-east-1 #https://developers.cloudflare.com/r2/api/s3/api/#bucket-region
@@ -152,7 +152,8 @@ spec:
       configuration: *backupConfig
       global: *backupFlag
       repo:
-        name: *r2 #repo1
+        name: repo1
+        s3: *minio
   proxy:
     pgBouncer:
       service:
