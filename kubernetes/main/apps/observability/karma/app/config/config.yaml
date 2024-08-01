@@ -2,9 +2,17 @@
 alertmanager:
   interval: 60s
   servers:
-    - name: home
+    - name: main
       uri: http://alertmanager-operated.observability.svc.cluster.local:9093
-      # uri: http://vmalertmanager-victoria-metrics.observability.svc.cluster.local:9093
+      timeout: 10s
+      healthcheck:
+        visible: false
+        filters:
+          alertmanager:
+            - alertname=Watchdog
+            - prometheus=observability/kube-prometheus-stack
+    - name: utility
+      uri: https://alertmanager-utility.${SECRET_DOMAIN}
       timeout: 10s
       healthcheck:
         visible: false
