@@ -43,7 +43,7 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 ## Overview
 
 This is a monorepository is for my home kubernetes clusters.
-I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like [Ansible](https://www.ansible.com/), [Terraform](https://www.terraform.io/), [Kubernetes](https://kubernetes.io/), [Flux](https://github.com/fluxcd/flux2), [Renovate](https://github.com/renovatebot/renovate), and [GitHub Actions](https://github.com/features/actions).
+I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like [Terraform](https://www.terraform.io/), [Kubernetes](https://kubernetes.io/), [Flux](https://github.com/fluxcd/flux2), [Renovate](https://github.com/renovatebot/renovate), and [GitHub Actions](https://github.com/features/actions).
 
 The purpose here is to learn k8s, while practicing Gitops.
 
@@ -55,7 +55,7 @@ There is a template over at [onedr0p/cluster-template](https://github.com/onedr0
 
 ### Installation
 
-My clusters are a mix of [k3s](https://k3s.io/) provisioned overtop bare-metal Debian using the [Ansible](https://www.ansible.com/) galaxy role [ansible-role-k3s](https://github.com/PyratLabs/ansible-role-k3s), and [talos linux](https://www.talos.dev) immutable kubernetes OS. This is a semi-hyper-converged cluster, workloads and block storage are sharing the same available resources on my nodes while I have a separate NAS server with ZFS for NFS/SMB shares, bulk file storage and backups.
+My clusters run [talos linux](https://www.talos.dev) immutable kubernetes OS. This is a semi-hyper-converged cluster, workloads and block storage are sharing the same available resources on my nodes while I have a separate NAS server running Unraid withg NFS/SMB shares, bulk file storage and backups.
 
 ### Core Components
 
@@ -117,7 +117,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 | Service                                     | Use                                                               | Cost           |
 |---------------------------------------------|-------------------------------------------------------------------|----------------|
 | [Bitwarden](https://bitwarden.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
-| [Cloudflare](https://www.cloudflare.com/)   | Domain and S3                                                     | ~$30/yr        |
+| [Cloudflare](https://www.cloudflare.com/)   | Domain and R2                                                     | ~$30/yr        |
 | [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free           |
 | [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free           |
 |                                             |                                                                   | Total: ~$5/mo  |
