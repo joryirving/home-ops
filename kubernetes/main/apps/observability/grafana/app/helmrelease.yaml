@@ -139,23 +139,6 @@ spec:
             allowUiUpdates: true
             options:
               path: /var/lib/grafana/dashboards/system
-          - name: thanos
-            orgId: 1
-            folder: Thanos
-            type: file
-            disableDeletion: false
-            editable: true
-            allowUiUpdates: true
-            options:
-              path: /var/lib/grafana/dashboards/thanos
-          # - name: victoriametrics
-          #   orgId: 1
-          #   folder: VictoriaMetrics
-          #   type: file
-          #   disableDeletion: false
-          #   editable: true
-          #   options:
-          #     path: /var/lib/grafana/dashboards/victoriametrics-folder
     datasources:
       datasources.yaml:
         apiVersion: 1
@@ -166,25 +149,16 @@ spec:
           - name: Prometheus
             type: prometheus
             uid: prometheus
-            isDefault: true
             access: proxy
-            url: http://thanos-query-frontend.observability.svc.cluster.local:10902
+            url: http://prometheus-operated.observability.svc.cluster.local:9090
             jsonData:
-              prometheusType: Thanos
               timeInterval: 1m
-          # - name: Prometheus
-          #   type: prometheus
-          #   uid: prometheus
-          #   isDefault: true
-          #   access: proxy
-          #   url: http://vmsingle-victoria-metrics.observability.svc.cluster.local:8429
-          #   jsonData:
-          #     prometheusType: Prometheus
-          #     timeInterval: 1m
+            isDefault: true
           - name: Alertmanager
             type: alertmanager
+            uid: alertmanager
             access: proxy
-            url: http://vmalertmanager-victoria-metrics.observability.svc.cluster.local:9093
+            url: http://alertmanager-operated.observability.svc.cluster.local:9093
             jsonData:
               implementation: prometheus
     dashboards:
@@ -280,13 +254,6 @@ spec:
           gnetId: 7587
           revision: 3
           datasource: Prometheus
-        blocky:
-          # renovate: depName="blocky"
-          gnetId: 13768
-          revision: 4
-          datasource:
-            - { name: DS_PROMETHEUS, value: Prometheus }
-            - { name: VAR_BLOCKY_URL, value: 'http:\/\/blocky.${SECRET_DOMAIN}' }
         cert-manager:
           url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/cert-manager/dashboards/cert-manager.json
           datasource: Prometheus
@@ -386,59 +353,6 @@ spec:
           revision: 1
           datasource:
             - { name: DS_PROMETHEUS, value: Prometheus }
-      thanos:
-        thanos-bucket-replicate:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/bucket-replicate.json
-          datasource: Prometheus
-        thanos-compact:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/compact.json
-          datasource: Prometheus
-        thanos-overview:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/overview.json
-          datasource: Prometheus
-        thanos-query:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/query.json
-          datasource: Prometheus
-        thanos-query-frontend:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/query-frontend.json
-          datasource: Prometheus
-        thanos-receieve:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/receive.json
-          datasource: Prometheus
-        thanos-rule:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/rule.json
-          datasource: Prometheus
-        thanos-sidecar:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/sidecar.json
-          datasource: Prometheus
-        thanos-store:
-          url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/thanos/dashboards/store.json
-          datasource: Prometheus
-      # victoriametrics:
-      #   vm-single:
-      #     # renovate: depName="VictoriaMetrics - single-node"
-      #     gnetId: 10229
-      #     revision: 35
-      #     datasource:
-      #       - { name: DS_PROMETHEUS, value: Prometheus }
-      #   vm-operator:
-      #     # renovate: depName="VictoriaMetrics - operator"
-      #     gnetId: 17869
-      #     revision: 2
-      #     datasource:
-      #       - { name: DS_PROMETHEUS, value: Prometheus }
-      #   vm-vmalert:
-      #     # renovate: depName="VictoriaMetrics - vmalert"
-      #     gnetId: 14950
-      #     revision: 11
-      #     datasource:
-      #       - { name: DS_PROMETHEUS, value: Prometheus }
-      #   vm-vmagent:
-      #     # renovate: depName="VictoriaMetrics - vmagent"
-      #     gnetId: 12683
-      #     revision: 18
-      #     datasource:
-      #       - { name: DS_PROMETHEUS, value: Prometheus }
     sidecar:
       dashboards:
         enabled: true

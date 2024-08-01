@@ -30,8 +30,6 @@ spec:
       namespace: observability
     - name: rook-ceph-cluster
       namespace: rook-ceph
-    - name: thanos
-      namespace: observability
   values:
     crds:
       enabled: false
@@ -105,10 +103,6 @@ spec:
               sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: kubernetes_node
     prometheus:
-      thanosService:
-        enabled: true
-      thanosServiceMonitor:
-        enabled: true
       ingress:
         enabled: true
         ingressClassName: internal
@@ -125,9 +119,6 @@ spec:
         hosts:
           - prometheus.${SECRET_DOMAIN}
       prometheusSpec:
-        podMetadata:
-          annotations:
-            secret.reloader.stakater.com/reload: &secret thanos-objstore-config
         scrapeInterval: 1m # Must match interval in Grafana Helm chart
         enableAdminAPI: true
         enableFeatures:
@@ -157,11 +148,4 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
-        thanos:
-          image: quay.io/thanos/thanos:${THANOS_VERSION}
-          version: "${THANOS_VERSION#v}"
-          objectStorageConfig:
-            existingSecret:
-              name: *secret
-              key: config
     cleanPrometheusOperatorObjectNames: true

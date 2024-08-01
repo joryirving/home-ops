@@ -34,9 +34,33 @@ spec:
     crds:
       enabled: false
     alertmanager:
-      enabled: false
+      ingress:
+        enabled: true
+        pathType: Prefix
+        ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal-utility.${SECRET_DOMAIN}
+        hosts:
+          - alertmanager-utility.${SECRET_DOMAIN}
+      alertmanagerSpec:
+        replicas: 1
+        useExistingSecret: true
+        configSecret: alertmanager-secret
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-hostpath
+              resources:
+                requests:
+                  storage: 1Gi
     grafana:
       enabled: false
+      forceDeployDashboards: true
+      sidecar:
+        dashboards:
+          multicluster:
+            etcd:
+              enabled: true
     kubeApiServer:
       enabled: true
     kubelet:
@@ -75,17 +99,6 @@ spec:
               sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: kubernetes_node
     prometheus:
-      thanosService:
-        enabled: true
-      thanosServiceMonitor:
-        enabled: true
-      thanosServiceExternal:
-        enabled: true
-        type: LoadBalancer
-        annotations:
-          external-dns.alpha.kubernetes.io/hostname: thanos-svc.${SECRET_DOMAIN}
-          io.cilium/lb-ipam-ips: ${SVC_THANOS_ADDR:=temp}
-        externalTrafficPolicy: Cluster
       ingress:
         enabled: true
         ingressClassName: internal
@@ -95,18 +108,12 @@ spec:
         hosts:
           - prometheus-utility.${SECRET_DOMAIN}
       prometheusSpec:
-        podMetadata:
-          annotations:
-            secret.reloader.stakater.com/reload: &secret thanos-objstore-config
         scrapeInterval: 1m # Must match interval in Grafana Helm chart
         enableAdminAPI: true
         enableFeatures:
           - auto-gomemlimit
           - memory-snapshot-on-shutdown
           - new-service-discovery-manager
-        additionalAlertManagerConfigs:
-          - static_configs:
-              - targets: ["alertmanager.${SECRET_DOMAIN}"]
         externalLabels:
           cluster: ${CLUSTER_NAME}
         resources:
@@ -130,11 +137,4 @@ spec:
               resources:
                 requests:
                   storage: 20Gi
-        thanos:
-          image: quay.io/thanos/thanos:${THANOS_VERSION}
-          version: "${THANOS_VERSION#v}"
-          objectStorageConfig:
-            existingSecret:
-              name: *secret
-              key: config
     cleanPrometheusOperatorObjectNames: true
