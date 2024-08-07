@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/logo.png" align="center" width="144px" height="144px"/>
+<img src="https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/kah-logo.png" align="center" width="144px" height="144px"/>
 
 
 ### My Homelab Repository :snowflake:
