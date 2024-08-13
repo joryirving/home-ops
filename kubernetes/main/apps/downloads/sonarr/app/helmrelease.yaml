@@ -111,6 +111,14 @@ spec:
     persistence:
       config:
         existingClaim: *app
+      scripts:
+        type: configMap
+        name: sonarr-configmap
+        defaultMode: 0775
+        globalMounts:
+          - path: /scripts/refresh-series.sh
+            subPath: refresh-series.sh
+            readOnly: true
       tmp:
         type: emptyDir
       data:
