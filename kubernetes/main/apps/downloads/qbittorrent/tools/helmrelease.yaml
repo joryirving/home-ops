@@ -29,11 +29,11 @@ spec:
     controllers:
       reannounce:
         containers:
-          app:
-            image: &image
+          app: &container
+            image:
               repository: ghcr.io/buroa/qbtools
               tag: v0.15.4@sha256:51c454cdf95e216a8f40ec5744ecbd8f29a924b4aada805fee64beb0b89cbe59
-            env: &env
+            env:
               TZ: ${TIMEZONE}
               POD_NAMESPACE:
                 valueFrom:
@@ -45,7 +45,11 @@ spec:
               "--server", "qbittorrent.$(POD_NAMESPACE).svc.cluster.local",
               "--port", "80"
             ]
-            resources: &resources
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
               requests:
                 cpu: 25m
               limits:
