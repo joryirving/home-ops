@@ -42,7 +42,34 @@ spec:
             env:
               TZ: ${TIMEZONE}
               QBITTORRENT__PORT: &port 80
-              QBITTORRENT__BT_PORT: &port-bt "${SECRET_VPN_FORWARDED_PORT_1:=54321}"
+              QBITTORRENT__BT_PORT: &bittorrentPort "${SECRET_VPN_FORWARDED_PORT_1:=54321}"
+              QBT_Preferences__WebUI__AlternativeUIEnabled: false
+              QBT_Preferences__WebUI__AuthSubnetWhitelistEnabled: true
+              QBT_Preferences__WebUI__AuthSubnetWhitelist: |-
+                10.42.0.0/16, 10.69.1.0/24, 192.168.30.0/24
+              QBT_Preferences__WebUI__LocalHostAuth: false
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/v2/app/version
+                    port: *port
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 10
+                  failureThreshold: 6
+              readiness: *probes
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 10
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 25m
@@ -82,7 +109,7 @@ spec:
         ports:
           bittorrent:
             enabled: true
-            port: *port-bt
+            port: *bittorrentPort
             protocol: TCP
     ingress:
       app:
