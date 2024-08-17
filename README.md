@@ -28,13 +28,13 @@ _... automated via [Flux](https://fluxcd.io), [Renovate](https://github.com/reno
 
 <div align="center">
 
-[![Age-Days](https://kromgo.jory.dev/cluster_age_days?format=badge)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
-[![Uptime-Days](https://kromgo.jory.dev/cluster_uptime_days?format=badge)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
-[![Node-Count](https://kromgo.jory.dev/cluster_node_count?format=badge)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
-[![Pod-Count](https://kromgo.jory.dev/cluster_pod_count?format=badge)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
-[![CPU-Usage](https://kromgo.jory.dev/cluster_cpu_usage?format=badge)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
-[![Memory-Usage](https://kromgo.jory.dev/cluster_memory_usage?format=badge)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
-[![Power-Usage](https://kromgo.jory.dev/cluster_power_usage?format=badge)](https://github.com/kashalls/kromgo/)
+[![Age-Days](https://kromgo.jory.dev/cluster_age_days?format=badge&style=flat-square)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Uptime-Days](https://kromgo.jory.dev/cluster_uptime_days?format=badge&style=flat-square)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Node-Count](https://kromgo.jory.dev/cluster_node_count?format=badge&style=flat-square)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Pod-Count](https://kromgo.jory.dev/cluster_pod_count?format=badge&style=flat-square)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![CPU-Usage](https://kromgo.jory.dev/cluster_cpu_usage?format=badge&style=flat-square)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Memory-Usage](https://kromgo.jory.dev/cluster_memory_usage?format=badge&style=flat-square)](https://github.com/kashalls/kromgo/)&nbsp;&nbsp;
+[![Power-Usage](https://kromgo.jory.dev/cluster_power_usage?format=badge&style=flat-square)](https://github.com/kashalls/kromgo/)
 
 </div>
 
