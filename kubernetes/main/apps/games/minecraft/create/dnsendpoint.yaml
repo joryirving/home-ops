@@ -4,10 +4,11 @@ apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
   name: create
-  annotations:
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   endpoints:
     - dnsName: "create.${SECRET_DOMAIN}"
       recordType: CNAME
       targets: ["mc.${SECRET_DOMAIN}"]
+      providerSpecific:
+        - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+          value: 'false'

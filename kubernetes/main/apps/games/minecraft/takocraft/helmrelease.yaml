@@ -73,7 +73,7 @@ spec:
         enabled: true
         existingClaim: *app
     serviceAnnotations:
-      mc-router.itzg.me/externalServerName: takocraft.${SECRET_DOMAIN}
+      mc-router.itzg.me/externalServerName: &host takocraft.${SECRET_DOMAIN}
     minecraftServer:
       eula: true
       version: "1.21"
@@ -91,9 +91,9 @@ spec:
       motd: "Takocraft. This is the old Vibecraft"
       worldSaveName: takocraft
       viewDistance: 12
-      serviceAnnotations:
-        io.cilium/lb-ipam-ips: ${SVC_TAKOCRAFT_ADDR:=temp}
-      serviceType: LoadBalancer
+      # serviceAnnotations:
+      #   io.cilium/lb-ipam-ips: ${SVC_TAKOCRAFT_ADDR:=temp}
+      # serviceType: LoadBalancer
       spigetResources:
       - 36618 #Prom Exporter
       - 18494 #DiscordSRV
@@ -109,7 +109,13 @@ spec:
           type: ClusterIP
           port: 9225
         ingress:
-          enabled: false
+          ingressClassName: external
+          enabled: true
+          annotations:
+            external-dns.alpha.kubernetes.io/target: mc.${SECRET_DOMAIN}
+            external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+          hosts:
+           - name: *host
   valuesFrom:
   - kind: Secret
     name: minecraft-takocraft-secret
