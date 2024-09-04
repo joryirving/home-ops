@@ -55,25 +55,22 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             port: 5000
           wol_server0:
             type: wol
-            mac: 00:e0:4c:68:06:69
+            mac: a4:bb:6d:6e:ec:75
           wol_server1:
             type: wol
-            mac: 1c:fd:08:75:15:63
+            mac: 8c:04:ba:a5:51:20
           wol_server2:
             type: wol
-            mac: 1c:fd:08:75:15:6f
+            mac: 70:b5:e8:6d:37:14
           wol_server3:
             type: wol
-            mac: 00:e0:4c:68:06:dd
+            mac: 70:b5:e8:6d:43:c4
           wol_server4:
             type: wol
-            mac: 00:e0:4c:68:05:e6
+            mac: 70:b5:e8:6d:0f:d7
           wol_server5:
             type: wol
-            mac: 00:e0:4c:68:06:3a
-          wol_server6:
-            type: wol
-            mac: 2c:cf:67:09:03:1f
+            mac: 70:b5:e8:6d:35:fa
           reboot:
             type: cmd
             cmd: ["/usr/bin/sudo", "reboot"]
@@ -174,11 +171,6 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             pin: 6
             mode: output
             switch: false
-          server6_wol:
-            driver: wol_server6
-            pin: 0
-            mode: output
-            switch: false
           server7_led:
             driver: tes
             pin: 7
@@ -209,7 +201,7 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             - ["#Hutao", "server3_led", "server3_btn | KVM", "server3_wol | WOL"]
             - ["#Navia", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
             - ["#Yelan", "server5_led", "server5_btn | KVM", "server5_wol | WOL"]
-            - ["#Amber", "server6_led", "server6_btn | KVM", "server6_wol | WOL"]
+            - ["#6", "server6_led", "server6_btn | KVM"]
             - ["#7", "server7_led", "server7_btn | KVM"]
     ```
 
