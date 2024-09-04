@@ -42,27 +42,3 @@ resource "authentik_policy_expression" "user-settings-authorization" {
   return True
   EOT
 }
-
-## OAuth scopes
-data "authentik_scope_mapping" "scopes" {
-  managed_list = [
-    "goauthentik.io/providers/oauth2/scope-email",
-    "goauthentik.io/providers/oauth2/scope-openid",
-    "goauthentik.io/providers/oauth2/scope-profile"
-  ]
-}
-
-## Group bindings
-# resource "authentik_policy_binding" "media_policy_binding" {
-#   for_each = local.media_applications
-#   target   = authentik_application.media_application[each.value].uuid
-#   group    = authentik_group.media.id
-#   order    = 0
-# }
-
-# resource "authentik_policy_binding" "infra_policy_binding" {
-#   for_each = local.infra_applications
-#   target   = authentik_application.infra_application[each.value].uuid
-#   group    = authentik_group.infrastructure.id
-#   order    = 0
-# }
