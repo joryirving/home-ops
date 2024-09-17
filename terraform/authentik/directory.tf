@@ -8,6 +8,17 @@ resource "authentik_group" "downloads" {
   is_superuser = false
 }
 
+resource "authentik_group" "headscale" {
+  name         = "Headscale"
+  is_superuser = false
+}
+
+resource "authentik_policy_binding" "headscale" {
+  target = authentik_application.headscale_application.uuid
+  group  = authentik_group.headscale.id
+  order  = 0
+}
+
 resource "authentik_group" "home" {
   name         = "Home"
   is_superuser = false
