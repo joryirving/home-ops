@@ -28,6 +28,18 @@ variable "grafana_secret" {
   sensitive   = true
 }
 
+variable "headscale_id" {
+  type        = string
+  description = "Headscale Client ID"
+  sensitive   = true
+}
+
+variable "headscale_secret" {
+  type        = string
+  description = "Headscale Client Secret"
+  sensitive   = true
+}
+
 variable "kyoo_id" {
   type        = string
   description = "Kyoo Client ID"

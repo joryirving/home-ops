@@ -247,6 +247,29 @@ resource "authentik_application" "gitops_application" {
   policy_engine_mode = "all"
 }
 
+## Headscale ##
+resource "authentik_provider_oauth2" "headscale_oauth2" {
+  name                  = "headscale"
+  client_id             = var.headscale_id
+  client_secret         = var.headscale_secret
+  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
+  access_token_validity = "hours=4"
+  signing_key           = data.authentik_certificate_key_pair.generated.id
+  redirect_uris         = ["https://headscale.${var.cluster_domain}/oidc/callback"]
+}
+
+resource "authentik_application" "headscale_application" {
+  name               = "Headscale"
+  slug               = authentik_provider_oauth2.headscale_oauth2.name
+  protocol_provider  = authentik_provider_oauth2.headscale_oauth2.id
+  group              = authentik_group.infrastructure.name
+  open_in_new_tab    = true
+  meta_icon          = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/headscale.png"
+  meta_launch_url    = "https://headscale.${var.cluster_domain}/"
+  policy_engine_mode = "all"
+}
+
 ### Outpost ###
 # resource "authentik_outpost" "proxyoutpost" {
 #   name               = "proxy-outpost"
