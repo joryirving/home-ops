@@ -1,0 +1,113 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app tailscale
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      tailscale:
+        strategy: RollingUpdate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/tailscale/tailscale
+              tag: v1.72.1@sha256:83a6faec34866f70914a7d241d6ca749e6914f08f4f9059d942e1c3088dc001b
+            env:
+              NO_AUTOUPDATE: true
+              PORT: &port ${TAILNET_PUBLIC_PORT:=1}
+              TS_EXTRA_ARGS: --advertise-exit-node --advertise-tags=tag:k8s --login-server=http://headscale.network:8080
+              TS_HOSTNAME:
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+              TS_ROUTES: ${NODE_CIDR},${TRUSTED_LVAN}
+              TS_STATE_DIR: &path /tmp
+              TS_TAILSCALED_EXTRA_ARGS: --debug=0.0.0.0:9001
+              TS_USERSPACE: true
+              TZ: ${TIMEZONE}
+            envFrom:
+              - secretRef:
+                  name: tailscale-secret
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: *app
+    persistence:
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /.cache
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: *path
+      run:
+        type: emptyDir
+        globalMounts:
+          - path: /var/run
+    service:
+      app:
+        controller: *app
+        nameOverride: *app
+        ports:
+          http:
+            port: 9001
+      tailnet:
+        controller: *app
+        type: LoadBalancer
+        annotations:
+          io.cilium/lb-ipam-ips: ${SVC_TAILSCALE_ADDR:=temp}
+        externalTrafficPolicy: Cluster
+        ports:
+          tailnet:
+            port: *port
+            protocol: UDP
+    serviceMonitor:
+      app:
+        serviceName: *app
+        endpoints:
+          - port: http
+            scheme: http
+            path: /debug/metrics
+            interval: 1m
+            scrapeTimeout: 10s
