@@ -68,7 +68,8 @@ spec:
               ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "false"
               ZIGBEE2MQTT_CONFIG_SERIAL_BAUDRATE: 115200
               ZIGBEE2MQTT_CONFIG_SERIAL_DISABLE_LED: "false"
-              ZIGBEE2MQTT_CONFIG_SERIAL_PORT: &usbdevice /dev/ttyUSB0
+              ZIGBEE2MQTT_CONFIG_SERIAL_PORT: tcp://192.168.10.182:6638
+              # DEBUG: "zigbee-herdsman*"
             envFrom:
               - secretRef:
                   name: zigbee2mqtt
@@ -83,22 +84,22 @@ spec:
                   failureThreshold: 30
                   periodSeconds: 10
             securityContext:
-              privileged: true
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
               limits:
-                memory: 512Mi
+                memory: 1Gi
     defaultPodOptions:
-      # securityContext:
-      #   runAsNonRoot: true
-      #   runAsUser: 568
-      #   runAsGroup: 568
-      #   fsGroup: 568
-      #   fsGroupChangePolicy: OnRootMismatch
-      #   seccompProfile: { type: RuntimeDefault }
-      nodeSelector:
-        zigbee.feature.node.kubernetes.io/sonoff: "true"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: { type: RuntimeDefault }
     service:
       app:
         controller: *app
@@ -120,10 +121,3 @@ spec:
     persistence:
       config:
         existingClaim: *app
-      usb:
-        enabled: true
-        type: hostPath
-        hostPath: *usbdevice
-        hostPathType: CharDevice
-        globalMounts:
-          - path: *usbdevice
