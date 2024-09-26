@@ -29,6 +29,8 @@ rules:
     - gitrepositories
     - ocirepositories
     - buckets
+    - helmrepositories
+    - helmcharts
     - kustomizations
     - helmreleases
   verbs:
@@ -40,12 +42,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: &app capacitor
+  name: capacitor
 subjects:
   - kind: ServiceAccount
-    name: *app
+    name: capacitor
     namespace: flux-system
 roleRef:
   kind: ClusterRole
-  name: *app
+  name: capacitor
   apiGroup: rbac.authorization.k8s.io
