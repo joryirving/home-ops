@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: external-secrets
-      version: 0.10.3
+      version: 0.10.4
       sourceRef:
         kind: HelmRepository
         name: external-secrets
@@ -24,16 +24,22 @@ spec:
       retries: 3
   values:
     installCRDs: true
-    serviceMonitor:
-      enabled: true
-      interval: 1m
+    image:
+      repository: ghcr.io/external-secrets/external-secrets
     webhook:
+      image:
+        repository: ghcr.io/external-secrets/external-secrets
       serviceMonitor:
         enabled: true
         interval: 1m
     certController:
+      image:
+        repository: ghcr.io/external-secrets/external-secrets
       serviceMonitor:
         enabled: true
         interval: 1m
+    serviceMonitor:
+      enabled: true
+      interval: 1m
     bitwarden-sdk-server:
       enabled: false

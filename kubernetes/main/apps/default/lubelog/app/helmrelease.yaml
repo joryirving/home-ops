@@ -38,10 +38,9 @@ spec:
           app:
             image:
               repository: ghcr.io/hargata/lubelogger
-              tag: v1.3.6
+              tag: v1.3.8
             env:
               TZ: ${TIMEZONE}
-              LC_ALL: en_CA.UTF-8
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
@@ -54,8 +53,8 @@ spec:
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534
-        runAsGroup: 65534
+        runAsUser: 568
+        runAsGroup: 568
         seccompProfile: { type: RuntimeDefault }
     service:
       app:
@@ -72,6 +71,10 @@ spec:
           gethomepage.dev/name: lubelog
           gethomepage.dev/icon: https://demo.lubelogger.com/defaults/lubelogger_icon_72.png
           gethomepage.dev/description: Car Service Tracking
+          gethomepage.dev/widget.type: lubelogger
+          gethomepage.dev/widget.url: http://lubelog.default:8080
+          gethomepage.dev/widget.username: "{{ `{{HOMEPAGE_VAR_LUBELOG_USERNAME}}` }}"
+          gethomepage.dev/widget.password: "{{ `{{HOMEPAGE_VAR_LUBELOG_PASSWORD}}` }}"
           external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
         hosts:
           - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"

@@ -5,36 +5,12 @@ vars:
   PYTHON_BIN: python3
 
 env:
-  PATH: "{{.ROOT_DIR}}/.venv/bin:$PATH"
-  VIRTUAL_ENV: "{{.ROOT_DIR}}/.venv"
-  ANSIBLE_COLLECTIONS_PATH: "{{.ROOT_DIR}}/.venv/galaxy"
-  ANSIBLE_ROLES_PATH: "{{.ROOT_DIR}}/.venv/galaxy/ansible_roles"
-  ANSIBLE_VARS_ENABLED: "host_group_vars,community.sops.sops"
   BREWFILE: "{{.ROOT_DIR}}/.taskfiles/Ansible/Brewfile"
 
 tasks:
-
-  deps:
-    desc: Set up Ansible dependencies for the environment
-    cmds:
-      - task: .venv
-
   brew:
     desc: Install workstation dependencies with Brew
     cmd: brew bundle --file {{.BREWFILE}}
     preconditions:
       - { msg: "Missing Homebrew", sh: "command -v brew" }
       - { msg: "Missing Brewfile", sh: "test -f {{.BREWFILE}}" }
-
-  .venv:
-    internal: true
-    cmds:
-      - true && {{.PYTHON_BIN}} -m venv {{.ROOT_DIR}}/.venv
-      - .venv/bin/python3 -m pip install --upgrade pip setuptools wheel
-      - .venv/bin/python3 -m pip install --upgrade --requirement {{.ANSIBLE_DIR}}/requirements.txt
-      - .venv/bin/ansible-galaxy install --role-file "{{.ANSIBLE_DIR}}/requirements.yaml" --force
-    sources:
-      - "{{.ANSIBLE_DIR}}/requirements.txt"
-      - "{{.ANSIBLE_DIR}}/requirements.yaml"
-    generates:
-      - "{{.ROOT_DIR}}/.venv/pyvenv.cfg"
