@@ -143,11 +143,12 @@ spec:
           limits:
             memory: 2Gi
         replicaExternalLabelName: __replica__
-        ruleSelectorNilUsesHelmValues: false
-        serviceMonitorSelectorNilUsesHelmValues: false
-        podMonitorSelectorNilUsesHelmValues: false
-        probeSelectorNilUsesHelmValues: false
-        scrapeConfigSelectorNilUsesHelmValues: false
+        podmonitorselector: &selector
+          matchLabels: null
+        probeSelector: *selector
+        ruleSelector: *selector
+        scrapeConfigSelector: *selector
+        serviceMonitorSelector: *selector
         retention: 14d
         retentionSize: 70GB
         replicas: 2
