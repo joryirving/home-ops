@@ -49,24 +49,19 @@ spec:
                 10.42.0.0/16, 10.69.1.0/24, 192.168.30.0/24
               QBT_Preferences__WebUI__LocalHostAuth: false
             probes:
-              liveness: &probes
-                enabled: false
-                custom: true
-                spec:
-                  httpGet:
-                    path: /api/v2/app/version
-                    port: *port
-                  initialDelaySeconds: 30
-                  periodSeconds: 30
-                  timeoutSeconds: 10
-                  failureThreshold: 6
-              readiness: *probes
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
               startup:
-                enabled: false
+                enabled: true
                 spec:
                   failureThreshold: 30
-                  periodSeconds: 10
+                  periodSeconds: 5
             securityContext:
+              runAsUser: 568
+              runAsGroup: 568
+              runAsNonRoot: true
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
@@ -75,16 +70,8 @@ spec:
                 cpu: 25m
                 memory: 1G
               limits:
-                memory: 12G
+                memory: 4G
     defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 568
-        runAsGroup: 568
-        fsGroup: 568
-        fsGroupChangePolicy: OnRootMismatch
-        supplementalGroups: [10000]
-        seccompProfile: { type: RuntimeDefault }
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
