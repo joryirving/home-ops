@@ -35,7 +35,7 @@
 #   name                  = "${each.value}"
 #   external_host         = "http://${each.value}.${var.cluster_domain}"
 #   mode                  = "forward_single"
-#   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+#   authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
 #   access_token_validity = "hours=4"
 # }
 
@@ -56,7 +56,7 @@
 #   name                  = "${each.value}"
 #   external_host         = "http://${each.value}.${var.cluster_domain}"
 #   mode                  = "forward_single"
-#   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+#   authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
 #   access_token_validity = "hours=4"
 # }
 
@@ -80,7 +80,7 @@
 #   basic_auth_password_attribute = var.[each.value]_password
 #   external_host                 = "http://${each.value}.${var.cluster_domain}"
 #   mode                          = "forward_single"
-#   authorization_flow            = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+#   authorization_flow            = authentik_flow.provider-authorization-implicit-consent.uuid
 #   access_token_validity         = "hours=4"
 # }
 
@@ -100,7 +100,7 @@
 #   name                  = "home-assistant"
 #   external_host         = "http://hass.${var.cluster_domain}"
 #   mode                  = "forward_single"
-#   authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+#   authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
 #   access_token_validity = "hours=4"
 # }
 
@@ -120,9 +120,11 @@ resource "authentik_provider_oauth2" "grafana_oauth2" {
   name                  = "grafana"
   client_id             = var.grafana_id
   client_secret         = var.grafana_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
+  authentication_flow   = authentik_flow.authentication.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
+  signing_key           = data.authentik_certificate_key_pair.generated.id
   redirect_uris         = ["https://grafana.${var.cluster_domain}/login/generic_oauth"]
 }
 
@@ -142,9 +144,10 @@ resource "authentik_provider_oauth2" "kyoo_oauth2" {
   name                  = "kyoo"
   client_id             = var.kyoo_id
   client_secret         = var.kyoo_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
+  signing_key           = data.authentik_certificate_key_pair.generated.id
   redirect_uris         = ["https://kyoo.${var.cluster_domain}/api/auth/logged/authentik"]
 }
 
@@ -164,9 +167,10 @@ resource "authentik_provider_oauth2" "lubelog_oauth2" {
   name                  = "lubelog"
   client_id             = var.lubelog_id
   client_secret         = var.lubelog_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
+  signing_key           = data.authentik_certificate_key_pair.generated.id
   redirect_uris         = ["https://lubelog.${var.cluster_domain}/Login/RemoteAuth"]
 }
 
@@ -186,9 +190,10 @@ resource "authentik_provider_oauth2" "paperless_oauth2" {
   name                  = "paperless"
   client_id             = var.paperless_id
   client_secret         = var.paperless_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
+  signing_key           = data.authentik_certificate_key_pair.generated.id
   redirect_uris         = ["https://paperless.${var.cluster_domain}/accounts/oidc/authentik/login/callback/"]
 }
 
@@ -208,9 +213,10 @@ resource "authentik_provider_oauth2" "portainer_oauth2" {
   name                  = "portainer"
   client_id             = var.portainer_id
   client_secret         = var.portainer_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
+  signing_key           = data.authentik_certificate_key_pair.generated.id
   redirect_uris         = ["https://portainer.${var.cluster_domain}/"]
 }
 
@@ -230,9 +236,10 @@ resource "authentik_provider_oauth2" "gitops_oauth2" {
   name                  = "gitops"
   client_id             = var.gitops_id
   client_secret         = var.gitops_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
+  signing_key           = data.authentik_certificate_key_pair.generated.id
   redirect_uris         = ["https://gitops.${var.cluster_domain}/oauth2/callback"]
 }
 
@@ -252,7 +259,7 @@ resource "authentik_provider_oauth2" "headscale_oauth2" {
   name                  = "headscale"
   client_id             = var.headscale_id
   client_secret         = var.headscale_secret
-  authorization_flow    = resource.authentik_flow.provider-authorization-implicit-consent.uuid
+  authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
   signing_key           = data.authentik_certificate_key_pair.generated.id
