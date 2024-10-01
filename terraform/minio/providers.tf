@@ -10,6 +10,7 @@ provider "bitwarden" {
 
 provider "minio" {
   minio_server   = var.minio_url
+  minio_ssl      = true
   minio_user     = module.secrets_s3.data.access-key
   minio_password = module.secrets_s3.data.secret-key
 }
