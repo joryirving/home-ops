@@ -41,13 +41,8 @@ spec:
               tag: 5.0.0@sha256:1c0abd8a3c4450f36e7c850854e98dbe3f900eeab82478fc778349ae3721eea5
             env:
               TZ: ${TIMEZONE}
-              QBITTORRENT__PORT: &port 80
-              QBITTORRENT__BT_PORT: &bittorrentPort "${SECRET_VPN_FORWARDED_PORT_1:=54321}"
-              QBT_Preferences__WebUI__AlternativeUIEnabled: false
-              QBT_Preferences__WebUI__AuthSubnetWhitelistEnabled: true
-              QBT_Preferences__WebUI__AuthSubnetWhitelist: |-
-                10.42.0.0/16, 10.69.1.0/24, 192.168.30.0/24
-              QBT_Preferences__WebUI__LocalHostAuth: false
+              QBT_WEBUI_PORT: &port 80
+              QBT_TORRENTING_PORT: &torrentPort 50413
             probes:
               liveness:
                 enabled: true
@@ -72,6 +67,7 @@ spec:
               limits:
                 memory: 8Gi
     defaultPodOptions:
+      terminationGracePeriodSeconds: 120
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -96,7 +92,7 @@ spec:
         ports:
           bittorrent:
             enabled: true
-            port: *bittorrentPort
+            port: *torrentPort
             protocol: TCP
     ingress:
       app:
