@@ -201,7 +201,7 @@ Be sure to check out [kubesearch.dev](https://kubesearch.dev/) for ideas on how 
 
 ## 📜 Changelog
 
-See my _awful_ [commit history](https://github.com/joryirving/home-ops/commits/main)
+See my _awful_ [commit history](https://github.com/joryirving/home-ops/commits/)
 
 ---
 
