@@ -1,7 +1,3 @@
-data "bitwarden_project" "this" {
-  id = var.bw_proj_id
-}
-
 module "secrets" {
   for_each   = toset(local.buckets)
   source     = "./modules/create-secret"

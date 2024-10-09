@@ -1,27 +1,3 @@
-variable "bw_password" {
-  type        = string
-  description = "Bitwarden Master Key"
-  sensitive   = true
-}
-
-variable "bw_client_id" {
-  type        = string
-  description = "Bitwarden Client ID"
-  sensitive   = true
-}
-
-variable "bw_client_secret" {
-  type        = string
-  description = "Bitwarden Client Secret"
-  sensitive   = true
-}
-
-variable "bw_email" {
-  type        = string
-  description = "Bitwarden Email Login"
-  sensitive   = true
-}
-
 variable "bw_access_token" {
   type        = string
   description = "Bitwarden Secret Manager Access token"
@@ -42,12 +18,12 @@ variable "bw_proj_id" {
 
 variable "bw_minio_secret_id" {
   type        = string
-  description = "Bitwarden ID for Minio Secret"
+  description = "Bitwarden Secret Manager Secret ID for Minio Credentials"
   sensitive   = true
 }
 
 variable "minio_url" {
   type        = string
-  description = "Minio URL"
+  description = "Minio Server URL"
   sensitive   = true
 }
