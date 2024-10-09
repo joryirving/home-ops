@@ -1,3 +1,3 @@
 output "id" {
-  value = bitwarden_item_login.item.id
+  value = bitwarden_secret.item.id
 }
