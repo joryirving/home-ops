@@ -1,3 +1,10 @@
+locals {
+  buckets = [
+    "postgresql",
+    "volsync"
+  ]
+}
+
 module "buckets" {
   for_each    = toset(local.buckets)
   source      = "./modules/minio"
