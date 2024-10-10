@@ -25,13 +25,12 @@ spec:
   values:
     controllers:
       server:
-        enabled: true
-        type: deployment
         strategy: &strategy RollingUpdate
         rollingUpdate: &rollingUpdate
           unavailable: 0
-        annotations:
-          reloader.stakater.com/auto: "true"
+        pod: &pod
+          annotations:
+            reloader.stakater.com/auto: 'true'
         containers:
           app:
             image:
@@ -39,8 +38,10 @@ spec:
               tag: 1.11.0
             env:
               TIMEZONE: ${TIMEZONE}
+              # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
               API_ENDPOINT: &api_endpoint https://spotty.${SECRET_DOMAIN}/api
-              CLIENT_ENDPOINT: https://spotty.${SECRET_DOMAIN}
+              CLIENT_ENDPOINT: &client https://spotty.${SECRET_DOMAIN}
+              CORS: *client
               MONGO_ENDPOINT: mongodb://your-spotify-mongodb:27017/your_spotify #mongo sucks
             envFrom:
               - secretRef:
@@ -55,24 +56,20 @@ spec:
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
-              capabilities: {drop: ['ALL']}
-            resources:
-              requests:
-                cpu: 10m
-                memory: 550Mi
-              limits:
-                memory: 775Mi
+              capabilities: { drop: [ 'ALL' ] }
       web:
         strategy: *strategy
         rollingUpdate: *rollingUpdate
+        pod: *pod
         containers:
           app:
             image:
               repository: yooooomi/your_spotify_client
               tag: 1.11.0
             env:
+              TIMEZONE: ${TIMEZONE}
               API_ENDPOINT: *api_endpoint
-            probes: *probes
+            probes: &probes
             securityContext: *securityContext
       mongodb: #mongo still sucks
         type: statefulset
@@ -84,48 +81,46 @@ spec:
             image:
               repository: docker.io/library/mongo
               tag: 6.0.4-focal
+            env:
+              TZ: ${TIMEZONE}
             probes: *probes
     service:
       server:
         controller: server
-        nameOverride: server
         primary: true
         ports:
           http:
             port: 8080
       web:
         controller: web
-        nameOverride: web
         ports:
           http:
             port: 3000
       mongodb:
         controller: mongodb
-        nameOverride: mongodb
         ports:
           http:
             port: 27017
     ingress:
-      external:
-        enabled: true
+      app:
         className: external
         annotations:
           external-dns.alpha.kubernetes.io/target: external.${SECRET_DOMAIN}
         hosts:
           - host: spotty.${SECRET_DOMAIN}
             paths:
-              - path: /?(.*)
+              - path: /
                 pathType: Prefix
                 service:
                   identifier: web
                   port: http
-              - path: /api/?(.*)
+              - path: /api/
                 pathType: Prefix
                 service:
                   identifier: server
                   port: http
     persistence:
-      config:
+      mongo:
         existingClaim: *app
         advancedMounts:
           mongodb:
