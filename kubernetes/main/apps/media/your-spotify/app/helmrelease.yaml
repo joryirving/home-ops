@@ -69,7 +69,7 @@ spec:
             env:
               TIMEZONE: ${TIMEZONE}
               API_ENDPOINT: *api_endpoint
-            probes: &probes
+            probes: *probes
             securityContext: *securityContext
       mongodb: #mongo still sucks
         type: statefulset
@@ -113,12 +113,12 @@ spec:
         hosts:
           - host: spotty.${SECRET_DOMAIN}
             paths:
-              - path: /
+              - path: /?(.*)
                 pathType: Prefix
                 service:
                   identifier: web
                   port: http
-              - path: /api/
+              - path: /api/?(.*)
                 pathType: Prefix
                 service:
                   identifier: server
