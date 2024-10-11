@@ -27,6 +27,12 @@ spec:
       it-tools:
         annotations:
           reloader.stakater.com/auto: "true"
+        pod:
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            fsGroup: 568
+            fsGroupChangePolicy: "OnRootMismatch"
         containers:
           app:
             image:
@@ -34,22 +40,24 @@ spec:
               tag: 2024.5.13@sha256:311a9845438f45317278b3e3b6849abd0d7b0cf8e6b288a9c86c8bfdc39994ab
             env:
               TZ: ${TIMEZONE}
-            probes:
-              liveness:
-                enabled: false
-              readiness:
-                enabled: false
             resources:
               requests:
-                cpu: 100m
+                cpu: 5m
+                memory: 32Mi
               limits:
-                memory: 500Mi
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
     service:
       app:
         controller: *app
         ports:
           http:
-            port: 80
+            port: 8080
     ingress:
       app:
         className: external
@@ -62,4 +70,6 @@ spec:
                 service:
                   identifier: app
                   port: http
-
+    persistence:
+      tmp:
+        type: emptyDir
