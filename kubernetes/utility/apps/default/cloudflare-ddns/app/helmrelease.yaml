@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: cloudflare-ddns
+  name: &app cloudflare-ddns
 spec:
   interval: 30m
   chart:
@@ -25,27 +25,73 @@ spec:
   values:
     controllers:
       cloudflare-ddns:
-        type: cronjob
-        cronjob:
-          schedule: "@hourly"
-          successfulJobsHistory: 0
-        containers: &container
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
           app:
             image:
-              repository: ghcr.io/onedr0p/kubanetics
-              tag: 2024.10.6@sha256:3df78de17c878a5c910e91f306eaaf8cdb70970e1c4557a887021a2a2007aba0
-            command: ["/app/cloudflare-ddns.sh"]
+              repository: ghcr.io/larivierec/cloudflare-ddns
+              tag: main@sha256:5d2a99b559d8f4eaecc45b5f79b66fe6722d876c606e511ba2b5bcd2da903d3b
+            args:
+              - --zone-name
+              - ${SECRET_DOMAIN}
+              - --record-name
+              - ipv4.${SECRET_DOMAIN}
+              - --provider
+              - random
+            env:
+              ACCOUNT_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudflare-ddns-secret
+                    key: CLOUDFLARE_API_KEY
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health/alive
+                    port: &healthPort 8080
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health/ready
+                    port: *healthPort
             resources:
               requests:
-                cpu: 5m
+                memory: 64Mi
+                cpu: 10m
               limits:
-                memory: 16Mi
-    persistence:
-      config:
-        type: secret
-        name: cloudflare-ddns-secret
-        defaultMode: 0775
-        globalMounts:
-          - path: /app/cloudflare-ddns.sh
-            subPath: cloudflare-ddns.sh
-            readOnly: true
+                memory: 128Mi
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: &port 9000
+          health:
+            port: *healthPort
+    serviceMonitor:
+      app:
+        serviceName: *app
+        endpoints:
+          - port: health
+            scheme: http
+            path: /metrics
+            interval: 30s
+            scrapeTimeout: 30s
+    ingress:
+      app:
+        className: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal-utility.${SECRET_DOMAIN}
+        hosts:
+          - host: "ddns.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
