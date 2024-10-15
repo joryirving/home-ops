@@ -140,26 +140,26 @@ Outside the `external-dns` instance mentioned above another instance is deployed
 
 ### Main Kubernetes Cluster
 
-| Name  | Device         | CPU       | OS Disk   | Data Disk | RAM  | OS    | Purpose           |
-|-------|----------------|-----------|-----------|-----------|------|-------|-------------------|
-| Ayaka | Dell 7080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| Eula  | Dell 7080mff   | i7-10700T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| Ganyu | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| HuTao | Dell 3080mff   | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
-| Navia | Dell 3080mff   | i5-10500T | 256GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
-| Yelan | Dell 3080mff   | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
+| Name  | Device       | CPU       | OS Disk   | Data Disk | RAM  | OS    | Purpose           |
+|-------|--------------|-----------|-----------|-----------|------|-------|-------------------|
+| Ayaka | Dell 7080mff | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
+| Eula  | Dell 7080mff | i7-10700T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
+| Ganyu | Dell 3080mff | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
+| HuTao | Dell 3080mff | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
+| Navia | Dell 3080mff | i5-10500T | 256GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
+| Yelan | Dell 3080mff | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
 
 Total CPU: 76 threads
 Total RAM: 384GB
 
 ### Utility Kubernetes Cluster
 
-| Name     | Device         | CPU           | OS Disk      | RAM  | OS    | Purpose           |
-|----------|----------------|---------------|--------------|------|-------|-------------------|
-| Celestia | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | 16GB | Talos | k8s control-plane |
+| Name     | Device     | CPU           | OS Disk   | Data Disk  | RAM  | OS    | Purpose           |
+|----------|------------|---------------|-----------|------------|------|-------|-------------------|
+| Celestia | Bosgame P1 | Ryzen 7 5700U | 480GB SSD | 512GB NVME | 32GB | Talos | k8s control-plane |
 
-Total CPU: 4 threads
-Total RAM: 16GB
+Total CPU: 16 threads
+Total RAM: 32GB
 
 ### Supporting Hardware
 
