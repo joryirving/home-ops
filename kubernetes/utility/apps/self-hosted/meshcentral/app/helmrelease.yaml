@@ -1,0 +1,98 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/app-template-3.4.0/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app meshcentral
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  dependsOn:
+    - name: longhorn
+      namespace: storage
+    - name: volsync
+      namespace: storage
+  values:
+    controllers:
+      meshcentral:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ylianst/meshcentral
+              tag: 1.1.32@sha256:9f7c68b88a60e8a00c753ce43c9b44b68ec8c92485f1ac2d86ed423fa01362f2
+            env:
+              TZ: ${TIMEZONE}
+              NODE_ENV: production
+              HOSTNAME: &host mesh.${SECRET_DOMAIN}
+              ALLOW_NEW_ACCOUNTS: "false"
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 100m
+              limits:
+                memory: 2Gi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: { type: RuntimeDefault }
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 8080
+    ingress:
+      app:
+        className: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal-utility.${SECRET_DOMAIN}
+        hosts:
+          - host: *host
+            paths:
+              - path: /
+                service:
+                  identifier: app
+    persistence:
+      config:
+        type: configMap
+        name: meshcentral-config
+        advancedMounts:
+          *app :
+            *app :
+              - path: /opt/meshcentral/meshcentral-data/config.json
+                subPath: config.json
+      data:
+        existingClaim: *app
+        globalMounts:
+          - path: /root
+            subPath: rootdir
+          - path: /opt/meshcentral/meshcentral-data
+            subPath: data
+          - path: /opt/meshcentral/meshcentral-files
+            subPath: userfiles
+          - path: /opt/meshcentral/meshcentral-backups
+            subPath: backups
