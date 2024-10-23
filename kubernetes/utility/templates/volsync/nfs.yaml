@@ -13,22 +13,17 @@ spec:
     template:
       engineVersion: v2
       data:
-        RESTIC_REPOSITORY: "{{ .REPOSITORY_TEMPLATE }}/${APP}"
+        RESTIC_REPOSITORY: "/repository/${APP}"
         RESTIC_PASSWORD: "{{ .RESTIC_PASSWORD }}"
-        AWS_ACCESS_KEY_ID: "{{ .AWS_ACCESS_KEY_ID }}"
-        AWS_SECRET_ACCESS_KEY: "{{ .AWS_SECRET_ACCESS_KEY }}"
   dataFrom:
   - extract:
-      key: volsync-bucket
-  - extract:
-      key: volsync-minio-template
-      property: RESTIC_REPOSITORY
+      key: volsync-template
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/volsync.backube/replicationdestination_v1alpha1.json
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
 metadata:
-  name: "${APP}-bootstrap"
+  name: "${APP}-dst"
 spec:
   trigger:
     manual: restore-once

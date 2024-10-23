@@ -23,6 +23,7 @@ spec:
   - extract:
       key: volsync-r2-template
 ---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/volsync.backube/replicationsource_v1alpha1.json
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
@@ -42,8 +43,8 @@ spec:
     storageClassName: "${VOLSYNC_STORAGECLASS:-longhorn-snapshot}"
     accessModes: ["${VOLSYNC_ACCESSMODES:-ReadWriteOnce}"]
     moverSecurityContext:
-      runAsUser: "${VOLSYNC_UID:-568}"
-      runAsGroup: "${VOLSYNC_GID:-568}"
-      fsGroup: "${VOLSYNC_GID:-568}"
+      runAsUser: ${VOLSYNC_PUID:-568}
+      runAsGroup: ${VOLSYNC_PGID:-568}
+      fsGroup: ${VOLSYNC_PGID:-568}
     retain:
       daily: 7

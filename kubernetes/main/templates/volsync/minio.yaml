@@ -24,6 +24,7 @@ spec:
       key: volsync-minio-template
       property: RESTIC_REPOSITORY
 ---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/volsync.backube/replicationdestination_v1alpha1.json
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
 metadata:
@@ -40,12 +41,16 @@ spec:
     cacheCapacity: "${VOLSYNC_CACHE_CAPACITY:-10Gi}"
     storageClassName: "${VOLSYNC_STORAGECLASS:-ceph-block}"
     accessModes: ["${VOLSYNC_ACCESSMODES:-ReadWriteOnce}"]
-    moverSecurityContext:
-      runAsUser: "${VOLSYNC_UID:-568}"
-      runAsGroup: "${VOLSYNC_GID:-568}"
-      fsGroup: "${VOLSYNC_GID:-568}"
     capacity: "${VOLSYNC_CAPACITY:-2Gi}"
+    moverSecurityContext:
+      runAsUser: ${VOLSYNC_PUID:-568}
+      runAsGroup: ${VOLSYNC_PGID:-568}
+      fsGroup: ${VOLSYNC_PGID:-568}
+    enableFileDeletion: true
+    cleanupCachePVC: true
+    cleanupTempPVC: true
 ---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/volsync.backube/replicationsource_v1alpha1.json
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
@@ -65,9 +70,9 @@ spec:
     storageClassName: "${VOLSYNC_STORAGECLASS:-ceph-block}"
     accessModes: ["${VOLSYNC_ACCESSMODES:-ReadWriteOnce}"]
     moverSecurityContext:
-      runAsUser: "${VOLSYNC_UID:-568}"
-      runAsGroup: "${VOLSYNC_GID:-568}"
-      fsGroup: "${VOLSYNC_GID:-568}"
+      runAsUser: ${VOLSYNC_PUID:-568}
+      runAsGroup: ${VOLSYNC_PGID:-568}
+      fsGroup: ${VOLSYNC_PGID:-568}
     retain:
       hourly: 24
       daily: 10
