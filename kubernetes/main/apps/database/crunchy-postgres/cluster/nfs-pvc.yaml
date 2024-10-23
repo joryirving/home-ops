@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: postgres-repo3
+  name: postgres-nfs
 spec:
   capacity:
     storage: 1Mi
@@ -20,15 +20,15 @@ spec:
     - nconnect=8
   persistentVolumeReclaimPolicy: Delete
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-repo3 # this has to match the repo number in cluster.yaml
-spec:
-  accessModes:
-    - ReadWriteMany
-  volumeName: postgres-repo3
-  storageClassName: ""
-  resources:
-    requests:
-      storage: 1Mi
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: postgres-nfs
+# spec:
+#   accessModes:
+#     - ReadWriteMany
+#   volumeName: postgres-nfs
+#   storageClassName: ""
+#   resources:
+#     requests:
+#       storage: 1Mi
