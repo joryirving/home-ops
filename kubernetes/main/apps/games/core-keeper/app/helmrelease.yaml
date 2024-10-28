@@ -47,7 +47,7 @@ spec:
               DISCORD: "1" # Enables discord webhook features witch sends GameID to a channel.
               SEASON: "0" # Enables Seasonal Events. 0 is default, 1 is Easter, 2 is Halloween, 3 is Christmas.
               # SERVER_IP: 0.0.0.0 # Only used if port is set. Sets the address that the server will bind to.
-              # SERVER_PORT: "8989" # What port to bind to. If not set, then the server will use the Steam relay network. If set the clients will connect to the server directly and the port needs to be open.
+              # SERVER_PORT: &port "27015" # What port to bind to. If not set, then the server will use the Steam relay network. If set the clients will connect to the server directly and the port needs to be open.
             envFrom:
             - secretRef:
                 name: core-keeper-secret
@@ -61,6 +61,15 @@ spec:
                 cpu: 1000m
               limits:
                 memory: 8Gi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        supplementalGroups: [10000]
+        seccompProfile: { type: RuntimeDefault }
     # service:
     #   app:
     #     controller: *app
@@ -71,8 +80,6 @@ spec:
     #       game:
     #         protocol: UDP
     #         port: *port
-    #       rcon:
-    #         port: *rcon-port
     # ingress:
     #   app:
     #     enabled: false #nginx doesn't support non-https
