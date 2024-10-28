@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app whisper
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      whisper:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: onerahmet/openai-whisper-asr-webservice
+              tag: v1.6.0@sha256:162cc7e3ad5b7aa1d0420b4f811ed54630297cc80b200c1ce571ec6922d531bd
+            env:
+              TZ: ${TIMEZONE}
+              ASR_MODEL: small # tiny, base, small, medium, large, large-v1, large-v2 and large-v3
+              ASR_ENGINEL: faster_whisper # openai_whisper, faster_whisper
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                memory: 12Gi
+    # defaultPodOptions:
+    #   securityContext:
+    #     runAsNonRoot: true
+    #     runAsUser: 568
+    #     runAsGroup: 568
+    #     fsGroup: 568
+    #     fsGroupChangePolicy: OnRootMismatch
+    #     supplementalGroups: [10000]
+    #     seccompProfile: { type: RuntimeDefault }
+    service:
+      app:
+        controller: whisper
+        ports:
+          http:
+            port: 9000
+    persistence:
+      cache:
+        existingClaim: *app
+        globalMounts:
+          - path: /root/.cache/whisper
