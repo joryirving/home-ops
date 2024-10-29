@@ -37,27 +37,27 @@ tasks:
       node: "{{.node | default nil}}"
       namespace: '{{.namespace | default "default"}}'
       hostnetwork: "{{.hostnetwork | default false}}"
-      cluster: '{{ or .cluster (fail "Argument (cluster) is required") }}'
+      CLUSTER: '{{ or .CLUSTER (fail "Argument (CLUSTER) is required") }}'
 
   browse-pvc:
     desc: Browse PersistentVolumeClaims
     summary: |
       Args:
-        cluster: Cluster to run command against (required)
+        CLUSTER: Cluster to run command against (required)
         ns: Namespace to browse PersistentVolumeClaims in (default: default)
         claim: PersistentVolumeClaim to browse (required)
     interactive: true
-    cmd: kubectl browse-pvc --context {{.cluster}} --namespace {{.ns}} {{.claim}}
+    cmd: kubectl browse-pvc --context {{.CLUSTER}} --namespace {{.ns}} {{.claim}}
     requires:
-      vars: ["cluster", "claim"]
+      vars: [CLUSTER, claim]
 
   delete-failed-pods:
     desc: Deletes pods with a fucked status
     summary: |
       Args:
-        cluster: Cluster to run command against (required)
+        CLUSTER: Cluster to run command against (required)
     cmds:
       - for: ["Evicted", "Failed", "Succeeded"]
-        cmd: kubectl --context {{.cluster}} delete pods --field-selector status.phase={{.ITEM}} -A --ignore-not-found=true
+        cmd: kubectl --context {{.CLUSTER}} delete pods --field-selector status.phase={{.ITEM}} -A --ignore-not-found=true
     requires:
-      vars: ["cluster"]
+      vars: [CLUSTER]
