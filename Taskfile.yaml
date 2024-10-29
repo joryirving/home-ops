@@ -2,27 +2,33 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
+set: [pipefail]
+shopt: [globstar]
+
 vars:
+  CLUSTER: '{{.CLUSTER | default "main"}}'
+  CLUSTER_DIR: '{{.ROOT_DIR}}/kubernetes/{{.CLUSTER}}'
   KUBERNETES_DIR: "{{.ROOT_DIR}}/kubernetes"
 
 env:
-  KUBECONFIG: "{{.KUBERNETES_DIR}}/kubernetes/main/kubeconfig:{{.KUBERNETES_DIR}}/kubernetes/pi/kubeconfig"
-  SOPS_AGE_KEY_FILE: "{{.ROOT_DIR}}/age.key"
+  GOPATH: '{{.ROOT_DIR}}/.go'
+  KUBECONFIG: '{{.CLUSTER_DIR}}/kubeconfig'
+  MINIJINJA_CONFIG_FILE: '{{.ROOT_DIR}}/.minijinja.toml'
+  SOPS_AGE_KEY_FILE: '{{.ROOT_DIR}}/age.key'
+  TALOSCONFIG: '{{.CLUSTER_DIR}}/talosconfig'
+  VIRTUAL_ENV: '{{.ROOT_DIR}}/.venv'
 
 includes:
-  ansible: .taskfiles/Ansible
-  bitwarden: .taskfiles/Bitwarden
-  external-secrets: .taskfiles/ExternalSecrets
-  flux: .taskfiles/Flux
-  kubernetes: .taskfiles/Kubernetes
-  postgres: .taskfiles/Postgresql
-  rook: .taskfiles/Rook
-  sops: .taskfiles/Sops
-  talos: .taskfiles/Talos
-  volsync: .taskfiles/VolSync
+  bootstrap: .taskfiles/bootstrap
+  bitwarden: .taskfiles/bitwarden
+  kubernetes: .taskfiles/kubernetes
+  sops: .taskfiles/sops
+  talos: .taskfiles/talos
+  volsync: .taskfiles/volsync
+  workstation: .taskfiles/workstation
 
 tasks:
 
   default:
+    cmd: task --list
     silent: true
-    cmd: task -l
