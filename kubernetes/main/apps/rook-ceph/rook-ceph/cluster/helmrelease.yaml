@@ -23,8 +23,6 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
   dependsOn:
     - name: rook-ceph-operator
       namespace: rook-ceph
@@ -195,9 +193,10 @@ spec:
             failureDomain: host
             erasureCoded:
               dataChunks: 2
-              codingChunks: 2
+              codingChunks: 1
           preservePoolsOnDelete: true
           gateway:
+            hostNetwork: false
             port: 80
             resources:
               requests:
@@ -222,6 +221,8 @@ spec:
           ingressClassName: internal
           annotations:
             external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
+            nginx.ingress.kubernetes.io/proxy-body-size: "0"
+            nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
           host:
             name: rgw.${SECRET_DOMAIN}
             path: /
