@@ -1,0 +1,131 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+vars:
+  TALHELPER_SECRET_FILE: "talsecret.sops.yaml"
+  TALHELPER_CONFIG_FILE: "talconfig.yaml"
+
+env:
+  TALOSCONFIG: "talosconfig"
+
+tasks:
+  genconfig:
+    desc: Generate the Talos configs
+    cmd: talhelper -c {{.CLUSTER_DIR}}/talos/{{.TALHELPER_CONFIG_FILE}} genconfig -s {{.CLUSTER_DIR}}/talos/{{.TALHELPER_SECRET_FILE}} -o {{.CLUSTER_DIR}}/talos/clusterconfig
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Missing talhelper secret file", sh: "test -f {{.CLUSTER_DIR}}/talos/{{.TALHELPER_SECRET_FILE}}" }
+
+  node-config-apply:
+    desc: Apply the Talos config on a single node for an existing cluster
+    vars:
+      MODE: '{{.MODE | default "no-reboot"}}'
+    requires:
+      vars: [CLUSTER, HOSTNAME]
+    cmds:
+      - '{{if eq .MODE "reboot"}}kubectl drain {{.HOSTNAME}} --ignore-daemonsets --delete-emptydir-data --force{{end}}'
+      - talosctl apply-config --talosconfig={{.CLUSTER_DIR}}/talos/clusterconfig/talosconfig --mode={{.MODE}} --nodes {{.HOSTNAME}} --file {{.CLUSTER_DIR}}/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml
+      - talosctl --nodes {{.HOSTNAME}} health --wait-timeout=10m --server=false
+      - '{{if eq .MODE "reboot"}}kubectl uncordon {{.HOSTNAME}}{{end}}'
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Argument (hostname) is required", sh: "test -n {{.HOSTNAME}}" }
+      - { msg: "Argument (mode) is required", sh: "test -n {{.MODE}}" }
+
+  cluster-config-apply:
+    desc: Apply the Talos config on all nodes for an existing cluster
+    vars:
+      HOSTNAME:
+        sh: |-
+          kubectl get nodes --output=jsonpath='{.items[*].metadata.name}'
+      MODE: '{{.MODE | default "no-reboot"}}'
+    cmds:
+      - for: { var: HOSTNAME }
+        task: node-config-apply
+        vars:
+          HOSTNAME: '{{.ITEM}}'
+          MODE: "{{.MODE}}"
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.CLUSTER_DIR}}/talos/{{.TALHELPER_CONFIG_FILE}}" }
+
+  soft-nuke:
+    desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
+    prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
+    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/talos -c {{.CLUSTER_DIR}}/talos/{{.TALHELPER_CONFIG_FILE}} --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+
+  hard-nuke:
+    desc: Resets nodes back completely and reboots them
+    prompt: This will destroy your cluster and reset the nodes... continue?
+    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/talos -c {{.CLUSTER_DIR}}/talos/{{.TALHELPER_CONFIG_FILE}} --extra-flags "--reboot --graceful=false --wait=false" | bash
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+
+  node-reboot:
+    desc: Reboot individual Talos nodes.
+    requires:
+      vars: [CLUSTER, HOSTNAME]
+    cmds:
+      - until kubectl wait cephcluster --for=jsonpath=.status.ceph.health=HEALTH_OK --timeout=10m --all --all-namespaces &>/dev/null; do sleep 5; done
+      - until kubectl wait jobs --all --all-namespaces --for=condition=complete --timeout=5m &>/dev/null; do sleep 5; done
+      - kubectl drain {{.HOSTNAME}} --ignore-daemonsets --delete-emptydir-data --force
+      - talosctl reboot --nodes {{.ITEM}} --context {{.CLUSTER}}
+      - talosctl --nodes {{.HOSTNAME}} health --wait-timeout=10m --server=false
+      - kubectl uncordon {{.HOSTNAME}}
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Argument (HOSTNAME) is required", sh: "test -n {{.HOSTNAME}}" }
+      - { msg: "Argument (MODE) is required", sh: "test -n {{.MODE}}" }
+
+  cluster-reboot:
+    desc: Reboot all Talos nodes.
+    prompt: This will reboot all of the cluster nodes. Are you sure you want to continue?
+    requires:
+      vars: [CLUSTER]
+    vars:
+      HOSTNAMES:
+        sh: |-
+          kubectl get nodes --output=jsonpath='{.items[*].metadata.name}'
+    cmds:
+      - for: { var: HOSTNAMES }
+        task: node-reboot
+        vars:
+          HOSTNAME: '{{.ITEM}}'
+          CLUSTER: "{{.CLUSTER}}"
+      - task: :kubernetes:delete-failed-pods
+        vars:
+          CLUSTER: "{{.CLUSTER}}"
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+
+  node-shutdown:
+    desc: Shutdown individual Talos nodes.
+    requires:
+      vars: [CLUSTER, HOSTNAME]
+    cmds:
+      - until kubectl wait cephcluster --for=jsonpath=.status.ceph.health=HEALTH_OK --timeout=10m --all --all-namespaces &>/dev/null; do sleep 5; done
+      - until kubectl wait jobs --all --all-namespaces --for=condition=complete --timeout=5m &>/dev/null; do sleep 5; done
+      - kubectl drain {{.HOSTNAME}} --ignore-daemonsets --delete-emptydir-data --force
+      - talosctl shutdown --wait=false -n {{.ITEM}} --context {{.CLUSTER}}
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Argument (HOSTNAME) is required", sh: "test -n {{.HOSTNAME}}" }
+
+  cluster-shutdown:
+    desc: Shutdown all Talos nodes.
+    prompt: This will shutdown all of the cluster nodes. Are you sure you want to continue?
+    vars:
+      HOSTNAMES:
+        sh: |-
+          kubectl get nodes --output=jsonpath='{.items[*].metadata.name}'
+    cmds:
+      - for: { var: HOSTNAMES }
+        task: node-shutdown
+        vars:
+          HOSTNAME: '{{.ITEM}}'
+          CLUSTER: "{{.CLUSTER}}"
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }

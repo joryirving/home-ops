@@ -1,0 +1,143 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+vars:
+  BOOTSTRAP_RESOURCES_DIR: '{{.ROOT_DIR}}/.taskfiles/bootstrap/resources'
+  TALHELPER_SECRET_FILE: "{{.CLUSTER_DIR}}/talos/talsecret.sops.yaml"
+  TALHELPER_CONFIG_FILE: "{{.CLUSTER_DIR}}/talos/talconfig.yaml"
+
+tasks:
+
+  kubernetes:
+    desc: Bootstrap a Kubernetes cluster [CLUSTER=main] [NODES=ayaka,eula,...] [ROOK_DISK=/dev/nvme0n1]
+    prompt: Bootstrap a Kubernetes cluster ... continue?
+    vars: &vars
+      CLUSTER: '{{.CLUSTER}}'
+      NODES: '{{.NODES | default "ayaka,eula,ganyu,hutao,navia,yelan"}}'
+      ROOK_ENABLED: '{{.ROOK_ENABLED | default "true"}}'
+      ROOK_DISK: '{{.ROOK_DISK | default "/dev/nvme0n1"}}'
+    cmds:
+      - { task: gsec, vars: *vars }
+      - { task: gcon, vars: *vars }
+      - { task: conf, vars: *vars }
+      - { task: apps, vars: *vars }
+      - { task: rook, vars: *vars }
+      - { task: flux, vars: *vars }
+    requires:
+      vars: [CLUSTER]
+    preconditions:
+      - talosctl config info &>/dev/null
+      - test -f {{.CLUSTER_DIR}}/talosconfig
+
+  gsec:
+    desc: Generate the Talos secrets
+    cmds:
+      - talhelper -f {{.CLUSTER_DIR}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}} gensecret > {{.CLUSTER_DIR}}/talos/{{.TALHELPER_SECRET_FILE}}
+      - task: :sops:.encrypt-file
+        vars:
+          FILE: "{{.CLUSTER_DIR}}/talos/{{.TALHELPER_SECRET_FILE}}"
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.CLUSTER_DIR}}/bootstrap/talos/{{.TALHELPER_CONFIG_FILE}}" }
+    status:
+      - test -f "{{.CLUSTER_DIR}}/talos/{{.TALHELPER_SECRET_FILE}}"
+
+  gcon:
+    desc: Generate the Talos configs
+    cmd: talhelper -c {{.CLUSTER_DIR}}/talos/{{.TALHELPER_CONFIG_FILE}} genconfig -s {{.CLUSTER_DIR}}/talos/{{.TALHELPER_SECRET_FILE}} -o {{.CLUSTER_DIR}}/talos/clusterconfig
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Missing talhelper secret file", sh: "test -f {{.CLUSTER_DIR}}/talos/{{.TALHELPER_SECRET_FILE}}" }
+
+  conf:
+    internal: true
+    desc: Apply the Talos config on a nodes for a new cluster
+    dir: "{{.CLUSTER_DIR}}/talos/"
+    cmd: talhelper gencommand apply --extra-flags=--insecure | bash
+    preconditions:
+      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
+      - { msg: "Missing talhelper config file", sh: "test -f {{.CLUSTER_DIR}}/talos/{{.TALHELPER_CONFIG_FILE}}" }
+      - { msg: "Missing talconfig", sh: "test -f {{.CLUSTER_DIR}}/talosconfig" }
+
+  apps:
+    internal: true
+    cmds:
+      - until kubectl wait --for=condition=Ready=False nodes --all --timeout=10m; do sleep 5; done
+      - helmfile --quiet --file {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
+      - until kubectl wait --for=condition=Ready nodes --all --timeout=10m; do sleep 5; done
+    preconditions:
+      - test -f {{.CLUSTER_DIR}}/talosconfig
+      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml
+      - talosctl config info &>/dev/null
+
+  rook:
+    internal: true
+    vars: &vars
+      CLUSTER: '{{.CLUSTER}}'
+      NODE: '{{.ITEM}}'
+      ROOK_DISK: '{{.ROOK_DISK}}'
+      ROOK_ENABLED: '{{.ROOK_ENABLED}}'
+    cmds:
+      - for: { var: NODES }
+        task: rook-data
+        vars: *vars
+      - for: { var: NODES }
+        task: rook-disk
+        vars: *vars
+    preconditions:
+      - sh: '[ "{{.ROOK_ENABLED}}" = "true" ]'
+
+  rook-disk:
+    internal: true
+    cmds:
+      - minijinja-cli {{.BOOTSTRAP_RESOURCES_DIR}}/rook-disk-job.yaml.j2 | kubectl apply --server-side --filename -
+      - until kubectl --namespace {{.NS}} get job/{{.JOB}} &>/dev/null; do sleep 5; done
+      - kubectl --namespace {{.NS}} wait job/{{.JOB}} --for=condition=complete --timeout=5m
+      - kubectl --namespace {{.NS}} logs job/{{.JOB}}
+      - kubectl --namespace {{.NS}} delete job {{.JOB}}
+    vars:
+      JOB: wipe-disk-{{.NODE}}
+      NS: '{{.NS | default "default"}}'
+    env:
+      ROOK_DISK: '{{.ROOK_DISK}}'
+      JOB: '{{.JOB}}'
+      NODE: '{{.NODE}}'
+      NS: '{{.NS}}'
+    preconditions:
+      - test -f {{.BOOTSTRAP_RESOURCES_DIR}}/rook-disk-job.yaml.j2
+
+  rook-data:
+    internal: true
+    cmds:
+      - minijinja-cli {{.BOOTSTRAP_RESOURCES_DIR}}/rook-data-job.yaml.j2 | kubectl apply --server-side --filename -
+      - until kubectl --namespace {{.NS}} get job/{{.JOB}} &>/dev/null; do sleep 5; done
+      - kubectl --namespace {{.NS}} wait job/{{.JOB}} --for=condition=complete --timeout=5m
+      - kubectl --namespace {{.NS}} logs job/{{.JOB}}
+      - kubectl --namespace {{.NS}} delete job {{.JOB}}
+    vars:
+      JOB: wipe-data-{{.NODE}}
+      NS: '{{.NS | default "default"}}'
+    env:
+      ROOK_DISK: '{{.ROOK_DISK}}'
+      JOB: '{{.JOB}}'
+      NODE: '{{.NODE}}'
+      NS: '{{.NS}}'
+    preconditions:
+      - test -f {{.BOOTSTRAP_RESOURCES_DIR}}/rook-data-job.yaml.j2
+
+  flux:
+    internal: true
+    cmds:
+      - kubectl apply --server-side --kustomize {{.CLUSTER_DIR}}/bootstrap/apps
+      - for: { var: TEMPLATES }
+        cmd: bws run --project-id a4bea614-3330-4b3e-9809-b101004332c3 -- 'minijinja-cli --env {{.ITEM}}' | kubectl apply --server-side --filename -
+      - kubectl apply --server-side --filename {{.CLUSTER_DIR}}/flux/vars/cluster-settings.yaml
+      - kubectl apply --server-side --kustomize {{.CLUSTER_DIR}}/flux/config
+    vars:
+      TEMPLATES:
+        sh: ls {{.CLUSTER_DIR}}/bootstrap/apps/*.j2
+    env:
+      VAULT: '{{if eq .CLUSTER "main"}}kubernetes{{else}}{{.CLUSTER}}{{end}}' # ¯\_(ツ)_/¯
+    preconditions:
+      - test -f {{.CLUSTER_DIR}}/flux/vars/cluster-settings.yaml

@@ -7,9 +7,9 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  ref:
-    branch: main
   url: "https://github.com/joryirving/home-ops.git"
+  ref:
+    branch: "main"
   ignore: |
     # exclude all
     /*
@@ -36,7 +36,9 @@ spec:
       name: sops-age
   postBuild:
     substituteFrom:
-      - kind: ConfigMap
-        name: cluster-settings
-      - kind: Secret
-        name: cluster-secrets
+      - name: cluster-settings
+        kind: ConfigMap
+        optional: false
+      - name: cluster-secrets
+        kind: Secret
+        optional: true

@@ -1,0 +1,91 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+# This taskfile is used to manage certain VolSync tasks for a given application, limitations are described below.
+#   1. Fluxtomization, HelmRelease, PVC, ReplicationSource all have the same name (e.g. plex)
+#   2. ReplicationSource and ReplicationDestination are a Restic repository
+#   3. Applications are deployed as either a Kubernetes Deployment or StatefulSet
+#   4. Each application only has one PVC that is being replicated
+
+vars:
+  VOLSYNC_RESOURCES_DIR: '{{.ROOT_DIR}}/.taskfiles/volsync/resources'
+
+tasks:
+
+  state-*:
+    desc: Suspend or resume Volsync [CLUSTER=main]
+    cmds:
+      - flux --namespace flux-system {{.STATE}} kustomization volsync
+      - flux --namespace volsync-system {{.STATE}} helmrelease volsync
+      - '{{if eq .STATE "suspend"}}kubectl --namespace volsync-system scale deployment volsync --replicas 0{{end}}'
+      - '{{if eq .STATE "resume"}}flux --namespace volsync-system reconcile helmrelease volsync --force{{end}}'
+    vars:
+      STATE: '{{index .MATCH 0}}'
+    requires:
+      vars: [CLUSTER]
+
+  unlock:
+    desc: Unlock all Restic repos [CLUSTER=main]
+    cmd: >
+      kubectl get replicationsources --all-namespaces --no-headers -A | awk '{print $1, $2}'
+      | xargs --max-procs=2 -l bash -c 'kubectl --namespace "$0" patch --field-manager=flux-client-side-apply replicationsources "$1" --type merge --patch "{\"spec\":{\"restic\":{\"unlock\":\"{{now | unixEpoch}}\"}}}"'
+    requires:
+      vars: [CLUSTER]
+
+  snapshot:
+    desc: Snapshot an app [CLUSTER=main] [NS=default] [APP=required]
+    cmds:
+      - kubectl --namespace {{.NS}} patch replicationsources {{.APP}} --type merge -p '{"spec":{"trigger":{"manual":"{{now | unixEpoch}}"}}}'
+      - until kubectl --namespace {{.NS}} get job/{{.JOB}} &>/dev/null; do sleep 5; done
+      - kubectl --namespace {{.NS}} wait job/{{.JOB}} --for=condition=complete --timeout=120m
+    vars:
+      NS: '{{.NS | default "default"}}'
+      JOB: volsync-src-{{.APP}}
+    requires:
+      vars: [CLUSTER, APP]
+    preconditions:
+      - kubectl --namespace {{.NS}} get replicationsources {{.APP}}
+
+  restore:
+    desc: Restore an app [CLUSTER=main] [NS=default] [APP=required] [PREVIOUS=required]
+    cmds:
+      # Suspend
+      - flux --namespace flux-system suspend kustomization {{.APP}}
+      - flux --namespace {{.NS}} suspend helmrelease {{.APP}}
+      - kubectl --namespace {{.NS}} scale {{.CONTROLLER}}/{{.APP}} --replicas 0
+      - kubectl --namespace {{.NS}} wait pod --for=delete --selector="app.kubernetes.io/name={{.APP}}" --timeout=5m
+      # Restore
+      - minijinja-cli {{.VOLSYNC_RESOURCES_DIR}}/replicationdestination.yaml.j2 | kubectl apply --server-side --filename -
+      - until kubectl --namespace {{.NS}} get job/{{.JOB}} &>/dev/null; do sleep 5; done
+      - kubectl --namespace {{.NS}} wait job/{{.JOB}} --for=condition=complete --timeout=120m
+      - kubectl --namespace {{.NS}} delete replicationdestination {{.JOB}}
+      # Resume
+      - flux --namespace flux-system resume kustomization {{.APP}}
+      - flux --namespace {{.NS}} resume helmrelease {{.APP}}
+      - flux --namespace {{.NS}} reconcile helmrelease {{.APP}} --force
+      - kubectl --namespace {{.NS}} wait pod --for=condition=ready --selector="app.kubernetes.io/name={{.APP}}" --timeout=5m
+    vars:
+      NS: '{{.NS | default "default"}}'
+      JOB: volsync-dst-{{.APP}}
+      CONTROLLER:
+        sh: kubectl --namespace {{.NS}} get deployment {{.APP}} &>/dev/null && echo deployment || echo statefulset
+    env:
+      NS: '{{.NS}}'
+      APP: '{{.APP}}'
+      PREVIOUS: '{{.PREVIOUS}}'
+      JOB: '{{.JOB}}'
+      CLAIM:
+        sh: kubectl --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.sourcePVC}"
+      ACCESS_MODES:
+        sh: kubectl --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.restic.accessModes}"
+      STORAGE_CLASS_NAME:
+        sh: kubectl --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.restic.storageClassName}"
+      PUID:
+        sh: kubectl --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.restic.moverSecurityContext.runAsUser}"
+      PGID:
+        sh: kubectl --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.restic.moverSecurityContext.runAsGroup}"
+    requires:
+      vars: [CLUSTER, APP, PREVIOUS]
+    preconditions:
+      - test -f {{.VOLSYNC_RESOURCES_DIR}}/replicationdestination.yaml.j2
