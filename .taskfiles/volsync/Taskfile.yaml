@@ -12,6 +12,28 @@ vars:
   VOLSYNC_RESOURCES_DIR: '{{.ROOT_DIR}}/.taskfiles/volsync/resources'
 
 tasks:
+  list:
+    desc: List snapshots for an application [CLUSTER=main] [NS=default] [APP=required]
+    summary: |
+      Args:
+        CLUSTER: Cluster to run command against (required)
+        NS: Namespace the PVC is in (default: default)
+        APP: Application to list snapshots for (required)
+    cmds:
+      - minijinja-cli --env {{.VOLSYNC_RESOURCES_DIR}}/list.yaml.j2 | kubectl --context {{.CLUSTER}} apply -f -
+      - kubectl --context {{.CLUSTER}} -n {{.NS}} wait job/list-{{.APP}} --for condition=complete --timeout=1m
+      - kubectl --context {{.CLUSTER}} -n {{.NS}} logs job/list-{{.APP}} --container list
+      - kubectl --context {{.CLUSTER}} -n {{.NS}} delete job list-{{.APP}}
+    vars:
+      NS: '{{.NS | default "default"}}'
+      APP: '{{.APP}}'
+    env:
+      NS: '{{.NS}}'
+      APP: '{{.APP}}'
+    requires:
+      vars: [CLUSTER, APP]
+    preconditions:
+      - test -f {{.VOLSYNC_RESOURCES_DIR}}/list.yaml.j2
 
   state-*:
     desc: Suspend or resume Volsync [CLUSTER=main]
@@ -57,9 +79,9 @@ tasks:
       - kubectl --namespace {{.NS}} wait pod --for=delete --selector="app.kubernetes.io/name={{.APP}}" --timeout=5m
       # Restore
       - minijinja-cli {{.VOLSYNC_RESOURCES_DIR}}/replicationdestination.yaml.j2 | kubectl apply --server-side --filename -
-      - until kubectl --namespace {{.NS}} get job/{{.JOB}} &>/dev/null; do sleep 5; done
-      - kubectl --namespace {{.NS}} wait job/{{.JOB}} --for=condition=complete --timeout=120m
-      - kubectl --namespace {{.NS}} delete replicationdestination {{.JOB}}
+      - until kubectl --namespace {{.NS}} get job/volsync-dst-{{.APP}}-dst &>/dev/null; do sleep 5; done
+      - kubectl --namespace {{.NS}} wait job/volsync-dst-{{.APP}}-dst --for=condition=complete --timeout=120m
+      - kubectl --namespace {{.NS}} delete replicationdestination {{.APP}}-dst
       # Resume
       - flux --namespace flux-system resume kustomization {{.APP}}
       - flux --namespace {{.NS}} resume helmrelease {{.APP}}
@@ -67,14 +89,12 @@ tasks:
       - kubectl --namespace {{.NS}} wait pod --for=condition=ready --selector="app.kubernetes.io/name={{.APP}}" --timeout=5m
     vars:
       NS: '{{.NS | default "default"}}'
-      JOB: volsync-dst-{{.APP}}
       CONTROLLER:
         sh: kubectl --namespace {{.NS}} get deployment {{.APP}} &>/dev/null && echo deployment || echo statefulset
     env:
       NS: '{{.NS}}'
       APP: '{{.APP}}'
       PREVIOUS: '{{.PREVIOUS}}'
-      JOB: '{{.JOB}}'
       CLAIM:
         sh: kubectl --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.sourcePVC}"
       ACCESS_MODES:
