@@ -1,10 +1,15 @@
-resource "authentik_group" "users" {
-  name         = "users"
-  is_superuser = false
+
+data "authentik_group" "admins" {
+  name = "authentik Admins"
 }
 
 resource "authentik_group" "downloads" {
   name         = "Downloads"
+  is_superuser = false
+}
+
+resource "authentik_group" "grafana_admin" {
+  name         = "Grafana Admins"
   is_superuser = false
 }
 
@@ -13,55 +18,14 @@ resource "authentik_group" "headscale" {
   is_superuser = false
 }
 
-resource "authentik_policy_binding" "headscale" {
-  target = authentik_application.headscale_application.uuid
-  group  = authentik_group.headscale.id
-  order  = 0
-}
-
 resource "authentik_group" "home" {
   name         = "Home"
   is_superuser = false
 }
 
-resource "authentik_policy_binding" "paperless_monitoring" {
-  target = authentik_application.paperless_application.uuid
-  group  = authentik_group.home.id
-  order  = 0
-}
-
 resource "authentik_group" "infrastructure" {
   name         = "Infrastructure"
   is_superuser = false
-}
-
-resource "authentik_policy_binding" "gitops_infra" {
-  target = authentik_application.gitops_application.uuid
-  group  = authentik_group.infrastructure.id
-  order  = 0
-}
-
-resource "authentik_policy_binding" "portainer_infra" {
-  target = authentik_application.portainer_application.uuid
-  group  = authentik_group.infrastructure.id
-  order  = 0
-}
-
-resource "authentik_group" "media" {
-  name         = "Media"
-  is_superuser = false
-  parent       = resource.authentik_group.users.id
-}
-
-resource "authentik_group" "grafana_admin" {
-  name         = "Grafana Admins"
-  is_superuser = false
-}
-
-resource "authentik_policy_binding" "grafana_admins" {
-  target = authentik_application.grafana_application.uuid
-  group  = authentik_group.grafana_admin.id
-  order  = 0
 }
 
 resource "authentik_group" "monitoring" {
@@ -70,14 +34,26 @@ resource "authentik_group" "monitoring" {
   parent       = resource.authentik_group.grafana_admin.id
 }
 
-resource "authentik_policy_binding" "grafana_infra" {
-  target = authentik_application.grafana_application.uuid
-  group  = authentik_group.monitoring.id
+resource "authentik_group" "users" {
+  name         = "users"
+  is_superuser = false
+}
+
+resource "authentik_policy_binding" "application_policy_binding" {
+  for_each = local.applications
+
+  target = authentik_application.application[each.key].id
+  group  = each.value.group
   order  = 0
 }
 
-data "authentik_group" "admins" {
-  name = "authentik Admins"
+data "bitwarden_secret" "discord" {
+  key = "discord"
+}
+
+locals {
+  discord_client_id     = regex("DISCORD_CLIENT_ID: (\\S+)", data.bitwarden_secret.discord.value)[0]
+  discord_client_secret = regex("DISCORD_CLIENT_SECRET: (\\S+)", data.bitwarden_secret.discord.value)[0]
 }
 
 ##Oauth
@@ -89,6 +65,6 @@ resource "authentik_source_oauth" "discord" {
   user_matching_mode  = "email_deny"
 
   provider_type   = "discord"
-  consumer_key    = var.discord_client_id
-  consumer_secret = var.discord_client_secret
+  consumer_key    = local.discord_client_id
+  consumer_secret = local.discord_client_secret
 }

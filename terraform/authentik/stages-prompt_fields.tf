@@ -4,12 +4,6 @@ resource "authentik_stage_prompt_field" "username" {
   required  = true
   type      = "text"
   label     = "Username"
-  # initial_value = <<-EOT
-  # try:
-  #   return user.username
-  # except:
-  #   return ''
-  # EOT
   initial_value            = "try:\n    return user.username\nexcept:\n    return ''"
   initial_value_expression = true
   placeholder              = "try:\n    return user.username\nexcept:\n    return ''"

@@ -11,9 +11,8 @@ resource "authentik_stage_identification" "authentication-identification" {
 }
 
 resource "authentik_stage_password" "authentication-password" {
-  name     = "authentication-password"
-  backends = ["authentik.core.auth.InbuiltBackend"]
-  # configure_flow                = data.authentik_flow.default-password-change.id
+  name                          = "authentication-password"
+  backends                      = ["authentik.core.auth.InbuiltBackend"]
   failed_attempts_before_cancel = 3
 }
 
