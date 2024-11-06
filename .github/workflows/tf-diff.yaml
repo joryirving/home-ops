@@ -81,11 +81,6 @@
           working-directory: terraform/${{ matrix.environment }}
           run: terraform validate -no-color
 
-        - name: Export
-          run: |
-            printenv
-            echo $HEADSCALE
-
         - name: Terraform Plan
           working-directory: terraform/${{ matrix.environment }}
           run: terraform plan -lock=false -var "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
