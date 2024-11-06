@@ -1,0 +1,103 @@
+---
+  # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+  name: "Terraform plan"
+
+  on:
+    pull_request:
+      branches: ["main"]
+      paths: ["terraform/**"]
+
+  jobs:
+    sync:
+      name: Terraform plan
+      runs-on: ["gha-runner-scale-set"]
+      strategy:
+        matrix:
+          environment: [authentik, minio]
+      steps:
+        - name: Get Secrets
+          uses: bitwarden/sm-action@v2
+          with:
+            access_token: ${{ secrets.BW_ACCESS_TOKEN }}
+            secrets: |
+              e062dcb9-8cd7-471e-b9be-b10100497102 > BOT_APP_ID
+              5856238d-3fae-4a0f-9847-b1010049f697 > BOT_APP_PRIVATE_KEY
+              7c42cbd2-ac08-493c-882a-b11301817cbf > MINIO
+              a74d1863-53ac-4aa3-ae0c-b220011fa5c3 > BW_PROJ_ID
+
+        - name: Generate Token
+          uses: actions/create-github-app-token@v1
+          id: app-token
+          with:
+            app-id: ${{ env.BOT_APP_ID }}
+            private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
+
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            token: ${{ steps.app-token.outputs.token }}
+            fetch-depth: 0
+
+        - name: Setup Homebrew
+          uses: Homebrew/actions/setup-homebrew@master
+
+        - name: Setup Workflow Tools
+          shell: bash
+          run: brew install node
+
+        - name: Setup terraform
+          uses: hashicorp/setup-terraform@v3
+
+        - name: Terraform fmt
+          id: fmt
+          working-directory: terraform/${{ matrix.environment }}
+          run: terraform fmt -check
+          continue-on-error: true
+
+        - name: Extract MINIO Secrets
+          run: |
+            while IFS= read -r line; do
+              # Check for matching patterns using a case statement
+              case "$line" in
+                MINIO_ENDPOINT:* | MINIO_ACCESS_KEY:* | MINIO_SECRET_KEY:*)
+                  key=$(echo "$line" | awk -F: '{print $1}')
+                  value=$(echo "$line" | awk -F: '{print $2}' | xargs)
+
+                  # Mask the sensitive value
+                  echo "::add-mask::$value"
+
+                  # Use GITHUB_ENV to export the variables without echoing the value
+                  echo "${key}=${value}" >> $GITHUB_ENV
+                  ;;
+              esac
+            done <<< "$MINIO"
+
+        - name: Terraform Init
+          id: init
+          working-directory: terraform/${{ matrix.environment }}
+          env:
+            AWS_ACCESS_KEY_ID: ${{ env.MINIO_ACCESS_KEY }}
+            AWS_SECRET_ACCESS_KEY: ${{ env.MINIO_SECRET_KEY }}
+          run: |
+            terraform init \
+              -backend-config="access_key=$AWS_ACCESS_KEY_ID" \
+              -backend-config="secret_key=$AWS_SECRET_ACCESS_KEY"
+
+        - name: Terraform Validate
+          id: validate
+          working-directory: terraform/${{ matrix.environment }}
+          run: terraform validate -no-color
+
+        - name: Terraform Plan
+          working-directory: terraform/${{ matrix.environment }}
+          run: terraform plan -lock=false -var "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+
+        - name: Post PR comment
+          if: github.event_name == 'pull_request'
+          continue-on-error: true
+          uses: borchero/terraform-plan-comment@v2
+          with:
+            token: ${{ steps.app-token.outputs.token }}
+            header: "📝 Terraform Plan for ${{ matrix.environment }}"
+            working-directory: terraform/${{ matrix.environment }}
+            planfile: .planfile
