@@ -57,8 +57,8 @@ data "bitwarden_secret" "discord" {
 }
 
 locals {
-  discord_client_id     = regex("DISCORD_CLIENT_ID: (\\S+)", data.bitwarden_secret.discord.value)
-  discord_client_secret = regex("DISCORD_CLIENT_SECRET: (\\S+)", data.bitwarden_secret.discord.value)
+  discord_client_id     = replace(regex("DISCORD_CLIENT_ID: (\\S+)", data.bitwarden_secret.discord.value)[0], "\"", "")
+  discord_client_secret = replace(regex("DISCORD_CLIENT_SECRET: (\\S+)", data.bitwarden_secret.discord.value)[0], "\"", "")
 }
 
 ##Oauth
@@ -70,6 +70,6 @@ resource "authentik_source_oauth" "discord" {
   user_matching_mode  = "email_deny"
 
   provider_type   = "discord"
-  consumer_key    = local.discord_client_id[0]
-  consumer_secret = local.discord_client_secret[0]
+  consumer_key    = local.discord_client_id
+  consumer_secret = local.discord_client_secret
 }
