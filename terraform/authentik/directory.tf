@@ -39,11 +39,16 @@ resource "authentik_group" "users" {
   is_superuser = false
 }
 
+data "authentik_group" "lookup" {
+  for_each = local.applications
+  name     = each.value.group
+}
+
 resource "authentik_policy_binding" "application_policy_binding" {
   for_each = local.applications
 
-  target = authentik_application.application[each.key].id
-  group  = each.value.group
+  target = authentik_application.application[each.key].uuid
+  group  = data.authentik_group.lookup[each.key].id
   order  = 0
 }
 
@@ -52,8 +57,8 @@ data "bitwarden_secret" "discord" {
 }
 
 locals {
-  discord_client_id     = regex("DISCORD_CLIENT_ID: (\\S+)", data.bitwarden_secret.discord.value)[0]
-  discord_client_secret = regex("DISCORD_CLIENT_SECRET: (\\S+)", data.bitwarden_secret.discord.value)[0]
+  discord_client_id     = replace(regex("DISCORD_CLIENT_ID: (\\S+)", data.bitwarden_secret.discord.value)[0], "\"", "")
+  discord_client_secret = replace(regex("DISCORD_CLIENT_SECRET: (\\S+)", data.bitwarden_secret.discord.value)[0], "\"", "")
 }
 
 ##Oauth

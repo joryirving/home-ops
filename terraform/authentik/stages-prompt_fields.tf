@@ -1,9 +1,9 @@
 resource "authentik_stage_prompt_field" "username" {
-  name      = "username"
-  field_key = "username"
-  required  = true
-  type      = "text"
-  label     = "Username"
+  name                     = "username"
+  field_key                = "username"
+  required                 = true
+  type                     = "text"
+  label                    = "Username"
   initial_value            = "try:\n    return user.username\nexcept:\n    return ''"
   initial_value_expression = true
   placeholder              = "try:\n    return user.username\nexcept:\n    return ''"

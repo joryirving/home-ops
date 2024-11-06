@@ -1,22 +1,26 @@
+locals {
+  oauth_apps = [
+    "grafana",
+    "headscale",
+    "kyoo",
+    "lubelog",
+    "paperless",
+    "portainer"
+  ]
+}
+
 # Step 1: Retrieve secrets from Bitwarden
 data "bitwarden_secret" "application" {
-  for_each = {
-    grafana   = "GRAFANA_CLIENT_ID: (\\S+), GRAFANA_CLIENT_SECRET: (\\S+)"
-    headscale = "HEADSCALE_CLIENT_ID: (\\S+), HEADSCALE_CLIENT_SECRET: (\\S+)"
-    kyoo      = "KYOO_CLIENT_ID: (\\S+), KYOO_CLIENT_SECRET: (\\S+)"
-    lubelog   = "LUBELOG_CLIENT_ID: (\\S+), LUBELOG_CLIENT_SECRET: (\\S+)"
-    paperless = "PAPERLESS_CLIENT_ID: (\\S+), PAPERLESS_CLIENT_SECRET: (\\S+)"
-    portainer = "PORTAINER_CLIENT_ID: (\\S+), PORTAINER_CLIENT_SECRET: (\\S+)"
-  }
-  key = each.key
+  for_each = toset(local.oauth_apps)
+  key      = each.key
 }
 
 # Step 2: Parse the secrets using regex to extract client_id and client_secret
 locals {
   parsed_secrets = {
     for app, secret in data.bitwarden_secret.application : app => {
-      client_id     = length(regexall("${app}_CLIENT_ID: (\\S+)", secret.value)) > 0 ? regexall("${app}_CLIENT_ID: (\\S+)", secret.value)[0] : ""
-      client_secret = length(regexall("${app}_CLIENT_SECRET: (\\S+)", secret.value)) > 0 ? regexall("${app}_CLIENT_SECRET: (\\S+)", secret.value)[0] : ""
+      client_id     = replace(regex(".*_CLIENT_ID: (\\S+)", secret.value)[0], "\"", "")
+      client_secret = replace(regex(".*_CLIENT_SECRET: (\\S+)", secret.value)[0], "\"", "")
     }
   }
 }

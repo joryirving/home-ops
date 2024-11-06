@@ -32,30 +32,30 @@
           uses: actions/create-github-app-token@v1
           id: app-token
           with:
-            app-id: "${{ env.BOT_APP_ID }}"
-            private-key: "${{ env.BOT_APP_PRIVATE_KEY }}"
+            app-id: ${{ env.BOT_APP_ID }}
+            private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
         - name: Checkout
           uses: actions/checkout@v4
           with:
-            token: "${{ steps.app-token.outputs.token }}"
+            token: ${{ steps.app-token.outputs.token }}
 
         - name: Merge
           shell: bash
           env:
-            GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
+            GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           run: |
             args=()
             args+=(--app $BOT_USERNAME)
             args+=(--state open)
-            if [ "${{ github.event.inputs.labels }}" != "any" ]; then
-                IFS=',' read -ra labels <<< "${{ github.event.inputs.labels }}"
+            if [ ${{ github.event.inputs.labels }} != "any" ]; then
+                IFS=',' read -ra labels <<< ${{ github.event.inputs.labels }}
                 for label in "${labels[@]}"; do
                     args+=(--label "${label}")
                 done
             fi
             for id in $(gh pr list "${args[@]}" --jq '.[].number' --json number); do
-                if [ "${{ github.event.inputs.dryRun }}" = "true" ]; then
+                if [ ${{ github.event.inputs.dryRun }} = "true" ]; then
                     echo "Dry run: gh pr merge $id --squash"
                     continue
                 fi

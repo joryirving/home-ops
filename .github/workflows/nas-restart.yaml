@@ -28,13 +28,13 @@
           uses: actions/create-github-app-token@v1
           id: app-token
           with:
-            app-id: "${{ env.BOT_APP_ID }}"
-            private-key: "${{ env.BOT_APP_PRIVATE_KEY }}"
+            app-id: ${{ env.BOT_APP_ID }}
+            private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
         - name: Checkout
           uses: actions/checkout@v4
           with:
-            token: "${{ steps.app-token.outputs.token }}"
+            token: ${{ steps.app-token.outputs.token }}
 
         - name: Setup Homebrew
           uses: Homebrew/actions/setup-homebrew@master
@@ -47,16 +47,16 @@
           id: kubeconfig
           uses: timheuer/base64-to-file@v1
           with:
-            encodedString: "${{ env.KUBECONFIG }}"
+            encodedString: ${{ env.KUBECONFIG }}
             fileName: kubeconfig
 
         - name: Restart NFS Deployments
           env:
-            KUBECONFIG: "${{ steps.kubeconfig.outputs.filePath }}"
+            KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
           shell: bash
           run: |
             kubectl \
-                --context "${{ matrix.cluster }}" \
+                --context ${{ matrix.cluster }} \
                 get deployments \
                 --all-namespaces \
                 -l nfsMount=true \
