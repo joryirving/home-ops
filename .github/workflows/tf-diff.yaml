@@ -96,7 +96,7 @@ jobs:
 
       - name: Terraform fmt
         id: fmt
-        working-directory: terraform/${{ matrix.environment }}
+        working-directory: ${{ matrix.paths }}
         run: terraform fmt -check
         continue-on-error: true
 
@@ -120,7 +120,7 @@ jobs:
 
       - name: Terraform Init
         id: init
-        working-directory: terraform/${{ matrix.environment }}
+        working-directory: ${{ matrix.paths }}
         env:
           AWS_ACCESS_KEY_ID: ${{ env.MINIO_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ env.MINIO_SECRET_KEY }}
@@ -131,11 +131,11 @@ jobs:
 
       - name: Terraform Validate
         id: validate
-        working-directory: terraform/${{ matrix.environment }}
+        working-directory: ${{ matrix.paths }}
         run: terraform validate -no-color
 
       - name: Terraform Plan
-        working-directory: terraform/${{ matrix.environment }}
+        working-directory: ${{ matrix.paths }}
         run: terraform plan -lock=false -var "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
@@ -144,6 +144,6 @@ jobs:
         uses: borchero/terraform-plan-comment@v2
         with:
           token: ${{ steps.app-token.outputs.token }}
-          header: "📝 Terraform Plan for ${{ matrix.environment }}"
-          working-directory: terraform/${{ matrix.environment }}
+          header: "📝 Terraform Plan for ${{ matrix.paths }}"
+          working-directory: ${{ matrix.paths }}
           planfile: .planfile
