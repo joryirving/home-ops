@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    minio = {
+      source  = "aminueza/minio"
+      version = ">= 2.5.1"
+    }
+  }
+}
+
 resource "minio_s3_bucket" "bucket" {
   bucket = var.bucket_name
   acl    = "private"
