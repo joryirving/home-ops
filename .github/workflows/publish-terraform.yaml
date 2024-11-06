@@ -28,13 +28,13 @@ jobs:
         uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: "${{ env.BOT_APP_ID }}"
-          private-key: "${{ env.BOT_APP_PRIVATE_KEY }}"
+          app-id: ${{ env.BOT_APP_ID }}
+          private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: "${{ steps.app-token.outputs.token }}"
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@master
@@ -47,8 +47,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: "${{ github.actor }}"
-          password: "${{ secrets.GITHUB_TOKEN }}"
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lowercase repository owner
         shell: bash
