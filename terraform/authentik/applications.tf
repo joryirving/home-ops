@@ -49,7 +49,7 @@ locals {
       group         = authentik_group.home.name
       icon_url      = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
       redirect_uri  = "https://kyoo.${var.cluster_domain}/api/auth/logged/authentik"
-      launch_url    = "https://kyoo.${var.cluster_domain}"
+      launch_url    = "https://kyoo.${var.cluster_domain}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.cluster_domain}/login/callback"
     },
     lubelog = {
       client_id     = local.parsed_secrets["lubelog"].client_id
@@ -57,7 +57,7 @@ locals {
       group         = authentik_group.home.name
       icon_url      = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
       redirect_uri  = "https://lubelog.${var.cluster_domain}/Login/RemoteAuth"
-      launch_url    = "https://lubelog.${var.cluster_domain}"
+      launch_url    = "https://lubelog.${var.cluster_domain}/Login/RemoteAuth"
     },
     paperless = {
       client_id     = local.parsed_secrets["paperless"].client_id
@@ -85,7 +85,7 @@ resource "authentik_provider_oauth2" "oauth2" {
   client_secret         = each.value.client_secret
   authorization_flow    = authentik_flow.provider-authorization-implicit-consent.uuid
   authentication_flow   = authentik_flow.authentication.uuid
-  invalidation_flow     = authentik_flow.invalidation.uuid
+  invalidation_flow     = data.authentik_flow.default-provider-invalidation-flow.uuid
   property_mappings     = data.authentik_property_mapping_provider_scope.oauth2.ids
   access_token_validity = "hours=4"
   signing_key           = data.authentik_certificate_key_pair.generated.id
