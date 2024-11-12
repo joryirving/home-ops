@@ -15,6 +15,34 @@ spec:
     /*
     # include kubernetes directory
     !/kubernetes/utility
+    !/kubernetes/shared
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-shared
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./kubernetes/shared
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: home-kubernetes
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - name: cluster-settings
+        kind: ConfigMap
+        optional: true
+      - name: cluster-secrets
+        kind: Secret
+        optional: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -24,6 +52,8 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
+  dependsOn:
+    - name: cluster-shared
   path: ./kubernetes/utility/flux
   prune: true
   wait: false
@@ -38,7 +68,13 @@ spec:
     substituteFrom:
       - name: cluster-settings
         kind: ConfigMap
-        optional: false
+        optional: true
+      - name: cluster-settings-utility
+        kind: ConfigMap
+        optional: true
       - name: cluster-secrets
+        kind: Secret
+        optional: true
+      - name: cluster-secrets-utility
         kind: Secret
         optional: true
