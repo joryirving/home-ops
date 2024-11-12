@@ -228,6 +228,8 @@ patches:
             options: ["bind", "rshared", "rw"]
 
 controlPlane:
+  nodeLabels:
+    topology.kubernetes.io/zone: controlPlane
   patches:
     # Cluster configuration
     - |-
@@ -290,3 +292,7 @@ controlPlane:
             enabled: true
             forwardKubeDNSToHost: true
             resolveMemberNames: true
+
+worker:
+  nodeLabels:
+    topology.kubernetes.io/zone: worker
