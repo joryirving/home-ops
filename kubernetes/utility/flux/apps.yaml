@@ -6,7 +6,7 @@ metadata:
   name: cluster-apps
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 30m
   path: ./kubernetes/utility/apps
   prune: true
   sourceRef:
@@ -20,10 +20,17 @@ spec:
     substituteFrom:
       - name: cluster-settings
         kind: ConfigMap
-        optional: false
+        optional: true
+      - name: cluster-settings-utility
+        kind: ConfigMap
+        optional: true
       - name: cluster-secrets
         kind: Secret
         optional: true
+      - name: cluster-secrets-utility
+        kind: Secret
+        optional: true
+
   patches:
     - patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -39,10 +46,17 @@ spec:
             substituteFrom:
               - name: cluster-settings
                 kind: ConfigMap
-                optional: false
+                optional: true
+              - name: cluster-settings-utility
+                kind: ConfigMap
+                optional: true
               - name: cluster-secrets
                 kind: Secret
                 optional: true
+              - name: cluster-secrets-utility
+                kind: Secret
+                optional: true
+
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization

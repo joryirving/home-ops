@@ -6,7 +6,7 @@ metadata:
   name: cluster-apps
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 30m
   path: ./kubernetes/main/apps
   prune: true
   sourceRef:
@@ -20,8 +20,14 @@ spec:
     substituteFrom:
       - name: cluster-settings
         kind: ConfigMap
-        optional: false
+        optional: true
+      - name: cluster-settings-main
+        kind: ConfigMap
+        optional: true
       - name: cluster-secrets
+        kind: Secret
+        optional: true
+      - name: cluster-secrets-main
         kind: Secret
         optional: true
   patches:
@@ -39,8 +45,14 @@ spec:
             substituteFrom:
               - name: cluster-settings
                 kind: ConfigMap
-                optional: false
+                optional: true
+              - name: cluster-settings-main
+                kind: ConfigMap
+                optional: true
               - name: cluster-secrets
+                kind: Secret
+                optional: true
+              - name: cluster-secrets-main
                 kind: Secret
                 optional: true
       target:
