@@ -57,17 +57,63 @@ spec:
           http:
             port: 3493
             protocol: TCP
+      metrics:
+        enabled: true
+        controller: *app
+        ports:
+          metrics:
+            enabled: true
+            port: 9199
+            protocol: TCP
+    serviceMonitor:
+      app:
+        serviceName: network-ups-tools-metrics
+        endpoints:
+          - port: metrics
+            scheme: http
+            interval: 15s
+            scrapeTimeout: 10s
+            path: /ups_metrics
+            params:
+              target:
+                - localhost:3493
+            relabelings:
+              - sourceLabels: [__param_target]
+                targetLabel: target
     persistence:
       config:
-        enabled: true
         type: configMap
         name: *config
+        defaultMode: 0400
         globalMounts:
           - path: /etc/nut
-            readOnly: true
-      # ups:
-      #   type: hostPath
-      #   hostPath: /dev/bus/usb/001/004
-      #   globalMounts:
-      #     - path: /dev/bus/usb/001/001
-      #       readOnly: false
+    configMaps:
+      config:
+        enabled: true
+        data:
+          nut.conf: |-
+            MODE=netserver
+          upsd.conf: |-
+            MAXAGE 20
+            LISTEN 0.0.0.0
+          upsd.users: |-
+            [monuser]
+              password = "bacon"
+              actions = SET
+              instcmds = ALL
+              upsmon primary
+          ups.conf: |-
+            [networkups]
+              driver = "usbhid-ups"
+              port = "auto"
+              desc = "Back-UPS ES 600M1"
+              vendorid = "051D"
+              productid = "0002"
+              serial = "4B2217P19326"
+          upsmon.conf: |-
+            MONITOR ups@localhost:3493 1 upsmon "bacon" primary
+            SHUTDOWNCMD "/sbin/shutdown -h +0"
+            POWERDOWNFLAG /etc/killpower
+            POLLFREQ 15
+            POLLFREQALERT 5
+            HOSTSYNC 15
