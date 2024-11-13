@@ -72,13 +72,15 @@ spec:
         topology.kubernetes.io/zone: worker
       affinity:
         podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/name
-                    operator: In
-                    values: ["sabnzbd"]
-              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values: ["sabnzbd"]
+                topologyKey: kubernetes.io/hostname
     service:
       app:
         controller: *app
@@ -131,3 +133,5 @@ spec:
         globalMounts:
           - path: /downloads
             subPath: torrents
+      tmp:
+        type: emptyDir
