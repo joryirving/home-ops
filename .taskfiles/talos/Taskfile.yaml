@@ -6,9 +6,11 @@ tasks:
   genconfig:
     desc: Generate the Talos configs
     cmd: talhelper -c {{.CLUSTER_DIR}}/talos/talconfig.yaml genconfig -s {{.CLUSTER_DIR}}/talos/talsecret.sops.yaml -o {{.CLUSTER_DIR}}/talos/clusterconfig
+    requires:
+      vars: [CLUSTER]
     preconditions:
-      - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
-      - { msg: "Missing talhelper secret file", sh: "test -f {{.CLUSTER_DIR}}/talos/talconfig.yaml" }
+      - test -f {{.CLUSTER_DIR}}/talos/talconfig.yaml
+      - test -f {{.CLUSTER_DIR}}/talos/talsecret.sops.yaml
 
   apply-node:
     desc: Apply Talos config to a node [CLUSTER=main] [HOSTNAME=required]

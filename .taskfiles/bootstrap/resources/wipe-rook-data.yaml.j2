@@ -1,13 +1,14 @@
+
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: &app wipe-rook
+  name: &app wipe-rook-data
   namespace: default
   labels:
     app.kubernetes.io/name: *app
 spec:
-  parallelism: {{ ENV.TOTAL_NODES }}
+  parallelism: {{ ENV.NODES }}
   template:
     metadata:
       labels:
@@ -15,22 +16,20 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-        - name: wipe
+        - name: main
           image: docker.io/library/alpine:latest
           command: ["/bin/sh", "-c"]
-          args:
-            - apk add --no-cache sgdisk util-linux util-linux-misc parted device-mapper;
-              rm -rf /mnt/host_var/lib/rook;
-              sgdisk --zap-all {{ ENV.ROOK_DISK }};
-              dd if=/dev/zero of={{ ENV.ROOK_DISK }} bs=1M count=100 oflag=direct;
-              blkdiscard {{ ENV.ROOK_DISK }};
-              partprobe {{ ENV.ROOK_DISK }};
+          args: ["rm -rf /mnt/host_var/lib/rook"]
           volumeMounts:
-            - name: host-var
-              mountPath: /mnt/host_var
+            - mountPath: /mnt/host_var
+              name: host-var
           securityContext:
             privileged: true
           resources: {}
+      volumes:
+        - name: host-var
+          hostPath:
+            path: /var
       topologySpreadConstraints:
         - maxSkew: 1
           labelSelector:
@@ -38,7 +37,3 @@ spec:
               app.kubernetes.io/name: *app
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: DoNotSchedule
-      volumes:
-        - name: host-var
-          hostPath:
-            path: /var
