@@ -22,22 +22,8 @@ tasks:
     preconditions:
       - test -f {{.CLUSTER_DIR}}/apps/{{.PATH}}/ks.yaml
 
-  reconcile:
-    desc: Force update Flux to pull in changes from your Git repository
-    cmd: flux reconcile -n flux-system kustomization cluster --with-source --context {{.CLUSTER}}
-    vars:
-      CLUSTER: '{{ or .CLUSTER (fail "Argument (CLUSTER) is required") }}'
-
-  hr-restart:
-    desc: Restart all failed Helm Releases
-    cmds:
-      - kubectl --context {{.CLUSTER}} get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L1 bash -c 'flux suspend hr $0 -n $1 --context {{.CLUSTER}}'
-      - kubectl --context {{.CLUSTER}} get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L1 bash -c 'flux resume hr $0 -n $1 --context {{.CLUSTER}}'
-    vars:
-      CLUSTER: '{{ or .CLUSTER (fail "Argument (CLUSTER) is required") }}'
-
   browse-pvc:
-    desc: Mount PVC to an temp container for browsing [CLUSTER=main] [NS=default] [CLAIM=required]
+    desc: Mount a PVC to an temp container [CLUSTER=main] [NS=default] [CLAIM=required]
     interactive: true
     cmd: kubectl browse-pvc --namespace {{.NS}} --image docker.io/library/alpine:latest {{.CLAIM}}
     vars:
@@ -47,21 +33,38 @@ tasks:
     preconditions:
       - kubectl --namespace {{.NS}} get persistentvolumeclaims {{.CLAIM}}
 
-  delete-failed-pods:
-    desc: Deletes pods with a fucked status
-    summary: |
-      Args:
-        CLUSTER: Cluster to run command against (required)
+  sync-secrets:
+    desc: Sync all ExternalSecrets [CLUSTER=main]
     cmds:
-      - for: ["Evicted", "Failed", "Succeeded"]
-        cmd: kubectl --context {{.CLUSTER}} delete pods --field-selector status.phase={{.ITEM}} -A --ignore-not-found=true
+      - for: { var: SECRETS, split: "\n" }
+        cmd: kubectl --namespace {{splitList "," .ITEM | first}} annotate externalsecret {{splitList "," .ITEM | last}} force-sync="{{.TS}}" --overwrite
+    vars:
+      TS: '{{now | unixEpoch}}'
+      SECRETS:
+        sh: kubectl get externalsecret --all-namespaces --no-headers --output=jsonpath='{range .items[*]}{.metadata.namespace},{.metadata.name}{"\n"}{end}'
     requires:
       vars: [CLUSTER]
 
-  sync-secrets:
-    desc: Sync all ExternalSecrets [CLUSTER=main]
-    cmd: >
-      kubectl get externalsecret --all-namespaces --no-headers -A | awk '{print $1, $2}'
-      | xargs --max-procs=2 -l bash -c 'kubectl --namespace "$0" annotate externalsecret "$1" force-sync="{{now | unixEpoch}}" --overwrite'
+  delete-failed-pods:
+    desc: Delete pods with a Failed/Pending/Succeeded phase [CLUSTER=main]
+    cmds:
+      - for:
+          matrix:
+            PHASE: [Failed, Pending, Succeeded]
+        cmd: kubectl delete pods --field-selector status.phase={{.ITEM.PHASE}} -A --ignore-not-found=true
+    requires:
+      vars: [CLUSTER]
+
+  reconcile:
+    desc: Force update Flux to pull in changes from your Git repository
+    cmd: flux reconcile -n flux-system kustomization cluster --with-source
+    requires:
+      vars: [CLUSTER]
+
+  hr-restart:
+    desc: Restart all failed Helm Releases
+    cmds:
+      - kubectl get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L1 bash -c 'flux suspend hr $0 -n $1'
+      - kubectl get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L1 bash -c 'flux resume hr $0 -n $1'
     requires:
       vars: [CLUSTER]

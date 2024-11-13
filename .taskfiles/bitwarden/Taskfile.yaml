@@ -11,7 +11,7 @@ tasks:
       - task: push-main
       - task: push-utility
     preconditions:
-      - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
+      - which bws
 
   push-main:
     desc: Push main kubeconfig/talosconfig to Secrets Manager
@@ -19,7 +19,7 @@ tasks:
       - bws secret edit a0934c41-ae5d-410d-9d9f-b12601502428 --value "$(cat {{.KUBERNETES_DIR}}/main/kubeconfig)"
       - bws secret edit 7022c46d-537a-4c93-9366-b12601503c07 --value "$(cat {{.KUBERNETES_DIR}}/main/talos/clusterconfig/talosconfig)"
     preconditions:
-      - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
+      - which bws
 
   push-utility:
     desc: Push Utility kubeconfig to Secrets Manager
@@ -27,7 +27,7 @@ tasks:
       - bws secret edit bf0c9041-3997-42be-8c6a-b12601503135 --value "$(cat {{.KUBERNETES_DIR}}/utility/kubeconfig)"
       - bws secret edit 89e5c351-71d0-4db2-8cf0-b16b0158aae8 --value "$(cat {{.KUBERNETES_DIR}}/utility/talos/clusterconfig/talosconfig)"
     preconditions:
-      - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
+      - which bws
 
   pull:
     desc: Pull Kubeconfig from Secrets Manager
@@ -45,5 +45,4 @@ tasks:
       - bws secret get 89e5c351-71d0-4db2-8cf0-b16b0158aae8 | jq -r '.value' > ~/.talos/config # Utility talosconfig
       - talosctl config merge {{.KUBERNETES_DIR}}/main/talos/clusterconfig/talosconfig --talosconfig  ~/.talos/config #Merge main into flat talosconfig
     preconditions:
-      - { msg: "Bitwarden Secret Manager CLI not found", sh: "test bws" }
-      - { msg: "JQ not found", sh: "test jq" }
+      - which bws jq
