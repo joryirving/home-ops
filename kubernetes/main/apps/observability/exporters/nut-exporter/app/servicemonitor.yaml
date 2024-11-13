@@ -1,0 +1,43 @@
+
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/servicemonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/component: metrics
+    app.kubernetes.io/instance: servers
+    app.kubernetes.io/name: nut-exporter
+    prometheus: kube-prometheus
+  name: nut-exporter-network
+spec:
+  endpoints:
+    - interval: 30s
+      metricRelabelings:
+        - action: replace
+          replacement: network
+          sourceLabels:
+            - instance
+          targetLabel: instance
+        - action: replace
+          replacement: network
+          sourceLabels:
+            - server
+          targetLabel: server
+        - action: labeldrop
+          regex: (pod)
+      params:
+        server:
+          - ${SVC_NUT_ADDR}
+      path: /ups_metrics
+      port: metrics
+      scheme: http
+      scrapeTimeout: 30s
+  jobLabel: nut-exporter
+  namespaceSelector:
+    matchNames:
+      - observability
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: nut-exporter
+      app.kubernetes.io/name: nut-exporter
