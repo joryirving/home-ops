@@ -34,7 +34,7 @@ tasks:
     desc: Apply the Talos config on all nodes for an existing cluster [CLUSTER=main]
     vars:
       HOSTNAMES:
-        sh: kubectl get nodes --output=jsonpath='{.items[*].metadata.name}'
+        sh: kubectl get nodes --output=jsonpath='{.items[*].metadata.name}' --context {{.CLUSTER}}
     cmds:
       - for: { var: HOSTNAMES }
         task:  apply-node
