@@ -40,7 +40,7 @@ spec:
     cacheAccessModes: ["${VOLSYNC_CACHE_ACCESSMODES:-ReadWriteOnce}"]
     cacheCapacity: "${VOLSYNC_CACHE_CAPACITY:-10Gi}"
     storageClassName: "${VOLSYNC_STORAGECLASS:-placeholder}"
-    accessModes: ["${VOLSYNC_ACCESSMODES:-ReadWriteOnce}"] # Use ReadOnlyMany for CephFS
+    accessModes: ["${VOLSYNC_RSDT_ACCESSMODES:-ReadWriteOnce}"] # Use ReadOnlyMany for CephFS
     capacity: "${VOLSYNC_CAPACITY:-2Gi}"
     moverSecurityContext:
       runAsUser: ${VOLSYNC_PUID:-568}
@@ -58,7 +58,7 @@ metadata:
 spec:
   sourcePVC: "${CLAIM:-${APP}}"
   trigger:
-    schedule: "0 * * * *"
+    schedule: "${VOLSYNC_MINIO_SCHEDULE:-0} * * * *"
   restic:
     copyMethod: "${VOLSYNC_COPYMETHOD:-Snapshot}"
     pruneIntervalDays: 10
