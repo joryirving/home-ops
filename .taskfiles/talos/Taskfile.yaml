@@ -17,9 +17,11 @@ tasks:
     dotenv: ['{{.CLUSTER_DIR}}/cluster.env']
     cmds:
       - task: down
-      - talosctl apply-config --nodes {{.HOSTNAME}} --file {{.CLUSTER_DIR}}/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml
+      - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.CLUSTER_DIR}}/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml
       - talosctl --nodes {{.HOSTNAME}} health --wait-timeout=10m --server=false
       - task: up
+    vars:
+      MODE: '{{.MODE | default "auto"}}'
     requires:
       vars: [CLUSTER, HOSTNAME]
     preconditions:
