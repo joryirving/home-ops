@@ -167,7 +167,7 @@ Total RAM: 32GB
 | Name   | Device         | CPU           | OS Disk    | Data Disk  | RAM   | OS           | Purpose        |
 |--------|----------------|---------------|------------|------------|-------|--------------|----------------|
 | NAS    | HP z820        | E5-2680v2     | 32GB USB   | 500GB NVMe | 128GB | Unraid       | NAS/NFS/Backup |
-| DAS    | Lenovo SA120   | -             | -          | 56TB       | -     | -            | DAS w/ Parity  |
+| DAS    | Lenovo SA120   | -             | -          | 56TB       | -     | -            | ZFS - Raidz2   |
 | PiKVM  | Raspberry Pi4  | Cortex A72    | 64GB mSD   | -          | 4GB   | PiKVM (Arch) | KVM            |
 
 ### Networking/UPS Hardware
