@@ -13,6 +13,8 @@ terraform {
 }
 
 provider "onepassword" {
+  url                   = var.service_account_json != null ? "http://onepassword-connect.external-secrets.svc.cluster.local" : null
+  token                 = var.service_account_json
   service_account_token = var.onepassword_sa_token
 }
 
