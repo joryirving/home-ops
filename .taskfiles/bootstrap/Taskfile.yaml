@@ -90,7 +90,7 @@ tasks:
     cmds:
       - kubectl apply --server-side --kustomize {{.CLUSTER_DIR}}/bootstrap/apps
       - for: { var: TEMPLATES }
-        cmd: bws run --project-id a4bea614-3330-4b3e-9809-b101004332c3 -- 'minijinja-cli --env {{.ITEM}}' | kubectl apply --server-side --filename -
+        cmd: op run --env-file {{.CLUSTER_DIR}}/bootstrap/bootstrap.env --no-masking -- minijinja-cli {{.ITEM}} | kubectl apply --server-side --filename -
       - kubectl apply --server-side --filename {{.CLUSTER_DIR}}/flux/vars/cluster-settings.yaml
       - kubectl apply --server-side --kustomize {{.CLUSTER_DIR}}/flux/config
     vars:
