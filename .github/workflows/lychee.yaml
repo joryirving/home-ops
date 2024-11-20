@@ -19,12 +19,16 @@ jobs:
     name: Lychee
     runs-on: ubuntu-latest
     steps:
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@v2
+        with:
+          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
+
       - name: Get Secrets
         uses: 1password/load-secrets-action@v2
         with:
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.ONEPASS_SA_TOKEN }}
           BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
           BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
 
