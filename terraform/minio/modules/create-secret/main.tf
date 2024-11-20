@@ -1,7 +1,7 @@
 resource "onepassword_item" "item" {
   vault    = var.onepassword_vault
   title    = var.name
-  category = "password"
+  category = "login"
   username = var.username
   password = var.password
 
