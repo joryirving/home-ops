@@ -13,8 +13,7 @@ terraform {
 }
 
 provider "onepassword" {
-  url   = "http://onepassword-connect.external-secrets.svc.cluster.local"
-  token = var.onepassword_connect_token
+  service_account_token = var.onepassword_sa_token
 }
 
 module "onepassword_minio" {

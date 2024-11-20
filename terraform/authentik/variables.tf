@@ -4,8 +4,8 @@ variable "cluster_domain" {
   default     = "jory.dev"
 }
 
-variable "onepassword_connect_token" {
+variable "onepassword_sa_token" {
   type        = string
-  description = "1Pass Access token"
+  description = "Oneopass Service Account Token"
   sensitive   = true
 }

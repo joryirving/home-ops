@@ -14,17 +14,18 @@ concurrency:
 jobs:
   changed-terraform:
     name: Changed Terraform
-    runs-on: ["gha-runner-scale-set"]
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.changed-terraform.outputs.all_changed_and_modified_files }}
     steps:
       - name: Get Secrets
-        uses: bitwarden/sm-action@v2
+        uses: 1password/load-secrets-action@v2
         with:
-          access_token: ${{ secrets.BW_ACCESS_TOKEN }}
-          secrets: |
-            e062dcb9-8cd7-471e-b9be-b10100497102 > BOT_APP_ID
-            5856238d-3fae-4a0f-9847-b1010049f697 > BOT_APP_PRIVATE_KEY
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.ONEPASS_SA_TOKEN }}
+          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
 
       - name: Generate Token
         uses: actions/create-github-app-token@v1
@@ -62,14 +63,15 @@ jobs:
       fail-fast: false
     steps:
       - name: Get Secrets
-        uses: bitwarden/sm-action@v2
+        uses: 1password/load-secrets-action@v2
         with:
-          access_token: ${{ secrets.BW_ACCESS_TOKEN }}
-          secrets: |
-            e062dcb9-8cd7-471e-b9be-b10100497102 > BOT_APP_ID
-            5856238d-3fae-4a0f-9847-b1010049f697 > BOT_APP_PRIVATE_KEY
-            7c42cbd2-ac08-493c-882a-b11301817cbf > MINIO
-            a74d1863-53ac-4aa3-ae0c-b220011fa5c3 > BW_PROJ_ID
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.ONEPASS_SA_TOKEN }}
+          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
+          MINIO_ACCESS_KEY: op://Kubernetes/minio/MINIO_ACCESS_KEY
+          MINIO_SECRET_KEY: op://Kubernetes/MINIO_SECRET_KEY
 
       - name: Generate Token
         uses: actions/create-github-app-token@v1
@@ -91,6 +93,9 @@ jobs:
         shell: bash
         run: brew install node
 
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
+
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -99,24 +104,6 @@ jobs:
         working-directory: ${{ matrix.paths }}
         run: terraform fmt -check
         continue-on-error: true
-
-      - name: Extract MINIO Secrets
-        run: |
-          while IFS= read -r line; do
-            # Check for matching patterns using a case statement
-            case "$line" in
-              MINIO_ENDPOINT:* | MINIO_ACCESS_KEY:* | MINIO_SECRET_KEY:*)
-                key=$(echo "$line" | awk -F: '{print $1}')
-                value=$(echo "$line" | awk -F: '{print $2}' | xargs)
-
-                # Mask the sensitive value
-                echo "::add-mask::$value"
-
-                # Use GITHUB_ENV to export the variables without echoing the value
-                echo "${key}=${value}" >> $GITHUB_ENV
-                ;;
-            esac
-          done <<< "$MINIO"
 
       - name: Terraform Init
         id: init
@@ -136,7 +123,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ matrix.paths }}
-        run: terraform plan -lock=false -var "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: terraform plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         if: github.event_name == 'pull_request'
