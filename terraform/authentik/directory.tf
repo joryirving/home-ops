@@ -52,13 +52,10 @@ resource "authentik_policy_binding" "application_policy_binding" {
   order  = 0
 }
 
-data "bitwarden_secret" "discord" {
-  key = "discord"
-}
-
-locals {
-  discord_client_id     = replace(regex("DISCORD_CLIENT_ID: (\\S+)", data.bitwarden_secret.discord.value)[0], "\"", "")
-  discord_client_secret = replace(regex("DISCORD_CLIENT_SECRET: (\\S+)", data.bitwarden_secret.discord.value)[0], "\"", "")
+module "onepassword_discord" {
+  source = "github.com/joryirving/terraform-1password-item"
+  vault  = "Kubernetes"
+  item   = "discord"
 }
 
 ##Oauth
@@ -70,6 +67,6 @@ resource "authentik_source_oauth" "discord" {
   user_matching_mode  = "email_deny"
 
   provider_type   = "discord"
-  consumer_key    = local.discord_client_id
-  consumer_secret = local.discord_client_secret
+  consumer_key    = module.onepassword_discord.fields["DISCORD_CLIENT_ID"]
+  consumer_secret = module.onepassword_discord.fields["DISCORD_CLIENT_SECRET"]
 }

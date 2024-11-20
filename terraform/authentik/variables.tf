@@ -4,8 +4,8 @@ variable "cluster_domain" {
   default     = "jory.dev"
 }
 
-variable "bw_access_token" {
+variable "onepassword_connect_token" {
   type        = string
-  description = "Bitwarden Secret Manager Access token"
+  description = "1Pass Access token"
   sensitive   = true
 }

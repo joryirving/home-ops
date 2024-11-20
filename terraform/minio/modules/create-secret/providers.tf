@@ -1,8 +1,8 @@
 terraform {
   required_providers {
-    bitwarden = {
-      source  = "maxlaverse/bitwarden"
-      version = ">= 0.11.0"
+    onepassword = {
+      source  = "1Password/onepassword"
+      version = ">= 2.1.2"
     }
   }
 }
