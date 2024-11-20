@@ -96,6 +96,9 @@ jobs:
       - name: Install 1Password CLI
         uses: 1password/install-cli-action@v1
 
+      - name: debug
+        run: op vault list
+
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v3
 
@@ -123,7 +126,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ matrix.paths }}
-        run: terraform plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: terraform plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         if: github.event_name == 'pull_request'

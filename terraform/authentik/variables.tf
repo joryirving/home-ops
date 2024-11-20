@@ -9,3 +9,9 @@ variable "onepassword_sa_token" {
   description = "Oneopass Service Account Token"
   sensitive   = true
 }
+
+variable "bw_access_token" {
+  type        = string
+  description = "Bitwarden Secret Manager Access token"
+  sensitive   = true
+}

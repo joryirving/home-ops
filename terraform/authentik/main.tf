@@ -9,6 +9,18 @@ terraform {
       source  = "1Password/onepassword"
       version = ">= 2.1.2"
     }
+
+    bitwarden = {
+      source  = "maxlaverse/bitwarden"
+      version = ">= 0.11.0"
+    }
+  }
+}
+
+provider "bitwarden" {
+  access_token = var.bw_access_token
+  experimental {
+    embedded_client = true
   }
 }
 
