@@ -26,10 +26,10 @@ spec:
     - name: gha-runner-scale-set-controller
       namespace: actions-runner-system
   valuesFrom:
-    - targetPath: githubConfigSecret.github_token
-      kind: Secret
-      name: actions-runner-controller-auth
-      valuesKey: ACTION_RUNNER_CONTROLLER_GITHUB_TOKEN
+    - kind: Secret
+      name: actions-runner-controller-auth-secret
+      valuesKey: github_token
+      targetPath: githubConfigSecret.github_token
   values:
     nameOverride: gha-runner-scale-set
     runnerScaleSetName: gha-runner-scale-set
