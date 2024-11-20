@@ -13,8 +13,7 @@ variable "password" {
   description = "Secret password"
 }
 
-variable "bw_proj_id" {
+variable "onepassword_vault" {
   type        = string
-  description = "Bitwarden Secret Manager Project ID"
-  sensitive   = true
+  description = "Name of the 1password vault"
 }

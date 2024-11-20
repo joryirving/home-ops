@@ -9,67 +9,60 @@ locals {
   ]
 }
 
-# Step 1: Retrieve secrets from Bitwarden
-data "bitwarden_secret" "application" {
+# Step 1: Retrieve secrets from 1Password
+module "onepassword_application" {
   for_each = toset(local.oauth_apps)
-  key      = each.key
+  source   = "github.com/joryirving/terraform-1password-item"
+  vault    = "Kubernetes"
+  item     = each.key
 }
 
 # Step 2: Parse the secrets using regex to extract client_id and client_secret
 locals {
-  parsed_secrets = {
-    for app, secret in data.bitwarden_secret.application : app => {
-      client_id     = replace(regex(".*_CLIENT_ID: (\\S+)", secret.value)[0], "\"", "")
-      client_secret = replace(regex(".*_CLIENT_SECRET: (\\S+)", secret.value)[0], "\"", "")
-    }
-  }
-}
-
-locals {
   applications = {
     grafana = {
-      client_id     = local.parsed_secrets["grafana"].client_id
-      client_secret = local.parsed_secrets["grafana"].client_secret
+      client_id     = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_ID"]
+      client_secret = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_SECRET"]
       group         = authentik_group.monitoring.name
       icon_url      = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/grafana.png"
       redirect_uri  = "https://grafana.${var.cluster_domain}/login/generic_oauth"
       launch_url    = "https://grafana.${var.cluster_domain}/login/generic_oauth"
     },
     headscale = {
-      client_id     = local.parsed_secrets["headscale"].client_id
-      client_secret = local.parsed_secrets["headscale"].client_secret
+      client_id     = module.onepassword_application["headscale"].fields["HEADSCALE_CLIENT_ID"]
+      client_secret = module.onepassword_application["headscale"].fields["HEADSCALE_CLIENT_SECRET"]
       group         = authentik_group.infrastructure.name
       icon_url      = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/headscale.png"
       redirect_uri  = "https://headscale.${var.cluster_domain}/oidc/callback"
       launch_url    = "https://headscale.${var.cluster_domain}/"
     },
     kyoo = {
-      client_id     = local.parsed_secrets["kyoo"].client_id
-      client_secret = local.parsed_secrets["kyoo"].client_secret
+      client_id     = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_ID"]
+      client_secret = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_SECRET"]
       group         = authentik_group.home.name
       icon_url      = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
       redirect_uri  = "https://kyoo.${var.cluster_domain}/api/auth/logged/authentik"
       launch_url    = "https://kyoo.${var.cluster_domain}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.cluster_domain}/login/callback"
     },
     lubelog = {
-      client_id     = local.parsed_secrets["lubelog"].client_id
-      client_secret = local.parsed_secrets["lubelog"].client_secret
+      client_id     = module.onepassword_application["lubelog"].fields["LUBELOG_CLIENT_ID"]
+      client_secret = module.onepassword_application["lubelog"].fields["LUBELOG_CLIENT_SECRET"]
       group         = authentik_group.home.name
       icon_url      = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
       redirect_uri  = "https://lubelog.${var.cluster_domain}/Login/RemoteAuth"
       launch_url    = "https://lubelog.${var.cluster_domain}/Login/RemoteAuth"
     },
     paperless = {
-      client_id     = local.parsed_secrets["paperless"].client_id
-      client_secret = local.parsed_secrets["paperless"].client_secret
+      client_id     = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_ID"]
+      client_secret = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_SECRET"]
       group         = authentik_group.home.name
       icon_url      = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/paperless.png"
       redirect_uri  = "https://paperless.${var.cluster_domain}/accounts/oidc/authentik/login/callback/"
       launch_url    = "https://paperless.${var.cluster_domain}/"
     },
     portainer = {
-      client_id     = local.parsed_secrets["portainer"].client_id
-      client_secret = local.parsed_secrets["portainer"].client_secret
+      client_id     = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_ID"]
+      client_secret = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_SECRET"]
       group         = authentik_group.infrastructure.name
       icon_url      = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/portainer.png"
       redirect_uri  = "https://portainer.${var.cluster_domain}/"

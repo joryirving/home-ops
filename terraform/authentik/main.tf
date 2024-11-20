@@ -5,6 +5,11 @@ terraform {
       version = ">= 2024.10.0"
     }
 
+    onepassword = {
+      source  = "1Password/onepassword"
+      version = ">= 2.1.2"
+    }
+
     bitwarden = {
       source  = "maxlaverse/bitwarden"
       version = ">= 0.11.0"
@@ -19,15 +24,17 @@ provider "bitwarden" {
   }
 }
 
-data "bitwarden_secret" "authentik" {
-  key = "authentik"
+provider "onepassword" {
+  service_account_token = var.onepassword_sa_token
 }
 
-locals {
-  authentik_token = regex("AUTHENTIK_TOKEN: (\\S+)", data.bitwarden_secret.authentik.value)[0]
+module "onepassword_authentik" {
+  source = "github.com/joryirving/terraform-1password-item"
+  vault  = "Kubernetes"
+  item   = "authentik"
 }
 
 provider "authentik" {
   url   = "https://sso.${var.cluster_domain}"
-  token = local.authentik_token
+  token = module.onepassword_authentik.fields["AUTHENTIK_TOKEN"]
 }

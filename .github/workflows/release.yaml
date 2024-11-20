@@ -12,13 +12,18 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
-      - name: Get Secrets
-        uses: bitwarden/sm-action@v2
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@v2
         with:
-          access_token: ${{ secrets.BW_ACCESS_TOKEN }}
-          secrets: |
-            e062dcb9-8cd7-471e-b9be-b10100497102 > BOT_APP_ID
-            5856238d-3fae-4a0f-9847-b1010049f697 > BOT_APP_PRIVATE_KEY
+          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
+
+      - name: Get Secrets
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
 
       - name: Generate Token
         uses: actions/create-github-app-token@v1

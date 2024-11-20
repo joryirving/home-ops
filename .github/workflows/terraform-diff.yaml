@@ -18,13 +18,18 @@ jobs:
     outputs:
       matrix: ${{ steps.changed-terraform.outputs.all_changed_and_modified_files }}
     steps:
-      - name: Get Secrets
-        uses: bitwarden/sm-action@v2
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@v2
         with:
-          access_token: ${{ secrets.BW_ACCESS_TOKEN }}
-          secrets: |
-            e062dcb9-8cd7-471e-b9be-b10100497102 > BOT_APP_ID
-            5856238d-3fae-4a0f-9847-b1010049f697 > BOT_APP_PRIVATE_KEY
+          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
+
+      - name: Get Secrets
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
 
       - name: Generate Token
         uses: actions/create-github-app-token@v1
@@ -33,11 +38,10 @@ jobs:
           app-id: ${{ env.BOT_APP_ID }}
           private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
-      - name: Checkout Default Branch
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
-          fetch-depth: 0
 
       - name: Get Changed Terraform
         id: changed-terraform
@@ -53,7 +57,7 @@ jobs:
 
   sync:
     name: Terraform Diff
-    runs-on: ["gha-runner-scale-set"]
+    runs-on: ["gha-runner-scale-set"] #Backend is stored on local minio with no external ingress
     needs: ["changed-terraform"]
     strategy:
       matrix:
@@ -61,15 +65,20 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
-      - name: Get Secrets
-        uses: bitwarden/sm-action@v2
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@v2
         with:
-          access_token: ${{ secrets.BW_ACCESS_TOKEN }}
-          secrets: |
-            e062dcb9-8cd7-471e-b9be-b10100497102 > BOT_APP_ID
-            5856238d-3fae-4a0f-9847-b1010049f697 > BOT_APP_PRIVATE_KEY
-            7c42cbd2-ac08-493c-882a-b11301817cbf > MINIO
-            a74d1863-53ac-4aa3-ae0c-b220011fa5c3 > BW_PROJ_ID
+          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
+
+      - name: Get Secrets
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
+          MINIO_ACCESS_KEY: op://Kubernetes/minio/MINIO_ACCESS_KEY
+          MINIO_SECRET_KEY: op://Kubernetes/minio/MINIO_SECRET_KEY
 
       - name: Generate Token
         uses: actions/create-github-app-token@v1
@@ -82,7 +91,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
-          fetch-depth: 0
 
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@master
@@ -90,6 +98,9 @@ jobs:
       - name: Setup Workflow Tools
         shell: bash
         run: brew install node
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
 
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v3
@@ -99,24 +110,6 @@ jobs:
         working-directory: ${{ matrix.paths }}
         run: terraform fmt -check
         continue-on-error: true
-
-      - name: Extract MINIO Secrets
-        run: |
-          while IFS= read -r line; do
-            # Check for matching patterns using a case statement
-            case "$line" in
-              MINIO_ENDPOINT:* | MINIO_ACCESS_KEY:* | MINIO_SECRET_KEY:*)
-                key=$(echo "$line" | awk -F: '{print $1}')
-                value=$(echo "$line" | awk -F: '{print $2}' | xargs)
-
-                # Mask the sensitive value
-                echo "::add-mask::$value"
-
-                # Use GITHUB_ENV to export the variables without echoing the value
-                echo "${key}=${value}" >> $GITHUB_ENV
-                ;;
-            esac
-          done <<< "$MINIO"
 
       - name: Terraform Init
         id: init
@@ -136,7 +129,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ${{ matrix.paths }}
-        run: terraform plan -lock=false -var "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: terraform plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -var "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         if: github.event_name == 'pull_request'

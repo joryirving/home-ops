@@ -1,3 +1,3 @@
 output "id" {
-  value = bitwarden_secret.item.id
+  value = onepassword_item.item.uuid
 }
