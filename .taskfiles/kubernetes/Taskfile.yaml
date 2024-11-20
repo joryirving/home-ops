@@ -41,7 +41,7 @@ tasks:
     vars:
       TS: '{{now | unixEpoch}}'
       SECRETS:
-        sh: kubectl get externalsecret --all-namespaces --no-headers --output=jsonpath='{range .items[*]}{.metadata.namespace},{.metadata.name}{"\n"}{end}'
+        sh: kubectl get externalsecret --all-namespaces --no-headers --output=jsonpath='{range .items[*]}{.metadata.namespace},{.metadata.name}{"\n"}{end}' --context {{.CLUSTER}}
     requires:
       vars: [CLUSTER]
 
