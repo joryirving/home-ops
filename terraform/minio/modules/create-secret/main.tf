@@ -2,6 +2,8 @@ resource "onepassword_item" "item" {
   vault    = var.onepassword_vault
   title    = var.name
   category = "password"
+  username = var.username
+  password = var.password
 
   section {
     label = "Token for ${var.name}"

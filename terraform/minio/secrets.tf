@@ -4,5 +4,5 @@ module "secrets" {
   name              = "${each.key}-bucket"
   username          = random_password.user_name[each.key].result
   password          = random_password.user_secret[each.key].result
-  onepassword_vault = "kubernetes"
+  onepassword_vault = data.onepassword_vault.kubernetes.uuid
 }

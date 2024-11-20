@@ -30,9 +30,13 @@ provider "onepassword" {
   service_account_token = var.onepassword_sa_token
 }
 
+data "onepassword_vault" "kubernetes" {
+  name = "Kubernetes"
+}
+
 module "onepassword_minio" {
   source = "github.com/joryirving/terraform-1password-item"
-  vault  = "Kubernetes"
+  vault  = data.onepassword_vault.kubernetes.name
   item   = "minio"
 }
 
