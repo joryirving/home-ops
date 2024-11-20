@@ -97,39 +97,36 @@ jobs:
 
       - name: Setup Workflow Tools
         shell: bash
-        run: brew install node
+        run: brew install opentofu
 
       - name: Install 1Password CLI
         uses: 1password/install-cli-action@v1
 
-      - name: Setup terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform fmt
+      - name: Tofu fmt
         id: fmt
         working-directory: ${{ matrix.paths }}
-        run: terraform fmt -check
+        run: tofu fmt -check
         continue-on-error: true
 
-      - name: Terraform Init
+      - name: Tofu Init
         id: init
         working-directory: ${{ matrix.paths }}
         env:
           AWS_ACCESS_KEY_ID: ${{ env.MINIO_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ env.MINIO_SECRET_KEY }}
         run: |
-          terraform init \
+          tofu init \
             -backend-config="access_key=$AWS_ACCESS_KEY_ID" \
             -backend-config="secret_key=$AWS_SECRET_ACCESS_KEY"
 
-      - name: Terraform Validate
+      - name: Tofu Validate
         id: validate
         working-directory: ${{ matrix.paths }}
-        run: terraform validate -no-color
+        run: tofu validate -no-color
 
-      - name: Terraform Plan
+      - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
-        run: terraform plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -var "bw_access_token=${{ secrets.BW_ACCESS_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: tofu plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         if: github.event_name == 'pull_request'
@@ -137,6 +134,7 @@ jobs:
         uses: borchero/terraform-plan-comment@v2
         with:
           token: ${{ steps.app-token.outputs.token }}
+          planfile: .planfile
+          terraform-cmd: tofu
           header: "📝 Terraform Plan for ${{ matrix.paths }}"
           working-directory: ${{ matrix.paths }}
-          planfile: .planfile
