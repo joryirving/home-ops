@@ -1,0 +1,48 @@
+---
+version: "3"
+
+tasks:
+
+  push:
+    desc: Push all kubeconfig to OnePassword
+    cmds:
+      - op item edit kubernetes KUBECONFIG[text]="$(kubectl config view --flatten)" &>/dev/null
+      - op item edit kubernetes KUBECONFIG_BASE64[text]="$(kubectl config view --flatten | base64)" &>/dev/null
+      - task: push-main
+      - task: push-utility
+    preconditions:
+      - which op
+
+  push-main:
+    desc: Push main kubeconfig/talosconfig to OnePassword
+    cmds:
+      - op item edit kubernetes KUBECONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/kubeconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig)" &>/dev/null
+    preconditions:
+      - which op
+
+  push-utility:
+    desc: Push Utility kubeconfig to OnePassword
+    cmds:
+      - op item edit kubernetes KUBECONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}/kubernetes/utility/kubeconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}/kubernetes/utility/talos/clusterconfig/talosconfig)" &>/dev/null
+    preconditions:
+      - which op
+
+  pull:
+    desc: Pull Kubeconfig from OnePassword
+    cmds:
+      - mkdir -p ~/.kube
+      - mkdir -p ~/.talos
+      - mkdir -p ~/.talos
+      - op item get kubernetes --fields label=KUBECONFIG_MAIN > {{.ROOT_DIR}}/kubernetes/main/kubeconfig # Main kubeconfig
+      - op item get kubernetes --fields label=TALOSCONFIG_MAIN > {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig # Main talosconfig
+      - op item get kubernetes --fields label=KUBECONFIG_UTILITY > {{.ROOT_DIR}}/kubernetes/utility/kubeconfig # Utility kubeconfig
+      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY > {{.ROOT_DIR}}/kubernetes/utility/talos/clusterconfig/talosconfig # Utility talosconfig
+      - op item get kubernetes --fields label=KUBECONFIG ~/.kube/config # Flat kubeconfig
+      ## Note: The last `talosconfig` merged becomes the default context
+      ## We pull the second talosconfig, and merge the main into it, so main is default
+      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY > ~/.talos/config # Utility talosconfig
+      - talosctl config merge {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig --talosconfig  ~/.talos/config #Merge main into flat talosconfig
+    preconditions:
+      - which op
