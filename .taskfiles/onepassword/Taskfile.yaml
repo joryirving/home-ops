@@ -35,14 +35,14 @@ tasks:
       - mkdir -p ~/.kube
       - mkdir -p ~/.talos
       - mkdir -p ~/.talos
-      - op item get kubernetes --fields label=KUBECONFIG_MAIN > {{.ROOT_DIR}}/kubernetes/main/kubeconfig # Main kubeconfig
-      - op item get kubernetes --fields label=TALOSCONFIG_MAIN > {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig # Main talosconfig
-      - op item get kubernetes --fields label=KUBECONFIG_UTILITY > {{.ROOT_DIR}}/kubernetes/utility/kubeconfig # Utility kubeconfig
-      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY > {{.ROOT_DIR}}/kubernetes/utility/talos/clusterconfig/talosconfig # Utility talosconfig
-      - op item get kubernetes --fields label=KUBECONFIG > ~/.kube/config # Flat kubeconfig
+      - op item get kubernetes --fields label=KUBECONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/main/kubeconfig # Main kubeconfig
+      - op item get kubernetes --fields label=TALOSCONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig # Main talosconfig
+      - op item get kubernetes --fields label=KUBECONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/utility/kubeconfig # Utility kubeconfig
+      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/utility/talos/clusterconfig/talosconfig # Utility talosconfig
+      - op item get kubernetes --fields label=KUBECONFIG | tr -d '"' > ~/.kube/config # Flat kubeconfig
       ## Note: The last `talosconfig` merged becomes the default context
       ## We pull the second talosconfig, and merge the main into it, so main is default
-      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY > ~/.talos/config # Utility talosconfig
+      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY | tr -d '"' > ~/.talos/config # Utility talosconfig
       - talosctl config merge {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig --talosconfig  ~/.talos/config #Merge main into flat talosconfig
     preconditions:
       - which op
