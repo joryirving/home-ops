@@ -7,7 +7,7 @@ tasks:
     desc: Push all kubeconfig to OnePassword
     cmds:
       - op item edit kubernetes KUBECONFIG[text]="$(kubectl config view --flatten)" &>/dev/null
-      - op item edit kubernetes KUBECONFIG_BASE64[text]="$(kubectl config view --flatten | base64)" &>/dev/null
+      - op item edit kubernetes KUBECONFIG_BASE64[text]=(kubectl config view --flatten | base64 -w 0) &>/dev/null
       - task: push-main
       - task: push-utility
     preconditions:
