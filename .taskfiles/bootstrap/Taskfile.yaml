@@ -57,7 +57,7 @@ tasks:
       - which talosctl
 
   rook:
-    desc: Bootstrap Rook-Ceph [CLUSTER=main] [MODEL=required] ## Figure this bs out
+    desc: Bootstrap Rook-Ceph [CLUSTER=main] [MODEL=required]
     cmds:
       - minijinja-cli {{.BOOTSTRAP_RESOURCES_DIR}}/wipe-rook.yaml.j2 | kubectl apply --server-side --filename -
       - until kubectl --namespace default get job/wipe-rook &>/dev/null; do sleep 5; done
