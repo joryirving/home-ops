@@ -63,7 +63,7 @@ My clusters run [talos linux](https://www.talos.dev) immutable kubernetes OS. Th
 - [cilium](https://github.com/cilium/cilium): internal Kubernetes networking plugin
 - [cert-manager](https://cert-manager.io/docs/): creates SSL certificates for services in my cluster
 - [external-dns](https://github.com/kubernetes-sigs/external-dns): automatically syncs DNS records from my cluster ingresses to a DNS provider
-- [external-secrets](https://github.com/external-secrets/external-secrets/): managed Kubernetes secrets using [Bitwarden](https://bitwarden.com/).
+- [external-secrets](https://github.com/external-secrets/external-secrets/): managed Kubernetes secrets using [1Password](https://1password.com/).
 - [ingress-nginx](https://github.com/kubernetes/ingress-nginx/): ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer
 - [longhorn](https://longhorn.io/): Cloud native distributed block storage for Kubernetes
 - [rook-ceph](https://rook.io/): Cloud native distributed block storage for Kubernetes
@@ -115,13 +115,13 @@ While most of my infrastructure and workloads are self-hosted I do rely upon the
 
 The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), [ntfy](https://ntfy.sh/), and [Gatus](https://gatus.io/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
 
-| Service                                     | Use                                                               | Cost           |
-|---------------------------------------------|-------------------------------------------------------------------|----------------|
-| [Bitwarden](https://bitwarden.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$10/yr        |
-| [Cloudflare](https://www.cloudflare.com/)   | Domain and R2                                                     | ~$30/yr        |
-| [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free           |
-| [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free           |
-|                                             |                                                                   | Total: ~$5/mo  |
+| Service                                     | Use                                                               | Cost          |
+|---------------------------------------------|-------------------------------------------------------------------|---------------|
+| [1Password](https://1PAssword.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | Free - Work   |
+| [Cloudflare](https://www.cloudflare.com/)   | Domain and R2                                                     | ~$30/yr       |
+| [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free          |
+| [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free          |
+|                                             |                                                                   | Total: ~$3/mo |
 
 ---
 
@@ -145,9 +145,9 @@ Outside the `external-dns` instance mentioned above another instance is deployed
 |-------|--------------|-----------|-----------|-----------|------|-------|-------------------|
 | Ayaka | Dell 7080mff | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
 | Eula  | Dell 7080mff | i7-10700T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| Ganyu | Dell 3080mff | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
+| Ganyu | Dell 3080mff | i5-10500T | 500GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
 | HuTao | Dell 3080mff | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
-| Navia | Dell 3080mff | i5-10500T | 256GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
+| Navia | Dell 3080mff | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
 | Yelan | Dell 3080mff | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
 
 Total CPU: 76 threads
@@ -155,9 +155,9 @@ Total RAM: 384GB
 
 ### Utility Kubernetes Cluster
 
-| Name     | Device     | CPU           | OS Disk   | Data Disk  | RAM  | OS    | Purpose           |
-|----------|------------|---------------|-----------|------------|------|-------|-------------------|
-| Celestia | Bosgame P1 | Ryzen 7 5700U | 480GB SSD | 512GB NVME | 32GB | Talos | k8s control-plane |
+| Name     | Device     | CPU           | OS Disk   | Data Disk | RAM  | OS    | Purpose           |
+|----------|------------|---------------|-----------|-----------|------|-------|-------------------|
+| Celestia | Bosgame P1 | Ryzen 7 5700U | 480GB SSD | 1TB NVME  | 32GB | Talos | k8s control-plane |
 
 Total CPU: 16 threads
 Total RAM: 32GB
