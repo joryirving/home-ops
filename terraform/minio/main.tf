@@ -2,12 +2,12 @@ terraform {
   required_providers {
     onepassword = {
       source  = "1Password/onepassword"
-      version = ">= 2.1.2"
+      version = "2.1.2"
     }
 
     minio = {
       source  = "aminueza/minio"
-      version = ">= 2.5.1"
+      version = "2.5.1"
     }
   }
 }

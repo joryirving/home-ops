@@ -2,12 +2,12 @@ terraform {
   required_providers {
     authentik = {
       source  = "goauthentik/authentik"
-      version = ">= 2024.10.0"
+      version = "2024.10.2"
     }
 
     onepassword = {
       source  = "1Password/onepassword"
-      version = ">= 2.1.2"
+      version = "2.1.2"
     }
   }
 }
