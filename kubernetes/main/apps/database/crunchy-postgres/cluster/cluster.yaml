@@ -28,7 +28,7 @@ spec:
       metadata:
         labels:
           app.kubernetes.io/name: crunchy-postgres
-      replicas: &replicas 6
+      replicas: &replicas 3
       dataVolumeClaimSpec:
         storageClassName: local-hostpath
         accessModes: ["ReadWriteOnce"]
@@ -179,7 +179,7 @@ spec:
             lbipam.cilium.io/ips: ${SVC_CPGO_ADDR:=temp}
         type: LoadBalancer
       port: 5432
-      replicas: 3
+      replicas: *replicas
       config:
         global:
           # Grafana requires session
