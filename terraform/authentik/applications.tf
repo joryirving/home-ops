@@ -1,5 +1,6 @@
 locals {
   oauth_apps = [
+    "dashbrr",
     "grafana",
     "headscale",
     "kyoo",
@@ -20,6 +21,14 @@ module "onepassword_application" {
 # Step 2: Parse the secrets using regex to extract client_id and client_secret
 locals {
   applications = {
+    dashbrr = {
+      client_id     = module.onepassword_application["dashbrr"].fields["DASHBRR_CLIENT_ID"]
+      client_secret = module.onepassword_application["dashbrr"].fields["DASHBRR_CLIENT_SECRET"]
+      group         = authentik_group.monitoring.name
+      icon_url      = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/dashbrr.png"
+      redirect_uri  = "https://dashbrr.${var.cluster_domain}/api/auth/callback"
+      launch_url    = "https://dashbrr.${var.cluster_domain}/api/auth/callback"
+    },
     grafana = {
       client_id     = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_ID"]
       client_secret = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_SECRET"]
