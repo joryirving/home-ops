@@ -47,24 +47,10 @@ spec:
                 constraints:
                   - DoNotSchedule
                   - ScheduleAnyway
-            - name: LowNodeUtilization
-              namespaces:
-                exclude:
-                  - "remote"
-              args:
-                thresholds:
-                  cpu: 50
-                  memory: 50
-                  pods: 20
-                targetThresholds:
-                  cpu: 75
-                  memory: 75
-                  pods: 80
           plugins:
             balance:
               enabled:
                 - RemovePodsViolatingTopologySpreadConstraint
-                - LowNodeUtilization
             deschedule:
               enabled:
                 - RemovePodsViolatingInterPodAntiAffinity
