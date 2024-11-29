@@ -36,8 +36,25 @@ loadBalancer:
   mode: dsr
 localRedirectPolicy: true
 operator:
-  rollOutPods: true
   replicas: 1
+  rollOutPods: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  dashboards:
+    enabled: true
+    annotations:
+      grafana_folder: Network
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    trustCRDsExist: true
+dashboards:
+  enabled: true
+  annotations:
+    grafana_folder: Network
 rollOutCiliumPods: true
 routingMode: native
 securityContext:
