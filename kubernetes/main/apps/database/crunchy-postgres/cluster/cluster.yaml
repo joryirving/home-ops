@@ -5,6 +5,10 @@ kind: PostgresCluster
 metadata:
   name: &name postgres
 spec:
+  metadata:
+    labels:
+      crunchy-userinit.ramblurr.github.com/enabled: "true"
+      crunchy-userinit.ramblurr.github.com/superuser: &superuser "postgres"
   postgresVersion: 16
   monitoring:
     pgmonitor:
@@ -44,7 +48,7 @@ spec:
               postgres-operator.crunchydata.com/data: postgres
   users:
     # Superuser
-    - name: "postgres"
+    - name: *superuser
       databases: ["postgres"]
       options: "SUPERUSER"
       password:
