@@ -25,12 +25,14 @@ spec:
   values:
     global:
       podAnnotations:
-        secret.reloader.stakater.com/reload: authentik-secret
+        secret.reloader.stakater.com/reload: authentik-secret, authentik-db-secret
       deploymentStrategy:
         type: RollingUpdate
       envFrom:
         - secretRef:
             name: authentik-secret
+        - secretRef:
+            name: authentik-db-secret
     authentik:
       redis:
         host: dragonfly.database.svc.cluster.local
