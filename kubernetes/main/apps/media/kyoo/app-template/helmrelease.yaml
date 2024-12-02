@@ -108,7 +108,11 @@ spec:
               tag: 4.7.0@sha256:2a04796840d0d448973ac22046f2b43c70c8667dd2c7c7124332d5dd23d6ffe5
             env:
               TRANSCODER_URL: http://kyoo-transcoder:7666
-            envFrom: *envFrom
+            envFrom:
+              - secretRef:
+                  name: kyoo-secret
+              - secretRef:
+                  name: kyoo-db-secret
             resources:
               requests:
                 cpu: 10m
