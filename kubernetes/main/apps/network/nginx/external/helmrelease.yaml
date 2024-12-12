@@ -29,8 +29,9 @@ spec:
       replicaCount: 2
       service:
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: &hostname external.${SECRET_DOMAIN}
+          external-dns.alpha.kubernetes.io/hostname: external.${SECRET_DOMAIN}
           lbipam.cilium.io/ips: ${SVC_NGINX_EXTERNAL:=temp}
+        externalTrafficPolicy: Cluster
       ingressClassResource:
         name: external
         default: false
@@ -74,10 +75,7 @@ spec:
             any: true
       extraArgs:
         default-ssl-certificate: network/${SECRET_DOMAIN}-tls
-        publish-status-address: *hostname
       terminationGracePeriodSeconds: 120
-      publishService:
-        enabled: false
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname

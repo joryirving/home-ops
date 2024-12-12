@@ -38,6 +38,8 @@ spec:
         enabled: true
         pathType: Prefix
         ingressClassName: internal
+        annotations:
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
         hosts:
           - alertmanager.${SECRET_DOMAIN}
       alertmanagerSpec:
@@ -122,6 +124,7 @@ spec:
           gethomepage.dev/description: Monitoring Scrape Service
           gethomepage.dev/widget.type: prometheus
           gethomepage.dev/widget.url: http://kube-prometheus-stack-prometheus.observability:9090
+          external-dns.alpha.kubernetes.io/target: internal.${SECRET_DOMAIN}
         pathType: Prefix
         hosts:
           - prometheus.${SECRET_DOMAIN}
