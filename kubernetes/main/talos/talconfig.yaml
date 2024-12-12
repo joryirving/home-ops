@@ -245,6 +245,17 @@ patches:
             source: /var/openebs/local
             options: ["bind", "rshared", "rw"]
 
+  # # Performance hacks
+  - |-
+    machine:
+      install:
+        extraKernelArgs:
+          - apparmor=0
+          - init_on_alloc=0
+          - init_on_free=0
+          - mitigations=off
+          - security=none
+
 controlPlane:
   nodeLabels:
     topology.kubernetes.io/zone: controlPlane
