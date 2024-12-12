@@ -37,33 +37,40 @@ spec:
               tag: 2024.12.2@sha256:d8c2ea7da9fecae3bab3c0727fcf444bd80c2dcda8a259690f617ce3276ee7e0
             env:
               TZ: ${TIMEZONE}
-            probes:
-              liveness:
-                enabled: false
-              readiness:
-                enabled: false
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
-                cpu: 50m
-                memory: 400Mi
+                cpu: 10m
+                memory: 250Mi
               limits:
-                memory: 700Mi
+                memory: 2Gi
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
-              tag: 4.95.3
+              tag: 4.95.3@sha256:6d74583d68179cbb6ddadc2518b450d2ac3eaec2d342474fe1941e03371cd2cf
             env:
               TZ: ${TIMEZONE}
-            args:
-              - "/config"
-              - --auth
-              - "none"
-              - --user-data-dir
-              - "/config/.vscode"
-              - --extensions-dir
-              - "/config/.vscode"
+            args: [
+              "--auth", "none",
+              "--user-data-dir", "/config/.vscode",
+              "--extensions-dir", "/config/.vscode",
+              "--port", "12321",
+              "/config"
+            ]
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 512Mi
     defaultPodOptions:
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: { type: RuntimeDefault }
     service:
@@ -76,13 +83,8 @@ spec:
         ports:
           http:
             port: 8123
-      codeserver:
-        controller: *app
-        type: ClusterIP
-        ports:
-          http:
-            enabled: true
-            port: 8080
+          codeserver:
+            port: 12321
     ingress:
       app:
         className: external
@@ -100,8 +102,8 @@ spec:
             paths:
             - path: /
               service:
-                identifier: codeserver
-                port: http
+                identifier: app
+                port: codeserver
     persistence:
       config:
         existingClaim: *app
