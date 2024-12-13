@@ -21,7 +21,6 @@ tasks:
     status:
       - test -f "{{.CLUSTER_DIR}}/talos/talsecret.sops.yaml"
 
-
   gen-config:
     desc: Generate the Talos configs
     cmd: talhelper -c {{.CLUSTER_DIR}}/talos/talconfig.yaml genconfig -s {{.CLUSTER_DIR}}/talos/talsecret.sops.yaml -o {{.CLUSTER_DIR}}/talos/clusterconfig
@@ -56,6 +55,20 @@ tasks:
       - test -f {{.CLUSTER_DIR}}/talos/clusterconfig/talosconfig
       - which talosctl
 
+  apps:
+    desc: Bootstrap Apps [CLUSTER=main]
+    cmds:
+      - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
+      - helmfile --quiet --file {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
+      - until kubectl wait nodes --for=condition=Ready --all --timeout=10m; do sleep 5; done
+    requires:
+      vars: [CLUSTER]
+    preconditions:
+      - talosctl config info
+      - test -f {{.CLUSTER_DIR}}/talos/clusterconfig/talosconfig
+      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml
+      - which helmfile kubectl
+
   rook:
     desc: Bootstrap Rook-Ceph [CLUSTER=main] [MODEL=required]
     cmds:
@@ -71,19 +84,6 @@ tasks:
       - test -f {{.BOOTSTRAP_RESOURCES_DIR}}/wipe-rook.yaml.j2
       - which kubectl minijinja-cli stern talosctl
 
-  apps:
-    desc: Bootstrap Apps [CLUSTER=main]
-    cmds:
-      - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
-      - helmfile --quiet --file {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
-      - until kubectl wait nodes --for=condition=Ready --all --timeout=10m; do sleep 5; done
-    requires:
-      vars: [CLUSTER]
-    preconditions:
-      - talosctl config info
-      - test -f {{.CLUSTER_DIR}}/talos/clusterconfig/talosconfig
-      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml
-      - which helmfile kubectl
 
   flux:
     desc: Bootstrap Flux [CLUSTER=main]
