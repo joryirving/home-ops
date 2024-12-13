@@ -28,7 +28,7 @@ spec:
   values:
     controller:
       volumeSnapshotClasses:
-          - name: longhorn-snapclass
+          - name: csi-longhorn
             annotations:
               snapshot.storage.kubernetes.io/is-default-class: "true"
             driver: driver.longhorn.io
@@ -37,6 +37,11 @@ spec:
               # needed for successful VolumeSnapshots
               # see: https://github.com/longhorn/longhorn/issues/2534#issuecomment-1010508714
               type: snap
+          # - name: local-hostpath-snapclass
+          #   driver: openebs.io/local
+          #   deletionPolicy: Delete
+          #   parameters:
+          #     type: snap
       serviceMonitor:
         create: true
     webhook:
