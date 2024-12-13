@@ -9,11 +9,12 @@ spec:
   chart:
     spec:
       chart: snapshot-controller
-      version: 4.0.0
+      version: 3.0.6
       sourceRef:
         kind: HelmRepository
         name: piraeus
         namespace: flux-system
+  maxHistory: 2
   install:
     crds: CreateReplace
     remediation:
@@ -36,3 +37,7 @@ spec:
               # needed for successful VolumeSnapshots
               # see: https://github.com/longhorn/longhorn/issues/2534#issuecomment-1010508714
               type: snap
+      serviceMonitor:
+        create: true
+    webhook:
+      enabled: false
