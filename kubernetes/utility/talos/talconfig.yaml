@@ -140,9 +140,9 @@ patches:
     machine:
       kubelet:
         extraMounts:
-          - destination: /var/lib/longhorn/
+          - destination: /var/lib/csi-local-hostpath
             type: bind
-            source: /var/lib/longhorn/
+            source: /var/lib/csi-local-hostpath
             options: ["bind", "rshared", "rw"]
 
   # # Mount 2nd disk for Longhorn Storage
@@ -151,7 +151,7 @@ patches:
       disks:
       - device: /dev/nvme0n1
         partitions:
-          - mountpoint: /var/lib/longhorn/
+          - mountpoint: /var/lib/csi-local-hostpath
 
   # # Disable predictable NIC naming
   # - |-
