@@ -157,19 +157,19 @@ spec:
           schedules:
             full: "30 2 * * 0" # Sunday at 02:30
             incremental: "30 2 * * 1-6/2" # Mon-Sat at 02:30, every 2nd day
-        # - name: repo3
-        #   volume: &nfs
-        #     volumeClaimSpec:
-        #       storageClassName: ""
-        #       volumeName: "postgres-nfs"
-        #       accessModes: ["ReadWriteMany"]
-        #       resources:
-        #         requests:
-        #           storage: 1Mi
-        #   schedules:
-        #     full: "15 1 * * 0" # Sunday at 01:15
-        #     differential: "15 1 * * 1-6" # Mon-Sat at 01:15
-        #     incremental: "15 3-23 * * *" # Every hour except 01:30-2:30
+        - name: repo3
+          volume: &nfs
+            volumeClaimSpec:
+              storageClassName: nfs-slow #csi-driver-nfs
+              volumeName: postgres-nfs
+              accessModes: ["ReadWriteMany"]
+              resources:
+                requests:
+                  storage: 1Mi
+          schedules:
+            full: "15 1 * * 0" # Sunday at 01:15
+            differential: "15 1 * * 1-6" # Mon-Sat at 01:15
+            incremental: "15 3-23 * * *" # Every hour except 01:30-2:30
   dataSource:
     pgbackrest:
       stanza: db
