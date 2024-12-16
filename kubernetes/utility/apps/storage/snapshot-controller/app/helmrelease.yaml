@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: snapshot-controller
-      version: 3.0.6
+      version: 4.0.0
       sourceRef:
         kind: HelmRepository
         name: piraeus
@@ -29,15 +29,5 @@ spec:
     controller:
       args:
         enableDistributedSnapshotting: true
-      volumeSnapshotClasses:
-          - name: csi-longhorn
-            annotations:
-              snapshot.storage.kubernetes.io/is-default-class: "true"
-            driver: driver.longhorn.io
-            deletionPolicy: Delete
-            parameters:
-              type: snap
       serviceMonitor:
         create: true
-    webhook:
-      enabled: false
