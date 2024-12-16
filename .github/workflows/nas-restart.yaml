@@ -65,3 +65,6 @@
                 --no-headers | \
                 awk '{print "kubectl --context ${{ matrix.cluster }} rollout restart deployment/"$2" -n "$1}' | \
                 sh
+            kubectl \
+                --context ${{ matrix.cluster }} \
+                rollout restart statefulset postgres-repo-host -n database
