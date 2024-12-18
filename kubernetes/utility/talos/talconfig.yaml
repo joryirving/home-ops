@@ -72,9 +72,9 @@ patches:
       discovery:
         registries:
           kubernetes:
-            disabled: false
-          service:
             disabled: true
+          service:
+            disabled: false
 
   # Configure kubelet
   - |-
@@ -123,17 +123,7 @@ patches:
         devices.system.cpu.cpu14.cpufreq.energy_performance_preference: balance_power
         devices.system.cpu.cpu15.cpufreq.energy_performance_preference: balance_power
 
-  # Mount openebs-hostpath in kubelet
-  - |-
-    machine:
-      kubelet:
-        extraMounts:
-          - destination: /var/openebs/local
-            type: bind
-            source: /var/openebs/local
-            options: ["bind", "rshared", "rw"]
-
-  # Mount Longhorn storage in kubelet
+  # Mount democratic-csi storage in kubelet
   - |-
     machine:
       kubelet:
@@ -143,7 +133,7 @@ patches:
             source: /var/lib/csi-local-hostpath
             options: ["bind", "rshared", "rw"]
 
-  # # Mount 2nd disk for Longhorn Storage
+  # # Mount 2nd disk for democratic-csi Storage
   - |-
     machine:
       disks:
