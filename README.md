@@ -129,11 +129,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 ### Home DNS
 
-In my cluster `external-dns` is deployed with the `RFC2136` provider which syncs DNS records to `unifi` via [external-dns-unifi-webhook](https://github.com/kashalls/external-dns-unifi-webhook).
-
-### Public DNS
-
-Outside the `external-dns` instance mentioned above another instance is deployed in my cluster and configured to sync DNS records to [Cloudflare](https://www.cloudflare.com/). The only ingress this `external-dns` instance looks at to gather DNS records to put in `Cloudflare` are ones that have an ingress class name of `external` and contain an ingress annotation `external-dns.alpha.kubernetes.io/target`.
+In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM Pro-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs the DNS records to their respective platforms accordingly.
 
 ---
 
@@ -164,11 +160,11 @@ Total RAM: 32GB
 
 ### Supporting Hardware
 
-| Name   | Device         | CPU           | OS Disk    | Data Disk  | RAM   | OS           | Purpose        |
-|--------|----------------|---------------|------------|------------|-------|--------------|----------------|
-| NAS    | HP z820        | E5-2680v2     | 32GB USB   | 500GB NVMe | 128GB | Unraid       | NAS/NFS/Backup |
-| DAS    | Lenovo SA120   | -             | -          | 56TB       | -     | -            | ZFS - Raidz2   |
-| PiKVM  | Raspberry Pi4  | Cortex A72    | 64GB mSD   | -          | 4GB   | PiKVM (Arch) | KVM            |
+| Name    | Device        | CPU        | OS Disk    | Data Disk  | RAM  | OS           | Purpose        |
+|---------|---------------|------------|------------|------------|------|--------------|----------------|
+| Voyager | MS-01         | i5-12600H  | 32GB USB   | 1.92TB U.2 | 96GB | Unraid       | NAS/NFS/Backup |
+| DAS     | Lenovo SA120  | -          | -          | 72TB       | -    | -            | ZFS - Raidz2   |
+| PiKVM   | Raspberry Pi4 | Cortex A72 | 64GB mSD   | -          | 4GB  | PiKVM (Arch) | KVM            |
 
 ### Networking/UPS Hardware
 
