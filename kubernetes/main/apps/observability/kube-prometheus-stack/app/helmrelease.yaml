@@ -41,9 +41,11 @@ spec:
         hosts:
           - alertmanager.${SECRET_DOMAIN}
       alertmanagerSpec:
-        replicas: 1
-        useExistingSecret: true
-        configSecret: alertmanager-secret
+        alertmanagerConfiguration:
+          name: alertmanager
+          global:
+            resolveTimeout: 5m
+        externalUrl: https://alertmanager.${SECRET_DOMAIN}
         storage:
           volumeClaimTemplate:
             spec:
