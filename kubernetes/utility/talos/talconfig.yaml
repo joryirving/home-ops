@@ -121,12 +121,12 @@ patches:
         devices.system.cpu.cpu15.cpufreq.energy_performance_preference: balance_power
 
   # # Mount 2nd disk for democratic-csi Storage
-  # - |-
-  #   machine:
-  #     disks:
-  #     - device: /dev/nvme0n1
-  #       partitions:
-  #         - mountpoint: /var/lib/csi-local-hostpath
+  - |-
+    machine:
+      disks:
+      - device: /dev/nvme0n1
+        partitions:
+          - mountpoint: /var/lib/csi-local-hostpath
 
   # # Mount democratic-csi storage in kubelet
   - |-
@@ -137,8 +137,6 @@ patches:
             type: bind
             source: /var/lib/csi-local-hostpath
             options: ["bind", "rshared", "rw"]
-
-
 
   # # Disable predictable NIC naming
   # - |-
