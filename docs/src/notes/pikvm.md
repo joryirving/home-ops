@@ -71,6 +71,9 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
           wol_server5:
             type: wol
             mac: 70:b5:e8:6d:35:fa
+          wol_server6:
+            type: wol
+            mac: 58:47:ca:7a:dc:b5
           reboot:
             type: cmd
             cmd: ["/usr/bin/sudo", "reboot"]
@@ -171,6 +174,11 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             pin: 6
             mode: output
             switch: false
+          server6_wol:
+            driver: wol_server6
+            pin: 0
+            mode: output
+            switch: false
           server7_led:
             driver: tes
             pin: 7
@@ -201,7 +209,7 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             - ["#Hutao", "server3_led", "server3_btn | KVM", "server3_wol | WOL"]
             - ["#Navia", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
             - ["#Yelan", "server5_led", "server5_btn | KVM", "server5_wol | WOL"]
-            - ["#6", "server6_led", "server6_btn | KVM"]
+            - ["#Voyager", "server6_led", "server6_btn | KVM", "server6_wol | WOL"]
             - ["#7", "server7_led", "server7_btn | KVM"]
     ```
 
