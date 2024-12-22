@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app overseerr
+  name: &app jellyseerr
 spec:
   interval: 30m
   chart:
@@ -27,22 +27,22 @@ spec:
       namespace: rook-ceph
   values:
     controllers:
-      overseerr:
+      jellyseerr:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: ghcr.io/sct/overseerr
-              tag: 1.33.2
+              repository: docker.io/fallenbagel/jellyseerr
+              tag: 2.1.0@sha256:af5563771964282e5bfb6a4f30b05c75c8d30661a920f0399086f575217d0573
             env:
               TZ: ${TIMEZONE}
             resources:
               requests:
-                cpu: 15m
-                memory: 350M
+                cpu: 10m
+                memory: 350Mi
               limits:
-                memory: 600M
+                memory: 600Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -63,12 +63,12 @@ spec:
         annotations:
           gethomepage.dev/enabled: "true"
           gethomepage.dev/group: Video
-          gethomepage.dev/name: Overseerr
-          gethomepage.dev/icon: overseerr.png
+          gethomepage.dev/name: jellyseerr
+          gethomepage.dev/icon: jellyseerr.png
           gethomepage.dev/description: Media Request Management
-          gethomepage.dev/widget.type: overseerr
-          gethomepage.dev/widget.url: http://overseerr.media:5055
-          gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_OVERSEERR_TOKEN}}` }}"
+          gethomepage.dev/widget.type: jellyseerr
+          gethomepage.dev/widget.url: http://jellyseerr.media:5055
+          gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_JELLYSEERR_TOKEN}}` }}"
         hosts:
           - host: requests.${SECRET_DOMAIN}
             paths:
@@ -81,3 +81,13 @@ spec:
         existingClaim: *app
         globalMounts:
           - path: /app/config
+      cache:
+        existingClaim: jellyseerr-cache
+        globalMounts:
+          - path: /app/config/cache
+      logs:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config/logs
+      tmp:
+        type: emptyDir
