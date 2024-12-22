@@ -3,10 +3,9 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app kube-prometheus-stack
+  name: kube-prometheus-stack
 spec:
   interval: 30m
-  timeout: 15m
   chart:
     spec:
       chart: kube-prometheus-stack
@@ -38,14 +37,13 @@ spec:
         enabled: true
         pathType: Prefix
         ingressClassName: internal
-        hosts:
-          - alertmanager-utility.${SECRET_DOMAIN}
+        hosts: ["alertmanager-utility.${SECRET_DOMAIN}"]
       alertmanagerSpec:
         alertmanagerConfiguration:
           name: alertmanager
           global:
             resolveTimeout: 5m
-        externalUrl: https://lertmanager-utility.${SECRET_DOMAIN}
+        externalUrl: https://alertmanager-utility.${SECRET_DOMAIN}
         storage:
           volumeClaimTemplate:
             spec:
@@ -58,35 +56,42 @@ spec:
       forceDeployDashboards: true
       sidecar:
         dashboards:
+          annotations:
+            grafana_folder: Kubernetes
           multicluster:
             etcd:
               enabled: true
     kubeApiServer:
-      enabled: true
-    kubelet:
-      enabled: true
-    kubeControllerManager:
-      enabled: true
-      endpoints: &cp
-        - 10.69.1.121
-    kubeEtcd:
-      enabled: true
-      endpoints: *cp
+      serviceMonitor:
+        selector:
+          k8s-app: kube-apiserver
     kubeScheduler:
-      enabled: true
-      endpoints: *cp
+      service:
+        selector:
+          k8s-app: kube-scheduler
+    kubeControllerManager: &kubeControllerManager
+      service:
+        selector:
+          k8s-app: kube-controller-manager
+    kubeEtcd:
+      <<: *kubeControllerManager # etcd runs on control plane nodes
     kubeProxy:
       enabled: false
-    kubeStateMetrics:
-      enabled: true
     kube-state-metrics:
       fullnameOverride: kube-state-metrics
       metricLabelsAllowlist:
         - pods=[*]
         - deployments=[*]
         - persistentvolumeclaims=[*]
-    nodeExporter:
-      enabled: true
+      prometheus:
+        monitor:
+          enabled: true
+          relabelings:
+            - action: replace
+              regex: (.*)
+              replacement: $1
+              sourceLabels: ["__meta_kubernetes_pod_node_name"]
+              targetLabel: kubernetes_node
     prometheus-node-exporter:
       fullnameOverride: node-exporter
       prometheus:
@@ -98,16 +103,36 @@ spec:
               replacement: $1
               sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: kubernetes_node
+    additionalPrometheusRulesMap:
+      dockerhub-rules:
+        groups:
+          - name: dockerhub
+            rules:
+              - alert: DockerhubRateLimitRisk
+                annotations:
+                  summary: Kubernetes cluster Dockerhub rate limit risk
+                expr: count(time() - container_last_seen{image=~"(docker.io).*",container!=""} < 30) > 100
+                labels:
+                  severity: critical
+      oom-rules:
+        groups:
+          - name: oom
+            rules:
+              - alert: OomKilled
+                annotations:
+                  summary: Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ $value }} times in the last 10 minutes.
+                expr: (kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1
+                labels:
+                  severity: critical
     prometheus:
       ingress:
         enabled: true
         ingressClassName: internal
         pathType: Prefix
-        hosts:
-          - prometheus-utility.${SECRET_DOMAIN}
+        hosts: ["prometheus-utility.${SECRET_DOMAIN}"]
       prometheusSpec:
-        scrapeInterval: 1m # Must match interval in Grafana Helm chart
         enableAdminAPI: true
+        walCompression: true
         enableFeatures:
           - memory-snapshot-on-shutdown
         externalLabels:
@@ -117,20 +142,18 @@ spec:
             cpu: 100m
           limits:
             memory: 1500Mi
-        replicaExternalLabelName: __replica__
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false
-        retention: 2d
-        retentionSize: 15GB
-        replicas: 1
+        retention: 30d
+        retentionSize: 50GB
         storageSpec:
           volumeClaimTemplate:
             spec:
               storageClassName: local-hostpath
               resources:
                 requests:
-                  storage: 20Gi
+                  storage: 50Gi
     cleanPrometheusOperatorObjectNames: true
