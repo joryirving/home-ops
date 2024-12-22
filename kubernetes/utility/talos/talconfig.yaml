@@ -64,14 +64,14 @@ patches:
         disableSearchDomain: true
 
   # Enable cluster discovery
-  # - |-
-  #   cluster:
-  #     discovery:
-  #       registries:
-  #         kubernetes:
-  #           disabled: true
-  #         service:
-  #           disabled: false
+  - |-
+    cluster:
+      discovery:
+        registries:
+          kubernetes:
+            disabled: false
+          service:
+            disabled: true
 
   # Configure kubelet
   - |-
@@ -164,6 +164,9 @@ controlPlane:
     - |-
       cluster:
         allowSchedulingOnMasters: true
+        apiServer:
+          extraArgs:
+            feature-gates: AuthorizeNodeWithSelectors=false
         controllerManager:
           extraArgs:
             bind-address: 0.0.0.0
