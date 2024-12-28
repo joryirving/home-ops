@@ -8,7 +8,7 @@ on:
     - cron: "0 0 * * *" # Every day at midnight
   push:
     branches: ["main"]
-    paths: [".github/workflows/publish-schemas.yaml"]
+    paths: [".github/workflows/schemas.yaml"]
 
 jobs:
   publish:
@@ -31,7 +31,7 @@ jobs:
           BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
           BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
           KUBECONFIG: op://Kubernetes/kubernetes/KUBECONFIG_BASE4
-          CLOUDFLARE_API_KEY: op://Kubernetes/cloudflare/CLOUDFLARE_API_KEY_GHA
+          CLOUDFLARE_API_TOKEN: op://Kubernetes/cloudflare/CLOUDFLARE_API_TOKEN_GHA
           CLOUDFLARE_ACCOUNT_ID: op://Kubernetes/cloudflare/CLOUDFLARE_ACCOUNT_TAG
 
       - name: Generate Token
@@ -46,12 +46,12 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-
-      - name: Setup Workflow Tools
-        shell: bash
-        run: brew install kubernetes-cli
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+        with:
+          mise_toml: |
+            [tools]
+            "aqua:kubernetes/kubectl" = "latest"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -83,7 +83,7 @@ jobs:
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ env.CLOUDFLARE_API_KEY }}
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: /home/runner/.datree/crdSchemas
           command: pages deploy --project-name=kube-schemas --branch main .

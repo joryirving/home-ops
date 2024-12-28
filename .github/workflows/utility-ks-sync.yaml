@@ -40,13 +40,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
 
-      - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-
-      - name: Setup Workflow Tools
-        shell: bash
-        run: brew install fluxcd/tap/flux
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+        with:
+          mise_toml: |
+            [tools]
+            "aqua:fluxcd/flux2" = "latest"
+            "aqua:mikefarah/yq" = "latest"
 
       - name: Write kubeconfig
         id: kubeconfig

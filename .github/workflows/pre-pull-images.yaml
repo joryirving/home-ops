@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: "Flux Image Test"
+name: "Pre-pull Images"
 
 on:
   pull_request:
@@ -94,9 +94,12 @@ jobs:
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@master
 
-      - name: Setup Workflow Tools
-        shell: bash
-        run: brew install jo yq
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+        with:
+          mise_toml: |
+            [tools]
+            "aqua:mikefarah/yq" = "latest"
 
       - name: Checkout Default Branch
         uses: actions/checkout@v4
@@ -147,16 +150,16 @@ jobs:
         id: extract-images
         shell: bash
         run: |
-          images=$(jo -a $(grep -vf default.txt pull.txt))
+          images=$(jq --compact-output --raw-input --null-input '[inputs]' < <(grep -vf default.txt pull.txt))
           echo "images=${images}" >> $GITHUB_OUTPUT
           echo "${images}"
           echo "### Images" >> $GITHUB_STEP_SUMMARY
-          echo "${images}" | jq -r 'to_entries[] | "* \(.value)"' >> $GITHUB_STEP_SUMMARY
+          echo "${images}" | jq --raw-output 'to_entries[] | "* \(.value)"' >> $GITHUB_STEP_SUMMARY
 
-  test-images:
+  pre-pull-images:
     if: ${{ needs.extract-images.outputs.matrix != '[]' }}
-    name: Test images
-    runs-on: ubuntu-latest
+    name: Pre-pull Images
+    runs-on: ["gha-runner-scale-set"]
     needs: ["extract-images"]
     strategy:
       matrix:
@@ -164,14 +167,21 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
-      - name: Inspect Image
-        run: docker manifest inspect ${{ matrix.images }}
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+        with:
+          mise_toml: |
+            [tools]
+            "aqua:siderolabs/talos" = "latest"
+
+      - name: Pre-pull Image
+        run: talosctl -n $NODE_IP image pull ${{ matrix.images }}
 
   # Summarize matrix https://github.community/t/status-check-for-a-matrix-jobs/127354/7
-  test-images-success:
+  pre-pull-images-success:
     if: ${{ always() }}
-    needs: ["test-images"]
-    name: Test Images Successful
+    needs: ["pre-pull-images"]
+    name: Pre-pull Images Successful
     runs-on: ubuntu-latest
     steps:
       - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
