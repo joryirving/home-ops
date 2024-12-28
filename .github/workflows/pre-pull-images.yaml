@@ -69,7 +69,8 @@ jobs:
       max-parallel: 4
       fail-fast: false
     outputs:
-      matrix: ${{ steps.extract-images.outputs.images }}
+      images: ${{ steps.extract-images.outputs.images }}
+      paths: ${{ fromJSON(needs.changed-clusters.outputs.matrix) }}
     steps:
       - name: Configure 1password
         uses: 1password/load-secrets-action/configure@v2
@@ -90,9 +91,6 @@ jobs:
         with:
           app-id: ${{ env.BOT_APP_ID }}
           private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
-
-      - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
 
       - name: Setup mise
         uses: jdx/mise-action@v2
@@ -157,16 +155,35 @@ jobs:
           echo "${images}" | jq --raw-output 'to_entries[] | "* \(.value)"' >> $GITHUB_STEP_SUMMARY
 
   pre-pull-images:
-    if: ${{ needs.extract-images.outputs.matrix != '[]' }}
+    if: ${{ needs.extract-images.outputs.images != '[]' }}
     name: Pre-pull Images
     runs-on: ["gha-runner-scale-set"]
     needs: ["extract-images"]
     strategy:
       matrix:
-        images: ${{ fromJSON(needs.extract-images.outputs.matrix) }}
+        images: ${{ fromJSON(needs.extract-images.outputs.images) }}
+        paths: ${{ fromJSON(needs.extract-images.outputs.paths) }}
       max-parallel: 4
       fail-fast: false
     steps:
+      - name: Grab Cluster Name
+        run: |
+          cluster="${{ matrix.paths }}"
+          cluster="${cluster/kubernetes\//}"
+          echo "cluster=${cluster^^}" >> $GITHUB_ENV
+
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@v2
+        with:
+          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
+
+      - name: Get Secrets
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          TALOSCONFIG: op://Kubernetes/kubernetes/TALOSCONFIG_${{ env.cluster }}
+
       - name: Setup mise
         uses: jdx/mise-action@v2
         with:
