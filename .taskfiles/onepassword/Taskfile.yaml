@@ -18,6 +18,7 @@ tasks:
     cmds:
       - op item edit kubernetes KUBECONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/kubeconfig)" &>/dev/null
       - op item edit kubernetes TALOSCONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_MAIN_BASE64[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig | base64 -w 0)" &>/dev/null
     preconditions:
       - which op
 
@@ -26,6 +27,7 @@ tasks:
     cmds:
       - op item edit kubernetes KUBECONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}/kubernetes/utility/kubeconfig)" &>/dev/null
       - op item edit kubernetes TALOSCONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}/kubernetes/utility/talos/clusterconfig/talosconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_UTILITY_BASE64[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/talos/clusterconfig/talosconfig | base64 -w 0)" &>/dev/null
     preconditions:
       - which op
 
