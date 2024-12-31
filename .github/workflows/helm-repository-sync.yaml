@@ -52,8 +52,10 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
-      - name: Setup mise
+      - name: Setup Workflow Tools
         uses: jdx/mise-action@v2
+        env:
+          GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
           mise_toml: |
             [tools]
