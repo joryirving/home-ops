@@ -25,6 +25,8 @@ spec:
   dependsOn:
     - name: gha-runner-scale-set-controller
       namespace: actions-runner-system
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
   valuesFrom:
     - targetPath: githubConfigSecret.github_token
       kind: Secret
@@ -37,13 +39,21 @@ spec:
     minRunners: 1
     maxRunners: 10
     containerMode:
-      type: dind
+      type: kubernetes
+      kubernetesModeWorkVolumeClaim:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: ceph-block
+        resources:
+          requests:
+            storage: 20Gi
     template:
       spec:
         containers:
           - name: runner
             image: ghcr.io/joryirving/actions-runner:2.321.0@sha256:4a11ad0cda33fba7e3fc76effdfdb1ae74b054cd0376e1fbe0b9c9f4e1440da6
             command: ["/home/runner/run.sh"]
+        securityContext:
+          fsGroup: 123
     controllerServiceAccount:
       name: gha-runner-scale-set-controller
       namespace: actions-runner-system
