@@ -64,15 +64,15 @@ patches:
         disableSearchDomain: true
 
   # Enable cluster discovery
-  - |-
-    cluster:
-      discovery:
-        enabled: true
-        registries:
-          kubernetes:
-            disabled: false
-          service:
-            disabled: true
+  # - |-
+  #   cluster:
+  #     discovery:
+  #       enabled: true
+  #       registries:
+  #         kubernetes:
+  #           disabled: false
+  #         service:
+  #           disabled: true
 
   # Configure kubelet
   - |-
@@ -100,6 +100,7 @@ patches:
         net.ipv4.tcp_rmem: 4096 87380 33554432 # 2.5Gb/s
         net.ipv4.tcp_wmem: 4096 65536 33554432 # 2.5Gb/s
         net.ipv4.tcp_window_scaling: 1         # 2.5Gb/s
+        vm.nr_hugepages: "1024"
 
   # Custom sysfs settings
   - |-
@@ -166,9 +167,6 @@ controlPlane:
     - |-
       cluster:
         allowSchedulingOnMasters: true
-        apiServer:
-          extraArgs:
-            feature-gates: AuthorizeNodeWithSelectors=false
         controllerManager:
           extraArgs:
             bind-address: 0.0.0.0
