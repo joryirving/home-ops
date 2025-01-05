@@ -39,11 +39,13 @@ spec:
             env:
               ## Container Settings
               TZ: ${TIMEZONE}
-              SERVERNAME: "Smurf-VRising"
+              SERVERNAME: "Smurf-Rising"
               GAMEPORT: &game 9876
               QUERYPORT: &query 9877
               MAX_USERS: 4
               MAX_ADMIN: 2
+              UID: &uid 1000
+              GID: &gid 1000
             # envFrom:
             # - secretRef:
             #     name: vrising-secret
@@ -62,9 +64,9 @@ spec:
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsUser: *uid
+        runAsGroup: *gid
+        fsGroup: *gid
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: { type: RuntimeDefault }
     service:
