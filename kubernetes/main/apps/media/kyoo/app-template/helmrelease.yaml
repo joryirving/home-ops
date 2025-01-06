@@ -40,7 +40,7 @@ spec:
               MEILI_MASTER_KEY:
                 valueFrom:
                   secretKeyRef:
-                    name: kyoo-secret
+                    name: &secret kyoo-secret
                     key: MEILI_MASTER_KEY
             probes:
               liveness: &searchprobes
@@ -76,7 +76,7 @@ spec:
               tag: 4-alpine
             envFrom: &envFrom
               - secretRef:
-                  name: kyoo-secret
+                  name: *secret
               - configMapRef:
                   name: kyoo-config
             resources:
@@ -95,7 +95,7 @@ spec:
           01-migrations:
             envFrom:
               - secretRef:
-                  name: kyoo-secret
+                  name: *secret
             image:
               repository: ghcr.io/zoriya/kyoo_migrations
               tag: 4.7.0@sha256:564c05b0c166c8f20ad52382dc1adf64170274183a154dcefc9ff613c4424a18
@@ -108,7 +108,7 @@ spec:
               TRANSCODER_URL: http://kyoo-transcoder:7666
             envFrom:
               - secretRef:
-                  name: kyoo-secret
+                  name: *secret
             resources:
               requests:
                 cpu: 10m
@@ -200,7 +200,7 @@ spec:
           app:
             image:
               repository: ghcr.io/zoriya/kyoo_transcoder
-              tag: 4.6.0@sha256:30c5ae13dc7b9934e5eb45c345eaf16db750861c6ef7d8b92afed83e6298c524
+              tag: 4.7.0@sha256:30c5ae13dc7b9934e5eb45c345eaf16db750861c6ef7d8b92afed83e6298c524
             envFrom: *envFrom
             resources:
               requests:
