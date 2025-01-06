@@ -18,7 +18,7 @@ tasks:
     cmds:
       - task: down
       - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.CLUSTER_DIR}}/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml
-      - talosctl --nodes {{.HOSTNAME}} health --wait-timeout=10m --server=false
+      - talosctl --nodes {{.HOSTNAME}} health
       - task: up
     vars:
       MODE: '{{.MODE | default "auto"}}'
@@ -68,7 +68,7 @@ tasks:
     cmds:
       - task: down
       - talosctl --nodes {{.HOSTNAME}} reboot
-      - talosctl --nodes {{.HOSTNAME}} health --wait-timeout=10m --server=false
+      - talosctl --nodes {{.HOSTNAME}} health
       - task: up
     requires:
       vars: [CLUSTER, HOSTNAME]
