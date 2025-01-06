@@ -8,10 +8,11 @@ spec:
   interval: 15m
   chart:
     spec:
-      chart: ./chart
+      chart: kyoo
+      version: 4.7.1
       sourceRef:
-        kind: GitRepository
-        name: kyoo
+        kind: HelmRepository
+        name: zoriya
         namespace: flux-system
   install:
     createNamespace: true
@@ -22,114 +23,91 @@ spec:
       strategy: rollback
       retries: 3
   values:
-    meilisearch:
-      enabled: true
-    postgresql:
-      enabled: true
-      auth:
-        secretKeys:
-          adminPasswordKey: POSTGRES_PASSWORD
-          userPasswordKey: POSTGRES_PASSWORD
-    rabbitmq:
-      enabled: true
     global:
       meilisearch:
         infra:
-          # DOES NOT SUPPORT SPECIFYING KEY.  MUST BE NAMED `MEILI_MASTER_KEY`
-          existingSecret: &secret kyoo-chart-secret
+          existingSecret: &secret kyoo-secret
         kyoo_back:
           masterkeyKey: MEILI_MASTER_KEY
           existingSecret: *secret
       postgres:
-        #infra is only used by subchart deployment
         infra:
-          # subchart does not accept this global value in one place
-          # if updating be sure to also update postgresql.auth.username
-          user: kyoo_all
-          passwordKey: POSTGRES_PASSWORD
-          existingSecret: *secret
+          user: kyoo-all
         kyoo_back:
-          host: kyoo-chart-postgresql
-          port: 5432
-          database: kyoo_back
-          kyoo_migrations:
+          host: &host postgres-pgbouncer.database.svc
+          kyoo_migrations: &psql
             userKey: POSTGRES_USER
             passwordKey: POSTGRES_PASSWORD
             existingSecret: *secret
-          kyoo_back:
-            userKey: POSTGRES_USER
-            passwordKey: POSTGRES_PASSWORD
-            existingSecret: *secret
+          kyoo_back: *psql
         kyoo_transcoder:
-          host: kyoo-chart-postgresql
-          port: 5432
+          host: *host
           database: kyoo_transcoder
-          # POSTGRES_SCHEMA disabled means application will not create the schema
-          # and will instead use the user's search path
-          schema: disabled
-          kyoo_transcoder:
-            userKey: POSTGRES_USER
-            passwordKey: POSTGRES_PASSWORD
-            existingSecret: *secret
+          sslmode: require
+          kyoo_transcoder: *psql
       rabbitmq:
-        enabled: true
-        host: kyoo-rabbitmq
-        port: 5672
-        #infra is only used by subchart deployment
         infra:
           passwordKey: RABBITMQ_PASS
           keyErlangCookie: RABBITMQ_COOKIE
           existingSecret: *secret
-        kyoo_autosync:
+        kyoo_autosync: &rabbit
           userKey: RABBITMQ_USER
           passwordKey: RABBITMQ_PASS
           existingSecret: *secret
-        kyoo_back:
-          userKey: RABBITMQ_USER
-          passwordKey: RABBITMQ_PASS
-          existingSecret: *secret
-        kyoo_matcher:
-          userKey: RABBITMQ_USER
-          passwordKey: RABBITMQ_PASS
-          existingSecret: *secret
-        kyoo_scanner:
-          userKey: RABBITMQ_USER
-          passwordKey: RABBITMQ_PASS
-          existingSecret: *secret
+        kyoo_back: *rabbit
+        kyoo_matcher: *rabbit
+        kyoo_scanner: *rabbit
 
     kyoo:
       address: https://kyoo-chart.${SECRET_DOMAIN}
-      requireAccountVerification: true
-      defaultPermissions: "overall.read,overall.play"
-      unloggedPermissions: ""
-      libraryIgnorePattern: ""
-      languages: "en"
-      # hardware acceleration profile (valid values: disabled, vaapi, qsv, nvidia)
-      transcoderAcceleration: vaapi
-      # the preset used during transcode. faster means worst quality, you can probably use a slower preset with hwaccels
-      # warning: using vaapi hwaccel disable presets (they are not supported).
-      transcoderPreset: fast
+      transcoderAcceleration: vaapi # hardware acceleration profile (valid values: disabled, vaapi, qsv, nvidia)
       apikey:
         existingSecret: *secret
-        apikeyKey: kyoo_apikeys
-      oidc:
-        enabled: false
-        existingSecret: *secret
-        authMethod: ClientSecretBasic
+        apikeyKey: KYOO_API_KEY
+      oidc_providers:
+        - name: Authentik
+          existingSecret: *secret
+          clientIdKey: OIDC_AUTHENTIK_CLIENTID
+          clientSecretKey: OIDC_AUTHENTIK_SECRET
+          logo: https://sso.${SECRET_DOMAIN}/static/dist/assets/icons/icon.png
+          authorizationAddress: https://sso.${SECRET_DOMAIN}/application/o/authorize/
+          tokenAddress: https://sso.${SECRET_DOMAIN}/application/o/token/
+          profileAddress: https://sso.${SECRET_DOMAIN}/application/o/userinfo/
+          scope: "openid email profile"
+          authMethod: ClientSecretBasic
+
+    media:
+      volumes:
+        - name: media
+          nfs:
+            server: voyager.internal
+            path: ${SECRET_NFS_DATA:=temp}
+      volumeMounts:
+        - mountPath: &path /media
+          name: media
+          readOnly: true
+      baseMountPath: *path
 
     contentdatabase:
-      # TheMovieDB
       tmdb:
         apikeyKey: TMDB_API_KEY
         existingSecret: *secret
-      # TVDatabase
       tvdb:
         apikeyKey: TVDB_APIKEY
         pinKey: TVDB_PIN
         existingSecret: *secret
 
+    back:
+      persistence:
+        existingClaim: *app
+
     ingress:
       enabled: true
       ingressClassName: external
-      host: kyoo-chart.${SECRET_DOMAIN}
+      host: kyoo.${SECRET_DOMAIN}
       tls: true
+
+    meilisearch:
+      enabled: true
+    rabbitmq:
+      enabled: true
