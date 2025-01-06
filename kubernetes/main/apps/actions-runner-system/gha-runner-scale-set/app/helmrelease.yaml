@@ -44,10 +44,10 @@ spec:
       type: kubernetes
       kubernetesModeWorkVolumeClaim:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: ceph-block
+        storageClassName: local-hostpath
         resources:
           requests:
-            storage: 20Gi
+            storage: 25Gi
     template:
       spec:
         containers:
@@ -57,8 +57,6 @@ spec:
             env:
               - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
                 value: "false"
-        securityContext:
-          fsGroup: 123
     controllerServiceAccount:
       name: gha-runner-scale-set-controller
       namespace: actions-runner-system
