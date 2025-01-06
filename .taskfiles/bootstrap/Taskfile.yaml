@@ -63,7 +63,7 @@ tasks:
     preconditions:
       - talosctl config info
       - test -f {{.CLUSTER_DIR}}/talos/clusterconfig/talosconfig
-      - which talosctl
+      - which talosctl jq
 
   apps:
     desc: Bootstrap Apps [CLUSTER=main]
@@ -92,7 +92,7 @@ tasks:
         sh: talosctl config info --output json | jq --raw-output '.nodes | length'
     preconditions:
       - test -f {{.BOOTSTRAP_RESOURCES_DIR}}/wipe-rook.yaml.j2
-      - which kubectl minijinja-cli stern talosctl
+      - which kubectl minijinja-cli stern talosctl jq
 
 
   flux:
@@ -113,4 +113,4 @@ tasks:
     requires:
       vars: [CLUSTER]
     preconditions:
-      - which curl flux kubectl ls bws
+      - which curl flux kubectl ls op jq
