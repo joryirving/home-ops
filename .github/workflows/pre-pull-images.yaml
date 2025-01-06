@@ -99,7 +99,6 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@master
 
       - name: Setup Workflow Tools
-        shell: bash
         run: brew install jo yq
 
       - name: Checkout Default Branch
@@ -136,20 +135,17 @@ jobs:
             --output-file pull.yaml
 
       - name: Filter Default Branch Results
-        shell: bash
         run: |
           yq -r '[.. | .images? | select(. != null)] | flatten | sort | unique | .[]' \
               default.yaml > default.txt
 
       - name: Filter Pull Request Branch Results
-        shell: bash
         run: |
           yq -r '[.. | .images? | select(. != null)] | flatten | sort | unique | .[]' \
               pull.yaml > pull.txt
 
       - name: Compare Default and Pull Request Images
         id: extract-images
-        shell: bash
         run: |
           images=$(jq --compact-output --raw-input --null-input '[inputs]' < <(grep -vf default.txt pull.txt))
           echo "images=${images}" >> $GITHUB_OUTPUT
@@ -198,7 +194,6 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@master
 
       - name: Setup Workflow Tools
-        shell: bash
         run: brew install siderolabs/tap/talosctl
 
       - name: Pre-pull Image
@@ -215,6 +210,6 @@ jobs:
     name: Pre-pull Images Successful
     runs-on: ubuntu-latest
     steps:
-      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+      - if: ${{ !contains(needs.*.result, 'success') }}
         name: Check matrix status
         run: exit 1

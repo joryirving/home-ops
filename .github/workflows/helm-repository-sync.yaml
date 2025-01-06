@@ -84,7 +84,6 @@ jobs:
         name: Sync Helm Repository
         env:
           KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
-        shell: bash
         run: |
           declare -a repos=()
           for f in ${{ steps.changed-files.outputs.all_changed_and_modified_files }}; do
@@ -106,7 +105,6 @@ jobs:
         name: Sync Helm Repository
         env:
           KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
-        shell: bash
         run: |
           flux \
               --context ${{ github.event.inputs.clusterName }} \
