@@ -26,12 +26,8 @@ spec:
     keepHistory: false
   values:
     fullnameOverride: *app
-    image:
-      repository: ghcr.io/joryirving/smartctl_exporter
-      tag: 0.13.0@sha256:a31f74f50c0e3a22cc1bb474ea8ff0d5d4c4ca3be5409eaf24d8894ff74b0921
     config:
-      devices:
-        - /dev/sda
+      device_include: /dev/[nvme|sd].*
     serviceMonitor:
       enabled: true
       relabelings:
@@ -39,4 +35,3 @@ spec:
           regex: (pod)
     prometheusRules:
       enabled: false
-    tolerations: {}
