@@ -28,7 +28,7 @@ jobs:
         env:
           BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
           BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
-          KUBECONFIG: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
+          KUBECONFIG_BASE64: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
 
       - name: Generate Token
         uses: actions/create-github-app-token@v1
@@ -42,21 +42,17 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Setup mise
-        uses: jdx/mise-action@v2
-        env:
-          GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
-        with:
-          mise_toml: |
-            [tools]
-            "aqua:fluxcd/flux2" = "latest"
-            "aqua:mikefarah/yq" = "latest"
+      - name: Setup Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Setup Workflow Tools
+        run: brew install fluxcd/tap/flux
 
       - name: Write kubeconfig
         id: kubeconfig
         uses: timheuer/base64-to-file@v1
         with:
-          encodedString: ${{ env.KUBECONFIG }}
+          encodedString: ${{ env.KUBECONFIG_BASE64 }}
           fileName: kubeconfig
 
       - name: Sync Kustomization
