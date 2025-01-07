@@ -18,9 +18,6 @@ repositories:
   - name: coredns
     url: https://coredns.github.io/helm
 
-  - name: postfinance
-    url: https://postfinance.github.io/kubelet-csr-approver
-
 releases:
   - name: kube-prometheus-stack-crds
     namespace: observability
@@ -36,7 +33,8 @@ releases:
       - commonLabels:
           helm.toolkit.fluxcd.io/name: *name
           helm.toolkit.fluxcd.io/namespace: *namespace
-    needs: ["observability/kube-prometheus-stack-crds"]
+    needs:
+      - observability/kube-prometheus-stack-crds
 
   - name: &name coredns
     namespace: &namespace kube-system
@@ -47,11 +45,39 @@ releases:
       - customLabels:
           helm.toolkit.fluxcd.io/name: *name
           helm.toolkit.fluxcd.io/namespace: *namespace
-    needs: ["kube-system/cilium"]
+    needs:
+      - kube-system/cilium
 
   - name: spegel
     namespace: kube-system
     chart: oci://ghcr.io/spegel-org/helm-charts/spegel
     version: v0.0.28
     values: ["../../apps/kube-system/spegel/app/helm-values.yaml"]
-    needs: ["kube-system/coredns"]
+    needs:
+      - kube-system/cilium
+
+  - name: &name flux
+    namespace: &namespace flux-system
+    chart: oci://ghcr.io/fluxcd-community/charts/flux2
+    version: 2.14.0
+    values:
+      - ../../apps/flux-system/flux/app/helm-values.yaml
+      - helmController:
+          labels:
+            helm.toolkit.fluxcd.io/name: *name
+            helm.toolkit.fluxcd.io/namespace: *namespace
+      - kustomizeController:
+          labels:
+            helm.toolkit.fluxcd.io/name: *name
+            helm.toolkit.fluxcd.io/namespace: *namespace
+      - notificationController:
+          labels:
+            helm.toolkit.fluxcd.io/name: *name
+            helm.toolkit.fluxcd.io/namespace: *namespace
+      - sourceController:
+          labels:
+            helm.toolkit.fluxcd.io/name: *name
+            helm.toolkit.fluxcd.io/namespace: *namespace
+    needs:
+      - kube-system/coredns
+      - kube-system/spegel

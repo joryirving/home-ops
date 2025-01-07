@@ -3,18 +3,18 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app flux-webhooks
+  name: &app flux
   namespace: flux-system
 spec:
   targetNamespace: flux-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/main/apps/flux-system/addons/webhooks
-  prune: true
+  path: ./kubernetes/utility/apps/flux-system/flux/app
+  prune: false # never should be deleted
   sourceRef:
     kind: GitRepository
     name: home-kubernetes
-  wait: true
+  wait: false
   interval: 30m
   timeout: 5m
