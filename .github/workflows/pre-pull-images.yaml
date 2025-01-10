@@ -102,18 +102,12 @@ jobs:
           token: "${{ steps.app-token.outputs.token }}"
           ref: "${{ matrix.branches == 'default' && github.event.repository.default_branch || '' }}"
 
-      - name: Grab Cluster Name
-        run: |
-          cluster="${{ matrix.paths }}"
-          cluster="${cluster/kubernetes\//}"
-          echo "cluster=${cluster}" >> $GITHUB_ENV
-
       - name: Gather Images
         uses: docker://ghcr.io/allenporter/flux-local:v7.0.0
         with:
           args: >-
             get cluster
-            --path /github/workspace/kubernetes/${{ env.cluster }}/flux
+            --path /github/workspace/${{ matrix.paths }}/flux
             --enable-images
             --output yaml
             --output-file images.yaml
