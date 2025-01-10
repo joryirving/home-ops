@@ -73,7 +73,6 @@ jobs:
         paths: ${{ fromJSON(needs.changed-clusters.outputs.matrix) }}
       fail-fast: false
     outputs:
-      paths: ${{ needs.changed-clusters.outputs.matrix }}
       default: ${{ steps.extract-images.outputs.default }}
       pull: ${{ steps.extract-images.outputs.pull }}
     steps:
@@ -142,11 +141,11 @@ jobs:
     if: ${{ needs.compare-images.outputs.images != '[]' }}
     name: Pre-pull Images
     runs-on: ["gha-runner-scale-set"]
-    needs: ["compare-images"]
+    needs: ["compare-images", "changed-clusters"]
     strategy:
       matrix:
         images: ${{ fromJSON(needs.compare-images.outputs.images) }}
-        paths: ${{ fromJSON(needs.extract-images.outputs.paths) }}
+        paths: ${{ fromJSON(needs.changed-clusters.outputs.matrix) }}
       max-parallel: 4
       fail-fast: false
     steps:
