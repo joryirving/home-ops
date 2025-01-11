@@ -5,7 +5,7 @@ kind: Kustomization
 resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
-  - ./notifications.yaml
+  - ../../../shared/templates/flux/
   # Flux-Kustomizations
   - ./descheduler/ks.yaml
   - ./fstrim/ks.yaml
@@ -15,3 +15,11 @@ resources:
   - ./reloader/ks.yaml
   - ./spegel/ks.yaml
   - ./system-upgrade-controller/ks.yaml
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: not-used
+      namespace: kube-tools
+    unsetOnly: true

@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
+  - ../../../shared/templates/flux/
   # Flux-Kustomizations
   - ./actual/ks.yaml
   - ./atuin/ks.yaml
@@ -12,3 +13,11 @@ resources:
   - ./lubelog/ks.yaml
   - ./paperless/ks.yaml
   - ./redlib/ks.yaml
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: not-used
+      namespace: self-hosted
+    unsetOnly: true
