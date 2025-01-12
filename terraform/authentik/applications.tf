@@ -33,7 +33,7 @@ locals {
       client_id     = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_ID"]
       client_secret = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_SECRET"]
       group         = authentik_group.monitoring.name
-      icon_url      = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/grafana.png"
+      icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/grafana.png"
       redirect_uri  = "https://grafana.${var.cluster_domain}/login/generic_oauth"
       launch_url    = "https://grafana.${var.cluster_domain}/login/generic_oauth"
     },
@@ -65,7 +65,7 @@ locals {
       client_id     = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_ID"]
       client_secret = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_SECRET"]
       group         = authentik_group.home.name
-      icon_url      = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/paperless.png"
+      icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/paperless.png"
       redirect_uri  = "https://paperless.${var.cluster_domain}/accounts/oidc/authentik/login/callback/"
       launch_url    = "https://paperless.${var.cluster_domain}/"
     },
@@ -73,7 +73,7 @@ locals {
       client_id     = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_ID"]
       client_secret = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_SECRET"]
       group         = authentik_group.infrastructure.name
-      icon_url      = "https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/portainer.png"
+      icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/portainer.png"
       redirect_uri  = "https://portainer.${var.cluster_domain}/"
       launch_url    = "https://portainer.${var.cluster_domain}/"
     }
