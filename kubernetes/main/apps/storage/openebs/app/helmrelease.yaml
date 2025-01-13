@@ -22,15 +22,17 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
   values:
     localpv-provisioner:
       localpv:
         image:
           registry: quay.io/
+        basePath: &hostPath /var/openebs/local
       hostpathClass:
+        enabled: true
         name: local-hostpath
+        isDefaultClass: false
+        basePath: *hostPath
       helperPod:
         image:
           registry: quay.io/
