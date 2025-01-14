@@ -3,18 +3,20 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app echo-server
+  name: &app external-dns-unifi
   namespace: flux-system
 spec:
   targetNamespace: network
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/main/apps/network/echo-server/app
-  prune: true
+  dependsOn:
+    - name: external-secrets-stores
+  path: ./kubernetes/main/apps/network/internal/external-dns-unifi/app
+  prune: false
   sourceRef:
     kind: GitRepository
     name: flux-system
-  wait: false # no flux ks dependents
+  wait: true
   interval: 30m
   timeout: 5m
