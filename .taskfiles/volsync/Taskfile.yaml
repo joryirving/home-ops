@@ -40,7 +40,7 @@ tasks:
     cmds:
       - flux --namespace flux-system {{.STATE}} kustomization volsync
       - flux --namespace storage {{.STATE}} helmrelease volsync
-      - kubectl --namespace storage scale deployment volsync --replicas {{if eq .STATE "suspend"}}0{{else}}1{{end}}
+      - kubectl --namespace storage scale deployment volsync --replicas {{if eq .STATE "suspend"}}0{{else}}{{if eq .CLUSTER "main"}}2{{else}}1{{end}}{{end}}
     vars:
       STATE: '{{index .MATCH 0}}'
     requires:

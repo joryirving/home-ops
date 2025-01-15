@@ -87,7 +87,7 @@ resource "authentik_stage_prompt" "source-enrollment-prompt" {
 resource "authentik_stage_user_write" "enrollment-user-write" {
   name                     = "enrollment-user-write"
   create_users_as_inactive = false
-  create_users_group       = authentik_group.users.id
+  create_users_group       = authentik_group.default["users"].id
 }
 
 resource "authentik_stage_user_login" "source-enrollment-login" {
