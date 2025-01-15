@@ -37,14 +37,6 @@ locals {
       redirect_uri  = "https://grafana.${var.cluster_domain}/login/generic_oauth"
       launch_url    = "https://grafana.${var.cluster_domain}/login/generic_oauth"
     },
-    headscale = {
-      client_id     = module.onepassword_application["headscale"].fields["HEADSCALE_CLIENT_ID"]
-      client_secret = module.onepassword_application["headscale"].fields["HEADSCALE_CLIENT_SECRET"]
-      group         = "infrastructure"
-      icon_url      = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/headscale.png"
-      redirect_uri  = "https://headscale.${var.cluster_domain}/oidc/callback"
-      launch_url    = "https://headscale.${var.cluster_domain}/"
-    },
     kyoo = {
       client_id     = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_ID"]
       client_secret = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_SECRET"]
