@@ -24,7 +24,7 @@ locals {
     dashbrr = {
       client_id     = module.onepassword_application["dashbrr"].fields["DASHBRR_CLIENT_ID"]
       client_secret = module.onepassword_application["dashbrr"].fields["DASHBRR_CLIENT_SECRET"]
-      group         = authentik_group.monitoring.name
+      group         = "monitoring"
       icon_url      = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/dashbrr.png"
       redirect_uri  = "https://dashbrr.${var.cluster_domain}/api/auth/callback"
       launch_url    = "https://dashbrr.${var.cluster_domain}/api/auth/callback"
@@ -32,7 +32,7 @@ locals {
     grafana = {
       client_id     = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_ID"]
       client_secret = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_SECRET"]
-      group         = authentik_group.monitoring.name
+      group         = "monitoring"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/grafana.png"
       redirect_uri  = "https://grafana.${var.cluster_domain}/login/generic_oauth"
       launch_url    = "https://grafana.${var.cluster_domain}/login/generic_oauth"
@@ -40,7 +40,7 @@ locals {
     headscale = {
       client_id     = module.onepassword_application["headscale"].fields["HEADSCALE_CLIENT_ID"]
       client_secret = module.onepassword_application["headscale"].fields["HEADSCALE_CLIENT_SECRET"]
-      group         = authentik_group.infrastructure.name
+      group         = "infrastructure"
       icon_url      = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/headscale.png"
       redirect_uri  = "https://headscale.${var.cluster_domain}/oidc/callback"
       launch_url    = "https://headscale.${var.cluster_domain}/"
@@ -48,7 +48,7 @@ locals {
     kyoo = {
       client_id     = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_ID"]
       client_secret = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_SECRET"]
-      group         = authentik_group.home.name
+      group         = "home"
       icon_url      = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
       redirect_uri  = "https://kyoo.${var.cluster_domain}/api/auth/logged/authentik"
       launch_url    = "https://kyoo.${var.cluster_domain}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.cluster_domain}/login/callback"
@@ -56,7 +56,7 @@ locals {
     lubelog = {
       client_id     = module.onepassword_application["lubelog"].fields["LUBELOG_CLIENT_ID"]
       client_secret = module.onepassword_application["lubelog"].fields["LUBELOG_CLIENT_SECRET"]
-      group         = authentik_group.home.name
+      group         = "home"
       icon_url      = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
       redirect_uri  = "https://lubelog.${var.cluster_domain}/Login/RemoteAuth"
       launch_url    = "https://lubelog.${var.cluster_domain}/Login/RemoteAuth"
@@ -64,7 +64,7 @@ locals {
     paperless = {
       client_id     = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_ID"]
       client_secret = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_SECRET"]
-      group         = authentik_group.home.name
+      group         = "home"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/paperless.png"
       redirect_uri  = "https://paperless.${var.cluster_domain}/accounts/oidc/authentik/login/callback/"
       launch_url    = "https://paperless.${var.cluster_domain}/"
@@ -72,7 +72,7 @@ locals {
     portainer = {
       client_id     = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_ID"]
       client_secret = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_SECRET"]
-      group         = authentik_group.infrastructure.name
+      group         = "infrastructure"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/portainer.png"
       redirect_uri  = "https://portainer.${var.cluster_domain}/"
       launch_url    = "https://portainer.${var.cluster_domain}/"
@@ -104,7 +104,7 @@ resource "authentik_application" "application" {
   name               = title(each.key)
   slug               = each.key
   protocol_provider  = authentik_provider_oauth2.oauth2[each.key].id
-  group              = each.value.group
+  group              = authentik_group.default[each.value.group].id
   open_in_new_tab    = true
   meta_icon          = each.value.icon_url
   meta_launch_url    = each.value.launch_url
