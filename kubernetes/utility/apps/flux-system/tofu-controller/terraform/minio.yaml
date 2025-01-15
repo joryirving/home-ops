@@ -6,20 +6,6 @@ metadata:
 spec:
   interval: 12h
   approvePlan: auto
-  backendConfig:
-    customConfiguration: |
-      backend "s3" {
-        bucket   = "terraform-state"
-        key      = "minio/minio.tfstate"
-        region   = "main"
-        endpoint = "https://s3.${SECRET_DOMAIN}"
-
-        skip_credentials_validation = true
-        skip_requesting_account_id  = true
-        skip_metadata_api_check     = true
-        skip_region_validation      = true
-        force_path_style            = true
-      }
   backendConfigsFrom:
   - kind: Secret
     name: terraform-backend-secret
