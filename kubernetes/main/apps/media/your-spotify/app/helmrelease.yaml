@@ -25,24 +25,20 @@ spec:
   values:
     controllers:
       server:
-        strategy: &strategy RollingUpdate
-        rollingUpdate: &rollingUpdate
-          unavailable: 0
-        pod: &pod
-          annotations:
-            reloader.stakater.com/auto: 'true'
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
               repository: yooooomi/your_spotify_server
-              tag: 1.12.0
+              tag: 1.12.0@sha256:081b53a4faf529b7e8ceb0147ba10f4780730b729aebf2edb469a8c30441e99a
             env:
               TIMEZONE: ${TIMEZONE}
               # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
               API_ENDPOINT: &api_endpoint https://spotty.${SECRET_DOMAIN}/api
-              CLIENT_ENDPOINT: &client https://spotty.${SECRET_DOMAIN}
-              CORS: *client
+              CLIENT_ENDPOINT: https://spotty.${SECRET_DOMAIN}
               MONGO_ENDPOINT: mongodb://your-spotify-mongodb:27017/your_spotify #mongo sucks
+              PORT: &port 8080
             envFrom:
               - secretRef:
                   name: your-spotify-secret
@@ -57,23 +53,22 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
               capabilities: { drop: [ 'ALL' ] }
+            resources:
+              requests:
+                cpu: 10m
+                memory: 500Mi
       web:
-        strategy: *strategy
-        rollingUpdate: *rollingUpdate
-        pod: *pod
         containers:
           app:
             image:
               repository: yooooomi/your_spotify_client
-              tag: 1.12.0
+              tag: 1.12.0@sha256:33eda3e891cea1352a9d7178121a2e1b21ee715458252a04965ce917d97ba64b
             env:
-              TIMEZONE: ${TIMEZONE}
               API_ENDPOINT: *api_endpoint
             probes: *probes
             securityContext: *securityContext
       mongodb: #mongo still sucks
         type: statefulset
-        rollingUpdate: *rollingUpdate
         statefulset:
           podManagementPolicy: OrderedReady
         containers:
@@ -81,8 +76,6 @@ spec:
             image:
               repository: docker.io/library/mongo
               tag: 6.0.4-focal
-            env:
-              TZ: ${TIMEZONE}
             probes: *probes
     service:
       server:
@@ -90,7 +83,7 @@ spec:
         primary: true
         ports:
           http:
-            port: 8080
+            port: *port
       web:
         controller: web
         ports:
@@ -123,9 +116,9 @@ spec:
                   identifier: server
                   port: http
     persistence:
-      mongo:
+      configs:
         existingClaim: *app
         advancedMounts:
           mongodb:
             app:
-              - path: /data
+              - path: /data/db
