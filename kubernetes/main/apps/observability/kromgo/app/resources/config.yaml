@@ -1,5 +1,9 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/kashalls/kromgo/main/config.schema.json
+badge:
+  font: Verdana.ttf
+  size: 12
+
 metrics:
   - name: talos_version
     query: node_os_info{name="Talos"}
@@ -13,53 +17,64 @@ metrics:
 
   - name: cluster_node_count
     query: count(count by (node) (kube_node_status_condition{condition="Ready"}))
+    colors:
+      - { color: "green", min: 0, max: 9999 }
     title: Nodes
 
   - name: cluster_pod_count
     query: sum(kube_pod_status_phase{phase="Running"})
+    colors:
+      - { color: "green", min: 0, max: 9999 }
     title: Pods
 
   - name: cluster_cpu_usage
     query: round(avg(instance:node_cpu_utilisation:rate5m{kubernetes_node!=""}) * 100, 0.1)
-    title: CPU
     suffix: "%"
     colors:
       - { color: "green", min: 0, max: 35 }
       - { color: "orange", min: 36, max: 75 }
       - { color: "red", min: 76, max: 9999 }
+    title: CPU
 
   - name: cluster_memory_usage
     query: round(sum(node_memory_MemTotal_bytes{kubernetes_node!=""} - node_memory_MemAvailable_bytes{kubernetes_node!=""}) / sum(node_memory_MemTotal_bytes{kubernetes_node!=""}) * 100, 0.1)
-    title: Memory
     suffix: "%"
     colors:
       - { color: green, min: 0, max: 35 }
       - { color: orange, min: 36, max: 75 }
       - { color: red, min: 76, max: 9999 }
+    title: Memory
 
   - name: cluster_power_usage
     query: round((network_ups_tools_ups_load{server="server"} * 0.01 * 900) + ignoring(server, instance) (network_ups_tools_ups_load{server="network"} * 0.01 * 330)) # Server Rack Load % * 900W + Network Load % * 330W
-    title: Power
-    suffix: "W"
+    suffix: "w"
     colors:
-      - { color: "green", min: 0, max: 500 }
-      - { color: "orange", min: 501, max: 900 }
-      - { color: "red", min: 901, max: 9999 }
+      - { color: "green", min: 0, max: 400 }
+      - { color: "orange", min: 401, max: 750 }
+      - { color: "red", min: 751, max: 9999 }
+    title: Power
 
   - name: cluster_age_days
-    query: round((time() - max(kube_node_created) ) / 86400)
-    title: Age
+    query: round((time() - min(kube_node_created) ) / 86400)
     suffix: "d"
     colors:
       - { color: "green", min: 0, max: 180 }
       - { color: "orange", min: 181, max: 360 }
       - { color: "red", min: 361, max: 9999 }
+    title: Age
 
   - name: cluster_uptime_days
     query: round(avg(node_time_seconds{kubernetes_node!=""} - node_boot_time_seconds{kubernetes_node!=""}) / 86400)
-    title: Uptime
     suffix: "d"
     colors:
       - { color: "green", min: 0, max: 180 }
       - { color: "orange", min: 181, max: 360 }
       - { color: "red", min: 361, max: 9999 }
+    title: Uptime
+
+  - name: cluster_alert_count
+    query: alertmanager_alerts{state="active"} - 1 # Ignore Watchdog
+    colors:
+      - { color: "green", min: 0, max: 0 }
+      - { color: "red", min: 1, max: 9999 }
+    title: Alerts
