@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.changed-clusters.outputs.all_changed_and_modified_files }}
+      github-token: ${{ steps.app-token.outputs.token }}
     steps:
       - name: Configure 1password
         uses: 1password/load-secrets-action/configure@v2
@@ -76,30 +77,11 @@ jobs:
       default: ${{ steps.extract-images.outputs.default }}
       pull: ${{ steps.extract-images.outputs.pull }}
     steps:
-      - name: Configure 1password
-        uses: 1password/load-secrets-action/configure@v2
-        with:
-          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
-
-      - name: Get Secrets
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
-          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
-
-      - name: Generate Token
-        uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ env.BOT_APP_ID }}
-          private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: "${{ steps.app-token.outputs.token }}"
+          token: ${{ env.GITHUB_TOKEN }}
           ref: "${{ matrix.branches == 'default' && github.event.repository.default_branch || '' }}"
 
       - name: Gather Images
