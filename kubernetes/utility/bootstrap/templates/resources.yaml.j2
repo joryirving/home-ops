@@ -2,6 +2,32 @@
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: cert-manager
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jory.dev-tls
+  namespace: network
+  annotations:
+    cert-manager.io/alt-names: '*.jory.dev,jory.dev'
+    cert-manager.io/certificate-name: jory.dev
+    cert-manager.io/common-name: jory.dev
+    cert-manager.io/ip-sans: ""
+    cert-manager.io/issuer-group: ""
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-name: letsencrypt-production
+    cert-manager.io/uri-sans: ""
+  labels:
+    controller.cert-manager.io/fao: "true"
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ ENV.INGRESS_NGINX_TLS_CRT }}
+  tls.key: {{ ENV.INGRESS_NGINX_TLS_KEY }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: external-secrets
 ---
 apiVersion: v1
@@ -35,29 +61,3 @@ metadata:
 stringData:
   age.agekey: |
     {{ ENV.FLUX_SOPS_PRIVATE_KEY | indent(4) }}
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: network
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: jory.dev-tls
-  namespace: network
-  annotations:
-    cert-manager.io/alt-names: '*.jory.dev,jory.dev'
-    cert-manager.io/certificate-name: jory.dev
-    cert-manager.io/common-name: jory.dev
-    cert-manager.io/ip-sans: ""
-    cert-manager.io/issuer-group: ""
-    cert-manager.io/issuer-kind: ClusterIssuer
-    cert-manager.io/issuer-name: letsencrypt-production
-    cert-manager.io/uri-sans: ""
-  labels:
-    controller.cert-manager.io/fao: "true"
-type: kubernetes.io/tls
-data:
-  tls.crt: {{ ENV.INGRESS_NGINX_TLS_CRT }}
-  tls.key: {{ ENV.INGRESS_NGINX_TLS_KEY }}
