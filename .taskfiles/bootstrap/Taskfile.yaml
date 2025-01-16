@@ -62,7 +62,7 @@ tasks:
       - which talosctl jq
 
   apps:
-    desc: Bootstrap Apps [CLUSTER=main] [MODEL=required]
+    desc: Bootstrap Apps [CLUSTER=main]
     prompt: Bootstrap apps into the Talos cluster?
     cmds:
       - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
@@ -70,12 +70,11 @@ tasks:
       - helmfile --quiet --file {{.CLUSTER_DIR}}/bootstrap/helmfile.yaml apply --skip-diff-on-install --suppress-diff
       - helmfile --quiet --file {{.CLUSTER_DIR}}/bootstrap/helmfile.yaml destroy --selector name=wipe-rook
     env:
-      MODEL: '{{.MODEL}}'
       NODE_COUNT:
         sh: talosctl --context {{.CLUSTER}} config info --output json | jq --raw-output '.nodes | length'
       VAULT: kubernetes # ¯\_(ツ)_/¯
     requires:
-      vars: [CLUSTER, MODEL]
+      vars: [CLUSTER]
     preconditions:
       - op user get --me
       - talosctl config info
