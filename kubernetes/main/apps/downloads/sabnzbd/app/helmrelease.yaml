@@ -42,7 +42,7 @@ spec:
               TZ: ${TIMEZONE}
               SABNZBD__PORT: &port 8080
               SABNZBD__HOST_WHITELIST_ENTRIES: >-
-                sabnzbd, sabnzbd.downloads, sabnzbd.downloads.svc, sabnzbd.downloads.svc.cluster, sabnzbd.downloads.svc.cluster.local, sabnzbd.${SECRET_DOMAIN}
+                sabnzbd, sabnzbd.downloads, sabnzbd.downloads.svc, sabnzbd.downloads.svc.cluster, sabnzbd.downloads.svc.cluster.local, sabnzbd.jory.dev
             envFrom:
             - secretRef:
                 name: sabnzbd-secret
@@ -105,7 +105,7 @@ spec:
           gethomepage.dev/widget.url: http://sabnzbd.downloads:8080
           gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_SABNZBD_TOKEN}}` }}"
         hosts:
-        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+        - host: "{{ .Release.Name }}.jory.dev"
           paths:
           - path: /
             service:
@@ -117,7 +117,7 @@ spec:
       downloads:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA:=temp}
+        path: /mnt/user/data
         globalMounts:
         - path: /downloads
           subPath: usenet

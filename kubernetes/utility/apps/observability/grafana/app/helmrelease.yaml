@@ -32,7 +32,7 @@ spec:
       GF_FEATURE_TOGGLES_ENABLE: publicDashboards
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: natel-discrete-panel,pr0ps-trackmap-panel,panodata-map-panel
       GF_SECURITY_COOKIE_SAMESITE: *app
-      GF_SERVER_ROOT_URL: https://grafana-utility.${SECRET_DOMAIN}
+      GF_SERVER_ROOT_URL: https://grafana-utility.jory.dev
     envFromSecrets:
       - name: grafana-secret
     grafana.ini:
@@ -41,7 +41,7 @@ spec:
         check_for_plugin_updates: false
         reporting_enabled: false
       auth:
-        signout_redirect_url: https://sso.${SECRET_DOMAIN}/application/o/grafana/end-session/
+        signout_redirect_url: https://sso.jory.dev/application/o/grafana/end-session/
         oauth_auto_login: false
         oauth_allow_insecure_email_lookup: true
       auth.anonymous:
@@ -53,9 +53,9 @@ spec:
         name: authentik
         enabled: true
         scopes: openid email profile
-        auth_url: https://sso.${SECRET_DOMAIN}/application/o/authorize/
-        token_url: https://sso.${SECRET_DOMAIN}/application/o/token/
-        api_url: https://sso.${SECRET_DOMAIN}/application/o/userinfo/
+        auth_url: https://sso.jory.dev/application/o/authorize/
+        token_url: https://sso.jory.dev/application/o/token/
+        api_url: https://sso.jory.dev/application/o/userinfo/
         # Optionally map user groups to Grafana roles
         role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || contains(groups[*], 'Grafana Editors') && 'Editor' || 'Viewer'
     deploymentStrategy:
@@ -252,6 +252,6 @@ spec:
       enabled: true
       ingressClassName: external
       hosts:
-        - "{{ .Release.Name }}-utility.${SECRET_DOMAIN}"
+        - "{{ .Release.Name }}-utility.jory.dev"
     persistence:
       enabled: false

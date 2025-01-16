@@ -57,7 +57,7 @@ spec:
               PUBLIC_PORT: &port 8211
               RCON_ENABLED: true
               RCON_PORT: &rcon-port 25575
-              PUBLIC_IP: palworld.${SECRET_DOMAIN}
+              PUBLIC_IP: palworld.jory.dev
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
@@ -105,7 +105,7 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: ${SVC_PALWORLD_ADDR:=temp}
+          lbipam.cilium.io/ips: 10.69.1.39
         ports:
           http:
             port: 9877
@@ -128,9 +128,9 @@ spec:
         enabled: false #nginx doesn't support non-https
         className: external
         annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.${SECRET_DOMAIN}
+          external-dns.alpha.kubernetes.io/target: ipv4.jory.dev
         hosts:
-        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+        - host: "{{ .Release.Name }}.jory.dev"
           paths:
           - path: /
             service:

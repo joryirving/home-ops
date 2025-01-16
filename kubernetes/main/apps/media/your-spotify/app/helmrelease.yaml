@@ -35,8 +35,8 @@ spec:
             env:
               TIMEZONE: ${TIMEZONE}
               # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
-              API_ENDPOINT: &api_endpoint https://spotty.${SECRET_DOMAIN}/api
-              CLIENT_ENDPOINT: https://spotty.${SECRET_DOMAIN}
+              API_ENDPOINT: &api_endpoint https://spotty.jory.dev/api
+              CLIENT_ENDPOINT: https://spotty.jory.dev
               MONGO_ENDPOINT: mongodb://your-spotify-mongodb:27017/your_spotify #mongo sucks
               PORT: &port 8080
             envFrom:
@@ -103,7 +103,7 @@ spec:
           nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
           nginx.ingress.kubernetes.io/rewrite-target: /$1
         hosts:
-          - host: spotty.${SECRET_DOMAIN}
+          - host: spotty.jory.dev
             paths:
               - path: /?(.*)
                 pathType: Prefix

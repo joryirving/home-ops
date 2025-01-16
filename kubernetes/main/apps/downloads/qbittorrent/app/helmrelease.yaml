@@ -90,7 +90,7 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: ${SVC_QBITTTORENT_ADDR:=temp}
+          lbipam.cilium.io/ips: 10.69.1.36
         ports:
           bittorrent:
             enabled: true
@@ -114,7 +114,7 @@ spec:
             proxy_hide_header "content-security-policy";
             proxy_hide_header "X-Frame-Options";
         hosts:
-          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: "{{ .Release.Name }}.jory.dev"
             paths:
               - path: /
                 service:
@@ -126,7 +126,7 @@ spec:
       downloads:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA:=temp}
+        path: /mnt/user/data
         globalMounts:
           - path: /downloads
             subPath: torrents
