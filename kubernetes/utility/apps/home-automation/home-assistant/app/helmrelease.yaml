@@ -79,7 +79,7 @@ spec:
         nameOverride: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: ${SVC_HOME_ASSISTANT_ADDR:=temp}
+          lbipam.cilium.io/ips: 10.69.1.133
         ports:
           http:
             port: 8123
@@ -89,7 +89,7 @@ spec:
       app:
         className: external
         hosts:
-          - host: hass.${SECRET_DOMAIN}
+          - host: hass.jory.dev
             paths:
               - path: /
                 service:
@@ -98,7 +98,7 @@ spec:
       codeserver:
         className: internal
         hosts:
-          - host: hass-code.${SECRET_DOMAIN}
+          - host: hass-code.jory.dev
             paths:
             - path: /
               service:

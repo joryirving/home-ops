@@ -59,7 +59,7 @@ spec:
         kyoo_scanner: *rabbit
 
     kyoo:
-      address: https://kyoo.${SECRET_DOMAIN}
+      address: https://kyoo.jory.dev
       transcoderAcceleration: vaapi # hardware acceleration profile (valid values: disabled, vaapi, qsv, nvidia)
       apikey:
         existingSecret: *secret
@@ -69,10 +69,10 @@ spec:
           existingSecret: *secret
           clientIdKey: OIDC_AUTHENTIK_CLIENTID
           clientSecretKey: OIDC_AUTHENTIK_SECRET
-          logo: https://sso.${SECRET_DOMAIN}/static/dist/assets/icons/icon.png
-          authorizationAddress: https://sso.${SECRET_DOMAIN}/application/o/authorize/
-          tokenAddress: https://sso.${SECRET_DOMAIN}/application/o/token/
-          profileAddress: https://sso.${SECRET_DOMAIN}/application/o/userinfo/
+          logo: https://sso.jory.dev/static/dist/assets/icons/icon.png
+          authorizationAddress: https://sso.jory.dev/application/o/authorize/
+          tokenAddress: https://sso.jory.dev/application/o/token/
+          profileAddress: https://sso.jory.dev/application/o/userinfo/
           scope: "openid email profile"
           authMethod: ClientSecretBasic
 
@@ -81,7 +81,7 @@ spec:
         - name: media
           nfs:
             server: voyager.internal
-            path: ${SECRET_NFS_DATA:=temp}
+            path: /mnt/user/data
       volumeMounts:
         - mountPath: &path /media
           name: media
@@ -112,7 +112,7 @@ spec:
     ingress:
       enabled: true
       ingressClassName: external
-      host: kyoo.${SECRET_DOMAIN}
+      host: kyoo.jory.dev
       tls: true
 
     meilisearch:

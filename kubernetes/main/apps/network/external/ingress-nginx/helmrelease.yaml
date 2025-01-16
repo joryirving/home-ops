@@ -28,8 +28,8 @@ spec:
       replicaCount: 2
       service:
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: &hostname external.${SECRET_DOMAIN}
-          lbipam.cilium.io/ips: ${SVC_NGINX_EXTERNAL:=temp}
+          external-dns.alpha.kubernetes.io/hostname: &hostname external.jory.dev
+          lbipam.cilium.io/ips: 10.69.1.32
       ingressClassResource:
         name: external
         default: false
@@ -73,7 +73,7 @@ spec:
           namespaceSelector:
             any: true
       extraArgs:
-        default-ssl-certificate: cert-manager/${SECRET_DOMAIN}-tls
+        default-ssl-certificate: cert-manager/jory.dev-tls
         publish-status-address: *hostname
       terminationGracePeriodSeconds: 120
       publishService:
