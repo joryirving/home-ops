@@ -23,14 +23,6 @@ metadata:
 spec:
   policyName: flux-ks-add-cluster-settings
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.32.0/mutatingadmissionpolicybinding-admissionregistration-v1alpha1.json
-apiVersion: admissionregistration.k8s.io/v1alpha1
-kind: MutatingAdmissionPolicyBinding
-metadata:
-  name: flux-ks-add-cluster-settings-main
-spec:
-  policyName: flux-ks-add-cluster-settings-main
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.32.0/mutatingadmissionpolicy-admissionregistration-v1alpha1.json
 apiVersion: admissionregistration.k8s.io/v1alpha1
 kind: MutatingAdmissionPolicy
@@ -69,14 +61,6 @@ spec:
               op: "add", path: "/spec/postBuild/substituteFrom/-",
               value: Object.spec.postBuild.substituteFrom{
                 name: "cluster-settings",
-                kind: "ConfigMap",
-                optional: true
-              }
-            },
-            JSONPatch{
-              op: "add", path: "/spec/postBuild/substituteFrom/-",
-              value: Object.spec.postBuild.substituteFrom{
-                name: "cluster-settings-main",
                 kind: "ConfigMap",
                 optional: true
               }
@@ -123,14 +107,6 @@ spec:
                 kind: "ConfigMap",
                 optional: true
               }
-            },
-            JSONPatch{
-              op: "add", path: "/spec/postBuild/substituteFrom/-",
-              value: Object.spec.postBuild.substituteFrom{
-                name: "cluster-settings-main",
-                kind: "ConfigMap",
-                optional: true
-              }
             }
           ]
 ---
@@ -167,45 +143,6 @@ spec:
               op: "add", path: "/spec/postBuild/substituteFrom/-",
               value: Object.spec.postBuild.substituteFrom{
                 name: "cluster-settings",
-                kind: "ConfigMap",
-                optional: true
-              }
-            }
-          ]
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.32.0/mutatingadmissionpolicy-admissionregistration-v1alpha1.json
-apiVersion: admissionregistration.k8s.io/v1alpha1
-kind: MutatingAdmissionPolicy
-metadata:
-  name: flux-ks-add-cluster-settings-main
-spec:
-  matchConstraints:
-    resourceRules:
-      - apiGroups: ["kustomize.toolkit.fluxcd.io"]
-        apiVersions: ["v1"]
-        operations: ["CREATE", "UPDATE"]
-        resources: ["kustomizations"]
-  matchConditions:
-    - name: name-is-not-flux-system
-      expression: >
-        !(object.metadata.name == "flux-system")
-    - name: has-substitutefrom-field
-      expression: >
-        (has(object.spec.postBuild) && has(object.spec.postBuild.substituteFrom))
-    - name: cluster-settings-configmap-not-present
-      expression: >
-        !object.spec.postBuild.substituteFrom.exists(item, item.name == "cluster-settings")
-  failurePolicy: Fail
-  reinvocationPolicy: IfNeeded
-  mutations:
-    - patchType: "JSONPatch"
-      jsonPatch:
-        expression: >
-          [
-            JSONPatch{
-              op: "add", path: "/spec/postBuild/substituteFrom/-",
-              value: Object.spec.postBuild.substituteFrom{
-                name: "cluster-settings-main",
                 kind: "ConfigMap",
                 optional: true
               }
