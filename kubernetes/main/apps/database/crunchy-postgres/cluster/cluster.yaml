@@ -134,12 +134,12 @@ spec:
         repo2-retention-full-type: time
         repo2-s3-uri-style: path
         # Minio
-        # repo3-block: "y"
-        # repo3-bundle: "y"
-        # repo3-path: /crunchy-pgo
-        # repo3-retention-full: "30" # days
-        # repo3-retention-full-type: "time"
-        # repo3-s3-uri-style: path
+        repo3-block: "y"
+        repo3-bundle: "y"
+        repo3-path: /crunchy-pgo
+        repo3-retention-full: "30" # days
+        repo3-retention-full-type: "time"
+        repo3-s3-uri-style: path
       manual:
         repoName: repo1
         options:
@@ -169,24 +169,24 @@ spec:
           schedules:
             full: "30 2 * * 0" # Sunday at 02:30
             incremental: "30 2 * * 1-6/2" # Mon-Sat at 02:30, every 2nd day
-        # - name: repo3
-        #   s3: &minio
-        #     bucket: postgresql
-        #     endpoint: s3.jory.dev
-        #     region: ca-west-1
-        #   schedules:
-        #     full: "15 1 * * 0" # Sunday at 01:15
-        #     differential: "15 1 * * 1-6" # Mon-Sat at 01:15
-        #     incremental: "15 3-23 * * *" # Every hour except 01:30-2:30
+        - name: repo3
+          s3: &minio
+            bucket: postgresql
+            endpoint: s3.jory.dev
+            region: ca-west-1
+          schedules:
+            full: "15 1 * * 0" # Sunday at 01:15
+            differential: "15 1 * * 1-6" # Mon-Sat at 01:15
+            incremental: "15 3-23 * * *" # Every hour except 01:30-2:30
   dataSource:
     pgbackrest:
       stanza: db
       configuration: *backupConfig
       global: *backupFlag
       repo:
-        name: repo1
-        volume: *nfs
-        # s3: *r2
+        name: repo3
+        # volume: *nfs
+        s3: *minio
   proxy:
     pgBouncer:
       service:
