@@ -52,14 +52,14 @@ tasks:
   soft-nuke:
     desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
     prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
-    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/talos -c {{.CLUSTER_DIR}}/talos/talconfig.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" #| bash
+    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/talos/clusterconfig -c {{.CLUSTER_DIR}}/talos/talconfig.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
   hard-nuke:
     desc: Resets nodes back completely and reboots them
     prompt: This will destroy your cluster and reset the nodes... continue?
-    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/talos -c {{.CLUSTER_DIR}}/talos/talconfig.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
+    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/talos/clusterconfig -c {{.CLUSTER_DIR}}/talos/talconfig.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
