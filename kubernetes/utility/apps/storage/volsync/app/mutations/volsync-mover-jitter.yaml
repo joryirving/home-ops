@@ -4,6 +4,7 @@ apiVersion: admissionregistration.k8s.io/v1alpha1
 kind: MutatingAdmissionPolicyBinding
 metadata:
   name: volsync-mover-jitter
+  namespace: volsync-system
 spec:
   policyName: volsync-mover-jitter
 ---
@@ -21,12 +22,10 @@ spec:
         operations: ["CREATE", "UPDATE"]
         resources: ["jobs"]
   matchConditions:
-    - name: has-volsync-job-name-prefix
-      expression: >
-        object.metadata.name.startsWith("volsync-src-")
-    - name: has-volsync-created-by-labels
-      expression: >
-        object.metadata.labels["app.kubernetes.io/created-by"] == "volsync"
+    - name: has-name
+      expression: object.metadata.name.startsWith("volsync-src-")
+    - name: has-labels
+      expression: object.metadata.labels["app.kubernetes.io/created-by"] == "volsync"
   failurePolicy: Fail
   reinvocationPolicy: IfNeeded
   mutations:
@@ -44,7 +43,7 @@ spec:
                 name: "jitter",
                 image: "docker.io/library/busybox:latest",
                 imagePullPolicy: "IfNotPresent",
-                command: ["sh", "-c", "sleep $(shuf -i 0-60 -n 1)"]
+                command: ["sh", "-c", "sleep $(shuf -i 0-3000 -n 1)"]
               }
             }
           ]
