@@ -22,24 +22,6 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  values:
-    installCRDs: true
-    image:
-      repository: ghcr.io/external-secrets/external-secrets
-    webhook:
-      image:
-        repository: ghcr.io/external-secrets/external-secrets
-      serviceMonitor:
-        enabled: true
-        interval: 1m
-    certController:
-      image:
-        repository: ghcr.io/external-secrets/external-secrets
-      serviceMonitor:
-        enabled: true
-        interval: 1m
-    serviceMonitor:
-      enabled: true
-      interval: 1m
-    bitwarden-sdk-server:
-      enabled: false
+  valuesFrom:
+    - kind: ConfigMap
+      name: external-secrets-helm-values
