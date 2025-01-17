@@ -23,7 +23,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app crunchy-postgres-operator-cluster
+  name: &app crunchy-postgres-cluster
   namespace: flux-system
 spec:
   targetNamespace: database
@@ -51,7 +51,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app crunchy-postgres-userinit-controller
+  name: &app crunchy-postgres-stores
   namespace: flux-system
 spec:
   targetNamespace: database
@@ -59,8 +59,8 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: crunchy-postgres-operator-cluster
-  path: ./kubernetes/main/apps/database/crunchy-postgres/userinit-controller
+    - name: crunchy-postgres-cluster
+  path: ./kubernetes/main/apps/database/crunchy-postgres/stores
   prune: true
   sourceRef:
     kind: GitRepository
@@ -73,7 +73,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app crunchy-postgres-stores
+  name: &app crunchy-postgres-userinit-controller
   namespace: flux-system
 spec:
   targetNamespace: database
@@ -81,8 +81,8 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: external-secrets
-  path: ./kubernetes/main/apps/database/crunchy-postgres/clustersecretstore
+    - name: crunchy-postgres-cluster
+  path: ./kubernetes/main/apps/database/crunchy-postgres/userinit-controller
   prune: true
   sourceRef:
     kind: GitRepository
