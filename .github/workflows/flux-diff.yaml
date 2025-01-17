@@ -70,17 +70,19 @@ jobs:
         resources: ["helmrelease", "kustomization"]
       max-parallel: 4
       fail-fast: false
+    env:
+      GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
     steps:
       - name: Checkout Pull Request Branch
         uses: actions/checkout@v4
         with:
-          token: ${{ needs.changed-clusters.outputs.github-token }}
+          token: ${{ env.GITHUB_TOKEN }}
           path: pull
 
       - name: Checkout Default Branch
         uses: actions/checkout@v4
         with:
-          token: ${{ needs.changed-clusters.outputs.github-token }}
+          token: ${{ env.GITHUB_TOKEN }}
           ref: ${{ github.event.repository.default_branch }}
           path: default
 
