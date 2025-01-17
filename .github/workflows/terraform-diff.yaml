@@ -19,25 +19,12 @@ jobs:
     outputs:
       matrix: ${{ steps.changed-terraform.outputs.all_changed_and_modified_files }}
     steps:
-      - name: Configure 1password
-        uses: 1password/load-secrets-action/configure@v2
-        with:
-          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
-
-      - name: Get Secrets
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
-          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
-
       - name: Generate Token
         uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ env.BOT_APP_ID }}
-          private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,8 +63,6 @@ jobs:
         with:
           export-env: true
         env:
-          BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
-          BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
           MINIO_ACCESS_KEY: op://Kubernetes/minio/MINIO_ACCESS_KEY
           MINIO_SECRET_KEY: op://Kubernetes/minio/MINIO_SECRET_KEY
 
@@ -85,8 +70,8 @@ jobs:
         uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ env.BOT_APP_ID }}
-          private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout
         uses: actions/checkout@v4

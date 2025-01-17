@@ -24,16 +24,14 @@
           with:
             export-env: true
           env:
-            BOT_APP_ID: op://Kubernetes/github-bot/BOT_APP_ID
-            BOT_APP_PRIVATE_KEY: op://Kubernetes/github-bot/BOT_APP_PRIVATE_KEY
             KUBECONFIG: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
 
         - name: Generate Token
           uses: actions/create-github-app-token@v1
           id: app-token
           with:
-            app-id: ${{ env.BOT_APP_ID }}
-            private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
+            app-id: ${{ secrets.BOT_APP_ID }}
+            private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
 
         - name: Checkout
           uses: actions/checkout@v4
