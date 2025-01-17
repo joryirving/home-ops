@@ -12,6 +12,14 @@ tasks:
       - task: apps
     requires:
       vars: [CLUSTER]
+    preconditions:
+      - op user get --me
+      - talosctl config info
+      - test -f {{.CLUSTER_DIR}}/talos/clusterconfig/talosconfig
+      - test -f {{.CLUSTER_DIR}}/bootstrap/helmfile.yaml
+      - test -f {{.CLUSTER_DIR}}/bootstrap/templates/resources.yaml.j2
+      - test -f {{.CLUSTER_DIR}}/bootstrap/templates/wipe-rook.yaml.gotmpl
+      - which curl jq helmfile kubectl op talosctl
 
   gen-secrets:
     desc: Generate the Talos secrets
