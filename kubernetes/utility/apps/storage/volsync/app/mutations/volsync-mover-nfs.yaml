@@ -20,13 +20,11 @@ spec:
         operations: ["CREATE", "UPDATE"]
         resources: ["jobs"]
   matchConditions:
-    - name: has-volsync-job-name-prefix
-      expression: >
-        object.metadata.name.startsWith("volsync-")
-    - name: has-volsync-created-by-labels
-      expression: >
-        object.metadata.labels["app.kubernetes.io/created-by"] == "volsync"
-    - name: repository-volume-does-not-exist
+    - name: has-name
+      expression: object.metadata.name.startsWith("volsync-")
+    - name: has-labels
+      expression: object.metadata.labels["app.kubernetes.io/created-by"] == "volsync"
+    - name: volume-not-present
       expression: >
         !object.spec.template.spec.volumes.exists(item, item.name == "repository")
   failurePolicy: Fail
@@ -49,7 +47,7 @@ spec:
                 name: "repository",
                 nfs: Object.spec.template.spec.volumes.nfs{
                   server: "voyager.internal",
-                  path: "${SECRET_NFS_VOLSYNC}"
+                  path: "/mnt/user/kubernetes/volsync"
                 }
               }
             }
