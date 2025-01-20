@@ -5,19 +5,19 @@ version: "3"
 tasks:
   genconfig:
     desc: Generate the Talos configs
-    cmd: talhelper -c {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml genconfig -s {{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml -o {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig
+    cmd: talhelper -c {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml genconfig -s {{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml -o {{.BOOTSTRAP_DIR}}/talos/clusterconfig
     requires:
       vars: [CLUSTER]
     preconditions:
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml
 
   apply-node:
     desc: Apply Talos config to a node [CLUSTER=main] [HOSTNAME=required]
     dotenv: ['{{.CLUSTER_DIR}}/cluster.env']
     cmds:
       - task: down
-      - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml
+      - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.BOOTSTRAP_DIR}}/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml
       - talosctl --nodes {{.HOSTNAME}} health
       - task: up
     vars:
@@ -27,8 +27,8 @@ tasks:
     preconditions:
       - talosctl --nodes {{.HOSTNAME}} get machineconfig
       - test -f {{.CLUSTER_DIR}}/cluster.env
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
 
   apply-cluster: ## This isn't working on utility cluster
     desc: Apply the Talos config on all nodes for an existing cluster [CLUSTER=main]
@@ -46,20 +46,20 @@ tasks:
     preconditions:
       - talosctl config info
       - test -f {{.CLUSTER_DIR}}/cluster.env
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
 
   soft-nuke:
     desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
     prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
-    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig -c {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
+    cmd: talhelper gencommand reset -o {{.BOOTSTRAP_DIR}}/talos/clusterconfig -c {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
   hard-nuke:
     desc: Resets nodes back completely and reboots them
     prompt: This will destroy your cluster and reset the nodes... continue?
-    cmd: talhelper gencommand reset -o {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig -c {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
+    cmd: talhelper gencommand reset -o {{.BOOTSTRAP_DIR}}/talos/clusterconfig -c {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
@@ -76,7 +76,7 @@ tasks:
       - talosctl --nodes {{.HOSTNAME}} get machineconfig
       - talosctl config info
       - test -f {{.CLUSTER_DIR}}/cluster.env
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
       - which talosctl
 
   reboot-cluster:
@@ -99,8 +99,8 @@ tasks:
     preconditions:
       - talosctl config info
       - test -f {{.CLUSTER_DIR}}/cluster.env
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
 
   shutdown-cluster:
     desc: Shutdown Talos across the whole cluster [CLUSTER=main]
@@ -114,8 +114,8 @@ tasks:
     preconditions:
       - talosctl --nodes {{.NODES}} get machineconfig
       - talosctl config info
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - which talosctl
 
   kubeconfig:
@@ -128,7 +128,7 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - talosctl config info
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - which talosctl
 
   down:

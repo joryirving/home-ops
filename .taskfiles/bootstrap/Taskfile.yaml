@@ -15,44 +15,44 @@ tasks:
     preconditions:
       - op user get --me
       - talosctl config info
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
-      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/templates/resources.yaml.j2
-      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/templates/wipe-rook.yaml.gotmpl
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/apps/helmfile.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/apps/templates/resources.yaml.j2
+      - test -f {{.BOOTSTRAP_DIR}}/apps/templates/wipe-rook.yaml.gotmpl
       - which curl jq helmfile kubectl op talosctl
 
   gen-secrets:
     desc: Generate the Talos secrets
     cmds:
-      - talhelper -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml gensecret > {{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml
+      - talhelper -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml gensecret > {{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml
       - task: :sops:.encrypt-file
         vars:
-          FILE: "{{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml"
+          FILE: "{{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml"
     requires:
       vars: [CLUSTER]
     preconditions:
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
     status:
-      - test -f "{{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml"
+      - test -f "{{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml"
 
   gen-config:
     desc: Generate the Talos configs
-    cmd: talhelper -c {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml genconfig -s {{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml -o {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig
+    cmd: talhelper -c {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml genconfig -s {{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml -o {{.BOOTSTRAP_DIR}}/talos/clusterconfig
     requires:
       vars: [CLUSTER]
     preconditions:
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml
 
   apply-config:
     desc: Apply the Talos config on a nodes for a new cluster
-    dir: "{{.CLUSTER_DIR}}/bootstrap/talos/"
+    dir: "{{.BOOTSTRAP_DIR}}/talos/"
     cmd: talhelper gencommand apply --extra-flags=--insecure | bash
     requires:
       vars: [CLUSTER]
     preconditions:
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talconfig.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/talsecret.sops.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/talos/talsecret.sops.yaml
 
   talos:
     desc: Bootstrap Talos [CLUSTER=main]
@@ -66,7 +66,7 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - talosctl config info
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - which talosctl jq
 
   apps:
@@ -74,9 +74,9 @@ tasks:
     prompt: Bootstrap apps into the Talos cluster?
     cmds:
       - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
-      - op run --env-file {{.CLUSTER_DIR}}/bootstrap/apps/.secrets.env --no-masking -- minijinja-cli {{.CLUSTER_DIR}}/bootstrap/templates/resources.yaml.j2 | kubectl apply --server-side --filename -
-      - helmfile --quiet --file {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
-      - helmfile --quiet --file {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml destroy --selector name=wipe-rook
+      - op run --env-file {{.BOOTSTRAP_DIR}}/apps/.secrets.env --no-masking -- minijinja-cli {{.BOOTSTRAP_DIR}}/templates/resources.yaml.j2 | kubectl apply --server-side --filename -
+      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
+      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/apps/helmfile.yaml destroy --selector name=wipe-rook
     env:
       NODE_COUNT:
         sh: talosctl --context {{.CLUSTER}} config info --output json | jq --raw-output '.nodes | length'
@@ -86,8 +86,8 @@ tasks:
     preconditions:
       - op user get --me
       - talosctl config info
-      - test -f {{.CLUSTER_DIR}}/bootstrap/talos/clusterconfig/talosconfig
-      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/helmfile.yaml
-      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/templates/resources.yaml.j2
-      - test -f {{.CLUSTER_DIR}}/bootstrap/apps/templates/wipe-rook.yaml.gotmpl
+      - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/apps/helmfile.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/apps/templates/resources.yaml.j2
+      - test -f {{.BOOTSTRAP_DIR}}/apps/templates/wipe-rook.yaml.gotmpl
       - which curl jq helmfile kubectl op talosctl
