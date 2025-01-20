@@ -2,16 +2,16 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: "${CLAIM:-${APP}}"
+  name: "${CLAIM:=${APP}}"
   labels:
     app.kubernetes.io/name: "${APP}"
 spec:
-  accessModes: ["${VOLSYNC_ACCESSMODES:-ReadWriteOnce}"]
+  accessModes: ["${VOLSYNC_ACCESSMODES:=ReadWriteOnce}"]
   dataSourceRef:
     kind: ReplicationDestination
     apiGroup: volsync.backube
     name: "${APP}-bootstrap"
   resources:
     requests:
-      storage: "${VOLSYNC_CAPACITY:-2Gi}"
-  storageClassName: "${PVC_VOLSYNC_STORAGECLASS:-placeholder}"
+      storage: "${VOLSYNC_CAPACITY:=2Gi}"
+  storageClassName: "${PVC_VOLSYNC_STORAGECLASS:=placeholder}"
