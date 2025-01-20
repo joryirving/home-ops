@@ -19,12 +19,12 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-repos
+  name: cluster-meta
   namespace: flux-system
 spec:
   targetNamespace: flux-system
   interval: 30m
-  path: ./kubernetes/utility/flux/repos
+  path: ./kubernetes/utility/flux/meta
   prune: false # revert to true
   wait: true
   sourceRef:
@@ -40,7 +40,7 @@ metadata:
 spec:
   interval: 30m
   dependsOn:
-    - name: cluster-repos
+    - name: cluster-meta
     - name: cluster-shared
   path: ./kubernetes/utility/apps
   prune: false # revert to true
