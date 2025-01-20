@@ -94,21 +94,6 @@ spec:
         ports:
           http:
             port: *port
-    serviceMonitor:
-      app:
-        serviceName: *app
-        endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
-            metricRelabelings:
-              - action: labeldrop
-                regex: (pod)
-              - action: replace
-                sourceLabels: ["service"]
-                targetLabel: instance
     ingress:
       app:
         className: external
