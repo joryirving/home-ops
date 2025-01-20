@@ -4,13 +4,13 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app kustomize-mutating-webhook
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: cert-manager
+      namespace: cert-manager
   interval: 30m
   path: ./kubernetes/utility/apps/flux-system/kustomize-mutating-webhook/app
   prune: false # revert to true

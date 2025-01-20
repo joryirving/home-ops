@@ -4,7 +4,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app plex
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -14,7 +13,9 @@ spec:
     - ../../../../../shared/components/volsync
   dependsOn:
     - name: onepassword-store
+      namespace: external-secrets
     - name: volsync
+      namespace: storage
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/app
   postBuild:
@@ -37,7 +38,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app kometa
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -46,11 +46,17 @@ spec:
     - ../../../../../shared/components/volsync
   dependsOn:
     - name: plex
+      namespace: media
     - name: tautulli
+      namespace: media
     - name: radarr
+      namespace: downloads
     - name: sonarr
+      namespace: downloads
     - name: onepassword-store
+      namespace: external-secrets
     - name: volsync
+      namespace: storage
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/kometa
   postBuild:
@@ -81,6 +87,7 @@ spec:
 #     - ../../../../../shared/components/volsync
 #   dependsOn:
 #     - name: plex
+#       namespace: media
 #   interval: 30m
 #   path: ./kubernetes/main/apps/media/plex/movie-roulette
 #   postBuild:
@@ -100,13 +107,13 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app plex-auto-languages
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
+      namespace: media
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/plex-auto-languages
   prune: false # revert to true
@@ -123,14 +130,15 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app plex-image-cleanup
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
+      namespace: media
     - name: onepassword-store
+      namespace: external-secrets
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/plex-image-cleanup
   postBuild:

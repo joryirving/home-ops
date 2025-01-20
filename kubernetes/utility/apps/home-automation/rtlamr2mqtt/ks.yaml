@@ -4,14 +4,15 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app rtlamr2mqtt
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
+      namespace: external-secrets
     - name: node-feature-discovery-features
+      namespace: kube-tools
   interval: 30m
   path: ./kubernetes/utility/apps/home-automation/rtlamr2mqtt/app
   prune: false # revert to true

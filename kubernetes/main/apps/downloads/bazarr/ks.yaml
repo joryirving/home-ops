@@ -4,7 +4,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app bazarr
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -14,8 +13,11 @@ spec:
     - ../../../../../shared/components/volsync
   dependsOn:
     - name: crunchy-postgres-cluster
+      namespace: database
     - name: crunchy-postgres-stores
+      namespace: database
     - name: onepassword-store
+      namespace: external-secrets
     - name: volsync
   interval: 30m
   path: ./kubernetes/main/apps/downloads/bazarr/app
@@ -36,7 +38,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app whisper
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:

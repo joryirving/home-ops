@@ -4,7 +4,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app authentik
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -13,9 +12,13 @@ spec:
     - ../../../../../shared/components/gatus/external
   dependsOn:
     - name: crunchy-postgres-cluster
+      namespace: database
     - name: crunchy-postgres-stores
+      namespace: database
     - name: dragonfly-cluster
+      namespace: database
     - name: onepassword-store
+      namespace: external-secrets
   interval: 30m
   path: ./kubernetes/main/apps/security/authentik/app
   postBuild:

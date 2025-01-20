@@ -4,7 +4,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app crunchy-postgres-operator
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -25,14 +24,15 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app crunchy-postgres-cluster
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-operator
+      namespace: database
     - name: onepassword-store
+      namespace: external-secrets
   interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/cluster
   postBuild:
@@ -54,13 +54,13 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app crunchy-postgres-stores
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-cluster
+      namespace: database
   interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/stores
   prune: false # revert to true
@@ -77,13 +77,13 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app crunchy-postgres-userinit-controller
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-cluster
+      namespace: database
   interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/userinit-controller
   prune: false # revert to true

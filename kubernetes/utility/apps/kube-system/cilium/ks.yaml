@@ -4,7 +4,6 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app cilium
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
@@ -25,13 +24,13 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app cilium-config
-  namespace: flux-system
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: cilium
+      namespace: kube-system
   interval: 30m
   path: ./kubernetes/utility/apps/kube-system/cilium/config
   prune: false # never should be deleted
