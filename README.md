@@ -88,13 +88,13 @@ This Git repository contains the following directories under [Kubernetes](./kube
 │   ├── 📁 apps        # applications
 │   ├── 📁 bootstrap   # bootstrap procedures
 │   ├── 📁 flux        # core flux configuration
-│   └── 📁 talos       # talos configuration
 ├── 📁 shared          # shared cluster resources
+│   ├── 📁 components  # re-useable components
+│   ├── 📁 repos       # common reusable repositories
 └── 📁 utility         # utility cluster
     ├── 📁 apps        # applications
     ├── 📁 bootstrap   # bootstrap procedures
-    ├── 📁 flux        # core flux configuration
-    └── 📁 talos       # talos configuration
+    └── 📁 flux        # core flux configuration
 ```
 
 ### Networking
