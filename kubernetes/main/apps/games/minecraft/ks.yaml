@@ -6,19 +6,19 @@ metadata:
   name: &app mc-router
   namespace: flux-system
 spec:
-  targetNamespace: games
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/games/minecraft/mc-router
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: games
   timeout: 5m
+  wait: false
 # ---
 # # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 # apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -27,24 +27,25 @@ spec:
 #   name: &app minecraft-vibecraft
 #   namespace: flux-system
 # spec:
-#   targetNamespace: games
 #   commonMetadata:
 #     labels:
 #       app.kubernetes.io/name: *app
 #   dependsOn:
 #     - name: onepassword-store
-#   path: ./kubernetes/main/apps/games/minecraft/vibecraft
-#   prune: true
-#   sourceRef:
-#     kind: GitRepository
-#     name: flux-system
-#   wait: false # no flux ks dependents
 #   interval: 30m
-#   timeout: 5m
+#   path: ./kubernetes/main/apps/games/minecraft/vibecraft
 #   postBuild:
 #     substitute:
 #       APP: *app
 #       VOLSYNC_CAPACITY: 15Gi
+#   prune: true
+#   sourceRef:
+#     kind: GitRepository
+#     name: flux-system
+#     namespace: flux-system
+#   targetNamespace: games
+#   timeout: 5m
+#   wait: false
 # ---
 # # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 # apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -53,24 +54,25 @@ spec:
 #   name: &app minecraft-create
 #   namespace: flux-system
 # spec:
-#   targetNamespace: games
 #   commonMetadata:
 #     labels:
 #       app.kubernetes.io/name: *app
 #   dependsOn:
 #     - name: onepassword-store
-#   path: ./kubernetes/main/apps/games/minecraft/create
-#   prune: true
-#   sourceRef:
-#     kind: GitRepository
-#     name: flux-system
-#   wait: false # no flux ks dependents
 #   interval: 30m
-#   timeout: 5m
+#   path: ./kubernetes/main/apps/games/minecraft/create
 #   postBuild:
 #     substitute:
 #       APP: *app
 #       VOLSYNC_CAPACITY: 15Gi
+#   prune: true
+#   sourceRef:
+#     kind: GitRepository
+#     name: flux-system
+#     namespace: flux-system
+#   targetNamespace: games
+#   timeout: 5m
+#   wait: false
 # ---
 # # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 # apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -79,21 +81,22 @@ spec:
 #   name: &app minecraft-takocraft
 #   namespace: flux-system
 # spec:
-#   targetNamespace: games
 #   commonMetadata:
 #     labels:
 #       app.kubernetes.io/name: *app
 #   dependsOn:
 #     - name: onepassword-store
-#   path: ./kubernetes/main/apps/games/minecraft/takocraft
-#   prune: true
-#   sourceRef:
-#     kind: GitRepository
-#     name: flux-system
-#   wait: false # no flux ks dependents
 #   interval: 30m
-#   timeout: 5m
+#   path: ./kubernetes/main/apps/games/minecraft/takocraft
 #   postBuild:
 #     substitute:
 #       APP: *app
 #       VOLSYNC_CAPACITY: 15Gi
+#   prune: true
+#   sourceRef:
+#     kind: GitRepository
+#     name: flux-system
+#     namespace: flux-system
+#   targetNamespace: games
+#   timeout: 5m
+#   wait: false

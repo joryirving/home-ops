@@ -6,19 +6,19 @@ metadata:
   name: &app nut-exporter
   namespace: flux-system
 spec:
-  targetNamespace: observability
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/observability/exporters/nut-exporter/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: observability
   timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -27,16 +27,16 @@ metadata:
   name: &app nut-exporter-dashboard
   namespace: flux-system
 spec:
-  targetNamespace: observability
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/observability/exporters/nut-exporter/dashboard
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: observability
   timeout: 5m
+  wait: false

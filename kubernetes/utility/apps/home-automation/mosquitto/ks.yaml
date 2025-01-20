@@ -6,21 +6,21 @@ metadata:
   name: &app mosquitto
   namespace: flux-system
 spec:
-  targetNamespace: home-automation
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/utility/apps/home-automation/mosquitto/app
+  postBuild:
+    substitute:
+      APP: *app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: home-automation
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
+  wait: false

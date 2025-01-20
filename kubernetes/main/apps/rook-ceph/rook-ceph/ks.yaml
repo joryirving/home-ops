@@ -6,21 +6,21 @@ metadata:
   name: &app rook-ceph
   namespace: flux-system
 spec:
-  targetNamespace: rook-ceph
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/main/apps/rook-ceph/rook-ceph/app
   prune: false # never should be deleted
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: rook-ceph
   timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -29,16 +29,16 @@ metadata:
   name: &app rook-ceph-cluster
   namespace: flux-system
 spec:
-  targetNamespace: rook-ceph
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/rook-ceph/rook-ceph/cluster
   prune: false # never should be deleted
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: rook-ceph
   timeout: 15m
+  wait: false

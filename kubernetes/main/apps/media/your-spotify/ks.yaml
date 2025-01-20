@@ -6,24 +6,24 @@ metadata:
   name: &app your-spotify
   namespace: flux-system
 spec:
-  targetNamespace: media
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
     - name: volsync
-  path: ./kubernetes/main/apps/media/your-spotify/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false # no flux ks dependents
   interval: 30m
-  timeout: 5m
+  path: ./kubernetes/main/apps/media/your-spotify/app
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 5Gi
       GATUS_SUBDOMAIN: spotty
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: media
+  timeout: 5m
+  wait: false

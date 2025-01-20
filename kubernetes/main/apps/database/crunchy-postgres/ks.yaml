@@ -6,19 +6,19 @@ metadata:
   name: &app crunchy-postgres-operator
   namespace: flux-system
 spec:
-  targetNamespace: database
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true
-  interval: 30m
+  targetNamespace: database
   timeout: 5m
+  wait: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -27,27 +27,27 @@ metadata:
   name: &app crunchy-postgres-cluster
   namespace: flux-system
 spec:
-  targetNamespace: database
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-operator
     - name: onepassword-store
-  path: ./kubernetes/main/apps/database/crunchy-postgres/cluster
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: true
   interval: 30m
-  timeout: 5m
+  path: ./kubernetes/main/apps/database/crunchy-postgres/cluster
   postBuild:
     substituteFrom:
       - kind: Secret
         name: crunchy-postgres-r2
         optional: false
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: database
+  timeout: 5m
+  wait: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -56,21 +56,21 @@ metadata:
   name: &app crunchy-postgres-stores
   namespace: flux-system
 spec:
-  targetNamespace: database
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-cluster
+  interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/stores
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true
-  interval: 30m
+  targetNamespace: database
   timeout: 5m
+  wait: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -79,18 +79,18 @@ metadata:
   name: &app crunchy-postgres-userinit-controller
   namespace: flux-system
 spec:
-  targetNamespace: database
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-cluster
+  interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/userinit-controller
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true
-  interval: 30m
+  targetNamespace: database
   timeout: 5m
+  wait: true

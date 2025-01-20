@@ -6,21 +6,21 @@ metadata:
   name: &app dragonfly-operator
   namespace: flux-system
 spec:
-  targetNamespace: database
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/main/apps/database/dragonfly/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true
-  interval: 30m
+  targetNamespace: database
   timeout: 5m
+  wait: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -29,18 +29,18 @@ metadata:
   name: &app dragonfly-cluster
   namespace: flux-system
 spec:
-  targetNamespace: database
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: dragonfly-operator
+  interval: 30m
   path: ./kubernetes/main/apps/database/dragonfly/cluster
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true
-  interval: 30m
+  targetNamespace: database
   timeout: 5m
+  wait: true

@@ -6,7 +6,6 @@ metadata:
   name: &app radarr
   namespace: flux-system
 spec:
-  targetNamespace: downloads
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
@@ -14,15 +13,16 @@ spec:
     - name: crunchy-postgres-cluster
     - name: crunchy-postgres-stores
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/main/apps/downloads/radarr/app
+  postBuild:
+    substitute:
+      APP: *app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: downloads
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
+  wait: false

@@ -6,23 +6,23 @@ metadata:
   name: &app home-assistant
   namespace: flux-system
 spec:
-  targetNamespace: home-automation
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: volsync
-  path: ./kubernetes/utility/apps/home-automation/home-assistant/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false # no flux ks dependents
   interval: 30m
-  timeout: 15m
+  path: ./kubernetes/utility/apps/home-automation/home-assistant/app
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 5Gi
       GATUS_SUBDOMAIN: hass
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: home-automation
+  timeout: 15m
+  wait: false

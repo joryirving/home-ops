@@ -6,7 +6,6 @@ metadata:
   name: &app bazarr
   namespace: flux-system
 spec:
-  targetNamespace: downloads
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
@@ -15,18 +14,19 @@ spec:
     - name: crunchy-postgres-stores
     - name: onepassword-store
     - name: volsync
+  interval: 30m
   path: ./kubernetes/main/apps/downloads/bazarr/app
+  postBuild:
+    substitute:
+      APP: *app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: downloads
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
+  wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -35,16 +35,16 @@ metadata:
   name: &app whisper
   namespace: flux-system
 spec:
-  targetNamespace: downloads
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/downloads/bazarr/whisper
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: downloads
   timeout: 5m
+  wait: false

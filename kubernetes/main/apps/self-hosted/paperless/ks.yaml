@@ -6,7 +6,6 @@ metadata:
   name: &app paperless
   namespace: flux-system
 spec:
-  targetNamespace: self-hosted
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
@@ -15,17 +14,17 @@ spec:
     - name: dragonfly-cluster
     - name: onepassword-store
     - name: volsync
+  interval: 30m
   path: ./kubernetes/main/apps/self-hosted/paperless/app
+  postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_CAPACITY: 15Gi
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
-
+  targetNamespace: self-hosted
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
-      VOLSYNC_CAPACITY: 15Gi
+  wait: false

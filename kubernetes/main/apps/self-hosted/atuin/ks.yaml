@@ -6,24 +6,24 @@ metadata:
   name: &app atuin
   namespace: flux-system
 spec:
-  targetNamespace: self-hosted
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   dependsOn:
     - name: crunchy-postgres-cluster
     - name: crunchy-postgres-stores
     - name: onepassword-store
   path: ./kubernetes/main/apps/self-hosted/atuin/app
+  postBuild:
+    substitute:
+      APP: *app
+      GATUS_SUBDOMAIN: sh
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: self-hosted
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
-      GATUS_SUBDOMAIN: sh
+  wait: false

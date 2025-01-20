@@ -6,16 +6,16 @@ metadata:
   name: &app clickops
   namespace: flux-system
 spec:
-  targetNamespace: flux-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/flux-system/clickops/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: flux-system
   timeout: 5m
+  wait: false

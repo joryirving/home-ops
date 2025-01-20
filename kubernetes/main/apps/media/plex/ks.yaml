@@ -6,28 +6,28 @@ metadata:
   name: &app plex
   namespace: flux-system
 spec:
-  targetNamespace: media
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
     - name: volsync
-  path: ./kubernetes/main/apps/media/plex/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false # no flux ks dependents
   interval: 30m
-  timeout: 5m
+  path: ./kubernetes/main/apps/media/plex/app
   postBuild:
     substitute:
       APP: *app
       GATUS_PATH: /web/index.html
       VOLSYNC_CAPACITY: 50Gi
       VOLSYNC_CACHE_CAPACITY: 25Gi
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  timeout: 5m
+  wait: false
+  targetNamespace: media
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -36,7 +36,6 @@ metadata:
   name: &app kometa
   namespace: flux-system
 spec:
-  targetNamespace: media
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
@@ -47,19 +46,20 @@ spec:
     - name: sonarr
     - name: onepassword-store
     - name: volsync
+  interval: 30m
   path: ./kubernetes/main/apps/media/plex/kometa
+  postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_CAPACITY: 10Gi
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: media
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
-      VOLSYNC_CAPACITY: 10Gi
+  wait: false
 # ---
 # # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 # apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -68,23 +68,24 @@ spec:
 #   name: &app movie-roulette
 #   namespace: flux-system
 # spec:
-#   targetNamespace: media
 #   commonMetadata:
 #     labels:
 #       app.kubernetes.io/name: *app
 #   dependsOn:
 #     - name: plex
+#   interval: 30m
 #   path: ./kubernetes/main/apps/media/plex/movie-roulette
+#   postBuild:
+#     substitute:
+#       APP: *app
 #   prune: true
 #   sourceRef:
 #     kind: GitRepository
 #     name: flux-system
-#   wait: false # no flux ks dependents
-#   interval: 30m
+#     namespace: flux-system
+#   targetNamespace: media
 #   timeout: 5m
-#   postBuild:
-#     substitute:
-#       APP: *app
+#   wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -93,21 +94,21 @@ metadata:
   name: &app plex-auto-languages
   namespace: flux-system
 spec:
-  targetNamespace: media
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
+  interval: 30m
   path: ./kubernetes/main/apps/media/plex/plex-auto-languages
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: media
   timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -116,22 +117,22 @@ metadata:
   name: &app plex-image-cleanup
   namespace: flux-system
 spec:
-  targetNamespace: media
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/main/apps/media/plex/plex-image-cleanup
+  postBuild:
+    substitute:
+      APP: *app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: media
   timeout: 5m
-  postBuild:
-    substitute:
-      APP: *app
+  wait: false

@@ -6,21 +6,21 @@ metadata:
   name: &app kube-prometheus-stack
   namespace: flux-system
 spec:
-  targetNamespace: observability
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/utility/apps/observability/kube-prometheus-stack/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: observability
   timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -29,16 +29,16 @@ metadata:
   name: &app kube-prometheus-stack-crds
   namespace: flux-system
 spec:
-  targetNamespace: observability
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/utility/apps/observability/kube-prometheus-stack/crds
   prune: false # never should be deleted
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: observability
   timeout: 5m
+  wait: false

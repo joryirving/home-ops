@@ -6,16 +6,16 @@ metadata:
   name: &app descheduler
   namespace: flux-system
 spec:
-  targetNamespace: kube-tools
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/kube-tools/descheduler/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: kube-tools
   timeout: 5m
+  wait: false

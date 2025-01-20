@@ -6,19 +6,19 @@ metadata:
   name: &app weave-gitops
   namespace: flux-system
 spec:
-  targetNamespace: flux-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: authentik
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/main/apps/flux-system/weave-gitops/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: flux-system
   timeout: 5m
+  wait: false

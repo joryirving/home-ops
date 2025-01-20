@@ -7,21 +7,21 @@ metadata:
   name: &app external-dns-unifi
   namespace: flux-system
 spec:
-  targetNamespace: network
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: onepassword-store
+  interval: 30m
   path: ./kubernetes/main/apps/network/internal/external-dns
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true
-  interval: 30m
+  targetNamespace: network
   timeout: 5m
+  wait: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -30,18 +30,18 @@ metadata:
   name: &app internal-ingress-nginx
   namespace: flux-system
 spec:
-  targetNamespace: network
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: cert-manager-tls
+  interval: 30m
   path: ./kubernetes/main/apps/network/internal/ingress-nginx
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: network
   timeout: 5m
+  wait: false

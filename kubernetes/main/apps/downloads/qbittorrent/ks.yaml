@@ -6,21 +6,13 @@ metadata:
   name: &app qbittorrent
   namespace: flux-system
 spec:
-  targetNamespace: downloads
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: volsync
-  path: ./kubernetes/main/apps/downloads/qbittorrent/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false # no flux ks dependents
   interval: 30m
-  timeout: 5m
+  path: ./kubernetes/main/apps/downloads/qbittorrent/app
   postBuild:
     substitute:
       APP: *app
@@ -29,6 +21,14 @@ spec:
       PVC_VOLSYNC_STORAGECLASS: ceph-filesystem
       VOLSYNC_STORAGECLASS: ceph-filesystem
       VOLSYNC_SNAPSHOTCLASS: csi-ceph-filesystem
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: downloads
+  timeout: 5m
+  wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -37,18 +37,18 @@ metadata:
   name: &app qbittorrent-tools
   namespace: flux-system
 spec:
-  targetNamespace: downloads
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: qbittorrent
+  interval: 30m
   path: ./kubernetes/main/apps/downloads/qbittorrent/tools
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: downloads
   timeout: 5m
+  wait: false

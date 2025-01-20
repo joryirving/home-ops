@@ -6,16 +6,16 @@ metadata:
   name: &app flaresolverr
   namespace: flux-system
 spec:
-  targetNamespace: downloads
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/main/apps/downloads/flaresolverr/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: downloads
   timeout: 5m
+  wait: false

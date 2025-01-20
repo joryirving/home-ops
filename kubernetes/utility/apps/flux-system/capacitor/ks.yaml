@@ -6,19 +6,19 @@ metadata:
   name: &app capacitor
   namespace: flux-system
 spec:
-  targetNamespace: flux-system
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/utility/apps/flux-system/capacitor/app
+  postBuild:
+    substitute:
+      APP: *app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: flux-system
   timeout: 15m
-  postBuild:
-    substitute:
-      APP: *app
+  wait: false

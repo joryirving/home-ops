@@ -5,22 +5,22 @@ metadata:
   name: &app vrising
   namespace: flux-system
 spec:
-  targetNamespace: games
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  path: ./kubernetes/main/apps/games/vrising/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false # no flux ks dependents
   interval: 30m
-  timeout: 5m
+  path: ./kubernetes/main/apps/games/vrising/app
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 50Gi
       VOLSYNC_UID: "1000"
       VOLSYNC_GID: "1000"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: games
+  timeout: 5m
+  wait: false

@@ -6,16 +6,16 @@ metadata:
   name: &app local-path-provisioner
   namespace: flux-system
 spec:
-  targetNamespace: storage
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  interval: 30m
   path: ./kubernetes/utility/apps/storage/local-path-provisioner/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: false # no flux ks dependents
-  interval: 30m
+  targetNamespace: storage
   timeout: 5m
+  wait: false
