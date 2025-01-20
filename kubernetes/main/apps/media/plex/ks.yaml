@@ -13,7 +13,9 @@ spec:
     - ../../../../../shared/components/volsync
   dependsOn:
     - name: onepassword-store
+      namespace: external-secrets
     - name: volsync
+      namespace: storage
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/app
   postBuild:
@@ -44,11 +46,17 @@ spec:
     - ../../../../../shared/components/volsync
   dependsOn:
     - name: plex
+      namespace: media
     - name: tautulli
+      namespace: media
     - name: radarr
+      namespace: downloads
     - name: sonarr
+      namespace: downloads
     - name: onepassword-store
+      namespace: external-secrets
     - name: volsync
+      namespace: storage
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/kometa
   postBuild:
@@ -79,6 +87,7 @@ spec:
 #     - ../../../../../shared/components/volsync
 #   dependsOn:
 #     - name: plex
+#       namespace: media
 #   interval: 30m
 #   path: ./kubernetes/main/apps/media/plex/movie-roulette
 #   postBuild:
@@ -104,6 +113,7 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
+      namespace: media
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/plex-auto-languages
   prune: false # revert to true
@@ -126,7 +136,9 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
+      namespace: media
     - name: onepassword-store
+      namespace: external-secrets
   interval: 30m
   path: ./kubernetes/main/apps/media/plex/plex-image-cleanup
   postBuild:

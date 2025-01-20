@@ -30,7 +30,9 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-operator
+      namespace: database
     - name: onepassword-store
+      namespace: external-secrets
   interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/cluster
   postBuild:
@@ -58,6 +60,7 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-cluster
+      namespace: database
   interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/stores
   prune: false # revert to true
@@ -80,6 +83,7 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: crunchy-postgres-cluster
+      namespace: database
   interval: 30m
   path: ./kubernetes/main/apps/database/crunchy-postgres/userinit-controller
   prune: false # revert to true
