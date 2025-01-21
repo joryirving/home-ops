@@ -2,21 +2,19 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: storage
 resources:
-  # Pre Flux-Kustomizations
-  - ./namespace.yaml
-  # Flux-Kustomizations
   - ./csi-driver-nfs/ks.yaml
   - ./openebs/ks.yaml
   - ./snapshot-controller/ks.yaml
   - ./volsync/ks.yaml
 components:
   - ../../../shared/components/alerts
-transformers:
-  - |-
-    apiVersion: builtin
-    kind: NamespaceTransformer
-    metadata:
-      name: not-used
-      namespace: storage
-    unsetOnly: true
+  - ../../../shared/components/namespace
+patches:
+  - patch: |
+      - op: add
+        path: /metadata/name
+        value: storage
+    target:
+      kind: Namespace

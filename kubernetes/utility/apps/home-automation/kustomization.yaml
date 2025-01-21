@@ -2,21 +2,19 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: home-automation
 resources:
-  # Pre Flux-Kustomizations
-  - ./namespace.yaml
-  # Flux-Kustomizations
   - ./home-assistant/ks.yaml
   - ./mosquitto/ks.yaml
   - ./rtlamr2mqtt/ks.yaml
   - ./zigbee2mqtt/ks.yaml
 components:
   - ../../../shared/components/alerts
-transformers:
-  - |-
-    apiVersion: builtin
-    kind: NamespaceTransformer
-    metadata:
-      name: not-used
-      namespace: home-automation
-    unsetOnly: true
+  - ../../../shared/components/namespace
+patches:
+  - patch: |
+      - op: add
+        path: /metadata/name
+        value: home-automation
+    target:
+      kind: Namespace

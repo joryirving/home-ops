@@ -2,10 +2,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: media
 resources:
-  # Pre Flux-Kustomizations
-  - ./namespace.yaml
-  # Flux-Kustomizations
   - ./ersatztv/ks.yaml
   - ./jellyseerr/ks.yaml
   - ./kavita/ks.yaml
@@ -18,11 +16,11 @@ resources:
   - ./your-spotify/ks.yaml
 components:
   - ../../../shared/components/alerts
-transformers:
-  - |-
-    apiVersion: builtin
-    kind: NamespaceTransformer
-    metadata:
-      name: not-used
-      namespace: media
-    unsetOnly: true
+  - ../../../shared/components/namespace
+patches:
+  - patch: |
+      - op: add
+        path: /metadata/name
+        value: media
+    target:
+      kind: Namespace
