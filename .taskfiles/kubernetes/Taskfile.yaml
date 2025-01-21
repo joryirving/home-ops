@@ -68,7 +68,7 @@ tasks:
 
   reconcile:
     desc: Force update Flux to pull in changes from your Git repository
-    cmd: flux reconcile -n flux-system kustomization cluster-apps cluster-repos cluster-shared --with-source
+    cmd: flux reconcile -n flux-system kustomization cluster-apps cluster-meta cluster-shared --with-source
     requires:
       vars: [CLUSTER]
 
@@ -79,6 +79,18 @@ tasks:
       - kubectl get hr --all-namespaces | grep False | awk '{print $2, $1}' | xargs -L1 bash -c 'flux resume hr $0 -n $1'
     requires:
       vars: [CLUSTER]
+
+  ks-*:
+    desc: Suspend or resume Kustomizations [CLUSTER=main]
+    cmds:
+      - kubectl get ns -o jsonpath='{.items[*].metadata.name}' | xargs -n1 flux {{.STATE}} ks --all --namespace
+    vars:
+      STATE: '{{index .MATCH 0}}'
+    requires:
+      vars: [CLUSTER]
+    preconditions:
+      - '[[ "{{.STATE}}" == "suspend" || "{{.STATE}}" == "resume" ]]'
+      - which flux kubectl
 
   # https://docs.github.com/en/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/deploying-runner-scale-sets-with-actions-runner-controller#upgrading-arc
   upgrade-arc:

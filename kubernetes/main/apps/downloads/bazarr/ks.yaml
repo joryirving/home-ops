@@ -19,12 +19,13 @@ spec:
     - name: onepassword-store
       namespace: external-secrets
     - name: volsync
+      namespace: storage
   interval: 30m
   path: ./kubernetes/main/apps/downloads/bazarr/app
   postBuild:
     substitute:
       APP: *app
-  prune: false # revert to true
+  prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -44,7 +45,7 @@ spec:
       app.kubernetes.io/name: *app
   interval: 30m
   path: ./kubernetes/main/apps/downloads/bazarr/whisper
-  prune: false # revert to true
+  prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
