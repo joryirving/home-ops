@@ -63,18 +63,17 @@ There is a template over at [onedr0p/cluster-template](https://github.com/onedr0
 - [external-dns](https://github.com/kubernetes-sigs/external-dns): automatically syncs DNS records from my cluster ingresses to a DNS provider
 - [external-secrets](https://github.com/external-secrets/external-secrets/): managed Kubernetes secrets using [1Password](https://1password.com/).
 - [ingress-nginx](https://github.com/kubernetes/ingress-nginx/): ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer
-- [longhorn](https://longhorn.io/): Cloud native distributed block storage for Kubernetes
 - [rook-ceph](https://rook.io/): Cloud native distributed block storage for Kubernetes
-- [sops](https://toolkit.fluxcd.io/guides/mozilla-sops/): managed secrets for Kubernetes, Ansible, and Terraform which are committed to Git
+- [sops](https://toolkit.fluxcd.io/guides/mozilla-sops/): managed secrets for Talos, which are committed to Git
 - [spegel](https://github.com/XenitAB/spegel): stateless cluster local OCI registry mirror
-- [tf-controller](https://github.com/weaveworks/tf-controller): additional Flux component used to run Terraform from within a Kubernetes cluster.
+- [tofu-controller](https://github.com/weaveworks/tf-controller): additional Flux component used to run Terraform from within a Kubernetes cluster.
 - [volsync](https://github.com/backube/volsync): backup and recovery of persistent volume claims
 
 ### GitOps
 
 [Flux](https://github.com/fluxcd/flux2) watches the clusters in my [kubernetes](./kubernetes/) folder (see Directories below) and makes the changes to my clusters based on the state of my Git repository.
 
-The way Flux works for me here is it will recursively search the `kubernetes/${cluster}/apps` folder until it finds the most top level `kustomization.yaml` per directory and then apply all the resources listed in it. That aforementioned `kustomization.yaml` will generally only have a namespace resource and one or many Flux kustomizations. Those Flux kustomizations will generally have a `HelmRelease` or other resources related to the application underneath it which will be applied.
+The way Flux works for me here is it will recursively search the `kubernetes/${cluster}/apps` folder until it finds the most top level `kustomization.yaml` per directory and then apply all the resources listed in it. That aforementioned `kustomization.yaml` will generally only have a namespace resource and one or many Flux kustomizations (`ks.yaml`). Under the control of those Flux kustomizations there will be a `HelmRelease` or other resources related to the application which will be applied.
 
 [Renovate](https://github.com/renovatebot/renovate) watches my **entire** repository looking for dependency updates, when they are found a PR is automatically created. When some PRs are merged Flux applies the changes to my cluster.
 
@@ -84,17 +83,17 @@ This Git repository contains the following directories under [Kubernetes](./kube
 
 ```sh
 📁 kubernetes
-├── 📁 main            # main cluster
-│   ├── 📁 apps        # applications
-│   ├── 📁 bootstrap   # bootstrap procedures
-│   ├── 📁 flux        # core flux configuration
-├── 📁 shared          # shared cluster resources
-│   ├── 📁 components  # re-useable components
-│   ├── 📁 repos       # common reusable repositories
-└── 📁 utility         # utility cluster
-    ├── 📁 apps        # applications
-    ├── 📁 bootstrap   # bootstrap procedures
-    └── 📁 flux        # core flux configuration
+├── 📁 main             # main cluster
+│   ├── 📁 apps         # applications
+│   ├── 📁 bootstrap    # bootstrap procedures
+│   ├── 📁 flux         # core flux configuration
+├── 📁 shared           # shared cluster resources
+│   ├── 📁 components   # re-useable components
+│   ├── 📁 repositories # common reusable repositories
+└── 📁 utility          # utility cluster
+    ├── 📁 apps         # applications
+    ├── 📁 bootstrap    # bootstrap procedures
+    └── 📁 flux         # core flux configuration
 ```
 
 ### Networking
@@ -116,7 +115,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 | Service                                     | Use                                                               | Cost          |
 |---------------------------------------------|-------------------------------------------------------------------|---------------|
 | [1Password](https://1PAssword.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | Free - Work   |
-| [Cloudflare](https://www.cloudflare.com/)   | Domain and R2                                                     | ~$30/yr       |
+| [Cloudflare](https://www.cloudflare.com/)   | Domain and S4                                                     | ~$30/yr       |
 | [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free          |
 | [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free          |
 |                                             |                                                                   | Total: ~$3/mo |
@@ -125,9 +124,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 ## 🌐 DNS
 
-### Home DNS
-
-In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM Pro-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs the DNS records to their respective platforms accordingly.
+In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs the DNS records to their respective platforms accordingly.
 
 ---
 
@@ -149,20 +146,22 @@ Total RAM: 384GB
 
 ### Utility Kubernetes Cluster
 
-| Name     | Device     | CPU           | OS Disk   | Data Disk | RAM  | OS    | Purpose           |
-|----------|------------|---------------|-----------|-----------|------|-------|-------------------|
-| Celestia | Bosgame P1 | Ryzen 7 5700U | 480GB SSD | 1TB NVME  | 32GB | Talos | k8s control-plane |
+| Name     | Device     | CPU           | OS Disk   | Data Disk  | RAM  | OS    | Purpose           |
+|----------|------------|---------------|-----------|------------|------|-------|-------------------|
+| Celestia | Bosgame P1 | Ryzen 7 5700U | 480GB SSD | 500GB NVME | 32GB | Talos | k8s control-plane |
 
 Total CPU: 16 threads
 Total RAM: 32GB
 
 ### Supporting Hardware
 
-| Name    | Device        | CPU        | OS Disk    | Data Disk  | RAM  | OS           | Purpose        |
-|---------|---------------|------------|------------|------------|------|--------------|----------------|
-| Voyager | MS-01         | i5-12600H  | 32GB USB   | 1.92TB U.2 | 96GB | Unraid       | NAS/NFS/Backup |
-| DAS     | Lenovo SA120  | -          | -          | 72TB       | -    | -            | ZFS - Raidz2   |
-| PiKVM   | Raspberry Pi4 | Cortex A72 | 64GB mSD   | -          | 4GB  | PiKVM (Arch) | KVM            |
+| Name    | Device        | CPU        | OS Disk    | Data Disk     | RAM   | OS           | Purpose        |
+|---------|---------------|------------|------------|---------------|-------|--------------|----------------|
+| Voyager | MS-01         | i5-12600H  | 32GB USB   | 1.92TB U.2    | 96GB  | Unraid       | NAS/NFS/Backup |
+| DAS     | Lenovo SA120  | -          | -          | 6x14TB Raidz2 | -     | -            | ZFS            |
+| PiKVM   | Raspberry Pi4 | Cortex A72 | 64GB mSD   | -             | 4GB   | PiKVM (Arch) | KVM (Main)     |
+| TESmart | 8 port KVM    | -          | -          | -             | -     | -            | Network KVM    |
+| JetKVM  | JetKVM        | RV1106G3   | 8GB EMMC   | -             | 256MB | Linux 5.10   | KVM (Utility)  |
 
 ### Networking/UPS Hardware
 
@@ -188,18 +187,4 @@ Total RAM: 32GB
 
 ## 🤝 Thanks
 
-Big shout out to original [cluster-template](https://github.com/onedr0p/cluster-template), and the [Home Operations](https://discord.gg/home-operations) Discord community.
-
-Be sure to check out [kubesearch.dev](https://kubesearch.dev/) for ideas on how to deploy applications or get ideas on what you may deploy.
-
----
-
-## 📜 Changelog
-
-See my _awful_ [commit history](https://github.com/joryirving/home-ops/commits/)
-
----
-
-## 🔏 License
-
-See [LICENSE](./LICENSE)
+Big shout out to original [cluster-template](https://github.com/onedr0p/cluster-template), and the [Home Operations](https://discord.gg/home-operations) Discord community. Be sure to check out [kubesearch.dev](https://kubesearch.dev/) for ideas on how to deploy applications or get ideas on what you may deploy.
