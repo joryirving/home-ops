@@ -2,10 +2,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: flux-system
 resources:
-  # Pre Flux-Kustomizations
-  - ./namespace.yaml
-  # Flux-Kustomizations
   - ./capacitor/ks.yaml
   - ./flux-operator/ks.yaml
   - ./kustomize-mutating-webhook/ks.yaml
@@ -13,11 +11,11 @@ resources:
   - ./weave-gitops/ks.yaml
 components:
   - ../../../shared/components/alerts
-transformers:
-  - |-
-    apiVersion: builtin
-    kind: NamespaceTransformer
-    metadata:
-      name: not-used
-      namespace: flux-system
-    unsetOnly: true
+  - ../../../shared/components/namespace
+patches:
+  - patch: |
+      - op: add
+        path: /metadata/name
+        value: flux-system
+    target:
+      kind: Namespace
