@@ -15,15 +15,22 @@ instance:
     name: flux-system
     url: https://github.com/joryirving/home-ops.git
     ref: refs/heads/main
-    path: kubernetes/utility/flux/config
+    path: kubernetes/utility/flux/cluster
   commonMetadata:
     labels:
       app.kubernetes.io/name: flux
   kustomize:
     patches:
-      # Increase the number of workers and limits
-      # Ref: https://fluxcd.io/flux/installation/configuration/vertical-scaling/#increase-the-number-of-workers-and-limits
-      - patch: |
+      - # Add Sops decryption to 'flux-system' Kustomization
+        patch: |
+          - op: add
+            path: /spec/decryption
+            value:
+              provider: sops
+              secretRef:
+                name: sops-age
+      - # Increase the number of workers
+        patch: |
           - op: add
             path: /spec/template/spec/containers/0/args/-
             value: --concurrent=10
@@ -33,7 +40,8 @@ instance:
         target:
           kind: Deployment
           name: (kustomize-controller|helm-controller|source-controller)
-      - patch: |
+      - # Increase the memory limits
+        patch: |
           apiVersion: apps/v1
           kind: Deployment
           metadata:
@@ -49,9 +57,8 @@ instance:
         target:
           kind: Deployment
           name: (kustomize-controller|helm-controller|source-controller)
-      # Enable in-memory kustomize builds
-      # Ref: https://fluxcd.io/flux/installation/configuration/vertical-scaling/#enable-in-memory-kustomize-builds
-      - patch: |
+      - # Enable in-memory kustomize builds
+        patch: |
           - op: add
             path: /spec/template/spec/containers/0/args/-
             value: --concurrent=20
@@ -64,9 +71,8 @@ instance:
         target:
           kind: Deployment
           name: kustomize-controller
-      # Enable Helm repositories caching
-      # Ref: https://fluxcd.io/flux/installation/configuration/vertical-scaling/#enable-helm-repositories-caching
-      - patch: |
+      - # Enable Helm repositories caching
+        patch: |
           - op: add
             path: /spec/template/spec/containers/0/args/-
             value: --helm-cache-max-size=10
@@ -80,7 +86,6 @@ instance:
           kind: Deployment
           name: source-controller
       # Flux near OOM detection for Helm
-      # Ref: https://fluxcd.io/flux/installation/configuration/helm-oom-detection/
       - patch: |
           - op: add
             path: /spec/template/spec/containers/0/args/-
