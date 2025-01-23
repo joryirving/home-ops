@@ -97,6 +97,16 @@ spec:
         pinKey: TVDB_PIN
         existingSecret: *secret
 
+    autosync:
+      kyoo_autosync:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 20Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+
     back:
       kyoo_back:
         resources:
@@ -108,6 +118,47 @@ spec:
             memory: 8Gi
       persistence:
         existingClaim: *app
+
+    front:
+      kyoo_front:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 500Mi
+
+    matcher:
+      kyoo_matcher:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 500Mi
+
+    scanner:
+      kyoo_scanner:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 1Gi
+
+    transcoder:
+      kyoo_transcoder:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 500Mi
+          limits:
+            cpu: 100m
+            gpu.intel.com/i915: 1
+            memory: 8Gi
 
     ingress:
       enabled: true
