@@ -23,19 +23,6 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  values:
-    replicaCount: 1
-    certManager:
-      enabled: true
-    configMaps:
-      - create: true
-        name: cluster-settings
-        data:
-          CLUSTER: utility
-          PVC_VOLSYNC_STORAGECLASS: local-hostpath
-          VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
-          VOLSYNC_CACHE_SNAPSHOTCLASS: local-hostpath
-          VOLSYNC_STORAGECLASS: local-hostpath
-    secrets: []
-    podDisruptionBudget:
-      enabled: false #single node cluster
+  valuesFrom:
+    - kind: ConfigMap
+      name: kustomize-mutating-webhook-helm-values

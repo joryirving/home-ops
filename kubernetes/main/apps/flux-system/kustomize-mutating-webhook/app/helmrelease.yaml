@@ -23,16 +23,6 @@ spec:
     remediation:
       strategy: rollback
       retries: 3
-  values:
-    certManager:
-      enabled: true
-    configMaps:
-      - create: true
-        name: cluster-settings
-        data:
-          CLUSTER: main
-          PVC_VOLSYNC_STORAGECLASS: ceph-block
-          VOLSYNC_SNAPSHOTCLASS: csi-ceph-blockpool
-          VOLSYNC_CACHE_SNAPSHOTCLASS: ceph-block
-          VOLSYNC_STORAGECLASS: ceph-block
-    secrets: []
+  valuesFrom:
+    - kind: ConfigMap
+      name: kustomize-mutating-webhook-helm-values
