@@ -65,7 +65,7 @@ releases:
   - name: kustomize-mutating-webhook
     namespace: flux-system
     chart: fluxcd-kustomize-mutating-webhook/kustomize-mutating-webhook
-    version: 0.13.0
+    version: 0.3.0
     values:
       - ../../apps/flux-system/kustomize-mutating-webhook/app/helm-values.yaml
     needs:
@@ -78,7 +78,7 @@ releases:
     values:
       - ./templates/wipe-rook.yaml.gotmpl
     needs:
-      - kube-system/coredns
+      - flux-system/kustomize-mutating-webhook
 
   - name: flux-operator
     namespace: flux-system
