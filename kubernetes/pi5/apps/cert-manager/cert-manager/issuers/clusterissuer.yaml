@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/cert-manager.io/clusterissuer_v1.json
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: jory@jory.dev
+    privateKeySecretRef:
+      name: letsencrypt-production
+    solvers:
+      - dns01:
+          cloudflare:
+            email: jory@jory.dev
+            apiTokenSecretRef:
+              name: cloudflare-secret
+              key: CLOUDFLARE_API_KEY
+        selector:
+          dnsZones: ["jory.dev"]
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/cert-manager.io/clusterissuer_v1.json
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: jory@jory.dev
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+      - dns01:
+          cloudflare:
+            email: jory@jory.dev
+            apiTokenSecretRef:
+              name: cloudflare-secret
+              key: CLOUDFLARE_API_KEY
+        selector:
+          dnsZones: ["jory.dev"]
