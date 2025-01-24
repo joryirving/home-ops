@@ -16,17 +16,17 @@ tasks:
     desc: Apply Talos config to a node [CLUSTER=main] [HOSTNAME=required]
     dotenv: ['{{.CLUSTER_DIR}}/cluster.env']
     cmds:
-      - task: down
-      - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.BOOTSTRAP_DIR}}/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml
-      - talosctl --nodes {{.HOSTNAME}} health
-      - task: up
+      # - task: down
+      - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.BOOTSTRAP_DIR}}/talos/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      - talosctl --nodes {{.HOSTNAME}} health --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      # - task: up
     vars:
       MODE: '{{.MODE | default "auto"}}'
     requires:
       vars: [CLUSTER, HOSTNAME]
     preconditions:
-      - talosctl --nodes {{.HOSTNAME}} get machineconfig
-      - test -f {{.CLUSTER_DIR}}/cluster.env
+      - talosctl --nodes {{.HOSTNAME}} get machineconfig --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      - test -f {{.BOOTSTRAP_DIR}}/cluster.env
       - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
       - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
 
@@ -44,7 +44,7 @@ tasks:
     requires:
       vars: [CLUSTER]
     preconditions:
-      - talosctl config info
+      - talosctl config info --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - test -f {{.CLUSTER_DIR}}/cluster.env
       - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
       - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
@@ -67,14 +67,14 @@ tasks:
     desc: Reboot Talos on a single node [CLUSTER=main] [HOSTNAME=required]
     cmds:
       - task: down
-      - talosctl --nodes {{.HOSTNAME}} reboot
-      - talosctl --nodes {{.HOSTNAME}} health
+      - talosctl --nodes {{.HOSTNAME}} reboot --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      - talosctl --nodes {{.HOSTNAME}} health --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - task: up
     requires:
       vars: [CLUSTER, HOSTNAME]
     preconditions:
-      - talosctl --nodes {{.HOSTNAME}} get machineconfig
-      - talosctl config info
+      - talosctl --nodes {{.HOSTNAME}} get machineconfig --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      - talosctl config info --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - test -f {{.CLUSTER_DIR}}/cluster.env
       - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
       - which talosctl
@@ -86,7 +86,7 @@ tasks:
       vars: [CLUSTER]
     vars:
       HOSTNAMES:
-        sh: kubectl get nodes --output=jsonpath='{.items[*].metadata.name}'
+        sh: kubectl get nodes --output=jsonpath='{.items[*].metadata.name}' --context {{.CLUSTER}}
     cmds:
       - for: { var: HOSTNAMES }
         task: reboot-node
@@ -97,7 +97,7 @@ tasks:
         vars:
           CLUSTER: "{{.CLUSTER}}"
     preconditions:
-      - talosctl config info
+      - talosctl config info --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - test -f {{.CLUSTER_DIR}}/cluster.env
       - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
       - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
@@ -112,22 +112,22 @@ tasks:
     requires:
       vars: [CLUSTER]
     preconditions:
-      - talosctl --nodes {{.NODES}} get machineconfig
-      - talosctl config info
+      - talosctl --nodes {{.NODES}} get machineconfig --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
+      - talosctl config info --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - test -f {{.BOOTSTRAP_DIR}}/talos/talconfig.yaml
       - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - which talosctl
 
   kubeconfig:
     desc: Generate the kubeconfig for a Talos cluster [CLUSTER=main]
-    cmd: talosctl kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
+    cmd: talosctl kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}} --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
     vars:
       TALOS_CONTROLLER:
-        sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
+        sh: talosctl config info --output json --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig | jq --raw-output '.endpoints[]' | shuf -n 1
     requires:
       vars: [CLUSTER]
     preconditions:
-      - talosctl config info
+      - talosctl config info --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - test -f {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig
       - which talosctl
 
