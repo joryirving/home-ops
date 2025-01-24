@@ -76,7 +76,11 @@ tasks:
       - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
       - op run --env-file {{.BOOTSTRAP_DIR}}/apps/.secrets.env --no-masking -- minijinja-cli {{.BOOTSTRAP_DIR}}/apps/templates/resources.yaml.j2 | kubectl apply --server-side --filename -
       - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/apps/helmfile.yaml apply --skip-diff-on-install --suppress-diff
-      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/apps/helmfile.yaml destroy --selector name=wipe-rook
+      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/apps/helmfile.yaml destroy --selector name=wipe-rook || true
+      - '{{if eq .NODE_COUNT 1}}talosctl reboot -n {{.TALOS_CONTROLLER}}{{end}}'
+    vars:
+      TALOS_CONTROLLER:
+        sh: talosctl config info --output json --context {{.CLUSTER}} --talosconfig {{.BOOTSTRAP_DIR}}/talos/clusterconfig/talosconfig | jq --raw-output '.endpoints[]'
     env:
       NODE_COUNT:
         sh: talosctl --context {{.CLUSTER}} config info --output json | jq --raw-output '.nodes | length'
