@@ -32,15 +32,6 @@ tasks:
     preconditions:
       - op user get --me
 
-  push-pi5:
-    desc: Push pi5 kubeconfig/talosconfig to OnePassword
-    cmds:
-      - op item edit kubernetes KUBECONFIG_PI5[text]="$(cat {{.ROOT_DIR}}/kubernetes/pi5/kubeconfig)" &>/dev/null
-      - op item edit kubernetes TALOSCONFIG_PI5[text]="$(cat {{.ROOT_DIR}}/kubernetes/pi5/bootstrap/talos/clusterconfig/talosconfig)" &>/dev/null
-      - op item edit kubernetes TALOSCONFIG_PI5_BASE64[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig | base64 -w 0)" &>/dev/null
-    preconditions:
-      - op user get --me
-
   pull:
     desc: Pull Kubeconfig from OnePassword
     cmds:
@@ -50,13 +41,10 @@ tasks:
       - op item get kubernetes --fields label=TALOSCONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig # Main talosconfig
       - op item get kubernetes --fields label=KUBECONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/utility/kubeconfig # Utility kubeconfig
       - op item get kubernetes --fields label=TALOSCONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/utility/bootstrap/talos/clusterconfig/talosconfig # Utility talosconfig
-      - op item get kubernetes --fields label=KUBECONFIG_PI5 | tr -d '"' > {{.ROOT_DIR}}/kubernetes/pi5/kubeconfig # Pi5 kubeconfig
-      - op item get kubernetes --fields label=TALOSCONFIG_PI5 | tr -d '"' > {{.ROOT_DIR}}/kubernetes/pi5/bootstrap/talos/clusterconfig/talosconfig # Pi5 talosconfig
       - op item get kubernetes --fields label=KUBECONFIG | tr -d '"' > ~/.kube/config # Flat kubeconfig
       ## Note: The last `talosconfig` merged becomes the default context
       ## We pull the second talosconfig, and merge the main into it, so main is default
       - cp {{.ROOT_DIR}}/kubernetes/utility/bootstrap/talos/clusterconfig/talosconfig ~/.talos/config # Utility talosconfig
-      - talosctl config merge {{.ROOT_DIR}}/kubernetes/pi5/bootstrap/talos/clusterconfig/talosconfig --talosconfig  ~/.talos/config #Merge pi5 into flat talosconfig
       - talosctl config merge {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig --talosconfig  ~/.talos/config #Merge main into flat talosconfig
     preconditions:
       - op user get --me
