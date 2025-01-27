@@ -19,7 +19,7 @@ jobs:
     name: Changed Clusters
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.changed-clusters.outputs.all_changed_and_modified_files }}
+      matrix: ${{ steps.process-changes.outputs.matrix }}
     steps:
       - name: Generate Token
         uses: actions/create-github-app-token@v1
@@ -39,13 +39,21 @@ jobs:
         uses: tj-actions/changed-files@v45
         with:
           files: kubernetes/**
-          files_ignore: kubernetes/shared/**
           dir_names: true
           dir_names_max_depth: 2
           matrix: true
 
-      - name: List All Changed Clusters
-        run: echo ${{ steps.changed-clusters.outputs.all_changed_and_modified_files }}
+      - name: Process Changes
+        id: process-changes
+        run: |
+          changed=$(echo '${{ steps.changed-clusters.outputs.all_changed_and_modified_files }}' | jq -r '.[]')
+
+          # If kubernetes/shared is changed, include both clusters
+          if echo "$changed" | grep -q "kubernetes/shared"; then
+            echo 'matrix=["kubernetes/main", "kubernetes/utility"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$changed" >> "$GITHUB_OUTPUT"
+          fi
 
   test:
     name: Flux Local Test
