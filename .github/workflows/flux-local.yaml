@@ -49,7 +49,7 @@ jobs:
           changed=$(echo '${{ steps.changed-clusters.outputs.all_changed_and_modified_files }}' | jq -r '. | @json')
 
           if echo "$changed" | grep -q "kubernetes/shared"; then
-            echo 'matrix=["kubernetes/main", "kubernetes/utility"]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=["kubernetes/pi5"]' >> "$GITHUB_OUTPUT"
           else
             if [[ "$changed" == "["*"]" ]]; then
               echo "matrix=$changed" >> "$GITHUB_OUTPUT"

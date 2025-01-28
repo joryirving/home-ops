@@ -5,7 +5,7 @@ version: '3'
 tasks:
 
   apply-ks:
-    desc: Apply a Flux Kustomization resource for a cluster [CLUSTER=main] [PATH=required] [NS=flux-system]
+    desc: Apply a Flux Kustomization resource for a cluster [CLUSTER=pi5] [PATH=required] [NS=flux-system]
     cmd: >
       flux build --namespace {{.NS}} ks {{base .PATH}}
       --kustomization-file {{.CLUSTER_DIR}}/apps/{{.PATH}}/ks.yaml
@@ -23,7 +23,7 @@ tasks:
       - test -f {{.CLUSTER_DIR}}/apps/{{.PATH}}/ks.yaml
 
   browse-pvc:
-    desc: Mount a PVC to an temp container [CLUSTER=main] [NS=default] [CLAIM=required]
+    desc: Mount a PVC to an temp container [CLUSTER=pi5] [NS=default] [CLAIM=required]
     interactive: true
     cmd: kubectl browse-pvc --namespace {{.NS}} --image docker.io/library/alpine:latest {{.CLAIM}}
     vars:
@@ -34,7 +34,7 @@ tasks:
       - kubectl --namespace {{.NS}} get persistentvolumeclaims {{.CLAIM}}
 
   node-shell:
-    desc: Open a shell to a node [CLUSTER=main] [NODE=required]
+    desc: Open a shell to a node [CLUSTER=pi5] [NODE=required]
     interactive: true
     cmd: kubectl node-shell -n kube-system -x {{.NODE}}
     requires:
@@ -45,7 +45,7 @@ tasks:
       - which kubectl
 
   sync-secrets:
-    desc: Sync all ExternalSecrets [CLUSTER=main]
+    desc: Sync all ExternalSecrets [CLUSTER=pi5]
     cmds:
       - for: { var: SECRETS, split: "\n" }
         cmd: kubectl --namespace {{splitList "," .ITEM | first}} annotate externalsecret {{splitList "," .ITEM | last}} force-sync="{{.TS}}" --overwrite  --context {{.CLUSTER}}
@@ -57,7 +57,7 @@ tasks:
       vars: [CLUSTER]
 
   delete-failed-pods:
-    desc: Delete pods with a Failed/Pending/Succeeded phase [CLUSTER=main]
+    desc: Delete pods with a Failed/Pending/Succeeded phase [CLUSTER=pi5]
     cmds:
       - for:
           matrix:
@@ -81,7 +81,7 @@ tasks:
       vars: [CLUSTER]
 
   ks-*:
-    desc: Suspend or resume Kustomizations [CLUSTER=main]
+    desc: Suspend or resume Kustomizations [CLUSTER=pi5]
     cmds:
       - kubectl get ns -o jsonpath='{.items[*].metadata.name}' | xargs -n1 flux {{.STATE}} ks --all --namespace
     vars:
@@ -94,7 +94,7 @@ tasks:
 
   # https://docs.github.com/en/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/deploying-runner-scale-sets-with-actions-runner-controller#upgrading-arc
   upgrade-arc:
-    desc: Upgrade the ARC [CLUSTER=main]
+    desc: Upgrade the ARC [CLUSTER=pi5]
     cmds:
       - helm -n actions-runner-system uninstall home-ops-runner || true
       - helm -n actions-runner-system uninstall actions-runner-controller || true

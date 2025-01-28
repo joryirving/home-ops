@@ -13,7 +13,7 @@ vars:
 
 tasks:
   list:
-    desc: List snapshots for an application [CLUSTER=main] [NS=default] [APP=required]
+    desc: List snapshots for an application [CLUSTER=pi5] [NS=default] [APP=required]
     summary: |
       Args:
         CLUSTER: Cluster to run command against (required)
@@ -36,7 +36,7 @@ tasks:
       - test -f {{.VOLSYNC_RESOURCES_DIR}}/list.yaml.j2
 
   state-*:
-    desc: Suspend or resume Volsync [CLUSTER=main]
+    desc: Suspend or resume Volsync [CLUSTER=pi5]
     cmds:
       - flux --namespace flux-system {{.STATE}} kustomization volsync
       - flux --namespace storage {{.STATE}} helmrelease volsync
@@ -50,7 +50,7 @@ tasks:
       - which flux kubectl
 
   unlock:
-    desc: Unlock all restic source repos [CLUSTER=main]
+    desc: Unlock all restic source repos [CLUSTER=pi5]
     cmds:
       - for: { var: SOURCES, split: "\n" }
         cmd: kubectl --namespace {{splitList "," .ITEM | first}} patch --field-manager=flux-client-side-apply replicationsources {{splitList "," .ITEM | last}} --type merge --patch "{\"spec\":{\"restic\":{\"unlock\":\"{{now | unixEpoch}}\"}}}"
@@ -63,7 +63,7 @@ tasks:
       - which kubectl
 
   snapshot:
-    desc: Snapshot an app [CLUSTER=main] [NS=default] [APP=required]
+    desc: Snapshot an app [CLUSTER=pi5] [NS=default] [APP=required]
     cmds:
       - kubectl --namespace {{.NS}} patch replicationsources {{.APP}} --type merge -p '{"spec":{"trigger":{"manual":"{{now | unixEpoch}}"}}}'
       - until kubectl --namespace {{.NS}} get job/{{.JOB}} &>/dev/null; do sleep 5; done
@@ -78,7 +78,7 @@ tasks:
       - which kubectl
 
   restore:
-    desc: Restore an app [CLUSTER=main] [NS=default] [APP=required] [PREVIOUS=required]
+    desc: Restore an app [CLUSTER=pi5] [NS=default] [APP=required] [PREVIOUS=required]
     cmds:
       # Suspend
       - flux --namespace flux-system suspend kustomization {{.APP}}
@@ -120,7 +120,7 @@ tasks:
       - which flux kubectl minijinja-cli
 
   unlock-local:
-    desc: Unlock a restic source repo from local machine [CLUSTER=main] [NS=default] [APP=required]
+    desc: Unlock a restic source repo from local machine [CLUSTER=pi5] [NS=default] [APP=required]
     cmds:
       - minijinja-cli {{.VOLSYNC_RESOURCES_DIR}}/unlock.yaml.j2 | kubectl apply --server-side --filename -
       - until kubectl --namespace {{.NS}} get job/volsync-unlock-{{.APP}} &>/dev/null; do sleep 5; done
