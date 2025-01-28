@@ -10,7 +10,6 @@ tasks:
       - op item edit kubernetes KUBECONFIG_BASE64[text]=(kubectl config view --flatten | base64 -w 0) &>/dev/null
       - task: push-main
       - task: push-utility
-      - task: push-pi5
     preconditions:
       - op user get --me
 
@@ -37,6 +36,8 @@ tasks:
     cmds:
       - mkdir -p ~/.kube
       - mkdir -p ~/.talos
+      - mkdir -p {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig
+      - mkdir -p {{.ROOT_DIR}}/kubernetes/utility/bootstrap/talos/clusterconfig
       - op item get kubernetes --fields label=KUBECONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/main/kubeconfig # Main kubeconfig
       - op item get kubernetes --fields label=TALOSCONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig # Main talosconfig
       - op item get kubernetes --fields label=KUBECONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/utility/kubeconfig # Utility kubeconfig
