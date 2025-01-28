@@ -47,13 +47,13 @@ jobs:
         id: process-changes
         run: |
           changed=$(echo '${{ steps.changed-clusters.outputs.all_changed_and_modified_files }}' | jq -r '.[]')
-
-          # If kubernetes/shared is changed, include both clusters
-          if echo "$changed" | grep -q "kubernetes/shared"; then
-            echo 'matrix=["kubernetes/main", "kubernetes/utility"]' >> "$GITHUB_OUTPUT"
+          if echo "${changed}" | grep -q "kubernetes/shared"; then
+            echo 'matrix=["kubernetes/main", "kubernetes/utility"]' >> "${GITHUB_OUTPUT}"
           else
-            echo "matrix=$changed" >> "$GITHUB_OUTPUT"
+            echo "matrix=${changed}" >> "${GITHUB_OUTPUT}"
           fi
+          echo "changed $changed"
+          echo "matrix $matrix"
 
   test:
     name: Flux Local Test
