@@ -34,10 +34,11 @@
         - name: Merge
           env:
             GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+            BOT_USERNAME: "smurf-bot"
           run: |
             args=()
-            args+=(--app $BOT_USERNAME)
-            args+=(--state open)
+            args+=(--app "$BOT_USERNAME")
+            args+=(--state "open")
             if [ ${{ github.event.inputs.labels }} != "any" ]; then
                 IFS=',' read -ra labels <<< ${{ github.event.inputs.labels }}
                 for label in "${labels[@]}"; do
