@@ -9,7 +9,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   interval: 30m
-  path: ./kubernetes/main/apps/flux-system/flux-operator/app
+  path: ./kubernetes/shared/apps/flux-system/flux-operator/app
   prune: false # never should be deleted
   sourceRef:
     kind: GitRepository
@@ -29,7 +29,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   interval: 30m
-  path: ./kubernetes/main/apps/flux-system/flux-operator/instance
+  path: ./kubernetes/shared/apps/flux-system/flux-operator/instance
   prune: false # never should be deleted
   sourceRef:
     kind: GitRepository
@@ -38,3 +38,8 @@ spec:
   targetNamespace: flux-system
   timeout: 5m
   wait: false
+  postBuild:
+    substitute:
+      CLUSTER: utility
+      TOKEN_KEY_NAME: FLUX_UTILITY_GITHUB_WEBHOOK_TOKEN
+      WEBHOOK_INGRESS: flux-webhook-utility
