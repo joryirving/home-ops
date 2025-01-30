@@ -74,23 +74,6 @@ jobs:
         name: List All Changed Files
         run: echo ${{ steps.changed-files.outputs.all_changed_and_modified_files }}
 
-      - name: Process Changes
-        id: process-changes
-        run: |
-          changed=$(echo '${{ steps.changed-files.outputs.all_changed_and_modified_files }}' | jq -r '. | @json')
-
-          if echo "$changed" | grep -q "kubernetes/shared"; then
-            echo 'matrix=["kubernetes/main", "kubernetes/utility"]' >> "$GITHUB_OUTPUT"
-          else
-            if [[ "$changed" == "["*"]" ]]; then
-              echo "matrix=$changed" >> "$GITHUB_OUTPUT"
-            else
-              echo "matrix=[\"$changed\"]" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-          echo "changed: $changed"
-          echo "matrix: $(cat $GITHUB_OUTPUT | grep matrix)"
-
       - if: ${{ github.event.inputs.clusterName == '' && github.event.inputs.helmRepoNamespace == '' && github.event.inputs.helmRepoName == '' }}
         name: Sync Helm Repository
         env:
@@ -98,7 +81,7 @@ jobs:
         shell: bash
         run: |
           declare -a repos=()
-          for f in ${{ steps.process-changes.outputs.matrix }}; do
+          for f in ${{ steps.changed-files.outputs.all_changed_and_modified_files }}; do
               cluster_name=$(echo "${f}" | awk -F'/' '{print $2}')
               repo_namespace="$(yq -r '.spec.chart.spec.sourceRef.namespace' "${f}")"
               repo_name="$(yq -r '.spec.chart.spec.sourceRef.name' "${f}")"
