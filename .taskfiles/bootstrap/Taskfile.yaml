@@ -75,8 +75,8 @@ tasks:
     cmds:
       - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
       - op run --env-file {{.BOOTSTRAP_DIR}}/.secrets.env --no-masking -- minijinja-cli {{.BOOTSTRAP_DIR}}/templates/resources.yaml.j2 | kubectl apply --server-side --filename -
-      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/helmfile.yaml apply --skip-diff-on-install --suppress-diff
-      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/helmfile.yaml destroy --selector name=wipe-rook || true
+      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.CLUSTER}}
+      - helmfile --quiet --file {{.BOOTSTRAP_DIR}}/helmfile.yaml destroy --selector name=wipe-rook --kube-context {{.CLUSTER}} || true
       - '{{if eq .NODE_COUNT 1}}talosctl reboot -n {{.TALOS_CONTROLLER}}{{end}}'
     vars:
       TALOS_CONTROLLER:
