@@ -3,23 +3,21 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app capacitor
+  name: &app headlamp
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  components:
-    - ../../../../../shared/meta/components/gatus/guarded
+  dependsOn:
+    - name: cert-manager
+      namespace: cert-manager
   interval: 30m
-  path: ./kubernetes/utility/apps/flux-system/capacitor/app
-  postBuild:
-    substitute:
-      APP: *app
+  path: ./kubernetes/main/apps/flux-system/headlamp/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
   targetNamespace: flux-system
-  timeout: 15m
+  timeout: 5m
   wait: false
