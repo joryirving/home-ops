@@ -9,7 +9,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   interval: 30m
-  path: ./kubernetes/utility/apps/cert-manager/cert-manager/app
+  path: ./kubernetes/shared/apps/cert-manager/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -17,7 +17,7 @@ spec:
     namespace: flux-system
   targetNamespace: cert-manager
   timeout: 5m
-  wait: true
+  wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -29,10 +29,10 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   dependsOn:
-    - name: cert-manager
-      namespace: cert-manager
+    - name: onepassword-store
+      namespace: external-secrets
   interval: 30m
-  path: ./kubernetes/utility/apps/cert-manager/cert-manager/issuers
+  path: ./kubernetes/shared/apps/cert-manager/issuers
   prune: true
   sourceRef:
     kind: GitRepository
@@ -57,7 +57,7 @@ spec:
     - name: onepassword-store
       namespace: external-secrets
   interval: 30m
-  path: ./kubernetes/utility/apps/cert-manager/cert-manager/tls
+  path: ./kubernetes/shared/apps/cert-manager/tls
   prune: true
   sourceRef:
     kind: GitRepository
