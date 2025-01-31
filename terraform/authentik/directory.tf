@@ -3,6 +3,7 @@ locals {
     downloads      = { name = "Downloads" }
     home           = { name = "Home" }
     infrastructure = { name = "Infrastructure" }
+    media          = { name = "Media" }
     monitoring     = { name = "Monitoring" }
     users          = { name = "Users" }
   }
