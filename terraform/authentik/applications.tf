@@ -41,7 +41,7 @@ locals {
       group         = "infrastructure"
       icon_url      = "https://raw.githubusercontent.com/headlamp-k8s/headlamp/refs/heads/main/frontend/src/resources/icon-dark.svg"
       redirect_uri  = "https://headlamp.${var.cluster_domain}/oidc-callback"
-      launch_url    = "https://headlamp.${var.cluster_domain}/oidc-callback"
+      launch_url    = "https://headlamp.${var.cluster_domain}/"
     },
     kyoo = {
       client_id     = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_ID"]
