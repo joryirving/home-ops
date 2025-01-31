@@ -2,7 +2,7 @@ locals {
   oauth_apps = [
     "dashbrr",
     "grafana",
-    "headscale",
+    "headlamp",
     "kyoo",
     "lubelog",
     "paperless",
@@ -24,7 +24,7 @@ locals {
     dashbrr = {
       client_id     = module.onepassword_application["dashbrr"].fields["DASHBRR_CLIENT_ID"]
       client_secret = module.onepassword_application["dashbrr"].fields["DASHBRR_CLIENT_SECRET"]
-      group         = "monitoring"
+      group         = "downloads"
       icon_url      = "https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/dashbrr.png"
       redirect_uri  = "https://dashbrr.${var.cluster_domain}/api/auth/callback"
       launch_url    = "https://dashbrr.${var.cluster_domain}/api/auth/callback"
@@ -37,10 +37,18 @@ locals {
       redirect_uri  = "https://grafana.${var.cluster_domain}/login/generic_oauth"
       launch_url    = "https://grafana.${var.cluster_domain}/login/generic_oauth"
     },
+    headlamp = {
+      client_id     = module.onepassword_application["headlamp"].fields["HEADLAMP_CLIENT_ID"]
+      client_secret = module.onepassword_application["headlamp"].fields["HEADLAMP_CLIENT_SECRET"]
+      group         = "infrastructure"
+      icon_url      = "https://raw.githubusercontent.com/headlamp-k8s/headlamp/refs/heads/main/frontend/src/resources/icon-dark.svg"
+      redirect_uri  = "https://headlamp.${var.cluster_domain}/oidc-callback"
+      launch_url    = "https://headlamp.${var.cluster_domain}/oidc-callback"
+    },
     kyoo = {
       client_id     = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_ID"]
       client_secret = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_SECRET"]
-      group         = "home"
+      group         = "media"
       icon_url      = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
       redirect_uri  = "https://kyoo.${var.cluster_domain}/api/auth/logged/authentik"
       launch_url    = "https://kyoo.${var.cluster_domain}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.cluster_domain}/login/callback"
