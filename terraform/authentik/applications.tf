@@ -10,7 +10,6 @@ locals {
   ]
 }
 
-# Step 1: Retrieve secrets from 1Password
 module "onepassword_application" {
   for_each = toset(local.oauth_apps)
   source   = "github.com/joryirving/terraform-1password-item"
@@ -18,7 +17,6 @@ module "onepassword_application" {
   item     = each.key
 }
 
-# Step 2: Parse the secrets using regex to extract client_id and client_secret
 locals {
   applications = {
     dashbrr = {
