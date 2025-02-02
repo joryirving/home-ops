@@ -57,7 +57,7 @@ spec:
               PUBLIC_PORT: &port 8211
               RCON_ENABLED: true
               RCON_PORT: &rcon-port 25575
-              PUBLIC_IP: palworld.jory.dev
+              PUBLIC_IP: palworld.${SECRET_DOMAIN}
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
@@ -128,9 +128,9 @@ spec:
         enabled: false #nginx doesn't support non-https
         className: external
         annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.jory.dev
+          external-dns.alpha.kubernetes.io/target: ipv4.${SECRET_DOMAIN}
         hosts:
-        - host: "{{ .Release.Name }}.jory.dev"
+        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
           - path: /
             service:

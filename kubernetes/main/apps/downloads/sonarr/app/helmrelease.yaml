@@ -100,7 +100,7 @@ spec:
           gethomepage.dev/widget.url: http://sonarr.downloads
           gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_SONARR_TOKEN}}` }}"
         hosts:
-        - host: "{{ .Release.Name }}.jory.dev"
+        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
           - path: /
             service:
@@ -125,6 +125,6 @@ spec:
       data:
         type: nfs
         server: voyager.internal
-        path: /mnt/user/data
+        path: ${SECRET_NFS_DATA}
         globalMounts:
         - path: /data

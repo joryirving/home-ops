@@ -43,7 +43,7 @@ spec:
               # Configure application
               PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
               PAPERLESS_REDIS_PREFIX: pngx
-              PAPERLESS_URL: https://paperless.jory.dev
+              PAPERLESS_URL: https://paperless.${SECRET_DOMAIN}
               PAPERLESS_PORT: "8000"
               PAPERLESS_TIME_ZONE: America/Edmonton
               PAPERLESS_WEBSERVER_WORKERS: "2"
@@ -94,7 +94,7 @@ spec:
           gethomepage.dev/widget.url: http://paperless.self-hosted:8000
           gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_PAPERLESS_TOKEN}}` }}"
         hosts:
-        - host: "{{ .Release.Name }}.jory.dev"
+        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
           paths:
           - path: /
             service:
@@ -108,6 +108,6 @@ spec:
       nas:
         type: nfs
         server: voyager.internal
-        path: /mnt/user/scans
+        path: ${SECRET_NFS_PAPERLESS}s
         globalMounts:
           - path: /data/nas
