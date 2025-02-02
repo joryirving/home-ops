@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/infra.contrib.fluxcd.io/terraform_v1alpha2.json
-apiVersion: infra.contrib.fluxcd.io/v1alpha1
+apiVersion: infra.contrib.fluxcd.io/v1alpha2
 kind: Terraform
 metadata:
   name: authentik
@@ -13,7 +13,7 @@ spec:
         key      = "authentik/authentik.tfstate"
         region   = "main"
         endpoints = {
-          s3 = "https://s3.jory.dev"
+          s3 = "https://s3.${SECRET_DOMAIN}"
         }
 
         skip_credentials_validation = true

@@ -37,13 +37,13 @@ spec:
         enabled: true
         pathType: Prefix
         ingressClassName: internal
-        hosts: ["alertmanager-utility.jory.dev"]
+        hosts: ["alertmanager-utility.${SECRET_DOMAIN}"]
       alertmanagerSpec:
         alertmanagerConfiguration:
           name: alertmanager
           global:
             resolveTimeout: 5m
-        externalUrl: https://alertmanager-utility.jory.dev
+        externalUrl: https://alertmanager-utility.${SECRET_DOMAIN}
         storage:
           volumeClaimTemplate:
             spec:
@@ -129,7 +129,7 @@ spec:
         enabled: true
         ingressClassName: internal
         pathType: Prefix
-        hosts: ["prometheus-utility.jory.dev"]
+        hosts: ["prometheus-utility.${SECRET_DOMAIN}"]
       prometheusSpec:
         enableAdminAPI: true
         walCompression: true
