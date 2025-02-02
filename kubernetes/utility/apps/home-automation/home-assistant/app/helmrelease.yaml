@@ -36,7 +36,7 @@ spec:
               repository: ghcr.io/joryirving/home-assistant
               tag: 2025.1.4@sha256:4f69710fc8470d6dff0441e689c6350f3d88d96db3da9bb9a862dbf0cd518189
             env:
-              TZ: America/Edmonton
+              TZ: ${TIMEZONE}
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -52,7 +52,7 @@ spec:
               repository: ghcr.io/coder/code-server
               tag: 4.96.4@sha256:f93810f7f6636b3af3b1a750faf612349cddb89fbb6d28d69123a214fc75ee9e
             env:
-              TZ: America/Edmonton
+              TZ: ${TIMEZONE}
             args: [
               "--auth", "none",
               "--user-data-dir", "/config/.vscode",
@@ -79,7 +79,7 @@ spec:
         nameOverride: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: 10.69.1.133
+          lbipam.cilium.io/ips: ${SVC_HOME_ASSISTANT_ADDR}
         ports:
           http:
             port: 8123

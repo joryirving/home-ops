@@ -38,7 +38,7 @@ spec:
               repository: ghcr.io/joryirving/qbittorrent-beta
               tag: 5.0.3@sha256:cbc69292b1ce75021447ac507642ed16baf207a4a9d752236f82650adee303b1
             env:
-              TZ: America/Edmonton
+              TZ: ${TIMEZONE}
               QBT_WEBUI_PORT: &port 80
               QBT_TORRENTING_PORT: &torrentPort 50413
             probes:
@@ -90,7 +90,7 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: 10.69.1.36
+          lbipam.cilium.io/ips: ${SVC_QBITTTORENT_ADDR}
         ports:
           bittorrent:
             enabled: true

@@ -38,7 +38,7 @@ spec:
               tag: master@sha256:479ad8a97206df899a540d0b33a7ef303e1dd9a7840b412bd3db0ec9ed7a0e0e
             env:
               ## Container Settings
-              TZ: America/Edmonton
+              TZ: ${TIMEZONE}
               ALWAYS_UPDATE_ON_START: true
               BACKUP_ENABLED: false #volsync is backing up the PVC
               RESTART_ENABLED: false #no one is playing right now.
@@ -79,7 +79,7 @@ spec:
               tag: v1.3.1
             env:
               ## Container Settings
-              TZ: America/Edmonton
+              TZ: ${TIMEZONE}
               RCON_HOST: localhost
               RCON_PORT: *rcon-port
               SAVE_DIRECTORY: /palworld
@@ -105,7 +105,7 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: 10.69.1.39
+          lbipam.cilium.io/ips: ${SVC_PALWORLD_ADDR}
         ports:
           http:
             port: 9877
