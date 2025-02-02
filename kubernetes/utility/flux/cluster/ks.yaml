@@ -72,12 +72,15 @@ spec:
             substituteFrom:
               - kind: ConfigMap
                 name: cluster-settings
-            substituteFrom:
               - kind: ConfigMap
                 name: cluster-settings-shared
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-settings
   prune: true
   sourceRef:
     kind: GitRepository
