@@ -14,9 +14,6 @@ repositories:
   - name: jetstack
     url: https://charts.jetstack.io
 
-  - name: fluxcd-kustomize-mutating-webhook
-    url: https://xunholy.github.io/fluxcd-kustomize-mutating-webhook
-
 releases:
   - name: kube-prometheus-stack-crds
     namespace: observability
@@ -55,19 +52,12 @@ releases:
     values: ['{{ requiredEnv "CLUSTER_DIR" }}/apps/external-secrets/external-secrets/app/helm-values.yaml']
     needs: ['cert-manager/cert-manager']
 
-  - name: kustomize-mutating-webhook
-    namespace: flux-system
-    chart: fluxcd-kustomize-mutating-webhook/kustomize-mutating-webhook
-    version: 0.3.0
-    values: ['{{ requiredEnv "CLUSTER_DIR" }}/apps/flux-system/kustomize-mutating-webhook/app/helm-values.yaml']
-    needs: ['external-secrets/external-secrets']
-
   - name: wipe-rook
     namespace: kube-system
     chart: oci://ghcr.io/bjw-s/helm/app-template
     version: 3.6.1
     values: ['{{ requiredEnv "SHARED_DIR" }}/bootstrap/templates/wipe-rook.yaml.gotmpl']
-    needs: ['flux-system/kustomize-mutating-webhook']
+    needs: ['external-secrets/external-secrets']
 
   - name: flux-operator
     namespace: flux-system
