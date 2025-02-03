@@ -86,15 +86,15 @@ This Git repository contains the following directories under [Kubernetes](./kube
 📁 kubernetes
 ├── 📁 main             # main cluster
 │   ├── 📁 apps         # applications
-│   ├── 📁 bootstrap    # bootstrap procedures
 │   ├── 📁 flux         # core flux configuration
+│   ├── 📁 talos        # talos configuration
 ├── 📁 shared           # shared cluster resources
-│   ├── 📁 components   # re-useable components
-│   ├── 📁 repositories # common reusable repositories
+│   ├── 📁 bootstrap    # bootstrap procedures
+│   ├── 📁 meta         # re-useable components
 └── 📁 utility          # utility cluster
     ├── 📁 apps         # applications
-    ├── 📁 bootstrap    # bootstrap procedures
-    └── 📁 flux         # core flux configuration
+    ├── 📁 flux         # core flux configuration
+    └── 📁 talos        # talos configuration
 ```
 
 ### Networking
@@ -115,8 +115,8 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 | Service                                     | Use                                                               | Cost          |
 |---------------------------------------------|-------------------------------------------------------------------|---------------|
-| [1Password](https://1PAssword.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | Free - Work   |
-| [Cloudflare](https://www.cloudflare.com/)   | Domain and S4                                                     | ~$30/yr       |
+| [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | Free via work |
+| [Cloudflare](https://www.cloudflare.com/)   | Domain, DNS, WAF and R2 bucket (S3 Compatible endpoint)           | ~$30/yr       |
 | [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free          |
 | [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free          |
 |                                             |                                                                   | Total: ~$3/mo |
@@ -188,4 +188,4 @@ Total RAM: 32GB
 
 ## 🤝 Thanks
 
-Big shout out to original [cluster-template](https://github.com/onedr0p/cluster-template), and the [Home Operations](https://discord.gg/home-operations) Discord community. Be sure to check out [kubesearch.dev](https://kubesearch.dev/) for ideas on how to deploy applications or get ideas on what you may deploy.
+Big shout out to the [cluster-template](https://github.com/onedr0p/cluster-template), and the [Home Operations](https://discord.gg/home-operations) Discord community. Be sure to check out [kubesearch.dev](https://kubesearch.dev/) for ideas on how to deploy applications or get ideas on what you may deploy.
