@@ -57,15 +57,15 @@ tasks:
   talos:
     desc: Bootstrap Talos [CLUSTER=main]
     cmds:
-      - until talosctl --nodes {{.TALOS_CONTROLLER}} bootstrap --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig; do sleep 5; done
-      - talosctl kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}} --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig
+      - until talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{.TALOS_CONTROLLER}} bootstrap; do sleep 5; done
+      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
     vars:
       TALOS_CONTROLLER:
-        sh: talosctl config info --output json --context {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig | jq --raw-output '.endpoints[]' | shuf -n 1
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
     requires:
       vars: [CLUSTER]
     preconditions:
-      - talosctl config info
+      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
       - which talosctl jq
 
@@ -77,13 +77,13 @@ tasks:
       - op run --env-file {{.SHARED_DIR}}/bootstrap/.secrets.env --no-masking -- minijinja-cli {{.SHARED_DIR}}/bootstrap/templates/resources.yaml.j2 | kubectl apply --server-side --filename -
       - helmfile --quiet --file {{.SHARED_DIR}}/bootstrap/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.CLUSTER}}
       - helmfile --quiet --file {{.SHARED_DIR}}/bootstrap/helmfile.yaml destroy --selector name=wipe-rook --kube-context {{.CLUSTER}} || true
-      - '{{if eq .NODE_COUNT 1}}talosctl reboot -n {{.TALOS_CONTROLLER}}{{end}}'
+      - '{{if eq .NODE_COUNT 1}}talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}'
     vars:
       TALOS_CONTROLLER:
-        sh: talosctl config info --output json --context {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig | jq --raw-output '.endpoints[]'
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]'
     env:
       NODE_COUNT:
-        sh: talosctl --context {{.CLUSTER}} config info --output json | jq --raw-output '.nodes | length'
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.nodes | length'
       VAULT: kubernetes # ¯\_(ツ)_/¯
       CLUSTER: '{{.CLUSTER}}'
       SHARED_DIR: '{{.SHARED_DIR}}'
@@ -92,7 +92,7 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - op user get --me
-      - talosctl config info
+      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
       - test -f {{.SHARED_DIR}}/bootstrap/helmfile.yaml
       - test -f {{.SHARED_DIR}}/bootstrap/templates/resources.yaml.j2
