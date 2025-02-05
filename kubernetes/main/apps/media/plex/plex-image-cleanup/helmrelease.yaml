@@ -29,8 +29,11 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         cronjob:
-          schedule: "30 8 * * *"
+          schedule: "@daily"
+          timeZone: &timeZone ${TIMEZONE}
+          concurrencyPolicy: Forbid
           successfulJobsHistory: 1
+          failedJobsHistory: 1
         containers:
           app:
             image:
