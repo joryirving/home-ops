@@ -152,3 +152,34 @@ spec:
   targetNamespace: media
   timeout: 5m
   wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app plex-trakt-sync
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  components:
+    - ../../../../../shared/meta/components/volsync
+  dependsOn:
+    - name: onepassword-store
+      namespace: external-secrets
+    - name: volsync
+      namespace: storage
+  interval: 30m
+  path: ./kubernetes/main/apps/media/plex/trakt-sync
+  postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_CAPACITY: 500Mi
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: media
+  timeout: 5m
+  wait: false
