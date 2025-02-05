@@ -30,8 +30,15 @@ spec:
   values:
     controllers:
       plex-trakt-sync:
+        type: cronjob
         annotations:
           reloader.stakater.com/auto: "true"
+        cronjob:
+          schedule: "@daily"
+          timeZone: &timeZone ${TIMEZONE}
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
         containers:
           app:
             image:
@@ -47,7 +54,7 @@ spec:
                   secretKeyRef:
                     name: plex-secret
                     key: PLEX_TOKEN
-              PLEX_USERNAME: LilDrunkenSmurf
+              PLEX_USERNAME: lildrunkensmurf
               TRAKT_USERNAME: LilDrunkenSmurf
             probes:
               liveness:
