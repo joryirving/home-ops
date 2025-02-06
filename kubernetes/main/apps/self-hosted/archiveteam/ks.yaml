@@ -8,11 +8,15 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  components:
+    - ../../../../../shared/meta/components/gatus/guarded
+    - ../../../../../shared/meta/components/volsync
   interval: 30m
   path: ./kubernetes/main/apps/self-hosted/archiveteam/app
   postBuild:
     substitute:
       APP: *app
+      VOLSYNC_CAPACITY: 20Gi
   prune: true
   sourceRef:
     kind: GitRepository
