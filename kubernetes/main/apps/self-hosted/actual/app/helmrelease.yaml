@@ -43,7 +43,7 @@ spec:
                 memory: 80M
               limits:
                 memory: 256M
-    self-hostedPodOptions:
+    defaultPodOptions:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -68,7 +68,6 @@ spec:
           - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
                 service:
                   identifier: app
                   port: http
