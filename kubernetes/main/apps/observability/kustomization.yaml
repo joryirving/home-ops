@@ -3,6 +3,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: observability
+components:
+  - ../../flux/meta/components/cluster-vars
+  - ../../../shared/meta/components/alerts
+  - ../../../shared/meta/components/global-vars
+  - ../../../shared/meta/components/namespace
+  - ../../../shared/meta/components/sops
 resources:
   - ./gatus/ks.yaml
   - ./grafana/ks.yaml
@@ -13,9 +19,3 @@ resources:
   - ./kube-prometheus-stack/ks.yaml
   # Exporters
   - ./exporters
-components:
-  - ../../flux/meta/components/cluster-vars
-  - ../../../shared/meta/components/alerts
-  - ../../../shared/meta/components/global-vars
-  - ../../../shared/meta/components/namespace
-  - ../../../shared/meta/components/sops
