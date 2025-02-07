@@ -23,8 +23,8 @@ spec:
       strategy: rollback
       retries: 3
   dependsOn:
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
+    - name: local-path-provisioner
+      namespace: storage
   values:
     controllers:
       archiveteam:
@@ -70,7 +70,7 @@ spec:
           gethomepage.dev/name: Archive Team
           gethomepage.dev/icon: mdi-archive-arrow-up
         hosts:
-          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: "{{ .Release.Name }}-utility.${SECRET_DOMAIN}"
             paths:
               - path: /
                 service:
