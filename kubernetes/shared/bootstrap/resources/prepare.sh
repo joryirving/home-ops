@@ -40,7 +40,7 @@ function apply_prometheus_crds() {
         gum "${LOG_ARGS[@]}" fatal "No CustomResourceDefinitions found in the fetched resources"
     fi
 
-    # Check if the CRDs are already applied
+    # Check if the CRDs are up-to-date
     if echo "${crds}" | kubectl --context ${CLUSTER} diff --filename - &>/dev/null; then
         gum "${LOG_ARGS[@]}" info "Prometheus CRDs are up-to-date"
         return
@@ -64,15 +64,16 @@ function apply_namespaces() {
         gum "${LOG_ARGS[@]}" fatal "Directory does not exist" directory "${apps_dir}"
     fi
 
-    # Apply namespaces if they do not exist
     for app in "${apps_dir}"/*/; do
         namespace=$(basename "${app}")
 
+        # Check if the namespace resources are up-to-date
         if kubectl --context ${CLUSTER} get namespace "${namespace}" &>/dev/null; then
             gum "${LOG_ARGS[@]}" info "Namespace resource is up-to-date" resource "${namespace}"
             continue
         fi
 
+        # Apply the namespace resources
         if kubectl --context ${CLUSTER} create namespace "${namespace}" --dry-run=client --output=yaml \
             | kubectl --context ${CLUSTER} apply --server-side --filename - &>/dev/null;
         then
@@ -94,7 +95,7 @@ function apply_secrets() {
         gum "${LOG_ARGS[@]}" fatal "File does not exist" file "${secrets_file}"
     fi
 
-    # Inject secrets into the template using the 'op inject' command
+    # Inject secrets into the template
     if ! resources=$(op inject --in-file "${secrets_file}" 2>/dev/null) || [[ -z "${resources}" ]]; then
         gum "${LOG_ARGS[@]}" fatal "Failed to inject secrets" file "${secrets_file}"
     fi
@@ -127,7 +128,7 @@ function wipe_rook_disks() {
         return
     fi
 
-    # Wipe disks matching the CSI_DISK environment variable
+    # Wipe disks on each node that match the CSI_DISK environment variable
     for node in $(talosctl --context ${CLUSTER} config info --output json | jq --raw-output '.nodes | .[]'); do
         disk=$(
             talosctl --context ${CLUSTER} --nodes "${node}" get disks --output json \
@@ -144,7 +145,7 @@ function wipe_rook_disks() {
                 gum "${LOG_ARGS[@]}" fatal "Failed to wipe disk" node "${node}" disk "${disk}"
             fi
         else
-            gum "${LOG_ARGS[@]}" warn "No disks found" node "${node}" model "${ROOK_DISK:-}"
+            gum "${LOG_ARGS[@]}" warn "No disks found" node "${node}" model "${CSI_DISK:-}"
         fi
     done
 }

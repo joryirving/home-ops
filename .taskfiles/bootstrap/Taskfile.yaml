@@ -14,12 +14,11 @@ tasks:
       vars: [CLUSTER, CSI_DISK]
     preconditions:
       - op user get --me
-      - talosctl config info
+      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
       - test -f {{.SHARED_DIR}}/bootstrap/helmfile.yaml
-      - test -f {{.SHARED_DIR}}/bootstrap/templates/resources.yaml.j2
-      - test -f {{.SHARED_DIR}}/bootstrap/templates/wipe-rook.yaml.gotmpl
-      - which curl jq helmfile kubectl op talosctl
+      - test -f {{.SHARED_DIR}}/bootstrap/resources/prepare.sh
+      - which curl gum jq helmfile kubectl kustomize op talosctl yq
 
   gen-secrets:
     desc: Generate the Talos secrets
@@ -94,8 +93,5 @@ tasks:
       - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
       - test -f {{.SHARED_DIR}}/bootstrap/helmfile.yaml
-      - test -f {{.SHARED_DIR}}/bootstrap/hooks/cilium-config.sh
-      - test -f {{.SHARED_DIR}}/bootstrap/hooks/prometheus-operator-crds.sh
-      - test -f {{.SHARED_DIR}}/bootstrap/hooks/wipe-csi-disk.sh
-      - test -f {{.SHARED_DIR}}/bootstrap/templates/resources.yaml.j2
+      - test -f {{.SHARED_DIR}}/bootstrap/resources/prepare.sh
       - which curl gum jq helmfile kubectl kustomize op talosctl yq
