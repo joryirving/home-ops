@@ -74,7 +74,8 @@ tasks:
       IMPORTANT: CSI_DISK must be set to the disk model used across all the nodes (e.g. WD_BLACK SN770 1TB)
     prompt: Bootstrap apps into the Talos cluster?
     cmds:
-      - helmfile --quiet --file {{.SHARED_DIR}}/bootstrap/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.CLUSTER}}
+      - bash {{.SHARED_DIR}}/bootstrap/resources/prepare.sh
+      - helmfile --file {{.SHARED_DIR}}/bootstrap/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.CLUSTER}}
       - '{{if eq .NODE_COUNT 1}}talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}'
     vars:
       TALOS_CONTROLLER:
@@ -94,4 +95,4 @@ tasks:
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
       - test -f {{.SHARED_DIR}}/bootstrap/helmfile.yaml
       - test -f {{.SHARED_DIR}}/bootstrap/resources/prepare.sh
-      - which curl gum jq helmfile kubectl kustomize op talosctl yq
+      - which gum jq helmfile kubectl kustomize op talosctl yq
