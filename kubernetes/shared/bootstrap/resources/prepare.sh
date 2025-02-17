@@ -128,25 +128,29 @@ function wipe_rook_disks() {
         return
     fi
 
+    if ! nodes=$(talosctl --context ${CLUSTER} config info --output json 2>/dev/null | jq --raw-output '.nodes | join(" ")') || [[ -z "${nodes}" ]]; then
+        gum "${LOG_ARGS[@]}" fatal "No Talos nodes found"
+    fi
+
+    gum "${LOG_ARGS[@]}" debug "Discovered Talos nodes" nodes "${nodes}"
+
     # Wipe disks on each node that match the CSI_DISK environment variable
-    for node in $(talosctl --context ${CLUSTER} config info --output json | jq --raw-output '.nodes | .[]'); do
-        disk=$(
-            talosctl --context ${CLUSTER} --nodes "${node}" get disks --output json \
-                | jq --raw-output 'select(.spec.model == env.CSI_DISK) | .metadata.id' \
-                | xargs
-        )
+    for node in ${nodes}; do
+        if ! disks=$(talosctl --context ${CLUSTER} --nodes "${node}" get disk --output json 2>/dev/null \
+            | jq --raw-output --slurp '. | map(select(.spec.model == env.CSI_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]];
+        then
+            gum "${LOG_ARGS[@]}" fatal "No disks found" node "${node}" model "${CSI_DISK:-}"
+        fi
 
-        if [[ -n "${disk}" ]]; then
-            gum "${LOG_ARGS[@]}" debug "Discovered Talos node and disk" node "${node}" disk "${disk}"
+        gum "${LOG_ARGS[@]}" debug "Discovered Talos node and disk" node "${node}" disks "${disks}"
 
+        for disk in ${disks}; do
             if talosctl --context ${CLUSTER} --nodes "${node}" wipe disk "${disk}" &>/dev/null; then
                 gum "${LOG_ARGS[@]}" info "Disk wiped" node "${node}" disk "${disk}"
             else
                 gum "${LOG_ARGS[@]}" fatal "Failed to wipe disk" node "${node}" disk "${disk}"
             fi
-        else
-            gum "${LOG_ARGS[@]}" warn "No disks found" node "${node}" model "${CSI_DISK:-}"
-        fi
+        done
     done
 }
 
