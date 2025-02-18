@@ -11,14 +11,6 @@ ui:
   title: Health Status
   header: Health Status
   logo: https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/lds-transparent.png
-# alerting:
-#   discord:
-#     webhook-url: ${DISCORD_WEBHOOK_URL}
-#     default-alert:
-#       description: health-check failed
-#       send-on-resolved: true
-#       failure-threshold: 5
-#       success-threshold: 3
 connectivity:
   checker:
     target: 1.1.1.1:53
@@ -31,7 +23,6 @@ endpoints:
     client:
       dns-resolver: tcp://1.1.1.1:53
     conditions: ["[STATUS] == 200"]
-    # alerts: [{ type: discord }]
   - name: flux-webhook
     group: main-external
     url: https://flux-webhook.${SECRET_DOMAIN}
@@ -39,7 +30,6 @@ endpoints:
     client:
       dns-resolver: tcp://1.1.1.1:53
     conditions: ["[STATUS] == 404"]
-    # alerts: [{ type: discord }]
 remote:
   instances:
     - endpoint-prefix: ""
