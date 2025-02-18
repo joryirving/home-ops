@@ -72,22 +72,15 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities:
-                  drop:
-                  - ALL
-                  add:
-                  - "NET_RAW"
+              capabilities: { drop: ["ALL"] }
             resources: *resources
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
-        fsGroup: 65534
+        fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
-        sysctls:
-        - name: net.ipv4.ping_group_range
-          value: 0 65536
     service:
       app:
         controller: *app
@@ -103,7 +96,7 @@ spec:
       app:
         className: external
         hosts:
-          - host: status-utility.${SECRET_DOMAIN}
+          - host: status-${CLUSTER}.${SECRET_DOMAIN}
             paths:
               - path: /
                 service:
