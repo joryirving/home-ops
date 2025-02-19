@@ -14,6 +14,11 @@ repositories:
   - name: jetstack
     url: https://charts.jetstack.io
 
+hooks:
+  - events: ['prepare']
+    command: '{{ requiredEnv "ROOT_DIR" }}/bootstrap/resources/prepare.sh'
+    showlogs: true
+
 releases:
   - name: cilium
     namespace: kube-system
