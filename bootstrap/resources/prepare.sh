@@ -5,6 +5,29 @@ set -euo pipefail
 # Set default values for the 'gum log' command
 readonly LOG_ARGS=("log" "--time=rfc3339" "--formatter=text" "--structured" "--level")
 
+# Verify required CLI tools are installed
+function check_dependencies() {
+    local deps=("gum" "jq" "kubectl" "kustomize" "op" "talosctl" "yq")
+    local missing=()
+
+    for dep in "${deps[@]}"; do
+        if ! command -v "${dep}" &>/dev/null; then
+            missing+=("${dep}")
+        fi
+    done
+
+    if [ ${#missing[@]} -ne 0 ]; then
+        if ! command -v gum &>/dev/null; then
+            printf "%s \033[1;95m%s\033[0m Missing required dependencies \033[0;30mdependencies=\033[0m\"%s\"\n" \
+                "$(date --iso-8601=seconds)" "FATAL" "${missing[*]}"
+            exit 1
+        fi
+        gum "${LOG_ARGS[@]}" fatal "Missing required dependencies" dependencies "${missing[*]}"
+    fi
+
+    gum "${LOG_ARGS[@]}" debug "Dependencies are installed" dependencies "${deps[*]}"
+}
+
 # Talos requires the nodes to be 'Ready=False' before applying resources
 function wait_for_nodes() {
     gum "${LOG_ARGS[@]}" debug "Waiting for nodes to be available"
@@ -17,7 +40,7 @@ function wait_for_nodes() {
 
     # Wait for all nodes to be 'Ready=False'
     until kubectl --context ${CLUSTER} wait nodes --for=condition=Ready=False --all --timeout=10s &>/dev/null; do
-        gum "${LOG_ARGS[@]}" info "Nodes are not available, waiting for nodes to be available"
+        gum "${LOG_ARGS[@]}" info "Nodes are not available, waiting for nodes to be available. Retrying in 10 seconds..."
         sleep 10
     done
 }
@@ -128,33 +151,44 @@ function wipe_rook_disks() {
         return
     fi
 
+    if ! nodes=$(talosctl --context ${CLUSTER} config info --output json 2>/dev/null | jq --raw-output '.nodes | join(" ")') || [[ -z "${nodes}" ]]; then
+        gum "${LOG_ARGS[@]}" fatal "No Talos nodes found"
+    fi
+
+    gum "${LOG_ARGS[@]}" debug "Talos nodes discovered" nodes "${nodes}"
+
     # Wipe disks on each node that match the CSI_DISK environment variable
-    for node in $(talosctl --context ${CLUSTER} config info --output json | jq --raw-output '.nodes | .[]'); do
-        disk=$(
-            talosctl --context ${CLUSTER} --nodes "${node}" get disks --output json \
-                | jq --raw-output 'select(.spec.model == env.CSI_DISK) | .metadata.id' \
-                | xargs
-        )
+    for node in ${nodes}; do
+        if ! disks=$(talosctl --context ${CLUSTER} --nodes "${node}" get disk --output json 2>/dev/null \
+            | jq --raw-output --slurp '. | map(select(.spec.model == env.CSI_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]];
+        then
+            gum "${LOG_ARGS[@]}" fatal "No disks found" node "${node}" model "${CSI_DISK:-}"
+        fi
 
-        if [[ -n "${disk}" ]]; then
-            gum "${LOG_ARGS[@]}" debug "Discovered Talos node and disk" node "${node}" disk "${disk}"
+        gum "${LOG_ARGS[@]}" debug "Talos node and disk discovered" node "${node}" disks "${disks}"
 
+        # Wipe each disk on the node
+        for disk in ${disks}; do
             if talosctl --context ${CLUSTER} --nodes "${node}" wipe disk "${disk}" &>/dev/null; then
                 gum "${LOG_ARGS[@]}" info "Disk wiped" node "${node}" disk "${disk}"
             else
                 gum "${LOG_ARGS[@]}" fatal "Failed to wipe disk" node "${node}" disk "${disk}"
             fi
-        else
-            gum "${LOG_ARGS[@]}" warn "No disks found" node "${node}" model "${CSI_DISK:-}"
-        fi
+        done
     done
 }
 
+function success() {
+    gum "${LOG_ARGS[@]}" info "Cluster is ready for installing helmfile apps"
+}
+
 function main() {
+    check_dependencies
     wait_for_nodes
     apply_prometheus_crds
     apply_namespaces
     apply_secrets
     wipe_rook_disks
+    success
 }
 main "$@"

@@ -8,9 +8,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  dependsOn:
-    - name: node-feature-discovery
-      namespace: kube-tools
+  components:
+    - ../../../../../shared/meta/components/system-upgrade
   interval: 30m
   path: ./kubernetes/utility/apps/kube-tools/system-upgrade-controller/app
   prune: true
@@ -27,6 +26,8 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app system-upgrade-controller-plans
+  labels:
+    substitution.flux/enabled: false
 spec:
   commonMetadata:
     labels:
@@ -37,12 +38,9 @@ spec:
   interval: 30m
   path: ./kubernetes/utility/apps/kube-tools/system-upgrade-controller/plans
   postBuild:
-    substitute:
-      TALOS_SCHEMATIC_ID: 96f8c146a67c80daad900d3fc1a6976fe11062321eee9ab6ae2a6aea88b2d26e
-      # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-      TALOS_VERSION: v1.9.4
-      # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
-      KUBERNETES_VERSION: v1.32.2
+    substituteFrom:
+      - kind: ConfigMap
+        name: system-upgrade-plan-versions
   prune: true
   sourceRef:
     kind: GitRepository

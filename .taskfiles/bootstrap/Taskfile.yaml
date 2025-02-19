@@ -16,9 +16,9 @@ tasks:
       - op user get --me
       - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
-      - test -f {{.SHARED_DIR}}/bootstrap/helmfile.yaml
-      - test -f {{.SHARED_DIR}}/bootstrap/resources/prepare.sh
-      - which curl gum jq helmfile kubectl kustomize op talosctl yq
+      - test -f {{.BOOTSTRAP_DIR}}/helmfile.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/resources/prepare.sh
+      - which helmfile op talosctl
 
   gen-secrets:
     desc: Generate the Talos secrets
@@ -31,6 +31,7 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - test -f {{.TALOS_DIR}}/talconfig.yaml
+      - which talhelper
     status:
       - test -f "{{.TALOS_DIR}}/talsecret.sops.yaml"
 
@@ -42,6 +43,7 @@ tasks:
     preconditions:
       - test -f {{.TALOS_DIR}}/talconfig.yaml
       - test -f {{.TALOS_DIR}}/talsecret.sops.yaml
+      - which talhelper
 
   apply-config:
     desc: Apply the Talos config on a nodes for a new cluster
@@ -52,6 +54,7 @@ tasks:
     preconditions:
       - test -f {{.TALOS_DIR}}/talconfig.yaml
       - test -f {{.TALOS_DIR}}/talsecret.sops.yaml
+      - which talhelper
 
   talos:
     desc: Bootstrap Talos [CLUSTER=main]
@@ -72,9 +75,9 @@ tasks:
     desc: Bootstrap Apps [CLUSTER=main] [CSI_DISK=required]
     summary: |
       IMPORTANT: CSI_DISK must be set to the disk model used across all the nodes (e.g. WD_BLACK SN770 1TB)
-    prompt: Bootstrap apps into the Talos cluster?
     cmds:
-      - helmfile --quiet --file {{.SHARED_DIR}}/bootstrap/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.CLUSTER}}
+      - bash {{.BOOTSTRAP_DIR}}/resources/prepare.sh
+      - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.yaml apply --skip-diff-on-install --suppress-diff --kube-context {{.CLUSTER}}
       - '{{if eq .NODE_COUNT 1}}talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}'
     vars:
       TALOS_CONTROLLER:
@@ -92,6 +95,6 @@ tasks:
       - op user get --me
       - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
-      - test -f {{.SHARED_DIR}}/bootstrap/helmfile.yaml
-      - test -f {{.SHARED_DIR}}/bootstrap/resources/prepare.sh
-      - which curl gum jq helmfile kubectl kustomize op talosctl yq
+      - test -f {{.BOOTSTRAP_DIR}}/helmfile.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/resources/prepare.sh
+      - which helmfile op talosctl
