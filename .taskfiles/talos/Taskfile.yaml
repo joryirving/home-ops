@@ -5,7 +5,7 @@ version: "3"
 tasks:
   genconfig:
     desc: Generate the Talos configs
-    cmd: talhelper -c {{.TALOS_DIR}}/talconfig.yaml genconfig -s {{.TALOS_DIR}}/talsecret.sops.yaml -o {{.TALOS_DIR}}/clusterconfig
+    cmd: talhelper {{.TALOS_DIR}}/talconfig.yaml genconfig --env-file {{.TALOS_DIR}}/talenv.yaml --secret-file {{.TALOS_DIR}}/talsecret.sops.yaml --out-dir {{.TALOS_DIR}}/clusterconfig
     requires:
       vars: [CLUSTER]
     preconditions:
@@ -14,7 +14,6 @@ tasks:
 
   apply-node:
     desc: Apply Talos config to a node [CLUSTER=main] [HOSTNAME=required] [MODE=auto]
-    dotenv: ['{{.TALOS_DIR}}/cluster.env']
     cmds:
       # - task: down
       - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.TALOS_DIR}}/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig
@@ -52,14 +51,14 @@ tasks:
   soft-nuke:
     desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
     prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
-    cmd: talhelper gencommand reset -o {{.TALOS_DIR}}/clusterconfig -c {{.TALOS_DIR}}/talconfig.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
+    cmd: talhelper gencommand reset --out-dir {{.TALOS_DIR}}/clusterconfig --config-file {{.TALOS_DIR}}/talconfig.yaml --env-file {{.TALOS_DIR}}/talenv.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
   hard-nuke:
     desc: Resets nodes back completely and reboots them
     prompt: This will destroy your cluster and reset the nodes... continue?
-    cmd: talhelper gencommand reset -o {{.TALOS_DIR}}/clusterconfig -c {{.TALOS_DIR}}/talconfig.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
+    cmd: talhelper gencommand reset --out-dir {{.TALOS_DIR}}/clusterconfig --config-file {{.TALOS_DIR}}/talconfig.yaml --env-file {{.TALOS_DIR}}/talenv.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
