@@ -10,12 +10,12 @@ tasks:
     summary: |
       IMPORTANT: CSI_DISK must be set to the disk model used across all the nodes (e.g. WD_BLACK SN770)
     cmds:
-      - talhelper {{.TALOS_DIR}}/talconfig.yaml genconfig --env-file {{.TALOS_DIR}}/talenv.yaml --secret-file {{.TALOS_DIR}}/talsecret.sops.yaml --out-dir {{.TALOS_DIR}}/clusterconfig
-      - talhelper --config-file {{.TALOS_DIR}}/talconfig.yaml --env-file {{.TALOS_DIR}}/talenv.yaml gencommand apply --extra-flags=--insecure | bash
-      - until talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{.TALOS_CONTROLLER}} bootstrap; do sleep 5; done
-      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
+      - talhelper genconfig  --config-file talconfig.yaml --secret-file talsecret.sops.yaml --out-dir clusterconfig
+      - talhelper --config-file talconfig.yaml --env-file talenv.yaml gencommand apply --extra-flags=--insecure | bash
+      - until talosctl --talosconfig clusterconfig/talosconfig --nodes {{.TALOS_CONTROLLER}} bootstrap; do sleep 5; done
+      - talosctl --talosconfig clusterconfig/talosconfig kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
       - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
-      - '{{if eq .NODE_COUNT 1}}talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}' ## Reboot my single node cluster
+      - '{{if eq .NODE_COUNT 1}}talosctl --talosconfig clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}' ## Reboot my single node cluster
     vars:
       TALOS_CONTROLLER:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]'
@@ -66,7 +66,8 @@ tasks:
 
   gen-config:
     desc: Generate the Talos configs
-    cmd: talhelper {{.TALOS_DIR}}/talconfig.yaml genconfig --env-file {{.TALOS_DIR}}/talenv.yaml --secret-file {{.TALOS_DIR}}/talsecret.sops.yaml --out-dir {{.TALOS_DIR}}/clusterconfig
+    dir: '{{.TALOS_DIR}}'
+    cmd: talhelper talconfig.yaml genconfig --secret-file talsecret.sops.yaml --out-dir clusterconfig
     requires:
       vars: [CLUSTER]
     preconditions:
@@ -76,8 +77,8 @@ tasks:
 
   apply-config:
     desc: Apply the Talos config on a nodes for a new cluster
-    dir: "{{.TALOS_DIR}}/"
-    cmd: talhelper --config-file {{.TALOS_DIR}}/talconfig.yaml --env-file {{.TALOS_DIR}}/talenv.yaml gencommand apply --extra-flags=--insecure | bash
+    dir: '{{.TALOS_DIR}}'
+    cmd: talhelper --config-file talconfig.yaml gencommand apply --extra-flags=--insecure | bash
     requires:
       vars: [CLUSTER]
     preconditions:

@@ -5,7 +5,8 @@ version: "3"
 tasks:
   genconfig:
     desc: Generate the Talos configs
-    cmd: talhelper {{.TALOS_DIR}}/talconfig.yaml genconfig --env-file {{.TALOS_DIR}}/talenv.yaml --secret-file {{.TALOS_DIR}}/talsecret.sops.yaml --out-dir {{.TALOS_DIR}}/clusterconfig
+    dir: '{{.TALOS_DIR}}'
+    cmd: talhelper genconfig  --config-file talconfig.yaml --secret-file talsecret.sops.yaml --out-dir clusterconfig
     requires:
       vars: [CLUSTER]
     preconditions:
@@ -14,10 +15,11 @@ tasks:
 
   apply-node:
     desc: Apply Talos config to a node [CLUSTER=main] [HOSTNAME=required] [MODE=auto]
+    dir: '{{.TALOS_DIR}}'
     cmds:
       # - task: down
-      - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file {{.TALOS_DIR}}/clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig
-      - talosctl --nodes {{.HOSTNAME}} health --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig
+      - talosctl apply-config --nodes {{.HOSTNAME}} --mode={{.MODE}} --file clusterconfig/{{.CLUSTER}}-{{.HOSTNAME}}.yaml --talosconfig clusterconfig/talosconfig
+      - talosctl --nodes {{.HOSTNAME}} health --talosconfig clusterconfig/talosconfig
       # - task: up
     vars:
       MODE: '{{.MODE | default "auto"}}'
@@ -51,14 +53,16 @@ tasks:
   soft-nuke:
     desc: Resets nodes back to maintenance mode so you can re-deploy again straight after
     prompt: This will destroy your cluster and reset the nodes back to maintenance mode... continue?
-    cmd: talhelper gencommand reset --out-dir {{.TALOS_DIR}}/clusterconfig --config-file {{.TALOS_DIR}}/talconfig.yaml --env-file {{.TALOS_DIR}}/talenv.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
+    dir: '{{.TALOS_DIR}}'
+    cmd: talhelper gencommand reset --out-dir clusterconfig --config-file talconfig.yaml --extra-flags "--reboot --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
   hard-nuke:
     desc: Resets nodes back completely and reboots them
     prompt: This will destroy your cluster and reset the nodes... continue?
-    cmd: talhelper gencommand reset --out-dir {{.TALOS_DIR}}/clusterconfig --config-file {{.TALOS_DIR}}/talconfig.yaml --env-file {{.TALOS_DIR}}/talenv.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
+    dir: '{{.TALOS_DIR}}'
+    cmd: talhelper gencommand reset --out-dir clusterconfig --config-file talconfig.yaml --extra-flags "--reboot --graceful=false --wait=false" | bash
     preconditions:
       - { msg: "Argument (CLUSTER) is required", sh: "test -n {{.CLUSTER}}" }
 
@@ -119,10 +123,10 @@ tasks:
 
   kubeconfig:
     desc: Generate the kubeconfig for a Talos cluster [CLUSTER=main]
-    cmd: talosctl kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}} --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig
+    cmd: talosctl kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
     vars:
       TALOS_CONTROLLER:
-        sh: talosctl config info --output json --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig | jq --raw-output '.endpoints[]' | shuf -n 1
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig | jq --raw-output '.endpoints[]' | shuf -n 1
     requires:
       vars: [CLUSTER]
     preconditions:
