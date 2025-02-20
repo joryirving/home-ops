@@ -67,6 +67,19 @@ spec:
       - apiVersion: monitoring.giantswarm.io/v1alpha1
         kind: Silence
         metadata:
+          name: cpu-throttling-kyoo-front
+          namespace: observability
+        spec:
+          matchers:
+            - name: alertname
+              value: CPUThrottlingHigh
+              isRegex: false
+            - name: pod
+              value: kyoo-front-*
+              isRegex: true
+      - apiVersion: monitoring.giantswarm.io/v1alpha1
+        kind: Silence
+        metadata:
           name: voyager-memory-high-utilization
           namespace: observability
         spec:
