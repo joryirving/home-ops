@@ -21,7 +21,7 @@ on:
     paths: ["kubernetes/**/helmrelease.yaml"]
 
 jobs:
-  sync:
+  helm-repository-sync:
     name: Helm Repository Sync
     runs-on: [home-ops-runner]
     steps:
@@ -106,3 +106,16 @@ jobs:
               --context ${{ github.event.inputs.clusterName }} \
               --namespace ${{ github.event.inputs.helmRepoNamespace }} \
               reconcile source helm ${{ github.event.inputs.helmRepoName }} || true
+
+  helm-repository-sync-status:
+    needs: ["helm-repository-sync"]
+    name: Helm Repository Sync Success
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Any jobs failed?
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
+      - name: All jobs passed or skipped
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        run: echo "All jobs passed or skipped" && echo "${{ toJSON(needs.*.result) }}"
