@@ -27,41 +27,43 @@ spec:
   valuesFrom:
     - kind: ConfigMap
       name: cilium-helm-values
-  # Enable Hubble, Hubble Relay and Hubble UI
   values:
-    hubble:
-      enabled: true
-      metrics:
-        enabled:
-          - dns:query
-          - drop
-          - tcp
-          - flow
-          - port-distribution
-          - icmp
-          - http
-        serviceMonitor:
-          enabled: true
-        dashboards:
-          enabled: true
-          annotations:
-            grafana_folder: Network
-      relay:
-        enabled: true
-        rollOutPods: true
-        prometheus:
-          serviceMonitor:
-            enabled: true
-      ui:
-        enabled: true
-        rollOutPods: true
-        ingress:
-          enabled: true
-          className: internal
-          annotations:
-            gethomepage.dev/enabled: "true"
-            gethomepage.dev/icon: cilium.png
-            gethomepage.dev/name: Hubble
-            gethomepage.dev/group: Observability
-            gethomepage.dev/description: Network Monitoring Dashboard
-          hosts: ["hubble.${SECRET_DOMAIN}"]
+    operator:
+      tolerations: []
+  # Enable Hubble, Hubble Relay and Hubble UI
+    # hubble:
+    #   enabled: true
+    #   metrics:
+    #     enabled:
+    #       - dns:query
+    #       - drop
+    #       - tcp
+    #       - flow
+    #       - port-distribution
+    #       - icmp
+    #       - http
+    #     serviceMonitor:
+    #       enabled: true
+    #     dashboards:
+    #       enabled: true
+    #       annotations:
+    #         grafana_folder: Network
+    #   relay:
+    #     enabled: true
+    #     rollOutPods: true
+    #     prometheus:
+    #       serviceMonitor:
+    #         enabled: true
+    #   ui:
+    #     enabled: true
+    #     rollOutPods: true
+    #     ingress:
+    #       enabled: true
+    #       className: internal
+    #       annotations:
+    #         gethomepage.dev/enabled: "true"
+    #         gethomepage.dev/icon: cilium.png
+    #         gethomepage.dev/name: Hubble
+    #         gethomepage.dev/group: Observability
+    #         gethomepage.dev/description: Network Monitoring Dashboard
+    #       hosts: ["hubble.${SECRET_DOMAIN}"]
