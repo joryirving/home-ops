@@ -67,7 +67,7 @@ function wipe_rook_disks() {
         if ! disks=$(talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" get disk --output json 2>/dev/null \
             | jq --exit-status --raw-output --slurp '. | map(select(.spec.model == env.ROOK_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]];
         then
-            log error "No disks found" node "${node}" "model=${CSI_DISK}"
+            log error "No disks found" "node=${node}" "model=${CSI_DISK}"
         fi
 
         log debug "Talos node and disk discovered" "node=${node}" "disks=${disks}"
@@ -101,7 +101,7 @@ function apply_helm_releases() {
 }
 
 function main() {
-    check_env KUBERNETES_VERSION CSI_DISK TALOS_VERSION CLUSTER
+    check_env KUBECONFIG KUBERNETES_VERSION CSI_DISK TALOS_VERSION CLUSTER
     check_cli helmfile jq kubectl kustomize minijinja-cli op talosctl yq
 
     # Apply resources and Helm releases
