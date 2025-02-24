@@ -105,7 +105,6 @@ jobs:
         run: tofu plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
-        if: github.event_name == 'pull_request'
         continue-on-error: true
         uses: borchero/terraform-plan-comment@v2
         with:
