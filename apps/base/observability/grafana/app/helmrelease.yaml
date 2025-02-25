@@ -23,7 +23,7 @@ spec:
       strategy: rollback
       retries: 3
   values:
-    replicas: 2
+    replicas: ${REPLICAS:=1}
     podAnnotations:
       reloader.stakater.com/auto: "true"
     env:
@@ -32,7 +32,7 @@ spec:
       GF_FEATURE_TOGGLES_ENABLE: publicDashboards
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: natel-discrete-panel,pr0ps-trackmap-panel,panodata-map-panel
       GF_SECURITY_COOKIE_SAMESITE: *app
-      GF_SERVER_ROOT_URL: https://grafana.${SECRET_DOMAIN}
+      GF_SERVER_ROOT_URL: https://${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}
     envFromSecrets:
       - name: grafana-secret
     grafana.ini:
@@ -388,18 +388,8 @@ spec:
     ingress:
       enabled: true
       ingressClassName: external
-      annotations:
-        gethomepage.dev/enabled: "true"
-        gethomepage.dev/icon: grafana.png
-        gethomepage.dev/name: Grafana
-        gethomepage.dev/group: Observability
-        gethomepage.dev/description: Monitoring Dashboards
-        # gethomepage.dev/widget.type: grafana
-        # gethomepage.dev/widget.url: http://grafana.observability
-        # gethomepage.dev/widget.username: '{{`{{HOMEPAGE_VAR_GRAFANA_USERNAME}}`}}'
-        # gethomepage.dev/widget.password: '{{`{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}`}}'
       hosts:
-        - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+        - "${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"
     persistence:
       enabled: false
     topologySpreadConstraints:

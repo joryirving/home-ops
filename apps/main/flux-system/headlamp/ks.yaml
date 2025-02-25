@@ -10,6 +10,11 @@ spec:
       app.kubernetes.io/name: *app
   interval: 30m
   path: ./apps/base/flux-system/headlamp/app
+  postBuild:
+    substitute:
+      GATUS_SUBDOMAIN: *app
+      STORAGECLASS: ceph-filesystem
+      STORAGECLASS_ACCESSMODE: ReadWriteMany
   prune: true
   sourceRef:
     kind: GitRepository

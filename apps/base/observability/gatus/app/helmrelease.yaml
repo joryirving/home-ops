@@ -25,10 +25,8 @@ spec:
   values:
     controllers:
       gatus:
-        replicas: 2
+        replicas: 1
         strategy: RollingUpdate
-        labels:
-          postgres: "true"
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -59,9 +57,6 @@ spec:
               GATUS_CONFIG_PATH: /config
               GATUS_DELAY_START_SECONDS: 5
               WEB_PORT: &port 80
-            envFrom:
-            - secretRef:
-                name: gatus-secret
             probes:
               liveness: &probes
                 enabled: true
@@ -101,16 +96,8 @@ spec:
     ingress:
       app:
         className: external
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/group: Observability
-          gethomepage.dev/name: Gatus
-          gethomepage.dev/icon: gatus.png
-          gethomepage.dev/description: Status Page
-          gethomepage.dev/widget.type: gatus
-          gethomepage.dev/widget.url: http://gatus.observability
         hosts:
-          - host: status.${SECRET_DOMAIN}
+          - host: ${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}
             paths:
               - path: /
                 service:

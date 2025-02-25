@@ -25,10 +25,10 @@ spec:
   values:
     fullnameOverride: *app
     controller:
-      replicaCount: 2
+      replicaCount: ${REPLICAS:=1}
       service:
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: &hostname external.${SECRET_DOMAIN}
+          external-dns.alpha.kubernetes.io/hostname: &hostname ${EXTERNAL_DOMAIN}.${SECRET_DOMAIN}
           lbipam.cilium.io/ips: ${SVC_NGINX_EXTERNAL}
       ingressClassResource:
         name: external

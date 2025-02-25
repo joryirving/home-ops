@@ -33,17 +33,17 @@ spec:
         enabled: true
         pathType: Prefix
         ingressClassName: internal
-        hosts: ["alertmanager.${SECRET_DOMAIN}"]
+        hosts: ["${ALERTMANAGER_SUBDOMAIN}.${SECRET_DOMAIN}"]
       alertmanagerSpec:
         alertmanagerConfiguration:
           name: alertmanager
           global:
             resolveTimeout: 5m
-        externalUrl: https://alertmanager.${SECRET_DOMAIN}
+        externalUrl: https://${ALERTMANAGER_SUBDOMAIN}.${SECRET_DOMAIN}
         storage:
           volumeClaimTemplate:
             spec:
-              storageClassName: ceph-block
+              storageClassName: ${STORAGECLASS}
               resources:
                 requests:
                   storage: 1Gi
@@ -134,17 +134,8 @@ spec:
       ingress:
         enabled: true
         ingressClassName: internal
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: prometheus.png
-          gethomepage.dev/name: Prometheus
-          gethomepage.dev/group: Observability
-          gethomepage.dev/app: prometheus
-          gethomepage.dev/description: Monitoring Scrape Service
-          gethomepage.dev/widget.type: prometheus
-          gethomepage.dev/widget.url: http://kube-prometheus-stack-prometheus.observability:9090
         pathType: Prefix
-        hosts: ["prometheus.${SECRET_DOMAIN}"]
+        hosts: ["${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"]
       prometheusSpec:
         enableAdminAPI: true
         walCompression: true
@@ -163,12 +154,12 @@ spec:
         probeSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false
         retention: 30d
-        retentionSize: 70GB
+        retentionSize: ${PVC_CAPACITY}GB
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: ceph-block
+              storageClassName: ${STORAGECLASS}
               resources:
                 requests:
-                  storage: 75Gi
+                  storage: ${PVC_CAPACITY}Gi
     cleanPrometheusOperatorObjectNames: true

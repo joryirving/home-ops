@@ -10,6 +10,9 @@ spec:
       app.kubernetes.io/name: *app
   interval: 30m
   path: ./apps/base/kube-system/coredns/app
+  postBuild:
+    substitute:
+      REPLICAS: "3" #Match control plane count
   prune: false # never should be deleted
   sourceRef:
     kind: GitRepository

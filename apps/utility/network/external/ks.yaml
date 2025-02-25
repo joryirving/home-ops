@@ -38,6 +38,10 @@ spec:
       namespace: external-secrets
   interval: 30m
   path: ./apps/base/network/external/cloudflared
+  postBuild:
+    substitute:
+      EXTERNAL_DNS: external-utility
+      CLOUDFLARED_TUNNEL_ID: 4e64e0e1-a45d-40c2-bb22-1d94f3bb51ba
   prune: true
   sourceRef:
     kind: GitRepository
@@ -58,6 +62,9 @@ spec:
       app.kubernetes.io/name: *app
   interval: 30m
   path: ./apps/base/network/external/echo-server
+  postBuild:
+    substitute:
+      GATUS_SUBDOMAIN: echo-server-utility
   prune: true
   sourceRef:
     kind: GitRepository
@@ -104,6 +111,9 @@ spec:
       namespace: cert-manager
   interval: 30m
   path: ./apps/base/network/external/ingress-nginx
+  postBuild:
+    substitute:
+      EXTERNAL_DOMAIN: external-utility
   prune: true
   sourceRef:
     kind: GitRepository

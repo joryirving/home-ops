@@ -13,6 +13,12 @@ spec:
       namespace: external-secrets
   interval: 30m
   path: ./apps/base/observability/kube-prometheus-stack/app
+  postBuild:
+    substitute:
+      ALERTMANAGER_SUBDOMAIN: alertmanager-utility
+      GATUS_SUBDOMAIN: prometheus-utility
+      STORAGECLASS: local-hostpath
+      PVC_CAPACITY: "50"
   prune: true
   sourceRef:
     kind: GitRepository

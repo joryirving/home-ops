@@ -89,10 +89,11 @@ jobs:
 
       - name: Add comment
         if: ${{ steps.diff.outputs.diff != '' }}
+        continue-on-error: true
         uses: mshick/add-pr-comment@v2
         with:
           repo-token: ${{ steps.app-token.outputs.token }}
-          message-id: ${{ github.event.pull_request.number }}/${{ matrix.paths }}/${{ matrix.resources }}
+          message-id: ${{ github.event.pull_request.number }}/${{ matrix.cluster }}/${{ matrix.resources }}
           message-failure: Diff was not successful
           message: |
             ```diff

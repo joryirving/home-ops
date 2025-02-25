@@ -25,7 +25,7 @@ spec:
   values:
     controllers:
       cloudflared:
-        replicas: 2
+        replicas: ${REPLICAS:=1}
         strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
@@ -46,7 +46,7 @@ spec:
               - --config
               - /etc/cloudflared/config/config.yaml
               - run
-              - "85be482d-5cf9-4ee5-a9a0-c489e3dd6188"
+              - "${CLOUDFLARED_TUNNEL_ID}"
             probes:
               liveness: &probes
                 enabled: true

@@ -49,15 +49,15 @@ spec:
       enabled: true
       ingressClassName: internal
       hosts:
-        - host: headlamp.${SECRET_DOMAIN}
+        - host: ${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}
           paths:
             - path: /
               type: Prefix
     persistentVolumeClaim:
       enabled: true
-      accessModes: ["ReadWriteMany"]
+      accessModes: ["${STORAGECLASS_ACCESSMODE}"]
       size: 1Gi
-      storageClassName: ceph-filesystem
+      storageClassName: ${STORAGECLASS}
     volumeMounts:
       - mountPath: /build/plugins
         name: headlamp-plugins

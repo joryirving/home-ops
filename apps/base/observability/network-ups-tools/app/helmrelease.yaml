@@ -43,15 +43,12 @@ spec:
         pod:
           annotations:
             configmap.reloader.stakater.com/reload: &config network-ups-tools-config
-          nodeSelector:
-            ups.feature.node.kubernetes.io/tripplite: "true"
     service:
       app:
         controller: *app
-        type: LoadBalancer
+        # type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: ${SVC_SERVER_NUT_ADDR:=temp}
-          external-dns.alpha.kubernetes.io/hostname: server-nut.${SECRET_DOMAIN}
+          external-dns.alpha.kubernetes.io/hostname: ${HOSTNAME}.${SECRET_DOMAIN}
         externalTrafficPolicy: Cluster
         ports:
           http:
