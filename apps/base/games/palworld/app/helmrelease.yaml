@@ -1,0 +1,152 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app palworld
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  dependsOn:
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+  - name: volsync
+    namespace: storage
+  values:
+    controllers:
+      palworld:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/jammsen/docker-palworld-dedicated-server
+              tag: master@sha256:479ad8a97206df899a540d0b33a7ef303e1dd9a7840b412bd3db0ec9ed7a0e0e
+            env:
+              ## Container Settings
+              TZ: ${TIMEZONE}
+              ALWAYS_UPDATE_ON_START: true
+              BACKUP_ENABLED: false #volsync is backing up the PVC
+              RESTART_ENABLED: false #no one is playing right now.
+              RESTART_CRON_EXPRESSION: 0 5 * * * #5am daily
+              MULTITHREAD_ENABLED: true
+              COMMUNITY_SERVER: false
+              SERVER_SETTINGS_MODE: auto
+              ## Server Gameplay Settings
+              DEATH_PENALTY: None
+              BASE_CAMP_WORKER_MAXNUM: 20
+              PAL_EGG_DEFAULT_HATCHING_TIME: "2.000000" #Default for Normal Mode
+              ENABLE_NON_LOGIN_PENALTY: false
+              ## Server Settings
+              SERVER_NAME: Platonically Pals
+              SERVER_DESCRIPTION: Smurf's Palworld. Come in, have a tako!
+              PUBLIC_PORT: &port 8211
+              RCON_ENABLED: true
+              RCON_PORT: &rcon-port 25575
+              PUBLIC_IP: palworld.${SECRET_DOMAIN}
+              ## Webhook Settings
+              WEBHOOK_ENABLED: true
+            envFrom:
+            - secretRef:
+                name: palworld-secret
+            probes:
+              liveness: &disabled
+                enabled: false
+              readiness: *disabled
+              startup: *disabled
+            resources:
+              requests:
+                cpu: 1000m
+              limits:
+                memory: 24Gi
+          exporter:
+            image:
+              repository: docker.io/bostrt/palworld-exporter
+              tag: v1.3.1
+            env:
+              ## Container Settings
+              TZ: ${TIMEZONE}
+              RCON_HOST: localhost
+              RCON_PORT: *rcon-port
+              SAVE_DIRECTORY: /palworld
+            envFrom:
+            - secretRef:
+                name: palworld-secret
+            resources:
+              limits:
+                memory: 256Mi
+              requests:
+                cpu: 5m
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+        # pod:
+        #   securityContext:
+        #     runAsUser: 1000
+        #     runAsGroup: 1000
+        #     fsGroup: 1000
+        #     fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        controller: *app
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: ${SVC_PALWORLD_ADDR}
+        ports:
+          http:
+            port: 9877
+          game:
+            protocol: UDP
+            port: *port
+          rcon:
+            port: *rcon-port
+    serviceMonitor:
+      app:
+        serviceName: *app
+        endpoints:
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 10s
+    ingress:
+      main:
+        enabled: false #nginx doesn't support non-https
+        className: external
+        annotations:
+          external-dns.alpha.kubernetes.io/target: ipv4.${SECRET_DOMAIN}
+        hosts:
+        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          paths:
+          - path: /
+            service:
+              identifier: app
+              port: game
+    persistence:
+      config:
+        existingClaim: *app
+        globalMounts:
+        - path: /palworld
+      cache:
+        existingClaim: palworld-cache
+        globalMounts:
+          - path: /palworld/Pal/Binaries
+            subPath: binaries
+          - path: /palworld/Pal/Content
+            subPath: content
+      tmp:
+        type: emptyDir

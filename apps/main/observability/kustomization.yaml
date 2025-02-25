@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: observability
+components:
+  - ../../../infrastructure/components/clusters/main
+  - ../../../infrastructure/components/common
+resources:
+  - ./gatus/ks.yaml
+  - ./gatus/externalsecret.yaml
+  - ./grafana/ks.yaml
+  - ./karma/ks.yaml
+  - ./kromgo/ks.yaml
+  - ./kube-prometheus-stack/ks.yaml
+  - ./network-ups-tools/ks.yaml
+  - ./silence-operator/ks.yaml
+  # Exporters
+  - ./exporters
+configMapGenerator:
+  - name: gatus-configmap
+    files:
+      - ./gatus/config/config.yaml
+generatorOptions:
+  disableNameSuffixHash: true

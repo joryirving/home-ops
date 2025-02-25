@@ -1,0 +1,172 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app kyoo
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: kyoo
+      version: 4.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: zoriya
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    global:
+      meilisearch:
+        infra:
+          existingSecret: &secret kyoo-secret
+        kyoo_back:
+          masterkeyKey: MEILI_MASTER_KEY
+          existingSecret: *secret
+      postgres:
+        infra:
+          user: kyoo-all
+        kyoo_back:
+          host: &host postgres-pgbouncer.database.svc
+          kyoo_migrations: &psql
+            userKey: POSTGRES_USER
+            passwordKey: POSTGRES_PASSWORD
+            existingSecret: *secret
+          kyoo_back: *psql
+        kyoo_transcoder:
+          host: *host
+          database: kyoo_transcoder
+          sslmode: require
+          kyoo_transcoder: *psql
+      rabbitmq:
+        infra:
+          passwordKey: RABBITMQ_PASS
+          keyErlangCookie: RABBITMQ_COOKIE
+          existingSecret: *secret
+        kyoo_autosync: &rabbit
+          userKey: RABBITMQ_USER
+          passwordKey: RABBITMQ_PASS
+          existingSecret: *secret
+        kyoo_back: *rabbit
+        kyoo_matcher: *rabbit
+        kyoo_scanner: *rabbit
+
+    kyoo:
+      address: https://kyoo.${SECRET_DOMAIN}
+      transcoderAcceleration: vaapi # hardware acceleration profile (valid values: disabled, vaapi, qsv, nvidia)
+      apikey:
+        existingSecret: *secret
+        apikeyKey: KYOO_API_KEY
+      oidc_providers:
+        - name: Authentik
+          existingSecret: *secret
+          clientIdKey: OIDC_AUTHENTIK_CLIENTID
+          clientSecretKey: OIDC_AUTHENTIK_SECRET
+          logo: https://sso.${SECRET_DOMAIN}/static/dist/assets/icons/icon.png
+          authorizationAddress: https://sso.${SECRET_DOMAIN}/application/o/authorize/
+          tokenAddress: https://sso.${SECRET_DOMAIN}/application/o/token/
+          profileAddress: https://sso.${SECRET_DOMAIN}/application/o/userinfo/
+          scope: "openid email profile"
+          authMethod: ClientSecretBasic
+
+    media:
+      volumes:
+        - name: media
+          nfs:
+            server: voyager.internal
+            path: ${SECRET_NFS_DATA}
+      volumeMounts:
+        - mountPath: &path /media
+          name: media
+          readOnly: true
+      baseMountPath: *path
+
+    contentdatabase:
+      tmdb:
+        apikeyKey: TMDB_API_KEY
+        existingSecret: *secret
+      tvdb:
+        apikeyKey: TVDB_APIKEY
+        pinKey: TVDB_PIN
+        existingSecret: *secret
+
+    autosync:
+      kyoo_autosync:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 20Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+
+    back:
+      kyoo_back:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 1Gi
+          limits:
+            cpu: 4000m
+            memory: 8Gi
+      persistence:
+        existingClaim: *app
+
+    front:
+      kyoo_front:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 50Mi
+          limits:
+            cpu: 1
+            memory: 500Mi
+
+    matcher:
+      kyoo_matcher:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 50Mi
+          limits:
+            cpu: 1
+            memory: 500Mi
+
+    scanner:
+      kyoo_scanner:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 1Gi
+
+    transcoder:
+      kyoo_transcoder:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 500Mi
+          limits:
+            cpu: 1
+            gpu.intel.com/i915: 1
+            memory: 8Gi
+
+    ingress:
+      enabled: true
+      ingressClassName: external
+      host: kyoo.${SECRET_DOMAIN}
+      tls: true
+
+    meilisearch:
+      enabled: true
+    rabbitmq:
+      enabled: true

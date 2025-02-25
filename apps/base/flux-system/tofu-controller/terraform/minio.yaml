@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/infra.contrib.fluxcd.io/terraform_v1alpha2.json
+apiVersion: infra.contrib.fluxcd.io/v1alpha2
+kind: Terraform
+metadata:
+  name: minio
+spec:
+  interval: 12h
+  approvePlan: auto
+  backendConfig:
+    customConfiguration: |
+      backend "s3" {
+        bucket = "terraform-state"
+        key    = "minio/minio.tfstate"
+        region   = "main"
+        endpoints = {
+          s3 = "https://s3.${SECRET_DOMAIN}"
+        }
+
+        skip_credentials_validation = true
+        skip_requesting_account_id  = true
+        skip_metadata_api_check     = true
+        skip_region_validation      = true
+        use_path_style              = true
+      }
+  backendConfigsFrom:
+  - kind: Secret
+    name: terraform-backend-secret
+  path: ./minio
+  sourceRef:
+    kind: OCIRepository
+    name: terraform
+    namespace: flux-system
+  varsFrom:
+  - kind: Secret
+    name: terraform-secret
