@@ -10,14 +10,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 
-env:
-  HOMEBREW_NO_ANALYTICS: "1"
-
 jobs:
   pre-job:
+    name: Helm Repository Sync Pre-Job
     runs-on: ubuntu-latest
     outputs:
       any_changed: ${{ steps.changed-files.outputs.any_changed }}
+      all_changed_and_modified_files: ${{ steps.changed-files.outputs.all_changed_and_modified_files }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,14 +25,15 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v45
         with:
-          files: |
-            **/helmrelease.yaml
-            **/helm-values.yaml
+          files: kubernetes/**/helmrelease.yaml
 
   helm-repository-sync:
     name: Helm Repository Sync
     needs: pre-job
     runs-on: home-ops-runner
+    strategy:
+      matrix:
+        cluster: ["main", "utility"]
     if: ${{ needs.pre-job.outputs.any_changed == 'true' }}
     steps:
       - name: Configure 1password
@@ -48,15 +48,6 @@ jobs:
         env:
           KUBECONFIG_BASE64: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
 
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-
-      - name: Setup Workflow Tools
-        run: brew install fluxcd/tap/flux
-
       - name: Write kubeconfig
         id: kubeconfig
         uses: timheuer/base64-to-file@v1
@@ -64,35 +55,20 @@ jobs:
           encodedString: ${{ env.KUBECONFIG_BASE64 }}
           fileName: kubeconfig
 
-      - name: Get Changed Files
-        id: changed-files
-        uses: tj-actions/changed-files@v45
-        with:
-          files: |
-            **/helmrelease.yaml
-            **/helm-values.yaml
-          safe_output: false
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install flux
+        run: curl -fsSL https://fluxcd.io/install.sh | bash
 
       - name: Sync Helm Repository
         env:
           KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
+          FILTER: '[.spec.chart.spec.sourceRef] | unique | .[] | "\(.namespace) \(.name)"'
         shell: bash
         run: |
-          declare -a repos=()
-          for f in ${{ steps.changed-files.outputs.all_changed_and_modified_files }}; do
-              cluster_name=$(echo "${f}" | awk -F'/' '{print $2}')
-              repo_namespace="$(yq -r '.spec.chart.spec.sourceRef.namespace' "${f}")"
-              repo_name="$(yq -r '.spec.chart.spec.sourceRef.name' "${f}")"
-              repos+=("${cluster_name}:${repo_namespace}:${repo_name}")
-          done
-          mapfile -t repos < <(printf "%s\n" "${repos[@]}" | sort -u)
-          for r in "${repos[@]}"; do
-              IFS=':' read -r cluster_name repo_namespace repo_name <<< "${r}"
-              flux \
-                  --context ${cluster_name} \
-                  --namespace ${repo_namespace} \
-                  reconcile source helm ${repo_name} || true
-          done
+          yq eval-all "${FILTER}" ${{ needs.pre-job.outputs.all_changed_and_modified_files }} \
+            | xargs -l bash -c 'flux --context ${{ matrix.cluster }} --namespace $0 reconcile source helm $1'
 
   helm-repository-sync-status:
     needs: helm-repository-sync
@@ -103,6 +79,7 @@ jobs:
       - name: Any jobs failed?
         if: ${{ contains(needs.*.result, 'failure') }}
         run: exit 1
-      - name: All jobs passed or skipped
+
+      - name: All jobs passed or skipped?
         if: ${{ !(contains(needs.*.result, 'failure')) }}
         run: echo "All jobs passed or skipped" && echo "${{ toJSON(needs.*.result) }}"
