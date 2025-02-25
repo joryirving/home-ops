@@ -1,0 +1,195 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app plex
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  components:
+    - ../../../../../infrastructure/components/gatus/external
+    - ../../../../../infrastructure/components/volsync
+  dependsOn:
+    - name: onepassword-store
+      namespace: external-secrets
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
+    - name: volsync
+      namespace: storage
+  interval: 30m
+  path: ./kubernetes/apps/base/media/plex/app
+  postBuild:
+    substitute:
+      APP: *app
+      GATUS_PATH: /web/index.html
+      VOLSYNC_CAPACITY: 50Gi
+      VOLSYNC_CACHE_CAPACITY: 25Gi
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  timeout: 5m
+  wait: false
+  targetNamespace: media
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app kometa
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  components:
+    - ../../../../../infrastructure/components/volsync
+  dependsOn:
+    - name: radarr
+      namespace: downloads
+    - name: sonarr
+      namespace: downloads
+    - name: onepassword-store
+      namespace: external-secrets
+    - name: plex
+      namespace: media
+    - name: tautulli
+      namespace: media
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
+    - name: volsync
+      namespace: storage
+  interval: 30m
+  path: ./kubernetes/apps/base/media/plex/kometa
+  postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_CAPACITY: 10Gi
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: media
+  timeout: 5m
+  wait: false
+# ---
+# # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+# apiVersion: kustomize.toolkit.fluxcd.io/v1
+# kind: Kustomization
+# metadata:
+#   name: &app movie-roulette
+#   namespace: flux-system
+# spec:
+#   commonMetadata:
+#     labels:
+#       app.kubernetes.io/name: *app
+#   components:
+#     - ../../../../../infrastructure/components/gatus/external
+#     - ../../../../../infrastructure/components/volsync
+#   dependsOn:
+#     - name: rook-ceph-cluster
+#       namespace: rook-ceph
+#     - name: plex
+#       namespace: media
+#   interval: 30m
+#   path: ./kubernetes/apps/base/media/plex/movie-roulette
+#   postBuild:
+#     substitute:
+#       APP: *app
+#   prune: true
+#   sourceRef:
+#     kind: GitRepository
+#     name: flux-system
+#     namespace: flux-system
+#   targetNamespace: media
+#   timeout: 5m
+#   wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app plex-auto-languages
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  dependsOn:
+    - name: plex
+      namespace: media
+  interval: 30m
+  path: ./kubernetes/apps/base/media/plex/plex-auto-languages
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: media
+  timeout: 5m
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app plex-image-cleanup
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  dependsOn:
+    - name: plex
+      namespace: media
+    - name: onepassword-store
+      namespace: external-secrets
+  interval: 30m
+  path: ./kubernetes/apps/base/media/plex/plex-image-cleanup
+  postBuild:
+    substitute:
+      APP: *app
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: media
+  timeout: 5m
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app plex-trakt-sync
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  components:
+    - ../../../../../infrastructure/components/volsync
+  dependsOn:
+    - name: onepassword-store
+      namespace: external-secrets
+    - name: plex
+      namespace: media
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
+    - name: volsync
+      namespace: storage
+  interval: 30m
+  path: ./kubernetes/apps/base/media/plex/trakt-sync
+  postBuild:
+    substitute:
+      APP: *app
+      VOLSYNC_CAPACITY: 500Mi
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: media
+  timeout: 5m
+  wait: false

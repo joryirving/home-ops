@@ -1,0 +1,104 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app tautulli
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      tautulli:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/tautulli
+              tag: 2.15.1@sha256:040c3441ee544c5fa0828019c6deedef7ffa37af6a36b59a58bbae7058580951
+            env:
+              TZ: ${TIMEZONE}
+              TAUTULLI__PORT: &port 80
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /status
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 1Gi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 80
+    ingress:
+      app:
+        className: external
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/group: Video
+          gethomepage.dev/name: Tautulli
+          gethomepage.dev/icon: tautulli.png
+          gethomepage.dev/description: Plex Stream Monitoring
+          gethomepage.dev/widget.type: tautulli
+          gethomepage.dev/widget.url: http://tautulli.media
+          gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_TAUTULLI_TOKEN}}` }}"
+        hosts:
+          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+    persistence:
+      config:
+        existingClaim: *app
+      cache:
+        existingClaim: tautulli-cache
+        globalMounts:
+          - path: /config/cache
+      logs:
+        type: emptyDir
+        globalMounts:
+          - path: /config/logs
+      tmp:
+        type: emptyDir

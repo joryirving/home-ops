@@ -1,0 +1,29 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app kube-prometheus-stack
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  dependsOn:
+    - name: onepassword-store
+      namespace: external-secrets
+  interval: 30m
+  path: ./kubernetes/apps/base/observability/kube-prometheus-stack/app
+  postBuild:
+    substitute:
+      ALERTMANAGER_SUBDOMAIN: alertmanager-utility
+      GATUS_SUBDOMAIN: prometheus-utility
+      STORAGECLASS: local-hostpath
+      PVC_CAPACITY: "50"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: observability
+  timeout: 5m
+  wait: false

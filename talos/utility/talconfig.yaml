@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+---
+# renovate: datasource=docker depName=ghcr.io/siderolabs/installer
+talosVersion: v1.9.4
+# renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
+kubernetesVersion: v1.32.2
+
+clusterName: &cluster utility
+endpoint: https://10.69.1.120:6443
+
+clusterPodNets:
+  - "10.42.0.0/16"
+
+clusterSvcNets:
+  - "10.43.0.0/16"
+
+additionalApiServerCertSans: &sans
+  - "10.69.1.120"
+  - "127.0.0.1"
+additionalMachineCertSans: *sans
+
+# Disable built-in Flannel to use Cilium
+cniConfig:
+  name: none
+
+nodes:
+  - hostname: "celestia"
+    ipAddress: "10.69.1.121"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/96f8c146a67c80daad900d3fc1a6976fe11062321eee9ab6ae2a6aea88b2d26e
+    controlPlane: true
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: 84:47:09:2d:52:52
+        dhcp: true
+        mtu: 1500
+        vip:
+          ip: "10.69.1.120"
+
+# Global patches
+patches:
+  - "@./patches/global/machine-democratic-csi.yaml" # Secondary Disk Mount
+  - "@./patches/global/machine-disks.yaml"          # Secondary Disk Mount
+  - "@./patches/global/machine-files.yaml"          # NFS Mount
+  - "@./patches/global/machine-install.yaml"        # Less security, faster puter
+  - "@./patches/global/machine-kubelet.yaml"        # VLAN Subnet Info
+  - "@./patches/global/machine-network.yaml"        # Search Domain
+  - "@./patches/global/machine-sysctls.yaml"        # Network Tweaks
+  - "@./patches/global/machine-sysfs.yaml"          # CPU Power
+
+controlPlane:
+  nodeLabels:
+    topology.kubernetes.io/zone: controlPlane
+  patches:
+    - "@./patches/controller/admission-controller-patch.yaml"
+    - "@./patches/controller/cluster.yaml"
+    - "@./patches/controller/machine-features.yaml"
+
+worker:
+  nodeLabels:
+    topology.kubernetes.io/zone: worker

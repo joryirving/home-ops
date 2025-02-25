@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app archiveteam
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      archiveteam:
+        pod:
+          annotations:
+            kubernetes.io/egress-bandwidth: "50M"
+            kubernetes.io/ingress-bandwidth: "50M"
+        containers:
+          app:
+            image:
+              repository: atdr.meo.ws/archiveteam/warrior-dockerfile
+              tag: latest
+            resources:
+              requests:
+                cpu: 20m
+                memory: 300Mi
+              limits:
+                memory: 500Mi
+            env:
+              DOWNLOADER: LilDrunkenSmurf
+              SELECTED_PROJECT: usgovernment
+              CONCURRENT_ITEMS: 6
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        controller: *app
+        ports:
+          http:
+            port: 8001
+    ingress:
+      app:
+        className: internal
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/group: Home
+          gethomepage.dev/name: Archive Team
+          gethomepage.dev/icon: mdi-archive-arrow-up
+        hosts:
+          - host: "${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"
+            paths:
+              - path: /
+                service:
+                  identifier: app
+                  port: http
+    persistence:
+      config:
+        existingClaim: *app
+        globalMounts:
+          - path: /projects

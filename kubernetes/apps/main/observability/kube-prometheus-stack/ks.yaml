@@ -1,0 +1,53 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app kube-prometheus-stack
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  dependsOn:
+    - name: onepassword-store
+      namespace: external-secrets
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
+  interval: 30m
+  path: ./kubernetes/apps/base/observability/kube-prometheus-stack/app
+  postBuild:
+    substitute:
+      ALERTMANAGER_SUBDOMAIN: alertmanager
+      GATUS_SUBDOMAIN: prometheus
+      STORAGECLASS: ceph-block
+      PVC_CAPACITY: "75"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: observability
+  timeout: 5m
+  wait: false
+  patches:
+  - target:
+      kind: HelmRelease
+      name: kube-prometheus-stack
+    patch: |-
+      apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      metadata:
+        name: kube-prometheus-stack
+      spec:
+        values:
+          prometheus:
+            ingress:
+              annotations:
+                gethomepage.dev/enabled: "true"
+                gethomepage.dev/icon: prometheus.png
+                gethomepage.dev/name: Prometheus
+                gethomepage.dev/group: Observability
+                gethomepage.dev/app: prometheus
+                gethomepage.dev/description: Monitoring Scrape Service
+                gethomepage.dev/widget.type: prometheus
+                gethomepage.dev/widget.url: http://kube-prometheus-stack-prometheus.observability:9090

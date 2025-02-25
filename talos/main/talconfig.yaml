@@ -1,0 +1,175 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+---
+# renovate: datasource=docker depName=ghcr.io/siderolabs/installer
+talosVersion: v1.9.4
+# renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
+kubernetesVersion: v1.32.2
+
+clusterName: &cluster main
+endpoint: https://10.69.1.20:6443
+
+clusterPodNets:
+  - "10.42.0.0/16"
+
+clusterSvcNets:
+  - "10.43.0.0/16"
+
+additionalApiServerCertSans: &sans
+  - "10.69.1.20"
+  - "127.0.0.1"
+additionalMachineCertSans: *sans
+
+# Disable built-in Flannel to use Cilium
+cniConfig:
+  name: none
+
+nodes:
+  - hostname: "ayaka"
+    ipAddress: "10.69.1.21"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    controlPlane: true
+    networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: a4:bb:6d:6e:ec:75
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
+      - deviceSelector:
+          hardwareAddr: 00:e0:4c:68:06:69
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
+        vip:
+          ip: "10.69.1.20"
+  - hostname: "eula"
+    ipAddress: "10.69.1.22"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    controlPlane: true
+    networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 8c:04:ba:a5:51:20
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
+      - deviceSelector:
+          hardwareAddr: 1c:fd:08:75:15:63
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
+        vip:
+          ip: "10.69.1.20"
+  - hostname: "ganyu"
+    ipAddress: "10.69.1.23"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    controlPlane: true
+    networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:37:14
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
+      - deviceSelector:
+          hardwareAddr: 1c:fd:08:75:15:6f
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
+        vip:
+          ip: "10.69.1.20"
+  - hostname: "hutao"
+    ipAddress: "10.69.1.24"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    controlPlane: false
+    networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:43:c4
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
+      - deviceSelector:
+          hardwareAddr: 00:e0:4c:68:06:dd
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
+  - hostname: "navia"
+    ipAddress: "10.69.1.25"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    controlPlane: false
+    networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:0f:d7
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
+      - deviceSelector:
+          hardwareAddr: 00:e0:4c:68:05:e6
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
+  - hostname: "yelan"
+    ipAddress: "10.69.1.26"
+    installDisk: /dev/sda
+    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    controlPlane: false
+    networkInterfaces:
+      # 1G Internal Port
+      - deviceSelector:
+          hardwareAddr: 70:b5:e8:6d:35:fa
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 2048
+      # 2.5G PICe Port
+      - deviceSelector:
+          hardwareAddr: 00:e0:4c:68:06:3a
+        dhcp: true
+        mtu: 1500
+        dhcpOptions:
+            routeMetric: 1024
+
+# Global patches
+patches:
+  - "@./patches/global/machine-files.yaml"   # Spegel/NFS Mount
+  - "@./patches/global/machine-install.yaml" # Less security, faster puter
+  - "@./patches/global/machine-kubelet.yaml" # VLAN Subnet Info
+  - "@./patches/global/machine-network.yaml" # Search Domain
+  - "@./patches/global/machine-openebs.yaml" # Kubelet Mount
+  - "@./patches/global/machine-sysctls.yaml" # Network Tweaks
+  - "@./patches/global/machine-sysfs.yaml"   # CPU Power
+
+# Controller patches
+controlPlane:
+  nodeLabels:
+    topology.kubernetes.io/zone: controlPlane
+  patches:
+    - "@./patches/controller/admission-controller-patch.yaml"
+    - "@./patches/controller/cluster.yaml"
+    - "@./patches/controller/machine-features.yaml"
+
+worker:
+  nodeLabels:
+    topology.kubernetes.io/zone: worker

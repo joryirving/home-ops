@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/probe_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: devices
+spec:
+  module: icmp
+  prober:
+    url: blackbox-exporter.observability.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        ## Main Rack
+        - kvm.internal
+        - pikvm.internal
+        - voyager.internal
+        - ayaka.internal
+        - eula.internal
+        - ganyu.internal
+        - hutao.internal
+        - navia.internal
+        - yelan.internal

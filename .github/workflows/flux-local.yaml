@@ -11,50 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changed-clusters:
-    name: Changed Clusters
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.process-changes.outputs.matrix }}
-      any_changed: ${{ steps.process-change.outputs.any_changed }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Get Changed Clusters
-        id: changed-clusters
-        uses: tj-actions/changed-files@v45
-        with:
-          files: kubernetes/**
-          dir_names: true
-          dir_names_max_depth: 2
-          matrix: true
-
-      - name: Process Changes
-        id: process-changes
-        run: |
-          changed=$(echo '${{ steps.changed-clusters.outputs.all_changed_and_modified_files }}' | jq -r '. | @json')
-
-          if echo "$changed" | grep -q "kubernetes/shared"; then
-            echo 'matrix=["kubernetes/main", "kubernetes/utility"]' >> "$GITHUB_OUTPUT"
-          else
-            if [[ "$changed" == "["*"]" ]]; then
-              echo "matrix=$changed" >> "$GITHUB_OUTPUT"
-            else
-              echo "matrix=[\"$changed\"]" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-          echo "changed: $changed"
-          echo "matrix: $(cat $GITHUB_OUTPUT | grep matrix)"
-
   test:
     name: Flux Local Test
-    needs: changed-clusters
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        paths: ${{ fromJSON(needs.changed-clusters.outputs.matrix) }}
-    if: ${{ needs.changed-clusters.outputs.any_changed == 'true' }}
+        cluster: ["main", "utility"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,21 +24,19 @@ jobs:
       - name: Run flux-local test
         uses: docker://ghcr.io/allenporter/flux-local:v7.0.0
         with:
-          args: test --enable-helm --all-namespaces --path /github/workspace/${{ matrix.paths }}/flux/cluster -v
+          args: test --enable-helm --all-namespaces --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }} -v
 
   diff:
     name: Flux Local Diff
-    needs: changed-clusters
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     strategy:
       matrix:
-        paths: ${{ fromJSON(needs.changed-clusters.outputs.matrix) }}
+        cluster: ["main", "utility"]
         resources: ["helmrelease", "kustomization"]
       max-parallel: 4
       fail-fast: false
-    if: ${{ needs.changed-clusters.outputs.any_changed == 'true' }}
     steps:
       - name: Checkout Pull Request Branch
         uses: actions/checkout@v4
@@ -95,8 +55,8 @@ jobs:
           args: >-
             diff ${{ matrix.resources }}
             --unified 6
-            --path /github/workspace/pull/${{ matrix.paths }}/flux/cluster
-            --path-orig /github/workspace/default/${{ matrix.paths }}/flux/cluster
+            --path /github/workspace/pull/kubernetes/clusters/${{ matrix.cluster }}
+            --path-orig /github/workspace/default/kubernetes/${{ matrix.cluster }}/flux/cluster
             --strip-attrs "helm.sh/chart,checksum/config,app.kubernetes.io/version,chart"
             --limit-bytes 10000
             --all-namespaces
@@ -129,10 +89,11 @@ jobs:
 
       - name: Add comment
         if: ${{ steps.diff.outputs.diff != '' }}
+        continue-on-error: true
         uses: mshick/add-pr-comment@v2
         with:
           repo-token: ${{ steps.app-token.outputs.token }}
-          message-id: ${{ github.event.pull_request.number }}/${{ matrix.paths }}/${{ matrix.resources }}
+          message-id: ${{ github.event.pull_request.number }}/${{ matrix.cluster }}/${{ matrix.resources }}
           message-failure: Diff was not successful
           message: |
             ```diff
