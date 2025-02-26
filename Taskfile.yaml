@@ -8,10 +8,11 @@ shopt: [globstar]
 vars:
   BOOSTRAP_DIR: '{{.ROOT_DIR}}/bootstrap'
   CLUSTER: '{{.CLUSTER | default "main"}}'
-  CLUSTER_DIR: '{{.ROOT_DIR}}/kubernetes/{{.CLUSTER}}'
+  CLUSTER_APPS: '{{.ROOT_DIR}}/kubernetes/apps/{{.CLUSTER}}'
+  CLUSTER_DIR: '{{.ROOT_DIR}}/kubernetes/clusters/{{.CLUSTER}}'
   SCRIPTS_DIR: '{{.ROOT_DIR}}/scripts'
-  SHARED: '{{.ROOT_DIR}}/kubernetes/shared'
-  TALOS_DIR: '{{.CLUSTER_DIR}}/talos'
+  SHARED_APPS: '{{.ROOT_DIR}}/kubernetes/apps/base'
+  TALOS_DIR: '{{.ROOT_DIR}}/talos/{{.CLUSTER}}'
 
 dotenv:
   - '{{.KUBERNETES_DIR}}/components/system-upgrade/.env'

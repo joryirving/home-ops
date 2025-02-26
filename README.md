@@ -84,17 +84,16 @@ This Git repository contains the following directories under [Kubernetes](./kube
 
 ```sh
 📁 kubernetes
-├── 📁 main             # main cluster
-│   ├── 📁 apps         # applications
-│   ├── 📁 flux         # core flux configuration
-│   ├── 📁 talos        # talos configuration
-├── 📁 shared           # shared cluster resources
-│   ├── 📁 bootstrap    # bootstrap procedures
-│   ├── 📁 meta         # re-useable components
-└── 📁 utility          # utility cluster
-    ├── 📁 apps         # applications
-    ├── 📁 flux         # core flux configuration
-    └── 📁 talos        # talos configuration
+├── 📁 apps              # app configurations
+│   ├── 📁 base          # base app configuration
+│   ├── 📁 main          # cluster specific overlay
+│   ├── 📁 utility
+├── 📁 clusters          # Cluster flux configurations
+│   ├── 📁 main
+│   ├── 📁 utility
+├── 📁 infrastructure    # shared infrastructure resources
+    ├── 📁 components    # re-useable components
+    └── 📁 repositories  # helmrespositories
 ```
 
 ### Networking
