@@ -16,18 +16,18 @@ tasks:
   push-main:
     desc: Push main kubeconfig/talosconfig to OnePassword
     cmds:
-      - op item edit kubernetes KUBECONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/kubeconfig)" &>/dev/null
-      - op item edit kubernetes TALOSCONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig)" &>/dev/null
-      - op item edit kubernetes TALOSCONFIG_MAIN_BASE64[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig | base64 -w 0)" &>/dev/null
+      - op item edit kubernetes KUBECONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/kubernetes/clusters/main/kubeconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_MAIN[text]="$(cat {{.ROOT_DIR}}/talos/main/clusterconfig/talosconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_MAIN_BASE64[text]="$(cat {{.ROOT_DIR}}/talos/main/clusterconfig/talosconfig | base64 -w 0)" &>/dev/null
     preconditions:
       - op user get --me
 
   push-utility:
     desc: Push utility kubeconfig/talosconfig to OnePassword
     cmds:
-      - op item edit kubernetes KUBECONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}/kubernetes/utility/kubeconfig)" &>/dev/null
-      - op item edit kubernetes TALOSCONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}/kubernetes/utility/bootstrap/talos/clusterconfig/talosconfig)" &>/dev/null
-      - op item edit kubernetes TALOSCONFIG_UTILITY_BASE64[text]="$(cat {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig | base64 -w 0)" &>/dev/null
+      - op item edit kubernetes KUBECONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}/kubernetes/clusters/utility/kubeconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_UTILITY[text]="$(cat {{.ROOT_DIR}}}/talos/utility/clusterconfig/talosconfig)" &>/dev/null
+      - op item edit kubernetes TALOSCONFIG_UTILITY_BASE64[text]="$(cat {{.ROOT_DIR}}/talos/utility/clusterconfig/talosconfig | base64 -w 0)" &>/dev/null
     preconditions:
       - op user get --me
 
@@ -36,16 +36,16 @@ tasks:
     cmds:
       - mkdir -p ~/.kube
       - mkdir -p ~/.talos
-      - mkdir -p {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig
-      - mkdir -p {{.ROOT_DIR}}/kubernetes/utility/bootstrap/talos/clusterconfig
-      - op item get kubernetes --fields label=KUBECONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/main/kubeconfig # Main kubeconfig
-      - op item get kubernetes --fields label=TALOSCONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig # Main talosconfig
-      - op item get kubernetes --fields label=KUBECONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/utility/kubeconfig # Utility kubeconfig
-      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/utility/bootstrap/talos/clusterconfig/talosconfig # Utility talosconfig
+      - mkdir -p {{.ROOT_DIR}}}/talos/main/talos/clusterconfig
+      - mkdir -p {{.ROOT_DIR}}}/talos/utility/clusterconfig
+      - op item get kubernetes --fields label=KUBECONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/kubernetes/clusters/main/kubeconfig # Main kubeconfig
+      - op item get kubernetes --fields label=TALOSCONFIG_MAIN | tr -d '"' > {{.ROOT_DIR}}/talos/main/clusterconfig/talosconfig # Main talosconfig
+      - op item get kubernetes --fields label=KUBECONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}/kubernetes/clusters/utility/kubeconfig # Utility kubeconfig
+      - op item get kubernetes --fields label=TALOSCONFIG_UTILITY | tr -d '"' > {{.ROOT_DIR}}}/talos/utility/clusterconfig/talosconfig # Utility talosconfig
       - op item get kubernetes --fields label=KUBECONFIG | tr -d '"' > ~/.kube/config # Flat kubeconfig
       ## Note: The last `talosconfig` merged becomes the default context
       ## We pull the second talosconfig, and merge the main into it, so main is default
-      - cp {{.ROOT_DIR}}/kubernetes/utility/bootstrap/talos/clusterconfig/talosconfig ~/.talos/config # Utility talosconfig
-      - talosctl config merge {{.ROOT_DIR}}/kubernetes/main/bootstrap/talos/clusterconfig/talosconfig --talosconfig  ~/.talos/config #Merge main into flat talosconfig
+      - cp {{.ROOT_DIR}}}/talos/utility/clusterconfig/talosconfig ~/.talos/config # Utility talosconfig
+      - talosctl config merge {{.ROOT_DIR}}/talos/main/clusterconfig/talosconfig --talosconfig  ~/.talos/config #Merge main into flat talosconfig
     preconditions:
       - op user get --me
