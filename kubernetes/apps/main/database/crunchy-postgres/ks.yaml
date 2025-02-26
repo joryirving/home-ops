@@ -12,7 +12,7 @@ spec:
     - name: csi-driver-nfs
       namespace: storage
   interval: 30m
-  path: ./kubernetes/apps/base/database/crunchy-postgres
+  path: ./kubernetes/apps/base/database/crunchy-postgres/operator
   prune: true
   sourceRef:
     kind: GitRepository
@@ -42,7 +42,7 @@ spec:
       failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 30m
-  path: ./kubernetes/apps/base/database/crunchy-postgres-cluster
+  path: ./kubernetes/apps/base/database/crunchy-postgres/cluster
   prune: true
   sourceRef:
     kind: GitRepository
@@ -70,7 +70,7 @@ spec:
       failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 30m
-  path: ./kubernetes/apps/base/database/crunchy-postgres-stores
+  path: ./kubernetes/apps/base/database/crunchy-postgres/stores
   prune: true
   sourceRef:
     kind: GitRepository
@@ -93,7 +93,7 @@ spec:
     - name: crunchy-postgres-cluster
       namespace: database
   interval: 30m
-  path: ./kubernetes/apps/base/database/crunchy-postgres-userinit-controller
+  path: ./kubernetes/apps/base/database/crunchy-postgres/userinit-controller
   prune: true
   sourceRef:
     kind: GitRepository

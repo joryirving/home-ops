@@ -9,7 +9,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   interval: 30m
-  path: ./kubernetes/apps/base/cert-manager/cert-manager
+  path: ./kubernetes/apps/base/cert-manager/cert-manager/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -37,7 +37,7 @@ spec:
       failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 30m
-  path: ./kubernetes/apps/base/cert-manager/cert-manager-issuers
+  path: ./kubernetes/apps/base/cert-manager/cert-manager/issuers
   prune: true
   sourceRef:
     kind: GitRepository
@@ -67,7 +67,7 @@ spec:
       failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 30m
-  path: ./kubernetes/apps/base/cert-manager/cert-manager-tls
+  path: ./kubernetes/apps/base/cert-manager/cert-manager/tls
   prune: true
   sourceRef:
     kind: GitRepository
