@@ -121,7 +121,14 @@ jobs:
           TALOSCONFIG: ${{ steps.talosconfig.outputs.filePath }}
         run: |
           NODE=$(talosctl config info --output json | jq --raw-output '.nodes[]' | shuf -n 1)
-          talosctl -n $NODE image pull ${{ matrix.images }}
+          BASE_IMAGE=$(echo ${{ matrix.images }} | sed 's/:.*//')
+
+          if ! talosctl -n $NODE image list | grep -q $BASE_IMAGE; then
+            echo "Base image $BASE_IMAGE is not pulled, pulling ${{ matrix.images }} now."
+            talosctl -n $NODE image pull ${{ matrix.images }}
+          else
+            echo "Base image $BASE_IMAGE is already pulled on the node, skipping pull for ${{ matrix.images }}."
+          fi
 
   pre-pull-images-status:
     needs: pre-pull-images
