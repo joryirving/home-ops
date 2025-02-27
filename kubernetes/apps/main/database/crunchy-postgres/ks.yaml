@@ -8,9 +8,6 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  dependsOn:
-    - name: csi-driver-nfs
-      namespace: storage
   interval: 30m
   path: ./kubernetes/apps/base/database/crunchy-postgres/operator
   prune: true
@@ -34,43 +31,19 @@ spec:
   dependsOn:
     - name: crunchy-postgres-operator
       namespace: database
-    - name: onepassword-store
+    - name: onepassword
       namespace: external-secrets
   healthCheckExprs:
     - apiVersion: postgres-operator.crunchydata.com/v1beta1
       kind: PostgresCluster
       failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
-  interval: 30m
-  path: ./kubernetes/apps/base/database/crunchy-postgres/cluster
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  targetNamespace: database
-  timeout: 5m
-  wait: true
----
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: &app crunchy-postgres-stores
-spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: *app
-  dependsOn:
-    - name: crunchy-postgres-cluster
-      namespace: database
-  healthCheckExprs:
     - apiVersion: external-secrets.io/v1beta1
       kind: ClusterSecretStore
       failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 30m
-  path: ./kubernetes/apps/base/database/crunchy-postgres/stores
+  path: ./kubernetes/apps/base/database/crunchy-postgres
   prune: true
   sourceRef:
     kind: GitRepository
