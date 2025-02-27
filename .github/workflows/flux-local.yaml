@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cluster: ["main", "utility"]
+        cluster: ["main", "test", "utility"]
     if: ${{ needs.pre-job.outputs.any_changed == 'true' }}
     steps:
       - name: Checkout
@@ -51,7 +51,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        cluster: ["main", "utility"]
+        cluster: ["main", "test", "utility"]
         resources: ["helmrelease", "kustomization"]
       max-parallel: 4
       fail-fast: false
