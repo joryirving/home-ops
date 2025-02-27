@@ -31,8 +31,6 @@ spec:
   dependsOn:
     - name: crunchy-postgres-operator
       namespace: database
-    - name: onepassword
-      namespace: external-secrets
   healthCheckExprs:
     - apiVersion: postgres-operator.crunchydata.com/v1beta1
       kind: PostgresCluster
@@ -62,9 +60,6 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  dependsOn:
-    - name: crunchy-postgres-cluster
-      namespace: database
   interval: 30m
   path: ./kubernetes/apps/base/database/crunchy-postgres/userinit-controller
   prune: true
