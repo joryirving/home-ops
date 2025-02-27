@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         branches: ["default", "pull"]
-        cluster: ["main", "utility"]
+        cluster: ["main", "test", "utility"]
       fail-fast: false
     outputs:
       default: ${{ steps.extract-images.outputs.default }}
@@ -89,7 +89,7 @@ jobs:
     strategy:
       matrix:
         images: ${{ fromJSON(needs.compare-images.outputs.images) }}
-        cluster: ["main", "utility"]
+        cluster: ["main", "test", "utility"]
       max-parallel: 4
       fail-fast: false
     if: ${{ needs.pre-job.outputs.any_changed == 'true' && needs.compare-images.outputs.images != '[]' }}
