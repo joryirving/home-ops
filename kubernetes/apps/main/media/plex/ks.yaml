@@ -11,13 +11,6 @@ spec:
   components:
     - ../../../../../infrastructure/components/gatus/external
     - ../../../../../infrastructure/components/volsync
-  dependsOn:
-    - name: onepassword
-      namespace: external-secrets
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
-    - name: volsync
-      namespace: storage
   interval: 30m
   path: ./kubernetes/apps/base/media/plex/app
   postBuild:
@@ -51,16 +44,10 @@ spec:
       namespace: downloads
     - name: sonarr
       namespace: downloads
-    - name: onepassword
-      namespace: external-secrets
     - name: plex
       namespace: media
     - name: tautulli
       namespace: media
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
-    - name: volsync
-      namespace: storage
   interval: 30m
   path: ./kubernetes/apps/base/media/plex/kometa
   postBuild:
@@ -90,8 +77,6 @@ spec:
 #     - ../../../../../infrastructure/components/gatus/external
 #     - ../../../../../infrastructure/components/volsync
 #   dependsOn:
-#     - name: rook-ceph-cluster
-#       namespace: rook-ceph
 #     - name: plex
 #       namespace: media
 #   interval: 30m
@@ -143,8 +128,6 @@ spec:
   dependsOn:
     - name: plex
       namespace: media
-    - name: onepassword
-      namespace: external-secrets
   interval: 30m
   path: ./kubernetes/apps/base/media/plex/plex-image-cleanup
   postBuild:
@@ -171,14 +154,8 @@ spec:
   components:
     - ../../../../../infrastructure/components/volsync
   dependsOn:
-    - name: onepassword
-      namespace: external-secrets
     - name: plex
       namespace: media
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
-    - name: volsync
-      namespace: storage
   interval: 30m
   path: ./kubernetes/apps/base/media/plex/trakt-sync
   postBuild:
