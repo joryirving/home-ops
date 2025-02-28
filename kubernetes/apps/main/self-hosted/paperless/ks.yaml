@@ -16,13 +16,14 @@ spec:
       namespace: database
     - name: dragonfly-cluster
       namespace: database
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/self-hosted/paperless
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 15Gi
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

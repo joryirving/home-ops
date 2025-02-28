@@ -11,13 +11,14 @@ spec:
   components:
     - ../../../../infrastructure/components/gatus/external
     - ../../../../infrastructure/components/volsync
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/kavita
   postBuild:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: comics
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

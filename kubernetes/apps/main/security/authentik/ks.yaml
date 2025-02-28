@@ -15,13 +15,14 @@ spec:
       namespace: database
     - name: dragonfly-cluster
       namespace: database
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/security/authentik
   postBuild:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: sso
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

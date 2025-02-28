@@ -11,13 +11,14 @@ spec:
   dependsOn:
     - name: crunchy-postgres-cluster
       namespace: database
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/observability/gatus
   postBuild:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: status
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

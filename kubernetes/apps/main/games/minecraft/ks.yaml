@@ -8,9 +8,10 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/games/minecraft/mc-router
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -31,7 +32,7 @@ spec:
 #   components:
 #    - ../../../../../infrastructure/components/gatus/external
 #    - ../../../../../infrastructure/components/volsync
-#   interval: 30m
+#   interval: 1h
 #   path: ./kubernetes/apps/base/games/minecraft/create
 #   postBuild:
 #     substitute:
@@ -58,13 +59,14 @@ spec:
   components:
    - ../../../../../infrastructure/components/gatus/external
    - ../../../../../infrastructure/components/volsync
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/games/minecraft/takocraft
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 15Gi
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -85,7 +87,7 @@ spec:
 #   components:
 #    - ../../../../../infrastructure/components/gatus/external
 #    - ../../../../../infrastructure/components/volsync
-#   interval: 30m
+#   interval: 1h
 #   path: ./kubernetes/apps/base/games/minecraft/vibecraft
 #   postBuild:
 #     substitute:

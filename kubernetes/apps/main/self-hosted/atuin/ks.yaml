@@ -10,7 +10,7 @@ spec:
       app.kubernetes.io/name: *app
   components:
     - ../../../../infrastructure/components/gatus/guarded
-  interval: 30m
+  interval: 1h
   dependsOn:
     - name: crunchy-postgres-cluster
       namespace: database
@@ -20,6 +20,7 @@ spec:
       APP: *app
       GATUS_SUBDOMAIN: sh
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

@@ -11,7 +11,7 @@ spec:
   components:
     - ../../../../infrastructure/components/gatus/external
     - ../../../../infrastructure/components/volsync
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/kyoo
   postBuild:
     substitute:
@@ -19,6 +19,7 @@ spec:
       VOLSYNC_CAPACITY: 50Gi
       VOLSYNC_CACHE_CAPACITY: 25Gi
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

@@ -8,7 +8,7 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/rook-ceph/rook-ceph/app
   prune: false # never should be deleted
   sourceRef:
@@ -44,7 +44,7 @@ spec:
       kind: CephCluster
       failed: status.ceph.health == 'HEALTH_ERR'
       current: status.ceph.health in ['HEALTH_OK', 'HEALTH_WARN']
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/rook-ceph/rook-ceph/cluster
   postBuild:
     substitute:

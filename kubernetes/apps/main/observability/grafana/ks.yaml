@@ -13,7 +13,7 @@ spec:
   dependsOn:
     - name: crunchy-postgres-cluster
       namespace: database
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/observability/grafana
   postBuild:
     substitute:
@@ -21,6 +21,7 @@ spec:
       GATUS_SUBDOMAIN: *app
       REPLICAS: "2"
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

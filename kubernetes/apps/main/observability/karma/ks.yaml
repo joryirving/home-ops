@@ -10,12 +10,13 @@ spec:
       app.kubernetes.io/name: *app
   components:
     - ../../../../infrastructure/components/gatus/external
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/observability/karma
   postBuild:
     substitute:
       APP: *app
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

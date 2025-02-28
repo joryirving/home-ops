@@ -11,13 +11,14 @@ spec:
   components:
     - ../../../../infrastructure/components/gatus/guarded
     - ../../../../infrastructure/components/volsync
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/ersatztv
   postBuild:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: tv
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

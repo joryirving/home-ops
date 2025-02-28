@@ -8,9 +8,10 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/database/dragonfly/operator
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -31,9 +32,10 @@ spec:
   dependsOn:
     - name: dragonfly-operator
       namespace: database
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/database/dragonfly/cluster
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

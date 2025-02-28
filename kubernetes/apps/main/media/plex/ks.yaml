@@ -11,7 +11,7 @@ spec:
   components:
     - ../../../../../infrastructure/components/gatus/external
     - ../../../../../infrastructure/components/volsync
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/plex/app
   postBuild:
     substitute:
@@ -20,6 +20,7 @@ spec:
       VOLSYNC_CAPACITY: 50Gi
       VOLSYNC_CACHE_CAPACITY: 25Gi
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -48,13 +49,14 @@ spec:
       namespace: media
     - name: tautulli
       namespace: media
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/plex/kometa
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 10Gi
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -79,7 +81,7 @@ spec:
 #   dependsOn:
 #     - name: plex
 #       namespace: media
-#   interval: 30m
+#   interval: 1h
 #   path: ./kubernetes/apps/base/media/plex/movie-roulette
 #   postBuild:
 #     substitute:
@@ -105,9 +107,10 @@ spec:
   dependsOn:
     - name: plex
       namespace: media
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-auto-languages
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -128,12 +131,13 @@ spec:
   dependsOn:
     - name: plex
       namespace: media
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-image-cleanup
   postBuild:
     substitute:
       APP: *app
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -156,13 +160,14 @@ spec:
   dependsOn:
     - name: plex
       namespace: media
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/plex/trakt-sync
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 500Mi
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

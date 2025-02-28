@@ -8,13 +8,14 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/observability/gatus
   postBuild:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: status-utility
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

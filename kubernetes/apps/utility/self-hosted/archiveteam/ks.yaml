@@ -10,7 +10,7 @@ spec:
       app.kubernetes.io/name: *app
   components:
     - ../../../../infrastructure/components/gatus/guarded
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/self-hosted/archiveteam
   postBuild:
     substitute:
@@ -18,6 +18,7 @@ spec:
       GATUS_SUBDOMAIN: archiveteam-utility
       STORAGECLASS: local-hostpath
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

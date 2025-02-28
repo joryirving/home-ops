@@ -11,7 +11,7 @@ spec:
   dependsOn:
     - name: external-dns-cloudflare
       namespace: network
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/network/external/cloudflared
   postBuild:
     substitute:
@@ -19,6 +19,7 @@ spec:
       EXTERNAL_DNS: external
       CLOUDFLARED_TUNNEL_ID: 85be482d-5cf9-4ee5-a9a0-c489e3dd6188
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -36,12 +37,13 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/network/external/echo-server
   postBuild:
     substitute:
       GATUS_SUBDOMAIN: echo-server
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -59,9 +61,10 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/network/external/external-dns
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -82,13 +85,14 @@ spec:
   dependsOn:
     - name: cert-manager-tls
       namespace: cert-manager
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/network/external/ingress-nginx
   postBuild:
     substitute:
       EXTERNAL_DOMAIN: external
       REPLICAS: "2"
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

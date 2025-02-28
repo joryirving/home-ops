@@ -15,12 +15,13 @@ spec:
       namespace: downloads
     - name: sonarr
       namespace: downloads
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/downloads/recyclarr
   postBuild:
     substitute:
       APP: *app
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

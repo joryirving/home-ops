@@ -8,7 +8,7 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/observability/kube-prometheus-stack
   postBuild:
     substitute:
@@ -17,6 +17,7 @@ spec:
       STORAGECLASS: ceph-block
       PVC_CAPACITY: "75"
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

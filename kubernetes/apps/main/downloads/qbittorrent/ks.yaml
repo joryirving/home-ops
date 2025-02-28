@@ -11,12 +11,13 @@ spec:
   components:
     - ../../../../../infrastructure/components/gatus/guarded
     - ../../../../../infrastructure/components/volsync
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/downloads/qbittorrent/app
   postBuild:
     substitute:
       APP: *app
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -37,9 +38,10 @@ spec:
   dependsOn:
     - name: qbittorrent
       namespace: downloads
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/downloads/qbittorrent/tools
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

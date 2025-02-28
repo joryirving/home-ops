@@ -8,9 +8,10 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/flux-system/tofu-controller/controller
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
@@ -31,9 +32,10 @@ spec:
   dependsOn:
     - name: tofu-controller
       namespace: flux-system
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/flux-system/tofu-controller/terraform
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

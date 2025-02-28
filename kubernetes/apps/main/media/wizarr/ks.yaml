@@ -16,13 +16,14 @@ spec:
       namespace: media
     - name: jellyseerr
       namespace: media
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/wizarr
   postBuild:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: join
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

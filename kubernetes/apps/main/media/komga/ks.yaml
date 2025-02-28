@@ -11,13 +11,14 @@ spec:
   components:
     - ../../../../infrastructure/components/gatus/external
     - ../../../../infrastructure/components/volsync
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/media/komga
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 20Gi
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

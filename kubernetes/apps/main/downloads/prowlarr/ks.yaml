@@ -13,12 +13,13 @@ spec:
   dependsOn:
     - name: crunchy-postgres-cluster
       namespace: database
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/downloads/prowlarr
   postBuild:
     substitute:
       APP: *app
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system

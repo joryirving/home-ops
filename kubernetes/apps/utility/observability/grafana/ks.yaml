@@ -10,13 +10,14 @@ spec:
       app.kubernetes.io/name: *app
   components:
     - ../../../../infrastructure/components/gatus/external
-  interval: 30m
+  interval: 1h
   path: ./kubernetes/apps/base/observability/grafana
   postBuild:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: grafana-utility
   prune: true
+  retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
