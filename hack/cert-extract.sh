@@ -15,6 +15,9 @@ if [[ "$DESTINATION" == "caddy" ]]; then
 elif [[ "$DESTINATION" == "unifi" ]]; then
   SERVER="root@192.168.1.1"
   DIR="/data/unifi-core/config"
+elif [[ "$DESTINATION" == "pikvm" ]]; then
+  SERVER="root@192.168.1.11"
+  DIR="/etc/kvmd/nginx/ssl"
 else
   echo "Unknown DESTINATION: $DESTINATION"
   exit 1
@@ -42,6 +45,9 @@ if ! diff "$CERT_TMP" "$CERT_JSON" >/dev/null; then
   if [[ "$DESTINATION" == "caddy" ]]; then
     scp "$CERT_DIR/certificate.crt" "$SERVER:$DIR/wildcard.crt"
     scp "$CERT_DIR/certificate.key" "$SERVER:$DIR/wildcard.key"
+  elif [[ "$DESTINATION" == "pikvm" ]]; then
+    scp "$CERT_DIR/certificate.crt" "$SERVER:$DIR/server.crt"
+    scp "$CERT_DIR/certificate.key" "$SERVER:$DIR/server.key"
   else
     scp "$CERT_DIR/certificate.pem" "$SERVER:$DIR"
   fi
