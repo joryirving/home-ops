@@ -6,14 +6,10 @@ metadata:
   name: &app crunchy-postgres-operator
 spec:
   interval: 1h
-  chart:
-    spec:
-      chart: pgo
-      version: 5.7.4
-      sourceRef:
-        kind: HelmRepository
-        name: crunchydata
-        namespace: flux-system
+  chartRef:
+    kind: OCIRepository
+    name: pgo
+    namespace: database
   maxHistory: 2
   install:
     crds: CreateReplace
