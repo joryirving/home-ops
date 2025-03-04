@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: |
           yq eval-all "${FILTER}" ${{ needs.pre-job.outputs.all_changed_and_modified_files }} \
-            | xargs -l bash -c 'flux --context ${{ matrix.cluster }} --namespace $0 reconcile source helm $1'
+            | xargs -l -r bash -c 'flux --context ${{ matrix.cluster }} --namespace $0 reconcile source helm $1'
 
   helm-repository-sync-status:
     needs: helm-repository-sync
