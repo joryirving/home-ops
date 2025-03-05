@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: "Helm Repository Sync"
+name: Flux Helmrepository Sync
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   pre-job:
-    name: Helm Repository Sync Pre-Job
+    name: Helm Repo Sync - Pre-Job
     runs-on: ubuntu-latest
     outputs:
       any_changed: ${{ steps.changed-files.outputs.any_changed }}
@@ -27,14 +27,43 @@ jobs:
         with:
           files: kubernetes/**/helmrelease.yaml
 
-  helm-repository-sync:
-    name: Helm Repository Sync
+  extract:
+    if: ${{ needs.pre-job.outputs.any_changed == 'true' }}
+    name: Helm Repo Sync - Extract Helm Repos
     needs: pre-job
+    runs-on: ubuntu-latest
+    outputs:
+      repos: ${{ steps.extract.outputs.repos }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Repos
+        id: extract
+        env:
+          FILTER: '[.spec.chart.spec.sourceRef] | unique | .[] | ["\(.namespace)/\(.name)"]'
+        run: |
+          repos=$(yq --indent 0 --output-format json eval-all "${FILTER}" \
+              ${{ needs.pre-job.outputs.all_changed_and_modified_files }}
+          )
+          echo "repos=${repos}" >> $GITHUB_OUTPUT
+
+          echo '## Helm Repos' >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo $repos | jq >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  sync:
+    if: ${{ needs.pre-job.outputs.any_changed == 'true' && needs.extract.outputs.repos != '[]' }}
+    name: Helm Repo Sync - Sync Helm Repos
+    needs: ["pre-job", "extract"]
     runs-on: home-ops-runner
     strategy:
       matrix:
+        repos: ${{ fromJSON(needs.extract.outputs.repos) }}
         cluster: ["main", "utility"]
-    if: ${{ needs.pre-job.outputs.any_changed == 'true' }}
+      max-parallel: 4
+      fail-fast: false
     steps:
       - name: Configure 1password
         uses: 1password/load-secrets-action/configure@v2
@@ -55,27 +84,22 @@ jobs:
           encodedString: ${{ env.KUBECONFIG_BASE64 }}
           fileName: kubeconfig
 
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Install flux
         run: curl -fsSL https://fluxcd.io/install.sh | bash
 
-      - name: Sync Helm Repository
+      - name: Sync Repo
         continue-on-error: true
         env:
           KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
-          FILTER: '[.spec.chart.spec.sourceRef] | unique | .[] | "\(.namespace) \(.name)"'
-        shell: bash
         run: |
-          yq eval-all "${FILTER}" ${{ needs.pre-job.outputs.all_changed_and_modified_files }} \
-            | xargs -l -r bash -c 'flux --context ${{ matrix.cluster }} --namespace $0 reconcile source helm $1'
+          IFS='/' read -r ns repo <<< "${{ matrix.repos }}"
+          flux --context ${{ matrix.cluster }} --namespace ${ns} reconcile source helm ${repo}
 
-  helm-repository-sync-status:
-    needs: helm-repository-sync
-    name: Helm Repository Sync Success
-    runs-on: ubuntu-latest
+  status:
     if: ${{ always() }}
+    name: Helm Repo Sync - Success
+    needs: sync
+    runs-on: ubuntu-latest
     steps:
       - name: Any jobs failed?
         if: ${{ contains(needs.*.result, 'failure') }}
