@@ -155,13 +155,14 @@ Total RAM: 32GB
 
 ### Supporting Hardware
 
-| Name    | Device        | CPU        | OS Disk    | Data Disk     | RAM   | OS           | Purpose        |
-|---------|---------------|------------|------------|---------------|-------|--------------|----------------|
-| Voyager | MS-01         | i5-12600H  | 32GB USB   | 1.92TB U.2    | 96GB  | Unraid       | NAS/NFS/Backup |
-| DAS     | Lenovo SA120  | -          | -          | 6x14TB Raidz2 | -     | -            | ZFS            |
-| PiKVM   | Raspberry Pi4 | Cortex A72 | 64GB mSD   | -             | 4GB   | PiKVM (Arch) | KVM (Main)     |
-| TESmart | 8 port KVM    | -          | -          | -             | -     | -            | Network KVM    |
-| JetKVM  | JetKVM        | RV1106G3   | 8GB EMMC   | -             | 256MB | Linux 5.10   | KVM (Utility)  |
+| Name    | Device            | CPU        | OS Disk    | Data Disk     | RAM   | OS           | Purpose        |
+|---------|-------------------|------------|------------|---------------|-------|--------------|----------------|
+| Voyager | MS-01             | i5-12600H  | 32GB USB   | 1.92TB U.2    | 96GB  | Unraid       | NAS/NFS/Backup |
+| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2 | -     | -            | ZFS            |
+| PiKVM   | Raspberry Pi4     | Cortex A72 | 64GB mSD   | -             | 4GB   | PiKVM (Arch) | KVM (Main)     |
+| PDU     | UniFi USP PDU Pro | -          | -          | -             | -     | -            | PDU            |
+| TESmart | 8 port KVM        | -          | -          | -             | -     | -            | Network KVM    |
+| JetKVM  | JetKVM            | RV1106G3   | 8GB EMMC   | -             | 256MB | Linux 5.10   | KVM (Utility)  |
 
 ### Networking/UPS Hardware
 
