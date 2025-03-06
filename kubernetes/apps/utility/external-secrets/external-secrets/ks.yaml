@@ -8,14 +8,23 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: onepassword
+      namespace: &namespace external-secrets
+  healthCheckExprs:
+    - apiVersion: external-secrets.io/v1beta1
+      kind: ClusterSecretStore
+      failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 1h
-  path: ./kubernetes/apps/base/external-secrets/external-secrets
+  path: ./kubernetes/apps/base/external-secrets
   prune: true
   retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: external-secrets
-  timeout: 5m
-  wait: true
+  targetNamespace: *namespace
+  timeout: 15m
