@@ -13,7 +13,7 @@
       runs-on: [home-ops-runner]
       strategy:
         matrix:
-          cluster: ["main", "utility"]
+          cluster: ["main"]
       steps:
         - name: Configure 1password
           uses: 1password/load-secrets-action/configure@v2
@@ -26,9 +26,6 @@
             export-env: true
           env:
             KUBECONFIG: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
-
-        - name: Generate Token
-          uses: actions/create-github-app-token@v1
 
         - name: Checkout
           uses: actions/checkout@v4
