@@ -104,6 +104,10 @@ function main() {
     check_env KUBECONFIG KUBERNETES_VERSION CSI_DISK TALOS_VERSION CLUSTER
     check_cli helmfile jq kubectl kustomize minijinja-cli op talosctl yq
 
+    if ! op whoami --format=json &>/dev/null; then
+        log error "Failed to authenticate with 1Password CLI"
+    fi
+
     # Apply resources and Helm releases
     wait_for_nodes
     wipe_rook_disks

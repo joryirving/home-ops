@@ -86,6 +86,9 @@ jobs:
         run: curl -fsSL https://fluxcd.io/install.sh | bash
 
       - name: Sync Helm Repos
+        continue-on-error: true
+        env:
+          KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
         run: |
           jq --raw-output '.[] | split(",") | "\(.[0]) \(.[1])"' <<< '${{ needs.extract.outputs.repos }}' \
               | xargs -l bash -c 'flux --context ${{ matrix.cluster }} --namespace $0 reconcile source helm $1'
