@@ -24,6 +24,6 @@ module "onepassword_authentik" {
 }
 
 provider "authentik" {
-  url   = "https://sso.${var.cluster_domain}"
+  url   = "https://sso.${var.CLUSTER_DOMAIN}"
   token = module.onepassword_authentik.fields["AUTHENTIK_TOKEN"]
 }

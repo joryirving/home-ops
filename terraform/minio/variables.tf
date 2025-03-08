@@ -1,7 +1,6 @@
 variable "OP_CONNECT_HOST" {
   type        = string
   description = "Oneopass Connect URL"
-  default     = "http://voyager.internal:7070"
 }
 
 variable "OP_CONNECT_TOKEN" {
