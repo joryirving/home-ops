@@ -1,18 +1,16 @@
-variable "onepassword_sa_token" {
+variable "OP_CONNECT_HOST" {
   type        = string
-  description = "Oneopass Service Account Token"
-  sensitive   = true
-  default     = null
+  description = "Oneopass Connect URL"
 }
 
-variable "service_account_json" {
+variable "OP_CONNECT_TOKEN" {
   type        = string
   description = "The path to the service account JSON for OnePassword."
   sensitive   = true
   default     = null
 }
 
-variable "minio_url" {
+variable "MINIO_URL" {
   type        = string
   description = "Minio Server URL"
   default     = "s3.jory.dev"

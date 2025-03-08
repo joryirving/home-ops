@@ -13,9 +13,8 @@ terraform {
 }
 
 provider "onepassword" {
-  url                   = var.service_account_json != null ? "http://voyager.internal:7070" : null
-  token                 = var.service_account_json
-  service_account_token = var.onepassword_sa_token
+  url   = var.OP_CONNECT_HOST
+  token = var.OP_CONNECT_TOKEN
 }
 
 data "onepassword_vault" "kubernetes" {
@@ -29,7 +28,7 @@ module "onepassword_minio" {
 }
 
 provider "minio" {
-  minio_server   = var.minio_url
+  minio_server   = var.MINIO_URL
   minio_user     = module.onepassword_minio.fields["MINIO_ACCESS_KEY"]
   minio_password = module.onepassword_minio.fields["MINIO_SECRET_KEY"]
   minio_ssl      = true

@@ -13,9 +13,8 @@ terraform {
 }
 
 provider "onepassword" {
-  url                   = var.service_account_json != null ? "http://voyager.internal:7070" : null
-  token                 = var.service_account_json
-  service_account_token = var.onepassword_sa_token
+  url   = var.OP_CONNECT_HOST
+  token = var.OP_CONNECT_TOKEN
 }
 
 module "onepassword_authentik" {
@@ -25,6 +24,6 @@ module "onepassword_authentik" {
 }
 
 provider "authentik" {
-  url   = "https://sso.${var.cluster_domain}"
+  url   = "https://sso.${var.CLUSTER_DOMAIN}"
   token = module.onepassword_authentik.fields["AUTHENTIK_TOKEN"]
 }

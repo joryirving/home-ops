@@ -47,7 +47,8 @@ jobs:
       - name: Configure 1password
         uses: 1password/load-secrets-action/configure@v2
         with:
-          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
+          connect-host: ${{ secrets.OP_CONNECT_HOST }}
+          connect-token: ${{ secrets.OP_CONNECT_TOKEN }}
 
       - name: Get Secrets
         uses: 1password/load-secrets-action@v2
@@ -102,7 +103,7 @@ jobs:
 
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
-        run: tofu plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: tofu plan -lock=false -var "OP_CONNECT_TOKEN=${{ secrets.OP_CONNECT_TOKEN }}" -var "OP_CONNECT_HOST=${{ secrets.OP_CONNECT_HOST }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         continue-on-error: true
