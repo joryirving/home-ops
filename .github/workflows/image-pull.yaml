@@ -102,6 +102,11 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
+      - name: Uppercase Cluster Name
+        run: |
+          cluster="${{ matrix.cluster }}"
+          echo "cluster=${cluster^^}" >> $GITHUB_ENV
+
       - name: Configure 1password
         uses: 1password/load-secrets-action/configure@v2
         with:
@@ -113,7 +118,7 @@ jobs:
         with:
           export-env: true
         env:
-          TALOSCONFIG_BASE64: op://Kubernetes/kubernetes/TALOSCONFIG_${{ matrix.cluster }}_BASE64
+          TALOSCONFIG_BASE64: op://Kubernetes/kubernetes/TALOSCONFIG_${{ env.cluster }}_BASE64
 
       - name: Write talosconfig
         id: talosconfig
