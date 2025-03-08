@@ -13,8 +13,8 @@ terraform {
 }
 
 provider "onepassword" {
-  url   = var.onepassword_connect
-  token = var.service_account_json
+  url   = var.OP_CONNECT_HOST
+  token = var.OP_CONNECT_TOKEN
 }
 
 data "onepassword_vault" "kubernetes" {
@@ -28,7 +28,7 @@ module "onepassword_minio" {
 }
 
 provider "minio" {
-  minio_server   = var.minio_url
+  minio_server   = var.MINIO_URL
   minio_user     = module.onepassword_minio.fields["MINIO_ACCESS_KEY"]
   minio_password = module.onepassword_minio.fields["MINIO_SECRET_KEY"]
   minio_ssl      = true
