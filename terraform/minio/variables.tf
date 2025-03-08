@@ -1,8 +1,7 @@
-variable "onepassword_sa_token" {
+variable "onepassword_connect" {
   type        = string
-  description = "Oneopass Service Account Token"
-  sensitive   = true
-  default     = null
+  description = "Oneopass Connect URL"
+  default     = "http://voyager.internal:7070"
 }
 
 variable "service_account_json" {

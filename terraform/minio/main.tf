@@ -13,9 +13,8 @@ terraform {
 }
 
 provider "onepassword" {
-  url                   = var.service_account_json != null ? "http://voyager.internal:7070" : null
-  token                 = var.service_account_json
-  service_account_token = var.onepassword_sa_token
+  url   = var.onepassword_connect
+  token = var.service_account_json
 }
 
 data "onepassword_vault" "kubernetes" {

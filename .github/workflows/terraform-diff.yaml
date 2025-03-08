@@ -56,6 +56,7 @@ jobs:
         env:
           MINIO_ACCESS_KEY: op://Kubernetes/minio/MINIO_ACCESS_KEY
           MINIO_SECRET_KEY: op://Kubernetes/minio/MINIO_SECRET_KEY
+          OP_CONNECT_TOKEN: op://Kubernetes/1password/OP_CONNECT_TOKEN
 
       - name: Generate Token
         uses: actions/create-github-app-token@v1
@@ -102,7 +103,7 @@ jobs:
 
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
-        run: tofu plan -lock=false -var "onepassword_sa_token=${{ secrets.ONEPASS_SA_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: tofu plan -lock=false -var "service_account_json=${{ env.OP_CONNECT_TOKEN }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         continue-on-error: true
