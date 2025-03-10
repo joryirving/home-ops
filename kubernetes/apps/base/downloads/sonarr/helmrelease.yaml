@@ -35,6 +35,15 @@ spec:
               SONARR__AUTH__REQUIRED: DisabledForLocalAddresses
               SONARR__LOG__DBENABLED: "False"
               SONARR__LOG__LEVEL: info
+              SONARR__POSTGRES__HOST: sonarr-postgres-pgbouncer.downloads.svc
+              SONARR__POSTGRES__MAINDB: *app
+              SONARR__POSTGRES__PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: sonarr-postgres-pguser-sonarr
+                    key: password
+              SONARR__POSTGRES__PORT: "5432"
+              SONARR__POSTGRES__USER: *app
               SONARR__SERVER__PORT: &port 80
               SONARR__UPDATE__BRANCH: develop
               TZ: ${TIMEZONE}

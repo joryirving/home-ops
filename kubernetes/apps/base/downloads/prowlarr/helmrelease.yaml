@@ -36,6 +36,15 @@ spec:
               PROWLARR__AUTH__REQUIRED: DisabledForLocalAddresses
               PROWLARR__LOG__DBENABLED: "False"
               PROWLARR__LOG__LEVEL: info
+              PROWLARR__POSTGRES__HOST: prowlarr-postgres-pgbouncer.downloads.svc
+              PROWLARR__POSTGRES__MAINDB: *app
+              PROWLARR__POSTGRES__PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: prowlarr-postgres-pguser-prowlarr
+                    key: password
+              PROWLARR__POSTGRES__PORT: "5432"
+              PROWLARR__POSTGRES__USER: *app
               PROWLARR__SERVER__PORT: &port 80
               PROWLARR__UPDATE__BRANCH: develop
             envFrom:
