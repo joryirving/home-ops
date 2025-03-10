@@ -49,16 +49,17 @@ spec:
           env:
             GF_DATABASE_HOST: grafana-postgres-pgbouncer.observability.svc
             GF_DATABASE_NAME: grafana
-            GF_DATABASE_PASSWORD:
-              valueFrom:
-                secretKeyRef:
-                  name: grafana-postgres-pguser-grafana
-                  key: password
             GF_DATABASE_SSL_MODE: require
             GF_DATABASE_TYPE: postgres
             GF_DATABASE_USER: grafana
           envFromSecrets:
             - name: grafana-secret
+          envValueFrom:
+            GF_DATABASE_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-postgres-pguser-grafana
+                  key: password
           ingress:
             annotations:
               gethomepage.dev/enabled: "true"
