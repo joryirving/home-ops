@@ -30,19 +30,10 @@ spec:
               repository: ghcr.io/hargata/lubelogger
               tag: v1.4.5
             env:
-              PG_HOST: lubelog-postgres-pgbouncer.self-hosted.svc
-              PG_USER: *app
-              PG_PASSWORD:
-                valueFrom:
-                  secretKeyRef:
-                    name: lubelog-postgres-pguser-lubelog
-                    key: password
-              PG_DATABASE: *app
-              POSTGRES_CONNECTION: "Host=$(PG_HOST);Username=$(PG_USER);Password=$(PG_PASSWORD);Database=$(PG_DATABASE);"
               TZ: ${TIMEZONE}
             envFrom:
               - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+                  name: lubelog-secret
             resources:
               requests:
                 cpu: 15m
@@ -75,7 +66,7 @@ spec:
           gethomepage.dev/widget.username: "{{ `{{HOMEPAGE_VAR_LUBELOG_USERNAME}}` }}"
           gethomepage.dev/widget.password: "{{ `{{HOMEPAGE_VAR_LUBELOG_PASSWORD}}` }}"
         hosts:
-          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - host: lubelog.${SECRET_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
