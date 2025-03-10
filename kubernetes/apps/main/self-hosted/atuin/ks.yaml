@@ -13,8 +13,13 @@ spec:
     - ../../../../components/postgres
   interval: 1h
   dependsOn:
-    - name: crunchy-postgres
+    - name: crunchy-postgres-operator
       namespace: database
+  healthCheckExprs:
+    - apiVersion: postgres-operator.crunchydata.com/v1beta1
+      kind: PostgresCluster
+      failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   path: ./kubernetes/apps/base/self-hosted/atuin
   postBuild:
     substitute:

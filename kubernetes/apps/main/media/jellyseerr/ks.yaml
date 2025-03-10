@@ -12,6 +12,14 @@ spec:
     - ../../../../components/gatus/external
     - ../../../../components/postgres
     - ../../../../components/volsync
+  dependsOn:
+    - name: crunchy-postgres-operator
+      namespace: database
+  healthCheckExprs:
+    - apiVersion: postgres-operator.crunchydata.com/v1beta1
+      kind: PostgresCluster
+      failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 1h
   path: ./kubernetes/apps/base/media/jellyseerr
   postBuild:
