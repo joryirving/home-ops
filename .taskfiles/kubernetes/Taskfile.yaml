@@ -77,8 +77,8 @@ tasks:
   hr-restart:
     desc: Restart all failed Helm Releases
     cmds:
-      - kubectl get hr --all-namespaces --context {{.CLUSTER}} | grep False | awk '{print $1, $2}' | xargs -L1 bash -c 'flux suspend hr ks -n $0 $1 --context {{.CLUSTER}}'
-      - kubectl get hr --all-namespaces --context {{.CLUSTER}} | grep False | awk '{print $1, $2}' | xargs -L1 bash -c 'flux resume hr ks -n $0 $1 --context {{.CLUSTER}}'
+      - kubectl get hr --all-namespaces --context {{.CLUSTER}} | grep False | awk '{print $1, $2}' | xargs -L1 bash -c 'flux suspend hr -n $0 $1 --context {{.CLUSTER}}'
+      - kubectl get hr --all-namespaces --context {{.CLUSTER}} | grep False | awk '{print $1, $2}' | xargs -L1 bash -c 'flux resume hr -n $0 $1 --context {{.CLUSTER}}'
     requires:
       vars: [CLUSTER]
 
