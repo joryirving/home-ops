@@ -9,7 +9,9 @@ spec:
     labels:
       crunchy-userinit.ramblurr.github.com/enabled: "true"
       crunchy-userinit.ramblurr.github.com/superuser: &superuser "postgres"
-  postgresVersion: 16
+    annotations:
+      postgres-operator.crunchydata.com/autoCreateUserSchema: "true"
+  postgresVersion: 17
   monitoring:
     pgmonitor:
       exporter:
@@ -38,14 +40,14 @@ spec:
         accessModes: ["ReadWriteMany"]
         resources:
           requests:
-            storage: 20Gi
+            storage: 5Gi
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: "kubernetes.io/hostname"
           whenUnsatisfiable: "DoNotSchedule"
           labelSelector:
             matchLabels:
-              postgres-operator.crunchydata.com/data: postgres
+              postgres-operator.crunchydata.com/cluster: ${APP}-postgres
   users:
     # Superuser
     - name: *superuser
@@ -117,7 +119,7 @@ spec:
   proxy:
     pgBouncer:
       port: 5432
-      replicas: *replicas
+      # replicas: 1
       config:
         global:
           pool_mode: ${POOL_MODE:=session}
