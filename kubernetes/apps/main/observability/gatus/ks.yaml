@@ -51,9 +51,12 @@ spec:
                 replicas: 2
                 containers:
                   app:
-                    envFrom:
-                    - secretRef:
-                        name: gatus-secret
+                    env:
+                      POSTGRES_URI:
+                        valueFrom:
+                          secretKeyRef:
+                            name: gatus-postgres-pguser-gatus
+                            key: pgbouncer-uri
             ingress:
               app:
                 annotations:

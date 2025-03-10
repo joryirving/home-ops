@@ -30,6 +30,8 @@ spec:
               repository: ghcr.io/hargata/lubelogger
               tag: v1.4.5
             env:
+              POSTGRES_CONNECTION: |
+                Host=lubelog-postgres-pgbouncer.self-hosted.svc;Username=lubelog};Password={{ .SecretRef "lubelog-postgres-pguser-lubelog" | .Values.password }};Database=lubelog;
               TZ: ${TIMEZONE}
             envFrom:
               - secretRef:
