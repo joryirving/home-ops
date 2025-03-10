@@ -31,16 +31,16 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app external-echo-server
+  name: &app external-echo
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   interval: 1h
-  path: ./kubernetes/apps/base/network/external/echo-server
+  path: ./kubernetes/apps/base/network/external/echo
   postBuild:
     substitute:
-      GATUS_SUBDOMAIN: echo-server-test
+      GATUS_SUBDOMAIN: echo-test
   prune: true
   retryInterval: 2m
   sourceRef:

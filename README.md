@@ -91,9 +91,7 @@ This Git repository contains the following directories under [Kubernetes](./kube
 ├── 📁 clusters          # Cluster flux configurations
 │   ├── 📁 main
 │   ├── 📁 utility
-├── 📁 infrastructure    # shared infrastructure resources
-    ├── 📁 components    # re-useable components
-    └── 📁 repositories  # helmrespositories
+├── 📁 components        # re-useable components
 ```
 
 ### Networking
