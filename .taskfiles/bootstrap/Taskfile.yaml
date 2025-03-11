@@ -11,7 +11,7 @@ tasks:
       IMPORTANT: CSI_DISK must be set to the disk model used across all the nodes (e.g. WD_BLACK SN770)
     cmds:
       - talhelper genconfig  --config-file talconfig.yaml --secret-file talsecret.sops.yaml --out-dir clusterconfig
-      - talhelper --config-file talconfig.yaml --env-file talenv.yaml gencommand apply --extra-flags=--insecure | bash
+      - talhelper --config-file talconfig.yaml gencommand apply --extra-flags=--insecure | bash
       - until talosctl --talosconfig clusterconfig/talosconfig --nodes {{.TALOS_CONTROLLER}} bootstrap; do sleep 5; done
       - talosctl --talosconfig clusterconfig/talosconfig kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
       - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
