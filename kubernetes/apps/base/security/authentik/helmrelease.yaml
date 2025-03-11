@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: authentik
+  name: &app authentik
 spec:
   interval: 1h
   chart:
@@ -27,12 +27,28 @@ spec:
         secret.reloader.stakater.com/reload: authentik-secret
       deploymentStrategy:
         type: RollingUpdate
+      env:
+        - name: AUTHENTIK_POSTGRESQL__NAME
+          value: *app
+        - name: AUTHENTIK_POSTGRESQL__HOST
+          value: authentik-postgres-pgbouncer.security.svc #Authentik requires transaction for pgBouncer
+        - name: AUTHENTIK_POSTGRESQL__USER
+          value: *app
+        - name: AUTHENTIK_POSTGRESQL__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: authentik-postgres-pguser-authentik
+              key: password
+        - name: AUTHENTIK_POSTGRESQL__USE_PGBOUNCER
+          value: "true"
+        - name: AUTHENTIK_POSTGRESQL__SSLMODE
+          value: require
       envFrom:
         - secretRef:
             name: authentik-secret
     authentik:
       redis:
-        host: dragonfly.database.svc.cluster.local
+        host: authentik-dragonfly
     server:
       autoscaling:
         enabled: true

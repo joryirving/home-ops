@@ -29,17 +29,20 @@ spec:
         infra:
           user: kyoo-all
         kyoo_back:
-          host: &host postgres-pgbouncer.database.svc
-          kyoo_migrations: &psql
-            userKey: POSTGRES_USER
-            passwordKey: POSTGRES_PASSWORD
-            existingSecret: *secret
-          kyoo_back: *psql
+          host: &host kyoo-postgres-primary.media.svc
+          port: &port 5432
+          database: kyoo_back
+          kyoo_migrations: &psql_secret
+            userKey: user
+            passwordKey: password
+            existingSecret: kyoo-postgres-pguser-kyoo-all
+          kyoo_back: *psql_secret
         kyoo_transcoder:
           host: *host
+          port: *port
           database: kyoo_transcoder
           sslmode: require
-          kyoo_transcoder: *psql
+          kyoo_transcoder: *psql_secret
       rabbitmq:
         infra:
           passwordKey: RABBITMQ_PASS
