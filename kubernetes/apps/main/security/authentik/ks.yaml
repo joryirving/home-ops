@@ -10,7 +10,7 @@ spec:
       app.kubernetes.io/name: *app
   components:
     - ../../../../components/dragonfly
-    - ../../../../components/gatus/guarded
+    - ../../../../components/gatus/external
     - ../../../../components/postgres
   dependsOn:
     - name: crunchy-postgres-operator
@@ -32,6 +32,7 @@ spec:
     substitute:
       APP: *app
       GATUS_SUBDOMAIN: sso
+      POOL_MODE: transaction
   prune: true
   retryInterval: 2m
   sourceRef:

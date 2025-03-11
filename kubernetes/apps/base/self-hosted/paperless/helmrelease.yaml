@@ -30,31 +30,42 @@ spec:
               repository: ghcr.io/paperless-ngx/paperless-ngx
               tag: 2.14.7
             env:
-              # Configure application
+              # Application
               PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
               PAPERLESS_URL: https://paperless.${SECRET_DOMAIN}
               PAPERLESS_PORT: "8000"
               PAPERLESS_TIME_ZONE: ${TIMEZONE}
               PAPERLESS_WEBSERVER_WORKERS: "2"
               PAPERLESS_TASK_WORKERS: "2"
-              # Configure Remote User auth
+              # Folder Importer
+              PAPERLESS_CONSUMER_POLLING: "60"
+              PAPERLESS_CONSUMER_RECURSIVE: "true"
+              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
+              # Database
+              PAPERLESS_DBENGINE: postgresql
+              PAPERLESS_DBPORT: "5432"
+              PAPERLESS_DBNAME: *app
+              PAPERLESS_DBHOST: paperless-postgres-pgbouncer.self-hosted.svc
+              PAPERLESS_DBUSER: *app
+              PAPERLESS_DBPASS:
+                valueFrom:
+                  secretKeyRef:
+                    name: paperless-postgres-pguser-paperless
+                    key: password
+              # Remote User Auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
               PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "false"
-              # Configure folders
+              # Folders
               PAPERLESS_CONSUMPTION_DIR: /data/nas/consume
               PAPERLESS_DATA_DIR: /data/local/data
               PAPERLESS_EXPORT_DIR: /data/nas/export
               PAPERLESS_MEDIA_ROOT: /data/local/media
-              # Configure folder importer
-              PAPERLESS_CONSUMER_POLLING: "60"
-              PAPERLESS_CONSUMER_RECURSIVE: "true"
-              PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
-              # Configure OCR
+              # OCR
               PAPERLESS_OCR_LANGUAGES: nld
               PAPERLESS_OCR_LANGUAGE: nld
-              # Configure redis integration
+              # Redis
               PAPERLESS_REDIS: redis://paperless-dragonfly:6379
-              # Configure user permissions
+              # User Permissions
               USERMAP_GID: "65542"
             envFrom:
             - secretRef:

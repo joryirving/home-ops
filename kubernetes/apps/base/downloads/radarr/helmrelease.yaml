@@ -36,6 +36,15 @@ spec:
               RADARR__AUTH__REQUIRED: DisabledForLocalAddresses
               RADARR__LOG__DBENABLED: "False"
               RADARR__LOG__LEVEL: info
+              RADARR__POSTGRES__HOST: radarr-postgres-pgbouncer.downloads.svc
+              RADARR__POSTGRES__MAINDB: *app
+              RADARR__POSTGRES__PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: radarr-postgres-pguser-radarr
+                    key: password
+              RADARR__POSTGRES__PORT: "5432"
+              RADARR__POSTGRES__USER: *app
               RADARR__SERVER__PORT: &port 80
               RADARR__UPDATE__BRANCH: develop
               TZ: ${TIMEZONE}
