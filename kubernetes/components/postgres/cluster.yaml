@@ -3,14 +3,8 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: &name ${APP}-postgres
+  name: &name ${APP}
 spec:
-  metadata:
-    labels:
-      crunchy-userinit.ramblurr.github.com/enabled: "true"
-      crunchy-userinit.ramblurr.github.com/superuser: &superuser "postgres"
-    annotations:
-      postgres-operator.crunchydata.com/autoCreateUserSchema: "true"
   postgresVersion: 17
   monitoring:
     pgmonitor:
@@ -36,8 +30,8 @@ spec:
           app.kubernetes.io/name: ${APP}-crunchy-postgres
       replicas: &replicas 2
       dataVolumeClaimSpec:
-        storageClassName: ceph-filesystem
-        accessModes: ["ReadWriteMany"]
+        storageClassName: ceph-block
+        accessModes: ["ReadWriteOnce"]
         resources:
           requests:
             storage: 5Gi
@@ -50,7 +44,7 @@ spec:
               postgres-operator.crunchydata.com/cluster: ${APP}-postgres
   users:
     # Superuser
-    - name: *superuser
+    - name: "postgres"
       databases: ["postgres"]
       options: "SUPERUSER"
       password:
@@ -77,12 +71,12 @@ spec:
         repo1-retention-full-type: "time"
         repo1-s3-uri-style: path
         # R2
-        repo2-block: "y"
-        repo2-bundle: "y"
-        repo2-path: /${APP}
-        repo2-retention-full: "7" # days
-        repo2-retention-full-type: time
-        repo2-s3-uri-style: path
+        # repo2-block: "y"
+        # repo2-bundle: "y"
+        # repo2-path: /${APP}
+        # repo2-retention-full: "7" # days
+        # repo2-retention-full-type: time
+        # repo2-s3-uri-style: path
       manual:
         repoName: repo1
         options:
