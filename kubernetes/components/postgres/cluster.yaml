@@ -3,7 +3,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: &name ${APP}-postgres
+  name: &name ${APP}
 spec:
   postgresVersion: 17
   monitoring:
@@ -44,7 +44,7 @@ spec:
               postgres-operator.crunchydata.com/cluster: ${APP}-postgres
   users:
     # Superuser
-    - name: *superuser
+    - name: "postgres"
       databases: ["postgres"]
       options: "SUPERUSER"
       password:
