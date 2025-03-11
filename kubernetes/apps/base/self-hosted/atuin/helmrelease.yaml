@@ -30,6 +30,11 @@ spec:
               repository: ghcr.io/atuinsh/atuin
               tag: 18.4.0@sha256:8c6fa0aea944bf2a39665c9c69df1c2c0f9c05207bda5b942d450142285e3ee1
             env:
+              ATUIN_DB_URI:
+                valueFrom:
+                  secretKeyRef:
+                    name: atuin-postgres-pguser-atuin
+                    key: pgbouncer-uri
               ATUIN_HOST: 0.0.0.0
               ATUIN_PORT: &port 80
               ATUIN_OPEN_REGISTRATION: "true"
@@ -37,9 +42,6 @@ spec:
               ATUIN_METRICS__HOST: 0.0.0.0
               ATUIN_METRICS__PORT: &metricsPort 8080
               ATUIN_TLS__ENABLE: "false"
-            envFrom:
-              - secretRef:
-                  name: atuin-secret
             args: ["server", "start"]
             probes:
               liveness: &probes
