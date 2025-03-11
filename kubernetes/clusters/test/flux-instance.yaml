@@ -9,7 +9,10 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  interval: 30m
+  dependsOn:
+    - name: flux-operator
+      namespace: *namespace
+  interval: 1h
   path: ./kubernetes/clusters/test/flux-instance
   prune: true
   sourceRef:
