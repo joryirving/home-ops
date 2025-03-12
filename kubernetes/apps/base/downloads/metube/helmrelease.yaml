@@ -46,16 +46,17 @@ spec:
         ports:
           http:
             port: 8081
-    ingress:
+    route:
       app:
-        className: internal
-        hosts:
-        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          paths:
-          - path: /
-            service:
-              identifier: app
-              port: http
+        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         existingClaim: *app

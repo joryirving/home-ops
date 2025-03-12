@@ -88,16 +88,17 @@ spec:
         serviceName: gatus
         endpoints:
           - port: http
-    ingress:
+    route:
       app:
-        className: external
-        hosts:
-          - host: ${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames: ["${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     serviceAccount:
       create: true
       name: *app

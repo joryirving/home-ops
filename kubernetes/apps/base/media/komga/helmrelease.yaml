@@ -44,26 +44,17 @@ spec:
         ports:
           http:
             port: *port
-    ingress:
+    route:
       app:
-        className: external
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/group: Books
-          gethomepage.dev/name: Komga
-          gethomepage.dev/icon: komga.png
-          gethomepage.dev/description: Comic/Ebook Web Reader
-          gethomepage.dev/widget.type: komga
-          gethomepage.dev/widget.url: http://komga.media:8080
-          gethomepage.dev/widget.username: "{{ `{{HOMEPAGE_VAR_KOMGA_USERNAME}}` }}"
-          gethomepage.dev/widget.password: "{{ `{{HOMEPAGE_VAR_KOMGA_PASSWORD}}` }}"
-        hosts:
-          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         existingClaim: *app

@@ -83,33 +83,49 @@ spec:
         controller: web
         ports:
           http:
-            port: 3000
+            port: &webport 3000
       mongodb:
         controller: mongodb
         ports:
           http:
             port: 27017
-    ingress:
+    route:
       app:
-        className: external
-        annotations:
-          nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/proxy-body-size: 1000m
-          nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-          nginx.ingress.kubernetes.io/rewrite-target: /$1
-        hosts:
-          - host: spotty.${SECRET_DOMAIN}
-            paths:
-              - path: /?(.*)
-                pathType: Prefix
-                service:
-                  identifier: web
-                  port: http
-              - path: /api/?(.*)
-                pathType: Prefix
-                service:
-                  identifier: server
-                  port: http
+        hostnames:
+          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - "spotty.${SECRET_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: web
+                port: *webport
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  remove: ["Range"]
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: "/"
+            matches:
+              - path:
+                  type: RegularExpression
+                  value: "/?(.*)"
+          - backendRefs:
+              - name: server
+                port: *port
+            matches:
+              - path:
+                  type: RegularExpression
+                  value: "/api/?(.*)"
+        limits:
+          requestBodyBytes: 1048576000  # Equivalent to `proxy-body-size: 1000m`
+        timeouts:
+          request: 3600s  # Equivalent to `proxy-read-timeout: "3600"`
     persistence:
       configs:
         existingClaim: *app

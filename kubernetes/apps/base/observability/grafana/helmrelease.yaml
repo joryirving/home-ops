@@ -400,11 +400,14 @@ spec:
       metricRelabelings:
         - action: labeldrop
           regex: (pod)
-    ingress:
-      enabled: true
-      ingressClassName: external
-      hosts:
-        - "${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"
+    route:
+      main:
+        enabled: true
+        hostnames: ["${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
     persistence:
       enabled: false
     topologySpreadConstraints:

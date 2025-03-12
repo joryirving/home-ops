@@ -78,25 +78,17 @@ spec:
         ports:
           http:
             port: *port
-    ingress:
+    route:
       app:
-        className: internal
-        annotations:
-          # gethomepage.dev/enabled: "true"
-          # gethomepage.dev/group: Downloads
-          # gethomepage.dev/name: dashbrr
-          # gethomepage.dev/icon: dashbrr.png
-          # gethomepage.dev/description: Media stack management
-          # gethomepage.dev/widget.type: dashbrr
-          # gethomepage.dev/widget.url: http://dashbrr.downloads
-          # gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_DASHBRR_TOKEN}}` }}"
-        hosts:
-        - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          paths:
-          - path: /
-            service:
-              identifier: app
-              port: http
+        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     serviceAccount:
       create: true
       name: dashbrr

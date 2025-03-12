@@ -1,0 +1,27 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app cloudflare-tunnel
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  dependsOn:
+    - name: cloudflare-dns
+  interval: 1h
+  path: ./kubernetes/apps/base/network/cloudflare-tunnel
+  postBuild:
+    substitute:
+      EXTERNAL_DNS: external-utility
+      CLOUDFLARED_TUNNEL_ID: 4e64e0e1-a45d-40c2-bb22-1d94f3bb51ba
+  prune: true
+  retryInterval: 2m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: network
+  timeout: 5m
+  wait: false
