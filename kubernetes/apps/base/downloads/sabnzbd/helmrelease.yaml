@@ -32,7 +32,13 @@ spec:
               TZ: ${TIMEZONE}
               SABNZBD__PORT: &port 8080
               SABNZBD__HOST_WHITELIST_ENTRIES: >-
-                sabnzbd, sabnzbd.downloads, sabnzbd.downloads.svc, sabnzbd.downloads.svc.cluster, sabnzbd.downloads.svc.cluster.local, sabnzbd.${SECRET_DOMAIN}
+                sabnzbd,
+                sabnzbd.downloads,
+                sabnzbd.downloads.svc,
+                sabnzbd.downloads.svc.cluster,
+                sabnzbd.downloads.svc.cluster.local,
+                sab.${SECRET_DOMAIN},
+                sabnzbd.${SECRET_DOMAIN}
             envFrom:
             - secretRef:
                 name: sabnzbd-secret
@@ -83,7 +89,9 @@ spec:
             port: *port
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames:
+          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - sab.${SECRET_DOMAIN}
         parentRefs:
           - name: internal
             namespace: kube-system
