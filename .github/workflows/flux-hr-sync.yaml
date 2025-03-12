@@ -67,7 +67,30 @@ jobs:
 
       - name: Sync Helm Repos
         run: |
-          jq --raw-output '.[] | split(",") | "\(.[0]) \(.[1])"' <<< '${{ needs.extract.outputs.repos }}' \
+          existing_repos="[]"
+
+          for repo in $(echo '${{ needs.extract.outputs.repos }}' | jq -r '.[]'); do
+            namespace=$(echo $repo | cut -d ',' -f1)
+            repo_name=$(echo $repo | cut -d ',' -f2)
+
+            repo_status=$(flux get source helm $repo_name --namespace $namespace --status-selector 'ready=true' || true)
+
+            if echo "$repo_status" | grep -q "READY"; then
+              echo "Repository $repo_name exists in namespace $namespace."
+              existing_repos=$(echo $existing_repos | jq ". += [\"$namespace,$repo_name\"]")
+            else
+              echo "Repository $repo_name does not exist in namespace $namespace."
+            fi
+          done
+
+          if [ "$existing_repos" != "[]" ]; then
+            echo '## Helm Repos for ${{ matrix.cluster }}' >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            echo "$existing_repos" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+          jq --raw-output '.[] | split(",") | "\(.[0]) \(.[1])"' <<< "$existing_repos" \
               | xargs -l bash -c 'flux --namespace $0 reconcile source helm $1'
 
   status:

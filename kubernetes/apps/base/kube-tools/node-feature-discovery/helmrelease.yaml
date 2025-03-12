@@ -1,4 +1,14 @@
 ---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: node-feature-discovery
+  namespace: kube-tools # Required for Renovate lookups
+spec:
+  interval: 1h
+  url: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -13,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: node-feature-discovery
+        namespace: kube-tools
   install:
     crds: CreateReplace
     remediation:
