@@ -59,8 +59,9 @@ There is a template over at [onedr0p/cluster-template](https://github.com/onedr0
 ### Core Components
 
 - [actions-runner-controller](https://github.com/actions/actions-runner-controller): self-hosted Github runners
-- [cilium](https://github.com/cilium/cilium): internal Kubernetes networking plugin
 - [cert-manager](https://cert-manager.io/docs/): creates SSL certificates for services in my cluster
+- [cilium](https://github.com/cilium/cilium): eBPF-based networking for my workloads.
+- [cloudflared](https://github.com/cloudflare/cloudflared): Enables Cloudflare secure access to my routes.
 - [external-dns](https://github.com/kubernetes-sigs/external-dns): automatically syncs DNS records from my cluster ingresses to a DNS provider
 - [external-secrets](https://github.com/external-secrets/external-secrets/): managed Kubernetes secrets using [1Password](https://1password.com/).
 - [rook-ceph](https://rook.io/): Cloud native distributed block storage for Kubernetes
