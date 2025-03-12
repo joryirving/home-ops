@@ -1,10 +1,19 @@
 ---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: democratic-csi
+  namespace: storage # Required for Renovate lookups
+spec:
+  interval: 1h
+  url: https://democratic-csi.github.io/charts/
+---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: &name democratic-csi
-
 spec:
   interval: 1h
   chart:
@@ -14,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: democratic-csi
+        namespace: storage
   install:
     remediation:
       retries: 3
