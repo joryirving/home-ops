@@ -53,46 +53,22 @@ jobs:
 
   sync:
     name: Helm Repo Sync - Sync Helm Repos
+    runs-on: ${{ format('home-ops-runner-{0}', matrix.cluster) }}
     needs: ["pre-job", "extract"]
-    runs-on: home-ops-runner
-    if: ${{ needs.pre-job.outputs.any_changed == 'true' && needs.extract.outputs.repos != '[]' }}
     strategy:
       matrix:
-        repos: ${{ fromJSON(needs.extract.outputs.repos) }}
         cluster: ["main", "utility"]
       max-parallel: 4
       fail-fast: false
+    if: ${{ needs.pre-job.outputs.any_changed == 'true' && needs.extract.outputs.repos != '[]' }}
     steps:
-      - name: Configure 1password
-        uses: 1password/load-secrets-action/configure@v2
-        with:
-          connect-host: ${{ secrets.OP_CONNECT_HOST}}
-          connect-token: ${{ secrets.OP_CONNECT_TOKEN }}
-
-      - name: Get Secrets
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          KUBECONFIG_BASE64: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
-
-      - name: Write kubeconfig
-        id: kubeconfig
-        uses: timheuer/base64-to-file@v1
-        with:
-          encodedString: ${{ env.KUBECONFIG_BASE64 }}
-          fileName: kubeconfig
-
       - name: Install flux
         run: curl -fsSL https://fluxcd.io/install.sh | bash
 
       - name: Sync Helm Repos
-        continue-on-error: true
-        env:
-          KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
         run: |
           jq --raw-output '.[] | split(",") | "\(.[0]) \(.[1])"' <<< '${{ needs.extract.outputs.repos }}' \
-              | xargs -l bash -c 'flux --context ${{ matrix.cluster }} --namespace $0 reconcile source helm $1'
+              | xargs -l bash -c 'flux --namespace $0 reconcile source helm $1'
 
   status:
     if: ${{ always() }}
