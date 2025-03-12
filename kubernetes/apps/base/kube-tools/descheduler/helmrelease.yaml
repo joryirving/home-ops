@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: descheduler
+  namespace: kube-tools # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://kubernetes-sigs.github.io/descheduler
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: descheduler
+        namespace: kube-tools
   install:
     remediation:
       retries: 3

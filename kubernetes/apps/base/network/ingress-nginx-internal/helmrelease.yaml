@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: ingress-nginx
+  namespace: network # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://kubernetes.github.io/ingress-nginx
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: ingress-nginx
+        namespace: network
   install:
     remediation:
       retries: 3

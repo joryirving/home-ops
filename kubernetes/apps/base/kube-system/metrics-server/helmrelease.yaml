@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: metrics-server
+  namespace: kube-system # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://kubernetes-sigs.github.io/metrics-server
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: metrics-server
+        namespace: kube-system
   install:
     remediation:
       retries: 3

@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: jetstack
+  namespace: cert-manager # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://charts.jetstack.io/
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: jetstack
+        namespace: cert-manager
   install:
     remediation:
       retries: 3

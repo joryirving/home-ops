@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: authentik-charts
+  namespace: security # Required for Renovate lookups
 spec:
   interval: 30m
   url: https://charts.goauthentik.io
@@ -23,6 +24,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: authentik-charts
+        namespace: security
   install:
     remediation:
       retries: 3

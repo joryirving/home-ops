@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: headlamp
+  namespace: flux-system # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://headlamp-k8s.github.io/headlamp/
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: headlamp
+        namespace: flux-system
   install:
     remediation:
       retries: 3

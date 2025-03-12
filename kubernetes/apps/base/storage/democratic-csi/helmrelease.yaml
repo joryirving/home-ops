@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: democratic-csi
+  namespace: storage # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://democratic-csi.github.io/charts/
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: democratic-csi
+        namespace: storage
   install:
     remediation:
       retries: 3

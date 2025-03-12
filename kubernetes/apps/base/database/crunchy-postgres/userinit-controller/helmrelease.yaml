@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: crunchy-userinit
+  namespace: database # Required for Renovate lookups
 spec:
   interval: 30m
   url: https://ramblurr.github.io/crunchy-userinit-controller
@@ -23,6 +24,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: crunchy-userinit
+        namespace: database
   maxHistory: 2
   install:
     crds: CreateReplace

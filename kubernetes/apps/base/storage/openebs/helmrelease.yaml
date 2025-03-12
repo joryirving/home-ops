@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: openebs
+  namespace: storage # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://openebs.github.io/openebs
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: openebs
+        namespace: storage
   install:
     remediation:
       retries: 3

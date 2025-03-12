@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: piraeus
+  namespace: storage # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://piraeus.io/helm-charts/
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: piraeus
+        namespace: storage
   maxHistory: 2
   install:
     crds: CreateReplace

@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: backube
+  namespace: storage # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://backube.github.io/helm-charts/
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: backube
+        namespace: storage
   install:
     remediation:
       retries: 3

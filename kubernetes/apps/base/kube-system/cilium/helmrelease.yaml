@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: cilium
+  namespace: flux-system # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://helm.cilium.io
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: cilium
+        namespace: flux-system
   install:
     remediation:
       retries: 3

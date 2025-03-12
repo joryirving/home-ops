@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: wiremind
+  namespace: observability # Required for Renovate lookups
 spec:
   interval: 1h
   url: https://wiremind.github.io/wiremind-helm-charts/
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: wiremind
+        namespace: observability
   install:
     remediation:
       retries: 3

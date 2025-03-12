@@ -4,6 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: csi-driver-nfs
+  namespace: storage # Required for Renovate lookups
 spec:
   interval: 2h
   url: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
@@ -22,6 +23,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: csi-driver-nfs
+        namespace: storage
   install:
     remediation:
       retries: 3
