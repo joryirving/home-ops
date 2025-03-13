@@ -37,7 +37,7 @@ spec:
               TUNNEL_TRANSPORT_PROTOCOL: quic
             envFrom:
               - secretRef:
-                  name: cloudflare-tunnel
+                  name: *app
             args: ["tunnel", "run"]
             probes:
               liveness: &probes
@@ -68,7 +68,7 @@ spec:
         runAsGroup: 100
     service:
       app:
-        controller: cloudflare-tunnel
+        controller: *app
         ports:
           http:
             port: *port
