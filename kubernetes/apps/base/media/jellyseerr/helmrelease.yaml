@@ -38,6 +38,8 @@ spec:
                     name: jellyseerr-pguser-jellyseerr
                     key: password
               DB_NAME: *app
+              LOG_LEVEL: "info"
+              PORT: &port 80
               TZ: ${TIMEZONE}
             envFrom:
               - secretRef:
@@ -60,26 +62,20 @@ spec:
         controller: *app
         ports:
           http:
-            port: 5055
-    ingress:
+            port: *port
+    route:
       app:
-        className: external
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/group: Video
-          gethomepage.dev/name: jellyseerr
-          gethomepage.dev/icon: jellyseerr.png
-          gethomepage.dev/description: Media Request Management
-          gethomepage.dev/widget.type: jellyseerr
-          gethomepage.dev/widget.url: http://jellyseerr.media:5055
-          gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_JELLYSEERR_TOKEN}}` }}"
-        hosts:
-          - host: requests.${SECRET_DOMAIN}
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - requests.${SECRET_DOMAIN}
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         existingClaim: *app

@@ -63,24 +63,22 @@ spec:
     #     controller: *app
     #     type: LoadBalancer
     #     annotations:
-    #       lbipam.cilium.io/ips: ${SVC_COREKEEPER_ADDR}
+    #       lbipam.cilium.io/ips: ${SVC_COREKEEPER_ADDR}, ::ffff:${SVC_COREKEEPER_ADDR}
     #     ports:
     #       game:
     #         protocol: UDP
     #         port: *port
-    # ingress:
+    # route:
     #   app:
-    #     enabled: false #nginx doesn't support non-https
-    #     className: external
-    #     annotations:
-    #       external-dns.alpha.kubernetes.io/target: ipv4.${SECRET_DOMAIN}
-    #     hosts:
-    #     - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
-    #       paths:
-    #       - path: /
-    #         service:
-    #           identifier: app
-    #           port: game
+    #     hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+    #     parentRefs:
+    #       - name: external
+    #         namespace: kube-system
+    #         sectionName: https
+    #     rules:
+    #       - backendRefs:
+    #           - name: *app
+    #             port: *port
     persistence:
       config:
         existingClaim: *app

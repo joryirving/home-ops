@@ -52,26 +52,18 @@ spec:
         controller: *app
         ports:
           http:
-            port: 8090
-    ingress:
+            port: &port 8090
+    route:
       app:
-        className: internal
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/group: Downloads
-          gethomepage.dev/name: Mylar
-          gethomepage.dev/icon: mylar.png
-          gethomepage.dev/description: Comic Downloads
-          gethomepage.dev/widget.type: mylar
-          gethomepage.dev/widget.url: http://mylar.downloads:8090
-          gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_MYLAR_TOKEN}}` }}"
-        hosts:
-          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         existingClaim: *app

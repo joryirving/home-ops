@@ -53,18 +53,20 @@ spec:
         controller: *app
         ports:
           http:
-            port: 8080
-    ingress:
+            port: &port 8080
+    route:
       app:
-        className: internal
-        annotations:
-          nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-        hosts:
-          - host: *host
-            paths:
-              - path: /
-                service:
-                  identifier: app
+        hostnames:
+          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - *host
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         type: configMap

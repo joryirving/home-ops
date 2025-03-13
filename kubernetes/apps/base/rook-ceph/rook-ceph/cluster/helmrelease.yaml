@@ -33,12 +33,6 @@ spec:
     monitoring:
       enabled: true
       createPrometheusRules: true
-    ingress:
-      dashboard:
-        ingressClassName: internal
-        host:
-          name: rook.${SECRET_DOMAIN}
-          path: /
     toolbox:
       enabled: true
     cephClusterSpec:
@@ -203,12 +197,3 @@ spec:
           volumeBindingMode: Immediate
           parameters:
             region: ca-west-1
-        ingress:
-          enabled: true
-          ingressClassName: internal
-          annotations:
-            nginx.ingress.kubernetes.io/proxy-body-size: "0"
-            nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
-          host:
-            name: rgw.${SECRET_DOMAIN}
-            path: /

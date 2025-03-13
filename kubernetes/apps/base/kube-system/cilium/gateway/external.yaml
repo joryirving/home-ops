@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/gateway.networking.k8s.io/gateway_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: external
+  annotations:
+    external-dns.alpha.kubernetes.io/target: &hostname ${EXTERNAL_DOMAIN}.${SECRET_DOMAIN}
+  labels:
+    gateway: external
+spec:
+  gatewayClassName: cilium
+  addresses:
+    - type: IPAddress
+      value: ${SVC_GATEWAY_EXTERNAL}
+    - type: IPAddress
+      value: ::ffff:${SVC_GATEWAY_EXTERNAL}
+  infrastructure:
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: *hostname
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.${SECRET_DOMAIN}"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.${SECRET_DOMAIN}"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        certificateRefs:
+          - kind: Secret
+            name: jory-dev-tls

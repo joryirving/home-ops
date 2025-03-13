@@ -1,0 +1,71 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: cloudflare-dns
+  namespace: network # Required for Renovate lookups
+spec:
+  interval: 12h
+  url: https://kubernetes-sigs.github.io/external-dns
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app cloudflare-dns
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.15.2
+      sourceRef:
+        kind: HelmRepository
+        name: cloudflare-dns
+        namespace: network
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    fullnameOverride: *app
+    image: # TODO: https://github.com/kubernetes-sigs/external-dns/pull/4943
+      repository: ghcr.io/buroa/external-dns
+      tag: 631b84da
+    provider:
+      name: cloudflare
+    env:
+      - name: &name CF_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: &secret cloudflare-dns
+            key: *name
+      - name: &name CF_ZONE_ID
+        valueFrom:
+          secretKeyRef:
+            name: *secret
+            key: *name
+    extraArgs:
+      - --cloudflare-dns-records-per-page=1000
+      - --cloudflare-proxied
+      - --crd-source-apiversion=externaldns.k8s.io/v1alpha1
+      - --crd-source-kind=DNSEndpoint
+      - --gateway-label-filter=gateway==external
+      - --zone-id-filter=$(CF_ZONE_ID)
+    triggerLoopOnEvent: true
+    policy: sync
+    sources: ["crd", "gateway-httproute"]
+    txtOwnerId: ${CLUSTER}
+    txtPrefix: k8s.${CLUSTER}.
+    domainFilters: ["${SECRET_DOMAIN}"]
+    serviceMonitor:
+      enabled: true
+    podAnnotations:
+      secret.reloader.stakater.com/reload: *secret

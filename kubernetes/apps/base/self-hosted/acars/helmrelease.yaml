@@ -168,7 +168,7 @@ spec:
         type: ClusterIP
         ports:
           http:
-            port: 80
+            port: &port 80
           acarsinput:
             port: 5550
             protocol: UDP
@@ -179,17 +179,17 @@ spec:
             port: 15550
           vdsloutput:
             port: 15555
-
-    ingress:
+    route:
       acarshub:
-        className: external
-        hosts:
-          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: acarshub
-                  port: http
+        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: acarshub
+                port: 80
     persistence:
       # usb:
       #   type: hostPath

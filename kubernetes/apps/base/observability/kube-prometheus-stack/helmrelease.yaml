@@ -38,11 +38,14 @@ spec:
         enabled: true
         forceConflicts: true
     alertmanager:
-      ingress:
-        enabled: true
-        pathType: Prefix
-        ingressClassName: internal
-        hosts: ["${ALERTMANAGER_SUBDOMAIN}.${SECRET_DOMAIN}"]
+      route:
+        main:
+          enabled: true
+          hostnames: ["${ALERTMANAGER_SUBDOMAIN}.${SECRET_DOMAIN}"]
+          parentRefs:
+            - name: internal
+              namespace: kube-system
+              sectionName: https
       alertmanagerSpec:
         alertmanagerConfiguration:
           name: alertmanager
@@ -130,11 +133,14 @@ spec:
                 labels:
                   severity: critical
     prometheus:
-      ingress:
-        enabled: true
-        ingressClassName: internal
-        pathType: Prefix
-        hosts: ["${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"]
+      route:
+        main:
+          enabled: true
+          hostnames: ["${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}"]
+          parentRefs:
+            - name: internal
+              namespace: kube-system
+              sectionName: https
       prometheusSpec:
         enableAdminAPI: true
         walCompression: true

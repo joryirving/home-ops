@@ -9,7 +9,7 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   interval: 1h
-  path: ./kubernetes/apps/base/kube-system/cilium
+  path: ./kubernetes/apps/base/kube-system/cilium/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -34,6 +34,33 @@ spec:
           operator:
             replicas: 1
 ---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app cilium-gateway
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  dependsOn:
+    - name: cert-manager
+      namespace: cert-manager
+  interval: 1h
+  path: ./kubernetes/apps/base/kube-system/cilium/gateway
+  postBuild:
+    substitute:
+      EXTERNAL_DOMAIN: external-test
+      INTERNAL_DOMAIN: internal-test
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: kube-system
+  timeout: 15m
+  wait: true
+---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -43,6 +70,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  dependsOn:
+    - name: cilium
   interval: 15m
   path: ./kubernetes/apps/test/kube-system/cilium/config
   prune: true

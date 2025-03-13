@@ -58,7 +58,7 @@ spec:
         controller: *app
         ports:
           http:
-            port: 8080
+            port: &port 8080
     serviceMonitor:
       app:
         serviceName: *app
@@ -68,22 +68,17 @@ spec:
             path: /metrics
             interval: 1m
             scrapeTimeout: 10s
-    ingress:
+    route:
       app:
-        className: external
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/icon: https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/karma.ico
-          gethomepage.dev/name: Karma
-          gethomepage.dev/group: Observability
-          gethomepage.dev/description: Alertmanger Quick View
-        hosts:
-          - host: "{{ .Release.Name }}.${SECRET_DOMAIN}"
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         type: emptyDir

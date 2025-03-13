@@ -87,30 +87,13 @@ spec:
       worldSaveName: takocraft
       viewDistance: 12
       # serviceAnnotations:
-      #   lbipam.cilium.io/ips: ${SVC_TAKOCRAFT_ADDR}
+      #   lbipam.cilium.io/ips: ${SVC_TAKOCRAFT_ADDR}, ::ffff:${SVC_TAKOCRAFT_ADDR}
       # serviceType: LoadBalancer
       spigetResources:
       - 36618 #Prom Exporter
       - 18494 #DiscordSRV
       rcon:
         enabled: true
-      extraPorts:
-      - name: metrics
-        containerPort: 9225
-        protocol: TCP
-        service:
-          enabled: true
-          embedded: false
-          type: ClusterIP
-          port: 9225
-        ingress:
-          ingressClassName: external
-          enabled: true
-          annotations:
-            external-dns.alpha.kubernetes.io/target: mc.${SECRET_DOMAIN}
-            external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
-          hosts:
-           - name: *host
   valuesFrom:
   - kind: Secret
     name: minecraft-takocraft-secret
