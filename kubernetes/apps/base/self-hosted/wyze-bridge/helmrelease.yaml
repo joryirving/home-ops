@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &name wyze-bridge
+  name: &app wyze-bridge
 spec:
   interval: 1h
   chartRef:
@@ -57,11 +57,11 @@ spec:
                 gpu.intel.com/i915: 1
     service:
       app:
-        controller: wyze
+        controller: *app
         ports:
           http:
             enabled: true
-            port: 5000
+            port: &port 5000
           rtmp:
             enabled: true
             port: 1935
