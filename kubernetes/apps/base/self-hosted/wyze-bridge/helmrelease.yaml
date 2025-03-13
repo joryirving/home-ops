@@ -9,6 +9,7 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
+
   install:
     remediation:
       retries: 3
@@ -57,7 +58,7 @@ spec:
                 gpu.intel.com/i915: 1
     service:
       app:
-        controller: *app
+        controller: &controller wyze
         ports:
           http:
             enabled: true
@@ -85,5 +86,5 @@ spec:
             sectionName: https
         rules:
           - backendRefs:
-              - name: *app
+              - name: *controller
                 port: *port
