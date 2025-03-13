@@ -102,26 +102,23 @@ spec:
           - matches:
               - path:
                   type: PathPrefix
-                  value: "/"
+                  value: "/api"
             filters:
-              - type: RequestHeaderModifier
-                requestHeaderModifier:
-                  remove: ["Range"]
               - type: URLRewrite
                 urlRewrite:
                   path:
                     type: ReplacePrefixMatch
                     replacePrefixMatch: "/"
             backendRefs:
-              - name: web
-                port: *webport
+              - name: server
+                port: *port
           - matches:
               - path:
                   type: PathPrefix
-                  value: "/api"
+                  value: "/"
             backendRefs:
-              - name: server
-                port: *port
+              - name: web
+                port: *webport
     persistence:
       configs:
         existingClaim: *app
