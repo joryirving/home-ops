@@ -42,27 +42,20 @@ spec:
         controller: *app
         ports:
           http:
-            port: 5000
-    ingress:
+            port: &port 5000
+    route:
       app:
-        className: external
-        annotations:
-          gethomepage.dev/enabled: "true"
-          gethomepage.dev/group: Books
-          gethomepage.dev/name: Kavita
-          gethomepage.dev/icon: kavita.png
-          gethomepage.dev/description: Comic/Ebook Web Reader
-          gethomepage.dev/widget.type: kavita
-          gethomepage.dev/widget.url: http://kavita.media:5000
-          gethomepage.dev/widget.username: "{{ `{{HOMEPAGE_VAR_KAVITA_USERNAME}}` }}"
-          gethomepage.dev/widget.password: "{{ `{{HOMEPAGE_VAR_KAVITA_PASSWORD}}` }}"
-        hosts:
-          - host: comics.${SECRET_DOMAIN}
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - comics.${SECRET_DOMAIN}
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         existingClaim: *app

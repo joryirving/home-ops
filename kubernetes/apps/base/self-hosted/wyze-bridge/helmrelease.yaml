@@ -3,12 +3,13 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &name wyze-bridge
+  name: &app wyze-bridge
 spec:
   interval: 1h
   chartRef:
     kind: OCIRepository
     name: app-template
+
   install:
     remediation:
       retries: 3
@@ -57,11 +58,11 @@ spec:
                 gpu.intel.com/i915: 1
     service:
       app:
-        controller: wyze
+        controller: &controller wyze
         ports:
           http:
             enabled: true
-            port: 5000
+            port: &port 5000
           rtmp:
             enabled: true
             port: 1935
@@ -74,13 +75,16 @@ spec:
           webrtc:
             enabled: true
             port: 8889
-    ingress:
+    route:
       app:
-        className: internal
-        hosts:
-          - host: ${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
+        hostnames:
+          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - ${GATUS_SUBDOMAIN}.${SECRET_DOMAIN}
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *controller
+                port: *port
