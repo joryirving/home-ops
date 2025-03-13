@@ -89,39 +89,39 @@ spec:
         ports:
           http:
             port: 27017
-  route:
-    app:
-      hostnames:
-        - "{{ .Release.Name }}.${SECRET_DOMAIN}"
-        - "spotty.${SECRET_DOMAIN}"
-      parentRefs:
-        - name: external
-          namespace: kube-system
-          sectionName: https
-      rules:
-        - backendRefs:
-            - name: web
-              port: *webport
-          filters:
-            - type: RequestHeaderModifier
-              requestHeaderModifier:
-                remove: ["Range"]
-            - type: URLRewrite
-              urlRewrite:
-                path:
-                  type: ReplacePrefixMatch
-                  replacePrefixMatch: "/"
-          matches:
-            - path:
-                type: PathPrefix
-                value: "/"
-        - backendRefs:
-            - name: server
-              port: *port
-          matches:
-            - path:
-                type: PathPrefix
-                value: "/api"
+    route:
+      app:
+        hostnames:
+          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - "spotty.${SECRET_DOMAIN}"
+        parentRefs:
+          - name: external
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: "/"
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  remove: ["Range"]
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: "/"
+            backendRefs:
+              - name: web
+                port: *webport
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: "/api"
+            backendRefs:
+              - name: server
+                port: *port
     persistence:
       configs:
         existingClaim: *app
