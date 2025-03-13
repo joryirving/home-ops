@@ -89,43 +89,39 @@ spec:
         ports:
           http:
             port: 27017
-    route:
-      app:
-        hostnames:
-          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          - "spotty.${SECRET_DOMAIN}"
-        parentRefs:
-          - name: external
-            namespace: kube-system
-            sectionName: https
-        rules:
-          - backendRefs:
-              - name: web
-                port: *webport
-            filters:
-              - type: RequestHeaderModifier
-                requestHeaderModifier:
-                  remove: ["Range"]
-              - type: URLRewrite
-                urlRewrite:
-                  path:
-                    type: ReplacePrefixMatch
-                    replacePrefixMatch: "/"
-            matches:
-              - path:
-                  type: RegularExpression
-                  value: "/?(.*)"
-          - backendRefs:
-              - name: server
-                port: *port
-            matches:
-              - path:
-                  type: RegularExpression
-                  value: "/api/?(.*)"
-        # limits:
-        #   requestBodyBytes: 1048576000  # Equivalent to `proxy-body-size: 1000m`
-        # timeouts:
-        #   request: 3600s  # Equivalent to `proxy-read-timeout: "3600"`
+  route:
+    app:
+      hostnames:
+        - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+        - "spotty.${SECRET_DOMAIN}"
+      parentRefs:
+        - name: external
+          namespace: kube-system
+          sectionName: https
+      rules:
+        - backendRefs:
+            - name: web
+              port: *webport
+          filters:
+            - type: RequestHeaderModifier
+              requestHeaderModifier:
+                remove: ["Range"]
+            - type: URLRewrite
+              urlRewrite:
+                path:
+                  type: ReplacePrefixMatch
+                  replacePrefixMatch: "/"
+          matches:
+            - path:
+                type: PathPrefix
+                value: "/"
+        - backendRefs:
+            - name: server
+              port: *port
+          matches:
+            - path:
+                type: PathPrefix
+                value: "/api"
     persistence:
       configs:
         existingClaim: *app
