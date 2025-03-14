@@ -8,6 +8,10 @@ helmDefaults:
   # waitRetries: 3 # Not supported by Helm yet
 
 repositories:
+  - name: charts-mirror
+    url: ghcr.io/onedr0p/charts-mirror
+    oci: true
+
   - name: controlplaneio
     url: ghcr.io/controlplaneio-fluxcd/charts
     oci: true
@@ -16,21 +20,16 @@ repositories:
     url: ghcr.io/coredns/charts
     oci: true
 
-  - name: cilium
-    url: https://helm.cilium.io
-
   - name: external-secrets
     url: ghcr.io/external-secrets/charts
     oci: true
 
-  - name: jetstack
-    url: https://charts.jetstack.io
 
 releases:
   - name: cilium
     namespace: kube-system
     atomic: true
-    chart: cilium/cilium
+    chart: charts-mirror/cilium
     version: 1.17.1
     values: ['{{ requiredEnv "SHARED_APPS" }}/kube-system/cilium/helm/values.yaml']
     hooks:
@@ -64,7 +63,7 @@ releases:
   - name: cert-manager
     namespace: cert-manager
     atomic: true
-    chart: jetstack/cert-manager
+    chart: charts-mirror/cert-manager
     version: v1.17.1
     values: ['{{ requiredEnv "SHARED_APPS" }}/cert-manager/cert-manager/app/helm/values.yaml']
     needs: ['kube-system/coredns']
