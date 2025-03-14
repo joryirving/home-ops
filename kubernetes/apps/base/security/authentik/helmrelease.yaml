@@ -1,14 +1,17 @@
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
 metadata:
-  name: authentik-charts
-  namespace: security # Required for Renovate lookups
+  name: authentik
 spec:
-  interval: 30m
-  url: https://charts.goauthentik.io
-  timeout: 3m
+  interval: 1h
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 2025.2.1
+  url: oci://ghcr.io/goauthentik/helm-charts/authentik
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -17,14 +20,9 @@ metadata:
   name: &app authentik
 spec:
   interval: 1h
-  chart:
-    spec:
-      chart: authentik
-      version: 2025.2.1
-      sourceRef:
-        kind: HelmRepository
-        name: authentik-charts
-        namespace: security
+  chartRef:
+    kind: OCIRepository
+    name: authentik
   install:
     remediation:
       retries: 3
