@@ -7,29 +7,11 @@ helmDefaults:
   waitForJobs: true
   # waitRetries: 3 # Not supported by Helm yet
 
-repositories:
-  - name: charts-mirror
-    url: ghcr.io/onedr0p/charts-mirror
-    oci: true
-
-  - name: controlplaneio
-    url: ghcr.io/controlplaneio-fluxcd/charts
-    oci: true
-
-  - name: coredns
-    url: ghcr.io/coredns/charts
-    oci: true
-
-  - name: external-secrets
-    url: ghcr.io/external-secrets/charts
-    oci: true
-
-
 releases:
   - name: cilium
     namespace: kube-system
     atomic: true
-    chart: charts-mirror/cilium
+    chart: oci://ghcr.io/onedr0p/charts-mirror/cilium
     version: 1.17.1
     values: ['{{ requiredEnv "SHARED_APPS" }}/kube-system/cilium/helm/values.yaml']
     hooks:
@@ -55,7 +37,7 @@ releases:
   - name: coredns
     namespace: kube-system
     atomic: true
-    chart: coredns/coredns
+    chart: ghcr.io/coredns/charts/coredns
     version: 1.39.1
     values: ['{{ requiredEnv "SHARED_APPS" }}/kube-system/coredns/helm/values.yaml']
     needs: ['kube-system/cilium']
@@ -63,7 +45,7 @@ releases:
   - name: cert-manager
     namespace: cert-manager
     atomic: true
-    chart: charts-mirror/cert-manager
+    chart: oci://ghcr.io/onedr0p/charts-mirror/cert-manager
     version: v1.17.1
     values: ['{{ requiredEnv "SHARED_APPS" }}/cert-manager/cert-manager/app/helm/values.yaml']
     needs: ['kube-system/coredns']
@@ -71,7 +53,7 @@ releases:
   - name: external-secrets
     namespace: external-secrets
     atomic: true
-    chart: external-secrets/external-secrets
+    chart: ghcr.io/external-secrets/charts/external-secrets
     version: 0.14.4
     values: ['{{ requiredEnv "SHARED_APPS" }}/external-secrets/helm/values.yaml']
     hooks:
@@ -98,7 +80,7 @@ releases:
   - name: flux-operator
     namespace: flux-system
     atomic: true
-    chart: controlplaneio/flux-operator
+    chart: ghcr.io/controlplaneio-fluxcd/charts/flux-operator
     version: 0.17.0
     values: ['{{ requiredEnv "SHARED_APPS" }}/flux-system/flux-operator/helm/values.yaml']
     needs: ['external-secrets/external-secrets']
@@ -106,7 +88,7 @@ releases:
   - name: flux-instance
     namespace: flux-system
     atomic: true
-    chart: controlplaneio/flux-instance
+    chart: ghcr.io/controlplaneio-fluxcd/charts/flux-instance
     version: 0.17.0
     values: ['{{ requiredEnv "CLUSTER_DIR" }}/flux-instance/helm/values.yaml']
     needs: ['flux-system/flux-operator']
