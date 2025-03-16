@@ -15,6 +15,16 @@ spec:
   verify:
     provider: cosign
 ---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: itzg-charts
+  namespace: games # Required for Renovate lookups
+spec:
+  interval: 2h
+  url: https://itzg.github.io/minecraft-server-charts/
+---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -22,9 +32,18 @@ metadata:
   name: &app minecraft-takocraft
 spec:
   interval: 1h
-  chartRef:
-    kind: OCIRepository
-    name: minecraft
+  # chartRef:
+  #   kind: OCIRepository
+  #   name: minecraft
+  chart:
+    spec:
+      # renovate: registryUrl=https://itzg.github.io/minecraft-server-charts/
+      chart: minecraft
+      version: 4.25.1
+      sourceRef:
+        kind: HelmRepository
+        name: itzg-charts
+        namespace: games
   install:
     remediation:
       retries: 3
