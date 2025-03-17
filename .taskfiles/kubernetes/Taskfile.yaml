@@ -109,3 +109,12 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - which flux helm
+
+  flatten:
+    desc: Flatten kubectl and talosctl
+    cmds:
+      - mkdir -p ~/.kube ~/.talos
+      - kubectl config view --flatten > ~/.kube/config
+      - cp {{.ROOT_DIR}}/talos/test/clusterconfig/talosconfig ~/.talos/config
+      - talosctl config merge {{.ROOT_DIR}}/talos/utility/clusterconfig/talosconfig --talosconfig ~/.talos/config
+      - talosctl config merge {{.ROOT_DIR}}/talos/main/clusterconfig/talosconfig --talosconfig ~/.talos/config
