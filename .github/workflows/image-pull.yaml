@@ -16,10 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       any_changed: ${{ steps.changed-files.outputs.any_changed }}
-      available_clusters: ${{ steps.check-runners.outputs.available_clusters }}
-    permissions:
-      actions: read
-      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -30,27 +26,6 @@ jobs:
         with:
           files: kubernetes/**
 
-      - name: Check Available Runners
-        id: check-runners
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          CLUSTERS=("main" "utility" "test")
-          AVAILABLE_CLUSTERS=()
-
-          for cluster in "${CLUSTERS[@]}"; do
-            RUNNER="home-ops-runner-$cluster"
-            STATUS=$(gh api /repos/${{ github.repository }}/actions/runners --jq ".runners | map(select(.name == \"$RUNNER\" and .status == \"online\")) | length")
-
-            if [[ "$STATUS" -gt 0 ]]; then
-              AVAILABLE_CLUSTERS+=("\"$cluster\"")
-            fi
-          done
-
-          JSON="[${AVAILABLE_CLUSTERS[*]}]"
-          echo "available_clusters=$JSON" >> $GITHUB_OUTPUT
-          echo "Available clusters: $JSON"
-
   extract:
     if: ${{ needs.pre-job.outputs.any_changed == 'true' }}
     name: Image Pull - Extract Images
@@ -59,7 +34,7 @@ jobs:
     strategy:
       matrix:
         branches: ["default", "pull"]
-        cluster: ${{ fromJSON(needs.pre-job.outputs.available_clusters) }}
+        cluster: ["main", "utility"]
       fail-fast: false
     outputs:
       default: ${{ steps.images.outputs.default }}
@@ -122,7 +97,7 @@ jobs:
     needs: ["pre-job", "compare"]
     strategy:
       matrix:
-        cluster: ${{ fromJSON(needs.pre-job.outputs.available_clusters) }}
+        cluster: ["main", "utility"]
         images: ${{ fromJSON(needs.compare.outputs.images) }}
       max-parallel: 4
       fail-fast: false

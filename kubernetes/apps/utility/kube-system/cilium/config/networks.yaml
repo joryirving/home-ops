@@ -7,9 +7,9 @@ metadata:
 spec:
   allowFirstLastIPs: "No"
   blocks:
-    - cidr: "10.69.1.0/24"
+    - cidr: 10.69.1.0/24
+    - cidr: ::ffff:10.69.1.0/112 # IPv4-mapped IPv6
 ---
-# https://docs.cilium.io/en/latest/network/l2-announcements
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliuml2announcementpolicy_v2alpha1.json
 apiVersion: cilium.io/v2alpha1
 kind: CiliumL2AnnouncementPolicy
@@ -22,27 +22,54 @@ spec:
     matchLabels:
       kubernetes.io/os: linux
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliumbgppeeringpolicy_v2alpha1.json
-apiVersion: cilium.io/v2alpha1
-kind: CiliumBGPPeeringPolicy
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliumbgpadvertisement_v2alpha1.json
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumBGPAdvertisement
 metadata:
-  name: l3-policy
+  name: cilium-bgp-advertisement
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    - advertisementType: "Service"
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchExpressions:
+          - { key: somekey, operator: NotIn, values: ["never-used-value"] }
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliumbgppeerconfig_v2alpha1.json
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumBGPPeerConfig
+metadata:
+  name: cilium-bgp-peer-config-ipv4
+spec:
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: "bgp"
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliumbgpclusterconfig_v2alpha1.json
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumBGPClusterConfig
+metadata:
+  name: cilium-bgp-cluster-config
 spec:
   nodeSelector:
     matchLabels:
       kubernetes.io/os: linux
-  virtualRouters:
-    - localASN: 64515
-      exportPodCIDR: false
-      serviceSelector:
-        matchExpressions:
-          - key: thisFakeSelector
-            operator: NotIn
-            values:
-              - will-match-and-announce-all-services
-      neighbors:
-        - peerAddress: 192.168.1.1/32
+  bgpInstances:
+    - name: "instance-64515"
+      localASN: 64515
+      peers:
+        - name: "peer-64513-ipv4"
           peerASN: 64513
+          peerAddress: "192.168.1.1"
+          peerConfigRef:
+            name: "cilium-bgp-peer-config-ipv4"
 ---
 apiVersion: v1
 kind: Service
