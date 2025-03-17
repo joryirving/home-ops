@@ -11,7 +11,6 @@ on:
     paths: [".github/workflows/schemas.yaml"]
 
 env:
-  HOMEBREW_NO_ANALYTICS: "1"
   UV_SYSTEM_PYTHON: "1"
 
 jobs:
@@ -48,13 +47,11 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-        with:
-          stable: true
+      - name: Install kubectl
+        uses: azure/setup-kubectl@3e0aec4d80787158d308d7b364cb1b702e7feb7f # v4.0.0
 
-      - name: Setup Workflow Tools
-        run: brew install kubectl uv
+      - name: Install uv
+        uses: astral-sh/setup-uv@f94ec6bedd8674c4426838e6b50417d36b6ab231 # v5.3.1
 
       - name: Setup Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
