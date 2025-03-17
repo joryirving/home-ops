@@ -3,17 +3,15 @@
 apiVersion: source.toolkit.fluxcd.io/v1beta2
 kind: OCIRepository
 metadata:
-  name: minecraft
+  name: minecraft-takocraft
 spec:
   interval: 1h
   layerSelector:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 4.25.1
-  url: oci://ghcr.io/onedr0p/charts-mirror/minecraft
-  verify:
-    provider: cosign
+    tag: 4.26.0
+  url: oci://ghcr.io/joryirving/minecraft-server-charts/minecraft
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -32,18 +30,18 @@ metadata:
   name: &app minecraft-takocraft
 spec:
   interval: 1h
-  # chartRef:
-  #   kind: OCIRepository
-  #   name: minecraft
-  chart:
-    spec:
-      # renovate: registryUrl=https://itzg.github.io/minecraft-server-charts/
-      chart: minecraft
-      version: 4.25.1
-      sourceRef:
-        kind: HelmRepository
-        name: itzg-charts
-        namespace: games
+  chartRef:
+    kind: OCIRepository
+    name: minecraft-takocraft
+  # chart:
+  #   spec:
+  #     # renovate: registryUrl=https://itzg.github.io/minecraft-server-charts/
+  #     chart: minecraft
+  #     version: 4.25.1
+  #     sourceRef:
+  #       kind: HelmRepository
+  #       name: itzg-charts
+  #       namespace: games
   install:
     remediation:
       retries: 3
