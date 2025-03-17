@@ -82,16 +82,21 @@ function wipe_rook_disks() {
         return
     fi
 
+    if [ "$CSI_DISK" = "null" ]; then
+        log warn "No disks to wipe"
+        return
+    fi
+
     if ! nodes=$(talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig config info --output json 2>/dev/null | jq --exit-status --raw-output '.nodes | join(" ")') || [[ -z "${nodes}" ]]; then
         log error "No Talos nodes found"
     fi
 
     log debug "Talos nodes discovered" "nodes=${nodes}"
 
-    # Wipe disks on each node that match the ROOK_DISK environment variable
+    # Wipe disks on each node that match the CSI_DISK environment variable
     for node in ${nodes}; do
         if ! disks=$(talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" get disk --output json 2>/dev/null \
-            | jq --exit-status --raw-output --slurp '. | map(select(.spec.model == env.ROOK_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]];
+            | jq --exit-status --raw-output --slurp '. | map(select(.spec.model == env.CSI_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]];
         then
             log error "No disks found" "node=${node}" "model=${CSI_DISK}"
         fi

@@ -15,7 +15,7 @@ tasks:
       - until talosctl --talosconfig clusterconfig/talosconfig --nodes {{.TALOS_CONTROLLER}} bootstrap; do sleep 5; done
       - talosctl --talosconfig clusterconfig/talosconfig kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
       - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
-      - '{{if eq .NODE_COUNT 1}}talosctl --talosconfig clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}' ## Reboot my single node cluster
+      - '{{if and (eq .NODE_COUNT 1) (ne .CSI_DISK "null")}}talosctl --talosconfig clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}' ## Reboot my single node cluster
     vars:
       TALOS_CONTROLLER:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]'
@@ -24,13 +24,39 @@ tasks:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.nodes | length'
       CSI_DISK: '{{.CSI_DISK}}'
       CLUSTER: '{{.CLUSTER}}'
+      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
       CLUSTER_DIR: '{{.CLUSTER_DIR}}'
       SHARED_APPS: '{{.SHARED_APPS}}'
       SHARED_DIR: '{{.SHARED_DIR}}'
     requires:
       vars: [CLUSTER, CSI_DISK]
     preconditions:
-      - op user get --me
+      - op whoami --format=json
+      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
+      - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
+      - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
+
+  helmfile:
+    desc: Bootstrap Cluster apps [CSI_DISK=required]
+    dir: '{{.TALOS_DIR}}'
+    summary: |
+      IMPORTANT: CSI_DISK must be set to the disk model used across all the nodes (e.g. WD_BLACK SN770)
+    cmds:
+      - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
+    vars:
+      TALOS_CONTROLLER:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]'
+    env:
+      CSI_DISK: '{{.CSI_DISK}}'
+      CLUSTER: '{{.CLUSTER}}'
+      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
+      CLUSTER_DIR: '{{.CLUSTER_DIR}}'
+      SHARED_APPS: '{{.SHARED_APPS}}'
+      SHARED_DIR: '{{.SHARED_DIR}}'
+    requires:
+      vars: [CLUSTER, CSI_DISK]
+    preconditions:
+      - op whoami --format=json
       - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
       - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
