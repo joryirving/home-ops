@@ -6,8 +6,6 @@ metadata:
   name: internal
   annotations:
     external-dns.alpha.kubernetes.io/target: &hostname ${INTERNAL_DOMAIN}.${SECRET_DOMAIN}
-  labels:
-    gateway: internal
 spec:
   gatewayClassName: cilium
   addresses:
@@ -25,7 +23,7 @@ spec:
       hostname: "*.${SECRET_DOMAIN}"
       allowedRoutes:
         namespaces:
-          from: All
+          from: Same
     - name: https
       protocol: HTTPS
       port: 443
