@@ -70,11 +70,10 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-
-      - name: Setup Workflow Tools
-        run: brew install opentofu
+      - name: Install Opentofu
+        uses: opentofu/setup-opentofu@592200bd4b9bbf4772ace78f887668b1aee8f716 # v1.0.5
+        with:
+          tofu_wrapper: false
 
       - name: Install 1Password CLI
         uses: 1password/install-cli-action@143a85f84a90555d121cde2ff5872e393a47ab9f # v1.0.0
