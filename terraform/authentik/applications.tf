@@ -4,7 +4,7 @@ locals {
     "grafana",
     "headlamp",
     "kyoo",
-    "lubelog",
+    "lubelogger",
     "paperless",
     "portainer"
   ]
@@ -51,13 +51,13 @@ locals {
       redirect_uri  = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/logged/authentik"
       launch_url    = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.CLUSTER_DOMAIN}/login/callback"
     },
-    lubelog = {
-      client_id     = module.onepassword_application["lubelog"].fields["LUBELOG_CLIENT_ID"]
-      client_secret = module.onepassword_application["lubelog"].fields["LUBELOG_CLIENT_SECRET"]
+    lubelogger = {
+      client_id     = module.onepassword_application["lubelogger"].fields["LUBELOGGER_CLIENT_ID"]
+      client_secret = module.onepassword_application["lubelogger"].fields["LUBELOGGER_CLIENT_SECRET"]
       group         = "home"
       icon_url      = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
-      redirect_uri  = "https://lubelog.${var.CLUSTER_DOMAIN}/Login/RemoteAuth"
-      launch_url    = "https://lubelog.${var.CLUSTER_DOMAIN}/Login/RemoteAuth"
+      redirect_uri  = "https://lubelogger.${var.CLUSTER_DOMAIN}/Login/RemoteAuth"
+      launch_url    = "https://lubelogger.${var.CLUSTER_DOMAIN}/Login/RemoteAuth"
     },
     paperless = {
       client_id     = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_ID"]
