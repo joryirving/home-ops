@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "description": ["Auto-merge container digests updates"],
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["digest"],
+      "matchPackageNames": ["/bjw-s/", "/bjw-s-labs/", "/home-operations/", "/joryirving/", "buroa"],
+      "ignoreTests": true
+    },
+    {
+      "description": "Auto-merge Helm Releases",
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": ["/kube-prometheus-stack/"],
+      "ignoreTests": false
+    },
+    {
+      "description": "Auto-merge GitHub Releases",
+      "matchDatasources": ["github-releases"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": ["/gateway-api/", "/prometheus-operator/"],
+      "ignoreTests": false
+    }
+  ]
+}
