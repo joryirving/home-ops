@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app lubelog
+  name: &app lubelogger
 spec:
   interval: 1h
   chartRef:
@@ -19,7 +19,7 @@ spec:
       retries: 3
   values:
     controllers:
-      lubelog:
+      lubelogger:
         labels:
           postgres: "true"
         annotations:
@@ -33,7 +33,7 @@ spec:
               TZ: ${TIMEZONE}
             envFrom:
               - secretRef:
-                  name: lubelog-secret
+                  name: lubelogger-secret
             resources:
               requests:
                 cpu: 15m
