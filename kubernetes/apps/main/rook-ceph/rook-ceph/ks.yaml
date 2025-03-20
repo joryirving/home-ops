@@ -30,6 +30,10 @@ spec:
       app.kubernetes.io/name: *app
   components:
     - ../../../../../components/gatus/guarded
+  dependsOn:
+    - name: rook-ceph
+    - name: volsync
+      namespace: storage
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
