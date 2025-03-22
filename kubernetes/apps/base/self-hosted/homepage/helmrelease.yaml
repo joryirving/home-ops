@@ -30,7 +30,7 @@ spec:
               repository: ghcr.io/gethomepage/homepage
               tag: v1.0.4
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
             envFrom:
               - secretRef:
                   name: homepage-secret
@@ -48,7 +48,7 @@ spec:
             port: &port 3000
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system

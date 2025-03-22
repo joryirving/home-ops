@@ -44,7 +44,7 @@ spec:
               DASHBRR__DB_PATH: /cache/._  # cache path is derived from DASHBRR__DB_PATH
               DASHBRR__LISTEN_ADDR: 0.0.0.0:8080
               GIN_MODE: debug
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
             envFrom:
             - secretRef:
                 name: dashbrr-secret
@@ -80,7 +80,7 @@ spec:
             port: *port
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system

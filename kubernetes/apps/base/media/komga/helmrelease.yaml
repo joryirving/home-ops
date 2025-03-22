@@ -30,7 +30,7 @@ spec:
               repository: gotson/komga
               tag: "1.21.2@sha256:ba587695d786f0e8f4de8598b8aa2785cc8c671098ef1cb624819c2bb812789c"
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               SERVER_PORT: &port 8080
             resources:
               requests:
@@ -46,7 +46,7 @@ spec:
             port: *port
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: external
             namespace: kube-system
@@ -61,7 +61,7 @@ spec:
       media:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
           - path: /data
             subPath: media

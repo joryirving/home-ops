@@ -30,7 +30,7 @@ spec:
               repository: ghcr.io/linuxserver/mylar3
               tag: version-v0.8.2@sha256:29667e112cf4f7feb0f43cb9c274bd345b324a5fa602293b0a12f6d9f7d51f5b
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               UID: 1000
               GID: 1000
             resources:
@@ -55,7 +55,7 @@ spec:
             port: &port 8090
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system
@@ -70,6 +70,6 @@ spec:
       data:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
           - path: /data

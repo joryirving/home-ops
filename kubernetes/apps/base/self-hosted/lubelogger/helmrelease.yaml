@@ -30,7 +30,7 @@ spec:
               repository: ghcr.io/hargata/lubelogger
               tag: v1.4.5
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
             envFrom:
               - secretRef:
                   name: lubelogger-secret
@@ -54,7 +54,7 @@ spec:
             port: &port 8080
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: external
             namespace: kube-system

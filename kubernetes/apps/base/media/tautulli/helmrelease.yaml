@@ -28,7 +28,7 @@ spec:
               repository: ghcr.io/joryirving/tautulli
               tag: 2.15.1@sha256:1dde3cb0df8f9544a17864a81f1f3c7e9871979008c4519c7575c33a512e64ee
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               TAUTULLI__PORT: &port 80
             probes:
               liveness: &probes
@@ -67,7 +67,7 @@ spec:
             port: *port
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: external
             namespace: kube-system

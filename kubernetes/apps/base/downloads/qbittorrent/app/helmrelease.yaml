@@ -30,7 +30,7 @@ spec:
               repository: ghcr.io/joryirving/qbittorrent
               tag: 5.0.4@sha256:48adf2c917d4ff1d2306fa415a7ad9f08ddb22cb66239d201c13bda24ca1aadd
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               QBT_WEBUI_PORT: &port 80
               QBT_TORRENTING_PORT: &torrentPort 50413
             probes:
@@ -84,7 +84,7 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: ${SVC_QBITTTORENT_ADDR}, ::ffff:${SVC_QBITTTORENT_ADDR}
+          lbipam.cilium.io/ips: 10.69.1.36, ::ffff:10.69.1.36
         ports:
           http:
             primary: true
@@ -96,8 +96,8 @@ spec:
     route:
       app:
         hostnames:
-          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          - qb.${SECRET_DOMAIN}
+          - "{{ .Release.Name }}.jory.dev"
+          - qb.jory.dev
         parentRefs:
           - name: internal
             namespace: kube-system
@@ -112,7 +112,7 @@ spec:
       downloads:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
           - path: /downloads
             subPath: torrents

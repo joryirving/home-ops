@@ -30,7 +30,7 @@ spec:
               repository: ghcr.io/kareadita/kavita
               tag: 0.8.5@sha256:0266bd9cfedfcb36c72b43a43257c9d1049ab7da58acd9f90130d288deb1ac0a
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
             resources:
               requests:
                 cpu: 15m
@@ -46,8 +46,8 @@ spec:
     route:
       app:
         hostnames:
-          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          - comics.${SECRET_DOMAIN}
+          - "{{ .Release.Name }}.jory.dev"
+          - comics.jory.dev
         parentRefs:
           - name: external
             namespace: kube-system
@@ -64,7 +64,7 @@ spec:
       media:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
           - path: /data
             subPath: media
