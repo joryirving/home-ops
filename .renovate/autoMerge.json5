@@ -1,0 +1,32 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  packageRules: [
+    {
+      description: "Auto-merge trusted container digests",
+      matchDatasources: ["docker"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["digest"],
+      matchPackageNames: ["/home-operations/"],
+      ignoreTests: true,
+    },
+    {
+      description: "Auto-merge OCI Charts",
+      matchDatasources: ["docker"],
+      automerge: true,
+      automergeType: "pr",
+      matchUpdateTypes: ["minor", "patch"],
+      matchPackageNames: ["/kube-prometheus-stack/"],
+      ignoreTests: false,
+    },
+    {
+      description: "Auto-merge GitHub Releases",
+      matchDatasources: ["github-releases"],
+      automerge: true,
+      automergeType: "branch",
+      matchUpdateTypes: ["minor", "patch"],
+      matchPackageNames: ["/external-dns/", "/gateway-api/", "/prometheus-operator/"],
+      ignoreTests: true,
+    },
+  ],
+}
