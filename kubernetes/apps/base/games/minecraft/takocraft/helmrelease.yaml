@@ -69,14 +69,14 @@ spec:
       failureThreshold: 30
       periodSeconds: 10
     extraEnv:
-      TZ: ${TIMEZONE}
+      TZ: America/Edmonton
       ENABLE_AUTOPAUSE: TRUE # Doesn't work in Kubes
     persistence:
       dataDir:
         enabled: true
         existingClaim: *app
     serviceAnnotations:
-      mc-router.itzg.me/externalServerName: &host takocraft.${SECRET_DOMAIN}
+      mc-router.itzg.me/externalServerName: &host takocraft.jory.dev
     minecraftServer:
       eula: true
       version: "1.21.4"
@@ -95,7 +95,7 @@ spec:
       worldSaveName: takocraft
       viewDistance: 12
       # serviceAnnotations:
-      #   lbipam.cilium.io/ips: ${SVC_TAKOCRAFT_ADDR}, ::ffff:${SVC_TAKOCRAFT_ADDR}
+      #   lbipam.cilium.io/ips: 10.69.1.38, ::ffff:10.69.1.38
       # serviceType: LoadBalancer
       spigetResources:
       - 36618 #Prom Exporter

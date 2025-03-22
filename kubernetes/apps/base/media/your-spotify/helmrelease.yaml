@@ -28,10 +28,10 @@ spec:
               repository: yooooomi/your_spotify_server
               tag: 1.12.0@sha256:081b53a4faf529b7e8ceb0147ba10f4780730b729aebf2edb469a8c30441e99a
             env:
-              TIMEZONE: ${TIMEZONE}
+              TIMEZONE: America/Edmonton
               # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
-              API_ENDPOINT: &api_endpoint https://spotty.${SECRET_DOMAIN}/api
-              CLIENT_ENDPOINT: https://spotty.${SECRET_DOMAIN}
+              API_ENDPOINT: &api_endpoint https://spotty.jory.dev/api
+              CLIENT_ENDPOINT: https://spotty.jory.dev
               MONGO_ENDPOINT: mongodb://your-spotify-mongodb:27017/your_spotify #mongo sucks
               PORT: &port 8080
             envFrom:
@@ -92,8 +92,8 @@ spec:
     route:
       app:
         hostnames:
-          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          - "spotty.${SECRET_DOMAIN}"
+          - "{{ .Release.Name }}.jory.dev"
+          - "spotty.jory.dev"
         parentRefs:
           - name: external
             namespace: kube-system

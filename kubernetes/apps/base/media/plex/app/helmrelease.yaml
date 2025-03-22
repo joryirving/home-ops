@@ -33,9 +33,9 @@ spec:
               repository: ghcr.io/joryirving/plex
               tag: 1.41.5.9522@sha256:71a6f2e2e65f51c6b7963950c99c134ab4a9bed859e7d63b87483a3ab5b375fc
             env:
-              TZ: ${TIMEZONE}
-              PLEX_ADVERTISE_URL: https://plex.${SECRET_DOMAIN}:443,http://${SVC_PLEX_ADDR}:32400
-              PLEX_NO_AUTH_NETWORKS: ${CLUSTER_CIDR},${TRUSTED_CIDR}
+              TZ: America/Edmonton
+              PLEX_ADVERTISE_URL: https://plex.jory.dev:443,http://10.69.1.35:32400
+              PLEX_NO_AUTH_NETWORKS: 10.42.0.0/16,192.168.30.0/24
             probes:
               liveness: &probes
                 enabled: true
@@ -77,14 +77,14 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: ${SVC_PLEX_ADDR}, ::ffff:${SVC_PLEX_ADDR}
+          lbipam.cilium.io/ips: 10.69.1.35, ::ffff:10.69.1.35
         ports:
           http:
             port: *port
     route:
       app:
         hostnames:
-          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
+          - "{{ .Release.Name }}.jory.dev"
         parentRefs:
           - name: external
             namespace: kube-system
@@ -123,7 +123,7 @@ spec:
       media:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
           - path: /data
             subPath: media

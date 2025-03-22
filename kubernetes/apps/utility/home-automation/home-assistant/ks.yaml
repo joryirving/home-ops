@@ -16,8 +16,13 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      VOLSYNC_CAPACITY: 5Gi
+      CLUSTER: utility
       GATUS_SUBDOMAIN: hass
+      PVC_VOLSYNC_STORAGECLASS: local-hostpath
+      VOLSYNC_CACHE_SNAPSHOTCLASS: local-hostpath
+      VOLSYNC_CAPACITY: 5Gi
+      VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
+      VOLSYNC_STORAGECLASS: local-hostpath
   prune: true
   retryInterval: 2m
   sourceRef:

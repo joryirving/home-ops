@@ -28,7 +28,7 @@ spec:
               tag: master@sha256:cbf760546bce4e40d195029ccb3ca3357e8074424d53ebe3cb81744a7c15467e
             env:
               ## Container Settings
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               ALWAYS_UPDATE_ON_START: true
               BACKUP_ENABLED: false #volsync is backing up the PVC
               RESTART_ENABLED: false #no one is playing right now.
@@ -47,7 +47,7 @@ spec:
               PUBLIC_PORT: &port 8211
               RCON_ENABLED: true
               RCON_PORT: &rcon-port 25575
-              PUBLIC_IP: palworld.${SECRET_DOMAIN}
+              PUBLIC_IP: palworld.jory.dev
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
@@ -69,7 +69,7 @@ spec:
               tag: v1.3.1
             env:
               ## Container Settings
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               RCON_HOST: localhost
               RCON_PORT: *rcon-port
               SAVE_DIRECTORY: /palworld
@@ -95,7 +95,7 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: ${SVC_PALWORLD_ADDR}, ::ffff:${SVC_PALWORLD_ADDR}
+          lbipam.cilium.io/ips: 10.69.1.39, ::ffff:10.69.1.39
         ports:
           http:
             port: 9877
@@ -116,8 +116,8 @@ spec:
     route:
       app:
         annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.${SECRET_DOMAIN}
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+          external-dns.alpha.kubernetes.io/target: ipv4.jory.dev
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: external
             namespace: kube-system

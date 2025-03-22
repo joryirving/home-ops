@@ -33,7 +33,7 @@ spec:
               repository: jasongdove/ersatztv
               tag: v25.1.0-vaapi@sha256:f845dc4d4d458cdeac89f97b2331fe02bb5877e4772ab9cef0e71b776382a657
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               XDG_DATA_HOME: /config # https://github.com/ErsatzTV/ErsatzTV/issues/327
             probes:
               liveness:
@@ -70,8 +70,8 @@ spec:
     route:
       app:
         hostnames:
-          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          - tv.${SECRET_DOMAIN}
+          - "{{ .Release.Name }}.jory.dev"
+          - tv.jory.dev
         parentRefs:
           - name: internal
             namespace: kube-system
@@ -92,7 +92,7 @@ spec:
       media:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
           - path: /data
             subPath: media

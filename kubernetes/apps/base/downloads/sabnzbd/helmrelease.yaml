@@ -29,7 +29,7 @@ spec:
               repository: ghcr.io/joryirving/sabnzbd
               tag: 4.4.1@sha256:c34563105d23ef9c3adf2d4d9d862be91c13176eccd6c71d6a8b34e4c5e0bd95
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               SABNZBD__PORT: &port 8080
               SABNZBD__HOST_WHITELIST_ENTRIES: >-
                 sabnzbd,
@@ -37,8 +37,8 @@ spec:
                 sabnzbd.downloads.svc,
                 sabnzbd.downloads.svc.cluster,
                 sabnzbd.downloads.svc.cluster.local,
-                sab.${SECRET_DOMAIN},
-                sabnzbd.${SECRET_DOMAIN}
+                sab.jory.dev,
+                sabnzbd.jory.dev
             envFrom:
             - secretRef:
                 name: sabnzbd-secret
@@ -90,8 +90,8 @@ spec:
     route:
       app:
         hostnames:
-          - "{{ .Release.Name }}.${SECRET_DOMAIN}"
-          - sab.${SECRET_DOMAIN}
+          - "{{ .Release.Name }}.jory.dev"
+          - sab.jory.dev
         parentRefs:
           - name: internal
             namespace: kube-system
@@ -106,7 +106,7 @@ spec:
       downloads:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
         - path: /downloads
           subPath: usenet

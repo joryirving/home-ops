@@ -10,6 +10,9 @@ spec:
       app.kubernetes.io/name: *app
   interval: 1h
   path: ./kubernetes/apps/base/kube-system/cilium/app
+  postBuild:
+    substitute:
+      CLUSTER: main
   prune: true
   sourceRef:
     kind: GitRepository
@@ -50,8 +53,11 @@ spec:
   path: ./kubernetes/apps/base/kube-system/cilium/gateway
   postBuild:
     substitute:
+      CLUSTER: main
       EXTERNAL_DOMAIN: external
       INTERNAL_DOMAIN: internal
+      SVC_GATEWAY_EXTERNAL: 10.69.1.32
+      SVC_GATEWAY_INTERNAL: 10.69.1.31
   prune: true
   sourceRef:
     kind: GitRepository

@@ -30,7 +30,7 @@ spec:
               repository: mrcas/kapowarr
               tag: v1.1.1@sha256:5179333c44619f6938814bceb2cb0d1c65bbe2302077de56e56e2568be06b08f
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
             resources:
               requests:
                 cpu: 15m
@@ -45,7 +45,7 @@ spec:
             port: &port 5656
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system
@@ -62,6 +62,6 @@ spec:
       data:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
           - path: /data

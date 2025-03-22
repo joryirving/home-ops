@@ -30,7 +30,7 @@ spec:
               tag: latest-build-412
             env:
               FEED_ID: LILDRUNKENSMURF-ACARS-1
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               SOAPYSDR: driver=rtlsdr
               FREQUENCIES: 130.425;130.850;131.475;131.550;131.725
               # Enabling all frequencies to determine which are actually used
@@ -61,7 +61,7 @@ spec:
               tag: latest-build-348
             env:
               FEED_ID: LILDRUNKENSMURF-VDL2-1
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               SOAPYSDR: driver=rtlsdr
               FREQUENCIES: "136.975;136.650"
               ZMQ_MODE: server
@@ -84,7 +84,7 @@ spec:
               repository: ghcr.io/sdr-enthusiasts/acars_router
               tag: latest-build-494
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               AR_SEND_UDP_ACARS: acars-acarshub:5550;${ACARSDRAMA_ACARS}
               AR_SEND_UDP_VDLM2: acars-acarshub:5555;${ACARSDRAMA_VDLM2}
               AR_RECV_ZMQ_VDLM2: acars-acarshub:45555
@@ -136,7 +136,7 @@ spec:
               repository: ghcr.io/sdr-enthusiasts/docker-acarshub
               tag: v3.8.1Build1405_linux_amd64_nohealthcheck
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               ENABLE_ADSB: "false"
               ENABLE_ACARS: external
               # ENABLE_VDLM: external
@@ -181,7 +181,7 @@ spec:
             port: 15555
     route:
       acarshub:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: external
             namespace: kube-system

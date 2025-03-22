@@ -49,7 +49,7 @@ spec:
               READARR__POSTGRES__USER: *app
               READARR__SERVER__PORT: &port 80
               READARR__UPDATE__BRANCH: develop
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
             envFrom:
             - secretRef:
                 name: readarr-secret
@@ -73,7 +73,7 @@ spec:
             port: *port
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system
@@ -90,6 +90,6 @@ spec:
       data:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
         - path: /data

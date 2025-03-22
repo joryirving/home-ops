@@ -30,7 +30,7 @@ spec:
               repository: ghcr.io/joryirving/bazarr
               tag: 1.5.1@sha256:ee7d9791265d5369800c334c4eca3bb4a27dcffcd35ef00d7ab0239d5768ca85
             env:
-              TZ: ${TIMEZONE}
+              TZ: America/Edmonton
               POSTGRES_DATABASE: *app
               POSTGRES_ENABLED: "true"
               POSTGRES_HOST: bazarr-pgbouncer.downloads.svc
@@ -104,7 +104,7 @@ spec:
           gethomepage.dev/widget.type: bazarr
           gethomepage.dev/widget.url: http://bazarr.downloads:6767
           gethomepage.dev/widget.key: "{{ `{{HOMEPAGE_VAR_BAZARR_TOKEN}}` }}"
-        hostnames: ["{{ .Release.Name }}.${SECRET_DOMAIN}"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system
@@ -125,7 +125,7 @@ spec:
       data:
         type: nfs
         server: voyager.internal
-        path: ${SECRET_NFS_DATA}
+        path: /mnt/user/data
         globalMounts:
         - path: /data
       log:
