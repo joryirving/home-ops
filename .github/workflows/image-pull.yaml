@@ -102,6 +102,15 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
+      - name: Attest
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          case "${{ matrix.images }}" in
+            *joryirving*)
+              gh attestation verify --owner joryirving oci://${{ matrix.images }}
+              ;;
+          esac
       - name: Install talosctl
         run: curl -fsSL https://talos.dev/install | sh
 
@@ -109,7 +118,7 @@ jobs:
         run: talosctl --nodes $NODE image pull ${{ matrix.images }}
 
   status:
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     name: Image Pull - Success
     needs: pull
     runs-on: ubuntu-latest

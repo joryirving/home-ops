@@ -105,18 +105,18 @@ jobs:
       - name: Add comment
         if: ${{ steps.diff.outputs.diff != '' }}
         continue-on-error: true
-        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2.8.2
+        uses: marocchino/sticky-pull-request-comment@52423e01640425a022ef5fd42c6fb5f633a02728 # v2.9.1
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
-          repo-token: ${{ steps.app-token.outputs.token }}
-          message-id: ${{ github.event.pull_request.number }}/${{ matrix.cluster }}/${{ matrix.resources }}
-          message-failure: Diff was not successful
+          header: "${{ github.event.pull_request.number }}/kubernetes/${{ matrix.resources }}"
           message: |
             ```diff
             ${{ steps.diff.outputs.diff }}
             ```
 
   status:
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     name: Flux Local - Success
     needs: ["test", "diff"]
     runs-on: ubuntu-latest
