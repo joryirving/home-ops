@@ -40,24 +40,17 @@ spec:
       reloader.stakater.com/auto: "true"
     fullnameOverride: headlamp
     initContainers:
-      - image: ghcr.io/headlamp-k8s/headlamp-plugin-flux:v0.1.0-beta-2@sha256:c63dc4e10d7ddb95c966194b5e6fbe2012feb7f932bafa24692daed3cf6c248a
+      - image: ghcr.io/headlamp-k8s/headlamp-plugin-flux:v0.2.0@sha256:6727bb58c95feef9f62f8fe125c244601d31ca62eab546b0f88c045560ed33de
         command:
           - /bin/sh
           - -c
-          - mkdir -p /build/plugins && cp -r /plugins/* /build/plugins/
+          - mkdir -p /build/plugins/flux && cp -r /plugins/* /build/plugins/
         name: headlamp-plugins
         volumeMounts:
           - mountPath: /build/plugins
             name: headlamp-plugins
     config:
-      # oidc:
-      #   secret:
-      #     create: false
-      #   externalSecret:
-      #     enabled: true
-      #     name: headlamp-secret
       pluginsDir: /build/plugins
-
     persistentVolumeClaim:
       enabled: true
       accessModes: ["${STORAGECLASS_ACCESSMODE}"]
