@@ -51,6 +51,11 @@ spec:
             name: headlamp-plugins
     config:
       pluginsDir: /build/plugins
+    serviceAccount:
+      create: false
+      name: headlamp-admin
+    clusterRoleBinding:
+      create: false
     persistentVolumeClaim:
       enabled: true
       accessModes: ["${STORAGECLASS_ACCESSMODE}"]
@@ -62,8 +67,3 @@ spec:
     volumes:
       - name: headlamp-plugins
         emptyDir: {}
-    securityContext:
-      runAsNonRoot: true
-      privileged: false
-      runAsUser: 1000
-      runAsGroup: 100
