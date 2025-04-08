@@ -2,19 +2,39 @@
 - id: sonarr-refresh-series
   execute-command: /config/sonarr-refresh-series.sh
   command-working-directory: /config
-  pass-arguments-to-command:
-    - source: request
+  pass-environment-to-command:
+    - envname: SONARR_REMOTE_ADDR
+      source: request
       name: remote-addr
-    - source: string
+    - envname: SONARR_API_KEY
+      source: string
       name: '{{ getenv "SONARR_API_KEY" }}'
-    - source: entire-payload
+    - envname: SONARR_EVENT_TYPE
+      source: payload
+      name: eventType
+    - envname: SONARR_SERIES_ID
+      source: payload
+      name: series.id
+    - envname: SONARR_SERIES_TITLE
+      source: payload
+      name: series.title
 
 - id: sonarr-tag-codecs
   execute-command: /config/sonarr-tag-codecs.sh
   command-working-directory: /config
-  pass-arguments-to-command:
-    - source: request
+  pass-environment-to-command:
+    - envname: SONARR_REMOTE_ADDR
+      source: request
       name: remote-addr
-    - source: string
+    - envname: SONARR_API_KEY
+      source: string
       name: '{{ getenv "SONARR_API_KEY" }}'
-    - source: entire-payload
+    - envname: SONARR_EVENT_TYPE
+      source: payload
+      name: eventType
+    - envname: SONARR_SERIES_ID
+      source: payload
+      name: series.id
+    - envname: SONARR_SERIES_TITLE
+      source: payload
+      name: series.title
