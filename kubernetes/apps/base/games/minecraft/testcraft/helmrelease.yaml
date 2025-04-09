@@ -1,0 +1,107 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: minecraft-testcraft
+spec:
+  interval: 5m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 4.26.1
+  url: oci://ghcr.io/itzg/minecraft-server-charts/minecraft
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app minecraft-testcraft
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: minecraft-testcraft
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    image:
+      repository: ghcr.io/itzg/minecraft-server
+      tag: 2025.4.0@sha256:ebd8e1308013c320168f436076dc5e854172be0131dd89c8406c5a4b6bc3da0a
+    resources:
+      requests:
+        cpu: 500m
+      limits:
+        memory: 8Gi
+    securityContext:
+      runAsUser: 1000
+      fsGroup: 100
+    livenessProbe:
+      enabled: false
+      command:
+        - echo
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      failureThreshold: 20
+      successThreshold: 1
+      timeoutSeconds: 1
+    readinessProbe:
+      enabled: false
+      command:
+        - echo
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      failureThreshold: 20
+      successThreshold: 1
+      timeoutSeconds: 1
+    startupProbe:
+      command:
+        - echo
+      enabled: false
+      failureThreshold: 30
+      periodSeconds: 10
+    extraEnv:
+      TZ: America/Edmonton
+      ENABLE_AUTOPAUSE: TRUE # Doesn't work in Kubes
+    persistence:
+      dataDir:
+        enabled: true
+        existingClaim: *app
+    serviceAnnotations:
+      mc-router.itzg.me/externalServerName: &host testcraft.jory.dev
+    minecraftServer:
+      eula: true
+      version: "1.21.4"
+      type: PAPER
+      overrideServerProperties: true
+      jvmXXOpts: "-XX:MaxRAMPercentage=75"
+      memory: 8192M
+      difficulty: normal
+      spawnProtection: 0
+      gameMode: survival
+      pvp: false
+      onlineMode: true
+      #whitelist: "LilDrunkenSmurf"
+      ops: "LilDrunkenSmurf"
+      motd: "Testcraft. This is a test server"
+      worldSaveName: testcraft
+      viewDistance: 12
+      # serviceAnnotations:
+      #   lbipam.cilium.io/ips: 10.69.1.38, ::ffff:10.69.1.38
+      # serviceType: LoadBalancer
+      spigetResources:
+      - 36618 #Prom Exporter
+      - 18494 #DiscordSRV
+      rcon:
+        enabled: true
+  valuesFrom:
+  - kind: Secret
+    name: testcraft-minecraft
+    valuesKey: RCON_PASSWORD
+    targetPath: minecraftServer.rcon.password
