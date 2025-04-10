@@ -1,17 +1,13 @@
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
-apiVersion: source.toolkit.fluxcd.io/v1beta2
-kind: OCIRepository
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
 metadata:
-  name: minecraft-testcraft
+  name: itzg-charts
+  namespace: games # Required for Renovate lookups
 spec:
-  interval: 5m
-  layerSelector:
-    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
-    operation: copy
-  ref:
-    tag: 4.26.1
-  url: oci://ghcr.io/itzg/minecraft-server-charts/minecraft
+  interval: 2h
+  url: https://itzg.github.io/minecraft-server-charts/
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -20,9 +16,15 @@ metadata:
   name: &app minecraft-testcraft
 spec:
   interval: 1h
-  chartRef:
-    kind: OCIRepository
-    name: minecraft-testcraft
+  chart:
+    spec:
+      # renovate: registryUrl=https://itzg.github.io/minecraft-server-charts/
+      chart: minecraft
+      version: 4.26.1
+      sourceRef:
+        kind: HelmRepository
+        name: itzg-charts
+        namespace: games
   install:
     remediation:
       retries: -1
@@ -31,77 +33,65 @@ spec:
     remediation:
       retries: 3
   values:
-    image:
-      repository: ghcr.io/itzg/minecraft-server
-      tag: 2025.4.0@sha256:ebd8e1308013c320168f436076dc5e854172be0131dd89c8406c5a4b6bc3da0a
-    resources:
-      requests:
-        cpu: 500m
-      limits:
-        memory: 8Gi
-    securityContext:
-      runAsUser: 1000
-      fsGroup: 100
-    livenessProbe:
-      enabled: false
-      command:
-        - echo
-      initialDelaySeconds: 30
-      periodSeconds: 5
-      failureThreshold: 20
-      successThreshold: 1
-      timeoutSeconds: 1
-    readinessProbe:
-      enabled: false
-      command:
-        - echo
-      initialDelaySeconds: 30
-      periodSeconds: 5
-      failureThreshold: 20
-      successThreshold: 1
-      timeoutSeconds: 1
-    startupProbe:
-      command:
-        - echo
-      enabled: false
-      failureThreshold: 30
-      periodSeconds: 10
-    extraEnv:
-      TZ: America/Edmonton
-      ENABLE_AUTOPAUSE: TRUE # Doesn't work in Kubes
-    persistence:
-      dataDir:
+      deploymentAnnotations:
+        secret.reloader.stakater.com/reload: &secret minecraft-secret
+      image:
+        repository: itzg/minecraft-server
+        tag: 2025.4.0-java21
+      resources:
+        limits:
+          cpu: 2000m
+          memory: 4000Mi
+        requests:
+          cpu: 200m
+          memory: 2000Mi
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 100
+      livenessProbe:
+        initialDelaySeconds: 0
+      readinessProbe:
+        initialDelaySeconds: 0
+      startupProbe:
         enabled: true
-        existingClaim: *app
-    serviceAnnotations:
-      mc-router.itzg.me/externalServerName: &host testcraft.jory.dev
-    minecraftServer:
-      eula: true
-      version: "1.21.4"
-      type: PAPER
-      overrideServerProperties: true
-      jvmXXOpts: "-XX:MaxRAMPercentage=75"
-      memory: 8192M
-      difficulty: normal
-      spawnProtection: 0
-      gameMode: survival
-      pvp: false
-      onlineMode: true
-      #whitelist: "LilDrunkenSmurf"
-      ops: "LilDrunkenSmurf"
-      motd: "Testcraft. This is a test server"
-      worldSaveName: testcraft
-      viewDistance: 12
-      # serviceAnnotations:
-      #   lbipam.cilium.io/ips: 10.69.1.38, ::ffff:10.69.1.38
-      # serviceType: LoadBalancer
-      spigetResources:
-      - 36618 #Prom Exporter
-      - 18494 #DiscordSRV
-      rcon:
-        enabled: true
+      extraEnv:
+        ENABLE_ROLLING_LOGS: true
+        MEMORY: ""
+      persistence:
+        dataDir:
+          enabled: true
+          existingClaim: minecraft-testcraft
+      serviceAnnotations:
+        coredns.io/hostname: minecraft-server.${SECRET_DOMAIN}
+      minecraftServer:
+        eula: true
+        version: 1.21.4
+        type: PAPER
+        difficulty: normal
+        pvp: true
+        whitelist: "LilDrunkenSmurf"
+        ops: "LilDrunkenSmurf"
+        motd: Meh
+        worldSaveName: world
+        viewDistance: 12
+        forceReDownload: true
+        memory: ""
+        jvmXXOpts: "-XX:MaxRAMPercentage=70"
+        rcon:
+          enabled: true
+          serviceType: ClusterIP
+        serviceType: LoadBalancer
+        extraPorts:
+          - name: map
+            containerPort: 8100
+            protocol: TCP
+            service:
+              enabled: true
+              embedded: false
+              type: ClusterIP
+              port: 8100
   valuesFrom:
-  - kind: Secret
-    name: *app
-    valuesKey: RCON_PASSWORD
-    targetPath: minecraftServer.rcon.password
+    - kind: Secret
+      name: *secret
+      valuesKey: RCON_PASSWORD
+      targetPath: minecraftServer.rcon.password
