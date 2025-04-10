@@ -37,52 +37,33 @@ spec:
       tag: 2025.4.0@sha256:ebd8e1308013c320168f436076dc5e854172be0131dd89c8406c5a4b6bc3da0a
     resources:
       requests:
-        cpu: 500m
+        cpu: 200m
       limits:
-        memory: 8Gi
+        cpu: 2000m
+        memory: 4Gi
     securityContext:
       runAsUser: 1000
       fsGroup: 100
     livenessProbe:
-      enabled: false
-      command:
-        - echo
       initialDelaySeconds: 30
-      periodSeconds: 5
-      failureThreshold: 20
-      successThreshold: 1
-      timeoutSeconds: 1
     readinessProbe:
-      enabled: false
-      command:
-        - echo
       initialDelaySeconds: 30
-      periodSeconds: 5
-      failureThreshold: 20
-      successThreshold: 1
-      timeoutSeconds: 1
     startupProbe:
-      command:
-        - echo
-      enabled: false
-      failureThreshold: 30
-      periodSeconds: 10
+        enabled: true
     extraEnv:
       TZ: America/Edmonton
-      ENABLE_AUTOPAUSE: TRUE # Doesn't work in Kubes
     persistence:
       dataDir:
         enabled: true
         existingClaim: *app
     serviceAnnotations:
-      mc-router.itzg.me/externalServerName: &host takocraft.jory.dev
+      mc-router.itzg.me/externalServerName: takocraft.jory.dev
     minecraftServer:
       eula: true
-      version: "1.21.4"
+      version: 1.21.4
       type: PAPER
       overrideServerProperties: true
       jvmXXOpts: "-XX:MaxRAMPercentage=75"
-      memory: 8192M
       difficulty: normal
       spawnProtection: 0
       gameMode: survival
@@ -93,12 +74,8 @@ spec:
       motd: "Takocraft. This is the old Vibecraft"
       worldSaveName: takocraft
       viewDistance: 12
-      # serviceAnnotations:
-      #   lbipam.cilium.io/ips: 10.69.1.38, ::ffff:10.69.1.38
-      # serviceType: LoadBalancer
       spigetResources:
       - 36618 #Prom Exporter
-      - 18494 #DiscordSRV
       rcon:
         enabled: true
   valuesFrom:
