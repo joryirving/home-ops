@@ -18,7 +18,7 @@ spec:
       retries: 3
   values:
     controllers:
-      acarsdec:
+      acars-dec:
         annotations:
           reloader.stakater.com/auto: "true"
         replicas: 1
@@ -38,7 +38,7 @@ spec:
               # FREQUENCIES: >-
               #   130.025;130.425;130.450;130.825;130.850;131.125;131.425;
               #   131.450;131.475;131.525;131.550;131.725;131.825;131.850
-              OUTPUT_SERVER: acars-acarsrouter
+              OUTPUT_SERVER: acars-acars-router
               OUTPUT_SERVER_PORT: "5550"
               OUTPUT_SERVER_MODE: tcp
             resources:
@@ -64,7 +64,7 @@ spec:
               SOAPYSDR: driver=rtlsdr
               FREQUENCIES: "136.975;136.650"
               ZMQ_MODE: server
-              ZMQ_ENDPOINT: tcp://acars-acarsrouter:45555
+              ZMQ_ENDPOINT: tcp://acars-acars-router:45555
             resources:
               requests:
                 cpu: 10m
@@ -73,38 +73,38 @@ spec:
                 memory: 256Mi
             securityContext:
               privileged: true
-      acarsrouter:
+      acars-router:
         annotations:
           reloader.stakater.com/auto: "true"
         replicas: 1
         containers:
-          acarsrouter:
+          acars-router:
             image:
               repository: ghcr.io/sdr-enthusiasts/acars_router
               tag: latest-build-494
             env:
               TZ: America/Edmonton
-              AR_SEND_UDP_ACARS: acars-acarshub:5550;${ACARSDRAMA_ACARS}
-              AR_SEND_UDP_VDLM2: acars-acarshub:5555;${ACARSDRAMA_VDLM2}
-              AR_RECV_ZMQ_VDLM2: acars-acarshub:45555
+              AR_SEND_UDP_ACARS: acars-acars-hub:5550;${ACARSDRAMA_ACARS}
+              AR_SEND_UDP_VDLM2: acars-acars-hub:5555;${ACARSDRAMA_VDLM2}
+              AR_RECV_ZMQ_VDLM2: acars-acars-hub:45555
             resources:
               requests:
                 cpu: 10m
                 memory: 128Mi
               limits:
                 memory: 256Mi
-      acarsannotator:
+      acars-processor:
         annotations:
           reloader.stakater.com/auto: "true"
         replicas: 1 # active nas
         type: statefulset
         containers:
-          acarshub:
+          acars-processor:
             image:
-              repository: ghcr.io/tyzbit/acars-annotator
-              tag: v0.10.0
+              repository: ghcr.io/tyzbit/acars-processor
+              tag: v0.11.5@sha256:60daee8abccf3051e7aac179a36aa0f00c86c56e46b5297dd9582fe14452f499
             env:
-              ACARSHUB_HOST: acars-acarshub
+              ACARSHUB_HOST: acars-acars-hub
               ACARSHUB_PORT: "15550"
               ANNOTATE_ACARS: "true"
               ACARS_ANNOTATOR_SELECTED_FIELDS: >-
@@ -113,8 +113,131 @@ spec:
                 acarsFlightNumber
                 acarsFrequencyMHz
                 acarsMessageText
-              FILTER_CRITERIA_DICTIONARY_PHRASE_LENGTH_MINIMUM: "2"
+              # FILTER_CRITERIA_DICTIONARY_PHRASE_LENGTH_MINIMUM: "2"
               FILTER_CRITERIA_HAS_TEXT: "true"
+              FILTER_OLLAMA_URL: http://voyager.internal:11434
+              FILTER_OLLAMA_MODEL: llama3.2
+              FILTER_OLLAMA_PROMPT: &prompt |
+                This message was sent between aircraft and air traffic control.
+                Rarely, messages like these have sections with communication
+                that is interesting to air travel enthusiasts. The communication
+                may be included after various types of sort generated reports
+                or message headers. If the message starts out with "DISP",
+                "MSG FROM" it definitely has a message interesting to air travel
+                enthusiasts because automated systems don't output "MSG FROM"
+                Likewise, "--FREETEXT--" means the message was typed by a
+                person. Air travel enthusiasts care the most about human-typed
+                messages, not computer generated reports. They know acronyms
+                that the general public might know, and probably won't know
+                most other terminology used in messages.
+
+
+                For example:
+                ```
+                MSG FROM DISP WAS THAT A TYPO QM YOU WERE FILED FOR FL290
+                ```
+
+                This is interesting to air travel enthusiasts because
+                - The message is to or from dispatch, which is usually
+                important communication.
+                - The message concerns a typo. Air travel enthusiasts are
+                interested in seeing "behind the scenes", which includes
+                mistakes or dramatic situations.
+                - Air travel enthusiasts may not know what FL290 means but
+                because there aren't many acronyms or technical lingo, they
+                can still understand what the message is saying.
+
+                This is a harder message, but it is still
+                considered interesting:
+
+                ```
+                C314           3HELLO
+                OIL IS AT 10.0/10.0
+                THANK YOU
+
+
+
+
+                ```
+
+                Air travel enthusiasts wouldn't know what C314 means,
+                but if the message has any greetings or pleasantries such as
+                "HELLO", "HEY", or "THNAK YOU", it is now unambiguously clear
+                that this message contains interesting communication. It is also
+                a short message, which is common because pilots and ATC want to
+                minimize the amount of time they spend typing due to the
+                critical nature of their jobs.
+
+                Also, if the message sounds dramatic such as referring to an
+                emergency, life vests, passengers (the shorthand PAX is used),
+                comments or questions about bad weather (known as SIGMET,
+                weather in general is referred to as WX), or reads as a person
+                reporting a serious situation, it is definitely interesting to
+                air travel enthusiasts.
+
+                This is the last example of meaningful communication:
+                ```
+                3A01 OPSCTL 0364/14 KRSW/KHVN .N804VL
+                TELL ROMAN TO SLOW DOWN
+                LOL WE ARE GONNA
+                TRY AND MAKE SOME TIME
+                ```
+
+                The message starts off with information that might be used to
+                route the message which enthusiasts won't know what they mean.
+                The presence of OPS, though, means it's probably a message
+                to Operations, but it still might be computer generated. Then
+                the author writes a humorous and friendly message asking Roman
+                to slow down and adding that they are going to try to make some
+                time. Since automatically generated messages don't use names,
+                English shorthand (LOL) or inform about planned actions, this is
+                definitely interesting to enthusiasts.
+
+                This does not have interesting information to a hobbyist:
+
+                ```
+                POSN36188W077155,GUILD,022722,335,DEEEZ,023833,ESCHR,M49,27459,
+                154A785RESREQ/AK,1158AF6PER/PR1326,303,360,153,,0,53,,M56,180,,,
+                P40,P0,36090,,1173,31729A4RESREQ/AK,1158AF6FPN/FNAAL2816/RP:DA:
+                KDCA:AA:KJAX:CR:KDCAKJAX:R:19O(26O):D:AMEEE1.SCOOB:A:LUNNI1.ESENT
+                :AP:ILSY26..GUILD,N36188W077150.Q409.SESUE..ESENT,N32095W080551:
+                V:ESENT,,AA2800,5F52
+                ```
+
+                This is virtually entirely technical information that requires
+                software a hobbyist would not have to parse. Most messages will
+                be automatically generated by software intended to be ingested
+                by other air travel related software familiar with the format.
+                Messages with a lot of alphanumeric characters or groups of
+                characters that do not make a grammatically correct sentence
+                is not interesting communication.
+
+                Another message that does not have interesting communication:
+                ```
+                POSN 37.177W 75.729,  71,024200,29004,28040,  63,-39,031712,
+                KPHLN 371037W 754344,-------,024200,29004, ,      , ,M 39,
+                28040  63,  71,
+                ```
+
+                This is mostly data and numbers. An air travel hobbyist would
+                prefer to see things pilots and air traffic controllers have
+                manually written.
+
+                Here are some examples of text that, if present, means the
+                message is not relevant to air traffic enthusiasts:
+                - ROB SLAT DIS PROX
+                - FPN/
+                - HOWGOZIT
+
+                Punctuation you might expect for English sentences being omitted
+                is not a strong indicator whether an interesting message is
+                present. There may be commas, periods spaces and newlines in
+                unusual places or there might be a lot of extra whitespace.
+                Personal communication will most likely be in ALL CAPS.
+                Newlines might also be in the middle of words.
+
+                Based on the information provided, does this message have
+                communication that is interesting to air travel enthusiasts?
               LOGLEVEL: debug
             envFrom:
               - secretRef:
@@ -125,13 +248,13 @@ spec:
                 memory: 64Mi
               limits:
                 memory: 64Mi
-      acarshub:
+      acars-hub:
         annotations:
           reloader.stakater.com/auto: "true"
         replicas: 1 # active nas
         type: statefulset
         containers:
-          acarshub:
+          acars-hub:
             image:
               repository: ghcr.io/sdr-enthusiasts/docker-acarshub
               tag: v3.8.1Build1405_nohealthcheck
@@ -151,8 +274,8 @@ spec:
       nodeSelector:
         rtl.feature.node.kubernetes.io/rtlsdr: "true"
     service:
-      acarsrouter:
-        controller: acarsrouter
+      acars-router:
+        controller: acars-router
         type: ClusterIP
         ports:
           router:
@@ -163,8 +286,8 @@ spec:
         ports:
           vdl:
             port: 45555
-      acarshub:
-        controller: acarshub
+      acars-hub:
+        controller: acars-hub
         type: ClusterIP
         ports:
           http:
@@ -180,7 +303,7 @@ spec:
           vdsloutput:
             port: 15555
     route:
-      acarshub:
+      acars-hub:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: external
@@ -188,24 +311,12 @@ spec:
             sectionName: https
         rules:
           - backendRefs:
-              - name: acarshub
+              - name: acars-hub
                 port: 80
     persistence:
-      # usb:
-      #   type: hostPath
-      #   hostPath: /dev/bus/usb
-      #   advancedMounts:
-      #     acarsdec:
-      #       acarsdec:
-      #         - path: /dev/bus/usb
-      #     dumpvdl2:
-      #       dumpvld2:
-      #         - path: /dev/bus/usb
-      # run:
-      #   type: emptyDir
-      acarshub:
+      acars-hub:
         existingClaim: *app
         advancedMounts:
-          acarshub:
-            acarshub:
+          acars-hub:
+            acars-hub:
               - path: /run/acars
