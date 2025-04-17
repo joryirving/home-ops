@@ -16,28 +16,22 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  dependsOn:
+    - name: intel-device-plugin-gpu
+      namespace: kube-tools
   values:
     controllers:
       ollama:
         replicas: 1
         annotations:
           reloader.stakater.com/auto: "true"
-        pod:
-          affinity:
-            podAntiAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                - topologyKey: "kubernetes.io/hostname"
-                  labelSelector:
-                    matchExpressions:
-                      - key: app.kubernetes.io/name
-                        operator: In
-                        values:
-                          - ollama
         containers:
           app:
             image:
               repository: ghcr.io/tyzbit/ollama-intel-gpu
               tag: latest
+            securityContext:
+              privileged: true
             env:
               # --- Intel GPU
               DEVICE: Arc
@@ -60,8 +54,7 @@ spec:
                 cpu: 200m
               limits:
                 memory: 12Gi
-            securityContext:
-              privileged: true
+                gpu.intel.com/i915: 1
     service:
       app:
         controller: *app
