@@ -115,65 +115,90 @@ spec:
                 acarsMessageText
               # FILTER_CRITERIA_DICTIONARY_PHRASE_LENGTH_MINIMUM: "2"
               FILTER_CRITERIA_HAS_TEXT: "true"
-              FILTER_OLLAMA_URL: http://voyager.internal:11434
+              FILTER_OLLAMA_FILTER_ON_FAILURE: "true"
               FILTER_OLLAMA_MODEL: llama3.2
+              FILTER_OLLAMA_URL: http://voyager.internal:11434
               FILTER_OLLAMA_PROMPT: &prompt |
                 This message was sent between aircraft and air traffic control.
-                Rarely, messages like these have sections with communication
-                that is interesting to air travel enthusiasts. The communication
-                may be included after various types of sort generated reports
-                or message headers. If the message starts out with "DISP",
-                "MSG FROM" it definitely has a message interesting to air travel
-                enthusiasts because automated systems don't output "MSG FROM"
-                Likewise, "--FREETEXT--" means the message was typed by a
-                person. Air travel enthusiasts care the most about human-typed
-                messages, not computer generated reports. They know acronyms
-                that the general public might know, and probably won't know
-                most other terminology used in messages.
+                Rarely, messages like these have prose in them that
+                is interesting to air travel enthusiasts because it was was
+                written by a pilot or air traffic controllers. The messages
+                they care about most often read like instant messages or
+                text messages.
 
+                If a message has prose that comes across as emotional or
+                dramatic in any way, including but NOT limited to friendly,
+                angry, alarmed, scared  or stressed, then it is definitely
+                something air travel enthusiasts want to see because they are
+                interested in air travel situations that are dramatic, comedic,
+                friendly or otherwise show the interactions of people behind the
+                scenes of air travel.
 
-                For example:
-                ```
-                MSG FROM DISP WAS THAT A TYPO QM YOU WERE FILED FOR FL290
-                ```
-
-                This is interesting to air travel enthusiasts because
-                - The message is to or from dispatch, which is usually
-                important communication.
-                - The message concerns a typo. Air travel enthusiasts are
-                interested in seeing "behind the scenes", which includes
-                mistakes or dramatic situations.
-                - Air travel enthusiasts may not know what FL290 means but
-                because there aren't many acronyms or technical lingo, they
-                can still understand what the message is saying.
-
-                This is a harder message, but it is still
-                considered interesting:
-
-                ```
-                C314           3HELLO
-                OIL IS AT 10.0/10.0
-                THANK YOU
-
-
-
-
-                ```
-
-                Air travel enthusiasts wouldn't know what C314 means,
-                but if the message has any greetings or pleasantries such as
-                "HELLO", "HEY", or "THNAK YOU", it is now unambiguously clear
-                that this message contains interesting communication. It is also
-                a short message, which is common because pilots and ATC want to
-                minimize the amount of time they spend typing due to the
-                critical nature of their jobs.
-
-                Also, if the message sounds dramatic such as referring to an
+                If prose in the message refers to a serious situation like an
                 emergency, life vests, passengers (the shorthand PAX is used),
-                comments or questions about bad weather (known as SIGMET,
-                weather in general is referred to as WX), or reads as a person
-                reporting a serious situation, it is definitely interesting to
-                air travel enthusiasts.
+                comments or questions about bad weather (known as SIGMET),
+                unusual situations (for example, an aircraft with only one
+                passenger or a request that looks like it's for a VIP),
+                devices on the aircraft (such as coffee makers or lavatories -
+                shorthand: LAV) or otherwise reads as a person reporting an
+                important situation, air travel enthusiasts definitely want to
+                see it.
+
+                If the message has any of these strings, then air travel
+                enthusiasts want to see it because automated systems don't
+                use these terms:
+
+                - DISP
+                - MSG FROM
+                - MEET
+                - HELLO
+                - HEY
+                - PAX
+                - FREETEXT
+                - CHOP
+
+                Here's an example message air travel enthusiasts want to see:
+                ```
+                C313YYZ        1PAX IN 22C WAS VAPING. P
+                LEASE HAVE CSM MEET US.
+                HE APOLOGIZED.
+                CHEERS ALEX
+
+
+
+                ```
+
+                This is interesting to them because:
+
+                - It mentions a passenger (PAX) was vaping, which is against
+                the law to do on aircraft. Air travel enthusiasts are interested
+                in situations where rules or laws are being broken.
+                - It mentions the passenger apologizing. This adds a human
+                element to the events and makes the message more interesting
+                because air travel enthusiasts like drama.
+                - It has "CHEERS ALEX" which is a friendly sign-off written by
+                a person. Air travel enthusiasts want to see things written by
+                people and friendly greetings and closings, like you might see
+                in text messages or personal emails, mean the message is
+                written by a person and thus is interesting to air travel
+                enthusiasts.
+
+                This is a harder message because it is extremely short, but it
+                is still considered interesting:
+
+                ```
+                171730  CHS  JFK3
+                          A
+                WIND 50 KTS STRONGER THAN PLANNED
+                ```
+
+                The prose in the message starts with "WIND 50 KTS STRONGER...",
+                which describes a potentially dangerous or harrowing situation,
+                since strong winds are dangerous to an aircraft. The message was
+                also clearly human-written since a generated report would not
+                include interpretation or commentary such as "STRONGER THAN
+                PLANNED". This is definitely a message air traffic enthusiasts
+                want to see.
 
                 This is the last example of meaningful communication:
                 ```
@@ -183,17 +208,15 @@ spec:
                 TRY AND MAKE SOME TIME
                 ```
 
-                The message starts off with information that might be used to
-                route the message which enthusiasts won't know what they mean.
-                The presence of OPS, though, means it's probably a message
-                to Operations, but it still might be computer generated. Then
-                the author writes a humorous and friendly message asking Roman
-                to slow down and adding that they are going to try to make some
-                time. Since automatically generated messages don't use names,
-                English shorthand (LOL) or inform about planned actions, this is
-                definitely interesting to enthusiasts.
+                The presence of OPS means it's probably bespoke prose to or
+                from Operations. The message then has a humorous and friendly
+                message asking Roman to slow down and adding that they
+                are going to try to make some time.  Since automatically
+                generated messages don't use English shorthand (LOL) or inform
+                about planned actions, this is definitely something air travel
+                enthusiasts want to see.
 
-                This does not have interesting information to a hobbyist:
+                This is a message an air travel enthusiast is NOT interested in:
 
                 ```
                 POSN36188W077155,GUILD,022722,335,DEEEZ,023833,ESCHR,M49,27459,
@@ -204,40 +227,111 @@ spec:
                 V:ESENT,,AA2800,5F52
                 ```
 
-                This is virtually entirely technical information that requires
-                software a hobbyist would not have to parse. Most messages will
-                be automatically generated by software intended to be ingested
-                by other air travel related software familiar with the format.
-                Messages with a lot of alphanumeric characters or groups of
-                characters that do not make a grammatically correct sentence
-                is not interesting communication.
+                This is virtually entirely raw diagnostic data that requires
+                software that a hobbyist would NOT care about. Air travel
+                enthusiasts want to see messages from people and messages
+                written by people are more free-form, may contain errors and
+                read more like a natural conversation or prose.
 
-                Another message that does not have interesting communication:
+                Another message that air travel enthusiasts don't want to see:
+
                 ```
-                POSN 37.177W 75.729,  71,024200,29004,28040,  63,-39,031712,
-                KPHLN 371037W 754344,-------,024200,29004, ,      , ,M 39,
-                28040  63,  71,
+                PAGE 00001
+                MDC REPORT: ENGINE TREND
+                WRITE OPTION: ACARS AUTO
+                FILENAME: AC15315J.ETD
+                TIME: 22:36
+                DATE: 17Apr2025
+                MDC APPLICATION PN: 832-6207-426
+                MDC TABLES PN:      810-0042-115
+
+
+                LEG:18226  DATE:17APR25 TIME:22:36
+
+                ------------------------------------
+                L N1                      84.8 %
+                R N1                      84.8 %
+                L N2                      88.4 %
+                R N2                      88.1 %
+                L ITT                      831 C
+                R ITT                      839 C
+                L PS3                      293 PSI
+                R PS3                      289 PSI
+                L N1 VIBES                 0.3 MIL
+                R N1 VIBES                 0.1 MIL
+                L N2 VIBES                 0.2 MIL
+                R N2 VIBES                 0.2 MIL
+                L OIL TEMP                  75 C
+                R OIL TEMP                  78 C
+                L OIL PRESSURE              78 PSI
+                R OIL PRESSURE              77 PSI
+                L PLA                     51.3 DEG
+                R PLA                     50.8 DEG
+                L FUEL FLOW               4625 PPH
+                R FUEL FLOW               4631 PPH
+                L VG POSITION              0.5 DEG
+                R VG POSITION              1.0 DEG
+                FADEC IN CONTROL         LB AND RB
+                COMPUTED AIRSPEED        155.1 KT
+                ALTITUDE                    96 FT
+                TOTAL AIR TEMP            17.5 C
+                L FADEC BLEED STATUS      1044 INT
+                R FADEC BLEED STATUS      1044 INT
                 ```
 
-                This is mostly data and numbers. An air travel hobbyist would
-                prefer to see things pilots and air traffic controllers have
-                manually written.
+                Based on the large amount of sensors and readings in this
+                message, this is clearly a periodic report which has a lot of sensor data.
+                This IS NOT something an air travel enthusiast wants to see
+                because data from sensors IS NOT useful or interesting to them.
+                Most or all of this message is also in two columns which
+                should strongly indicate it's a automatically generated report
+                rather than freehand prose written by a human pilot or air
+                traffic controller and therefore is not interesting to
+                air travel enthusiasts.
 
-                Here are some examples of text that, if present, means the
-                message is not relevant to air traffic enthusiasts:
+                This is part of a similar message that air travel enthusiats
+                do not want to see:
+                ```
+                L ITT                      880 C
+                R ITT                      874 C
+                L PS3                      292 PSI
+                R PS3                      297 PSI
+                ```
+
+                Any message that looks like it's listing out sensors and
+                values for the sensors with a lot of spaces like this message
+                has for multiple lines or more is not what air travel
+                enthusiasts want to see.
+
+                Another message that air traffic enthusiasts do not want to see:
+                ```
+                FPN/RP:DA:KLGA:AA:KMCO:CR:KLGAKMCO(35R)..MOXXY.Q85.LPERD:A:SNFLD3.LPERD:F:VECTOR..DISCO..FESHA:AP:ILS 35R:F:PRESKCC4E
+                ```
+
+                This message has a lot of English words but when they are read
+                the sentence seems like gibberish. Since it's not prose or even
+                informal prose, air travel enthusiasts do not want to see it.
+
+                Here are some pieces of text that, if present, means the
+                message is definitely NOT relevant to air traffic enthusiasts:
                 - ROB SLAT DIS PROX
                 - FPN/
-                - HOWGOZIT
+                - FILENAME
+                - LRU SIGNAL CONDITIONER UNIT
+                - POSRPT
+                - PROX
+                - P/N
 
-                Punctuation you might expect for English sentences being omitted
-                is not a strong indicator whether an interesting message is
-                present. There may be commas, periods spaces and newlines in
-                unusual places or there might be a lot of extra whitespace.
-                Personal communication will most likely be in ALL CAPS.
-                Newlines might also be in the middle of words.
+                Messages with a lot of acronyms don't make sense to air travel
+                enthusiasts because they won't know what they mean so they
+                do not want to see those messages.
 
-                Based on the information provided, does this message have
-                communication that is interesting to air travel enthusiasts?
+                Do not consider punctuation like commas, periods spaces and
+                newlines to make your decision. Ignore newlines, spaces or other
+                charaters in the middle of words.
+
+                Based on what I've told you, is this message something you're
+                certain that an air travel enthusiast would want to see?
               LOGLEVEL: debug
             envFrom:
               - secretRef:
