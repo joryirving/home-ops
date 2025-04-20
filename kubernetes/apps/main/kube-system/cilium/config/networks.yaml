@@ -23,53 +23,52 @@ spec:
       kubernetes.io/os: linux
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliumbgpadvertisement_v2alpha1.json
-apiVersion: "cilium.io/v2alpha1"
+apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPAdvertisement
 metadata:
-  name: cilium-bgp-advertisement
+  name: l3-bgp-advertisement
   labels:
     advertise: bgp
 spec:
   advertisements:
-    - advertisementType: "Service"
+    - advertisementType: Service
       service:
-        addresses:
-          - LoadBalancerIP
+        addresses: ["LoadBalancerIP"]
       selector:
         matchExpressions:
           - { key: somekey, operator: NotIn, values: ["never-used-value"] }
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliumbgppeerconfig_v2alpha1.json
-apiVersion: "cilium.io/v2alpha1"
+apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPPeerConfig
 metadata:
-  name: cilium-bgp-peer-config-ipv4
+  name: l3-bgp-peer-config
 spec:
   families:
     - afi: ipv4
       safi: unicast
       advertisements:
         matchLabels:
-          advertise: "bgp"
+          advertise: bgp
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/cilium.io/ciliumbgpclusterconfig_v2alpha1.json
-apiVersion: "cilium.io/v2alpha1"
+apiVersion: cilium.io/v2alpha1
 kind: CiliumBGPClusterConfig
 metadata:
-  name: cilium-bgp-cluster-config
+  name: l3-bgp-cluster-config
 spec:
   nodeSelector:
     matchLabels:
       kubernetes.io/os: linux
   bgpInstances:
-    - name: "instance-64514"
+    - name: cilium
       localASN: 64514
       peers:
-        - name: "peer-64513-ipv4"
+        - name: unifi
           peerASN: 64513
-          peerAddress: "192.168.1.1"
+          peerAddress: 192.168.1.1
           peerConfigRef:
-            name: "cilium-bgp-peer-config-ipv4"
+            name: l3-bgp-peer-config
 ---
 apiVersion: v1
 kind: Service
