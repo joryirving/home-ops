@@ -82,10 +82,10 @@ function wipe_rook_disks() {
         return
     fi
 
-    if [ "$CSI_DISK" = "null" ]; then
-        log warn "No disks to wipe"
-        return
-    fi
+    # if [ "$CSI_DISK" = "null" ]; then
+    #     log warn "No disks to wipe"
+    #     return
+    # fi
 
     if ! nodes=$(talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig config info --output json 2>/dev/null | jq --exit-status --raw-output '.nodes | join(" ")') || [[ -z "${nodes}" ]]; then
         log error "No Talos nodes found"
@@ -93,21 +93,44 @@ function wipe_rook_disks() {
 
     log debug "Talos nodes discovered" "nodes=${nodes}"
 
-    # Wipe disks on each node that match the CSI_DISK environment variable
-    for node in ${nodes}; do
-        if ! disks=$(talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" get disk --output json 2>/dev/null |
-            jq --exit-status --raw-output --slurp '. | map(select(.spec.model == env.CSI_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]]; then
-            log error "No disks found" "node=${node}" "model=${CSI_DISK}"
-        fi
+    ## TODO: Uncomment this when I have different kinds of disks
+    # # Wipe disks on each node that match the CSI_DISK environment variable
+    # for node in ${nodes}; do
+    #     if ! disks=$(talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" get disk --output json 2>/dev/null |
+    #         jq --exit-status --raw-output --slurp '. | map(select(.spec.model == env.CSI_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]]; then
+    #         log error "No disks found" "node=${node}" "model=${CSI_DISK}"
+    #     fi
 
-        log debug "Talos node and disk discovered" "node=${node}" "disks=${disks}"
+    #     log debug "Talos node and disk discovered" "node=${node}" "disks=${disks}"
+
+    #     # Wipe each disk on the node
+    #     for disk in ${disks}; do
+    #         if talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" wipe disk "${disk}" &>/dev/null; then
+    #             log info "Disk wiped" "node=${node}" "disk=${disk}"
+    #         else
+    #             log error "Failed to wipe disk" "node=${node}" "disk=${disk}"
+    #         fi
+    #     done
+    # done
+
+    # Hardcode the disk to wipe (nvme0n2)
+    target_disk="nvme0n2"
+
+    # Wipe the hardcoded disk on each node
+    for node in ${nodes}; do
+        # if ! disks=$(talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" get disk --output json 2>/dev/null |
+            # jq --exit-status --raw-output --slurp '. | map(select(.spec.model == env.CSI_DISK) | .metadata.id) | join(" ")') || [[ -z "${nodes}" ]]; then
+            # log error "No disks found" "node=${node}" "model=${CSI_DISK}"
+        # fi
+
+        log debug "Talos node and disk discovered" "node=${node}" "disks=${target_disk}"
 
         # Wipe each disk on the node
         for disk in ${disks}; do
-            if talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" wipe disk "${disk}" &>/dev/null; then
-                log info "Disk wiped" "node=${node}" "disk=${disk}"
+            if talosctl --talosconfig ${TALOS_DIR}/clusterconfig/talosconfig --nodes "${node}" wipe disk "${target_disk}" &>/dev/null; then
+                log info "Disk wiped" "node=${node}" "disk=${target_disk}"
             else
-                log error "Failed to wipe disk" "node=${node}" "disk=${disk}"
+                log error "Failed to wipe disk" "node=${node}" "disk=${target_disk}"
             fi
         done
     done
