@@ -6,7 +6,7 @@ talosVersion: v1.9.5
 kubernetesVersion: v1.32.4
 
 clusterName: &cluster main
-endpoint: https://10.69.1.20:6443
+endpoint: https://k8s.main.internal:6443
 
 clusterPodNets:
   - "10.42.0.0/16"
@@ -26,135 +26,118 @@ cniConfig:
 nodes:
   - hostname: "ayaka"
     ipAddress: "10.69.1.21"
-    installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    installDisk: /dev/nvme0n1
+    talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
-      # 1G Internal Port
-      - deviceSelector:
-          hardwareAddr: a4:bb:6d:6e:ec:75
+      - # 2.5G Bond
+        interface: bond0
+        bond:
+          mode: 802.3ad
+          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
+          xmitHashPolicy: layer3+4
+          lacpRate: fast
+          miimon: 1000
         dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 2048
-      # 2.5G PICe Port
-      - deviceSelector:
-          hardwareAddr: 00:e0:4c:68:06:69
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 1024
+        mtu: 9000
         vip:
           ip: "10.69.1.20"
+      # - 10G
+      #   deviceSelector: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
+      #   dhcp: true
+      #   mtu: 9000
+      #  vip:
+      #    ip: "10.69.1.20"
+      - # eula
+        deviceSelector: { busPath: 0-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.21/32]
+        routes: [{ network: 169.254.255.22/32, metric: 2048 }]
+      - # ganyu
+        deviceSelector: { busPath: 1-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.21/32]
+        routes: [{ network: 169.254.255.23/32, metric: 2048 }]
   - hostname: "eula"
     ipAddress: "10.69.1.22"
-    installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    installDisk: /dev/nvme0n1
+    talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
-      # 1G Internal Port
-      - deviceSelector:
-          hardwareAddr: 8c:04:ba:a5:51:20
+      - # 2.5G Bond
+        interface: bond0
+        bond:
+          mode: 802.3ad
+          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
+          xmitHashPolicy: layer3+4
+          lacpRate: fast
+          miimon: 1000
         dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 2048
-      # 2.5G PICe Port
-      - deviceSelector:
-          hardwareAddr: 1c:fd:08:75:15:63
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 1024
+        mtu: 9000
         vip:
           ip: "10.69.1.20"
+      # - 10G
+      #   deviceSelector: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
+      #   dhcp: true
+      #   mtu: 9000
+      #  vip:
+      #    ip: "10.69.1.20"
+      - # ayaka
+        deviceSelector: { busPath: 0-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.22/32]
+        routes: [{ network: 169.254.255.21/32, metric: 2048 }]
+      - # ganyu
+        deviceSelector: { busPath: 1-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.22/32]
+        routes: [{ network: 169.254.255.23/32, metric: 2048 }]
   - hostname: "ganyu"
     ipAddress: "10.69.1.23"
-    installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
+    installDisk: /dev/nvme0n1
+    talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
-      # 1G Internal Port
-      - deviceSelector:
-          hardwareAddr: 70:b5:e8:6d:37:14
+      - # 2.5G Bond
+        interface: bond0
+        bond:
+          mode: 802.3ad
+          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
+          xmitHashPolicy: layer3+4
+          lacpRate: fast
+          miimon: 1000
         dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 2048
-      # 2.5G PICe Port
-      - deviceSelector:
-          hardwareAddr: 1c:fd:08:75:15:6f
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 1024
+        mtu: 9000
         vip:
           ip: "10.69.1.20"
-  - hostname: "hutao"
-    ipAddress: "10.69.1.24"
-    installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
-    controlPlane: false
-    networkInterfaces:
-      # 1G Internal Port
-      - deviceSelector:
-          hardwareAddr: 70:b5:e8:6d:43:c4
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 2048
-      # 2.5G PICe Port
-      - deviceSelector:
-          hardwareAddr: 00:e0:4c:68:06:dd
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 1024
-  - hostname: "navia"
-    ipAddress: "10.69.1.25"
-    installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
-    controlPlane: false
-    networkInterfaces:
-      # 1G Internal Port
-      - deviceSelector:
-          hardwareAddr: 70:b5:e8:6d:0f:d7
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 2048
-      # 2.5G PICe Port
-      - deviceSelector:
-          hardwareAddr: 00:e0:4c:68:05:e6
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 1024
-  - hostname: "yelan"
-    ipAddress: "10.69.1.26"
-    installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/97bf8e92fc6bba0f03928b859c08295d7615737b29db06a97be51dc63004e403
-    controlPlane: false
-    networkInterfaces:
-      # 1G Internal Port
-      - deviceSelector:
-          hardwareAddr: 70:b5:e8:6d:35:fa
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 2048
-      # 2.5G PICe Port
-      - deviceSelector:
-          hardwareAddr: 00:e0:4c:68:06:3a
-        dhcp: true
-        mtu: 1500
-        dhcpOptions:
-            routeMetric: 1024
+      # - 10G
+      #   deviceSelector: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
+      #   dhcp: true
+      #   mtu: 9000
+      #  vip:
+      #    ip: "10.69.1.20"
+      - # ayaka
+        deviceSelector: { busPath: 0-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.23/32]
+        routes: [{ network: 169.254.255.21/32, metric: 2048 }]
+      - # eula
+        deviceSelector: { busPath: 1-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.23/32]
+        routes: [{ network: 169.254.255.22/32, metric: 2048 }]
 
 # Global patches
 patches:
   - "@./patches/global/machine-files.yaml"   # Spegel/NFS Mount
   - "@./patches/global/machine-install.yaml" # Less security, faster puter
+  - "@./patches/global/machine-kernel.yaml"  # Machine Kernels
   - "@./patches/global/machine-kubelet.yaml" # VLAN Subnet Info
   - "@./patches/global/machine-network.yaml" # Search Domain
   - "@./patches/global/machine-openebs.yaml" # Kubelet Mount
@@ -164,7 +147,8 @@ patches:
 # Controller patches
 controlPlane:
   nodeLabels:
-    topology.kubernetes.io/zone: controlPlane
+    intel.feature.node.kubernetes.io/gpu: "true"
+    topology.kubernetes.io/region: k8s
   patches:
     - "@./patches/controller/admission-controller-patch.yaml"
     - "@./patches/controller/cluster.yaml"
