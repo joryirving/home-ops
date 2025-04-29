@@ -113,8 +113,8 @@ function wipe_rook_disks() {
     #     done
     # done
 
-    # Hardcode the disk to wipe (nvme0n2)
-    target_disk="nvme0n2"
+    # Hardcode the disk to wipe (nvme1n1)
+    target_disk="nvme1n1"
 
     # Wipe the hardcoded disk on each node
     for node in ${nodes}; do
