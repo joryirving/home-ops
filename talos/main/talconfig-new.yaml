@@ -6,7 +6,7 @@ talosVersion: v1.9.5
 kubernetesVersion: v1.32.4
 
 clusterName: &cluster main
-endpoint: https://k8s.main.interna:6443
+endpoint: https://k8s.main.internal:6443
 
 clusterPodNets:
   - "10.42.0.0/16"
@@ -30,16 +30,20 @@ nodes:
     talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
-      - # 2.5G
-        deviceSelector:
-          hardwareAddr: 58:47:ca:7d:3d:b0
+      - # 2.5G Bond
+        interface: bond0
+        bond:
+          mode: 802.3ad
+          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
+          xmitHashPolicy: layer3+4
+          lacpRate: fast
+          miimon: 1000
         dhcp: true
         mtu: 9000
         vip:
           ip: "10.69.1.20"
       # - 10G
-      #   deviceSelector:
-      #     hardwareAddr: 58:47:ca:7d:*
+      #   deviceSelector: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
       #   dhcp: true
       #   mtu: 9000
       #  vip:
@@ -74,19 +78,12 @@ nodes:
         mtu: 9000
         vip:
           ip: "10.69.1.20"
-      # - # 10G
-      #   interface: bond0
-      #   bond:
-      #     mode: active-backup
-      #     primaryReselectPolicy: always
-      #     interfaces:
-      #       - hardwareAddr: "58:47:ca:7d:41:45"  # 10G
-      #       - hardwareAddr: "58:47:ca:7d:41:48"  # 2.5G
-      #     miimon: 1000
+      # - 10G
+      #   deviceSelector: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
       #   dhcp: true
       #   mtu: 9000
-      #   vip:
-      #     ip: "10.69.1.20"
+      #  vip:
+      #    ip: "10.69.1.20"
       - # ayaka
         deviceSelector: { busPath: 0-1.0 }
         dhcp: false
@@ -118,8 +115,7 @@ nodes:
         vip:
           ip: "10.69.1.20"
       # - 10G
-      #   deviceSelector:
-      #     hardwareAddr: 58:47:ca:7d:*
+      #   deviceSelector: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
       #   dhcp: true
       #   mtu: 9000
       #  vip:
