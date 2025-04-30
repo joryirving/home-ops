@@ -67,14 +67,26 @@ spec:
             enabled: true
       network:
         provider: host
+        addressRanges:
+          public: ["10.69.1.0/24"]
+          cluster: ["169.254.255.0/24"]
         connections:
           requireMsgr2: true
       storage:
-        useAllNodes: true
-        useAllDevices: true
-        deviceFilter: nvme1n1
+        useAllNodes: false
+        useAllDevices: false
         config:
           osdsPerDevice: "1"
+        nodes:
+          - name: ayaka
+            devices:
+              - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_230314800604
+          - name: eula
+            devices:
+              - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_23063G803424
+          - name: ganyu
+            devices:
+              - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_23026Y802292
       placement:
         mgr: &placement
           nodeAffinity:

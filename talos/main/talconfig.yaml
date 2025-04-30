@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
 ---
 # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-talosVersion: v1.9.5
+talosVersion: v1.10.0
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
-kubernetesVersion: v1.32.4
+kubernetesVersion: v1.33.0
 
 clusterName: &cluster main
 endpoint: https://k8s.main.internal:6443
@@ -26,18 +26,14 @@ cniConfig:
 nodes:
   - hostname: "ayaka"
     ipAddress: "10.69.1.21"
-    installDisk: /dev/nvme0n1
+    installDiskSelector:
+      serial: "24400G801149"
     talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
-      - # 2.5G Bond
-        interface: bond0
-        bond:
-          mode: 802.3ad
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-          xmitHashPolicy: layer3+4
-          lacpRate: fast
-          miimon: 1000
+      - # 2.5G
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:3c:88
         dhcp: true
         mtu: 9000
         vip:
@@ -62,18 +58,14 @@ nodes:
         routes: [{ network: 169.254.255.23/32, metric: 2048 }]
   - hostname: "eula"
     ipAddress: "10.69.1.22"
-    installDisk: /dev/nvme0n1
+    installDiskSelector:
+      serial: "22501H800457"
     talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
-      - # 2.5G Bond
-        interface: bond0
-        bond:
-          mode: 802.3ad
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-          xmitHashPolicy: layer3+4
-          lacpRate: fast
-          miimon: 1000
+      - # 2.5G
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:3d:b0
         dhcp: true
         mtu: 9000
         vip:
@@ -98,18 +90,14 @@ nodes:
         routes: [{ network: 169.254.255.23/32, metric: 2048 }]
   - hostname: "ganyu"
     ipAddress: "10.69.1.23"
-    installDisk: /dev/nvme0n1
+    installDiskSelector:
+      serial: "230314800616"
     talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
-      - # 2.5G Bond
-        interface: bond0
-        bond:
-          mode: 802.3ad
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-          xmitHashPolicy: layer3+4
-          lacpRate: fast
-          miimon: 1000
+      - # 2.5G
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:41:48
         dhcp: true
         mtu: 9000
         vip:
