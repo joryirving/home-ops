@@ -52,6 +52,7 @@ spec:
       dashboard:
         enabled: true
         urlPrefix: /
+        port: 7000
         ssl: false
         prometheusEndpoint: http://prometheus-operated.observability.svc.cluster.local:9090
       mgr:
@@ -66,14 +67,26 @@ spec:
             enabled: true
       network:
         provider: host
+        addressRanges:
+          public: ["10.69.1.0/24"]
+          cluster: ["169.254.255.0/24"]
         connections:
           requireMsgr2: true
       storage:
-        useAllNodes: true
-        useAllDevices: true
-        deviceFilter: nvme0n1
+        useAllNodes: false
+        useAllDevices: false
         config:
           osdsPerDevice: "1"
+        nodes:
+          - name: ayaka
+            devices:
+              - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_230314800604
+          - name: eula
+            devices:
+              - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_23063G803424
+          - name: ganyu
+            devices:
+              - name: /dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_23026Y802292
       placement:
         mgr: &placement
           nodeAffinity:
@@ -99,9 +112,8 @@ spec:
           volumeBindingMode: Immediate
           mountOptions: ["discard"]
           parameters:
-            # TODO: Consider enabling compression on cluster rebuild
-            # compression_mode: aggressive
-            # compression_algorithm: zstd
+            compression_mode: aggressive
+            compression_algorithm: zstd
             imageFormat: "2"
             imageFeatures: layering,fast-diff,object-map,deep-flatten,exclusive-lock
             csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
