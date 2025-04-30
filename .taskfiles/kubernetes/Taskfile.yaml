@@ -2,6 +2,9 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: '3'
 
+vars:
+  KUBERNETES_RESOURCES_DIR: "{{.ROOT_DIR}}/.taskfiles/kubernetes/resources"
+
 tasks:
 
   apply-ks:
@@ -118,3 +121,15 @@ tasks:
       - cp {{.ROOT_DIR}}/talos/test/clusterconfig/talosconfig ~/.talos/config
       - talosctl config merge {{.ROOT_DIR}}/talos/utility/clusterconfig/talosconfig --talosconfig ~/.talos/config
       - talosctl config merge {{.ROOT_DIR}}/talos/main/clusterconfig/talosconfig --talosconfig ~/.talos/config
+
+  privileged:
+    desc: Run a privileged pod
+    cmd: |
+      echo "Using envsubst: $(which envsubst)"
+      kubectl run privileged-{{.node}} -i --rm --image=null \
+        --overrides="$(yq {{.KUBERNETES_RESOURCES_DIR}}/privileged-pod.tmpl.yaml -o=json | envsubst)"
+    env:
+      node: "{{.node}}"
+    preconditions:
+      - which envsubst
+      - test -f {{.KUBERNETES_RESOURCES_DIR}}/privileged-pod.tmpl.yaml
