@@ -16,9 +16,6 @@ router bgp 64513
   neighbor 10.69.1.21 peer-group k8s-main
   neighbor 10.69.1.22 peer-group k8s-main
   neighbor 10.69.1.23 peer-group k8s-main
-  neighbor 10.69.1.24 peer-group k8s-main
-  neighbor 10.69.1.25 peer-group k8s-main
-  neighbor 10.69.1.26 peer-group k8s-main
   neighbor 10.69.1.121 peer-group k8s-utility
 
   address-family ipv4 unicast

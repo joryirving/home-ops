@@ -18,7 +18,7 @@ tasks:
       - '{{if and (eq .NODE_COUNT 1) (ne .CSI_DISK "null")}}talosctl --talosconfig clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}' ## Reboot my single node cluster
     vars:
       TALOS_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]'
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
     env:
       NODE_COUNT:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.nodes | length'
