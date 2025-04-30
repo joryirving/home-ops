@@ -26,19 +26,24 @@ cniConfig:
 nodes:
   - hostname: "ayaka"
     ipAddress: "10.69.1.21"
-    installDisk: /dev/nvme0n1
+    installDiskSelector:
+      busPath: /pci0000:00/0000:00:06.0/0000:01:00.0/nvme
     talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
       - # 2.5G Bond
-        interface: bond0
-        bond:
-          mode: 802.3ad
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-          xmitHashPolicy: layer3+4
-          lacpRate: fast
-          miimon: 1000
-        dhcp: true
+        # interface: bond0
+        # bond:
+        #   mode: 802.3ad
+        #   deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
+        #   xmitHashPolicy: layer3+4
+        #   lacpRate: fast
+        #   miimon: 1000
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:3c:88
+        dhcp: false
+        addresses:
+          - "10.69.1.21/16"
         mtu: 9000
         vip:
           ip: "10.69.1.20"
@@ -62,19 +67,24 @@ nodes:
         routes: [{ network: 169.254.255.23/32, metric: 2048 }]
   - hostname: "eula"
     ipAddress: "10.69.1.22"
-    installDisk: /dev/nvme0n1
+    installDiskSelector:
+      busPath: /pci0000:00/0000:00:06.0/0000:01:00.0/nvme
     talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
       - # 2.5G Bond
-        interface: bond0
-        bond:
-          mode: 802.3ad
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-          xmitHashPolicy: layer3+4
-          lacpRate: fast
-          miimon: 1000
-        dhcp: true
+        # interface: bond0
+        # bond:
+        #   mode: 802.3ad
+        #   deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
+        #   xmitHashPolicy: layer3+4
+        #   lacpRate: fast
+        #   miimon: 1000
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:3d:b0
+        dhcp: false
+        addresses:
+          - "10.69.1.22/16"
         mtu: 9000
         vip:
           ip: "10.69.1.20"
@@ -98,19 +108,24 @@ nodes:
         routes: [{ network: 169.254.255.23/32, metric: 2048 }]
   - hostname: "ganyu"
     ipAddress: "10.69.1.23"
-    installDisk: /dev/nvme0n1
+    installDiskSelector:
+      busPath: /pci0000:00/0000:00:06.0/0000:01:00.0/nvme
     talosImageURL: factory.talos.dev/installer/ab86bd395e263b78e5f54c800e4d319dae786d9ae25ecb129462a9e0e9491615
     controlPlane: true
     networkInterfaces:
       - # 2.5G Bond
-        interface: bond0
-        bond:
-          mode: 802.3ad
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-          xmitHashPolicy: layer3+4
-          lacpRate: fast
-          miimon: 1000
-        dhcp: true
+        # interface: bond0
+        # bond:
+        #   mode: 802.3ad
+        #   deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
+        #   xmitHashPolicy: layer3+4
+        #   lacpRate: fast
+        #   miimon: 1000
+        deviceSelector:
+          hardwareAddr: 02:f0:32:4f:02:f3
+        dhcp: false
+        addresses:
+          - "10.69.1.23/16"
         mtu: 9000
         vip:
           ip: "10.69.1.20"
