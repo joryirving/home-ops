@@ -69,7 +69,20 @@ spec:
               value: CephNodeDiskspaceWarning
               isRegex: false
             - name: device
-              value: /dev/sd.*
+              value: /dev/nvme.*
+              isRegex: true
+      - apiVersion: monitoring.giantswarm.io/v1alpha1
+        kind: Silence
+        metadata:
+          name: ceph-inconsistent-mtu-diskspace-warning
+          namespace: observability
+        spec:
+          matchers:
+            - name: alertname
+              value: CephNodeInconsistentMTU
+              isRegex: false
+            - name: device
+              value: lxc.*
               isRegex: true
       - apiVersion: monitoring.giantswarm.io/v1alpha1
         kind: Silence
