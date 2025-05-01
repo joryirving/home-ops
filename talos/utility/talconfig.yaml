@@ -27,7 +27,7 @@ nodes:
   - hostname: "celestia"
     ipAddress: "10.69.1.121"
     installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/96f8c146a67c80daad900d3fc1a6976fe11062321eee9ab6ae2a6aea88b2d26e
+    talosImageURL: factory.talos.dev/installer/1dd37815dd2c6e708d1286e0cd0af2324dcfc3857f0429257070969b04a63ab4
     controlPlane: true
     networkInterfaces:
       - deviceSelector:
@@ -42,7 +42,7 @@ patches:
   - "@./patches/global/machine-democratic-csi.yaml" # Secondary Disk Mount
   - "@./patches/global/machine-disks.yaml"          # Secondary Disk Mount
   - "@./patches/global/machine-files.yaml"          # NFS Mount
-  - "@./patches/global/machine-install.yaml"        # Less security, faster puter
+  # - "@./patches/global/machine-install.yaml" # This is baked into the install image now, as of v1.10.0 - https://github.com/siderolabs/talos/releases/tag/v1.10.0
   - "@./patches/global/machine-kubelet.yaml"        # VLAN Subnet Info
   - "@./patches/global/machine-network.yaml"        # Search Domain
   - "@./patches/global/machine-sysctls.yaml"        # Network Tweaks
@@ -50,6 +50,7 @@ patches:
 
 controlPlane:
   nodeLabels:
+    topology.kubernetes.io/region: k8s
     topology.kubernetes.io/zone: controlPlane
   patches:
     - "@./patches/controller/admission-controller-patch.yaml"
