@@ -1,0 +1,193 @@
+---
+version: v1alpha1
+debug: false
+persist: true
+machine:
+  type: {{ ENV.MACHINE_TYPE }}
+  token: op://Kubernetes/talos-utility/MACHINE_TOKEN
+  ca:
+    crt: op://Kubernetes/talos-utility/MACHINE_CA_CRT
+    {% if ENV.MACHINE_TYPE == 'controlplane' %}
+    key: op://Kubernetes/talos-utility/MACHINE_CA_KEY
+    {% endif %}
+  features:
+    rbac: true
+    stableHostname: true
+    {% if ENV.MACHINE_TYPE == 'controlplane' %}
+    kubernetesTalosAPIAccess:
+      enabled: true
+      allowedRoles: ["os:admin"]
+      allowedKubernetesNamespaces: ["actions-runner-system", "kube-tools"]
+    {% endif %}
+    apidCheckExtKeyUsage: true
+    diskQuotaSupport: true
+    kubePrism:
+      enabled: true
+      port: 7445
+    hostDNS:
+      enabled: true
+      resolveMemberNames: true
+      forwardKubeDNSToHost: false
+  files:
+    - op: overwrite
+      path: /etc/nfsmount.conf
+      permissions: 0o644
+      content: |
+        [ NFSMount_Global_Options ]
+        nfsvers=4.2
+        hard=True
+        nconnect=16
+        noatime=True
+        rsize=1048576
+        wsize=1048576
+  install:
+    image: factory.talos.dev/installer/{{ ENV.TALOS_SCHEMATIC }}:{{ ENV.TALOS_VERSION }}
+  kubelet:
+    image: ghcr.io/siderolabs/kubelet:{{ ENV.KUBERNETES_VERSION }}
+    extraArgs:
+      max-pods: "200"
+    extraConfig:
+      serializeImagePulls: false
+    extraMounts:
+      - destination: /var/lib/csi-local-hostpath
+        type: bind
+        source: /var/lib/csi-local-hostpath
+        options: ["bind", "rshared", "rw"]
+    defaultRuntimeSeccompProfileEnabled: true
+    nodeIP:
+      validSubnets: ["10.69.1.0/24", "10.69.2.0/24"]
+    disableManifestsDirectory: true
+  network:
+    nameservers: ["10.69.1.1"]
+    disableSearchDomain: true
+  nodeLabels:
+    intel.feature.node.kubernetes.io/gpu: true
+    topology.kubernetes.io/region: k8s
+  sysctls:
+    fs.inotify.max_user_watches: 1048576   # Watchdog
+    fs.inotify.max_user_instances: 8192    # Watchdog
+    net.core.default_qdisc: fq             # 10Gb/s
+    net.core.rmem_max: 67108864            # 10Gb/s | Cloudflared / QUIC
+    net.core.wmem_max: 67108864            # 10Gb/s | Cloudflared / QUIC
+    net.ipv4.tcp_congestion_control: bbr   # 10Gb/s
+    net.ipv4.tcp_fastopen: 3               # Send and accept data in the opening SYN packet
+    net.ipv4.tcp_mtu_probing: 1            # 10Gb/s | Jumbo frames
+    net.ipv4.tcp_rmem: 4096 87380 33554432 # 10Gb/s
+    net.ipv4.tcp_wmem: 4096 65536 33554432 # 10Gb/s
+    net.ipv4.tcp_window_scaling: 1         # 10Gb/s
+    vm.nr_hugepages: 1024                  # PostgreSQL
+  sysfs:
+    devices.system.cpu.cpu0.cpufreq.boost: 1
+    devices.system.cpu.cpu1.cpufreq.boost: 1
+    devices.system.cpu.cpu2.cpufreq.boost: 1
+    devices.system.cpu.cpu3.cpufreq.boost: 1
+    devices.system.cpu.cpu4.cpufreq.boost: 1
+    devices.system.cpu.cpu5.cpufreq.boost: 1
+    devices.system.cpu.cpu6.cpufreq.boost: 1
+    devices.system.cpu.cpu7.cpufreq.boost: 1
+    devices.system.cpu.cpu8.cpufreq.boost: 1
+    devices.system.cpu.cpu9.cpufreq.boost: 1
+    devices.system.cpu.cpu10.cpufreq.boost: 1
+    devices.system.cpu.cpu11.cpufreq.boost: 1
+    devices.system.cpu.cpu12.cpufreq.boost: 1
+    devices.system.cpu.cpu13.cpufreq.boost: 1
+    devices.system.cpu.cpu14.cpufreq.boost: 1
+    devices.system.cpu.cpu15.cpufreq.boost: 1
+    devices.system.cpu.cpu0.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu1.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu2.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu3.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu4.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu5.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu6.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu7.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu8.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu9.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu10.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu11.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu12.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu13.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu14.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpu15.cpufreq.energy_performance_preference: balance_power
+  time:
+    disabled: false
+    servers: ["time.cloudflare.com"]
+cluster:
+  ca:
+    crt: op://Kubernetes/talos-utility/CLUSTER_CA_CRT
+    {% if ENV.MACHINE_TYPE == 'controlplane' %}
+    key: op://Kubernetes/talos-utility/CLUSTER_CA_KEY
+    {% endif %}
+  clusterName: utility
+  controlPlane:
+    endpoint: https://k8s.utility.internal:6443
+  discovery:
+    enabled: true
+    registries:
+      kubernetes:
+        disabled: true
+      service:
+        disabled: false
+  id: op://Kubernetes/talos-utility/CLUSTER_ID
+  network:
+    cni:
+      name: none
+    dnsDomain: cluster.local
+    podSubnets: ["10.42.0.0/16"]
+    serviceSubnets: ["10.43.0.0/16"]
+  secret: op://Kubernetes/talos-utility/CLUSTER_SECRET
+  token: op://Kubernetes/talos-utility/CLUSTER_TOKEN
+  {% if ENV.MACHINE_TYPE == 'controlplane' %}
+  aggregatorCA:
+    crt: op://Kubernetes/talos-utility/CLUSTER_AGGREGATORCA_CRT
+    key: op://Kubernetes/talos-utility/CLUSTER_AGGREGATORCA_KEY
+  allowSchedulingOnControlPlanes: true
+  apiServer:
+    image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
+    extraArgs:
+      enable-aggregator-routing: true
+      feature-gates: MutatingAdmissionPolicy=true
+      runtime-config: admissionregistration.k8s.io/v1alpha1=true
+    certSANs: ["k8s.utility.internal", "127.0.0.1"]
+    disablePodSecurityPolicy: true
+  controllerManager:
+    image: registry.k8s.io/kube-controller-manager:{{ ENV.KUBERNETES_VERSION }}
+    extraArgs:
+      bind-address: 0.0.0.0
+  coreDNS:
+    disabled: true
+  etcd:
+    advertisedSubnets: ["10.69.1.0/24"]
+    ca:
+      crt: op://Kubernetes/talos-utility/CLUSTER_ETCD_CA_CRT
+      key: op://Kubernetes/talos-utility/CLUSTER_ETCD_CA_KEY
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381
+  proxy:
+    disabled: true
+    image: registry.k8s.io/kube-proxy:{{ ENV.KUBERNETES_VERSION }}
+  secretboxEncryptionSecret: op://Kubernetes/talos-utility/CLUSTER_SECRETBOXENCRYPTIONSECRET
+  scheduler:
+    image: registry.k8s.io/kube-scheduler:{{ ENV.KUBERNETES_VERSION }}
+    extraArgs:
+      bind-address: 0.0.0.0
+    config:
+      apiVersion: kubescheduler.config.k8s.io/v1
+      kind: KubeSchedulerConfiguration
+      profiles:
+        - schedulerName: default-scheduler
+          plugins:
+            score:
+              disabled:
+                - name: ImageLocality
+          pluginConfig:
+            - name: PodTopologySpread
+              args:
+                defaultingType: List
+                defaultConstraints:
+                  - maxSkew: 1
+                    topologyKey: kubernetes.io/hostname
+                    whenUnsatisfiable: ScheduleAnyway
+  serviceAccount:
+    key: op://Kubernetes/talos-utility/CLUSTER_SERVICEACCOUNT_KEY
+  {% endif %}

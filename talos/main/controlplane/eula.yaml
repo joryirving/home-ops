@@ -1,0 +1,27 @@
+---
+machine:
+  install:
+    diskSelector:
+      serial: "22501H800457"
+  network:
+    hostname: eula
+    interfaces:
+      - # 10G
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:3d:ad
+        dhcp: true
+        mtu: 9000
+      - # ayaka
+        deviceSelector: { busPath: 0-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.22/32]
+        routes: [{ network: 169.254.255.21/32, metric: 2048 }]
+      - # ganyu
+        deviceSelector: { busPath: 1-1.0 }
+        dhcp: false
+        mtu: 65520
+        addresses: [169.254.255.22/32]
+        routes: [{ network: 169.254.255.23/32, metric: 2048 }]
+  nodeLabels:
+    topology.kubernetes.io/zone: m
