@@ -1,0 +1,17 @@
+---
+machine:
+  disks:
+    - device: /dev/nvme0n1
+      partitions: [{ mountpoint: var/lib/csi-local-hostpath }]
+  install:
+    disk: /dev/sda
+  network:
+    hostname: celestia
+    interfaces:
+      - # 2.5G
+        deviceSelector:
+          hardwareAddr: 84:47:09:2d:52:52
+        mtu: 9000
+        dhcp: true
+  nodeLabels:
+    topology.kubernetes.io/zone: m

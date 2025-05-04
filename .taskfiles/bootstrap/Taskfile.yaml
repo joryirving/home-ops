@@ -3,38 +3,55 @@
 version: '3'
 
 tasks:
-
-  default:
-    desc: Bootstrap Talos nodes and Cluster apps [CSI_DISK=required]
-    dir: '{{.TALOS_DIR}}'
-    summary: |
-      IMPORTANT: CSI_DISK must be set to the disk model used across all the nodes (e.g. WD_BLACK SN770)
+  talos:
+    desc: Bootstrap Talos
+    prompt: Bootstrap Talos ...?
     cmds:
-      - talhelper genconfig  --config-file talconfig.yaml --secret-file talsecret.sops.yaml --out-dir clusterconfig
-      - talhelper --config-file talconfig.yaml gencommand apply --extra-flags=--insecure | bash
-      - until talosctl --talosconfig clusterconfig/talosconfig --nodes {{.TALOS_CONTROLLER}} bootstrap; do sleep 5; done
-      - talosctl --talosconfig clusterconfig/talosconfig kubeconfig --nodes {{.TALOS_CONTROLLER}} --force --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
-      - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
-      - '{{if and (eq .NODE_COUNT 1) (ne .CSI_DISK "null")}}talosctl --talosconfig clusterconfig/talosconfig reboot -n {{.TALOS_CONTROLLER}}{{end}}' ## Reboot my single node cluster
+      - until talosctl --nodes {{.RANDOM_CONTROLLER}} bootstrap; do sleep 5; done
+      - talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.KUBERNETES_DIR}}
     vars:
-      TALOS_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
-    env:
-      NODE_COUNT:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.nodes | length'
-      CSI_DISK: '{{.CSI_DISK}}'
-      CLUSTER: '{{.CLUSTER}}'
-      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
-      CLUSTER_DIR: '{{.CLUSTER_DIR}}'
-      SHARED_APPS: '{{.SHARED_APPS}}'
-      SHARED_DIR: '{{.SHARED_DIR}}'
+      RANDOM_CONTROLLER:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
+    requires:
+      vars: [CLUSTER]
+    preconditions:
+      - talosctl config info
+      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig
+      - which jq talosctl
+
+  apps:
+    desc: Bootstrap Kubernetes Apps [CSI_DISK=required]
+    prompt: Bootstrap Kubernetes Apps ...?
+    cmds:
+      - kubectl config set-cluster {{.CONTEXT}} --server https://{{.RANDOM_CONTROLLER}}:6443
+      - defer: talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}}
+      - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
+      - for: { var: BLOCK_DEVICES }
+        cmd: talosctl --nodes {{.KEY}} wipe disk {{.ITEM}}
+      - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
     requires:
       vars: [CLUSTER, CSI_DISK]
+    vars:
+      BLOCK_DEVICES_FILTER: |-
+        map(select(.spec.model == "{{.CSI_DISK}}"))
+          | group_by(.node)
+          | map({ (.[0].node): (map(.metadata.id) | join(" ")) })
+          | add
+      BLOCK_DEVICES_RESPONSE:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig get disks --output json | jq --compact-output --slurp '{{.BLOCK_DEVICES_FILTER}}'
+      BLOCK_DEVICES:
+        ref: fromJson .BLOCK_DEVICES_RESPONSE
+      CONTEXT:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.context'
+      RANDOM_CONTROLLER:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
     preconditions:
-      - op whoami --format=json
-      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
-      - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
+      - op user get --me
+      - talosctl config info
+      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
+      - test -f {{.TALOS_DIR}}/talosconfig
+      - which helmfile jq kubectl op talosctl
 
   helmfile:
     desc: Bootstrap Cluster apps [CSI_DISK=required]
@@ -45,7 +62,7 @@ tasks:
       - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
     vars:
       TALOS_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info --output json | jq --raw-output '.endpoints[]'
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[]'
     env:
       CSI_DISK: '{{.CSI_DISK}}'
       CLUSTER: '{{.CLUSTER}}'
@@ -57,32 +74,6 @@ tasks:
       vars: [CLUSTER, CSI_DISK]
     preconditions:
       - op whoami --format=json
-      - talosctl --talosconfig {{.TALOS_DIR}}/clusterconfig/talosconfig config info
-      - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
+      - test -f {{.TALOS_DIR}}/talosconfig
       - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
-
-  gen-secrets:
-    desc: Generate the Talos secrets
-    cmds:
-      - talhelper -f {{.TALOS_DIR}}/talconfig.yaml gensecret > {{.TALOS_DIR}}/talsecret.sops.yaml
-      - task: :sops:.encrypt-file
-        vars:
-          FILE: "{{.TALOS_DIR}}/talsecret.sops.yaml"
-    requires:
-      vars: [CLUSTER]
-    preconditions:
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
-      - which talhelper
-    status:
-      - test -f "{{.TALOS_DIR}}/talsecret.sops.yaml"
-
-  gen-config:
-    desc: Generate the Talos configs
-    dir: '{{.TALOS_DIR}}'
-    cmd: talhelper talconfig.yaml genconfig --secret-file talsecret.sops.yaml --out-dir clusterconfig
-    requires:
-      vars: [CLUSTER]
-    preconditions:
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
-      - test -f {{.TALOS_DIR}}/talsecret.sops.yaml
-      - which talhelper
