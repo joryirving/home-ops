@@ -19,7 +19,7 @@ tasks:
         | talosctl --nodes {{.NODE}} apply-config \
           --mode {{.MODE}} \
           --config-patch @{{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{.NODE}}.yaml \
-          --file /dev/stdin {{if .INSECURE}}--insecure{{end}}\
+          --file /dev/stdin {{if .INSECURE}}--insecure{{end}} \
           --talosconfig {{.TALOS_DIR}}/talosconfig
     vars:
       MODE: '{{.MODE | default "auto"}}'
@@ -101,7 +101,7 @@ tasks:
       vars: [CLUSTER,NODE]
     preconditions:
       - talosctl config info
-      - talosctl --nodes {{.NODE}} get machineconfig
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig
       - which talosctl
 
   reset-cluster:
@@ -115,7 +115,7 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - talosctl config info
-      - talosctl --nodes {{.NODES}} get machineconfig
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODES}} get machineconfig
       - which jq talosctl
 
   reboot-node:
