@@ -41,7 +41,7 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
         type: disabled
       streamer:
         desired_fps:
-          default: 20
+          default: 30
         h264_bitrate:
           default: 2500
         h264_gop:
@@ -55,16 +55,16 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             port: 5000
           wol_server0:
             type: wol
-            mac: 58:47:ca:7d:3c:88
+            mac: 58:47:ca:7d:3c:85
           wol_server1:
             type: wol
-            mac: 58:47:ca:7d:3d:b0
+            mac: 58:47:ca:7d:3d:ad
           wol_server2:
             type: wol
-            mac: 58:47:ca:7d:41:48
+            mac: 58:47:ca:7d:41:45
           wol_server3:
             type: wol
-            mac: 02:c2:e8:d1:f3:bb
+            mac: 58:47:ca:7a:dc:b2
           reboot:
             type: cmd
             cmd: ["/usr/bin/sudo", "reboot"]
@@ -137,11 +137,6 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             pin: 4
             mode: output
             switch: false
-          server4_wol:
-            driver: wol_server4
-            pin: 0
-            mode: output
-            switch: false
           server5_led:
             driver: tes
             pin: 5
@@ -151,11 +146,6 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             pin: 5
             mode: output
             switch: false
-          server5_wol:
-            driver: wol_server5
-            pin: 0
-            mode: output
-            switch: false
           server6_led:
             driver: tes
             pin: 6
@@ -163,11 +153,6 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
           server6_btn:
             driver: tes
             pin: 6
-            mode: output
-            switch: false
-          server6_wol:
-            driver: wol_server6
-            pin: 0
             mode: output
             switch: false
           server7_led:
@@ -198,10 +183,10 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             - ["#Eula", "server1_led", "server1_btn | KVM", "server1_wol | WOL"]
             - ["#Ganyu", "server2_led", "server2_btn | KVM", "server2_wol | WOL"]
             - ["#Voyager", "server3_led", "server3_btn | KVM", "server3_wol | WOL"]
-            - ["#6", "server4_led", "server4_btn | KVM"]
-            - ["#7", "server5_led", "server5_btn | KVM"]
-            - ["#8", "server6_led", "server6_btn | KVM"]
-            - ["#7", "server7_led", "server7_btn | KVM"]
+            - ["#5", "server4_led", "server4_btn | KVM"]
+            - ["#6, "server5_led", "server5_btn | KVM"]
+            - ["#7", "server6_led", "server6_btn | KVM"]
+            - ["#8", "server7_led", "server7_btn | KVM"]
     ```
 
 3. Restart kvmd
