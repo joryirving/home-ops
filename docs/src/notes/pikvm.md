@@ -55,16 +55,16 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             port: 5000
           wol_server0:
             type: wol
-            mac: 58:47:ca:7d:3c:85
+            mac: 58:47:ca:7d:3c:88
           wol_server1:
             type: wol
-            mac: 58:47:ca:7d:3d:ad
+            mac: 58:47:ca:7d:3d:b0
           wol_server2:
             type: wol
-            mac: 58:47:ca:7d:41:45
+            mac: 58:47:ca:7d:41:48
           wol_server3:
             type: wol
-            mac: 58:47:ca:7a:dc:b2
+            mac: 58:47:ca:7a:dc:b5
           reboot:
             type: cmd
             cmd: ["/usr/bin/sudo", "reboot"]

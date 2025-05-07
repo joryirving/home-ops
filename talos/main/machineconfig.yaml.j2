@@ -69,16 +69,20 @@ machine:
     disableManifestsDirectory: true
   network:
     interfaces:
-      - interface: bond0
-        bond:
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-          mode: 802.3ad
-          xmitHashPolicy: layer3+4
-          lacpRate: fast
-          miimon: 1000
-        dhcp: true
+      - # 10G
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:*
+          driver: i40e
         mtu: 9000
-    nameservers: ["10.69.1.1", "10.69.2.1"]
+        dhcp: true
+        vip:
+          ip: 10.69.10.2
+      - # 2.5G ignore for WoL/vPro
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:*
+          driver: igc
+        ignore: true
+    nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
     intel.feature.node.kubernetes.io/gpu: true

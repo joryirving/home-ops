@@ -13,7 +13,7 @@ env:
 
 tasks:
   apply-node:
-    desc: Apply Talos config to a node [CLUSTER=main] [HOSTNAME=required] [MODE=auto]
+    desc: Apply Talos config to a node [CLUSTER=main] [NODE=required] [MODE=auto]
     cmd: |-
       minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 | op inject \
         | talosctl --nodes {{.NODE}} apply-config \
@@ -60,7 +60,6 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
       - test -f {{.TALOS_DIR}}/talosconfig
 
   upgrade-node:
@@ -119,18 +118,17 @@ tasks:
       - which jq talosctl
 
   reboot-node:
-    desc: Reboot Talos on a single node [CLUSTER=main] [HOSTNAME=required]
+    desc: Reboot Talos on a single node [CLUSTER=main] [NODE=required]
     cmds:
       - task: down
-      - talosctl --nodes {{.HOSTNAME}} reboot --talosconfig {{.TALOS_DIR}}/talosconfig
-      - talosctl --nodes {{.HOSTNAME}} health --talosconfig {{.TALOS_DIR}}/talosconfig
+      - talosctl --nodes {{.NODE}} reboot --talosconfig {{.TALOS_DIR}}/talosconfig
+      - talosctl --nodes {{.NODE}} health --talosconfig {{.TALOS_DIR}}/talosconfig
       - task: up
     requires:
-      vars: [CLUSTER, HOSTNAME]
+      vars: [CLUSTER, NODE]
     preconditions:
-      - talosctl --nodes {{.HOSTNAME}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
+      - talosctl --nodes {{.NODE}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
       - which talosctl
 
   reboot-cluster:
@@ -139,35 +137,33 @@ tasks:
     requires:
       vars: [CLUSTER]
     vars:
-      HOSTNAMES:
+      NODES:
         sh: kubectl get nodes --output=jsonpath='{.items[*].metadata.name}' --context {{.CLUSTER}}
     cmds:
-      - for: { var: HOSTNAMES }
+      - for: { var: NODES }
         task: reboot-node
         vars:
-          HOSTNAME: '{{.ITEM}}'
+          NODE: '{{.ITEM}}'
           CLUSTER: "{{.CLUSTER}}"
       - task: :kubernetes:delete-failed-pods
         vars:
           CLUSTER: "{{.CLUSTER}}"
     preconditions:
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
       - test -f {{.TALOS_DIR}}/talosconfig
 
   shutdown-cluster:
     desc: Shutdown Talos across the whole cluster [CLUSTER=main]
     prompt: Shutdown the Talos cluster '{{.CLUSTER}}' ... continue?
-    cmd: talosctl shutdown --nodes {{.HOSTNAMES}} --force
+    cmd: talosctl shutdown --nodes {{.NODES}} --force
     vars:
-      HOSTNAMES:
+      NODES:
         sh: kubectl get nodes --output=jsonpath='{.items[*].metadata.name}'
     requires:
       vars: [CLUSTER]
     preconditions:
       - talosctl --nodes {{.NODES}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
       - test -f {{.TALOS_DIR}}/talosconfig
       - which talosctl
 
