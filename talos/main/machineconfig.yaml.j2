@@ -68,16 +68,20 @@ machine:
       validSubnets: ["10.69.1.0/24", "10.69.2.0/24"]
     disableManifestsDirectory: true
   network:
-    # interfaces: ##Need this for WoL/vPro
-    #   - interface: bond0
-    #     bond:
-    #       deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: igc }]
-    #       mode: 802.3ad
-    #       xmitHashPolicy: layer3+4
-    #       lacpRate: fast
-    #       miimon: 1000
-    #     dhcp: true
-    #     mtu: 9000
+    interfaces:
+      - # 10G
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:*
+          driver: i40e
+        mtu: 9000
+        dhcp: true
+        vip:
+          ip: 10.69.10.2
+      - # 2.5G ignore for WoL/vPro
+        deviceSelector:
+          hardwareAddr: 58:47:ca:7d:*
+          driver: igc
+        ignore: true
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
