@@ -11,7 +11,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: v1.17.1
+    tag: v1.17.2
   url: oci://ghcr.io/rook/rook-ceph-cluster
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -73,20 +73,9 @@ spec:
         connections:
           requireMsgr2: true
       storage:
-        useAllNodes: false
+        useAllNodes: true
         useAllDevices: false
-        config:
-          osdsPerDevice: "1"
-        nodes:
-          - name: ayaka
-            devices:
-              - name: /dev/disk/by-id/nvme-SAMSUNG_MZQL21T9HCJR-00B7C_S63SNE0R504741
-          - name: eula
-            devices:
-              - name: /dev/disk/by-id/nvme-SAMSUNG_MZQL21T9HCJR-00A07_S64GNE0R300684
-          - name: ganyu
-            devices:
-              - name: /dev/disk/by-id/nvme-SAMSUNG_MZQL21T9HCJR-00BAL_S68LNE0T309523
+        devicePathFilter: /dev/disk/by-id/nvme-SAMSUNG_MZQL21T9HCJR-.*
       placement:
         mgr: &placement
           nodeAffinity:
