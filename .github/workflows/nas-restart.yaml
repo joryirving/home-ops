@@ -1,67 +1,70 @@
 ---
-  # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-  name: NFS Deployment Restart
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: NFS Deployment Restart
 
-  on:
-    workflow_dispatch:
-    repository_dispatch:
-      types: [nas-restart]
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [nas-restart]
 
-  jobs:
-    main:
-      name: NFS Deployment Restart - Deployment Restart
-      runs-on: ${{ format('home-ops-runner-{0}', matrix.cluster) }}
-      strategy:
-        matrix:
-          cluster: ["main"]
-      steps:
-        - name: Configure 1password
-          uses: 1password/load-secrets-action/configure@581a835fb51b8e7ec56b71cf2ffddd7e68bb25e0 # v2.0.0
-          with:
-            service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
+permissions:
+  contents: read
 
-        - name: Get Secrets
-          uses: 1password/load-secrets-action@581a835fb51b8e7ec56b71cf2ffddd7e68bb25e0 # v2.0.0
-          with:
-            export-env: true
-          env:
-            KUBECONFIG: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
+jobs:
+  main:
+    name: NFS Deployment Restart - Deployment Restart
+    runs-on: ${{ format('home-ops-runner-{0}', matrix.cluster) }}
+    strategy:
+      matrix:
+        cluster: ["main"]
+    steps:
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@581a835fb51b8e7ec56b71cf2ffddd7e68bb25e0 # v2.0.0
+        with:
+          service-account-token: ${{ secrets.ONEPASS_SA_TOKEN }}
 
-        - name: Checkout
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Get Secrets
+        uses: 1password/load-secrets-action@581a835fb51b8e7ec56b71cf2ffddd7e68bb25e0 # v2.0.0
+        with:
+          export-env: true
+        env:
+          KUBECONFIG: op://Kubernetes/kubernetes/KUBECONFIG_BASE64
 
-        - name: Setup Homebrew
-          uses: Homebrew/actions/setup-homebrew@master
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-        - name: Setup Workflow Tools
-          run: brew install kubernetes-cli
+      - name: Setup Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
 
-        - name: Write kubeconfig
-          id: kubeconfig
-          uses: timheuer/base64-to-file@adaa40c0c581f276132199d4cf60afa07ce60eac # v1
-          with:
-            encodedString: ${{ env.KUBECONFIG }}
-            fileName: kubeconfig
+      - name: Setup Workflow Tools
+        run: brew install kubernetes-cli
 
-        - name: Restart NFS Deployments
-          env:
-            KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
-          run: |
-            kubectl \
-                --context ${{ matrix.cluster }} \
-                get deployments \
-                --all-namespaces \
-                -l nfsMount=true \
-                -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name" \
-                --no-headers | \
-                awk '{print "kubectl --context ${{ matrix.cluster }} rollout restart deployment/"$2" -n "$1}' | \
-                sh
+      - name: Write kubeconfig
+        id: kubeconfig
+        uses: timheuer/base64-to-file@adaa40c0c581f276132199d4cf60afa07ce60eac # v1
+        with:
+          encodedString: ${{ env.KUBECONFIG }}
+          fileName: kubeconfig
 
-        - name: Restart Database Deployments
-          if: matrix.cluster == 'main'
-          env:
-            KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
-          run: |
-            kubectl \
-                --context ${{ matrix.cluster }} \
-                rollout restart statefulset postgres-repo-host -n database
+      - name: Restart NFS Deployments
+        env:
+          KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
+        run: |
+          kubectl \
+              --context ${{ matrix.cluster }} \
+              get deployments \
+              --all-namespaces \
+              -l nfsMount=true \
+              -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name" \
+              --no-headers | \
+              awk '{print "kubectl --context ${{ matrix.cluster }} rollout restart deployment/"$2" -n "$1}' | \
+              sh
+
+      - name: Restart Database Deployments
+        if: matrix.cluster == 'main'
+        env:
+          KUBECONFIG: ${{ steps.kubeconfig.outputs.filePath }}
+        run: |
+          kubectl \
+              --context ${{ matrix.cluster }} \
+              rollout restart statefulset postgres-repo-host -n database
