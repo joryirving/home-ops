@@ -12,8 +12,9 @@ tasks:
   push:
     desc: Push all kubeconfig to OnePassword
     cmds:
-      - op item edit kubernetes KUBECONFIG[text]="$(kubectl config view --flatten)" &>/dev/null
+      - task: :kubernetes:flatten
       - task: push-clusters
+      - task: push-combined
     preconditions:
       - op whoami --format=json
 
@@ -22,9 +23,18 @@ tasks:
     cmds:
       - |
         for cluster in {{.CLUSTERS | join " "}}; do
-          op item edit kubernetes KUBECONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/kubernetes/clusters/$cluster/kubeconfig)" &>/dev/null
-          op item edit kubernetes TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/talos/$cluster/clusterconfig/talosconfig)" &>/dev/null
+          op item edit kubernetes KUBECONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/kubernetes/clusters/$cluster/kubeconfig)"
+          op item edit kubernetes TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/talos/$cluster/talosconfig)"
         done
+    preconditions:
+      - op whoami --format=json
+
+  push-combined:
+    desc: Push kubeconfig/talosconfig for all clusters
+    cmds:
+      - task: :kubernetes:flatten
+      - op item edit kubernetes KUBECONFIG[text]="$(cat ~/.kube/config)"
+      - op item edit kubernetes TALCONFIG[text]="$(cat ~/.talos/config)"
     preconditions:
       - op whoami --format=json
 
@@ -34,14 +44,12 @@ tasks:
       - mkdir -p ~/.kube ~/.talos
       - |
         for cluster in {{.CLUSTERS | join " "}}; do
-          mkdir -p {{.ROOT_DIR}}/talos/$cluster/clusterconfig
+          mkdir -p {{.ROOT_DIR}}/talos/$cluster
           op item get kubernetes --fields label=KUBECONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]') | tr -d '"' > {{.ROOT_DIR}}/kubernetes/clusters/$cluster/kubeconfig
-          op item get kubernetes --fields label=TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]') | tr -d '"' > {{.ROOT_DIR}}/talos/$cluster/clusterconfig/talosconfig
+          op item get kubernetes --fields label=TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]') | tr -d '"' > {{.ROOT_DIR}}/talos/$cluster/talosconfig
         done
       - op item get kubernetes --fields label=KUBECONFIG | tr -d '"' > ~/.kube/config
-      ## Merge talosconfigs so main is the default
-      - cp {{.ROOT_DIR}}/talos/utility/clusterconfig/talosconfig ~/.talos/config
-      - talosctl config merge {{.ROOT_DIR}}/talos/test/clusterconfig/talosconfig --talosconfig ~/.talos/config
-      - talosctl config merge {{.ROOT_DIR}}/talos/main/clusterconfig/talosconfig --talosconfig ~/.talos/config
+      - op item get kubernetes --fields label=TALCONFIG | tr -d '"' > ~/.talos/config
+
     preconditions:
       - op whoami --format=json
