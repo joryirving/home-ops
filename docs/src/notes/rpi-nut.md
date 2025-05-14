@@ -1,4 +1,4 @@
-# NUTE
+# NUT
 
 ## Hardware notes
 Raspberry Pi 5 w/ 8GM RAM
