@@ -30,6 +30,13 @@ endpoints:
     client:
       dns-resolver: tcp://1.1.1.1:53
     conditions: ["[STATUS] == 404"]
+  - name: domain-expiration
+    group: domain
+    url: "https://jory.dev"
+    interval: 1h
+    conditions:
+      - "[DOMAIN_EXPIRATION] > 720h"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
 remote:
   instances:
     - endpoint-prefix: ""
