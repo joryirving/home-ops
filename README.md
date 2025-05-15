@@ -130,47 +130,47 @@ In my cluster there are two instances of [ExternalDNS](https://github.com/kubern
 
 ### Main Kubernetes Cluster
 
-| Name  | Device       | CPU       | OS Disk   | Data Disk | RAM  | OS    | Purpose           |
-|-------|--------------|-----------|-----------|-----------|------|-------|-------------------|
-| Ayaka | Dell 7080mff | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| Eula  | Dell 7080mff | i7-10700T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| Ganyu | Dell 3080mff | i5-10500T | 500GB SSD | 1TB NVME  | 64GB | Talos | k8s control-plane |
-| HuTao | Dell 3080mff | i5-10500T | 480GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
-| Navia | Dell 3080mff | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
-| Yelan | Dell 3080mff | i5-10500T | 240GB SSD | 1TB NVME  | 64GB | Talos | k8s worker        |
+| Name  | Device | CPU       | OS Disk    | Local Disk | Rook Disk  | RAM   | OS    | Purpose           |
+|-------|--------|-----------|------------|------------|------------|-------|-------|-------------------|
+| Ayaka | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Eula  | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Ganyu | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
 
-Total CPU: 76 threads
+Total CPU: 60 Cores/60 Threads
 Total RAM: 384GB
 
 ### Utility Kubernetes Cluster
 
-| Name     | Device     | CPU           | OS Disk   | Data Disk  | RAM  | OS    | Purpose           |
+| Name     | Device     | CPU           | OS Disk   | Local Disk | RAM  | OS    | Purpose           |
 |----------|------------|---------------|-----------|------------|------|-------|-------------------|
 | Celestia | Bosgame P1 | Ryzen 7 5700U | 480GB SSD | 500GB NVME | 32GB | Talos | k8s control-plane |
 
-Total CPU: 16 threads
+Total CPU: 8 Cores/16 Threads
 Total RAM: 32GB
 
 ### Supporting Hardware
 
-| Name    | Device            | CPU        | OS Disk    | Data Disk     | RAM   | OS           | Purpose        |
-|---------|-------------------|------------|------------|---------------|-------|--------------|----------------|
-| Voyager | MS-01             | i5-12600H  | 32GB USB   | 1.92TB U.2    | 96GB  | Unraid       | NAS/NFS/Backup |
-| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2 | -     | -            | ZFS            |
-| PiKVM   | Raspberry Pi4     | Cortex A72 | 64GB mSD   | -             | 4GB   | PiKVM (Arch) | KVM (Main)     |
-| PDU     | UniFi USP PDU Pro | -          | -          | -             | -     | -            | PDU            |
-| TESmart | 8 port KVM        | -          | -          | -             | -     | -            | Network KVM    |
-| JetKVM  | JetKVM            | RV1106G3   | 8GB EMMC   | -             | 256MB | Linux 5.10   | KVM (Utility)  |
+| Name    | Device            | CPU        | OS Disk    | Data Disk      | RAM   | OS           | Purpose           |
+|---------|-------------------|------------|------------|----------------|-------|--------------|-------------------|
+| Voyager | MS-01             | i5-12600H  | 32GB USB   | 6x400GB Raidz2 | 96GB  | Unraid       | NAS/NFS/Backup    |
+| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2  | -     | -            | ZFS               |
+| Venti   | Raspberry Pi5     | Cortex A76 | 250GB NVMe | -              | 8GB   | Raspbian     | NUT/SSH (Main)    |
+| Sayu    | Raspberry Pi5     | Cortex A76 | 500GB NVMe | -              | 8GB   | Raspbian     | NUT/SSH (Utility) |
+| PiKVM   | Raspberry Pi4     | Cortex A72 | 64GB mSD   | -              | 4GB   | PiKVM (Arch) | KVM (Main)        |
+| JetKVM  | JetKVM            | RV1106G3   | 8GB EMMC   | -              | 256MB | Linux 5.10   | KVM (Utility)     |
+| PDU     | UniFi USP PDU Pro | -          | -          | -              | -     | -            | PDU               |
+| TESmart | 8 port KVM        | -          | -          | -              | -     | -            | Network KVM       |
 
 ### Networking/UPS Hardware
 
-| Device                      | Purpose          |
-|-----------------------------|------------------|
-| Unifi UDM-SE                | Network - Router |
-| USW-Pro-24-POE              | Network - Switch |
-| Back-UPS 600                | Network - UPS    |
-| Unifi USW-Enterprise-24-PoE | Server - Switch  |
-| Tripp Lite 1500             | Server - UPS     |
+| Device                      | Purpose              |
+|-----------------------------|----------------------|
+| Unifi UDM-SE                | Network - Router     |
+| USW-Pro-24-POE              | Network - 1G Switch  |
+| Back-UPS 600                | Network - UPS        |
+| Unifi USW-Enterprise-24-PoE | Server - 2.5G Switch |
+| Unifi USW-Aggregation       | Server - 10G Switch  |
+| Tripp Lite 1500             | Server - UPS         |
 
 ---
 

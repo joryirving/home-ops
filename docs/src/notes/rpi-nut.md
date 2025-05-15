@@ -40,3 +40,26 @@ sudo systemctl restart nut-monitor
 ```
 
 You should now have a working PiNUT config that will also shutdown talos/the NAS when on battery power.
+
+## Docker Compose for node_exporter/smartlctl_exporter
+
+```yaml
+services:
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    network_mode: host
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+  smartctl-exporter:
+    image: ghcr.io/joryirving/smartctl_exporter:rolling
+    container_name: smartctl-exporter
+    ports:
+      - "9633:9633"
+    privileged: true
+    restart: unless-stopped
+```
