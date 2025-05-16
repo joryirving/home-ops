@@ -61,6 +61,8 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+        serviceAccount:
+          identifier: *app
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -83,8 +85,8 @@ spec:
           metrics:
             port: 8080
     serviceAccount:
-      create: true
-      name: *app
+      dragonfly-operator:
+        enabled: true
     serviceMonitor:
       app:
         serviceName: *app
