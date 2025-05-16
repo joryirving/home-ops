@@ -40,13 +40,13 @@ spec:
                     name: dashbrr-pguser-dashbrr
                     key: password
               DASHBRR__DB_PORT: "5432"
-              DASHBRR__DB_PATH: /cache/._  # cache path is derived from DASHBRR__DB_PATH
+              DASHBRR__DB_PATH: /cache/._ # cache path is derived from DASHBRR__DB_PATH
               DASHBRR__LISTEN_ADDR: 0.0.0.0:8080
               GIN_MODE: debug
               TZ: America/Edmonton
             envFrom:
-            - secretRef:
-                name: dashbrr-secret
+              - secretRef:
+                  name: dashbrr-secret
             probes:
               liveness: &probes
                 enabled: true
@@ -64,6 +64,8 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+        serviceAccount:
+          identifier: *app
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -89,8 +91,7 @@ spec:
               - name: *app
                 port: *port
     serviceAccount:
-      create: true
-      name: dashbrr
+      dashbrr: {}
     persistence:
       cache:
         type: emptyDir

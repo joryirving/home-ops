@@ -44,13 +44,18 @@ spec:
               tag: 4.100.2@sha256:0c31654f1125c3a685a42ed1f2946573f5ebaaf016c5bc0640c72f9f571267e0
             env:
               TZ: America/Edmonton
-            args: [
-              "--auth", "none",
-              "--user-data-dir", "/config/.vscode",
-              "--extensions-dir", "/config/.vscode",
-              "--port", "12321",
-              "/config"
-            ]
+            args:
+              [
+                "--auth",
+                "none",
+                "--user-data-dir",
+                "/config/.vscode",
+                "--extensions-dir",
+                "/config/.vscode",
+                "--port",
+                "12321",
+                "/config",
+              ]
             resources:
               requests:
                 cpu: 10m
@@ -66,7 +71,6 @@ spec:
     service:
       app:
         controller: *app
-        nameOverride: *app
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.133, ::ffff:10.69.10.133
