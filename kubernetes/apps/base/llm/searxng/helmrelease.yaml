@@ -65,27 +65,23 @@ spec:
                   - SETGID
                   - SETUID
                   - DAC_OVERRIDE
-
     service:
       app:
         controller: searxng
         ports:
           http:
             port: *port
-
-    ingress:
+    route:
       app:
-        className: "internal"
-        annotations:
-          external-dns.alpha.kubernetes.io/target: internal.jory.dev
-        hosts:
-          - host: search.jory.dev
-            paths:
-              - path: /
-                service:
-                  identifier: app
-                  port: http
-
+        hostnames: ["search.jory.dev"]
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: *app
+                port: *port
     persistence:
       config:
         type: configMap
