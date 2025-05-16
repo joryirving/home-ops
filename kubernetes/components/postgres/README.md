@@ -13,10 +13,10 @@ xargs -n2 sh -c 'kubectl patch cronjob $1 -n $0 --type=merge -p "{\"spec\": {\"s
 ### Boostraping new cluster
 
 ```yaml
-patches:
-- patch: |-
-    - op: remove
-    path: /spec/dataSource
-target:
-    kind: PostgresCluster
+  patches:
+    - patch: |-
+        - op: remove
+          path: /spec/dataSource
+      target:
+        kind: PostgresCluster
 ```
