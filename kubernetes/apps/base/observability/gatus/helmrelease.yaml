@@ -69,6 +69,8 @@ spec:
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
             resources: *resources
+        serviceAccount:
+          identifier: *app
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -99,8 +101,8 @@ spec:
               - name: *app
                 port: *port
     serviceAccount:
-      create: true
-      name: *app
+      gatus:
+        enabled: true
     persistence:
       config:
         type: emptyDir
