@@ -25,7 +25,7 @@ spec:
           app:
             image:
               repository: ghcr.io/open-webui/open-webui
-              tag: v0.6.7
+              tag: v0.6.9@sha256:2b1758ce5e4874c69baa1a91c6ff8dfc185c9f59eeb52f3a897f85276fc70de7
             env:
               OLLAMA_BASE_URL: http://ollama:11434
               ENABLE_RAG_WEB_SEARCH: true
@@ -39,6 +39,9 @@ spec:
                   secretKeyRef:
                     name: open-webui-pguser-open-webui
                     key: pgbouncer-uri
+            envFrom:
+              - secretRef:
+                  name: *app
             resources:
               requests:
                 cpu: 500m
