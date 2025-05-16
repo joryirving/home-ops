@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://1n1raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -22,26 +22,31 @@ spec:
   values:
     controllers:
       ollama:
-        replicas: 1
+        replicas: 3 # 1 per node
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
-            command: ["/bin/sh"]
-            args: ["-c", "sleep infinity"]
             image:
               repository: ghcr.io/tyzbit/ollama-intel-gpu
-              tag: latest
+              # tag: latest
+              tag: ipex-llm-v.0.0.1-2
+              # tag: latest@sha256:36da76816d399b80127c043261df912cfa7ee73bde0b22f52a75178b236b1eea
+            # image:
+            #   repository: docker.io/ollama/ollama
+            #   tag: 0.6.5
             securityContext:
               privileged: true
-              supplementalGroups: [44]
+            # command: [tail,-f,/dev/null]
             env:
               # --- Intel GPU
-              DEVICE: Arc
               OLLAMA_MAX_LOADED_MODELS: "1"
               OLLAMA_NUM_PARALLEL: "1"
-              OLLAMA_NUM_GPU: "1"
-              SYCL_CACHE_PERSITENT: "1"
+              # OLLAMA_NUM_GPU: "1"
+              SYCL_CACHE_PERSISTENT: "1"
+              IPEX_LLM_NUM_CTX: "4096"
+              SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS: "0"
+              IPEX_LLM_MODEL_SOURCE: modelscope
               # ---
               TZ: America/Edmonton
               # OLLAMA_INTEL_GPU: "1" # doesn't work right now, experimental
@@ -52,12 +57,31 @@ spec:
               OLLAMA_LOAD_TIMEOUT: "600"
               OLLAMA_CONTEXT_LENGTH: "4096"
               # OLLAMA_NUM_PARALLEL: "16"
+            # probes:
+            #   liveness:
+            #     enabled: true
+            #     type: HTTP
+            #   readiness:
+            #     enabled: true
+            #     custom: true
+            #     spec:
+            #       exec: {command: [sh,-c,/usr/bin/ollama run gemma3:4b ""]}
             resources:
               requests:
                 cpu: 200m
               limits:
-                memory: 12Gi
-                gpu.intel.com/i915: 1
+                memory: 16Gi
+        pod:
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: "kubernetes.io/hostname"
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                          - *app
     service:
       app:
         controller: *app
