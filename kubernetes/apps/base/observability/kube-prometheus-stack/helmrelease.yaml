@@ -108,7 +108,7 @@ spec:
               - alert: DockerhubRateLimitRisk
                 annotations:
                   summary: Kubernetes cluster Dockerhub rate limit risk
-                expr: count(time() - container_last_seen{image=~"(docker.io).*",container!=""} < 30) > 40
+                expr: count(time() - container_last_seen{image=~"(docker.io).*",container!=""} < 30) > 50
                 labels:
                   severity: critical
       oom-rules:
@@ -141,10 +141,6 @@ spec:
               namespace: kube-system
               sectionName: https
       prometheusSpec:
-        enableAdminAPI: true
-        walCompression: true
-        enableFeatures:
-          - memory-snapshot-on-shutdown
         externalLabels:
           cluster: ${CLUSTER}
         resources:
@@ -152,11 +148,20 @@ spec:
             cpu: 100m
           limits:
             memory: 3000Mi
-        ruleSelectorNilUsesHelmValues: false
-        serviceMonitorSelectorNilUsesHelmValues: false
+        image:
+          registry: docker.io
+          repository: prompp/prompp
+          tag: 2.53.2-0.2.3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 64535
+          runAsGroup: 64535
+          fsGroup: 64535
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false
+        serviceMonitorSelectorNilUsesHelmValues: false
         retention: 30d
         retentionSize: ${PVC_CAPACITY}GB
         storageSpec:
