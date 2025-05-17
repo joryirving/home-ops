@@ -40,7 +40,7 @@ spec:
       GF_FEATURE_TOGGLES_ENABLE: publicDashboards
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: natel-discrete-panel,pr0ps-trackmap-panel,panodata-map-panel
       GF_SECURITY_COOKIE_SAMESITE: *app
-      GF_SERVER_ROOT_URL: https://${GATUS_SUBDOMAIN}.jory.dev
+      GF_SERVER_ROOT_URL: https://${GATUS_SUBDOMAIN:=${APP}}.jory.dev
     envFromSecrets:
       - name: grafana-secret
     grafana.ini:
@@ -395,7 +395,7 @@ spec:
     route:
       main:
         enabled: true
-        hostnames: ["${GATUS_SUBDOMAIN}.jory.dev"]
+        hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
         parentRefs:
           - name: external
             namespace: kube-system
