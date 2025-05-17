@@ -90,7 +90,7 @@ spec:
             port: 27017
     route:
       app:
-        hostnames: ["spotty.jory.dev"]
+        hostnames: ["${GATUS_SUBDOMAIN}.jory.dev"]
         parentRefs:
           - name: external
             namespace: kube-system
@@ -107,14 +107,14 @@ spec:
                     type: ReplacePrefixMatch
                     replacePrefixMatch: "/"
             backendRefs:
-              - name: your-spotify-server
+              - identifier: server
                 port: *port
           - matches:
               - path:
                   type: PathPrefix
                   value: "/"
             backendRefs:
-              - name: your-spotify-web
+              - identifier: web
                 port: *webport
     persistence:
       configs:

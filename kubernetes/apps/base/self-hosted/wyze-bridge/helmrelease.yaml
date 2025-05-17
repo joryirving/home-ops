@@ -19,7 +19,7 @@ spec:
       retries: 3
   values:
     controllers:
-      wyze:
+      wyze-bridge:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -36,7 +36,7 @@ spec:
               LIBVA_DRIVER_NAME: i965
             envFrom:
               - secretRef:
-                  name: wyze-bridge
+                  name: *app
             probes:
               liveness:
                 enabled: true
@@ -57,7 +57,7 @@ spec:
                 gpu.intel.com/i915: 1
     service:
       app:
-        controller: &controller wyze
+        controller: *app
         ports:
           http:
             enabled: true
@@ -76,14 +76,12 @@ spec:
             port: 8889
     route:
       app:
-        hostnames:
-          - "{{ .Release.Name }}.jory.dev"
-          - ${GATUS_SUBDOMAIN}.jory.dev
+        hostnames: ["${GATUS_SUBDOMAIN}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system
             sectionName: https
         rules:
           - backendRefs:
-              - name: *controller
+              - name: *app
                 port: *port
