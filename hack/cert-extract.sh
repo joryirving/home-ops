@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export TLS_CERT="jory.dev-tls"
-export TLS_NAMESPACE="cert-manager"
+export TLS_CERT="jory-dev-tls"
+export TLS_NAMESPACE="kube-system"
 CERT_DIR="/tmp/cert"
 CERT_TMP="$CERT_DIR/tmp"
 CERT_JSON="$CERT_DIR/certificate/certificate-tls.json"
