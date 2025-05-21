@@ -50,5 +50,14 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
+    rbac:
+      bindings:
+        system-upgrade-controller:
+          type: ClusterRoleBinding
+          roleRef:
+            kind: ClusterRole
+            name: cluster-admin
+          subjects:
+            - identifier: *app
     serviceAccount:
       system-upgrade-controller: {}

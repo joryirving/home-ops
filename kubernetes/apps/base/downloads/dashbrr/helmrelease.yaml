@@ -90,6 +90,21 @@ spec:
           - backendRefs:
               - name: *app
                 port: *port
+    rbac:
+      roles:
+        dashbrr:
+          type: Role
+          rules:
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get", "watch", "list"]
+      bindings:
+        dashbrr:
+          type: RoleBinding
+          roleRef:
+            identifier: *app
+          subjects:
+            - identifier: *app
     serviceAccount:
       dashbrr: {}
     persistence:
