@@ -8,7 +8,6 @@ vars:
     - test
 
 tasks:
-
   push:
     desc: Push all kubeconfig to OnePassword
     cmds:
@@ -23,8 +22,8 @@ tasks:
     cmds:
       - |
         for cluster in {{.CLUSTERS | join " "}}; do
-          op item edit kubernetes KUBECONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/kubernetes/clusters/$cluster/kubeconfig)"
-          op item edit kubernetes TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/talos/$cluster/talosconfig)"
+          op item edit kubernetes KUBECONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/kubernetes/clusters/$cluster/kubeconfig)"  &>/dev/null
+          op item edit kubernetes TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/talos/$cluster/talosconfig)"  &>/dev/null
         done
     preconditions:
       - op whoami --format=json
@@ -33,8 +32,9 @@ tasks:
     desc: Push kubeconfig/talosconfig for all clusters
     cmds:
       - task: :kubernetes:flatten
-      - op item edit kubernetes KUBECONFIG[text]="$(cat ~/.kube/config)"
-      - op item edit kubernetes TALCONFIG[text]="$(cat ~/.talos/config)"
+      - op item edit kubernetes KUBECONFIG[text]="$(cat ~/.kube/config)"  &>/dev/null
+      - op item edit kubernetes KUBECONFIG_BASE64[text]="$(cat ~/.kube/config | base64 -w 0)"  &>/dev/null
+      - op item edit kubernetes TALCONFIG[text]="$(cat ~/.talos/config)"  &>/dev/null
     preconditions:
       - op whoami --format=json
 
