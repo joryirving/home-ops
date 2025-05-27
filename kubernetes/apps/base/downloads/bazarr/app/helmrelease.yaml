@@ -64,21 +64,6 @@ spec:
                 cpu: 10m
               limits:
                 memory: 4Gi
-          subcleaner:
-            image:
-              repository: registry.k8s.io/git-sync/git-sync
-              tag: v4.4.1@sha256:699b654e373f000c356756c24290a6dbb86500934b65ce6093fd92c434c61c6b
-            env:
-              GITSYNC_REPO: https://github.com/KBlixt/subcleaner
-              GITSYNC_REF: master
-              GITSYNC_PERIOD: 24h
-              GITSYNC_ROOT: /add-ons
-            resources:
-              requests:
-                cpu: 10m
-              limits:
-                memory: 128Mi
-            securityContext: *securityContext
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -132,8 +117,6 @@ spec:
         advancedMounts:
           bazarr:
             app:
-              - path: /add-ons
-                subPath: add-ons
               - path: /config/cache
                 subPath: cache
               - path: /config/log
