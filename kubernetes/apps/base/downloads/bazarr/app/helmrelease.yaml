@@ -113,12 +113,6 @@ spec:
               - name: *app
                 port: *port
     persistence:
-      add-ons:
-        type: emptyDir
-      cache:
-        type: emptyDir
-        globalMounts:
-          - path: /config/cache
       config:
         existingClaim: *app
       data:
@@ -127,15 +121,20 @@ spec:
         path: /mnt/user/data
         globalMounts:
           - path: /data
-      log:
-        type: emptyDir
-        globalMounts:
-          - path: /config/log
       scripts:
         type: configMap
         name: bazarr-scripts
         defaultMode: 0775
         globalMounts:
           - readOnly: true
-      tmp:
+      tmpfs:
         type: emptyDir
+        advancedMounts:
+          bazarr:
+            app:
+              - path: /config/cache
+                subPath: cache
+              - path: /config/log
+                subPath: log
+              - path: /tmp
+                subPath: tmp

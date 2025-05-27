@@ -72,10 +72,6 @@ spec:
                     values: ["plex"]
               topologyKey: kubernetes.io/hostname
     persistence:
-      config:
-        type: emptyDir
-        globalMounts:
-          - path: /config
       plex-config:
         existingClaim: plex
         globalMounts:
@@ -84,3 +80,10 @@ spec:
         existingClaim: plex-cache
         globalMounts:
           - path: /data/plex_config/Library/Application Support/Plex Media Server/Cache
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          plex-image-cleanup:
+            app:
+              - path: /config
+                subPath: config

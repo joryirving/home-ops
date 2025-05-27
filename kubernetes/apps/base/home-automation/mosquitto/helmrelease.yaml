@@ -81,7 +81,10 @@ spec:
           mosquitto:
             init-config:
               - path: /tmp/secret
-      external-config:
+      tmpfs:
         type: emptyDir
-        globalMounts:
-          - path: /mosquitto/external_config
+        advancedMounts:
+          mosquitto:
+            app:
+              - path: /mosquitto/external_config
+                subPath: external_config

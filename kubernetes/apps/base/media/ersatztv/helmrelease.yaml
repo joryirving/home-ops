@@ -80,12 +80,6 @@ spec:
     persistence:
       config:
         existingClaim: *app
-      cache:
-        type: emptyDir
-      tmp:
-        type: emptyDir
-      transcode:
-        type: emptyDir
       media:
         type: nfs
         server: voyager.internal
@@ -94,3 +88,14 @@ spec:
           - path: /data
             subPath: media
             readOnly: true
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          ersatztv:
+            app:
+              - path: /cache
+                subPath: cache
+              - path: /tmp
+                subPath: tmp
+              - path: /transcode
+                subPath: transcode
