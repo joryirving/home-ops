@@ -21,31 +21,22 @@ spec:
       mosquitto:
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          init-config:
-            image:
-              repository: public.ecr.aws/docker/library/eclipse-mosquitto
-              tag: 2.0.21
-              pullPolicy: IfNotPresent
-            command: ["/bin/sh", "-c"]
-            args:
-              [
-                "cp /tmp/secret/* /mosquitto/external_config/ && mosquitto_passwd -U /mosquitto/external_config/mosquitto_pwd"
-              ]
         containers:
           app:
             image:
               repository: public.ecr.aws/docker/library/eclipse-mosquitto
               tag: 2.0.21
-            resources:
-              requests:
-                cpu: 5m
-              limits:
-                memory: 16Mi
+            env:
+              TZ: America/Edmonton
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 100Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -58,33 +49,30 @@ spec:
         controller: *app
         type: LoadBalancer
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: mqtt.jory.dev
+          external-dns.alpha.kubernetes.io/hostname: ${GATUS_SUBDOMAIN}.jory.dev
           lbipam.cilium.io/ips: 10.69.10.134, ::ffff:10.69.10.134
         ports:
           http:
             port: 1883
+    configMaps:
+      config:
+        data:
+          mosquitto.conf: |
+            allow_anonymous true
+            autosave_interval 60
+            connection_messages false
+            listener 1883
+            per_listener_settings false
+            persistence true
+            persistence_location /data
     persistence:
       data:
-        existingClaim: mosquitto
+        existingClaim: *app
       config-file:
         type: configMap
-        name: mosquitto-configmap # overriden by kustomizeconfig
+        name: mosquitto
         advancedMounts:
           mosquitto:
             app:
               - path: /mosquitto/config/mosquitto.conf
                 subPath: mosquitto.conf
-      secret-file:
-        type: secret
-        name: mosquitto
-        advancedMounts:
-          mosquitto:
-            init-config:
-              - path: /tmp/secret
-      tmpfs:
-        type: emptyDir
-        advancedMounts:
-          mosquitto:
-            app:
-              - path: /mosquitto/external_config
-                subPath: external_config

@@ -8,14 +8,13 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  components:
-    - ../../../../components/gatus/guarded
   interval: 1h
   path: ./kubernetes/apps/base/home-automation/mosquitto/
   postBuild:
     substitute:
       APP: *app
       CLUSTER: utility
+      GATUS_SUBDOMAIN: mqtt
   prune: true
   retryInterval: 2m
   sourceRef:
