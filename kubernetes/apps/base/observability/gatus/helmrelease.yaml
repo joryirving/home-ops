@@ -120,6 +120,8 @@ spec:
     serviceAccount:
       gatus: {}
     persistence:
+      config:
+        type: emptyDir
       config-file:
         type: configMap
         name: gatus-configmap
@@ -127,10 +129,3 @@ spec:
           - path: /config/config.yaml
             subPath: config.yaml
             readOnly: true
-      tmpfs:
-        type: emptyDir
-        advancedMounts:
-          gatus:
-            app:
-              - path: /config
-                subPath: config
