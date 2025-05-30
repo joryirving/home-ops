@@ -79,8 +79,6 @@ spec:
               - name: *app
                 port: *port
     persistence:
-      config:
-        type: emptyDir
       config-file:
         type: configMap
         name: karma-configmap
@@ -88,3 +86,10 @@ spec:
           - path: *config
             subPath: config.yaml
             readOnly: true
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          karma:
+            app:
+              - path: /config
+                subPath: config

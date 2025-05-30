@@ -108,9 +108,13 @@ spec:
     serviceAccount:
       dashbrr: {}
     persistence:
-      cache:
-        type: emptyDir
-        sizeLimit: 1Gi
       config:
         type: configMap
         name: dashbrr-config
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          dashbrr:
+            app:
+              - path: /cache
+                subPath: cache
