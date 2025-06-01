@@ -10,9 +10,8 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 0.0.8
-  url: oci://ghcr.io/wiremind/wiremind-helm-charts/silence-operator
-
+    tag: 0.16.1
+  url: oci://ghcr.io/home-operations/charts-mirror/silence-operator
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -31,89 +30,9 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
-  dependsOn:
-    - name: silence-operator-crds
-      namespace: observability
   values:
+    alertmanagerAddress: http://kube-prometheus-stack-alertmanager:9093
     image:
-      name: quay.io/giantswarm/silence-operator
-    operator:
-      config:
-        alertmanager:
-          service:
-            address: http://kube-prometheus-stack-alertmanager:9093
-    rbac:
-      create: true
-    extraDeploy:
-      - apiVersion: monitoring.giantswarm.io/v1alpha1
-        kind: Silence
-        metadata:
-          name: ceph-node-nfsmount-diskspace-warning
-          namespace: observability
-        spec:
-          matchers:
-            - name: alertname
-              value: CephNodeDiskspaceWarning
-              isRegex: false
-            - name: mountpoint
-              value: /etc/nfsmount.conf
-              isRegex: false
-      - apiVersion: monitoring.giantswarm.io/v1alpha1
-        kind: Silence
-        metadata:
-          name: ceph-node-local-diskspace-warning
-          namespace: observability
-        spec:
-          matchers:
-            - name: alertname
-              value: CephNodeDiskspaceWarning
-              isRegex: false
-            - name: device
-              value: /dev/nvme.*
-              isRegex: true
-      - apiVersion: monitoring.giantswarm.io/v1alpha1
-        kind: Silence
-        metadata:
-          name: ceph-node-network-packet-errors
-          namespace: observability
-        spec:
-          matchers:
-            - name: alertname
-              value: CephNodeNetworkPacketErrors
-              isRegex: false
-      - apiVersion: monitoring.giantswarm.io/v1alpha1
-        kind: Silence
-        metadata:
-          name: ceph-inconsistent-mtu-diskspace-warning
-          namespace: observability
-        spec:
-          matchers:
-            - name: alertname
-              value: CephNodeInconsistentMTU
-              isRegex: false
-      - apiVersion: monitoring.giantswarm.io/v1alpha1
-        kind: Silence
-        metadata:
-          name: cpu-throttling-kyoo-front
-          namespace: observability
-        spec:
-          matchers:
-            - name: alertname
-              value: CPUThrottlingHigh
-              isRegex: false
-            - name: pod
-              value: kyoo-front.*
-              isRegex: true
-      - apiVersion: monitoring.giantswarm.io/v1alpha1
-        kind: Silence
-        metadata:
-          name: voyager-memory-high-utilization
-          namespace: observability
-        spec:
-          matchers:
-            - name: alertname
-              value: NodeMemoryHighUtilization
-              isRegex: false
-            - name: instance
-              value: voyager.internal:9100
-              isRegex: false
+      registry: quay.io
+    networkPolicy:
+      enabled: false
