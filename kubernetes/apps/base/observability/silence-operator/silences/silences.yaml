@@ -1,0 +1,93 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.giantswarm.io/silence_v1alpha1.json
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: ceph-node-nfsmount-diskspace-warning
+spec:
+  matchers:
+    - name: alertname
+      value: CephNodeDiskspaceWarning
+      isRegex: false
+    - name: mountpoint
+      value: /etc/nfsmount.conf
+      isRegex: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.giantswarm.io/silence_v1alpha1.json
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: ceph-node-local-diskspace-warning
+spec:
+  matchers:
+    - name: alertname
+      value: CephNodeDiskspaceWarning
+      isRegex: false
+    - name: device
+      value: /dev/nvme.*
+      isRegex: true
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.giantswarm.io/silence_v1alpha1.json
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: ceph-node-network-packet-errors
+spec:
+  matchers:
+    - name: alertname
+      value: CephNodeNetworkPacketErrors
+      isRegex: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.giantswarm.io/silence_v1alpha1.json
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: ceph-inconsistent-mtu-warning
+spec:
+  matchers:
+    - name: alertname
+      value: CephNodeInconsistentMTU
+      isRegex: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.giantswarm.io/silence_v1alpha1.json
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: nas-memory-high-utilization
+spec:
+  matchers:
+    - name: alertname
+      value: NodeMemoryHighUtilization
+      isRegex: false
+    - name: instance
+      value: voyager.internal:9100
+      isRegex: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.giantswarm.io/silence_v1alpha1.json
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: keda-hpa-maxed-out
+spec:
+  matchers:
+    - name: alertname
+      value: KubeHpaMaxedOut
+      isRegex: false
+    - name: horizontalpodautoscaler
+      value: keda-hpa-.*
+      isRegex: true
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.giantswarm.io/silence_v1alpha1.json
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: cpu-throttling-kyoo-front
+  namespace: observability
+spec:
+  matchers:
+    - name: alertname
+      value: CPUThrottlingHigh
+      isRegex: false
+    - name: pod
+      value: kyoo-front.*
+      isRegex: true
