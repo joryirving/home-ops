@@ -144,7 +144,7 @@ function render_template() {
         log error "File does not exist" "file=${file}"
     fi
 
-    if ! output=$(minijinja-cli "${file}" | op inject 2>/dev/null) || [[ -z "${output}" ]]; then
+    if ! output=$(minijinja-cli "${file}" | op inject) || [[ -z "${output}" ]]; then
         log error "Failed to render config" "file=${file}"
     fi
 

@@ -53,12 +53,12 @@ tasks:
       SHARED_APPS: '{{.SHARED_APPS}}'
       SHARED_DIR: '{{.SHARED_DIR}}'
     preconditions:
-      - op.exe whoami --format=json
+      - op whoami --format=json
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
       - test -f {{.TALOS_DIR}}/talosconfig
-      - which helmfile jq kubectl op.exe talosctl
+      - which helmfile jq kubectl op talosctl
 
   helmfile:
     desc: Bootstrap Cluster apps [CSI_DISK=required]
@@ -80,7 +80,7 @@ tasks:
     requires:
       vars: [CLUSTER, CSI_DISK]
     preconditions:
-      - op.exe whoami --format=json
+      - op whoami --format=json
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
       - test -f {{.TALOS_DIR}}/talosconfig
       - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
