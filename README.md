@@ -112,7 +112,7 @@ The alternative solution to these two problems would be to host a Kubernetes clu
 
 | Service                                     | Use                                                               | Cost          |
 |---------------------------------------------|-------------------------------------------------------------------|---------------|
-| [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | Free via work |
+| [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$80/yr$      |
 | [Cloudflare](https://www.cloudflare.com/)   | Domain, DNS, WAF and R2 bucket (S3 Compatible endpoint)           | ~$30/yr       |
 | [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free          |
 | [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free          |
@@ -136,6 +136,10 @@ In my cluster there are two instances of [ExternalDNS](https://github.com/kubern
 | Eula  | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
 | Ganyu | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
 
+OS Disk: m.2 Samsung PM9A3 960GB
+Local Disk: m.2 WD SN770 1TB
+Rook Disk: u.2 Samsung PM9A3 1.92TB
+
 Total CPU: 60 Cores/60 Threads
 Total RAM: 384GB
 
@@ -143,7 +147,10 @@ Total RAM: 384GB
 
 | Name     | Device     | CPU           | OS Disk   | Local Disk | RAM  | OS    | Purpose           |
 |----------|------------|---------------|-----------|------------|------|-------|-------------------|
-| Celestia | Bosgame P1 | Ryzen 7 5700U | 480GB SSD | 500GB NVME | 32GB | Talos | k8s control-plane |
+| Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe   | 32GB | Talos | k8s control-plane |
+
+OS Disk: 2.5" Samsung 870 EVO SSD
+Local Disk: m.2 WD SN770 1TB
 
 Total CPU: 8 Cores/16 Threads
 Total RAM: 32GB
@@ -166,7 +173,6 @@ Total RAM: 32GB
 | Device                      | Purpose              |
 |-----------------------------|----------------------|
 | Unifi UDM-SE                | Network - Router     |
-| USW-Pro-24-POE              | Network - 1G Switch  |
 | Back-UPS 600                | Network - UPS        |
 | Unifi USW-Enterprise-24-PoE | Server - 2.5G Switch |
 | Unifi USW-Aggregation       | Server - 10G Switch  |
