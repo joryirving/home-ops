@@ -49,9 +49,9 @@ machine:
     extraConfig:
       serializeImagePulls: false
     extraMounts:
-      - destination: /var/lib/csi-local-hostpath
+      - destination: /var/mnt/extra
         type: bind
-        source: /var/lib/csi-local-hostpath
+        source: /var/mnt/extra
         options: ["bind", "rshared", "rw"]
     defaultRuntimeSeccompProfileEnabled: true
     nodeIP:
@@ -70,7 +70,6 @@ machine:
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
-    intel.feature.node.kubernetes.io/gpu: true
     topology.kubernetes.io/region: k8s
   sysctls:
     fs.inotify.max_user_watches: 1048576   # Watchdog

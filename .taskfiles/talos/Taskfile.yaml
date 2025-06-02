@@ -15,7 +15,7 @@ tasks:
   apply-node:
     desc: Apply Talos config to a node [CLUSTER=main] [NODE=required] [MODE=auto]
     cmd: |-
-      minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 | op inject \
+      minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 | op.exe inject \
         | talosctl --nodes {{.NODE}} apply-config \
           --mode {{.MODE}} \
           --config-patch @{{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{.NODE}}.yaml \
@@ -38,12 +38,12 @@ tasks:
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
-      - op whoami --format=json
+      - op.exe whoami --format=json
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
       - test -f {{.TALOS_DIR}}/machineconfig.yaml.j2
       - test -f {{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{.NODE}}.yaml
       - test -f {{.TALOS_DIR}}/schematic.yaml
-      - which curl jq minijinja-cli op talosctl
+      - which curl jq minijinja-cli op.exe talosctl
 
   apply-cluster: ## This isn't working on utility cluster
     desc: Apply the Talos config on all nodes for an existing cluster [CLUSTER=main]
