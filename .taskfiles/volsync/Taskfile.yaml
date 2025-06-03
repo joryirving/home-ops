@@ -30,6 +30,7 @@ tasks:
     env:
       NS: '{{.NS}}'
       APP: '{{.APP}}'
+      REPOSITORY: '{{.REPOSITORY}}'
     requires:
       vars: [CLUSTER, APP]
     preconditions:
@@ -94,7 +95,7 @@ tasks:
       - flux --namespace {{.NS}} resume kustomization {{.APP}}
       - flux --namespace {{.NS}} resume helmrelease {{.APP}}
       - flux --namespace {{.NS}} reconcile helmrelease {{.APP}} --force
-      - kubectl --namespace {{.NS}} wait pod --for=condition=ready --selector="app.kubernetes.io/name={{.APP}}" --timeout=5m
+      - kubectl --namespace {{.NS}} wait pod --for=condition=ready --selector="app.kubernetes.io/instance={{.APP}}" --timeout=5m
     vars:
       NS: '{{.NS | default "default"}}'
       CONTROLLER:
@@ -103,6 +104,7 @@ tasks:
       NS: '{{.NS}}'
       APP: '{{.APP}}'
       PREVIOUS: '{{.PREVIOUS}}'
+      REPOSITORY: '{{.REPOSITORY}}'
       CLAIM:
         sh: kubectl --context {{.CLUSTER}} --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.sourcePVC}"
       ACCESS_MODES:
