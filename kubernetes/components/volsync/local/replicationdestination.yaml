@@ -10,7 +10,7 @@ spec:
   trigger:
     manual: restore-once
   restic:
-    repository: "${APP}-volsync"
+    repository: "${APP}-${VOLSYNC_REPOSITORY:=volsync}" # volsync for local, volsync-r2 for remote
     copyMethod: Snapshot
     volumeSnapshotClassName: "${VOLSYNC_SNAPSHOTCLASS:=csi-ceph-blockpool}"
     cacheStorageClassName: "${VOLSYNC_CACHE_SNAPSHOTCLASS:=ceph-block}"
