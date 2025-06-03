@@ -14,7 +14,7 @@ rclone config
 
 3) Choose s3 as the storage type.
 
-4) Set S3 provider to Cloudflare (option 12).
+4) Set S3 provider to Cloudflare (option 6).
 
 5) Enter the Cloudflare R2 Access Key and Secret Key (found in your Cloudflare dashboard under "R2 API Tokens"). Note that you want to scope this to read/write on a specific bucket(s).
 
