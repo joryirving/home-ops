@@ -39,7 +39,7 @@ spec:
             securityContext:
               privileged: true
             env:
-              # OLLAMA_MODELS: &modelPath /models
+              OLLAMA_MODELS: &modelPath /models
               # ONEAPI_DEVICE_SELECTOR: level_zero:0
               # IPEX_LLM_NUM_CTX: 16384
               no_proxy: localhost,127.0.0.1
@@ -86,7 +86,7 @@ spec:
       ollama:
         existingClaim: *app
         globalMounts:
-          - path: /models #*modelPath
+          - path: *modelPath
             subPath: models
           - path: /root/.ollama
             subPath: config
