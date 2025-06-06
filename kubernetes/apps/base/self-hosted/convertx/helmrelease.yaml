@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app it-tools
+  name: &app convertx
 spec:
   interval: 1h
   chartRef:
@@ -18,38 +18,55 @@ spec:
       retries: 3
   values:
     controllers:
-      it-tools:
-        annotations:
-          reloader.stakater.com/auto: "true"
+      convertx:
+        strategy: RollingUpdate
         containers:
           app:
             image:
-              repository: ghcr.io/joryirving/it-tools
-              tag: 2024.10.22@sha256:9b2d2253503fde13a5a879702d2b7fb24d1823f388d49ecf2b93933f8745dc5c
+              repository: ghcr.io/c4illin/convertx
+              tag: v0.14.1@sha256:346589f154332997329fdc888417d4b24c49cc9140eab80e637a68cfbdd8041b
             env:
               TZ: America/Edmonton
-            resources:
-              requests:
-                cpu: 5m
-                memory: 32Mi
-              limits:
-                memory: 256Mi
+              ACCOUNT_REGISTRATION: true
+              HTTP_ALLOWED: false
+              ALLOW_UNAUTHENTICATED: false
+              AUTO_DELETE_EVERY_N_HOURS: 1
+            # resources:
+            #   requests:
+            #     gpu.intel.com/i915: 1
+            #   limits:
+            #     gpu.intel.com/i915: 1
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &port 3000
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
         pod:
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 100
-            fsGroup: 100
+            runAsUser: &uid 568
+            runAsGroup: *uid
+            fsGroup: *uid
             fsGroupChangePolicy: "OnRootMismatch"
+          # nodeSelector:
+          #   intel.feature.node.kubernetes.io/gpu: "true"
     service:
       app:
         controller: *app
         ports:
           http:
-            port: &port 8080
+            port: *port
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
@@ -62,10 +79,14 @@ spec:
               - name: *app
                 port: *port
     persistence:
+      data:
+        existingClaim: *app
+        globalMounts:
+          - path: /app/data
       tmpfs:
         type: emptyDir
         advancedMounts:
-          it-tools:
+          convertx:
             app:
               - path: /tmp
                 subPath: tmp
