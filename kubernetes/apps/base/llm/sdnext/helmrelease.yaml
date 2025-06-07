@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app mylar
+  name: &app sdnext
 spec:
   interval: 1h
   chartRef:
@@ -18,43 +18,30 @@ spec:
       retries: 3
   values:
     controllers:
-      mylar:
-        annotations:
-          reloader.stakater.com/auto: "true"
+      sdnext:
+        replicas: 1 # 1 per node
         containers:
           app:
             image:
-              repository: ghcr.io/linuxserver/mylar3
-              tag: version-v0.8.2@sha256:71af252f1e526418d642051f4b4a5a0499802e5c707029663b81a9454e09a5a4
-            env:
-              TZ: America/Edmonton
-              UID: 1000
-              GID: 1000
+              repository: ghcr.io/joryirving/sdnext
+              tag: latest@sha256:fc86187744fb7d7de4ef9704b2b0399c385226e19738f0bef95b1802f466ed57
             resources:
               requests:
-                cpu: 15m
-                memory: 700M
+                cpu: 200m
               limits:
-                memory: 1200M
-    # defaultPodOptions:
-    #   securityContext:
-    #     runAsNonRoot: true
-    # runAsUser: 1000
-    # runAsGroup: 100
-    # fsGroup: 100
-    #     fsGroupChangePolicy: OnRootMismatch
-    #     seccompProfile: { type: RuntimeDefault }
+                memory: 16Gi
+                gpu.intel.com/i915: 1
     service:
       app:
         controller: *app
         ports:
           http:
-            port: &port 8090
+            port: &port 7860
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
         parentRefs:
-          - name: internal
+          - name: external
             namespace: kube-system
             sectionName: https
         rules:
@@ -63,10 +50,7 @@ spec:
                 port: *port
     persistence:
       config:
+        enabled: true
         existingClaim: *app
-      data:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/user/data
         globalMounts:
-          - path: /data
+          - path: /app
