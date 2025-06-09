@@ -5,9 +5,11 @@ kind: Kustomization
 resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
-secretGenerator:
+configMapGenerator:
   - name: acars-config
     options:
+      annotations:
+        kustomize.toolkit.fluxcd.io/substitute: disabled
       disableNameSuffixHash: true
     files:
       - config.yaml=acars-processor.yaml
