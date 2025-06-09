@@ -1,8 +1,9 @@
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app sabnzbd
+  name: &app cross-seed
 spec:
   interval: 1h
   chartRef:
@@ -17,47 +18,40 @@ spec:
       retries: 3
   values:
     controllers:
-      sabnzbd:
+      cross-seed:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: ghcr.io/joryirving/sabnzbd
-              tag: 4.5.1@sha256:123010627b7ccd52e33c5147dfd642f96762a789e9bb18493ce1dfa8547e5ade
+              repository: ghcr.io/cross-seed/cross-seed
+              tag: 6.12.6@sha256:4a954ce1f8b17d48d652544eb03f916a6f59f0f58499ede7b380d7f7dcc01ae8
             env:
+              CROSS_SEED_PORT: &port 80
               TZ: America/Edmonton
-              SABNZBD__PORT: &port 8080
-              SABNZBD__HOST_WHITELIST_ENTRIES: >-
-                sabnzbd,
-                sabnzbd.downloads,
-                sabnzbd.downloads.svc,
-                sabnzbd.downloads.svc.cluster,
-                sabnzbd.downloads.svc.cluster.local,
-                sab.jory.dev,
-                sabnzbd.jory.dev
-            envFrom:
-              - secretRef:
-                  name: sabnzbd-secret
+            args: ["daemon"]
             probes:
               liveness: &probes
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
-                    path: /api?mode=version
+                    path: /api/ping
                     port: *port
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
-                memory: 100Mi
               limits:
-                memory: 12Gi
+                memory: 512Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -65,41 +59,26 @@ spec:
         runAsGroup: 100
         fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: app.kubernetes.io/name
-                      operator: In
-                      values: ["qbittorrent"]
-                topologyKey: kubernetes.io/hostname
     service:
       app:
         controller: *app
         ports:
           http:
             port: *port
-    route:
-      app:
-        hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
-        parentRefs:
-          - name: internal
-            namespace: kube-system
-            sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       config:
         existingClaim: *app
+      secret-file:
+        type: secret
+        name: cross-seed
+        globalMounts:
+          - path: /config/config.js
+            subPath: config.js
+            readOnly: true
       media:
         type: nfs
         server: voyager.internal
         path: /mnt/user/data
         globalMounts:
-          - path: /media/Downloads/usenet
-            subPath: Downloads/usenet
+          - path: /media/Downloads
+            subPath: Downloads
