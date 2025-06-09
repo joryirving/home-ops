@@ -18,7 +18,7 @@ spec:
       retries: 3
   values:
     controllers:
-      acars-dec:
+      dec:
         annotations:
           reloader.stakater.com/auto: "true"
         replicas: 1
@@ -38,7 +38,7 @@ spec:
               # FREQUENCIES: >-
               #   130.025;130.425;130.450;130.825;130.850;131.125;131.425;
               #   131.450;131.475;131.525;131.550;131.725;131.825;131.850
-              OUTPUT_SERVER: acars-acars-router
+              OUTPUT_SERVER: acars-router
               OUTPUT_SERVER_PORT: "5550"
               OUTPUT_SERVER_MODE: tcp
             resources:
@@ -54,7 +54,7 @@ spec:
           reloader.stakater.com/auto: "true"
         replicas: 0 # both devices can't use the adapter at once
         containers:
-          dumpvdl2:
+          app:
             image:
               repository: ghcr.io/sdr-enthusiasts/docker-dumpvdl2
               tag: latest-build-348
@@ -64,7 +64,7 @@ spec:
               SOAPYSDR: driver=rtlsdr
               FREQUENCIES: "136.975;136.650"
               ZMQ_MODE: server
-              ZMQ_ENDPOINT: tcp://acars-acars-router:45555
+              ZMQ_ENDPOINT: tcp://acars-router:45555
             resources:
               requests:
                 cpu: 10m
@@ -73,33 +73,33 @@ spec:
                 memory: 256Mi
             securityContext:
               privileged: true
-      acars-router:
+      router:
         annotations:
           reloader.stakater.com/auto: "true"
         replicas: 1
         containers:
-          acars-router:
+          app:
             image:
               repository: ghcr.io/sdr-enthusiasts/acars_router
               tag: latest-build-494
             env:
               TZ: America/Edmonton
-              AR_SEND_UDP_ACARS: acars-acars-hub:5550;${ACARSDRAMA_ACARS}
-              AR_SEND_UDP_VDLM2: acars-acars-hub:5555;${ACARSDRAMA_VDLM2}
-              AR_RECV_ZMQ_VDLM2: acars-acars-hub:45555
+              AR_SEND_UDP_ACARS: acars-hub:5550;${ACARSDRAMA_ACARS}
+              AR_SEND_UDP_VDLM2: acars-hub:5555;${ACARSDRAMA_VDLM2}
+              AR_RECV_ZMQ_VDLM2: acars-dumpvdl2:45555
             resources:
               requests:
                 cpu: 10m
                 memory: 128Mi
               limits:
                 memory: 256Mi
-      acars-processor:
+      processor:
         annotations:
           reloader.stakater.com/auto: "true"
-        replicas: 1 # active nas
+        replicas: 1
         type: statefulset
         containers:
-          acars-processor:
+          app:
             image:
               repository: ghcr.io/tyzbit/acars-processor
               tag: v0.14.0@sha256:d09fade77592ead5749bb3a3559a317b3d432ee2565c479c13ff92ee9b72e8e6
@@ -112,13 +112,13 @@ spec:
                 memory: 512Mi
               limits:
                 memory: 512Mi
-      acars-hub:
+      hub:
         annotations:
           reloader.stakater.com/auto: "true"
-        replicas: 1 # active nas
+        replicas: 1
         type: statefulset
         containers:
-          acars-hub:
+          app:
             image:
               repository: ghcr.io/sdr-enthusiasts/docker-acarshub
               tag: v3.8.1Build1405_nohealthcheck
@@ -126,7 +126,7 @@ spec:
               TZ: America/Edmonton
               ENABLE_ADSB: "false"
               ENABLE_ACARS: external
-              # ENABLE_VDLM: external
+              ENABLE_VDLM: external
               QUIET_MESSAGES: "false" # This logs the messages themselves
             resources:
               requests:
@@ -138,8 +138,8 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: celestia
     service:
-      acars-router:
-        controller: acars-router
+      router:
+        controller: router
         type: ClusterIP
         ports:
           router:
@@ -150,8 +150,8 @@ spec:
         ports:
           vdl:
             port: 45555
-      acars-hub:
-        controller: acars-hub
+      hub:
+        controller: hub
         type: ClusterIP
         ports:
           http:
@@ -167,7 +167,7 @@ spec:
           vdsloutput:
             port: 15555
     route:
-      acars-hub:
+      app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: external
@@ -175,21 +175,21 @@ spec:
             sectionName: https
         rules:
           - backendRefs:
-              - identifier: acars-hub
+              - identifier: hub
                 port: *port
     persistence:
-      acars-hub:
+      hub:
         existingClaim: *app
         advancedMounts:
-          acars-hub:
-            acars-hub:
+          hub:
+            hub:
               - path: /run/acars
-      acars-processor:
-        type: secret
+      processor:
+        type: configMap
         name: acars-config
         advancedMounts:
-          acars-processor:
-            acars-processor:
+          processor:
+            processor:
               - path: /config.yaml
                 readOnly: true
                 subPath: config.yaml
