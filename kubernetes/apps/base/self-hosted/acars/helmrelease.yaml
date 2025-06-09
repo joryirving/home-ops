@@ -21,7 +21,7 @@ spec:
       dec:
         annotations:
           reloader.stakater.com/auto: "true"
-        replicas: 1
+        replicas: 1 # both apps can't use the adapter at once
         containers:
           app:
             image:
@@ -52,7 +52,7 @@ spec:
       dumpvdl2:
         annotations:
           reloader.stakater.com/auto: "true"
-        replicas: 0 # both devices can't use the adapter at once
+        replicas: 0 # both apps can't use the adapter at once
         containers:
           app:
             image:
@@ -96,8 +96,6 @@ spec:
       processor:
         annotations:
           reloader.stakater.com/auto: "true"
-        replicas: 1
-        type: statefulset
         containers:
           app:
             image:
@@ -115,8 +113,6 @@ spec:
       hub:
         annotations:
           reloader.stakater.com/auto: "true"
-        replicas: 1
-        type: statefulset
         containers:
           app:
             image:
@@ -182,14 +178,14 @@ spec:
         existingClaim: *app
         advancedMounts:
           hub:
-            hub:
+            app:
               - path: /run/acars
       processor:
         type: configMap
         name: acars-config
         advancedMounts:
           processor:
-            processor:
+            app:
               - path: /config.yaml
                 readOnly: true
                 subPath: config.yaml
