@@ -27,7 +27,8 @@ spec:
               tag: 4.5.1@sha256:123010627b7ccd52e33c5147dfd642f96762a789e9bb18493ce1dfa8547e5ade
             env:
               TZ: America/Edmonton
-              SABNZBD__PORT: &port 8080
+              CROSS_SEED_HOST: cross-seed.downloads.svc.cluster.local
+              SABNZBD__PORT: &port 80
               SABNZBD__HOST_WHITELIST_ENTRIES: >-
                 sabnzbd,
                 sabnzbd.downloads,
@@ -103,3 +104,11 @@ spec:
         globalMounts:
           - path: /media/Downloads/usenet
             subPath: Downloads/usenet
+      scripts:
+        type: configMap
+        name: sabnzbd-scripts
+        defaultMode: 0775
+        globalMounts:
+          - readOnly: true
+      tmp:
+        type: emptyDir
