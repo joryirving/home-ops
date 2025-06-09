@@ -1,8 +1,9 @@
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app radarr
+  name: &app cross-seed
 spec:
   interval: 1h
   chartRef:
@@ -17,43 +18,25 @@ spec:
       retries: 3
   values:
     controllers:
-      radarr:
+      cross-seed:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: ghcr.io/joryirving/radarr
-              tag: 5.26.1.10080@sha256:6e3851dc78a6ea9907fab1f1076fbd0d265bfe1bbe442c564c03f7e3da8844d5
+              repository: ghcr.io/cross-seed/cross-seed
+              tag: 6.12.6@sha256:4a954ce1f8b17d48d652544eb03f916a6f59f0f58499ede7b380d7f7dcc01ae8
             env:
-              RADARR__APP__INSTANCENAME: Radarr
-              RADARR__APP__THEME: dark
-              RADARR__AUTH__METHOD: External
-              RADARR__AUTH__REQUIRED: DisabledForLocalAddresses
-              RADARR__LOG__DBENABLED: "False"
-              RADARR__LOG__LEVEL: info
-              RADARR__POSTGRES__HOST: radarr-pgbouncer.downloads.svc
-              RADARR__POSTGRES__MAINDB: *app
-              RADARR__POSTGRES__PASSWORD:
-                valueFrom:
-                  secretKeyRef:
-                    name: radarr-pguser-radarr
-                    key: password
-              RADARR__POSTGRES__PORT: "5432"
-              RADARR__POSTGRES__USER: *app
-              RADARR__SERVER__PORT: &port 80
-              RADARR__UPDATE__BRANCH: develop
+              CROSS_SEED_PORT: &port 80
               TZ: America/Edmonton
-            envFrom:
-              - secretRef:
-                  name: radarr-secret
+            args: ["daemon"]
             probes:
               liveness: &probes
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
-                    path: /ping
+                    path: /api/ping
                     port: *port
                   initialDelaySeconds: 0
                   periodSeconds: 10
@@ -66,9 +49,9 @@ spec:
               capabilities: { drop: ["ALL"] }
             resources:
               requests:
-                cpu: 100m
+                cpu: 10m
               limits:
-                memory: 2Gi
+                memory: 512Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -82,32 +65,20 @@ spec:
         ports:
           http:
             port: *port
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: internal
-            namespace: kube-system
-            sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       config:
         existingClaim: *app
+      secret-file:
+        type: secret
+        name: cross-seed
+        globalMounts:
+          - path: /config/config.js
+            subPath: config.js
+            readOnly: true
       media:
         type: nfs
         server: voyager.internal
         path: /mnt/user/data
         globalMounts:
-          - path: /media
-      tmpfs:
-        type: emptyDir
-        advancedMounts:
-          radarr:
-            app:
-              - path: /config/logs
-                subPath: logs
-              - path: /tmp
-                subPath: tmp
+          - path: /media/Downloads
+            subPath: Downloads
