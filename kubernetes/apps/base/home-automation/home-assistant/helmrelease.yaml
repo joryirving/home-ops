@@ -28,6 +28,8 @@ spec:
               tag: 2025.5.3@sha256:8325d093759ced74f6aaf6bbd3331d0eda25bfbd111deb27f348fb7a362db2bf
             env:
               TZ: America/Edmonton
+              HASS_HTTP_TRUSTED_PROXY_1: 10.69.1.0/24
+              HASS_HTTP_TRUSTED_PROXY_2: 10.42.0.0/16
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -105,6 +107,10 @@ spec:
         existingClaim: *app
         globalMounts:
           - path: /config
+      config-cache:
+        existingClaim: home-assistant-cache
+        globalMounts:
+          - path: /config/.venv
       tmpfs:
         type: emptyDir
         advancedMounts:
