@@ -1,0 +1,28 @@
+---
+api:
+  listen: :80
+rtsp:
+  listen: :554
+webrtc:
+  listen: :8555
+  candidates:
+    - ${LB_SVC_IP}:8555
+    - stun:8555
+  ice_servers:
+    - urls:
+       - stun:stun.cloudflare.com:3478
+streams:
+  dining_room:
+    - rtsp://${USERNAME}:${PASSWORD}@192.168.20.20:554/ch0
+  family_room:
+    - rtsp://${USERNAME}:${PASSWORD}@192.168.20.126:554/ch0
+  front_room:
+    - rtsp://${USERNAME}:${PASSWORD}@192.168.20.222:554/ch0
+  garage:
+    - rtsp://${USERNAME}:${PASSWORD}@192.168.20.52:554/ch0
+  backyard:
+    - rtsp://${USERNAME}:${PASSWORD}@192.168.20.193:554/ch0
+  driveway:
+    - rtsp://${USERNAME}:${PASSWORD}@192.168.20.149:554/ch0
+  patio:
+    - rtsp://${USERNAME}:${PASSWORD}@192.168.20.248:554/ch0
