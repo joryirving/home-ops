@@ -71,7 +71,6 @@ spec:
         supplementalGroups: [44]
     service:
       app:
-        contrller: *app
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.35, ::ffff:10.69.10.35
@@ -86,6 +85,10 @@ spec:
           - name: external
             namespace: kube-system
             sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
             filters:
               - type: RequestHeaderModifier
                 requestHeaderModifier:
@@ -95,8 +98,7 @@ spec:
                   type: PathPrefix
                   value: /library/streams
           - backendRefs:
-              - name: *app
-                port: *port
+              - identifier: app
     persistence:
       config:
         existingClaim: *app
