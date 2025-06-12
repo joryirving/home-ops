@@ -12,7 +12,7 @@ spec:
   path: ./kubernetes/apps/base/kube-system/cilium/app
   postBuild:
     substitute:
-      CLUSTER: main
+      CLUSTER: utility
   prune: true
   sourceRef:
     kind: GitRepository
@@ -33,9 +33,9 @@ spec:
       spec:
         values:
           cluster:
-            name: main
+            name: utility
           operator:
-            replicas: 2
+            replicas: 1
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -53,11 +53,11 @@ spec:
   path: ./kubernetes/apps/base/kube-system/cilium/gateway
   postBuild:
     substitute:
-      CLUSTER: main
-      EXTERNAL_DOMAIN: external
-      INTERNAL_DOMAIN: internal
-      SVC_GATEWAY_EXTERNAL: 10.69.10.32
-      SVC_GATEWAY_INTERNAL: 10.69.10.31
+      CLUSTER: utility
+      EXTERNAL_DOMAIN: external-utility
+      INTERNAL_DOMAIN: internal-utility
+      SVC_GATEWAY_EXTERNAL: 10.69.10.132
+      SVC_GATEWAY_INTERNAL: 10.69.10.131
   prune: true
   sourceRef:
     kind: GitRepository
@@ -79,7 +79,7 @@ spec:
   dependsOn:
     - name: cilium
   interval: 15m
-  path: ./kubernetes/apps/main/kube-system/cilium/config
+  path: ./kubernetes/apps/utility/kube-system/cilium
   prune: true
   sourceRef:
     kind: GitRepository
