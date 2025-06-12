@@ -28,8 +28,8 @@ spec:
               tag: 2025.6.3
             env:
               TZ: America/Edmonton
-              PUID: &userid 1000
-              PGID: &groupid 100
+              PUID: &uid 1000
+              PGID: &gid 100
             resources:
               requests:
                 cpu: 15m
@@ -39,9 +39,9 @@ spec:
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
-        runAsUser: *userid
-        runAsGroup: *groupid
-        fsGroup: *groupid
+        runAsUser: *uid
+        runAsGroup: *gid
+        fsGroup: *gid
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: { type: RuntimeDefault }
     service:
