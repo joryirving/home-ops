@@ -184,8 +184,7 @@ spec:
           hub:
             app:
               - path: /run/acars
-              - path: /data
-      processor:
+      processor-config:
         type: configMap
         name: acars-config
         advancedMounts:
@@ -194,3 +193,9 @@ spec:
               - path: /config.yaml
                 readOnly: true
                 subPath: config.yaml
+      processor-db:
+        existingClaim: acars-processor
+        advancedMounts:
+          processor:
+            app:
+              - path: /data
