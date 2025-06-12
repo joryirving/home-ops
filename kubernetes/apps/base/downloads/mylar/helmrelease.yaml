@@ -46,7 +46,6 @@ spec:
     #     seccompProfile: { type: RuntimeDefault }
     service:
       app:
-        controller: *app
         ports:
           http:
             port: &port 8090
@@ -57,10 +56,6 @@ spec:
           - name: internal
             namespace: kube-system
             sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       config:
         existingClaim: *app

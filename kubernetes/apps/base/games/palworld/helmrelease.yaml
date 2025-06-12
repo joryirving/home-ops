@@ -91,7 +91,6 @@ spec:
         #     fsGroupChangePolicy: OnRootMismatch
     service:
       app:
-        controller: *app
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.39, ::ffff:10.69.10.39
@@ -121,10 +120,6 @@ spec:
           - name: external
             namespace: kube-system
             sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       config:
         existingClaim: *app

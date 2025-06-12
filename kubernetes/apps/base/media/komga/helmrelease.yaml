@@ -37,7 +37,6 @@ spec:
                 memory: 4Gi
     service:
       app:
-        controller: *app
         ports:
           http:
             port: *port
@@ -48,10 +47,6 @@ spec:
           - name: external
             namespace: kube-system
             sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       config:
         existingClaim: *app

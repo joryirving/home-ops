@@ -71,7 +71,6 @@ spec:
         supplementalGroups: [44]
     service:
       app:
-        controller: *app
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.35, ::ffff:10.69.10.35
@@ -88,7 +87,7 @@ spec:
             sectionName: https
         rules:
           - backendRefs:
-              - name: *app
+              - identifier: app
                 port: *port
             filters:
               - type: RequestHeaderModifier
@@ -99,8 +98,7 @@ spec:
                   type: PathPrefix
                   value: /library/streams
           - backendRefs:
-              - name: *app
-                port: *port
+              - identifier: app
     persistence:
       config:
         existingClaim: *app

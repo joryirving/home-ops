@@ -42,7 +42,6 @@ spec:
 
     service:
       app:
-        controller: *app
         ports:
           http:
             port: &port 5006
@@ -53,10 +52,6 @@ spec:
           - name: internal
             namespace: kube-system
             sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       data:
         existingClaim: *app

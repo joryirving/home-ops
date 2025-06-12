@@ -33,7 +33,6 @@ spec:
                 gpu.intel.com/i915: 1
     service:
       app:
-        controller: *app
         ports:
           http:
             port: &port 7860
@@ -44,10 +43,6 @@ spec:
           - name: external
             namespace: kube-system
             sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       config:
         enabled: true

@@ -61,7 +61,6 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
     service:
       app:
-        controller: *app
         ports:
           http:
             port: *port
@@ -70,7 +69,7 @@ spec:
         existingClaim: *app
       secret-file:
         type: secret
-        name: cross-seed
+        name: *app
         globalMounts:
           - path: /config/config.js
             subPath: config.js

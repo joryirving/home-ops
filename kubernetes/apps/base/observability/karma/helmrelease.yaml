@@ -54,7 +54,6 @@ spec:
               app.kubernetes.io/name: *app
     service:
       app:
-        controller: *app
         ports:
           http:
             port: &port 8080
@@ -74,10 +73,6 @@ spec:
           - name: external
             namespace: kube-system
             sectionName: https
-        rules:
-          - backendRefs:
-              - name: *app
-                port: *port
     persistence:
       config-file:
         type: configMap
