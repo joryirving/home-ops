@@ -76,16 +76,17 @@ spec:
                 topologyKey: kubernetes.io/hostname
     service:
       app:
-        controller: *app
+        forceRename: *app
+        primary: true
+        ports:
+          http:
+            port: *port
+      bittorrent:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.36, ::ffff:10.69.10.36
         ports:
-          http:
-            primary: true
-            port: *port
-          bittorrent:
-            enabled: true
+          bittorrent-tcp:
             port: *torrentPort
             protocol: TCP
     route:
