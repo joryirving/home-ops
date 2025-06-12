@@ -2,16 +2,19 @@
 
 # Purpose: Forward all human-created messages to and Discord
 # Environment variables are substituted at runtime by acars-processor
-LogLevel: debug
-ColorOutput: true
-ACARSHub:
-  MaxConcurrentRequests: 2
-  ACARS:
-    Host: &acarshubhost acars-hub
-    Port: 15550
-  # VDLM2:
-  #   Host: *acarshubhost
-  #   Port: 15555
+ACARSProcessorSettings:
+  ColorOutput: true
+  SaveMessages: true
+  SQLiteDatabasePath: /data/messages.db
+  LogLevel: debug
+  ACARSHub:
+    MaxConcurrentRequests: 2
+    ACARS:
+      Host: &acarshubhost acars-acarshub
+      Port: 15550
+    # VDLM2:
+    #   Host: *acarshubhost
+    #   Port: 15555
 
 Filters:
   Ollama:
@@ -19,11 +22,11 @@ Filters:
     Model: &ollamamodel qwen3
     URL: &ollamaurl https://ollama.jory.dev
     FilterOnFailure: true
-    MaxRetryAttempts: 1
+    MaxRetryAttempts: 3
     MaxRetryDelaySeconds: 5
     Timeout: 120
     Options: &ollamaopts [
-      {Name: num_predict, Value: 100},
+      {Name: num_predict, Value: 128},
       {Name: temperature, Value: 0.0},
       {Name: top_p, Value: 0.5},
       {Name: top_k, Value: 20},
@@ -283,7 +286,7 @@ Filters:
 
       Based on what I've told you, is this message something you're
       certain that an air travel enthusiast would want to see?
-#      /no_think
+      /no_think
   ACARS:
     DuplicateMessageSimilarity: 0.9
   VDLM2:
@@ -309,6 +312,26 @@ Annotators:
       acarsFrequencyMHz,
       acarsMessageText,
       acarsMessageFrom
+    ]
+  Ollama:
+    Enabled: false
+    Model: *ollamamodel
+    URL: *ollamaurl
+    Options: *ollamaopts
+    FilterWithQuestion: false
+   #  MaxPredictionTokens: 200
+    MaxRetryAttempts: 1
+    MaxRetryDelaySeconds: 5
+    Timeout: 60
+    UserPrompt: >-
+      Is there human-written prose present in this message?
+
+      Return only any human-written prose found in this message.
+      /no_think
+    SelectedFields: [
+      ollamaProcessedText,
+      ollamaEditActions,
+      ollamaQuestion
     ]
 
 Receivers:
