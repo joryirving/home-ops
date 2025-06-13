@@ -121,8 +121,8 @@ jobs:
           path: images.json
 
   pull:
-    name: Image Pull - Pull Images
     needs: diff
+    name: Image Pull - Pull Images
     runs-on: ${{ format('home-ops-runner-{0}', matrix.cluster) }}
     strategy:
       matrix:
@@ -135,23 +135,21 @@ jobs:
           name: diff-${{ matrix.cluster }}
           path: .
 
-      - name: Read Images from JSON
-        id: read-images
+      - name: Check and Pull Images
         run: |
-          mapfile -t images < <(jq -r '.[]' images.json)
-          echo "images_count=${#images[@]}" >> $GITHUB_OUTPUT
-          for i in "${!images[@]}"; do
-            echo "image_$i=${images[$i]}" >> $GITHUB_OUTPUT
-          done
+          images_file="diff-artifact/images.json"
+          images=$(jq -r '.[]' "$images_file")
 
-      - name: Pull Images
-        run: |
+          if [[ -z "$images" ]]; then
+            echo "No images to pull for cluster ${{ matrix.cluster }}"
+            exit 0
+          fi
+
           curl -fsSL https://talos.dev/install | sh
 
-          images=$(jq -r '.[]' images.json)
           for image in $images; do
             echo "Pulling $image"
-            talosctl --nodes ${{ matrix.cluster == 'main' && '10.0.0.2' || '10.0.1.2' }} image pull "$image"
+            run: talosctl --nodes $NODE image pull "$image"
           done
 
   success:
