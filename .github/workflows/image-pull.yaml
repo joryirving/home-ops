@@ -55,11 +55,16 @@ jobs:
             --output json
             --output-file images.json
 
-      - name: Save Images
+      - name: Extract Images and Summarize
         run: |
           mkdir -p output
           jq --compact-output '.' images.json > output/images.json
-        # Upload as cluster-branch key (e.g., main-default)
+
+          echo "## Branch: \`${{ matrix.branch }}\` — Cluster: \`${{ matrix.cluster }}\` Images" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          jq '.' images.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: Upload Image JSON
         uses: actions/upload-artifact@v4
         with:
