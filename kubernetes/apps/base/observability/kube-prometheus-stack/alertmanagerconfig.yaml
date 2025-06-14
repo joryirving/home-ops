@@ -51,21 +51,97 @@ spec:
       discordConfigs:
         - message: |-
             {{- range .Alerts }}
-              {{- if ne .Annotations.description "" }}
-                {{ .Annotations.description }}
-              {{- else if ne .Annotations.summary "" }}
-                {{ .Annotations.summary }}
-              {{- else if ne .Annotations.message "" }}
-                {{ .Annotations.message }}
-              {{- else }}
-                Alert description not available
-              {{- end }}
-              {{- if gt (len .Labels.SortedPairs) 0 }}
-                  {{- range .Labels.SortedPairs }}
-                    **{{ .Name }}:** {{ .Value }}
-                  {{- end }}
-              {{- end }}
+            {{- if eq .Status "firing" }}
+            > 🔥 **{{ .Labels.alertname }}** is currently **FIRING**
+            {{- else }}
+            > ✅ **{{ .Labels.alertname }}** has been **RESOLVED**
             {{- end }}
+
+            {{- if eq .Labels.severity "critical" }}
+            🚨 **Severity:** `CRITICAL` 🚨
+            {{- else if eq .Labels.severity "warning" }}
+            ⚠️ **Severity:** `WARNING` ⚠️
+            {{- else if eq .Labels.severity "info" }}
+            ℹ️ **Severity:** `INFO` ℹ️
+            {{- else }}
+            📊 **Severity:** `{{ .Labels.severity }}`
+            {{- end }}
+
+            {{- if ne .Annotations.description "" }}
+            📝 **Description:**
+            ```
+            {{ .Annotations.description }}
+            ```
+            {{- else if ne .Annotations.summary "" }}
+            📋 **Summary:**
+            ```
+            {{ .Annotations.summary }}
+            ```
+            {{- else if ne .Annotations.message "" }}
+            💬 **Message:**
+            ```
+            {{ .Annotations.message }}
+            ```
+            {{- else }}
+            🔔 Alert has been triggered
+            {{- end }}
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            **Alert Details:**
+            {{- if .Labels.namespace }}
+            **Namespace:** `{{ .Labels.namespace }}`
+            {{- end }}
+            {{- if .Labels.pod }}
+            **Pod:** `{{ .Labels.pod }}`
+            {{- end }}
+            {{- if .Labels.job }}
+            **Job:** `{{ .Labels.job }}`
+            {{- end }}
+            {{- if .Labels.instance }}
+            **Instance:** `{{ .Labels.instance }}`
+            {{- end }}
+            {{- if .Labels.container }}
+            **Container:** `{{ .Labels.container }}`
+            {{- end }}
+            {{- if .Labels.service }}
+            **Service:** `{{ .Labels.service }}`
+            {{- end }}
+
+            ⏰ **Timeline:**
+            {{- if eq .Status "firing" }}
+            🔥 **Started:** <t:{{ .StartsAt.Unix }}:F> (<t:{{ .StartsAt.Unix }}:R>)
+            {{- else }}
+            ✅ **Resolved:** <t:{{ .EndsAt.Unix }}:F> (<t:{{ .EndsAt.Unix }}:R>)
+            🕐 **Duration:** {{ .StartsAt | since | humanizeDuration }}
+            {{- end }}
+
+            {{- if eq .Status "firing" }}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            🚨 **Action Required** 🚨
+            {{- else }}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            ✨ **All Clear** ✨
+            {{- end }}
+
+            {{- end }}
+        # - message: |-
+        #     {{- range .Alerts }}
+        #       {{- if ne .Annotations.description "" }}
+        #         {{ .Annotations.description }}
+        #       {{- else if ne .Annotations.summary "" }}
+        #         {{ .Annotations.summary }}
+        #       {{- else if ne .Annotations.message "" }}
+        #         {{ .Annotations.message }}
+        #       {{- else }}
+        #         Alert description not available
+        #       {{- end }}
+        #       {{- if gt (len .Labels.SortedPairs) 0 }}
+        #           {{- range .Labels.SortedPairs }}
+        #             **{{ .Name }}:** {{ .Value }}
+        #           {{- end }}
+        #       {{- end }}
+        #     {{- end }}
           sendResolved: true
           apiURL:
             name: *secret
