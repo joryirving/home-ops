@@ -49,7 +49,9 @@ spec:
             key: ALERTMANAGER_HEARTBEAT_URL
     - name: discord
       discordConfigs:
-        - message: |-
+        - title: |-
+            {{- if eq .Status "firing" }}🚨 **ALERT FIRING** 🚨{{- else }}✅ **ALERT RESOLVED** ✅{{- end }}
+          message: |-
             {{- range .Alerts }}
             {{- if eq .Status "firing" }}
             > 🔥 **{{ .Labels.alertname }}** is currently **FIRING**
@@ -90,38 +92,30 @@ spec:
 
             **Alert Details:**
             {{- if .Labels.namespace }}
-            **Namespace:** `{{ .Labels.namespace }}`
+            Namespace: `{{ .Labels.namespace }}`
             {{- end }}
             {{- if .Labels.pod }}
-            **Pod:** `{{ .Labels.pod }}`
+            Pod: `{{ .Labels.pod }}`
             {{- end }}
             {{- if .Labels.job }}
-            **Job:** `{{ .Labels.job }}`
+            Job: `{{ .Labels.job }}`
             {{- end }}
             {{- if .Labels.instance }}
-            **Instance:** `{{ .Labels.instance }}`
+            Instance: `{{ .Labels.instance }}`
             {{- end }}
             {{- if .Labels.container }}
-            **Container:** `{{ .Labels.container }}`
+            Container: `{{ .Labels.container }}`
             {{- end }}
             {{- if .Labels.service }}
-            **Service:** `{{ .Labels.service }}`
+            Service: `{{ .Labels.service }}`
             {{- end }}
 
             ⏰ **Timeline:**
             {{- if eq .Status "firing" }}
-            🔥 **Started:** <t:{{ .StartsAt.Unix }}:F> (<t:{{ .StartsAt.Unix }}:R>)
+            🔥 Started: <t:{{ .StartsAt.Unix }}:F> (<t:{{ .StartsAt.Unix }}:R>)
             {{- else }}
-            ✅ **Resolved:** <t:{{ .EndsAt.Unix }}:F> (<t:{{ .EndsAt.Unix }}:R>)
-            🕐 **Duration:** {{ .StartsAt | since | humanizeDuration }}
-            {{- end }}
-
-            {{- if eq .Status "firing" }}
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            🚨 **Action Required** 🚨
-            {{- else }}
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            ✨ **All Clear** ✨
+            ✅ Resolved: <t:{{ .EndsAt.Unix }}:F> (<t:{{ .EndsAt.Unix }}:R>)
+            🕐 Duration: {{ .StartsAt | since | humanizeDuration }}
             {{- end }}
 
             {{- end }}
