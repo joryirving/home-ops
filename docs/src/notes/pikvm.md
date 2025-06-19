@@ -26,11 +26,9 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
 
     ```yaml
     ---
-
     nginx:
       https:
         enabled: false
-
     kvmd:
       auth:
         enabled: false
@@ -65,6 +63,9 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
           wol_server3:
             type: wol
             mac: 58:47:ca:7a:dc:b5
+          wol_server4:
+            type: wol
+            mac: 7c:83:34:b6:6a:2a
           reboot:
             type: cmd
             cmd: ["/usr/bin/sudo", "reboot"]
@@ -137,6 +138,11 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             pin: 4
             mode: output
             switch: false
+         server4_wol:
+            driver: wol_server4
+            pin: 0
+            mode: output
+            switch: false
           server5_led:
             driver: tes
             pin: 5
@@ -183,7 +189,7 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
             - ["#Eula", "server1_led", "server1_btn | KVM", "server1_wol | WOL"]
             - ["#Ganyu", "server2_led", "server2_btn | KVM", "server2_wol | WOL"]
             - ["#Voyager", "server3_led", "server3_btn | KVM", "server3_wol | WOL"]
-            - ["#5", "server4_led", "server4_btn | KVM"]
+            - ["#Citlali", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
             - ["#6, "server5_led", "server5_btn | KVM"]
             - ["#7", "server6_led", "server6_btn | KVM"]
             - ["#8", "server7_led", "server7_btn | KVM"]
