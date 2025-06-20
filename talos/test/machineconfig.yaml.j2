@@ -48,16 +48,20 @@ machine:
       max-pods: "200"
     extraConfig:
       serializeImagePulls: false
-    extraMounts:
-      - destination: /var/mnt/extra
-        type: bind
-        source: /var/mnt/extra
-        options: ["bind", "rshared", "rw"]
     defaultRuntimeSeccompProfileEnabled: true
     nodeIP:
-      validSubnets: ["10.69.1.0/24", "10.69.2.0/24"]
+      validSubnets: ["10.69.1.0/24"]
     disableManifestsDirectory: true
   network:
+    interfaces:
+      - # 1G
+        deviceSelector:
+          hardwareAddr: 7c:83:34:b6:6a:*
+          driver: r8169
+        mtu: 1500
+        dhcp: true
+        vip:
+          ip: 10.69.10.202
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
@@ -165,3 +169,11 @@ cluster:
   serviceAccount:
     key: op://Kubernetes/talos-test/CLUSTER_SERVICEACCOUNT_KEY
   {% endif %}
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: local-hostpath
+provisioning:
+  diskSelector:
+    match: disk.model == "KINGSTON SA400S3" && !system_disk
+  minSize: 480GB
