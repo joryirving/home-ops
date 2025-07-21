@@ -33,15 +33,15 @@ spec:
             probes:
               liveness: &probes
                 enabled: true
-                # custom: true
-                # spec:
-                #   httpGet:
-                #     path: /api/v2/app/version
-                #     port: *port
-                #   initialDelaySeconds: 0
-                #   periodSeconds: 10
-                #   timeoutSeconds: 1
-                #   failureThreshold: 3
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/v2/app/version
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
               readiness: *probes
               startup:
                 enabled: true
@@ -49,9 +49,6 @@ spec:
                   failureThreshold: 30
                   periodSeconds: 10
             securityContext:
-              runAsUser: 1000
-              runAsGroup: 100
-              runAsNonRoot: true
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
@@ -62,18 +59,12 @@ spec:
               limits:
                 memory: 8Gi
     defaultPodOptions:
-      terminationGracePeriodSeconds: 120
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: app.kubernetes.io/name
-                      operator: In
-                      values: ["sabnzbd"]
-                topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     service:
       app:
         forceRename: *app
