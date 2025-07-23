@@ -91,10 +91,23 @@ spec:
           - backendRefs:
               - identifier: app
                 port: *port
+    configMaps:
+      config:
+        data:
+          .qbt.toml: |
+            [qbittorrent]
+            addr = "http://localhost:80"
     persistence:
       config:
         existingClaim: *app
-      downloads:
+      config-file:
+        type: configMap
+        name: qbittorrent
+        globalMounts:
+          - path: /config/.qbt.toml
+            subPath: .qbt.toml
+            readOnly: true
+      media:
         type: nfs
         server: voyager.internal
         path: /mnt/user/data
