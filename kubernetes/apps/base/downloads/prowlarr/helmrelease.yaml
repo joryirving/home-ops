@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app prowlarr
+  name: prowlarr
 spec:
   interval: 1h
   chartRef:
@@ -27,21 +27,21 @@ spec:
               tag: 2.0.2.5116@sha256:01a28185794c3c3d6eba34f825faa4af9c405ded9a6ef51f31061d464f3e47b9
             env:
               TZ: America/Edmonton
-              PROWLARR__APP__INSTANCENAME: Prowlarr
+              PROWLARR__APP__INSTANCENAME: "{{ .Release.Name }}"
               PROWLARR__APP__THEME: dark
               PROWLARR__AUTH__METHOD: External
               PROWLARR__AUTH__REQUIRED: DisabledForLocalAddresses
               PROWLARR__LOG__DBENABLED: "False"
               PROWLARR__LOG__LEVEL: info
-              PROWLARR__POSTGRES__HOST: prowlarr-pgbouncer.downloads.svc
-              PROWLARR__POSTGRES__MAINDB: *app
+              PROWLARR__POSTGRES__HOST: "{{ .Release.Name }}-pgbouncer.downloads.svc"
+              PROWLARR__POSTGRES__MAINDB: "{{ .Release.Name }}"
               PROWLARR__POSTGRES__PASSWORD:
                 valueFrom:
                   secretKeyRef:
-                    name: prowlarr-pguser-prowlarr
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: password
               PROWLARR__POSTGRES__PORT: "5432"
-              PROWLARR__POSTGRES__USER: *app
+              PROWLARR__POSTGRES__USER: "{{ .Release.Name }}"
               PROWLARR__SERVER__PORT: &port 80
               PROWLARR__UPDATE__BRANCH: develop
             envFrom:

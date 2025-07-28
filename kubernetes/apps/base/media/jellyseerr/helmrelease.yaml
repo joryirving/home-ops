@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app jellyseerr
+  name: jellyseerr
 spec:
   interval: 1h
   chartRef:
@@ -28,21 +28,21 @@ spec:
               tag: 2.7.2@sha256:d83fcc8478f53073008b0c452c87d94ff5182fce73c426c813301c402b6612de
             env:
               DB_TYPE: "postgres"
-              DB_HOST: jellyseerr-pgbouncer.media.svc
+              DB_HOST: "{{ .Release.Name }}-pgbouncer.media.svc"
               DB_PORT: "5432"
-              DB_USER: *app
+              DB_USER: "{{ .Release.Name }}"
               DB_PASS:
                 valueFrom:
                   secretKeyRef:
-                    name: jellyseerr-pguser-jellyseerr
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: password
-              DB_NAME: *app
+              DB_NAME: "{{ .Release.Name }}"
               LOG_LEVEL: "info"
               PORT: &port 80
               TZ: America/Edmonton
             envFrom:
               - secretRef:
-                  name: jellyseerr-secret
+                  name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 10m
@@ -70,11 +70,11 @@ spec:
             sectionName: https
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /app/config
       cache:
-        existingClaim: jellyseerr-cache
+        existingClaim: "{{ .Release.Name }}-cache"
         globalMounts:
           - path: /app/config/cache
       tmpfs:

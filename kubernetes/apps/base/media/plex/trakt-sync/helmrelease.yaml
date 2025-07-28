@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app plex-trakt-sync
+  name: plex-trakt-sync
 spec:
   interval: 1h
   chartRef:
@@ -67,14 +67,14 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         advancedMounts:
           plex-trakt-sync:
             app:
               - path: /app/config
       config-yaml:
         type: configMap
-        name: plex-trakt-sync
+        name: "{{ .Release.Name }}"
         globalMounts:
           - path: /app/config/config.yml
             subPath: config.yml

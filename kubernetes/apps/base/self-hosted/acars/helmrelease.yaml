@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app acars
+  name: acars
 spec:
   interval: 1h
   chartRef:
@@ -178,7 +178,7 @@ spec:
                 port: *port
     persistence:
       hub:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         advancedMounts:
           hub:
             app:

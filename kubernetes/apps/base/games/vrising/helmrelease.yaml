@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app vrising
+  name: vrising
 spec:
   interval: 1h
   chartRef:
@@ -34,10 +34,10 @@ spec:
               MAX_USERS: 4
               MAX_ADMIN: 2
               UID: &uid 1000
-              GID: &gid 1000
+              GID: &gid 100
             # envFrom:
             # - secretRef:
-            #     name: vrising-secret
+            #     name: "{{ .Release.Name }}-secret"
             probes:
               liveness:
                 enabled: false
@@ -73,7 +73,7 @@ spec:
             protocol: UDP
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /mnt/vrising/persistentdata
       server:

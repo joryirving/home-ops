@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app mosquitto
+  name: mosquitto
 spec:
   interval: 1h
   chartRef:
@@ -66,10 +66,10 @@ spec:
             persistence_location /data
     persistence:
       data:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
       config-file:
         type: configMap
-        name: mosquitto
+        name: "{{ .Release.Name }}"
         advancedMounts:
           mosquitto:
             app:

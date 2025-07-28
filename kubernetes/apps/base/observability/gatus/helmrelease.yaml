@@ -87,7 +87,7 @@ spec:
             port: *port
     serviceMonitor:
       app:
-        serviceName: *app
+        serviceName: "{{ .Release.Name }}"
         endpoints:
           - port: http
     route:
@@ -119,7 +119,7 @@ spec:
         type: emptyDir
       config-file:
         type: configMap
-        name: gatus-configmap
+        name: "{{ .Release.Name }}-configmap"
         globalMounts:
           - path: /config/config.yaml
             subPath: config.yaml

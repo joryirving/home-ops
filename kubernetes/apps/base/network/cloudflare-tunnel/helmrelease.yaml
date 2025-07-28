@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app cloudflare-tunnel
+  name: cloudflare-tunnel
 spec:
   interval: 1h
   chartRef:
@@ -36,7 +36,7 @@ spec:
               TUNNEL_TRANSPORT_PROTOCOL: quic
             envFrom:
               - secretRef:
-                  name: *app
+                  name: "{{ .Release.Name }}"
             args: ["tunnel", "run"]
             probes:
               liveness: &probes
@@ -72,7 +72,7 @@ spec:
             port: *port
     serviceMonitor:
       app:
-        serviceName: *app
+        serviceName: "{{ .Release.Name }}"
         endpoints:
           - port: http
             scheme: http
@@ -82,7 +82,7 @@ spec:
     persistence:
       config-file:
         type: configMap
-        name: cloudflare-tunnel-configmap
+        name: "{{ .Release.Name }}-configmap"
         globalMounts:
           - path: /etc/cloudflared/config.yaml
             subPath: config.yaml

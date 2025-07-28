@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app kometa
+  name: kometa
 spec:
   interval: 1h
   chartRef:
@@ -45,7 +45,7 @@ spec:
               TZ: *timeZone
             envFrom:
               - secretRef:
-                  name: kometa-secret
+                  name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 10m
@@ -65,10 +65,10 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
       config-file:
         type: configMap
-        name: kometa-configmap
+        name: "{{ .Release.Name }}-configmap"
         globalMounts:
           - path: /config/config.yml
             subPath: config.yml

@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app atuin
+  name: atuin
 spec:
   interval: 1h
   chartRef:
@@ -32,7 +32,7 @@ spec:
               ATUIN_DB_URI:
                 valueFrom:
                   secretKeyRef:
-                    name: atuin-pguser-atuin
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: pgbouncer-uri
               ATUIN_HOST: 0.0.0.0
               ATUIN_PORT: &port 80
@@ -72,7 +72,7 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: *app
+              app.kubernetes.io/name: "{{ .Release.Name }}"
     service:
       app:
         ports:
