@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app unpoller
+  name: unpoller
 spec:
   interval: 1h
   chartRef:
@@ -33,7 +33,7 @@ spec:
               UP_INFLUXDB_DISABLE: true
             envFrom:
               - secretRef:
-                  name: *app
+                  name: "{{ .Release.Name }}"
             probes:
               liveness: &probes
                 enabled: true
@@ -68,7 +68,7 @@ spec:
            port: *port
     serviceMonitor:
       app:
-        serviceName: *app
+        serviceName: "{{ .Release.Name }}"
         endpoints:
           - port: http
             scheme: http

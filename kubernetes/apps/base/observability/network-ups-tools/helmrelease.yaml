@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app network-ups-tools
+  name: network-ups-tools
 spec:
   interval: 1h
   chartRef:
@@ -36,7 +36,7 @@ spec:
                 enabled: true
         pod:
           annotations:
-            configmap.reloader.stakater.com/reload: &config network-ups-tools-config
+            configmap.reloader.stakater.com/reload: &config "{{ .Release.Name }}-config"
     service:
       app:
         type: LoadBalancer

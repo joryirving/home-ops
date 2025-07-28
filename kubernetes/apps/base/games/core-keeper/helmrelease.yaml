@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app core-keeper
+  name: core-keeper
 spec:
   interval: 1h
   chartRef:
@@ -39,7 +39,7 @@ spec:
               # SERVER_PORT: &port "27015" # What port to bind to. If not set, then the server will use the Steam relay network. If set the clients will connect to the server directly and the port needs to be open.
             envFrom:
               - secretRef:
-                  name: core-keeper-secret
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &disabled
                 enabled: false
@@ -54,8 +54,8 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsGroup: 100
+        fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
     # service:
     #   app:
@@ -84,6 +84,6 @@ spec:
         globalMounts:
           - path: *datapath
       files:
-        existingClaim: core-keeper-server-files
+        existingClaim: "{{ .Release.Name }}-server-files"
         globalMounts:
           - path: /home/steam/core-keeper-dedicated

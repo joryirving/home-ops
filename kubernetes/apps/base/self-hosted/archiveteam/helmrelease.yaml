@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app archiveteam
+  name: archiveteam
 spec:
   interval: 1h
   chartRef:
@@ -59,6 +59,6 @@ spec:
             sectionName: https
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /projects

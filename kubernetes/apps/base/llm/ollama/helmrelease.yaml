@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app ollama
+  name: ollama
 spec:
   interval: 1h
   chartRef:
@@ -64,7 +64,7 @@ spec:
                       - key: app.kubernetes.io/name
                         operator: In
                         values:
-                          - *app
+                          - "{{ .Release.Name }}"
     service:
       app:
         ports:
@@ -79,7 +79,7 @@ spec:
             sectionName: https
     persistence:
       ollama:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: *modelPath
             subPath: models

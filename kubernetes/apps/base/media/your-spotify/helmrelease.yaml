@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app your-spotify
+  name: your-spotify
 spec:
   interval: 1h
   chartRef:
@@ -29,13 +29,13 @@ spec:
             env:
               TIMEZONE: America/Edmonton
               # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
-              API_ENDPOINT: &api_endpoint https://spotty.jory.dev/api
-              CLIENT_ENDPOINT: https://spotty.jory.dev
-              MONGO_ENDPOINT: mongodb://your-spotify-mongodb:27017/your_spotify #mongo sucks
+              API_ENDPOINT: &api_endpoint https://${GATUS_SUBDOMAIN:=${APP}}.jory.dev/api
+              CLIENT_ENDPOINT: https://${GATUS_SUBDOMAIN:=${APP}}.jory.dev
+              MONGO_ENDPOINT: "mongodb://{{ .Release.Name }}-mongodb:27017/your_spotify" #mongo sucks
               PORT: &port 8080
             envFrom:
               - secretRef:
-                  name: your-spotify-secret
+                  name: "{{ .Release.Name }}-secret"
             probes: &probes
               liveness:
                 enabled: true
@@ -118,7 +118,7 @@ spec:
                 port: *webport
     persistence:
       configs:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         advancedMounts:
           mongodb:
             app:
