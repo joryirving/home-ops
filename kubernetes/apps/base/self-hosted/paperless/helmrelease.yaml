@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app paperless
+  name: paperless
 spec:
   interval: 1h
   chartRef:
@@ -28,7 +28,7 @@ spec:
             env:
               # Application
               PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
-              PAPERLESS_URL: https://paperless.jory.dev
+              PAPERLESS_URL: "https://{{ .Release.Name }}.jory.dev"
               PAPERLESS_PORT: "8000"
               PAPERLESS_TIME_ZONE: America/Edmonton
               PAPERLESS_WEBSERVER_WORKERS: "2"
@@ -40,13 +40,13 @@ spec:
               # Database
               PAPERLESS_DBENGINE: postgresql
               PAPERLESS_DBPORT: "5432"
-              PAPERLESS_DBNAME: *app
-              PAPERLESS_DBHOST: paperless-pgbouncer.self-hosted.svc
-              PAPERLESS_DBUSER: *app
+              PAPERLESS_DBNAME: "{{ .Release.Name }}"
+              PAPERLESS_DBHOST: "{{ .Release.Name }}-pgbouncer.self-hosted.svc"
+              PAPERLESS_DBUSER: "{{ .Release.Name }}"
               PAPERLESS_DBPASS:
                 valueFrom:
                   secretKeyRef:
-                    name: paperless-pguser-paperless
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: password
               # Remote User Auth
               PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
@@ -60,12 +60,12 @@ spec:
               PAPERLESS_OCR_LANGUAGES: nld
               PAPERLESS_OCR_LANGUAGE: nld
               # Redis
-              PAPERLESS_REDIS: redis://paperless-dragonfly:6379
+              PAPERLESS_REDIS: "redis://{{ .Release.Name }}-dragonfly:6379"
               # User Permissions
               USERMAP_GID: "65542"
             envFrom:
               - secretRef:
-                  name: paperless-secret
+                  name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 15m
@@ -85,7 +85,7 @@ spec:
             sectionName: https
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /data/local
       nas:

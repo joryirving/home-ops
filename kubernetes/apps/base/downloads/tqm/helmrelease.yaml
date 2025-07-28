@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app tqm
+  name: tqm
 spec:
   interval: 1h
   chartRef:
@@ -80,10 +80,10 @@ spec:
       config:
         type: emptyDir
         globalMounts:
-          - path: /.config/tqm
+          - path: "/.config/{{ .Release.Name }}"
       secret-file:
         type: secret
-        name: tqm-config
+        name: "{{ .Release.Name }}-config"
         globalMounts:
           - path: /.config/tqm/config.yaml
             subPath: config.yaml

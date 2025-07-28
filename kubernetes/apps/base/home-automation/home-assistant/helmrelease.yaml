@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app home-assistant
+  name: home-assistant
 spec:
   interval: 1h
   chartRef:
@@ -91,25 +91,25 @@ spec:
             sectionName: https
         rules:
           - backendRefs:
-              - name: *app
+              - name: "{{ .Release.Name }}"
                 port: *port
       codeserver:
-        hostnames: ["hass-code.jory.dev"]
+        hostnames: ["${GATUS_SUBDOMAIN:=${APP}}-code.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system
             sectionName: https
         rules:
           - backendRefs:
-              - name: *app
+              - name: "{{ .Release.Name }}"
                 port: *codeserverPort
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /config
       config-cache:
-        existingClaim: home-assistant-cache
+        existingClaim: "{{ .Release.Name }}-cache"
         globalMounts:
           - path: /config/.venv
       tmpfs:

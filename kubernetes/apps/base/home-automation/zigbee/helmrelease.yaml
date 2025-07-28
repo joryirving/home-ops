@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app zigbee
+  name: zigbee
 spec:
   interval: 1h
   chartRef:
@@ -18,7 +18,6 @@ spec:
       retries: 3
   dependsOn:
     - name: mosquitto
-      namespace: home-automation
   values:
     controllers:
       zigbee:
@@ -56,7 +55,7 @@ spec:
               ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: ember
             envFrom:
               - secretRef:
-                  name: zigbee
+                  name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
@@ -97,4 +96,4 @@ spec:
             sectionName: https
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"

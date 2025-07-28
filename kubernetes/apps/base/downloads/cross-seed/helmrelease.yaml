@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app cross-seed
+  name: cross-seed
 spec:
   interval: 1h
   chartRef:
@@ -66,10 +66,10 @@ spec:
             port: *port
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
       secret-file:
         type: secret
-        name: *app
+        name: "{{ .Release.Name }}"
         globalMounts:
           - path: /config/config.js
             subPath: config.js

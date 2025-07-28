@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app searxng
+  name: searxng
 spec:
   interval: 1h
   chartRef:
@@ -30,10 +30,10 @@ spec:
             env:
               SEARXNG_BASE_URL: https://search.jory.dev
               SEARXNG_PORT: &port 8080
-              SEARXNG_REDIS_URL: redis://searxng-dragonfly:6379
+              SEARXNG_REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
             envFrom:
               - secretRef:
-                  name: *app
+                  name: "{{ .Release.Name }}"
             probes:
               liveness: &probes
                 enabled: true
@@ -79,7 +79,7 @@ spec:
     persistence:
       config:
         type: configMap
-        name: searxng-configmap
+        name: "{{ .Release.Name }}-configmap"
         globalMounts:
           - path: /etc/searxng/settings.yml
             subPath: settings.yml
