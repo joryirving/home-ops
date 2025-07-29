@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app lubelogger
+  name: lubelogger
 spec:
   interval: 1h
   chartRef:
@@ -30,7 +30,7 @@ spec:
               TZ: America/Edmonton
             envFrom:
               - secretRef:
-                  name: lubelogger-secret
+                  name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 15m
@@ -57,7 +57,7 @@ spec:
             sectionName: https
     persistence:
       app:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /App/config
             subPath: config

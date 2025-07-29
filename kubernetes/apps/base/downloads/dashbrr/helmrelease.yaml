@@ -29,13 +29,13 @@ spec:
             env:
               DASHBRR__CONFIG_PATH: /config/config.toml
               DASHBRR__DB_TYPE: postgres
-              DASHBRR__DB_NAME: *app
-              DASHBRR__DB_HOST: dashbrr-pgbouncer.downloads.svc
-              DASHBRR__DB_USER: *app
+              DASHBRR__DB_NAME: "{{ .Release.Name }}"
+              DASHBRR__DB_HOST: "{{ .Release.Name }}-pgbouncer.downloads.svc"
+              DASHBRR__DB_USER: "{{ .Release.Name }}"
               DASHBRR__DB_PASSWORD:
                 valueFrom:
                   secretKeyRef:
-                    name: dashbrr-pguser-dashbrr
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: password
               DASHBRR__DB_PORT: "5432"
               DASHBRR__DB_PATH: /cache/._ # cache path is derived from DASHBRR__DB_PATH
@@ -44,7 +44,7 @@ spec:
               TZ: America/Edmonton
             envFrom:
               - secretRef:
-                  name: dashbrr-secret
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -103,7 +103,7 @@ spec:
     persistence:
       config:
         type: configMap
-        name: dashbrr-config
+        name: "{{ .Release.Name }}-config"
       tmpfs:
         type: emptyDir
         advancedMounts:

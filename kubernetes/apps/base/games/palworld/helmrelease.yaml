@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app palworld
+  name: palworld
 spec:
   interval: 1h
   chartRef:
@@ -24,7 +24,7 @@ spec:
           app:
             image:
               repository: ghcr.io/jammsen/docker-palworld-dedicated-server
-              tag: master@sha256:cbf760546bce4e40d195029ccb3ca3357e8074424d53ebe3cb81744a7c15467e
+              tag: master@sha256:0a28d725730754268edba9b7290309af30ee336b88ab81aeaafae93dca116abb
             env:
               ## Container Settings
               TZ: America/Edmonton
@@ -46,12 +46,12 @@ spec:
               PUBLIC_PORT: &port 8211
               RCON_ENABLED: true
               RCON_PORT: &rcon-port 25575
-              PUBLIC_IP: palworld.jory.dev
+              PUBLIC_IP: "{{ .Release.Name }}.jory.dev"
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
               - secretRef:
-                  name: palworld-secret
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &disabled
                 enabled: false
@@ -74,7 +74,7 @@ spec:
               SAVE_DIRECTORY: /palworld
             envFrom:
               - secretRef:
-                  name: palworld-secret
+                  name: "{{ .Release.Name }}-secret"
             resources:
               limits:
                 memory: 256Mi
@@ -86,8 +86,8 @@ spec:
         # pod:
         #   securityContext:
         #     runAsUser: 1000
-        #     runAsGroup: 1000
-        #     fsGroup: 1000
+        #     runAsGroup: 100
+        #     fsGroup: 100
         #     fsGroupChangePolicy: OnRootMismatch
     service:
       app:
@@ -104,7 +104,7 @@ spec:
             port: *rcon-port
     serviceMonitor:
       app:
-        serviceName: *app
+        serviceName: "{{ .Release.Name }}"
         endpoints:
           - port: http
             scheme: http
@@ -122,11 +122,11 @@ spec:
             sectionName: https
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /palworld
       cache:
-        existingClaim: palworld-cache
+        existingClaim: "{{ .Release.Name }}-cache"
         globalMounts:
           - path: /palworld/Pal/Binaries
             subPath: binaries

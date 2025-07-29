@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app sonarr
+  name: sonarr
 spec:
   interval: 1h
   chartRef:
@@ -32,21 +32,21 @@ spec:
               SONARR__AUTH__REQUIRED: DisabledForLocalAddresses
               SONARR__LOG__DBENABLED: "False"
               SONARR__LOG__LEVEL: info
-              SONARR__POSTGRES__HOST: sonarr-pgbouncer.downloads.svc
-              SONARR__POSTGRES__MAINDB: *app
+              SONARR__POSTGRES__HOST: "{{ .Release.Name }}-pgbouncer.downloads.svc"
+              SONARR__POSTGRES__MAINDB: "{{ .Release.Name }}"
               SONARR__POSTGRES__PASSWORD:
                 valueFrom:
                   secretKeyRef:
-                    name: sonarr-pguser-sonarr
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: password
               SONARR__POSTGRES__PORT: "5432"
-              SONARR__POSTGRES__USER: *app
+              SONARR__POSTGRES__USER: "{{ .Release.Name }}"
               SONARR__SERVER__PORT: &port 80
               SONARR__UPDATE__BRANCH: develop
               TZ: America/Edmonton
             envFrom:
               - secretRef:
-                  name: sonarr-secret
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -90,7 +90,7 @@ spec:
             sectionName: https
     persistence:
       config:
-        existingClaim: *app
+        existingClaim: "{{ .Release.Name }}"
       media:
         type: nfs
         server: voyager.internal
