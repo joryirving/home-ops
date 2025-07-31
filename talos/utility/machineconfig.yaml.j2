@@ -59,14 +59,17 @@ machine:
     disableManifestsDirectory: true
   network:
     interfaces:
-      - # 2.5G
-        deviceSelector:
-          hardwareAddr: 84:47:09:2d:*
-          driver: igc
+      - interface: bond0
+        bond:
+          deviceSelectors: [{ hardwareAddr: "84:47:09:2d:*", driver: igc }]
+          mode: active-backup
         mtu: 9000
         dhcp: true
         vip:
           ip: 10.69.10.102
+        vlans:
+          - { vlanId: 10, dhcp: false, mtu: 9000 } ## IoT
+          - { vlanId: 70, dhcp: false, mtu: 9000 } ## L2 LB
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
