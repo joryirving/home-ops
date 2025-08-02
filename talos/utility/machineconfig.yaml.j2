@@ -29,6 +29,11 @@ machine:
       resolveMemberNames: true
       forwardKubeDNSToHost: false
   files:
+    - op: create
+      path: /etc/cri/conf.d/20-customization.part
+      content: |
+        [plugins."io.containerd.grpc.v1.cri"]
+          device_ownership_from_security_context = true
     - op: overwrite
       path: /etc/nfsmount.conf
       permissions: 0o644
