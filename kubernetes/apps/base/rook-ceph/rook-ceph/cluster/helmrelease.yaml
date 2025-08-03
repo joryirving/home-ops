@@ -40,6 +40,16 @@ spec:
       createPrometheusRules: true
     toolbox:
       enabled: true
+    route:
+      dashboard:
+        host:
+          name: ${GATUS_SUBDOMAIN:=${APP}}.jory.dev
+          path: /
+          pathType: PathPrefix
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
     cephClusterSpec:
       cephConfig:
         global:
@@ -197,6 +207,16 @@ spec:
           healthCheck:
             bucket:
               interval: 60s
+        route:
+          enabled: true
+          host:
+            name: rgw.jory.dev
+            path: /
+            pathType: PathPrefix
+          parentRefs:
+            - name: internal
+              namespace: kube-system
+              sectionName: https
         storageClass:
           enabled: true
           name: ceph-bucket
