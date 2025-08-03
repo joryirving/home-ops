@@ -59,13 +59,15 @@ machine:
   network:
     interfaces:
       - # 1G
-        deviceSelector:
-          hardwareAddr: 7c:83:34:b6:6a:*
-          driver: r8169
-        mtu: 1500
+        interface: bond0
+        bond:
+          deviceSelectors: [{ hardwareAddr: "7c:83:34:b6:6a:*", driver: r8169 }]
+          mode: active-backup
+        mtu: 9000
         dhcp: true
-        vip:
-          ip: 10.69.10.202
+        vlans:
+          - { vlanId: 10, dhcp: false, mtu: 9000 } ## IoT
+          - { vlanId: 70, dhcp: false, mtu: 9000 } ## L2 LB
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:

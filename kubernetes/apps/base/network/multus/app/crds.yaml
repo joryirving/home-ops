@@ -3,29 +3,29 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: gateway-api-crd
+  name: multus-crd
 spec:
   interval: 30m
-  url: https://github.com/kubernetes-sigs/gateway-api
+  url: https://github.com/k8snetworkplumbingwg/network-attachment-definition-client
   ref:
-  # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
-    tag: v1.3.0
+  # renovate: datasource=github-releases depName=k8snetworkplumbingwg/network-attachment-definition-client
+    tag: v1.7.7
   ignore: |
     # exclude
     /*
     # include
-    !config/crd/experimental
+    !artifacts/networks-crd.yaml
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: gateway-api
+  name: multus
 spec:
   prune: true
   sourceRef:
     kind: GitRepository
-    name: gateway-api-crd
+    name: multus-crd
   wait: true
   interval: 15m
   retryInterval: 1m
