@@ -70,17 +70,21 @@ machine:
     disableManifestsDirectory: true
   network:
     interfaces:
-      - # 10G
-        deviceSelector:
-          hardwareAddr: 58:47:ca:7d:*
-          driver: i40e
-        mtu: 9000
-        dhcp: true
       - # 2.5G ignore for WoL/vPro
         deviceSelector:
           hardwareAddr: 58:47:ca:7d:*
           driver: igc
         ignore: true
+      - # 10G
+        interface: bond0
+        bond:
+          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
+          mode: active-backup
+        mtu: 9000
+        dhcp: true
+        vlans:
+          - { vlanId: 10, dhcp: false, mtu: 9000 } ## IoT
+          - { vlanId: 70, dhcp: false, mtu: 9000 } ## L2 LB
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
