@@ -30,6 +30,9 @@ spec:
               TZ: America/Edmonton
               TAUTULLI_HTTP_BASE_URL: "https://{{ .Release.Name }}.jory.dev"
               TAUTULLI_HTTP_PORT: &port 80
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
