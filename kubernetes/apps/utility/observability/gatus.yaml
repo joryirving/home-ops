@@ -8,6 +8,8 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  components:
+    - ../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/observability/gatus
   postBuild:
@@ -15,6 +17,11 @@ spec:
       APP: *app
       CLUSTER: utility
       GATUS_SUBDOMAIN: status-utility
+      PVC_VOLSYNC_STORAGECLASS: local-hostpath
+      VOLSYNC_CACHE_SNAPSHOTCLASS: local-hostpath
+      VOLSYNC_CAPACITY: 5Gi
+      VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
+      VOLSYNC_STORAGECLASS: local-hostpath
   prune: true
   retryInterval: 2m
   sourceRef:
