@@ -1,20 +1,25 @@
 ---
 web:
-  port: $${WEB_PORT}
-storage:
-  type: postgres
-  path: $${POSTGRES_URI}?sslmode=require
-  caching: true
+  port: $${GATUS_WEB_PORT}
+
 metrics: true
-debug: false
+
 ui:
   title: Health Status
   header: Health Status
-  logo: https://raw.githubusercontent.com/joryirving/home-ops/main/docs/src/assets/icons/lds-transparent.png
+  logo: https://avatars.githubusercontent.com/u/46251616
+  link: https://github.com/joryirving
+  buttons:
+  - name: Github
+    link: https://github.com/joryirving
+  - name: Homelab
+    link: https://github.com/joryirving/home-ops
+
 connectivity:
   checker:
     target: 1.1.1.1:53
     interval: 1m
+
 endpoints:
   - name: status
     group: main-external
@@ -48,6 +53,7 @@ endpoints:
     interval: 1h
     conditions:
       - "[CERTIFICATE_EXPIRATION] > 240h"
+
 remote:
   instances:
     - endpoint-prefix: ""
