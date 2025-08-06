@@ -8,16 +8,6 @@ spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
-  components:
-    - ../../../../components/postgres
-  dependsOn:
-    - name: crunchy-postgres-operator
-      namespace: database
-  healthCheckExprs:
-    - apiVersion: postgres-operator.crunchydata.com/v1beta1
-      kind: PostgresCluster
-      failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
-      current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 1h
   path: ./kubernetes/apps/base/observability/gatus
   postBuild:
@@ -34,25 +24,3 @@ spec:
   targetNamespace: observability
   timeout: 5m
   wait: false
-  patches:
-    - target:
-        kind: HelmRelease
-        name: gatus
-      patch: |-
-        apiVersion: helm.toolkit.fluxcd.io/v2
-        kind: HelmRelease
-        metadata:
-          name: gatus
-        spec:
-          values:
-            controllers:
-              gatus:
-                replicas: 2
-                containers:
-                  app:
-                    env:
-                      POSTGRES_URI:
-                        valueFrom:
-                          secretKeyRef:
-                            name: gatus-pguser-gatus
-                            key: pgbouncer-uri

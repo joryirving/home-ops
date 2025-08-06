@@ -31,7 +31,11 @@ spec:
     remediation:
       retries: 3
   values:
-    fullnameOverride: blackbox-exporter
+    fullnameOverride: *app
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities: { add: ["NET_RAW"] }
     config:
       modules:
         http_2xx:
@@ -46,7 +50,16 @@ spec:
           timeout: 30s
           icmp:
             preferred_ip_protocol: ip4
-
+        tcp_connect:
+          prober: tcp
+          timeout: 5s
+          tcp:
+            preferred_ip_protocol: ip4
+    serviceMonitor:
+      enabled: true
+      defaults:
+        interval: 1m
+        scrapeTimeout: 10s
     prometheusRule:
       enabled: true
       rules:
@@ -58,23 +71,3 @@ spec:
           annotations:
             summary: |-
               The host {{ $labels.target }} is currently unreachable
-    pspEnabled: false
-    securityContext:
-      capabilities:
-        add: ["NET_RAW"]
-    podSecurityContext:
-      sysctls:
-        - name: net.ipv4.ping_group_range
-          value: "0 2147483647"
-    serviceMonitor:
-      enabled: true
-      defaults:
-        interval: 1m
-      targets:
-        - { name: &name voyager.internal, module: icmp, url: *name }
-        - { name: &name venti.internal, module: icmp, url: *name }
-        - { name: &name sayu.internal, module: icmp, url: *name }
-        - { name: &name pikvm.internal, module: icmp, url: *name }
-        - { name: &name jetkvm.internal, module: icmp, url: *name }
-        - { name: &name celestia.internal, module: icmp, url: *name }
-        - { name: tessmart, module: icmp, url: "192.168.1.10" }
