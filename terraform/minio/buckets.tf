@@ -1,7 +1,6 @@
 locals {
   buckets = [
-    "postgresql",
-    "volsync"
+    "postgresql"
   ]
 }
 
