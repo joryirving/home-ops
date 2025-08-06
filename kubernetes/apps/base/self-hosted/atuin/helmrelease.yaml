@@ -19,8 +19,6 @@ spec:
   values:
     controllers:
       atuin:
-        replicas: 2
-        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -29,16 +27,17 @@ spec:
               repository: ghcr.io/atuinsh/atuin
               tag: v18.8.0@sha256:8a8a8ef4eb5865656072bace5cc49390b56caa81360f9f0869054777155b6ef1
             env:
-              ATUIN_DB_URI:
-                valueFrom:
-                  secretKeyRef:
-                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
-                    key: pgbouncer-uri
+              ATUIN_DB_URI: sqlite:///config/atuin.db
               ATUIN_HOST: 0.0.0.0
+              ATUIN_METRICS__ENABLE: true
+              ATUIN_METRICS__HOST: 0.0.0.0
+              ATUIN_METRICS__PORT: &metricsPort 8081
+              ATUIN_OPEN_REGISTRATION: true
               ATUIN_PORT: &port 80
-              ATUIN_OPEN_REGISTRATION: "true"
               TZ: America/Edmonton
-            command: ["atuin", "server", "start"]
+            args:
+              - server
+              - start
             probes:
               liveness: &probes
                 enabled: true
@@ -52,32 +51,30 @@ spec:
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
               limits:
-                memory: 256Mi
-    self-hostedPodOptions:
+                memory: 64Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+    defaultPodOptions:
+      hostUsers: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: "{{ .Release.Name }}"
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     service:
       app:
         ports:
           http:
             port: *port
+          metrics:
+            port: *metricsPort
     route:
       app:
         hostnames: ["sh.jory.dev"]
@@ -86,10 +83,5 @@ spec:
             namespace: kube-system
             sectionName: https
     persistence:
-      tmpfs:
-        type: emptyDir
-        advancedMounts:
-          atuin:
-            app:
-              - path: /config
-                subPath: config
+      config:
+        existingClaim: "{{ .Release.Name }}"
