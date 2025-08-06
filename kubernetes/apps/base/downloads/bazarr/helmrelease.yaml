@@ -26,19 +26,8 @@ spec:
               repository: ghcr.io/joryirving/bazarr
               tag: 1.5.2@sha256:090e5a4e4f15231838bc771e5d50930c2d5f216a531393a8b2876d7ffe0f280a
             env:
+              BAZARR__PORT: &port 80
               TZ: America/Edmonton
-              POSTGRES_DATABASE: "{{ .Release.Name }}"
-              POSTGRES_ENABLED: "true"
-              POSTGRES_HOST: "{{ .Release.Name }}-pgbouncer.downloads.svc"
-              POSTGRES_USERNAME: "{{ .Release.Name }}"
-              POSTGRES_PASSWORD:
-                valueFrom:
-                  secretKeyRef:
-                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
-                    key: password
-            envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -46,7 +35,7 @@ spec:
                 spec:
                   httpGet:
                     path: /health
-                    port: &port 6767
+                    port: *port
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
@@ -60,7 +49,7 @@ spec:
               requests:
                 cpu: 10m
               limits:
-                memory: 4Gi
+                memory: 1Gi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -89,12 +78,6 @@ spec:
         path: /mnt/user/data
         globalMounts:
           - path: /media
-      scripts:
-        type: configMap
-        name: "{{ .Release.Name }}-scripts"
-        defaultMode: 0775
-        globalMounts:
-          - readOnly: true
       tmpfs:
         type: emptyDir
         advancedMounts:

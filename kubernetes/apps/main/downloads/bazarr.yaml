@@ -9,20 +9,11 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   components:
-    - ../../../../../components/gatus/guarded
-    - ../../../../../components/keda/nfs-scaler
-    - ../../../../../components/postgres
-    - ../../../../../components/volsync
-  dependsOn:
-    - name: crunchy-postgres-operator
-      namespace: database
-  healthCheckExprs:
-    - apiVersion: postgres-operator.crunchydata.com/v1beta1
-      kind: PostgresCluster
-      failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
-      current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
+    - ../../../../components/gatus/guarded
+    - ../../../../components/keda/nfs-scaler
+    - ../../../../components/volsync
   interval: 1h
-  path: ./kubernetes/apps/base/downloads/bazarr/app
+  path: ./kubernetes/apps/base/downloads/bazarr
   postBuild:
     substitute:
       APP: *app
@@ -36,24 +27,3 @@ spec:
   targetNamespace: downloads
   timeout: 5m
   wait: false
-# ---
-# # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-# apiVersion: kustomize.toolkit.fluxcd.io/v1
-# kind: Kustomization
-# metadata:
-#   name: &app whisper
-# spec:
-#   commonMetadata:
-#     labels:
-#       app.kubernetes.io/name: *app
-#   interval: 1h
-#   path: ./kubernetes/apps/base/downloads/bazarr/whisper
-#   prune: true
-#   retryInterval: 2m
-#   sourceRef:
-#     kind: GitRepository
-#     name: flux-system
-#     namespace: flux-system
-#   targetNamespace: downloads
-#   timeout: 5m
-#   wait: false
