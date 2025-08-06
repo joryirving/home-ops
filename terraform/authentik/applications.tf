@@ -3,7 +3,6 @@ locals {
     "grafana",
     "headlamp",
     "kyoo",
-    "lubelogger",
     "open-webui",
     "paperless",
     "portainer"
@@ -42,14 +41,6 @@ locals {
       icon_url      = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
       redirect_uri  = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/logged/authentik"
       launch_url    = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.CLUSTER_DOMAIN}/login/callback"
-    },
-    lubelogger = {
-      client_id     = module.onepassword_application["lubelogger"].fields["LUBELOGGER_CLIENT_ID"]
-      client_secret = module.onepassword_application["lubelogger"].fields["LUBELOGGER_CLIENT_SECRET"]
-      group         = "home"
-      icon_url      = "https://demo.lubelogger.com/defaults/lubelogger_icon_72.png"
-      redirect_uri  = "https://lubelogger.${var.CLUSTER_DOMAIN}/Login/RemoteAuth"
-      launch_url    = "https://lubelogger.${var.CLUSTER_DOMAIN}/Login/RemoteAuth"
     },
     open-webui = {
       client_id     = module.onepassword_application["open-webui"].fields["OPEN_WEBUI_CLIENT_ID"]
