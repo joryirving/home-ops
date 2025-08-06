@@ -11,21 +11,12 @@ spec:
   components:
     - ../../../../components/gatus/external
     - ../../../../components/postgres
-  dependsOn:
-    - name: crunchy-postgres-operator
-      namespace: database
-  healthCheckExprs:
-    - apiVersion: postgres-operator.crunchydata.com/v1beta1
-      kind: PostgresCluster
-      failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
-      current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 1h
   path: ./kubernetes/apps/base/observability/grafana
   postBuild:
     substitute:
       APP: *app
       CLUSTER: main
-      REPLICAS: "2"
   prune: true
   retryInterval: 2m
   sourceRef:
@@ -46,27 +37,5 @@ spec:
         name: grafana
       spec:
         values:
-          env:
-            GF_DATABASE_HOST: grafana-pgbouncer.observability.svc
-            GF_DATABASE_NAME: grafana
-            GF_DATABASE_SSL_MODE: require
-            GF_DATABASE_TYPE: postgres
-            GF_DATABASE_USER: grafana
           envFromSecrets:
             - name: grafana-secret
-          envValueFrom:
-            GF_DATABASE_PASSWORD:
-              secretKeyRef:
-                name: grafana-pguser-grafana
-                key: password
-          ingress:
-            annotations:
-              gethomepage.dev/enabled: "true"
-              gethomepage.dev/icon: grafana.png
-              gethomepage.dev/name: Grafana
-              gethomepage.dev/group: Observability
-              gethomepage.dev/description: Monitoring Dashboards
-              # gethomepage.dev/widget.type: grafana
-              # gethomepage.dev/widget.url: http://grafana.observability
-              # gethomepage.dev/widget.username: '{{`{{HOMEPAGE_VAR_GRAFANA_USERNAME}}`}}'
-              # gethomepage.dev/widget.password: '{{`{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}`}}'
