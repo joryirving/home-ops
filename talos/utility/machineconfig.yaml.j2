@@ -1,6 +1,7 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.10/website/content/v1.10/schemas/config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.11/website/content/v1.11/schemas/config.schema.json
 version: v1alpha1
+persist: true
 machine:
   type: {{ ENV.MACHINE_TYPE }}
   token: op://Kubernetes/talos-utility/MACHINE_TOKEN
@@ -45,12 +46,14 @@ machine:
         rsize=1048576
         wsize=1048576
   install:
-    image: factory.talos.dev/installer/{{ ENV.TALOS_SCHEMATIC }}:v1.10.6
+    image: factory.talos.dev/installer/{{ ENV.TALOS_SCHEMATIC }}:v1.11.0-beta.1
   kubelet:
     image: ghcr.io/siderolabs/kubelet:{{ ENV.KUBERNETES_VERSION }}
     extraArgs:
       max-pods: "200"
     extraConfig:
+      featureGates:
+        ImageVolume: true
       serializeImagePulls: false
     extraMounts:
       - destination: /var/mnt/extra
@@ -165,7 +168,7 @@ cluster:
     image: registry.k8s.io/kube-apiserver:{{ ENV.KUBERNETES_VERSION }}
     extraArgs:
       enable-aggregator-routing: true
-      feature-gates: MutatingAdmissionPolicy=true
+      feature-gates: ImageVolume=true,MutatingAdmissionPolicy=true
       runtime-config: admissionregistration.k8s.io/v1alpha1=true
     certSANs: ["k8s.utility.internal", "127.0.0.1"]
     disablePodSecurityPolicy: true
