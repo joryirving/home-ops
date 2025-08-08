@@ -28,7 +28,7 @@ spec:
             securityContext:
               runAsUser: 0
         containers:
-          main:
+          app:
             image:
               repository: ghcr.io/bjw-s-labs/manyfold
               tag: 0.120.1@sha256:e947147a0e383f669e87ce61ba4d4c323e2b4030864af698f53f97e5b79fd86e
@@ -79,7 +79,7 @@ spec:
             port: *port
     route:
       app:
-        hostnames: ["manyfold.jory.dev"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: internal
             namespace: kube-system
