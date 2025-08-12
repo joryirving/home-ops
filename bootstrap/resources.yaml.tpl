@@ -1,10 +1,8 @@
-{% for namespace in ["external-secrets", "flux-system"] %}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{ namespace }}
-{% endfor %}
+  name: external-secrets
 ---
 apiVersion: v1
 kind: Secret
@@ -13,6 +11,11 @@ metadata:
   namespace: external-secrets
 stringData:
   token: op://kubernetes/1password/OP_CONNECT_TOKEN
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flux-system
 ---
 apiVersion: v1
 kind: Secret

@@ -6,50 +6,35 @@ tasks:
   talos:
     cmds:
       - task: kubernetes
-      - task: wait
-      - task: crds
-      - task: resources
       - task: apps
     requires:
       vars: [CLUSTER]
+    preconditions:
+      - op whoami
+      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml
+      - which kubectl op
 
-  talos:
+  kubernetes:
     desc: Bootstrap Talos
     cmds:
       - until talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} bootstrap; do sleep 5; done
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force-context-name {{.CLUSTER}} --force {{.CLUSTER_DIR}}
+      - talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/talosconfig
     vars:
       RANDOM_CONTROLLER:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
     requires:
       vars: [CLUSTER]
     preconditions:
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
+      - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
+      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
       - which jq talosctl
 
-  wait:
-    desc: Wait for all nodes to be 'Ready=False'
+  apps:
+    desc: Bootstrap Kubernetes Apps
     cmds:
       - kubectl config set-cluster {{.CONTEXT}} --server https://{{.RANDOM_CONTROLLER}}:6443
-      - defer: talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.KUBERNETES_DIR}}
-      - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
-    requires:
-      vars: [CLUSTER]
-    vars:
-      CONTEXT:
-        sh: talosctl config info --output json | jq --raw-output '.context'
-      RANDOM_CONTROLLER:
-        sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
-    preconditions:
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
-      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig
-      - which jq kubectl talosctl
-
-  crds:
-    desc: Bootstrap CRDs
-    cmds:
-      - echo "Bootstrapping CRDs..."
+      - defer: talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/talosconfig
+      - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
       - for:
           - # renovate: datasource=github-releases depName=kubernetes-sigs/external-dns
             https://raw.githubusercontent.com/kubernetes-sigs/external-dns/refs/tags/v0.18.0/config/crd/standard/dnsendpoints.externaldns.k8s.io.yaml
@@ -62,30 +47,25 @@ tasks:
               echo "Applying CRD from {{.ITEM}}..."
               kubectl --context {{.CLUSTER}} apply --server-side --filename "{{.ITEM}}"
           fi
+      - op inject --in-file {{.BOOTSTRAP_DIR}}/resources.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
+      - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.yaml sync --hide-notes
     requires:
       vars: [CLUSTER]
-    preconditions:
-      - which kubectl
-
-  resources:
-    desc: Bootstrap Resources
-    cmd: |
-      echo "Bootstrapping Resources..."
-       op inject --in-file {{.BOOTSTRAP_DIR}}/resources.yaml | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
-      echo "Resources bootstrapped [{{.ITEM}}]"
-    status:
-      -  op inject --in-file {{.BOOTSTRAP_DIR}}/resources.yaml | op inject | kubectl --context {{.CLUSTER}} diff --filename -
+    vars:
+      CONTEXT:
+        sh: talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig --output json | jq --raw-output '.context'
+      RANDOM_CONTROLLER:
+        sh: talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig --output json | jq --raw-output '.endpoints[]' | shuf -n 1
+    env:
+      CLUSTER: '{{.CLUSTER}}'
+      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
+      CLUSTER_DIR: '{{.CLUSTER_DIR}}'
+      SHARED_APPS: '{{.SHARED_APPS}}'
+      SHARED_DIR: '{{.SHARED_DIR}}'
     preconditions:
       - op whoami
-      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml
-      - which kubectl op
-
-  apps:
-    desc: Bootstrap Apps
-    cmd: |
-      echo "Bootstrapping Apps..."
-      helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.yaml sync --hide-notes
-      echo "Apps bootstrapped [{{.ITEM}}]"
-    preconditions:
       - test -f {{.BOOTSTRAP_DIR}}/helmfile.yaml
-      - which helm helmfile
+      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml.tpl
+      - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
+      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
+      - which jq kubectl talosctl op
