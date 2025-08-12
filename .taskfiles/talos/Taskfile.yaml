@@ -36,8 +36,8 @@ tasks:
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
-      - op whoami --format=json
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
+      - op whoami
+      - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
       - test -f {{.TALOS_DIR}}/machineconfig.yaml.j2
       - test -f {{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{.NODE}}.yaml
       - test -f {{.TALOS_DIR}}/schematic.yaml
@@ -62,7 +62,9 @@ tasks:
 
   upgrade-node:
     desc: Upgrade Talos on a single node [CLUSTER=main] [NODE=required]
-    cmd: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} upgrade --image={{.TALOS_IMAGE}} --timeout=10m
+    cmds:
+      - task: apply-node
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} upgrade --image={{.TALOS_IMAGE}} --timeout=10m
     vars:
       MACHINE_TYPE:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machinetypes --output=jsonpath='{.spec}'

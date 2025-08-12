@@ -4,8 +4,17 @@ version: '3'
 
 tasks:
   talos:
+    cmds:
+      - task: kubernetes
+      - task: wait
+      - task: crds
+      - task: resources
+      - task: apps
+    requires:
+      vars: [CLUSTER]
+
+  talos:
     desc: Bootstrap Talos
-    prompt: Bootstrap Talos ...?
     cmds:
       - until talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} bootstrap; do sleep 5; done
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force-context-name {{.CLUSTER}} --force {{.CLUSTER_DIR}}
@@ -19,53 +28,64 @@ tasks:
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - which jq talosctl
 
-  apps:
-    desc: Bootstrap Kubernetes Apps
-    prompt: Bootstrap Kubernetes Apps ...?
+  wait:
+    desc: Wait for all nodes to be 'Ready=False'
     cmds:
       - kubectl config set-cluster {{.CONTEXT}} --server https://{{.RANDOM_CONTROLLER}}:6443
-      - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force-context-name {{.CLUSTER}} --force {{.CLUSTER_DIR}}
-      - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
-      - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
+      - defer: talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.KUBERNETES_DIR}}
+      - until kubectl wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
     requires:
       vars: [CLUSTER]
     vars:
       CONTEXT:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.context'
+        sh: talosctl config info --output json | jq --raw-output '.context'
       RANDOM_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
-    env:
-      CLUSTER: '{{.CLUSTER}}'
-      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
-      CLUSTER_DIR: '{{.CLUSTER_DIR}}'
-      SHARED_APPS: '{{.SHARED_APPS}}'
-      SHARED_DIR: '{{.SHARED_DIR}}'
+        sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
     preconditions:
-      - op whoami --format=json
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
-      - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
-      - test -f {{.TALOS_DIR}}/talosconfig
-      - which helmfile jq kubectl op talosctl
+      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig
+      - which jq kubectl talosctl
 
-  helmfile:
-    desc: Bootstrap Cluster apps
-    dir: '{{.TALOS_DIR}}'
+  crds:
+    desc: Bootstrap CRDs
     cmds:
-      - bash {{.SCRIPTS_DIR}}/bootstrap-apps.sh
-    vars:
-      TALOS_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[]'
-    env:
-      CLUSTER: '{{.CLUSTER}}'
-      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
-      CLUSTER_DIR: '{{.CLUSTER_DIR}}'
-      SHARED_APPS: '{{.SHARED_APPS}}'
-      SHARED_DIR: '{{.SHARED_DIR}}'
+      - echo "Bootstrapping CRDs..."
+      - for:
+          - # renovate: datasource=github-releases depName=kubernetes-sigs/external-dns
+            https://raw.githubusercontent.com/kubernetes-sigs/external-dns/refs/tags/v0.18.0/config/crd/standard/dnsendpoints.externaldns.k8s.io.yaml
+          - # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
+            https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/experimental-install.yaml
+          - # renovate: datasource=github-releases depName=prometheus-operator/prometheus-operator
+            https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.84.1/stripped-down-crds.yaml
+        cmd: |
+          if ! kubectl --context {{.CLUSTER}} diff --filename "{{.ITEM}}" &>/dev/null; then
+              echo "Applying CRD from {{.ITEM}}..."
+              kubectl --context {{.CLUSTER}} apply --server-side --filename "{{.ITEM}}"
+          fi
     requires:
       vars: [CLUSTER]
     preconditions:
-      - op whoami --format=json
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
-      - test -f {{.TALOS_DIR}}/talosconfig
-      - test -f {{.SCRIPTS_DIR}}/bootstrap-apps.sh
+      - which kubectl
+
+  resources:
+    desc: Bootstrap Resources
+    cmd: |
+      echo "Bootstrapping Resources..."
+       op inject --in-file {{.BOOTSTRAP_DIR}}/resources.yaml | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
+      echo "Resources bootstrapped [{{.ITEM}}]"
+    status:
+      -  op inject --in-file {{.BOOTSTRAP_DIR}}/resources.yaml | op inject | kubectl --context {{.CLUSTER}} diff --filename -
+    preconditions:
+      - op whoami
+      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml
+      - which kubectl op
+
+  apps:
+    desc: Bootstrap Apps
+    cmd: |
+      echo "Bootstrapping Apps..."
+      helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.yaml sync --hide-notes
+      echo "Apps bootstrapped [{{.ITEM}}]"
+    preconditions:
+      - test -f {{.BOOTSTRAP_DIR}}/helmfile.yaml
+      - which helm helmfile
