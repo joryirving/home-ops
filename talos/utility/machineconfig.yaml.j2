@@ -213,3 +213,11 @@ cluster:
   serviceAccount:
     key: op://Kubernetes/talos-utility/CLUSTER_SERVICEACCOUNT_KEY
   {% endif %}
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: local-hostpath
+provisioning:
+  diskSelector:
+    match: disk.model == "WD_BLACK SN770 1TB" && !system_disk
+  minSize: 1TB
