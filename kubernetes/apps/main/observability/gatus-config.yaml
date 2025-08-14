@@ -35,6 +35,8 @@ endpoints:
     client:
       dns-resolver: tcp://1.1.1.1:53
     conditions: ["[STATUS] == 200"]
+    extra-labels:
+      cluster: main
   - name: flux-webhook
     group: main-external
     url: https://flux-webhook.jory.dev
@@ -42,6 +44,8 @@ endpoints:
     client:
       dns-resolver: tcp://1.1.1.1:53
     conditions: ["[STATUS] == 404"]
+    extra-labels:
+      cluster: main
   - name: main-cert-expiration
     group: domain
     url: "https://status.jory.dev"
@@ -60,6 +64,8 @@ endpoints:
     interval: 1h
     conditions:
       - "[CERTIFICATE_EXPIRATION] > 240h"
+    extra-labels:
+      cluster: utility
 
 remote:
   instances:
