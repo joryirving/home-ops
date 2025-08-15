@@ -12,7 +12,7 @@ spec:
   path: ./kubernetes/apps/base/kube-system/cilium/app
   postBuild:
     substitute:
-      CLUSTER: test
+      CLUSTER: ${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository
@@ -52,7 +52,7 @@ spec:
   path: ./kubernetes/apps/base/kube-system/cilium/gateway
   postBuild:
     substitute:
-      CLUSTER: test
+      CLUSTER: ${CLUSTER}
       EXTERNAL_DOMAIN: external-test
       INTERNAL_DOMAIN: internal-test
       SVC_GATEWAY_EXTERNAL: 10.69.10.232
@@ -78,7 +78,7 @@ spec:
   dependsOn:
     - name: cilium
   interval: 15m
-  path: ./kubernetes/apps/test/kube-system/cilium/config
+  path: ./kubernetes/apps/test/kube-system/cilium
   prune: true
   sourceRef:
     kind: GitRepository
