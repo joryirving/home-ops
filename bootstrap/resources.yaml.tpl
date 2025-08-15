@@ -45,3 +45,13 @@ type: kubernetes.io/tls
 data:
   tls.crt: op://kubernetes/jory-dev-tls/tls.crt
   tls.key: op://kubernetes/jory-dev-tls/tls.key
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability

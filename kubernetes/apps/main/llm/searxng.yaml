@@ -11,9 +11,6 @@ spec:
   components:
     - ../../../../components/dragonfly
     - ../../../../components/gatus/guarded
-  dependsOn:
-    - name: dragonfly-operator
-      namespace: database
   healthCheckExprs:
     - apiVersion: dragonflydb.io/v1alpha1
       kind: Dragonfly
@@ -24,7 +21,7 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: main
+      CLUSTER: ${CLUSTER}
       GATUS_SUBDOMAIN: search
   prune: true
   retryInterval: 2m

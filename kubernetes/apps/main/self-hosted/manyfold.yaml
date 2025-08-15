@@ -12,17 +12,12 @@ spec:
     - ../../../../components/dragonfly
     - ../../../../components/gatus/guarded
     - ../../../../components/volsync
-  dependsOn:
-    - name: dragonfly-operator
-      namespace: database
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
   interval: 1h
   path: ./kubernetes/apps/base/self-hosted/manyfold
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: main
+      CLUSTER: ${CLUSTER}
       VOLSYNC_CAPACITY: 15Gi
   prune: true
   retryInterval: 2m
