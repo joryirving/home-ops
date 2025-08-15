@@ -14,13 +14,7 @@ spec:
     - ../../../../components/postgres
     - ../../../../components/volsync
   dependsOn:
-    - name: crunchy-postgres-operator
-      namespace: database
-    - name: dragonfly-operator
-      namespace: database
     - name: searxng
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
   healthCheckExprs:
     - apiVersion: dragonflydb.io/v1alpha1
       kind: Dragonfly
@@ -35,7 +29,7 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: main
+      CLUSTER: ${CLUSTER}
       GATUS_SUBDOMAIN: chat
   prune: true
   retryInterval: 2m

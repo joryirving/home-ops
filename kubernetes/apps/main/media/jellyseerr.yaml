@@ -12,11 +12,6 @@ spec:
     - ../../../../components/gatus/external
     - ../../../../components/postgres
     - ../../../../components/volsync
-  dependsOn:
-    - name: crunchy-postgres-operator
-      namespace: database
-    - name: rook-ceph-cluster
-      namespace: rook-ceph
   healthCheckExprs:
     - apiVersion: postgres-operator.crunchydata.com/v1beta1
       kind: PostgresCluster
@@ -27,7 +22,7 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: main
+      CLUSTER: ${CLUSTER}
       GATUS_SUBDOMAIN: requests
   prune: true
   retryInterval: 2m

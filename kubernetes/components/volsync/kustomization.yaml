@@ -7,3 +7,14 @@ resources:
   - ./pvc.yaml
   - ./replicationdestination.yaml
   - ./replicationsource.yaml
+patches:
+  - target:
+      group: helm.toolkit.fluxcd.io
+      version: v2
+      kind: HelmRelease
+    patch: |-
+      - op: add
+        path: /spec/dependsOn/-
+        value:
+          name: ${STORAGE_HR:=rook-ceph-cluster}
+          namespace: ${STORAGE_NS:=rook-ceph}
