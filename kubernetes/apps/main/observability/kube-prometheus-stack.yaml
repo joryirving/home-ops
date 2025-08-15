@@ -13,7 +13,7 @@ spec:
   postBuild:
     substitute:
       ALERTMANAGER_SUBDOMAIN: alertmanager
-      CLUSTER: main
+      CLUSTER: ${CLUSTER}
       GATUS_SUBDOMAIN: prometheus
       STORAGECLASS: ceph-block
       PVC_CAPACITY: "75"
@@ -26,25 +26,4 @@ spec:
   targetNamespace: observability
   timeout: 5m
   wait: false
-  patches:
-  - target:
-      kind: HelmRelease
-      name: kube-prometheus-stack
-    patch: |-
-      apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      metadata:
-        name: kube-prometheus-stack
-      spec:
-        values:
-          prometheus:
-            ingress:
-              annotations:
-                gethomepage.dev/enabled: "true"
-                gethomepage.dev/icon: prometheus.png
-                gethomepage.dev/name: Prometheus
-                gethomepage.dev/group: Observability
-                gethomepage.dev/app: prometheus
-                gethomepage.dev/description: Monitoring Scrape Service
-                gethomepage.dev/widget.type: prometheus
-                gethomepage.dev/widget.url: http://kube-prometheus-stack-prometheus.observability:9090
+
