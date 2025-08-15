@@ -5,3 +5,14 @@ kind: Component
 resources:
   - ./cluster.yaml
   - ./podmonitor.yaml
+patches:
+  - target:
+      group: helm.toolkit.fluxcd.io
+      version: v2
+      kind: HelmRelease
+    patch: |-
+      - op: add
+        path: /spec/dependsOn/-
+        value:
+          name: dragonfly-operator
+          namespace: database

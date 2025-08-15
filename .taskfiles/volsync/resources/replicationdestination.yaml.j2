@@ -9,6 +9,8 @@ spec:
     manual: restore-once
   kopia:
     accessModes: {{ ENV.ACCESS_MODES }}
+    cleanupCachePVC: true
+    cleanupTempPVC: true
     copyMethod: Direct
     destinationPVC: {{ ENV.CLAIM }}
     enableFileDeletion: true
@@ -17,7 +19,7 @@ spec:
       runAsGroup: {{ ENV.PGID }}
       fsGroup: {{ ENV.PGID }}
     previous: {{ ENV.PREVIOUS }}
-    repository: {{ ENV.APP }}-{{ ENV.REPOSITORY }}
+    repository: {{ ENV.APP }}-volsync
     sourceIdentity:
       sourceName: {{ ENV.APP }}
     storageClassName: {{ ENV.STORAGE_CLASS_NAME }}
