@@ -41,6 +41,26 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: &app cilium-gateway-crds
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  interval: 1h
+  path: ./kubernetes/apps/base/kube-system/cilium/crds
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: kube-system
+  timeout: 15m
+  wait: true
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: &app cilium-gateway
 spec:
   commonMetadata:
@@ -48,6 +68,7 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: certificates-import
+    - name: cilium-gateway-crds
   interval: 1h
   path: ./kubernetes/apps/base/kube-system/cilium/gateway
   postBuild:
