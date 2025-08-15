@@ -12,11 +12,6 @@ spec:
     - ../../../../components/dragonfly
     - ../../../../components/gatus/external
     - ../../../../components/postgres
-  dependsOn:
-    - name: crunchy-postgres-operator
-      namespace: database
-    - name: dragonfly-operator
-      namespace: database
   healthCheckExprs:
     - apiVersion: dragonflydb.io/v1alpha1
       kind: Dragonfly
@@ -31,7 +26,7 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: main
+      CLUSTER: ${CLUSTER}
       GATUS_SUBDOMAIN: sso
       POOL_MODE: transaction
   prune: true

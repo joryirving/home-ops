@@ -16,11 +16,12 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: utility
-      PVC_VOLSYNC_STORAGECLASS: local-hostpath
-      VOLSYNC_CACHE_SNAPSHOTCLASS: local-hostpath
+      CLUSTER: ${CLUSTER}
+      VOLSYNC_CAPACITY: 5Gi
       VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
       VOLSYNC_STORAGECLASS: local-hostpath
+      STORAGE_HR: ${STORAGE_HR}
+      STORAGE_NS: ${STORAGE_NS}
   prune: true
   retryInterval: 2m
   sourceRef:
