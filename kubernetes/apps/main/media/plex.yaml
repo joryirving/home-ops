@@ -17,7 +17,7 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: main
+      CLUSTER: ${CLUSTER}
       GATUS_PATH: /web/index.html
       VOLSYNC_CAPACITY: 50Gi
   prune: true
@@ -47,9 +47,7 @@ spec:
     - name: sonarr
       namespace: downloads
     - name: plex
-      namespace: media
     - name: tautulli
-      namespace: media
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/kometa
   postBuild:
@@ -81,13 +79,12 @@ spec:
 #     - ../../../../../components/volsync
 #   dependsOn:
 #     - name: plex
-#       namespace: media
 #   interval: 1h
 #   path: ./kubernetes/apps/base/media/plex/movie-roulette
 #   postBuild:
 #     substitute:
 #       APP: *app
-#       CLUSTER: main
+#       CLUSTER: ${CLUSTER}
 #   prune: true
 #   sourceRef:
 #     kind: GitRepository
@@ -108,7 +105,6 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
-      namespace: media
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-auto-languages
   prune: true
@@ -132,7 +128,6 @@ spec:
       app.kubernetes.io/name: *app
   dependsOn:
     - name: plex
-      namespace: media
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-image-cleanup
   postBuild:
@@ -161,9 +156,8 @@ spec:
     - ../../../../../components/volsync
   dependsOn:
     - name: plex
-      namespace: media
   interval: 1h
-  path: ./kubernetes/apps/base/media/plex/trakt-sync
+  path: ./kubernetes/apps/base/media/plex/plex-trakt-sync
   postBuild:
     substitute:
       APP: *app

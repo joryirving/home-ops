@@ -12,30 +12,6 @@ vars:
   VOLSYNC_RESOURCES_DIR: '{{.ROOT_DIR}}/.taskfiles/volsync/resources'
 
 tasks:
-  list:
-    desc: List snapshots for an application [CLUSTER=main] [NS=default] [APP=required]
-    summary: |
-      Args:
-        CLUSTER: Cluster to run command against (required)
-        NS: Namespace the PVC is in (default: default)
-        APP: Application to list snapshots for (required)
-    cmds:
-      - minijinja-cli --env {{.VOLSYNC_RESOURCES_DIR}}/list.yaml.j2 | kubectl apply -f -
-      - kubectl -n {{.NS}} wait job/list-{{.APP}} --for condition=complete --timeout=1m
-      - kubectl -n {{.NS}} logs job/list-{{.APP}} --container list
-      - kubectl -n {{.NS}} delete job list-{{.APP}}
-    vars:
-      NS: '{{.NS | default "default"}}'
-      APP: '{{.APP}}'
-    env:
-      NS: '{{.NS}}'
-      APP: '{{.APP}}'
-      REPOSITORY: '{{.REPOSITORY}}'
-    requires:
-      vars: [CLUSTER, APP]
-    preconditions:
-      - test -f {{.VOLSYNC_RESOURCES_DIR}}/list.yaml.j2
-
   state-*:
     desc: Suspend or resume Volsync [CLUSTER=main]
     cmds:
@@ -49,19 +25,6 @@ tasks:
     preconditions:
       - '[[ "{{.STATE}}" == "suspend" || "{{.STATE}}" == "resume" ]]'
       - which flux kubectl
-
-  unlock:
-    desc: Unlock all restic source repos [CLUSTER=main]
-    cmds:
-      - for: { var: SOURCES, split: "\n" }
-        cmd: kubectl --context {{.CLUSTER}} --namespace {{splitList "," .ITEM | first}} patch --field-manager=flux-client-side-apply replicationsources {{splitList "," .ITEM | last}} --type merge --patch "{\"spec\":{\"restic\":{\"unlock\":\"{{now | unixEpoch}}\"}}}"
-    vars:
-      SOURCES:
-        sh: kubectl --context {{.CLUSTER}} get replicationsources --all-namespaces --no-headers --output=jsonpath='{range .items[*]}{.metadata.namespace},{.metadata.name}{"\n"}{end}'
-    requires:
-      vars: [CLUSTER]
-    preconditions:
-      - which kubectl
 
   snapshot:
     desc: Snapshot an app [CLUSTER=main] [NS=default] [APP=required]
@@ -105,7 +68,6 @@ tasks:
       NS: '{{.NS}}'
       APP: '{{.APP}}'
       PREVIOUS: '{{.PREVIOUS}}'
-      REPOSITORY: '{{.REPOSITORY}}'
       CLAIM:
         sh: kubectl --context {{.CLUSTER}} --namespace {{.NS}} get replicationsources/{{.APP}} --output=jsonpath="{.spec.sourcePVC}"
       ACCESS_MODES:
