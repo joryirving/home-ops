@@ -11,7 +11,7 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - op whoami
-      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml.tpl
       - which kubectl op
 
   kubernetes:
@@ -21,41 +21,28 @@ tasks:
       - talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/talosconfig
     vars:
       RANDOM_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
     requires:
       vars: [CLUSTER]
     preconditions:
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
       - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
-      - which jq talosctl
+      - which yq talosctl
 
   apps:
     desc: Bootstrap Kubernetes Apps
     cmds:
-      - kubectl config set-cluster {{.CONTEXT}} --server https://{{.RANDOM_CONTROLLER}}:6443
+      - kubectl config set-cluster {{.CLUSTER}} --server https://{{.RANDOM_CONTROLLER}}:6443
       - defer: talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/talosconfig
       - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
-      - for:
-          - # renovate: datasource=github-releases depName=kubernetes-sigs/external-dns
-            https://raw.githubusercontent.com/kubernetes-sigs/external-dns/refs/tags/v0.18.0/config/crd/standard/dnsendpoints.externaldns.k8s.io.yaml
-          - # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
-            https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/experimental-install.yaml
-          - # renovate: datasource=github-releases depName=prometheus-operator/prometheus-operator
-            https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.84.1/stripped-down-crds.yaml
-        cmd: |
-          if ! kubectl --context {{.CLUSTER}} diff --filename "{{.ITEM}}" &>/dev/null; then
-              echo "Applying CRD from {{.ITEM}}..."
-              kubectl --context {{.CLUSTER}} apply --server-side --filename "{{.ITEM}}"
-          fi
       - op inject --in-file {{.BOOTSTRAP_DIR}}/resources.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
+      - helmfile --file {{.BOOTSTRAP_DIR}}/crds/helmfile.yaml template  | kubectl apply --server-side --filename - --context {{.CLUSTER}}
       - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.yaml sync --hide-notes
     requires:
       vars: [CLUSTER]
     vars:
-      CONTEXT:
-        sh: talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig --output json | jq --raw-output '.context'
       RANDOM_CONTROLLER:
-        sh: talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig --output json | jq --raw-output '.endpoints[]' | shuf -n 1
+        sh: talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig --output yaml | yq --exit-status '.endpoints[0]'
     env:
       CLUSTER: '{{.CLUSTER}}'
       CLUSTER_APPS: '{{.CLUSTER_APPS}}'
@@ -68,4 +55,4 @@ tasks:
       - test -f {{.BOOTSTRAP_DIR}}/resources.yaml.tpl
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
       - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
-      - which jq kubectl talosctl op
+      - which yq kubectl talosctl op
