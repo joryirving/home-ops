@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: spotizerr
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  install:
+    remediation:
+      retries: -1
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      spotizerr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: cooldockerizer93/spotizerr
+              tag: 3.1.0@sha256:0d4db6401aa60d2b8e68eb9d843b326d7d45a5b9494b5f13e6355c96d92b36bb
+            env:
+              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
+              REDIS_PORT: "6379"
+              REDIS_DB: "0"
+              PUID: &uid 1000
+              PGID: &gid 100
+              SSO_ENABLED: false
+              TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: &port 7171
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            # securityContext:
+            #   allowPrivilegeEscalation: false
+            #   readOnlyRootFilesystem: true
+            #   capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 100m
+              limits:
+                memory: 1Gi
+    # defaultPodOptions:
+    #   securityContext:
+    #     runAsNonRoot: true
+    #     runAsUser: *uid
+    #     runAsGroup: *gid
+    #     fsGroup: *gid
+    #     fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        ports:
+          http:
+            port: *port
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: internal
+            namespace: kube-system
+            sectionName: https
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /app/data
+      downloads:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/user/data/media/music
+        globalMounts:
+          - path: /app/downloads
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          spotizerr:
+            app:
+              - path: /app/logs
+                subPath: logs
+

@@ -3,31 +3,28 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app gatus-utility
+  name: &app spotizerr
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
   components:
+    - ../../../../components/dragonfly
+    - ../../../../components/gatus/guarded
+    - ../../../../components/keda/nfs-scaler
     - ../../../../components/volsync
   interval: 1h
-  path: ./kubernetes/apps/base/observability/gatus
+  path: ./kubernetes/apps/base/downloads/spotizerr
   postBuild:
     substitute:
       APP: *app
       CLUSTER: ${CLUSTER}
-      GATUS_SUBDOMAIN: status-utility
-      VOLSYNC_CAPACITY: 5Gi
-      VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
-      VOLSYNC_STORAGECLASS: local-hostpath
-      STORAGE_HR: ${STORAGE_HR}
-      STORAGE_NS: ${STORAGE_NS}
   prune: true
   retryInterval: 2m
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: observability
+  targetNamespace: downloads
   timeout: 5m
   wait: false

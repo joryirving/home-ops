@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app gatus
+  name: &app ${APP}
 spec:
   interval: 1h
   chartRef:
@@ -98,21 +98,21 @@ spec:
             sectionName: https
     rbac:
       roles:
-        gatus:
+        ${APP}:
           type: ClusterRole
           rules:
             - apiGroups: [""]
               resources: ["configmaps", "secrets"]
               verbs: ["get", "watch", "list"]
       bindings:
-        gatus:
+        ${APP}:
           type: ClusterRoleBinding
           roleRef:
             identifier: *app
           subjects:
             - identifier: *app
     serviceAccount:
-      gatus: {}
+      ${APP}: {}
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
