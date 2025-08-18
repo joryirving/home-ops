@@ -37,19 +37,19 @@ spec:
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
-            probes:
-              liveness: &probes
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /ping
-                    port: &port 7171
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
-              readiness: *probes
+            # probes:
+            #   liveness: &probes
+            #     enabled: true
+            #     custom: true
+            #     spec:
+            #       httpGet:
+            #         path: /ping
+            #         port: &port 7171
+            #       initialDelaySeconds: 0
+            #       periodSeconds: 10
+            #       timeoutSeconds: 1
+            #       failureThreshold: 3
+            #   readiness: *probes
             # securityContext:
             #   allowPrivilegeEscalation: false
             #   readOnlyRootFilesystem: true
@@ -58,7 +58,7 @@ spec:
               requests:
                 cpu: 100m
               limits:
-                memory: 1Gi
+                memory: 3Gi
     # defaultPodOptions:
     #   securityContext:
     #     runAsNonRoot: true
@@ -70,7 +70,7 @@ spec:
       app:
         ports:
           http:
-            port: *port
+            port: 7171
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
