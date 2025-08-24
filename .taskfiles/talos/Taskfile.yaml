@@ -92,7 +92,7 @@ tasks:
   reset-node:
     desc: Reset Talos on a single node [CLUSTER=main] [NODE=required]
     prompt: Reset Talos node '{{.NODE}}' ... continue?
-    cmd: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig reset --nodes {{.NODE}} --graceful=false --reboot #--user-disks-to-wipe u-local-hostpath
+    cmd: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig reset --nodes {{.NODE}} --graceful=false --reboot
     requires:
       vars: [CLUSTER,NODE]
     preconditions:
@@ -103,7 +103,7 @@ tasks:
   reset-cluster:
     desc: Reset Talos across the whole cluster [CLUSTER=main]
     prompt: Reset the Talos cluster ... continue?
-    cmd: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig reset --nodes {{.NODES}} --graceful=false --reboot #--user-disks-to-wipe u-local-hostpath
+    cmd: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig reset --nodes {{.NODES}} --graceful=false --reboot
     vars:
       NODES:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --join-output '[.nodes[]] | join(",")'
