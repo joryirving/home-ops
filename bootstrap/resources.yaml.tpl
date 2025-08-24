@@ -5,17 +5,27 @@ metadata:
   name: external-secrets
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: flux-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: onepassword
   namespace: external-secrets
 stringData:
   token: op://kubernetes/1password/OP_CONNECT_TOKEN
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: flux-system
 ---
 apiVersion: v1
 kind: Secret
@@ -45,13 +55,3 @@ type: kubernetes.io/tls
 data:
   tls.crt: op://kubernetes/jory-dev-tls/tls.crt
   tls.key: op://kubernetes/jory-dev-tls/tls.key
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: network
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: observability
