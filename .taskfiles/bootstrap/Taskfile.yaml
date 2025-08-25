@@ -11,38 +11,39 @@ tasks:
       vars: [CLUSTER]
     preconditions:
       - op whoami
-      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml.tpl
+      - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
+      - test -f {{.BOOTSTRAP_DIR}}/secrets.yaml.tpl
       - which kubectl op
 
   kubernetes:
     desc: Bootstrap Talos
     cmds:
       - until talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} bootstrap; do sleep 5; done
-      - talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/talosconfig
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
     vars:
       RANDOM_CONTROLLER:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
     requires:
       vars: [CLUSTER]
     preconditions:
-      - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
-      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - which yq talosctl
 
   apps:
     desc: Bootstrap Kubernetes Apps
     cmds:
       - kubectl config set-cluster {{.CLUSTER}} --server https://{{.RANDOM_CONTROLLER}}:6443
-      - defer: talosctl kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}} --talosconfig {{.TALOS_DIR}}/talosconfig
-      - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
-      - op inject --in-file {{.BOOTSTRAP_DIR}}/resources.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
-      - helmfile --file {{.BOOTSTRAP_DIR}}/crds/helmfile.yaml template  | kubectl apply --server-side --filename - --context {{.CLUSTER}}
-      - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.yaml sync --hide-notes
+      - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
+      # - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
+      - op inject --in-file {{.BOOTSTRAP_DIR}}/secrets.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
+      - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml template  | kubectl --context {{.CLUSTER}} apply --server-side --filename -
+      - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml sync --hide-notes
     requires:
       vars: [CLUSTER]
     vars:
       RANDOM_CONTROLLER:
-        sh: talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig --output yaml | yq --exit-status '.endpoints[0]'
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
     env:
       CLUSTER: '{{.CLUSTER}}'
       CLUSTER_APPS: '{{.CLUSTER_APPS}}'
@@ -51,8 +52,8 @@ tasks:
       SHARED_DIR: '{{.SHARED_DIR}}'
     preconditions:
       - op whoami
-      - test -f {{.BOOTSTRAP_DIR}}/helmfile.yaml
-      - test -f {{.BOOTSTRAP_DIR}}/resources.yaml.tpl
-      - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
-      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig --talosconfig {{.TALOS_DIR}}/talosconfig
-      - which yq kubectl talosctl op
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
+      - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
+      - test -f {{.BOOTSTRAP_DIR}}/secrets.yaml.tpl
+      - which helmfile jq kubectl op talosctl

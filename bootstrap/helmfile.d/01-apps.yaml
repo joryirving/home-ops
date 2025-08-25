@@ -5,7 +5,6 @@ helmDefaults:
   cleanupOnFail: true
   wait: true
   waitForJobs: true
-  # waitRetries: 3 # Not supported by Helm yet
 
 releases:
   - name: cilium
@@ -14,6 +13,18 @@ releases:
     chart: oci://ghcr.io/home-operations/charts-mirror/cilium
     version: 1.18.1
     values: ['./values.yaml.gotmpl']
+    hooks:
+      - # Advertise Kubernetes VIP
+        events: ['postsync']
+        command: kubectl
+        args:
+          - apply
+          - --server-side
+          - --namespace=kube-system
+          - --field-manager=kustomize-controller
+          - --kustomize
+          - ../../kubernetes/apps/kube-system/cilium/config
+        showlogs: true
 
   - name: coredns
     namespace: kube-system
