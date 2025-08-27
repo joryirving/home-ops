@@ -18,12 +18,13 @@ releases:
         events: ['postsync']
         command: kubectl
         args:
+          - --context={{ requiredEnv "CLUSTER" }}
           - apply
           - --server-side
           - --namespace=kube-system
           - --field-manager=kustomize-controller
           - --kustomize
-          - ../../kubernetes/apps/kube-system/cilium/config
+          - '{{ requiredEnv "CLUSTER_APPS" }}/kube-system/cilium'
         showlogs: true
 
   - name: coredns
