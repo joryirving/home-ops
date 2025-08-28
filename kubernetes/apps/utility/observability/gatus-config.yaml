@@ -28,13 +28,6 @@ connectivity:
     interval: 1m
 
 endpoints:
-  - name: status
-    group: utility-external
-    url: https://status-utility.jory.dev
-    interval: 1m
-    client:
-      dns-resolver: tcp://1.1.1.1:53
-    conditions: ["[STATUS] == 200"]
   - name: flux-webhook
     group: utility-external
     url: https://flux-webhook-utility.jory.dev
@@ -42,3 +35,14 @@ endpoints:
     client:
       dns-resolver: tcp://1.1.1.1:53
     conditions: ["[STATUS] == 404"]
+    extra-labels:
+      CLUSTER: utility
+  - name: status
+    group: main-external
+    url: https://status.jory.dev
+    interval: 1m
+    client:
+      dns-resolver: tcp://1.1.1.1:53
+    conditions: ["[STATUS] == 200"]
+    extra-labels:
+      CLUSTER: main
