@@ -14,7 +14,7 @@ xargs -n2 sh -c 'kubectl patch cronjob $1 -n $0 --type=merge -p "{\"spec\": {\"s
 
 ```yaml
   patches:
-    - patch: |-
+    - patch: |--
         - op: remove
           path: /spec/dataSource
       target:
