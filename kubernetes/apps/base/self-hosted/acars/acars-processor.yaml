@@ -1,16 +1,15 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/tyzbit/acars-processor/refs/heads/main/schema.json
 
-# Purpose: Forward all human-created messages to and Discord
-# Environment variables are substituted at runtime by acars-processor
 ACARSProcessorSettings:
   ColorOutput: true
+  LogLevel: debug
+  LogHideTimestamps: true
   Database:
     Enabled: true
     Type: sqlite
     SQLiteDatabasePath: /data/messages.db
-  LogLevel: info
   ACARSHub:
-    MaxConcurrentRequests: 2
+    MaxConcurrentRequests: 1
     ACARS:
       Host: &acarshubhost acars-hub
       Port: 15550
@@ -112,7 +111,7 @@ Steps:
   # Have local Ollama model look only for human-written messages
   - Filter:
       Ollama:
-        Model: &ollamamodel qwen3
+        Model: &ollamamodel qwen3:30b-a3b
         URL: &ollamaurl https://ollama.jory.dev
         FilterOnFailure: true
         MaxRetryAttempts: 2
@@ -126,38 +125,34 @@ Steps:
             { Name: frequency_penalty, Value: 1.1 }, # Penalize repeated tokens (0-2.0)
             { Name: num_gpu, Value: 40 }, # Number of layers to offload to GPU
           ]
-      # -----------------------------------------
-      # 1,121 characters
-      # 332 tokens https://token-calculator.net
-      # -----------------------------------------
-      UserPrompt: |
-        You are reviewing messages from both humans sources and must forward
-        only the messages with content written by humans.
+        # -----------------------------------------
+        # 955 characters
+        # 283 tokens https://token-calculator.net
+        # -----------------------------------------
+        UserPrompt: |
+          This message is either completely automatically generated or features
+          a human-written message after some data. You must find the messages
+          that have some human content.
 
-        Human content will always be the end of the message, typically after
-        a limited amount of information like airport codes and arrival times.
-        They may also contain some technical terms or acronyms.
+          Human content in these messages might have misspellings, abbreviations
+          or typos similar to cell phone text messages and may only be a few
+          words. Human content will often have acronyms.
 
-        Human content might have misspellings, abbreviations or typos similar
-        to cell phone text messages and may be only a few words.
+          DO forward if the message matches ANY of these criteria:
+          - Contains any amount of natural or colloquial language or prose.
+          - Contains a complaint, request or command.
+          - Contains a greeting/sign-offs or their variations, for example: HI,
+            HELLO, BONJOUR, GOOD MORNING/EVENING, THANK YOU/THANKS/THNKS/THX,
+            BRGRDS/RGRDS, CHEERS, COPY/COPY THAT.
+          - Has any prose content after the term FREETEXT or /TXT
+          - Has /Q/ or QQ or QUESTION MARK which signifies a person is asking a
+            question in this context.
+          - Commentary or questions about aircraft passengers,crew,med,medical,
+            medlink,booking,lavatories (abbreviation: LAV), seats, or other
+            situations or events relating to air travel.
+          - Lists a desk number or has DISPATCHER MSG.
 
-        DO forward if the message matches ANY of these rules:
-        - Contains natural or colloquial language, including informal.
-        - Greetings/sign-offs or their variations, for example: HI, HELLO,
-          BONJOUR, GOOD MORNING/EVENING, THANK YOU/THANKS/THNKS/THX, BRGRDS,
-          CHEERS, COPY/COPY THAT.
-        - It has content after the term FREETEXT or /TXT
-        - A clear sentence/clause such as WILL/IS/ARE/HAVE/NEED/CAN/PLEASE
-          followed by a verb, for example: PLEASE SEND WX.
-        - Has /Q/ or QQ or QUESTION MARK which signifies a question in this
-          context.
-        - Operational commentary or questions about aircraft passengers,crew,
-          med,medical,medlink,booking,lavatories (abbreviation: LAV), seats,
-          or any other situation or event regarding people and aircraft.
-        - Writeups or complaints about issues relating to aircraft.
-        - Lists a desk number or has DISPATCHER MSG.
-
-        Based on these rules, should this message be forwarded?
+          Based on these rules, should this message be forwarded?
 
   # This should be a human message, so send to my private Discord channel, with
   # fancy templating.
@@ -170,7 +165,7 @@ Steps:
         FormatText: true
         FormatTimestamps: true
         MessageGoTemplate: |
-          -# From [{{index . "ACARSProcessor.TailCode"}}]({{index . "ACARSProcessor.TrackingLink"}}){{if ne "" (index . "ACARSProcessor.FlightNumber")}} on flight {{index . "ACARSProcessor.FlightNumber"}}{{else}}{{end}} <t:{{index . "ACARSProcessor.UnixTimestamp"}}:R>{{if ne 0.0 (index . "ACARSProcessor.AircraftDistanceMi")}} from {{printf "%.2f" (index . "ACARSProcessor.AircraftDistanceMi")}} miles away{{else}}{{end}}.
+          -# From [{{index . "ACARSProcessor.TailCode"}}]({{index . "ACARSProcessor.TrackingLink"}}){{if ne "" (index . "ACARSProcessor.FlightNumber")}} on flight {{index . "ACARSProcessor.FlightNumber"}}{{else}}{{end}} <t:{{index . "ACARSProcessor.UnixTimestamp"}}:R>{{if ne 0.0 (index . "ACARSProcessor.AircraftDistanceMi")}}.
           ```
           {{index . "ACARSProcessor.MessageText"}}
           ```
