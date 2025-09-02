@@ -12,7 +12,7 @@ tasks:
     preconditions:
       - op whoami
       - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
-      - test -f {{.BOOTSTRAP_DIR}}/secrets.yaml.tpl
+      - test -d {{.BOOTSTRAP_DIR}}/templates
       - which kubectl op
 
   kubernetes:
@@ -36,7 +36,7 @@ tasks:
       - kubectl config set-cluster {{.CLUSTER}} --server https://{{.RANDOM_CONTROLLER}}:6443
       - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
       - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
-      - op inject --in-file {{.BOOTSTRAP_DIR}}/secrets.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
+      - op inject --in-file {{.BOOTSTRAP_DIR}}/templates/secrets.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
       - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml template  | kubectl --context {{.CLUSTER}} apply --server-side --filename -
       - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml sync --hide-notes
     requires:
@@ -55,5 +55,5 @@ tasks:
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
-      - test -f {{.BOOTSTRAP_DIR}}/secrets.yaml.tpl
+      - test -d {{.BOOTSTRAP_DIR}}/templates
       - which helmfile jq kubectl op talosctl
