@@ -72,6 +72,14 @@ spec:
         prometheus:
           serviceMonitor:
             enabled: true
+      route:
+        main:
+          enabled: true
+          hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
+          parentRefs:
+            - name: envoy-external
+              namespace: network
+              sectionName: https
     worker:
       autoscaling:
         enabled: true
