@@ -93,8 +93,8 @@ spec:
       app:
         hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
         parentRefs:
-          - name: external
-            namespace: kube-system
+          - name: envoy-external
+            namespace: network
             sectionName: https
         rules:
           - backendRefs:
@@ -103,8 +103,8 @@ spec:
       codeserver:
         hostnames: ["${GATUS_SUBDOMAIN:=${APP}}-code.jory.dev"]
         parentRefs:
-          - name: internal
-            namespace: kube-system
+          - name: envoy-internal
+            namespace: network
             sectionName: https
         rules:
           - backendRefs:

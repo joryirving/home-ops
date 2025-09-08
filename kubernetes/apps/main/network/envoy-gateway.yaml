@@ -3,18 +3,28 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app certificates-import
+  name: &app envoy-gateway
 spec:
   commonMetadata:
     labels:
       app.kubernetes.io/name: *app
+  dependsOn:
+    - name: certificates-import
   interval: 1h
-  path: ./kubernetes/apps/base/kube-system/certificates/import
+  path: ./kubernetes/apps/base/network/envoy-gateway
+  postBuild:
+    substitute:
+      CLUSTER: ${CLUSTER}
+      EXTERNAL_DOMAIN: external
+      INTERNAL_DOMAIN: internal
+      REPLICAS: "2"
+      SVC_GATEWAY_EXTERNAL: 10.69.10.32
+      SVC_GATEWAY_INTERNAL: 10.69.10.31
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: kube-system
-  timeout: 5m
+  targetNamespace: network
+  timeout: 15m
   wait: true
