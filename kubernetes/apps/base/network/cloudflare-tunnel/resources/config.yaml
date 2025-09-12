@@ -1,10 +1,11 @@
 ---
-originRequest:
-  originServerName: ${EXTERNAL_DOMAIN}.jory.dev
-
 ingress:
   - hostname: jory.dev
-    service: &service https://envoy-external.network.svc.cluster.local
+    originRequest:
+      originServerName: ${EXTERNAL_DOMAIN}.jory.dev
+    service: https://envoy-external.network.svc.cluster.local:443
   - hostname: "*.jory.dev"
-    service: *service
+    originRequest:
+      originServerName: ${EXTERNAL_DOMAIN}.jory.dev
+    service: https://envoy-external.network.svc.cluster.local:443
   - service: http_status:404
