@@ -10,9 +10,6 @@ spec:
       app.kubernetes.io/name: *app
   interval: 1h
   path: ./kubernetes/apps/base/kube-system/cilium
-  postBuild:
-    substitute:
-      CLUSTER: ${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository
@@ -33,7 +30,7 @@ spec:
       spec:
         values:
           cluster:
-            name: main
+            name: ${CLUSTER}
           operator:
             replicas: 2
 ---
@@ -49,7 +46,7 @@ spec:
   dependsOn:
     - name: cilium
   interval: 15m
-  path: ./kubernetes/apps/main/kube-system/cilium
+  path: ./kubernetes/apps/${CLUSTER}/kube-system/cilium
   prune: true
   sourceRef:
     kind: GitRepository
