@@ -29,7 +29,7 @@ spec:
               tag: 5.1.2@sha256:4f36229a58558add3d385f5d8a81bae110e55f03654b7dc73a90208e06a16bb8
             env:
               QBT_WEBUI_PORT: &port 80
-              QBT_TORRENTING_PORT: &torrentPort 50413
+              QBT_TORRENTING_PORT: 4069
               TZ: America/Edmonton
             probes:
               liveness: &probes
@@ -60,6 +60,13 @@ spec:
               limits:
                 memory: 8Gi
     defaultPodOptions:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |-
+          [{
+            "name": "vpn",
+            "namespace": "network",
+            "ips": ["10.69.90.10/24"]
+          }]
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -68,19 +75,9 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
     service:
       app:
-        forceRename: "{{ .Release.Name }}"
-        primary: true
         ports:
           http:
             port: *port
-      bittorrent:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.36
-        ports:
-          bittorrent-tcp:
-            port: *torrentPort
-            protocol: TCP
     route:
       app:
         hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
