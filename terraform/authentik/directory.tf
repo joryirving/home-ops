@@ -1,6 +1,7 @@
 locals {
   authentik_groups = {
     downloads      = { name = "Downloads" }
+    grafana_admin  = { name = "Grafana Admin" }
     home           = { name = "Home" }
     infrastructure = { name = "Infrastructure" }
     media          = { name = "Media" }
@@ -11,11 +12,6 @@ locals {
 
 data "authentik_group" "admins" {
   name = "authentik Admins"
-}
-
-resource "authentik_group" "grafana_admin" {
-  name         = "Grafana Admins"
-  is_superuser = false
 }
 
 resource "authentik_group" "default" {
@@ -32,21 +28,12 @@ resource "authentik_policy_binding" "application_policy_binding" {
   order  = 0
 }
 
-module "onepassword_discord" {
-  source = "github.com/joryirving/terraform-1password-item"
-  vault  = "Kubernetes"
-  item   = "discord"
-}
-
-##Oauth
-resource "authentik_source_oauth" "discord" {
-  name                = "Discord"
-  slug                = "discord"
-  authentication_flow = data.authentik_flow.default-source-authentication.id
-  enrollment_flow     = authentik_flow.enrollment-invitation.uuid
-  user_matching_mode  = "email_deny"
-
-  provider_type   = "discord"
-  consumer_key    = module.onepassword_discord.fields["DISCORD_CLIENT_ID"]
-  consumer_secret = module.onepassword_discord.fields["DISCORD_CLIENT_SECRET"]
+resource "authentik_user" "Jory" {
+  username = "LilDrunkenSmurf"
+  name     = "Jory Irving"
+  email    = "jory@jory.dev"
+  groups = concat(
+    [data.authentik_group.admins.id],
+    values(authentik_group.default)[*].id
+  )
 }

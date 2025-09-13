@@ -14,6 +14,13 @@ releases:
     version: 1.18.1
     values: ['../templates/values.yaml.gotmpl']
     hooks:
+      - # Wait for cilium CRDs to be available
+        events: ['postsync']
+        command: bash
+        args:
+          - -c
+          - until kubectl --context={{ requiredEnv "CLUSTER" }} get crd ciliumbgppeeringpolicies.cilium.io ciliuml2announcementpolicies.cilium.io ciliumloadbalancerippools.cilium.io &>/dev/null; do sleep 10; done
+        showlogs: true
       - # Advertise Kubernetes VIP
         events: ['postsync']
         command: kubectl
