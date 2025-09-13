@@ -55,11 +55,6 @@ machine:
       featureGates:
         ImageVolume: true
       serializeImagePulls: false
-    extraMounts:
-      - destination: /var/mnt/extra
-        type: bind
-        source: /var/mnt/extra
-        options: ["bind", "rshared", "rw"]
     defaultRuntimeSeccompProfileEnabled: true
     nodeIP:
       validSubnets: ["10.69.1.0/24", "10.69.2.0/24"]
@@ -70,13 +65,13 @@ machine:
         bond:
           deviceSelectors: [{ hardwareAddr: "84:47:09:2d:*", driver: igc }]
           mode: active-backup
-        mtu: 9000
+        mtu: 1500
         dhcp: true
         vlans:
           - # IOT VLAN
-            { vlanId: 10, dhcp: false, mtu: 9000 }
+            { vlanId: 10, dhcp: false, mtu: 1500 }
           - # Services VLAN (K8S svcs)
-            { vlanId: 70, dhcp: false, mtu: 9000 }
+            { vlanId: 70, dhcp: false, mtu: 1500 }
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
