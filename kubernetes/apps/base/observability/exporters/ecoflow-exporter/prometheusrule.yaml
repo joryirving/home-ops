@@ -1,0 +1,56 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ecoflow-exporter
+  namespace: monitoring
+spec:
+  groups:
+    - name: ecoflow-exporter
+      rules:
+        - alert: EcoflowExporterAbsent
+          annotations:
+            description: EcoFlow Exporter has disappeared from Prometheus target discovery.
+            summary: EcoFlow Exporter is down.
+          expr: |
+            absent(up{job=~".*ecoflow-exporter.*"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+
+        - alert: EcoflowLowBattery
+          annotations:
+            description: EcoFlow {{ $labels.instance }} battery level is {{ $value }}%, which is below 20%.
+            summary: EcoFlow battery low
+          expr: ecoflow_battery_level < 20
+          for: 1m
+          labels:
+            severity: warning
+
+        - alert: EcoflowVeryLowBattery
+          annotations:
+            description: EcoFlow {{ $labels.instance }} battery level is {{ $value }}%, which is below 10%.
+            summary: EcoFlow battery critically low
+          expr: ecoflow_battery_level < 10
+          for: 30s
+          labels:
+            severity: critical
+
+        - alert: EcoflowNotCharging
+          annotations:
+            description: EcoFlow {{ $labels.instance }} is not receiving AC/DC input power (Watts In = 0).
+            summary: EcoFlow not charging
+          expr: ecoflow_watts_in == 0
+          for: 5m
+          labels:
+            severity: warning
+
+        - alert: EcoflowHighLoad
+          annotations:
+            description: EcoFlow {{ $labels.instance }} output load is high at {{ $value }}W.
+            summary: EcoFlow high output load
+          expr: ecoflow_watts_out > 1800
+          for: 2m
+          labels:
+            severity: warning
