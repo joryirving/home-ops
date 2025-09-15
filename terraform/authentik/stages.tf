@@ -1,4 +1,14 @@
 ## Authorization stages
+resource "authentik_stage_identification" "authentication-identification" {
+  name                      = "authentication-identification"
+  user_fields               = ["username", "email"]
+  case_insensitive_matching = false
+  show_source_labels        = true
+  show_matched_user         = false
+  password_stage            = authentik_stage_password.authentication-password.id
+  recovery_flow             = authentik_flow.recovery.uuid
+}
+
 resource "authentik_stage_password" "authentication-password" {
   name                          = "authentication-password"
   backends                      = ["authentik.core.auth.InbuiltBackend"]

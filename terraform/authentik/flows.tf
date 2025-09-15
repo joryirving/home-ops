@@ -12,6 +12,12 @@ resource "authentik_flow" "authentication" {
   # background         = "https://placeholder.jpeg"
 }
 
+resource "authentik_flow_stage_binding" "authentication-flow-binding-00" {
+  target = authentik_flow.authentication.uuid
+  stage  = authentik_stage_identification.authentication-identification.id
+  order  = 0
+}
+
 resource "authentik_flow_stage_binding" "authentication-flow-binding-10" {
   target = authentik_flow.authentication.uuid
   stage  = authentik_stage_authenticator_validate.authentication-mfa-validation.id
