@@ -19,7 +19,7 @@ releases:
         command: bash
         args:
           - -c
-          - until kubectl --context={{ requiredEnv "CLUSTER" }} get crd ciliumbgppeeringpolicies.cilium.io ciliuml2announcementpolicies.cilium.io ciliumloadbalancerippools.cilium.io &>/dev/null; do sleep 10; done
+          - until kubectl --context={{ requiredEnv "CLUSTER" }} get crd ciliumloadbalancerippools.cilium.io ciliuml2announcementpolicies.cilium.io ciliumbgpadvertisements.cilium.io ciliumbgppeerconfigs.cilium.io ciliumbgpclusterconfigs.cilium.io &>/dev/null; do sleep 5; done
         showlogs: true
       - # Advertise Kubernetes VIP
         events: ['postsync']
@@ -27,8 +27,8 @@ releases:
         args:
           - --context={{ requiredEnv "CLUSTER" }}
           - apply
-          - --server-side
           - --namespace=kube-system
+          - --server-side
           - --field-manager=kustomize-controller
           - --filename={{ requiredEnv "CLUSTER_APPS" }}/kube-system/cilium/networking.yaml
         showlogs: true
