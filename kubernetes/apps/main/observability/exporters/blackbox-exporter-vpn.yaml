@@ -1,0 +1,84 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app blackbox-exporter-vpn
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  interval: 1h
+  path: ./kubernetes/apps/base/observability/exporters/blackbox-exporter
+  postBuild:
+    substitute:
+      APP: *app
+  prune: true
+  retryInterval: 2m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: observability
+  timeout: 5m
+  wait: false
+  patches:
+  - target:
+      kind: HelmRelease
+      name: blackbox-exporter-vpn
+    patch: |-
+      apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      metadata:
+        name: blackbox-exporter-vpn
+      spec:
+        values:
+          fullnameOverride: blackbox-exporter-vpn
+          strategy:
+            type: Recreate
+          podAnnotations:
+            k8s.v1.cni.cncf.io/networks: |-
+              [{
+                "name": "vpn",
+                "namespace": "kube-system",
+                "ips": ["192.168.90.13/24"],
+                "mac": "3e:d0:83:c0:8e:13"
+              }]
+          prometheusRule:
+            enabled: true
+            rules:
+              - alert: VPNBlackboxProbeFailed
+                expr: |-
+                  probe_success == 0
+                for: 15m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: |-
+                    The host {{ $labels.target }} is currently unreachable
+              - alert: VPNICMPProbeDown
+                expr: |-
+                  probe_success{job="vpn-icmp-external"} == 0
+                for: 15m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: |-
+                    ICMP probe to {{ $labels.target }} via the VPN has been failing for more than 15 minutes
+              - alert: VPNHTTPProbeDown
+                expr: probe_success{job="vpn-http-external"} == 0
+                for: 15m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: |-
+                    HTTP probe to {{ $labels.target }} via the VPN has been failing for more than 15 minutes
+        postRenderers:
+          - kustomize:
+              patches:
+                - target:
+                    kind: Deployment
+                    name: blackbox-exporter-vpn
+                  patch: |-
+                    - op: remove
+                      path: /spec/strategy/rollingUpdate
