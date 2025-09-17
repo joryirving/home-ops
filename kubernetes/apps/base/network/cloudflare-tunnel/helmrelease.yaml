@@ -74,18 +74,27 @@ spec:
             port: *port
     serviceMonitor:
       app:
-        serviceName: "{{ .Release.Name }}"
         endpoints:
           - port: http
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
+    configMaps:
+      config:
+        forceRename: &configMapName "{{ .Release.Name }}-configmap"
+        data:
+          config.yaml: |-
+            ingress:
+              - hostname: jory.dev
+                originRequest:
+                  originServerName: ${EXTERNAL_DOMAIN}.jory.dev
+                service: https://envoy-external.{{ .Release.Namespace }}.svc.cluster.local:443
+              - hostname: "*.jory.dev"
+                originRequest:
+                  originServerName: ${EXTERNAL_DOMAIN}.jory.dev
+                service: https://envoy-external.{{ .Release.Namespace }}.svc.cluster.local:443
+              - service: http_status:404
     persistence:
       config-file:
         type: configMap
-        name: "{{ .Release.Name }}-configmap"
+        name: *configMapName
         globalMounts:
           - path: /etc/cloudflared/config.yaml
             subPath: config.yaml
-            readOnly: true
