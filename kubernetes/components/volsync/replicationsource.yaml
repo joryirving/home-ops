@@ -12,10 +12,12 @@ spec:
     accessModes: ["${VOLSYNC_SNAP_ACCESSMODES:=ReadWriteOnce}"] # Use ReadOnlyMany for CephFS
     compression: zstd-fastest
     copyMethod: "${VOLSYNC_COPYMETHOD:=Snapshot}"
+    maintenanceIntervalDays: 7
     moverSecurityContext:
       runAsUser: ${VOLSYNC_PUID:=1000}
       runAsGroup: ${VOLSYNC_PGID:=100}
       fsGroup: ${VOLSYNC_PGID:=100}
+    parallelism: 2
     repository: "${APP}-volsync"
     retain:
       hourly: 24
