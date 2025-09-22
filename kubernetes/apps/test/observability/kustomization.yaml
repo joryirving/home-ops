@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: observability
+components:
+  - ../../../components/common
+resources:
+  - ./gatus.yaml
+configMapGenerator:
+  - name: gatus-test-configmap
+    files:
+      - config.yaml=./gatus-config.yaml
+generatorOptions:
+  disableNameSuffixHash: true
