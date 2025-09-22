@@ -78,7 +78,6 @@ spec:
             namespace: network
     configMaps:
       config:
-        forceRename: &configMapName "{{ .Release.Name }}-configmap"
         data:
           repository.config: |-
             {
@@ -96,7 +95,7 @@ spec:
     persistence:
       config-file:
         type: configMap
-        name: *configMapName
+        identifier: config
         globalMounts:
           - path: /config/repository.config
             subPath: repository.config
