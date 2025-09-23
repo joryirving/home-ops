@@ -25,26 +25,24 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/linuxserver/mylar3
-              tag: version-v0.8.3@sha256:ebc61a3b9677b03a1cc0dc6a48d02a6bae8eead13522dfe5010b6c0298616677
+              repository: ghcr.io/joryirving/mylar3
+              tag: 0.8.3@sha256:98dd1e1b81090445bed9229acac52e8fe7b9e36cf68a9a125c792457917d0295
             env:
               TZ: America/Edmonton
-              UID: 1000
-              GID: 100
             resources:
               requests:
                 cpu: 15m
                 memory: 700M
               limits:
                 memory: 1200M
-    # defaultPodOptions:
-    #   securityContext:
-    #     runAsNonRoot: true
-    #     runAsUser: 1000
-    #     runAsGroup: 100
-    #     fsGroup: 100
-    #     fsGroupChangePolicy: OnRootMismatch
-    #     seccompProfile: { type: RuntimeDefault }
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: { type: RuntimeDefault }
     service:
       app:
         ports:
