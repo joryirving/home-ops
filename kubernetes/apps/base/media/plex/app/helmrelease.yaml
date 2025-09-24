@@ -73,6 +73,7 @@ spec:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.35
+        externalTrafficPolicy: Local
         ports:
           http:
             port: *port
@@ -92,16 +93,30 @@ spec:
               - type: RequestHeaderModifier
                 requestHeaderModifier:
                   remove: ["Range"]
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  remove: ["Range"]
             matches:
               - path:
                   type: PathPrefix
                   value: /library/streams
+            timeouts:
+              request: 0s
+              backendRequest: 0s
           - backendRefs:
               - identifier: app
+                port: *port
+            timeouts:
+              request: 0s
+              backendRequest: 0s
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
-      # Separate PVC for cache to avoid backing up cache files
       plex-cache:
         existingClaim: "{{ .Release.Name }}-cache"
         globalMounts:
