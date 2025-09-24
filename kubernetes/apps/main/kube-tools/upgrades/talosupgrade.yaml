@@ -1,31 +1,24 @@
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/tuppr.home-operations.com/talosupgrade_v1alpha1.json
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/tuppr.home-operations.com/talosupgrade_v1alpha1.json
 apiVersion: tuppr.home-operations.com/v1alpha1
 kind: TalosUpgrade
 metadata:
   name: controllers
 spec:
   image:
-    repository: factory.talos.dev/metal-installer
     tag: v1.11.1
-  nodeLabelSelector:
-    # matchLabels: {}
-    matchExpressions:
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
   healthChecks:
     - # Nodes are ready
       apiVersion: v1
       kind: Node
       expr: status.conditions.filter(c, c.type == "Ready").all(c, c.status == "True")
-      # timeout: 10m
     - # No active VolSync replications
       apiVersion: volsync.backube/v1alpha1
       kind: ReplicationSource
       expr: status.conditions.filter(c, c.type == "Synchronizing").all(c, c.status == "False")
-      # timeout: 10m
     - # Ceph cluster is Healthy
       apiVersion: ceph.rook.io/v1
       kind: CephCluster
       expr: status.ceph.health in ['HEALTH_OK']
-      # timeout: 10m
+  policy:
+    placement: hard
