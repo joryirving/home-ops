@@ -3,10 +3,13 @@
 apiVersion: tuppr.home-operations.com/v1alpha1
 kind: TalosUpgrade
 metadata:
-  name: controllers
+  name: talos
 spec:
-  image:
-    tag: v1.11.1
+  talos:
+    # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
+    version: v1.11.1
+  policy:
+    placement: hard
   healthChecks:
     - # Nodes are ready
       apiVersion: v1
@@ -20,5 +23,3 @@ spec:
       apiVersion: ceph.rook.io/v1
       kind: CephCluster
       expr: status.ceph.health in ['HEALTH_OK']
-  policy:
-    placement: hard
