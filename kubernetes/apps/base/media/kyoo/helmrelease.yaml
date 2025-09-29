@@ -25,6 +25,71 @@ spec:
     name: kyoo
   dependsOn: []
   values:
+    meilisearch:
+      enabled: true
+    rabbitmq:
+      enabled: false
+    extraObjects:
+      - apiVersion: apps/v1
+        kind: StatefulSet
+        metadata:
+          name: &rabbitname kyoo-rabbitmq
+          labels: &rabbitlabels
+            app.kubernetes.io/name: rabbitmq
+            app.kubernetes.io/instance: kyoo
+        spec:
+          serviceName: *rabbitname
+          replicas: 1
+          selector:
+            matchLabels: *rabbitlabels
+          template:
+            metadata:
+              labels: *rabbitlabels
+            spec:
+              containers:
+                - name: *rabbitname
+                  image: rabbitmq:4.1.4
+                  ports:
+                    - containerPort: 5672
+                      name: amqp
+                  env:
+                    - name: RABBITMQ_DEFAULT_USER
+                      valueFrom:
+                        secretKeyRef:
+                          name: kyoo-secret
+                          key: RABBITMQ_USER
+                    - name: RABBITMQ_DEFAULT_PASS
+                      valueFrom:
+                        secretKeyRef:
+                          name: kyoo-secret
+                          key: RABBITMQ_PASS
+                  volumeMounts:
+                    - name: data
+                      mountPath: /var/lib/rabbitmq
+                  readinessProbe:
+                    exec:
+                      command: ["rabbitmq-diagnostics", "ping"]
+                    initialDelaySeconds: 10
+                    periodSeconds: 5
+          volumeClaimTemplates:
+            - metadata:
+                name: data
+              spec:
+                accessModes: ["ReadWriteOnce"]
+                resources:
+                  requests:
+                    storage: 8Gi
+      - apiVersion: v1
+        kind: Service
+        metadata:
+          name: *rabbitname
+          labels: *rabbitlabels
+        spec:
+          type: ClusterIP
+          selector: *rabbitlabels
+          ports:
+            - port: 5672
+              name: amqp
     global:
       meilisearch:
         infra:
@@ -155,7 +220,3 @@ spec:
             cpu: 1
             gpu.intel.com/i915: 1
             memory: 8Gi
-    meilisearch:
-      enabled: true
-    rabbitmq:
-      enabled: true
