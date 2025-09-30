@@ -20,3 +20,14 @@ spec:
     name: flux-system
   timeout: 5m0s
   wait: true
+  patches:
+    - # Enable Sops decryption on all child Kustomizations
+      target:
+        kind: Kustomization
+        version: v1
+        group: kustomize.toolkit.fluxcd.io
+      patch: |-
+        - op: add
+          path: /spec/decryption
+          value:
+            provider: sops
