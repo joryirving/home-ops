@@ -19,13 +19,13 @@ kind: HelmRelease
 metadata:
   name: &name home-ops-runner-${CLUSTER}
 spec:
-  interval: 15m
   chartRef:
     kind: OCIRepository
     name: gha-runner-scale-set
   dependsOn:
     - name: actions-runner-controller
       namespace: actions-runner-system
+  interval: 15m
   values:
     githubConfigUrl: https://github.com/joryirving/home-ops
     githubConfigSecret: home-ops-runner-secret
