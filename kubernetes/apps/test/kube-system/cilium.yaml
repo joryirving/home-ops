@@ -5,9 +5,6 @@ kind: Kustomization
 metadata:
   name: &app cilium
 spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: *app
   interval: 1h
   path: ./kubernetes/apps/base/kube-system/cilium
   prune: true
@@ -24,9 +21,6 @@ kind: Kustomization
 metadata:
   name: &app cilium-config
 spec:
-  commonMetadata:
-    labels:
-      app.kubernetes.io/name: *app
   dependsOn:
     - name: cilium
   interval: 15m
