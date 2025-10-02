@@ -1,11 +1,19 @@
 ---
-web:
-  port: $${GATUS_WEB_PORT}
+connectivity:
+  checker:
+    target: 1.1.1.1:53
+    interval: 1m
 
-storage:
-  type: sqlite
-  path: /config/sqlite.db
-  caching: true
+endpoints:
+  - name: status
+    group: main-external
+    url: https://status.jory.dev
+    interval: 1m
+    client:
+      dns-resolver: tcp://1.1.1.1:53
+    conditions: ["[STATUS] == 200"]
+    extra-labels:
+      CLUSTER: main
 
 metrics: true
 
@@ -22,18 +30,5 @@ ui:
   - name: Status
     link: https://status.jory.dev
 
-connectivity:
-  checker:
-    target: 1.1.1.1:53
-    interval: 1m
-
-endpoints:
-  - name: status
-    group: main-external
-    url: https://status.jory.dev
-    interval: 1m
-    client:
-      dns-resolver: tcp://1.1.1.1:53
-    conditions: ["[STATUS] == 200"]
-    extra-labels:
-      CLUSTER: main
+web:
+  port: $${GATUS_WEB_PORT}

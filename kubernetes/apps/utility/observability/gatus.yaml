@@ -3,22 +3,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app gatus-utility
+  name: gatus
 spec:
-  components:
-    - ../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/observability/gatus
   postBuild:
     substitute:
-      APP: *app
-      CLUSTER: ${CLUSTER}
       GATUS_SUBDOMAIN: status-${CLUSTER}
-      VOLSYNC_CAPACITY: 5Gi
-      VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
-      VOLSYNC_STORAGECLASS: local-hostpath
-      STORAGE_HR: ${STORAGE_HR}
-      STORAGE_NS: ${STORAGE_NS}
   prune: true
   sourceRef:
     kind: GitRepository

@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app ${APP}
+  name: &app gatus
 spec:
   chartRef:
     kind: OCIRepository
@@ -79,28 +79,28 @@ spec:
           - port: http
     route:
       app:
-        hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
+        hostnames: ["${GATUS_SUBDOMAIN}.jory.dev"]
         parentRefs:
           - name: envoy-external
             namespace: network
             sectionName: https
     rbac:
       roles:
-        ${APP}:
+        gatus:
           type: ClusterRole
           rules:
             - apiGroups: ["gateway.networking.k8s.io"]
               resources: ["httproutes"]
               verbs: ["get", "watch", "list"]
       bindings:
-        ${APP}:
+        gatus:
           type: ClusterRoleBinding
           roleRef:
             identifier: *app
           subjects:
             - identifier: *app
     serviceAccount:
-      ${APP}: {}
+      gatus: {}
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
