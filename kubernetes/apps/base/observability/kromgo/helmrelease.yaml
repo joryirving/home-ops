@@ -69,6 +69,9 @@ spec:
             port: *port
     route:
       app:
+        annotations:
+          gatus.home-operations.com/endpoint: |-
+            conditions: ["[STATUS] == 404"]
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: envoy-external
