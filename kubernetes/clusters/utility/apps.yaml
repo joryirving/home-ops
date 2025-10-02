@@ -62,6 +62,33 @@ spec:
               target:
                 group: helm.toolkit.fluxcd.io
                 kind: HelmRelease
+            - patch: |-
+                apiVersion: helm.toolkit.fluxcd.io/v2
+                kind: HelmRelease
+                metadata:
+                  name: home-ops-runner-utility
+                spec:
+                  values:
+                    template:
+                      spec:
+                        securityContext:
+                          fsGroup: 123
+              target:
+                kind: HelmRelease
+                name: home-ops-runner-utility
+            - patch: |-
+                apiVersion: helm.toolkit.fluxcd.io/v2
+                kind: HelmRelease
+                metadata:
+                  name: snapshot-controller
+                spec:
+                  values:
+                    controller:
+                      args:
+                        enableDistributedSnapshotting: true
+              target:
+                kind: HelmRelease
+                name: snapshot-controller
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization

@@ -60,6 +60,43 @@ spec:
               target:
                 group: helm.toolkit.fluxcd.io
                 kind: HelmRelease
+            - patch: |-
+                apiVersion: helm.toolkit.fluxcd.io/v2
+                kind: HelmRelease
+                metadata:
+                  name: cilium
+                spec:
+                  values:
+                    cluster:
+                      name: main
+                    operator:
+                      replicas: 2
+              target:
+                kind: HelmRelease
+                name: cilium
+            - patch: |-
+                apiVersion: helm.toolkit.fluxcd.io/v2
+                kind: HelmRelease
+                metadata:
+                  name: coredns
+                spec:
+                  values:
+                    replicaCount: 3
+              target:
+                kind: HelmRelease
+                name: coredns
+            - patch: |-
+                apiVersion: helm.toolkit.fluxcd.io/v2
+                kind: HelmRelease
+                metadata:
+                  name: grafana
+                spec:
+                  values:
+                    envFromSecrets:
+                      - name: grafana-secret
+              target:
+                kind: HelmRelease
+                name: grafana
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
