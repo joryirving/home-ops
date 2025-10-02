@@ -3,15 +3,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app echo
+  name: echo
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/network/echo
   postBuild:
     substitute:
-      APP: *app
-      CLUSTER: ${CLUSTER}
-      GATUS_SUBDOMAIN: echo
+      SUBDOMAIN: echo
   prune: true
   sourceRef:
     kind: GitRepository

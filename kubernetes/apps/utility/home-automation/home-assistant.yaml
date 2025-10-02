@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app home-assistant
+  name: home-assistant
 spec:
   components:
     - ../../../../components/volsync
@@ -11,14 +11,12 @@ spec:
   path: ./kubernetes/apps/base/home-automation/home-assistant
   postBuild:
     substitute:
-      APP: *app
-      CLUSTER: ${CLUSTER}
-      GATUS_SUBDOMAIN: hass
-      VOLSYNC_CAPACITY: 5Gi
-      VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
-      VOLSYNC_STORAGECLASS: local-hostpath
+      APP: home-assistant
       STORAGE_HR: ${STORAGE_HR}
       STORAGE_NS: ${STORAGE_NS}
+      VOLSYNC_CAPACITY: 5Gi
+      VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
+      VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
   prune: true
   sourceRef:
     kind: GitRepository
