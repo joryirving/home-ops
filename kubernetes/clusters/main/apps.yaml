@@ -49,6 +49,10 @@ spec:
                     crds: CreateReplace
                     strategy:
                       name: RetryOnFailure
+                  rollback:
+                    cleanupOnFail: true
+                    recreate: true
+                  timeout: 10m
                   upgrade:
                     cleanupOnFail: true
                     crds: CreateReplace
@@ -75,7 +79,7 @@ spec:
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
-                  name: cilium
+                  name: not-used
                 spec:
                   values:
                     cluster:
@@ -86,8 +90,8 @@ spec:
                 kind: HelmRelease
                 name: cilium
       target:
-        group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
+        name: cilium
     - # Update CoreDNS replicas
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -100,7 +104,7 @@ spec:
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
-                  name: coredns
+                  name: not-used
                 spec:
                   values:
                     replicaCount: 3
@@ -108,28 +112,5 @@ spec:
                 kind: HelmRelease
                 name: coredns
       target:
-        group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
-    - # Set Grafana to use secret for OAUTH
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
-          patches:
-            - patch: |-
-                apiVersion: helm.toolkit.fluxcd.io/v2
-                kind: HelmRelease
-                metadata:
-                  name: grafana
-                spec:
-                  values:
-                    envFromSecrets:
-                      - name: grafana-secret
-              target:
-                kind: HelmRelease
-                name: grafana
-      target:
-        group: kustomize.toolkit.fluxcd.io
-        kind: Kustomization
+        name: coredns
