@@ -11,14 +11,12 @@ spec:
   path: ./kubernetes/apps/base/home-automation/matter-server
   postBuild:
     substitute:
-      APP: *app
-      CLUSTER: ${CLUSTER}
-      GATUS_SUBDOMAIN: matter
-      VOLSYNC_CAPACITY: 5Gi
-      VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
-      VOLSYNC_STORAGECLASS: local-hostpath
+      APP: matter-server
       STORAGE_HR: ${STORAGE_HR}
       STORAGE_NS: ${STORAGE_NS}
+      VOLSYNC_CAPACITY: 5Gi
+      VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
+      VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
   prune: true
   sourceRef:
     kind: GitRepository

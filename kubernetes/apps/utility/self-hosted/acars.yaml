@@ -12,13 +12,12 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: ${CLUSTER}
       STORAGECLASS: local-hostpath
-      VOLSYNC_CAPACITY: 5Gi
-      VOLSYNC_SNAPSHOTCLASS: csi-local-hostpath
-      VOLSYNC_STORAGECLASS: local-hostpath
       STORAGE_HR: ${STORAGE_HR}
       STORAGE_NS: ${STORAGE_NS}
+      VOLSYNC_CAPACITY: 5Gi
+      VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
+      VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
     substituteFrom:
       - kind: Secret
         name: acarsdrama

@@ -23,8 +23,8 @@ spec:
             env:
               TIMEZONE: America/Edmonton
               # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
-              API_ENDPOINT: &api_endpoint https://${GATUS_SUBDOMAIN:=${APP}}.jory.dev/api
-              CLIENT_ENDPOINT: https://${GATUS_SUBDOMAIN:=${APP}}.jory.dev
+              API_ENDPOINT: &api_endpoint https://spotty.jory.dev/api
+              CLIENT_ENDPOINT: https://spotty.jory.dev
               MONGO_ENDPOINT: "mongodb://{{ .Release.Name }}-mongodb:27017/your_spotify" #mongo sucks
               PORT: &port 80
             envFrom:
@@ -84,7 +84,7 @@ spec:
             port: 27017
     route:
       app:
-        hostnames: ["${GATUS_SUBDOMAIN:=${APP}}.jory.dev"]
+        hostnames: ["spotty.jory.dev"]
         parentRefs:
           - name: envoy-external
             namespace: network
