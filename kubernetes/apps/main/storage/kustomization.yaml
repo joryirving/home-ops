@@ -12,3 +12,15 @@ resources:
   - ./snapshot-controller.yaml
   - ./volsync.yaml
   - ./volsync-maintenance.yaml
+replacements:
+  - source:
+      kind: Namespace
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: Kustomization
+          group: kustomize.toolkit.fluxcd.io
+        fieldPaths:
+          - spec.targetNamespace
+        options:
+          create: true

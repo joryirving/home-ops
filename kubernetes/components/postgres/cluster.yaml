@@ -3,7 +3,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: &name ${APP}
+  name: ${APP}
 spec:
   postgresVersion: 17
   monitoring:
@@ -28,7 +28,7 @@ spec:
       metadata:
         labels:
           app.kubernetes.io/name: ${APP}-crunchy-postgres
-      replicas: &replicas 3 # One per node
+      replicas: 3
       dataVolumeClaimSpec:
         storageClassName: local-hostpath
         accessModes: ["ReadWriteOnce"]

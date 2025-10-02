@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -23,42 +24,18 @@ spec:
               REDIS_HOST: "{{ .Release.Name }}-dragonfly"
               REDIS_PORT: "6379"
               REDIS_DB: "0"
-              PUID: &uid 1000
-              PGID: &gid 100
+              PUID: 1000
+              PGID: 100
               SSO_ENABLED: false
               TZ: America/Edmonton
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
-            # probes:
-            #   liveness: &probes
-            #     enabled: true
-            #     custom: true
-            #     spec:
-            #       httpGet:
-            #         path: /ping
-            #         port: &port 7171
-            #       initialDelaySeconds: 0
-            #       periodSeconds: 10
-            #       timeoutSeconds: 1
-            #       failureThreshold: 3
-            #   readiness: *probes
-            # securityContext:
-            #   allowPrivilegeEscalation: false
-            #   readOnlyRootFilesystem: true
-            #   capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 100m
               limits:
                 memory: 3Gi
-    # defaultPodOptions:
-    #   securityContext:
-    #     runAsNonRoot: true
-    #     runAsUser: *uid
-    #     runAsGroup: *gid
-    #     fsGroup: *gid
-    #     fsGroupChangePolicy: OnRootMismatch
     service:
       app:
         ports:
