@@ -47,19 +47,70 @@ spec:
                 metadata:
                   name: not-used
                 spec:
-                  driftDetection:
-                    mode: warn
                   install:
                     crds: CreateReplace
                     strategy:
                       name: RetryOnFailure
                   upgrade:
+                    cleanupOnFail: true
                     crds: CreateReplace
                     strategy:
-                      name: RetryOnFailure
+                      name: RemediateOnFailure
+                    remediation:
+                      remediateLastFailure: true
+                      retries: 2
               target:
                 group: helm.toolkit.fluxcd.io
                 kind: HelmRelease
+      target:
+        group: kustomize.toolkit.fluxcd.io
+        kind: Kustomization
+    - # Fix ARC Runner perms for D-CSI
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
+            - patch: |-
+                apiVersion: helm.toolkit.fluxcd.io/v2
+                kind: HelmRelease
+                metadata:
+                  name: home-ops-runner-test
+                spec:
+                  values:
+                    template:
+                      spec:
+                        securityContext:
+                          fsGroup: 123
+              target:
+                kind: HelmRelease
+                name: home-ops-runner-test
+      target:
+        group: kustomize.toolkit.fluxcd.io
+        kind: Kustomization
+    - # Set Snaposhot controller value for D-CSI
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
+            - patch: |-
+                apiVersion: helm.toolkit.fluxcd.io/v2
+                kind: HelmRelease
+                metadata:
+                  name: snapshot-controller
+                spec:
+                  values:
+                    controller:
+                      args:
+                        enableDistributedSnapshotting: true
+              target:
+                kind: HelmRelease
+                name: snapshot-controller
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
