@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app tofu-controller
+  name: tofu-controller
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/flux-system/tofu-controller
@@ -12,18 +12,16 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app tofu-controller-terraforms
+  name: tofu-controller-terraforms
 spec:
   dependsOn:
     - name: tofu-controller
-      namespace: flux-system
   interval: 1h
   path: ./kubernetes/apps/${CLUSTER}/flux-system/terraform
   prune: true
@@ -31,5 +29,4 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: flux-system
   wait: false

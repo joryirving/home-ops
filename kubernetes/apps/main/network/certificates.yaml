@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app certificates-import
+  name: certificates-import
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/network/certificates/import
@@ -12,14 +12,13 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: network
   wait: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app certificates-export
+  name: certificates-export
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/network/certificates/export
@@ -28,5 +27,4 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: network
   wait: true

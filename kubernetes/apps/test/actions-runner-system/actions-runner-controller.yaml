@@ -12,8 +12,7 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: actions-runner-system
-  wait: false
+  wait: true
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -21,15 +20,19 @@ kind: Kustomization
 metadata:
   name: &app actions-runner-controller-runners
 spec:
+  dependsOn:
+    - name: actions-runner-controller
+    - name: democratic-csi
+      namespace: storage
   interval: 1h
   path: ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/runners
   postBuild:
     substitute:
       CLUSTER: ${CLUSTER}
+      maxRunners: "2" # 2 per node
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: actions-runner-system
   wait: false
