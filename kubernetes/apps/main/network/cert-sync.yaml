@@ -90,35 +90,25 @@ spec:
 
                   set -euo pipefail
                   CERT_DIR="/tmp/cert"
-                  CERT_JSON="$CERT_DIR/certificate/certificate-tls.json"
-                  mkdir -p "$CERT_DIR/certificate"
+                  mkdir -p "$CERT_DIR"
 
-                  [[ ! -f "$CERT_JSON" ]] && echo "{}" > "$CERT_JSON"
+                  cp /root/.ssh/id_rsa /tmp/id_rsa
+                  sed -i -e '$a\' /tmp/id_rsa
+                  chmod 600 /tmp/id_rsa
 
                   # Grab secret
-                  kubectl get secret "$TLS_CERT" -n "$TLS_NAMESPACE" -ojson > "$CERT_DIR/tmp"
-
-                  if ! diff "$CERT_DIR/tmp" "$CERT_JSON" >/dev/null; then
-                    echo "New certificates extracted"
-                  else
-                    echo "No change in certificates"
-                    exit 0
-                  fi
-
                   kubectl get secret "$TLS_CERT" -n "$TLS_NAMESPACE" -ojsonpath="{.data.tls\.crt}" | base64 -d > "$CERT_DIR/certificate.crt"
                   kubectl get secret "$TLS_CERT" -n "$TLS_NAMESPACE" -ojsonpath="{.data.tls\.key}" | base64 -d > "$CERT_DIR/certificate.key"
 
-                  cp "$CERT_DIR/tmp" "$CERT_JSON"
-
-                  # Copy to voyager
-                  scp -o StrictHostKeyChecking=no "$CERT_DIR/certificate.crt" "$SERVER:$DIR/wildcard.crt"
-                  scp -o StrictHostKeyChecking=no "$CERT_DIR/certificate.key" "$SERVER:$DIR/wildcard.key"
-
-                  # Restart CaddyV2 container
-                  ssh -o StrictHostKeyChecking=no "$SERVER" "docker restart CaddyV2 || true"
+                  scp -i /tmp/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$CERT_DIR/certificate.crt" "$SERVER:$DIR/wildcard.crt"
+                  scp -i /tmp/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$CERT_DIR/certificate.key" "$SERVER:$DIR/wildcard.key"
+                  ssh -i /tmp/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SERVER" "docker restart CaddyV2 || true"
                   echo "Certificate updated and CaddyV2 restarted"
           volumes:
             - name: ssh-key
               secret:
                 secretName: cert-sync
-                defaultMode: 0400
+                defaultMode: 0600
+                items:
+                  - key: ssh-privatekey
+                    path: id_rsa
