@@ -18,21 +18,6 @@ spec:
   targetNamespace: kube-system
   timeout: 5m
   wait: false
-  patches:
-  - target:
-      kind: HelmRelease
-      name: cilium
-    patch: |-
-      apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      metadata:
-        name: cilium
-      spec:
-        values:
-          cluster:
-            name: ${CLUSTER}
-          operator:
-            replicas: 1
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
