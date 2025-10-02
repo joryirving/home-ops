@@ -51,6 +51,10 @@ spec:
                     crds: CreateReplace
                     strategy:
                       name: RetryOnFailure
+                  rollback:
+                    cleanupOnFail: true
+                    recreate: true
+                  timeout: 10m
                   upgrade:
                     cleanupOnFail: true
                     crds: CreateReplace
@@ -77,7 +81,7 @@ spec:
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
-                  name: home-ops-runner-test
+                  name: not-used
                 spec:
                   values:
                     template:
@@ -86,11 +90,11 @@ spec:
                           fsGroup: 123
               target:
                 kind: HelmRelease
-                name: home-ops-runner-test
+                name: home-ops-runner-utility
       target:
-        group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
-    - # Set Snaposhot controller value for D-CSI
+        name: actions-runner-controller-runners
+    - # Set Snapshot controller value for D-CSI
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
         kind: Kustomization
@@ -102,7 +106,7 @@ spec:
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
-                  name: snapshot-controller
+                  name: not-used
                 spec:
                   values:
                     controller:
@@ -112,5 +116,5 @@ spec:
                 kind: HelmRelease
                 name: snapshot-controller
       target:
-        group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
+        name: snapshot-controller
