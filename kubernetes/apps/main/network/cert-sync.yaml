@@ -62,7 +62,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: cert-sync
-              image: ghcr.io/onedr0p/kubanetics:2025.3.2
+              image: alpine:3.22
               env:
                 - name: TLS_CERT
                   value: jory-dev-tls
@@ -77,15 +77,22 @@ spec:
                   mountPath: /root/.ssh
                   readOnly: true
               command:
-                - /bin/bash
+                - /bin/sh
                 - -c
                 - |
+                  # Install required tools at runtime
+                  apk add --no-cache bash openssh-client curl jq
+
+                  # Install kubectl
+                  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                  chmod +x kubectl
+                  mv kubectl /usr/local/bin/
+
                   set -euo pipefail
                   CERT_DIR="/tmp/cert"
                   CERT_JSON="$CERT_DIR/certificate/certificate-tls.json"
                   mkdir -p "$CERT_DIR/certificate"
 
-                  # Ensure json exists
                   [[ ! -f "$CERT_JSON" ]] && echo "{}" > "$CERT_JSON"
 
                   # Grab secret
@@ -95,6 +102,7 @@ spec:
                     echo "New certificates extracted"
                   else
                     echo "No change in certificates"
+                    exit 0
                   fi
 
                   kubectl get secret "$TLS_CERT" -n "$TLS_NAMESPACE" -ojsonpath="{.data.tls\.crt}" | base64 -d > "$CERT_DIR/certificate.crt"
@@ -108,7 +116,6 @@ spec:
 
                   # Restart CaddyV2 container
                   ssh -o StrictHostKeyChecking=no "$SERVER" "docker restart CaddyV2 || true"
-
                   echo "Certificate updated and CaddyV2 restarted"
           volumes:
             - name: ssh-key
