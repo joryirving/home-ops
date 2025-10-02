@@ -60,6 +60,17 @@ spec:
               target:
                 group: helm.toolkit.fluxcd.io
                 kind: HelmRelease
+      target:
+        group: kustomize.toolkit.fluxcd.io
+        kind: Kustomization
+    - # Update Cilium Operator replicas
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
             - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
@@ -74,6 +85,17 @@ spec:
               target:
                 kind: HelmRelease
                 name: cilium
+      target:
+        group: kustomize.toolkit.fluxcd.io
+        kind: Kustomization
+    - # Update CoreDNS replicas
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
             - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
@@ -85,6 +107,17 @@ spec:
               target:
                 kind: HelmRelease
                 name: coredns
+      target:
+        group: kustomize.toolkit.fluxcd.io
+        kind: Kustomization
+    - # Set Grafana to use secret for OAUTH
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
             - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
