@@ -5,6 +5,8 @@ kind: Kustomization
 namespace: media
 components:
   - ../../../components/namespace
+replacements:
+  - path: ../../../components/replacements/ks.yaml
 resources:
   - ./ersatztv.yaml
   - ./jellyseerr.yaml
@@ -16,15 +18,3 @@ resources:
   - ./tautulli.yaml
   - ./wizarr.yaml
   - ./your-spotify.yaml
-replacements:
-  - source:
-      kind: Namespace
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Kustomization
-          group: kustomize.toolkit.fluxcd.io
-        fieldPaths:
-          - spec.targetNamespace
-        options:
-          create: true

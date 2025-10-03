@@ -5,6 +5,8 @@ kind: Kustomization
 namespace: self-hosted
 components:
   - ../../../components/namespace
+replacements:
+  - path: ../../../components/replacements/ks.yaml
 resources:
   - ./actual.yaml
   - ./archiveteam.yaml
@@ -12,15 +14,3 @@ resources:
   - ./manyfold.yaml
   - ./paperless.yaml
   - ./spoolman.yaml
-replacements:
-  - source:
-      kind: Namespace
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Kustomization
-          group: kustomize.toolkit.fluxcd.io
-        fieldPaths:
-          - spec.targetNamespace
-        options:
-          create: true

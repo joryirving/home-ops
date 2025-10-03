@@ -5,17 +5,7 @@ kind: Kustomization
 namespace: security
 components:
   - ../../../components/namespace
+replacements:
+  - path: ../../../components/replacements/ks.yaml
 resources:
   - ./authentik.yaml
-replacements:
-  - source:
-      kind: Namespace
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Kustomization
-          group: kustomize.toolkit.fluxcd.io
-        fieldPaths:
-          - spec.targetNamespace
-        options:
-          create: true

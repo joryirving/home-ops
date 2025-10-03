@@ -5,6 +5,8 @@ kind: Kustomization
 namespace: observability
 components:
   - ../../../components/namespace
+replacements:
+  - path: ../../../components/replacements/ks.yaml
 resources:
   - ./gatus.yaml
   - ./grafana.yaml
@@ -18,15 +20,3 @@ configMapGenerator:
       - config.yaml=./gatus-config.yaml
 generatorOptions:
   disableNameSuffixHash: true
-replacements:
-  - source:
-      kind: Namespace
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Kustomization
-          group: kustomize.toolkit.fluxcd.io
-        fieldPaths:
-          - spec.targetNamespace
-        options:
-          create: true
