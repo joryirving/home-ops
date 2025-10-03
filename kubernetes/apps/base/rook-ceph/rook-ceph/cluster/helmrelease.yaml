@@ -36,6 +36,14 @@ spec:
       enabled: true
     route:
       dashboard:
+        annotations:
+          gatus.home-operations.com/enabled: "true"
+          gatus.home-operations.com/endpoint: |-
+            conditions: ["len([BODY]) == 0"]
+            dns:
+              query-name: {{ .Release.Name }}.jory.dev
+              query-type: A
+            url: 1.1.1.1
         host:
           name: rook.jory.dev
           path: /
@@ -195,12 +203,20 @@ spec:
               interval: 60s
         route:
           enabled: true
+          annotations:
+            gatus.home-operations.com/enabled: "true"
+            gatus.home-operations.com/endpoint: |-
+              conditions: ["len([BODY]) == 0"]
+              dns:
+                query-name: rgw.jory.dev
+                query-type: A
+              url: 1.1.1.1
           host:
             name: rgw.jory.dev
             path: /
             pathType: PathPrefix
           parentRefs:
-            - name: internal
+            - name: envoy-internal
               namespace: kube-system
               sectionName: https
         storageClass:
