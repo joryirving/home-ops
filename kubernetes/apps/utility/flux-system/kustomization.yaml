@@ -5,20 +5,10 @@ kind: Kustomization
 namespace: flux-system
 components:
   - ../../../components/namespace
+replacements:
+  - path: ../../../components/replacements/ks.yaml
 resources:
   - ./addons.yaml
   - ./flux-operator.yaml
   - ./headlamp.yaml
   - ./tofu-controller.yaml
-replacements:
-  - source:
-      kind: Namespace
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Kustomization
-          group: kustomize.toolkit.fluxcd.io
-        fieldPaths:
-          - spec.targetNamespace
-        options:
-          create: true

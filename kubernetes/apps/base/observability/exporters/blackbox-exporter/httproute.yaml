@@ -4,8 +4,16 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: blackbox-exporter
+  annotations:
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |-
+      conditions: ["len([BODY]) == 0"]
+      dns:
+        query-name: ${SUBDOMAIN}.jory.dev
+        query-type: A
+      url: 1.1.1.1
 spec:
-  hostnames: ["blackbox.jory.dev"]
+  hostnames: ["${SUBDOMAIN}.jory.dev"]
   parentRefs:
     - name: envoy-internal
       namespace: network

@@ -5,21 +5,11 @@ kind: Kustomization
 namespace: home-automation
 components:
   - ../../../components/namespace
+replacements:
+  - path: ../../../components/replacements/ks.yaml
 resources:
   - ./home-assistant.yaml
   - ./matter-server.yaml
   - ./mosquitto.yaml
   # - ./rtlamr2mqtt.yaml ##RTL in use for ACARS
   - ./zigbee.yaml
-replacements:
-  - source:
-      kind: Namespace
-      fieldPath: metadata.name
-    targets:
-      - select:
-          kind: Kustomization
-          group: kustomize.toolkit.fluxcd.io
-        fieldPaths:
-          - spec.targetNamespace
-        options:
-          create: true
