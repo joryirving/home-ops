@@ -1,0 +1,47 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  customManagers: [
+    {
+      customType: "regex",
+      description: "Track Minecraft release versions in HelmRelease files",
+      fileMatch: [
+        "(^|/)helmrelease\\.ya?ml$"
+      ],
+      matchStrings: [
+        "# renovate: datasource=custom\\.minecraft-release\\s+version:\\s+[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
+      ],
+      datasourceTemplate: "custom.minecraft-release",
+      depNameTemplate: "minecraft-release",
+      versioningTemplate: "loose"
+    },
+    {
+      customType: "regex",
+      description: "Track Minecraft snapshot versions in HelmRelease files",
+      fileMatch: [
+        "(^|/)helmrelease\\.ya?ml$"
+      ],
+      matchStrings: [
+        "# renovate: datasource=custom\\.minecraft-snapshot\\s+version:\\s+[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
+      ],
+      datasourceTemplate: "custom.minecraft-snapshot",
+      depNameTemplate: "minecraft-snapshot",
+      versioningTemplate: "loose"
+    }
+  ],
+  customDatasources: {
+    "minecraft-release": {
+      defaultRegistryUrlTemplate: "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
+      format: "json",
+      transformTemplates: [
+        "{\"releases\": $map($filter(versions, function($v) { $v.type = \"release\"}), function($v) { {\"version\": $v.id, \"releaseTimestamp\": $v.releaseTime} }), \"sourceUrl\": \"https://minecraft.net\", \"homepage\": \"https://minecraft.net\"}"
+      ]
+    },
+    "minecraft-snapshot": {
+      defaultRegistryUrlTemplate: "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
+      format: "json",
+      transformTemplates: [
+        "{\"releases\": $map($filter(versions, function($v) { $v.type = \"snapshot\"}), function($v) { {\"version\": $v.id, \"releaseTimestamp\": $v.releaseTime} }), \"sourceUrl\": \"https://minecraft.net/snapshots\", \"homepage\": \"https://minecraft.net\"}"
+      ]
+    }
+  }
+}
