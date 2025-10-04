@@ -6,7 +6,10 @@ metadata:
   name: cluster-apps
   namespace: flux-system
 spec:
-  interval: 10m0s
+  decryption:
+    provider: sops
+  deletionPolicy: WaitForTermination
+  interval: 1h
   path: ./kubernetes/apps/utility
   postBuild:
     substitute:
@@ -20,10 +23,9 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  timeout: 5m0s
   wait: true
   patches:
-    - # Add Sops decryption to all Kustomizations
+    - # Add Kustomization defaults for all child Kustomizations
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
         kind: Kustomization
@@ -32,28 +34,7 @@ spec:
         spec:
           decryption:
             provider: sops
-      target:
-        group: kustomize.toolkit.fluxcd.io
-        kind: Kustomization
-    - # Add default timings to all Kustomizations
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
-          retryInterval: 2m
-          timeout: 10m
-      target:
-        group: kustomize.toolkit.fluxcd.io
-        kind: Kustomization
-    - # Add HelmRelease defaults to all Kustomizations
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
+          deletionPolicy: WaitForTermination
           patches:
             - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -95,7 +76,7 @@ spec:
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
-                  name: home-ops-runner-utility
+                  name: home-ops-runner-test
                 spec:
                   values:
                     template:
