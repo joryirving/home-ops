@@ -4,35 +4,13 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
+  name: nut-exporter-network-rack
   labels:
     app.kubernetes.io/component: metrics
     app.kubernetes.io/instance: servers
     app.kubernetes.io/name: nut-exporter
     prometheus: kube-prometheus
-  name: nut-exporter-network
 spec:
-  endpoints:
-    - interval: 30s
-      metricRelabelings:
-        - action: replace
-          replacement: network
-          sourceLabels:
-            - instance
-          targetLabel: instance
-        - action: replace
-          replacement: network
-          sourceLabels:
-            - server
-          targetLabel: server
-        - action: labeldrop
-          regex: (pod)
-      params:
-        server:
-          - sayu.internal
-      path: /ups_metrics
-      port: metrics
-      scheme: http
-      scrapeTimeout: 30s
   jobLabel: nut-exporter
   namespaceSelector:
     matchNames:
@@ -41,40 +19,38 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: nut-exporter
       app.kubernetes.io/name: nut-exporter
+  endpoints:
+    - interval: 30s
+      path: /ups_metrics
+      port: metrics
+      scheme: http
+      scrapeTimeout: 30s
+      params:
+        server: ["sayu.internal"]
+        ups: ["networkups"]
+      metricRelabelings:
+        - action: replace
+          replacement: networkups
+          sourceLabels: [instance]
+          targetLabel: instance
+        - action: replace
+          replacement: sayu.internal
+          sourceLabels: [server]
+          targetLabel: server
+        - action: labeldrop
+          regex: pod
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/servicemonitor_v1.json
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
+  name: nut-exporter-server-rack
   labels:
     app.kubernetes.io/component: metrics
     app.kubernetes.io/instance: servers
     app.kubernetes.io/name: nut-exporter
     prometheus: kube-prometheus
-  name: nut-exporter-server
 spec:
-  endpoints:
-    - interval: 30s
-      metricRelabelings:
-        - action: replace
-          replacement: server
-          sourceLabels:
-            - instance
-          targetLabel: instance
-        - action: replace
-          replacement: server
-          sourceLabels:
-            - server
-          targetLabel: server
-        - action: labeldrop
-          regex: (pod)
-      params:
-        server:
-          - venti.internal
-      path: /ups_metrics
-      port: metrics
-      scheme: http
-      scrapeTimeout: 30s
   jobLabel: nut-exporter
   namespaceSelector:
     matchNames:
@@ -83,3 +59,42 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: nut-exporter
       app.kubernetes.io/name: nut-exporter
+  endpoints:
+    - interval: 30s
+      path: /ups_metrics
+      port: metrics
+      scheme: http
+      scrapeTimeout: 30s
+      params:
+        server: ["venti.internal"]
+        ups: ["server_ups"]
+      metricRelabelings:
+        - action: replace
+          replacement: server_ups
+          sourceLabels: [instance]
+          targetLabel: instance
+        - action: replace
+          replacement: venti.internal
+          sourceLabels: [server]
+          targetLabel: server
+        - action: labeldrop
+          regex: pod
+    - interval: 30s
+      path: /ups_metrics
+      port: metrics
+      scheme: http
+      scrapeTimeout: 30s
+      params:
+        server: ["venti.internal"]
+        ups: ["ecoflow_ups"]
+      metricRelabelings:
+        - action: replace
+          replacement: ecoflow_ups
+          sourceLabels: [instance]
+          targetLabel: instance
+        - action: replace
+          replacement: venti.internal
+          sourceLabels: [server]
+          targetLabel: server
+        - action: labeldrop
+          regex: pod
