@@ -22,7 +22,7 @@ _... managed with Flux, Renovate, and GitHub Actions_ <img src="https://fonts.gs
 <div align="center">
 
 [![Home-Internet](https://img.shields.io/endpoint?url=https%3A%2F%2Fhealthchecks.io%2Fbadge%2Ff0288b6a-305e-4084-b492-bb0a54%2FKkxSOeO1-2.shields&style=for-the-badge&logo=ubiquiti&logoColor=white&label=Home%20Internet)](https://status.jory.dev)&nbsp;&nbsp;
-[![Status-Page](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fmain-external_status%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Status%20Page)](https://status.jory.dev/endpoints/external_gatus)&nbsp;&nbsp;
+[![Status-Page](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fmain-external_gatus%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Status%20Page)](https://status.jory.dev/endpoints/external_gatus)&nbsp;&nbsp;
 [![Plex](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fmain-external_plex%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=plex&logoColor=white&label=Plex)](https://status.jory.dev/endpoints/external_plex)
 
 </div>
@@ -52,7 +52,7 @@ The purpose here is to learn k8s, while practicing Gitops.
 
 ## ⛵ Kubernetes
 
-My Kubernetes clusters are deployed with [Talos](https://www.talos.dev). One is a low-power utility cluster, running important services, and the other is a semi-hyper-converged cluster, workloads and block storage are sharing the same available resources on my nodes while I have a separate NAS with ZFS for NFS/SMB shares, bulk file storage and backups.
+My Kubernetes clusters are deployed with [Talos](https://www.talos.dev). One is a test clkuster, one is a low-power utility cluster, running important services, and the other is a semi-hyper-converged cluster, workloads and block storage are sharing the same available resources on my nodes while I have a separate NAS with ZFS for NFS/SMB shares, bulk file storage and backups.
 
 There is a template over at [onedr0p/cluster-template](https://github.com/onedr0p/cluster-template) if you want to try and follow along with some of the practices I use here.
 
@@ -103,13 +103,13 @@ While most of my infrastructure and workloads are self-hosted I do rely upon the
 
 The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), [ntfy](https://ntfy.sh/), and [Gatus](https://gatus.io/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
 
-| Service                                     | Use                                                               | Cost          |
-|---------------------------------------------|-------------------------------------------------------------------|---------------|
-| [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$80/yr$      |
-| [Cloudflare](https://www.cloudflare.com/)   | Domain, DNS, WAF and R2 bucket (S3 Compatible endpoint)           | ~$30/yr       |
-| [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free          |
-| [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free          |
-|                                             |                                                                   | Total: ~$3/mo |
+| Service                                     | Use                                                               | Cost           |
+|---------------------------------------------|-------------------------------------------------------------------|----------------|
+| [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$80/yr$       |
+| [Cloudflare](https://www.cloudflare.com/)   | Domain, DNS, WAF and R2 bucket (S3 Compatible endpoint)           | ~$40/yr        |
+| [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free           |
+| [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free           |
+|                                             |                                                                   | Total: ~$10/mo |
 
 ---
 
@@ -152,7 +152,7 @@ Total RAM: 32GB
 
 | Name    | Device            | CPU        | OS Disk    | Data Disk      | RAM   | OS           | Purpose           |
 |---------|-------------------|------------|------------|----------------|-------|--------------|-------------------|
-| Voyager | MS-01             | i5-12600H  | 32GB USB   | 6x400GB Raidz2 | 96GB  | Unraid       | NAS/NFS/Backup    |
+| Voyager | MS-01             | i5-12600H  | 32GB USB   | -              | 96GB  | Unraid       | NAS/NFS/Backup    |
 | DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2  | -     | -            | ZFS               |
 | Venti   | Raspberry Pi5     | Cortex A76 | 250GB NVMe | -              | 8GB   | Raspbian     | NUT/SSH (Main)    |
 | Sayu    | Raspberry Pi5     | Cortex A76 | 500GB NVMe | -              | 8GB   | Raspbian     | NUT/SSH (Utility) |
@@ -170,6 +170,7 @@ Total RAM: 32GB
 | Unifi USW-Enterprise-24-PoE | Server - 2.5G Switch |
 | Unifi USW-Aggregation       | Server - 10G Switch  |
 | Tripp Lite 1500             | Server - UPS         |
+| Ecoflow Delta 3 Plus        | Server - UPS         |
 
 ---
 
