@@ -6,3 +6,20 @@ resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
   - ./httproute.yaml
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/resourceClaims
+        value:
+          - name: gpu
+            resourceClaimTemplateName: kyoo-gpu
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          claims:
+            - name: gpu
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: kyoo-transcoder
