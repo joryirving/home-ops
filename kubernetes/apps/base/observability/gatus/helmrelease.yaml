@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app gatus
+  name: gatus
 spec:
   chartRef:
     kind: OCIRepository
@@ -36,10 +36,10 @@ spec:
               repository: ghcr.io/twin/gatus
               tag: v5.26.0@sha256:3c0314bd1b1e9d7c34d8f2efee16b380770a9639ec5386cc305e8df104e097dc
             env:
-              TZ: America/Edmonton
               GATUS_CONFIG_PATH: /config
               GATUS_DELAY_START_SECONDS: 5
               GATUS_WEB_PORT: &port 80
+              TZ: America/Edmonton
             probes:
               liveness: &probes
                 enabled: true
@@ -63,7 +63,7 @@ spec:
               limits:
                 memory: 256Mi
         serviceAccount:
-          identifier: *app
+          identifier: "{{ .Release.Name }}"
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -76,7 +76,6 @@ spec:
             port: *port
     serviceMonitor:
       app:
-        serviceName: "{{ .Release.Name }}"
         endpoints:
           - port: http
     route:
@@ -101,9 +100,9 @@ spec:
         gatus:
           type: ClusterRoleBinding
           roleRef:
-            identifier: *app
+            identifier: gatus
           subjects:
-            - identifier: *app
+            - identifier: gatus
     serviceAccount:
       gatus: {}
     persistence:
@@ -115,4 +114,3 @@ spec:
         globalMounts:
           - path: /config/config.yaml
             subPath: config.yaml
-            readOnly: true

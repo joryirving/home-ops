@@ -25,15 +25,6 @@ endpoints:
       - "[CERTIFICATE_EXPIRATION] > 240h"
     extra-labels:
       cluster: utility
-  - name: status
-    group: utility-external
-    url: https://status-utility.jory.dev/
-    interval: 1m
-    client:
-      dns-resolver: tcp://1.1.1.1:53
-    conditions: ["[STATUS] == 200"]
-    extra-labels:
-      CLUSTER: utility
 
 metrics: true
 
@@ -61,4 +52,4 @@ remote:
       url: "https://status-utility.jory.dev/api/v1/endpoints/statuses"
 
 web:
-  port: $${GATUS_WEB_PORT}
+  port: ${GATUS_WEB_PORT}
