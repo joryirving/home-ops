@@ -8,7 +8,9 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
+  dependsOn:
+    - name: intel-device-plugin-gpu
+      namespace: kube-tools
   interval: 15m
   values:
     controllers:
@@ -35,16 +37,12 @@ spec:
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
             resources:
-              claims:
-                - name: gpu
               requests:
                 cpu: 10m
               limits:
+                gpu.intel.com/i915: 1
                 memory: 4G
     defaultPodOptions:
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: ersatztv-gpu
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true

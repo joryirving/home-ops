@@ -42,12 +42,11 @@ spec:
               OLLAMA_NUM_GPU: 999
               ZES_ENABLE_SYSMAN: 1
             resources:
-              claims:
-                - name: gpu
               requests:
                 cpu: 200m
               limits:
                 memory: 24Gi
+                gpu.intel.com/i915: 1
         pod:
           affinity:
             podAntiAffinity:
@@ -59,16 +58,6 @@ spec:
                         operator: In
                         values:
                           - "{{ .Release.Name }}"
-    defaultPodOptions:
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: ollama-gpu
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
     service:
       app:
         ports:

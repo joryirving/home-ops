@@ -35,7 +35,6 @@ machine:
         [plugins."io.containerd.cri.v1.images"]
           discard_unpacked_layers = false
         [plugins."io.containerd.grpc.v1.cri"]
-          cdi_spec_dirs = ["/var/cdi/static", "/var/cdi/dynamic"]
           device_ownership_from_security_context = true
     - op: overwrite
       path: /etc/nfsmount.conf
@@ -49,22 +48,19 @@ machine:
         rsize=1048576
         wsize=1048576
   install:
-    # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-    image: factory.talos.dev/installer/{{ ENV.TALOS_SCHEMATIC }}:v1.11.2
+    image: factory.talos.dev/installer/{{ ENV.TALOS_SCHEMATIC }}:v1.11.1
   kernel:
     modules:
       - name: nbd
       - name: thunderbolt
       - name: thunderbolt_net
   kubelet:
-    # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
     image: ghcr.io/siderolabs/kubelet:v1.34.1
     extraArgs:
       max-pods: "200"
     extraConfig:
       featureGates:
         ImageVolume: true
-        ResourceHealthStatus: true
       serializeImagePulls: false
     defaultRuntimeSeccompProfileEnabled: true
     nodeIP:
@@ -92,7 +88,7 @@ machine:
     nameservers: ["10.69.1.1"]
     disableSearchDomain: true
   nodeLabels:
-    node.kubernetes.io/gpu: true
+    intel.feature.node.kubernetes.io/gpu: true
     topology.kubernetes.io/region: k8s
   sysctls:
     fs.inotify.max_user_watches: "1048576"     # Watchdog
@@ -150,7 +146,7 @@ cluster:
     image: registry.k8s.io/kube-apiserver:v1.34.1
     extraArgs:
       enable-aggregator-routing: true
-      feature-gates: ImageVolume=true,MutatingAdmissionPolicy=true,ResourceHealthStatus=true
+      feature-gates: ImageVolume=true,MutatingAdmissionPolicy=true
       runtime-config: admissionregistration.k8s.io/v1beta1=true
     certSANs: ["k8s.main.internal", "127.0.0.1"]
     disablePodSecurityPolicy: true
