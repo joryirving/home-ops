@@ -6,3 +6,12 @@ resources:
   - ./externalsecret.yaml
   - ./helmrelease.yaml
   - ./pvc.yaml
+configMapGenerator:
+  - name: sonarr-configmap
+    files:
+      - refresh-series.sh=./resources/refresh-series.sh
+      - tag-codecs.sh=./resources/tag-codecs.sh
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
