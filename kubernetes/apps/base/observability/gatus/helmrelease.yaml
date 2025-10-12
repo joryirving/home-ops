@@ -57,7 +57,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {add: ["NET_RAW"], drop: ["ALL"]}
             resources:
               requests:
                 cpu: 100m
@@ -68,13 +68,8 @@ spec:
             - name: config
               accessMode: ReadWriteOnce
               size: 5Gi
-        serviceAccount:
-          identifier: gatus
     defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
+      hostUsers: false
     service:
       app:
         ports:
