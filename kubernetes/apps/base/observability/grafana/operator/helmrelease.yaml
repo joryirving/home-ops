@@ -3,37 +3,28 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
-  name: spegel
+  name: grafana-operator
 spec:
-  interval: 5m
+  interval: 15m
   layerSelector:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 0.4.0
-  url: oci://ghcr.io/spegel-org/helm-charts/spegel
+    tag: v5.19.4
+  url: oci://ghcr.io/grafana/helm-charts/grafana-operator
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: spegel
+  name: grafana-operator
 spec:
   chartRef:
     kind: OCIRepository
-    name: spegel
-  dependsOn: []
-  interval: 15m
+    name: grafana-operator
+  interval: 1h
   values:
-    grafanaDashboard:
+    dashboard:
       enabled: true
-      annotations:
-        grafana_folder: kube-system
-    service:
-      registry:
-        hostPort: 29999
     serviceMonitor:
       enabled: true
-    spegel:
-      containerdSock: /run/containerd/containerd.sock
-      containerdRegistryConfigPath: /etc/cri/conf.d/hosts
