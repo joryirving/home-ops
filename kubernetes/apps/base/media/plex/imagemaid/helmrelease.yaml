@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: plex-image-cleanup
+  name: imagemaid
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      plex-image-cleanup:
+      imagemaid:
         type: cronjob
         annotations:
           reloader.stakater.com/auto: "true"
@@ -25,13 +25,14 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/meisnate12/plex-image-cleanup
-              tag: v1.0.2
+              repository: kometateam/imagemaid
+              tag: v1.1.1
             env:
               PLEX_URL: http://plex.media.svc.cluster.local:32400
               PLEX_PATH: /data/plex_config/Library/Application Support/Plex Media Server
               MODE: remove
               PHOTO_TRANSCODER: true
+              TZ: America/Edmonton
             envFrom:
               - secretRef:
                   name: plex-secret
@@ -73,7 +74,7 @@ spec:
       tmpfs:
         type: emptyDir
         advancedMounts:
-          plex-image-cleanup:
+          imagemaid:
             app:
               - path: /config
                 subPath: config
