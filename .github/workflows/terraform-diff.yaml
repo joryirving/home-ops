@@ -60,8 +60,8 @@ jobs:
         with:
           export-env: true
         env:
-          MINIO_ACCESS_KEY: op://Kubernetes/minio/MINIO_ACCESS_KEY
-          MINIO_SECRET_KEY: op://Kubernetes/minio/MINIO_SECRET_KEY
+          AWS_ACCESS_KEY_ID: op://Kubernetes/garage/TERRAFORM_STATE_KEY_ID
+          AWS_SECRET_ACCESS_KEY: op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY
 
       - name: Generate Token
         uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
@@ -94,8 +94,8 @@ jobs:
         id: init
         working-directory: ${{ matrix.paths }}
         env:
-          AWS_ACCESS_KEY_ID: ${{ env.MINIO_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.MINIO_SECRET_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: |
           tofu init \
             -backend-config="access_key=$AWS_ACCESS_KEY_ID" \
