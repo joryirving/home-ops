@@ -6,8 +6,13 @@ MS-01, i5-12500H, 96GB DDR5. Dell LSI 9300-e. Lenovo SA120. ZFS Raidz2.
 ## Caddyfile
 
 ```yaml
-minio.jory.dev {
-        reverse_proxy voyager.internal:9001
+garage-api.jory.dev {
+        reverse_proxy voyager.internal:3903
+        tls /data/certificates/wildcard.crt /data/certificates/wildcard.key
+}
+
+garage.jory.dev {
+        reverse_proxy voyager.internal:3909
         tls /data/certificates/wildcard.crt /data/certificates/wildcard.key
 }
 
@@ -22,7 +27,7 @@ portainer.jory.dev {
 }
 
 s3.jory.dev {
-        reverse_proxy voyager.internal:9000
+        reverse_proxy voyager.internal:3900
         tls /data/certificates/wildcard.crt /data/certificates/wildcard.key
 }
 ```

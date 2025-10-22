@@ -2,10 +2,10 @@ terraform {
   backend "s3" {
     bucket = "terraform-state"
     key    = "garage/garage.tfstate"
-    region = "ca-central-1"
+    region = "ca-west-1"
 
     endpoints = {
-      s3 = "https://garage.jory.dev"
+      s3 = "https://s3.jory.dev"
     }
 
     skip_credentials_validation = true

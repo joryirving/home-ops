@@ -1,7 +1,7 @@
 apiVersion: infra.contrib.fluxcd.io/v1alpha2
 kind: Terraform
 metadata:
-  name: authentik
+  name: garage
 spec:
   interval: 12h
   approvePlan: auto
@@ -10,9 +10,9 @@ spec:
       backend "s3" {
         bucket   = "terraform-state"
         key      = "garage/garage.tfstate"
-        region   = "ca-central-1"
+        region   = "ca-west-1"
         endpoints = {
-          s3 = "https://garage.jory.dev"
+          s3 = "https://s3.jory.dev"
         }
 
         skip_credentials_validation = true
@@ -25,7 +25,7 @@ spec:
   backendConfigsFrom:
   - kind: Secret
     name: terraform-backend-secret
-  path: ./authentik
+  path: ./garage
   sourceRef:
     kind: OCIRepository
     name: terraform
