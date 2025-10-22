@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket = "terraform-state"
-    key    = "minio/minio.tfstate"
+    key    = "garage/garage.tfstate"
     region = "ca-central-1"
 
     endpoints = {

@@ -2,10 +2,10 @@ terraform {
   backend "s3" {
     bucket = "terraform-state"
     key    = "authentik/authentik.tfstate"
-    region = "main" # Region validation will be skipped
+    region = "ca-central-1"
 
     endpoints = {
-      s3 = "https://s3.jory.dev" # Minio endpoint
+      s3 = "https://garage.jory.dev"
     }
 
     skip_credentials_validation = true
