@@ -1,12 +1,12 @@
 resource "onepassword_item" "item" {
   vault    = var.onepassword_vault
-  title    = var.name
+  title    = "${var.name}-bucket"
   category = "login"
   username = var.username
   password = var.password
 
   section {
-    label = "Token for ${var.name}"
+    label = "Token for ${var.name} garage bucket"
     field {
       label = "AWS_ACCESS_KEY_ID"
       type  = "STRING"

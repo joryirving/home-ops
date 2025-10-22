@@ -1,7 +1,7 @@
 module "secrets" {
   for_each          = toset(local.buckets)
   source            = "./modules/create-secret"
-  name              = "${each.key}-bucket-garage"
+  name              = "${each.key}"
   username          = module.buckets[each.key].access_key_id
   password          = module.buckets[each.key].access_key_secret
   onepassword_vault = data.onepassword_vault.kubernetes.uuid

@@ -87,7 +87,7 @@ Here's an almost identical script written for CPGO:
 
 # Variables
 POOL_NAME="akademiya" ## ZFS Pool name
-DATASET_NAME="minio" ## ZFS Dataset name
+DATASET_NAME="s3" ## ZFS Dataset name
 SNAPSHOT_NAME="rclone-backup-$(date +%Y%m%d-%H%M%S)"
 SNAPSHOT_PATH="/mnt/$POOL_NAME/$DATASET_NAME/.zfs/snapshot/$SNAPSHOT_NAME"
 SUBDIR_TO_SYNC="postgresql"  # The directory inside the snapshot
