@@ -6,8 +6,7 @@ terraform {
     }
 
     garage = {
-      source = "schwitzd/garage"
-      # renovate: datasource=github-releases depName=schwitzd/terraform-provider-garage
+      source  = "schwitzd/garage"
       version = "1.2.0"
     }
   }
