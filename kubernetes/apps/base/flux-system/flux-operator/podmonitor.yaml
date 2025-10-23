@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/podmonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flux-system
+  labels:
+    app.kubernetes.io/part-of: flux
+    app.kubernetes.io/component: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - helm-controller
+          - source-controller
+          - kustomize-controller
+          - notification-controller
+  podMetricsEndpoints:
+    - port: http-prom

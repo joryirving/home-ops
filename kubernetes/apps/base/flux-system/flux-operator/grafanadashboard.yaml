@@ -1,0 +1,30 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/grafana.integreatly.org/grafanadashboard_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: flux-cluster
+spec:
+  allowCrossNamespaceImport: true
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+    - datasourceName: prometheus
+      inputName: DS_PROMETHEUS
+  url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/refs/heads/main/monitoring/configs/dashboards/cluster.json
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/grafana.integreatly.org/grafanadashboard_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: flux-control-plane
+spec:
+  allowCrossNamespaceImport: true
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  datasources:
+    - datasourceName: prometheus
+      inputName: DS_PROMETHEUS
+  url: https://raw.githubusercontent.com/fluxcd/flux2-monitoring-example/refs/heads/main/monitoring/configs/dashboards/control-plane.json
