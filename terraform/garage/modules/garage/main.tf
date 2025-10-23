@@ -1,7 +1,8 @@
 terraform {
   required_providers {
     garage = {
-      source  = "schwitzd/garage"
+      source = "schwitzd/garage"
+      # renovate: datasource=github-releases depName=schwitzd/terraform-provider-garage
       version = "1.2.0"
     }
   }
