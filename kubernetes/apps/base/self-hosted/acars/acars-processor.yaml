@@ -126,30 +126,31 @@ Steps:
             { Name: num_gpu, Value: 40 }, # Number of layers to offload to GPU
           ]
         # -----------------------------------------
-        # 955 characters
-        # 283 tokens https://token-calculator.net
+        # 890 characters
+        # 273 tokens https://token-calculator.net
         # -----------------------------------------
         UserPrompt: |
-          This message is either completely automatically generated or features
-          a human-written message after some data. You must find the messages
-          that have some human content.
+          IMPORTANT: DISREGARD, IGNORE AND SKIP ANY RAW OR TECHNICAL DATA OR
+          CODE IN THIS MESSAGE.
 
-          Human content in these messages might have misspellings, abbreviations
-          or typos similar to cell phone text messages and may only be a few
-          words. Human content will often have acronyms.
+          This message may feature a human-written message. Human-written
+          content in these messages might have misspellings, acronyms or
+          abbreviations similar to cell phone text messages. Human content may
+          only be a few words.
 
-          DO forward if the message matches ANY of these criteria:
-          - Contains any amount of natural or colloquial language or prose.
-          - Contains a complaint, request or command.
-          - Contains a greeting/sign-offs or their variations, for example: HI,
-            HELLO, BONJOUR, GOOD MORNING/EVENING, THANK YOU/THANKS/THNKS/THX,
-            BRGRDS/RGRDS, CHEERS, COPY/COPY THAT.
-          - Has any prose content after the term FREETEXT or /TXT
-          - Has /Q/ or QQ or QUESTION MARK which signifies a person is asking a
-            question in this context.
+          Forward if the message matches ANY of these criteria:
+          - It contains communication.
+          - It contains even a small amount of natural language.
+          - It contains a complaint, request or command.
+          - It contains a greeting/sign-offs or their variations, for example:
+            HI, HELLO, BONJOUR, GOOD MORNING/EVENING,
+            THANK YOU/THANKS/THNKS/THX, BRGRDS/RGRDS, CHEERS, COPY/COPY THAT.
+          - Has ANY content after the term FREETEXT or /TXT
+          - Has /Q/ or QQ or QUESTION MARK.
           - Commentary or questions about aircraft passengers,crew,med,medical,
-            medlink,booking,lavatories (abbreviation: LAV), seats, or other
-            situations or events relating to air travel.
+            medlink,booking,lavatories (abbreviation: LAV), mechanics
+            (abbreviation: MX), aircraft seats/rows or other situations or
+            events relating to air travel.
           - Lists a desk number or has DISPATCHER MSG.
 
           Based on these rules, should this message be forwarded?
@@ -164,14 +165,33 @@ Steps:
         URL: "${DISCORD_WEBHOOK_URL}"
         FormatText: true
         FormatTimestamps: true
-        MessageGoTemplate: |
-          -# From [{{index . "ACARSProcessor.TailCode"}}]({{index . "ACARSProcessor.TrackingLink"}}){{if ne "" (index . "ACARSProcessor.FlightNumber")}} on flight {{index . "ACARSProcessor.FlightNumber"}}{{else}}{{end}} <t:{{index . "ACARSProcessor.UnixTimestamp"}}:R>{{if ne 0.0 (index . "ACARSProcessor.AircraftDistanceMi")}}.
-          ```
-          {{index . "ACARSProcessor.MessageText"}}
-          ```
+        # MessageGoTemplate: |
+        #   -# From [{{index . "ACARSProcessor.TailCode"}}]({{index . "ACARSProcessor.TrackingLink"}}){{if ne "" (index . "ACARSProcessor.FlightNumber")}} on flight {{index . "ACARSProcessor.FlightNumber"}}{{else}}{{end}} <t:{{index . "ACARSProcessor.UnixTimestamp"}}:R>{{if ne 0.0 (index . "ACARSProcessor.AircraftDistanceMi")}} from {{printf "%.2f" (index . "ACARSProcessor.AircraftDistanceMi")}} miles away{{else}}{{end}}.
+        #   ```
+        #   {{index . "ACARSProcessor.MessageText"}}
+        #   ```
+        #   **Links**:
+        #   [Translate this message]({{index . "ACARSProcessor.TranslateLink"}})
+        #   [ACARSDrama messages from this aircraft]({{index . "ACARSProcessor.ACARSDramaTailNumberLink"}})
+        #   [Aircraft Photos]({{index . "ACARSProcessor.PhotosLink"}})
+        MessageGoTemplate: >-
+          -# From [{{index . "ACARSProcessor.TailCode"}}]({{index .
+          "ACARSProcessor.TrackingLink"}}){{if ne "" (index .
+          "ACARSProcessor.FlightNumber")}} on flight {{index .
+          "ACARSProcessor.FlightNumber"}}{{end}} <t:{{index .
+          "ACARSProcessor.UnixTimestamp"}}:R> {{if ne 0.0 (index .
+          "ACARSProcessor.AircraftDistanceMi")}} from {{printf "%.2f" (index .
+          "ACARSProcessor.AircraftDistanceMi")}} miles away{{end}}.
+
+          ```{{index . "ACARSProcessor.MessageText"}}```
+
           **Links**:
+
           [Translate this message]({{index . "ACARSProcessor.TranslateLink"}})
-          [ACARSDrama messages from this aircraft]({{index . "ACARSProcessor.ACARSDramaTailNumberLink"}})
+
+          [ACARSDrama messages from this aircraft]({{index .
+          "ACARSProcessor.ACARSDramaTailNumberLink"}})
+
           [Aircraft Photos]({{index . "ACARSProcessor.PhotosLink"}})
 
   # Use Ollama again to evaluate the emotion of the message and filter in one
@@ -203,19 +223,30 @@ Steps:
         URL: "${DISCORD_ANGER_WEBHOOK_URL}"
         # FormatText: true
         # FormatTimestamps: true
-        MessageGoTemplate: |
-          {{if eq (index . "ACARSProcessor.From") "Aircraft"}}From{{else}}To{{end}} [{{index . "ACARSProcessor.TailCode"}}]({{index . "ACARSProcessor.TrackingLink"}}){{if ne "" (index . "ACARSProcessor.FlightNumber")}} on flight {{index . "ACARSProcessor.FlightNumber"}}{{else}}{{end}} <t:{{index . "ACARSProcessor.UnixTimestamp"}}:R>{{if ne 0.0 (index . "ACARSProcessor.AircraftDistanceMi")}} from {{printf "%.2f" (index . "ACARSProcessor.AircraftDistanceMi")}} miles away{{else}}{{end}}.
-          -# This message rated a {{index . "ACARSProcessor.LLMProcessedNumber"}} in terms of emotional content.
+        MessageGoTemplate: >
+          {{if eq (index . "ACARSProcessor.From") "Aircraft"}}From{{else}}To
+          {{end}} [{{index . "ACARSProcessor.TailCode"}}]({{index .
+          "ACARSProcessor.TrackingLink"}}) {{if ne "" (index .
+          "ACARSProcessor.FlightNumber")}} on flight  {{index .
+          "ACARSProcessor.FlightNumber"}}{{else}}{{end}} <t:{{index .
+          "ACARSProcessor.UnixTimestamp"}}:R> {{if ne 0.0 (index .
+          "ACARSProcessor.AircraftDistanceMi")}} from  {{printf "%.2f" (index .
+          "ACARSProcessor.AircraftDistanceMi")}} miles away{{else}}{{end}}.
 
-          ```
-          {{index . "ACARSProcessor.MessageText"}}
-          ```
+          -# This message rated a {{index .
+          "ACARSProcessor.LLMProcessedNumber"}} in terms of emotional content.
+
+          ``` {{index . "ACARSProcessor.MessageText"}} ```
+
           The LLM had this to say:
-          ```
-          {{index . "ACARSProcessor.LLMModelFeedbackText"}}
-          ```
+
+          ``` {{index . "ACARSProcessor.LLMModelFeedbackText"}} ```
 
           **Links**:
+
           [Translate this message]({{index . "ACARSProcessor.TranslateLink"}})
-          [ACARSDrama messages from this aircraft]({{index . "ACARSProcessor.ACARSDramaTailNumberLink"}})
+
+          [ACARSDrama messages from this aircraft]({{index .
+          "ACARSProcessor.ACARSDramaTailNumberLink"}})
+
           [Aircraft Photos]({{index . "ACARSProcessor.PhotosLink"}})
