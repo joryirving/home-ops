@@ -10,7 +10,7 @@
         // foobar_version: v1.0.0
         // # renovate: datasource=docker depName=ghcr.io/foo/bar
         // FOOBAR_VERSION=v1.0.0
-        "datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n.+(:\\s|=)(&\\S+\\s)?(?<currentValue>.+)",
+        "datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n.+(:\\s|=)(&\\S+\\s)?(?<currentValue>\\S+)",
       ],
       datasourceTemplate: "{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}",
     },
@@ -25,5 +25,14 @@
       ],
       datasourceTemplate: "docker",
     },
+    {
+      customType: "regex",
+      description: "Talos machineconfig images",
+      managerFilePatterns: ["/talos/.+\\.yaml\\.j2$/"],  // only Talos files
+      matchStrings: [
+        "# renovate: datasource=docker depName=(?<depName>\\S+)\\nimage:\\s*(?<currentValue>.+)"
+      ],
+      datasourceTemplate: "docker"
+    }
   ],
 }
