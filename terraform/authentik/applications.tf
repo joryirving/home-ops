@@ -1,5 +1,6 @@
 locals {
   oauth_apps = [
+    "ersatztv",
     "grafana",
     "headlamp",
     "kyoo",
@@ -18,6 +19,14 @@ module "onepassword_application" {
 
 locals {
   applications = {
+    ersatztv = {
+      client_id     = module.onepassword_application["ersatztv"].fields["ERSATZTV_CLIENT_ID"]
+      client_secret = module.onepassword_application["ersatztv"].fields["ERSATZTV_CLIENT_SECRET"]
+      group         = "monitoring"
+      icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/ersatztv.png"
+      redirect_uri  = "https://tv.${var.CLUSTER_DOMAIN}/login/generic_oauth"
+      launch_url    = "https://tv.${var.CLUSTER_DOMAIN}/login/generic_oauth"
+    },
     grafana = {
       client_id     = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_ID"]
       client_secret = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_SECRET"]

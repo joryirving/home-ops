@@ -23,6 +23,9 @@ spec:
             env:
               TZ: America/Edmonton
               XDG_DATA_HOME: /config # https://github.com/ErsatzTV/ErsatzTV/issues/327
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
@@ -61,7 +64,7 @@ spec:
       app:
         hostnames: ["tv.jory.dev"]
         parentRefs:
-          - name: envoy-internal
+          - name: envoy-external
             namespace: network
     persistence:
       config:
