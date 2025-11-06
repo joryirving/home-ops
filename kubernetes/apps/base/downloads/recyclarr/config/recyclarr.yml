@@ -39,6 +39,25 @@ sonarr:
             qualities: ["WEBDL-480p", "WEBRip-480p"]
           - name: DVD
           - name: SDTV
+      - name: x265
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: HDTV-1080p
+          until_score: 10000
+        quality_sort: top
+        qualities:
+          - name: WEB 1080p
+            qualities: ["WEBDL-1080p", "WEBRip-1080p"]
+          - name: HDTV-1080p
+          - name: WEB 720p
+            qualities: ["WEBDL-720p", "WEBRip-720p"]
+          - name: HDTV-720p
+          - name: WEB 480p
+            qualities: ["WEBDL-480p", "WEBRip-480p"]
+          - name: DVD
+          - name: SDTV
 
     custom_formats:
       - trash_ids:
@@ -84,6 +103,16 @@ sonarr:
         assign_scores_to:
           - name: Remux-1080p - Anime
             score: 0 # Adjust scoring as desired
+
+     # x265 Formats
+      - trash_ids:
+          - 47435ece6b99a0b477caf360e79ba0bb # x265 (HD)
+          - 9b64dff695c2115facf1b6ea59c9bd07 # x265 (no HDR/DV)
+          - c9eafd50846d299b862ca9bb6ea91950 # x265
+          - 15a05bc7c1a36e2b57fd628f8977e2fc # AV1
+        assign_scores_to:
+          - name: x265
+            score: 10000
 
 radarr:
   radarr:
