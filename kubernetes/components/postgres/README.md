@@ -12,11 +12,11 @@ xargs -n2 sh -c 'kubectl patch cronjob $1 -n $0 --type=merge -p "{\"spec\": {\"s
 
 ### Boostraping new cluster
 
+Add this to the `kustomization.yaml` to boostrap a new Postgres cluster that has no existing backups:
+
 ```yaml
-  patches:
-    - patch: |-
-        - op: remove
-          path: /spec/dataSource
-      target:
-        kind: PostgresCluster
+  labels:
+    components.postgres/cpgo: init
 ```
+
+Based on this [patch](https://github.com/joryirving/home-ops/blob/2f86fd78a27e4ece10b75dcf40d5d7215b8beb2b/kubernetes/clusters/main/apps.yaml#L158-L178), it will remove the datasource and start a blank cluster. You can remove this and it'll "restore" from the backup.

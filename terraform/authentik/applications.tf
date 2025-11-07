@@ -77,8 +77,8 @@ locals {
       launch_url    = "https://portainer.${var.CLUSTER_DOMAIN}/"
     },
     romm = {
-      client_id     = module.onepassword_application["romm"].fields["ROMM_CLIENT_ID"]
-      client_secret = module.onepassword_application["romm"].fields["ROMM_CLIENT_SECRET"]
+      client_id     = module.onepassword_application["romm"].fields["ROMM_OIDC_CLIENT_ID"]
+      client_secret = module.onepassword_application["romm"].fields["ROMM_OIDC_CLIENT_SECRET"]
       group         = "games"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/romm.png"
       redirect_uri  = "https://romm.${var.CLUSTER_DOMAIN}/api/oauth/openid"
