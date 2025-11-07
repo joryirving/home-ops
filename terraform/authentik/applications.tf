@@ -1,13 +1,13 @@
 locals {
   oauth_apps = [
-    "ersatztv",
-    "grafana",
-    "headlamp",
-    "kyoo",
-    "open-webui",
-    "paperless",
-    "portainer",
-    "romm"
+    "ErsatzTV",
+    "Grafana",
+    "Headlamp",
+    "Kyoo",
+    "Open-WebUI",
+    "Paperless",
+    "Portainer",
+    "RomM"
   ]
 }
 
@@ -15,70 +15,70 @@ module "onepassword_application" {
   for_each = toset(local.oauth_apps)
   source   = "github.com/joryirving/terraform-1password-item"
   vault    = "Kubernetes"
-  item     = each.key
+  item     = lower(each.key)
 }
 
 locals {
   applications = {
-    ersatztv = {
-      client_id     = module.onepassword_application["ersatztv"].fields["ERSATZTV_CLIENT_ID"]
-      client_secret = module.onepassword_application["ersatztv"].fields["ERSATZTV_CLIENT_SECRET"]
+    ErsatzTV = {
+      client_id     = module.onepassword_application["ErsatzTV"].fields["ERSATZTV_CLIENT_ID"]
+      client_secret = module.onepassword_application["ErsatzTV"].fields["ERSATZTV_CLIENT_SECRET"]
       group         = "media"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/ersatztv.png"
       redirect_uri  = "https://tv.${var.CLUSTER_DOMAIN}/signin-oidc"
       launch_url    = "https://tv.${var.CLUSTER_DOMAIN}"
     },
-    grafana = {
-      client_id     = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_ID"]
-      client_secret = module.onepassword_application["grafana"].fields["GRAFANA_CLIENT_SECRET"]
+    Grafana = {
+      client_id     = module.onepassword_application["Grafana"].fields["GRAFANA_CLIENT_ID"]
+      client_secret = module.onepassword_application["Grafana"].fields["GRAFANA_CLIENT_SECRET"]
       group         = "monitoring"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/grafana.png"
       redirect_uri  = "https://grafana.${var.CLUSTER_DOMAIN}/login/generic_oauth"
       launch_url    = "https://grafana.${var.CLUSTER_DOMAIN}/login/generic_oauth"
     },
-    headlamp = {
-      client_id     = module.onepassword_application["headlamp"].fields["HEADLAMP_CLIENT_ID"]
-      client_secret = module.onepassword_application["headlamp"].fields["HEADLAMP_CLIENT_SECRET"]
+    Headlamp = {
+      client_id     = module.onepassword_application["Headlamp"].fields["HEADLAMP_CLIENT_ID"]
+      client_secret = module.onepassword_application["Headlamp"].fields["HEADLAMP_CLIENT_SECRET"]
       group         = "infrastructure"
       icon_url      = "https://raw.githubusercontent.com/headlamp-k8s/headlamp/refs/heads/main/frontend/src/resources/icon-dark.svg"
       redirect_uri  = "https://headlamp.${var.CLUSTER_DOMAIN}/oidc-callback"
       launch_url    = "https://headlamp.${var.CLUSTER_DOMAIN}/"
     },
-    kyoo = {
-      client_id     = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_ID"]
-      client_secret = module.onepassword_application["kyoo"].fields["KYOO_CLIENT_SECRET"]
+    Kyoo = {
+      client_id     = module.onepassword_application["Kyoo"].fields["KYOO_CLIENT_ID"]
+      client_secret = module.onepassword_application["Kyoo"].fields["KYOO_CLIENT_SECRET"]
       group         = "media"
       icon_url      = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
       redirect_uri  = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/logged/authentik"
       launch_url    = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.CLUSTER_DOMAIN}/login/callback"
     },
-    open-webui = {
-      client_id     = module.onepassword_application["open-webui"].fields["OPEN_WEBUI_CLIENT_ID"]
-      client_secret = module.onepassword_application["open-webui"].fields["OPEN_WEBUI_CLIENT_SECRET"]
+    Open-WebUI = {
+      client_id     = module.onepassword_application["Open-WebUI"].fields["OPEN_WEBUI_CLIENT_ID"]
+      client_secret = module.onepassword_application["Open-WebUI"].fields["OPEN_WEBUI_CLIENT_SECRET"]
       group         = "home"
       icon_url      = "https://raw.githubusercontent.com/open-webui/open-webui/refs/heads/main/static/favicon.png"
       redirect_uri  = "https://chat.${var.CLUSTER_DOMAIN}/oauth/oidc/callback"
       launch_url    = "https://chat.${var.CLUSTER_DOMAIN}/auth"
     },
-    paperless = {
-      client_id     = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_ID"]
-      client_secret = module.onepassword_application["paperless"].fields["PAPERLESS_CLIENT_SECRET"]
+    Paperless = {
+      client_id     = module.onepassword_application["Paperless"].fields["PAPERLESS_CLIENT_ID"]
+      client_secret = module.onepassword_application["Paperless"].fields["PAPERLESS_CLIENT_SECRET"]
       group         = "home"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/paperless.png"
       redirect_uri  = "https://paperless.${var.CLUSTER_DOMAIN}/accounts/oidc/authentik/login/callback/"
       launch_url    = "https://paperless.${var.CLUSTER_DOMAIN}/"
     },
-    portainer = {
-      client_id     = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_ID"]
-      client_secret = module.onepassword_application["portainer"].fields["PORTAINER_CLIENT_SECRET"]
+    Portainer = {
+      client_id     = module.onepassword_application["Portainer"].fields["PORTAINER_CLIENT_ID"]
+      client_secret = module.onepassword_application["Portainer"].fields["PORTAINER_CLIENT_SECRET"]
       group         = "infrastructure"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/portainer.png"
       redirect_uri  = "https://portainer.${var.CLUSTER_DOMAIN}/"
       launch_url    = "https://portainer.${var.CLUSTER_DOMAIN}/"
     },
-    romm = {
-      client_id     = module.onepassword_application["romm"].fields["ROMM_OIDC_CLIENT_ID"]
-      client_secret = module.onepassword_application["romm"].fields["ROMM_OIDC_CLIENT_SECRET"]
+    RomM = {
+      client_id     = module.onepassword_application["RomM"].fields["ROMM_OIDC_CLIENT_ID"]
+      client_secret = module.onepassword_application["RomM"].fields["ROMM_OIDC_CLIENT_SECRET"]
       group         = "games"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/romm.png"
       redirect_uri  = "https://romm.${var.CLUSTER_DOMAIN}/api/oauth/openid"
@@ -108,8 +108,8 @@ resource "authentik_provider_oauth2" "oauth2" {
 
 resource "authentik_application" "application" {
   for_each           = local.applications
-  name               = title(each.key)
-  slug               = each.key
+  name               = each.key
+  slug               = lower(each.key)
   protocol_provider  = authentik_provider_oauth2.oauth2[each.key].id
   group              = authentik_group.default[each.value.group].name
   open_in_new_tab    = true
