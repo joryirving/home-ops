@@ -155,3 +155,24 @@ spec:
       target:
         kind: Kustomization
         name: external-secrets
+    - # Bootstrap PSQL cluster
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
+            - patch: |-
+                apiVersion: postgres-operator.crunchydata.com/v1beta1
+                kind: PostgresCluster
+                metadata:
+                  name: not-used
+                spec:
+                  dataSource:
+                    $patch: delete
+              target:
+                kind: PostgresCluster
+      target:
+        kind: Kustomization
+        labelSelector: "components.postgres/cpgo=init"

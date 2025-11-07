@@ -1,6 +1,7 @@
 locals {
   authentik_groups = {
     downloads      = { name = "Downloads" }
+    games          = { name = "Games" }
     grafana_admins = { name = "Grafana Admins" }
     home           = { name = "Home" }
     infrastructure = { name = "Infrastructure" }
