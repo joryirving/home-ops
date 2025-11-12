@@ -49,7 +49,7 @@ machine:
     # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
     image: factory.talos.dev/installer/{{ ENV.TALOS_SCHEMATIC }}:v1.11.5
   kubelet:
-    image: ghcr.io/siderolabs/kubelet:v1.34.1
+    image: ghcr.io/siderolabs/kubelet:v1.34.2
     extraArgs:
       max-pods: "200"
     extraConfig:
@@ -138,7 +138,7 @@ cluster:
     key: op://Kubernetes/talos-test/CLUSTER_AGGREGATORCA_KEY
   allowSchedulingOnControlPlanes: true
   apiServer:
-    image: registry.k8s.io/kube-apiserver:v1.34.1
+    image: registry.k8s.io/kube-apiserver:v1.34.2
     extraArgs:
       enable-aggregator-routing: true
       feature-gates: ImageVolume=true,MutatingAdmissionPolicy=true
@@ -146,7 +146,7 @@ cluster:
     certSANs: ["k8s.test.internal", "127.0.0.1"]
     disablePodSecurityPolicy: true
   controllerManager:
-    image: registry.k8s.io/kube-controller-manager:v1.34.1
+    image: registry.k8s.io/kube-controller-manager:v1.34.2
     extraArgs:
       bind-address: 0.0.0.0
   coreDNS:
@@ -160,10 +160,10 @@ cluster:
       listen-metrics-urls: http://0.0.0.0:2381
   proxy:
     disabled: true
-    image: registry.k8s.io/kube-proxy:v1.34.1
+    image: registry.k8s.io/kube-proxy:v1.34.2
   secretboxEncryptionSecret: op://Kubernetes/talos-test/CLUSTER_SECRETBOXENCRYPTIONSECRET
   scheduler:
-    image: registry.k8s.io/kube-scheduler:v1.34.1
+    image: registry.k8s.io/kube-scheduler:v1.34.2
     extraArgs:
       bind-address: 0.0.0.0
     config:
