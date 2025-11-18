@@ -19,4 +19,11 @@ Add this to the `kustomization.yaml` to boostrap a new Postgres cluster that has
     components.postgres/cpgo: init
 ```
 
+Set account to owner
+Exec into the master pod for the postgres cluster:
+```
+psql
+ALTER DATABASE <app> OWNER TO <app>;
+```
+
 Based on this [patch](https://github.com/joryirving/home-ops/blob/2f86fd78a27e4ece10b75dcf40d5d7215b8beb2b/kubernetes/clusters/main/apps.yaml#L158-L178), it will remove the datasource and start a blank cluster. You can remove this and it'll "restore" from the backup.
