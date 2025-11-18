@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app jellyseerr
+  name: &app seerr
 spec:
   components:
     - ../../../../components/postgres
@@ -14,7 +14,7 @@ spec:
       failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 1h
-  path: ./kubernetes/apps/base/media/jellyseerr
+  path: ./kubernetes/apps/base/media/seerr
   postBuild:
     substitute:
       APP: *app
