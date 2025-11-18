@@ -13,14 +13,15 @@ spec:
   values:
     controllers:
       searxng:
-        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
+        replicas: 2
+        strategy: RollingUpdate
         containers:
           main:
             image:
               repository: ghcr.io/searxng/searxng
-              tag: 2025.5.17-86373e7@sha256:2f45ccc0b330faa47d8706de883c6e583b38806e32b51172d93c381ce1d92f0b
+              tag: 2025.11.18-576c8ca99@sha256:91da34403fc1d2c7ac23d1459af87870d87810b7d50b0c6a4585ab78846cb534
             env:
               SEARXNG_BASE_URL: https://search.jory.dev
               SEARXNG_PORT: &port 8080
@@ -44,9 +45,9 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 256Mi
+                memory: 215Mi
               limits:
-                memory: 2Gi
+                memory: 4Gi
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
