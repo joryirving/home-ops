@@ -13,7 +13,7 @@
 #     tag: 4.7.1
 #   url: oci://ghcr.io/zoriya/helm-charts/kyoo
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/gitrepository_v1.json
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
@@ -21,11 +21,14 @@ metadata:
 spec:
   interval: 15m
   url: https://github.com/zoriya/Kyoo
-  # ignore: |
-  #   # exclude
-  #   /*
-  #   # include
-  #   !chart
+  ref:
+    branch: master
+  ignore: |
+    # exclude all
+    /*
+    # include charts directory
+    !/chart/
+    !/chart/**
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
