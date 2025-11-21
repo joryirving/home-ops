@@ -49,6 +49,7 @@ jobs:
             --enable-helm
             --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }}
             --verbose
+            --exclude-selector flux-local/exclude=true
 
   diff:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
@@ -88,6 +89,7 @@ jobs:
             --limit-bytes 10000
             --all-namespaces
             --sources "flux-system"
+            --exclude-selector flux-local/exclude=true
             --output-file diff.patch
 
       - name: Generate Diff
