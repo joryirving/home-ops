@@ -1,9 +1,11 @@
-variable "uptimerobot_api_key" {
+variable "OP_CONNECT_HOST" {
   type        = string
-  description = "Uptime Robot API Key"
+  description = "Onepass Connect URL"
 }
 
-variable "taco_time_discord_webhook_url" {
+variable "OP_CONNECT_TOKEN" {
   type        = string
-  description = "Taco Time Discord Webhook URL"
+  description = "The path to the service account JSON for OnePassword."
+  sensitive   = true
+  default     = null
 }
