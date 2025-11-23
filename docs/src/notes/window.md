@@ -63,14 +63,14 @@ Replace the contents with:
 essentials:
   screens:
     - streams:
-        - url: "rtsp://<IP>>:8553/rtsp-high"
+        - url: "rtsp://<ip>:8553/rtsp-high?video=all&audio=all
 ```
 
 This will show the single camera full-screen.
 
 Check the service status:
 ```bash
-systemctl status systemctl restart lightdm.service
+systemctl restart lightdm.service
 ```
 
 ###🔁 6. Reboot to Confirm
