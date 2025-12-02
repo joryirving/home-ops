@@ -140,12 +140,24 @@ Total RAM: 384GB
 
 | Name     | Device     | CPU           | OS Disk   | Local Disk | RAM  | OS    | Purpose           |
 |----------|------------|---------------|-----------|------------|------|-------|-------------------|
-| Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe   | 32GB | Talos | k8s control-plane |
+| Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe   | 64GB | Talos | k8s control-plane |
 
 OS Disk: 2.5" Samsung 870 EVO SSD
 Local Disk: m.2 WD SN770 1TB
 
 Total CPU: 8 Cores/16 Threads
+Total RAM: 64GB
+
+### Test Kubernetes Cluster
+
+| Name     | Device         | CPU           | OS Disk   | Local Disk   | RAM  | OS    | Purpose           |
+|----------|----------------|---------------|-----------|--------------|------|-------|-------------------|
+| Citlali  | Beelink Mini-S | Celeron N5095 | 480GB SSD | 1TB M.2 SATA | 32GB | Talos | k8s control-plane |
+
+OS Disk: 2.5" Kingston SA400 SSD
+Local Disk: m.2 Timetec SATA SSD
+
+Total CPU: 4 Cores/4 Threads
 Total RAM: 32GB
 
 ### Supporting Hardware

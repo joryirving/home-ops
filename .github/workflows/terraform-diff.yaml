@@ -20,10 +20,10 @@ jobs:
     name: Changed Terraform
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.changed-terraform.outputs.all_changed_and_modified_files }}
+      changed-files: ${{ steps.changed-terraform.outputs.changed_files }}
     steps:
       - name: Checkout
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
@@ -31,10 +31,12 @@ jobs:
         id: changed-terraform
         uses: bjw-s-labs/action-changed-files@1a5aeab1bfa64d0c4e786f501d5a3f1fad4a24da # v0.4.1
         with:
-          patterns: terraform/**
+          patterns: terraform/**/*
+          include_only_directories: true
+          max_depth: 2
 
       - name: List All Changed Terraform
-        run: echo ${{ steps.changed-terraform.outputs.all_changed_and_modified_files }}
+        run: echo ${{ steps.changed-terraform.outputs.changed_files }}
 
   sync:
     name: Terraform Diff
@@ -42,7 +44,7 @@ jobs:
     needs: ["changed-terraform"]
     strategy:
       matrix:
-        paths: ${{ fromJSON(needs.changed-terraform.outputs.matrix) }}
+        paths: ${{ fromJSON(needs.changed-terraform.outputs.changed-files) }}
       max-parallel: 4
       fail-fast: false
     steps:
@@ -61,14 +63,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY
 
       - name: Generate Token
-        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        uses: actions/create-github-app-token@7e473efe3cb98aa54f8d4bac15400b15fad77d94 # v2.2.0
         id: app-token
         with:
           app-id: ${{ secrets.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
           token: ${{ steps.app-token.outputs.token }}
