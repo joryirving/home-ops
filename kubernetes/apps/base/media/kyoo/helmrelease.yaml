@@ -1,4 +1,4 @@
----
+# ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1.json
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
@@ -10,7 +10,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 4.7.1
+    tag: 5.0.0-prototype
   url: oci://ghcr.io/zoriya/helm-charts/kyoo
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -25,114 +25,29 @@ spec:
   dependsOn: []
   interval: 15m
   values:
-    meilisearch:
-      enabled: true
-    rabbitmq:
-      enabled: false
-    extraObjects:
-      - apiVersion: apps/v1
-        kind: StatefulSet
-        metadata:
-          name: &rabbitname kyoo-rabbitmq
-          labels: &rabbitlabels
-            app.kubernetes.io/name: rabbitmq
-            app.kubernetes.io/instance: kyoo
-        spec:
-          serviceName: *rabbitname
-          replicas: 1
-          selector:
-            matchLabels: *rabbitlabels
-          template:
-            metadata:
-              labels: *rabbitlabels
-            spec:
-              containers:
-                - name: *rabbitname
-                  image: rabbitmq:4.2.1
-                  ports:
-                    - containerPort: 5672
-                      name: amqp
-                  env:
-                    - name: RABBITMQ_DEFAULT_USER
-                      valueFrom:
-                        secretKeyRef:
-                          name: kyoo-secret
-                          key: RABBITMQ_USER
-                    - name: RABBITMQ_DEFAULT_PASS
-                      valueFrom:
-                        secretKeyRef:
-                          name: kyoo-secret
-                          key: RABBITMQ_PASS
-                  volumeMounts:
-                    - name: data
-                      mountPath: /var/lib/rabbitmq
-                  readinessProbe:
-                    exec:
-                      command: ["rabbitmq-diagnostics", "ping"]
-                    initialDelaySeconds: 10
-                    periodSeconds: 5
-          volumeClaimTemplates:
-            - metadata:
-                name: data
-              spec:
-                accessModes: ["ReadWriteOnce"]
-                resources:
-                  requests:
-                    storage: 8Gi
-      - apiVersion: v1
-        kind: Service
-        metadata:
-          name: *rabbitname
-          labels: *rabbitlabels
-        spec:
-          type: ClusterIP
-          selector: *rabbitlabels
-          ports:
-            - port: 5672
-              name: amqp
     global:
-      meilisearch:
-        infra:
-          existingSecret: &secret kyoo-secret
-        kyoo_back:
-          masterkeyKey: MEILI_MASTER_KEY
-          existingSecret: *secret
+      image:
+        tag: "edge"
+        imagePullPolicy: Always
       postgres:
-        infra:
-          user: kyoo-all
-        kyoo_back:
-          host: &host kyoo-primary.media.svc
-          port: &port 5432
-          database: kyoo_back
-          kyoo_migrations: &psql_secret
-            userKey: user
-            passwordKey: password
-            existingSecret: kyoo-pguser-kyoo-all
-          kyoo_back: *psql_secret
-        kyoo_transcoder:
-          host: *host
-          port: *port
-          database: kyoo_transcoder
-          sslmode: require
-          kyoo_transcoder: *psql_secret
-      rabbitmq:
-        infra:
-          passwordKey: RABBITMQ_PASS
-          keyErlangCookie: RABBITMQ_COOKIE
-          existingSecret: *secret
-        kyoo_autosync: &rabbit
-          userKey: RABBITMQ_USER
-          passwordKey: RABBITMQ_PASS
-          existingSecret: *secret
-        kyoo_back: *rabbit
-        kyoo_matcher: *rabbit
-        kyoo_scanner: *rabbit
+        shared:
+          host: kyoo-pgbouncer.media.svc
+          port: 5432
+          databaseOverride: *app
+          existingSecret: kyoo-pguser-kyoo
+          userKey: user
+          passwordKey: password
+        kyoo_api:
+          sslmode: ${SSLMODE}
     kyoo:
       address: https://kyoo.jory.dev
+      middlewareRootURL: https://kyoo.jory.dev
       transcoderAcceleration: vaapi # hardware acceleration profile (valid values: disabled, vaapi, qsv, nvidia)
-      apikey:
-        existingSecret: *secret
-        apikeyKey: KYOO_API_KEY
+      auth:
+        apikeys:
+          scanner:
+            existingSecret: &secret kyoo-secret
+            apikeyKey: KYOO_API_KEY
       oidc_providers:
         - name: Authentik
           existingSecret: *secret
@@ -150,11 +65,6 @@ spec:
           nfs:
             server: voyager.internal
             path: /mnt/akademiya/data/media
-      volumeMounts:
-        - mountPath: &path /media
-          name: media
-          readOnly: true
-      baseMountPath: *path
     contentdatabase:
       tmdb:
         apikeyKey: TMDB_API_KEY
@@ -163,17 +73,10 @@ spec:
         apikeyKey: TVDB_APIKEY
         pinKey: TVDB_PIN
         existingSecret: *secret
-    autosync:
-      kyoo_autosync:
-        resources:
-          requests:
-            cpu: 5m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 100Mi
-    back:
-      kyoo_back:
+    api:
+      persistence:
+        existingClaim: *app
+      kyoo_api:
         resources:
           requests:
             cpu: 10m
@@ -181,10 +84,8 @@ spec:
           limits:
             cpu: 4000m
             memory: 8Gi
-      persistence:
-        existingClaim: *app
-    front:
-      kyoo_front:
+    auth:
+      kyoo_auth:
         resources:
           requests:
             cpu: 20m
@@ -192,11 +93,11 @@ spec:
           limits:
             cpu: 2
             memory: 500Mi
-    matcher:
-      kyoo_matcher:
+    front:
+      kyoo_front:
         resources:
           requests:
-            cpu: 50m
+            cpu: 20m
             memory: 50Mi
           limits:
             cpu: 2
@@ -211,6 +112,8 @@ spec:
             cpu: 1
             memory: 1Gi
     transcoder:
+      # persistence:
+      #   existingClaim: *app
       kyoo_transcoder:
         resources:
           requests:
@@ -219,3 +122,95 @@ spec:
           limits:
             cpu: 1
             memory: 8Gi
+    traefikproxy:
+      enabled: false
+    extraObjects:
+      - apiVersion: gateway.networking.k8s.io/v1
+        kind: HTTPRoute
+        metadata:
+          name: kyoo
+        spec:
+          hostnames: ["kyoo.jory.dev"]
+          parentRefs:
+            - name: envoy-external
+              namespace: network
+          rules:
+            - name: api
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /api
+                - path:
+                    type: PathPrefix
+                    value: /swagger
+              backendRefs:
+                - name: kyoo-api
+                  namespace: media
+                  port: 3567
+            - name: auth
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /auth
+                - path:
+                    type: PathPrefix
+                    value: /.well-known
+              backendRefs:
+                - name: kyoo-auth
+                  namespace: media
+                  port: 4568
+            - name: transcoder
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /video
+              backendRefs:
+                - name: kyoo-transcoder
+                  namespace: media
+                  port: 7666
+            - name: scanner
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /scanner
+              backendRefs:
+                - name: kyoo-scanner
+                  namespace: media
+                  port: 4389
+            - name: front
+              backendRefs:
+                - name: kyoo-front
+                  namespace: media
+                  port: 8901
+      - apiVersion: gateway.envoyproxy.io/v1alpha1
+        kind: SecurityPolicy
+        metadata:
+          name: kyoo-auth
+        spec:
+          targetRefs:
+            - group: gateway.networking.k8s.io
+              kind: HTTPRoute
+              name: kyoo
+              sectionName: api
+            - group: gateway.networking.k8s.io
+              kind: HTTPRoute
+              name: kyoo
+              sectionName: transcoder
+            - group: gateway.networking.k8s.io
+              kind: HTTPRoute
+              name: kyoo
+              sectionName: scanner
+          extAuth:
+            headersToExtAuth:
+              - Authorization
+              - X-Api-Key
+              - cookie
+            recomputeRoute: true
+            http:
+              backendRefs:
+                - name: kyoo-auth
+                  namespace: media
+                  port: 4568
+              path: /auth/jwt
+              headersToBackend:
+                - Authorization

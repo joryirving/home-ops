@@ -4,6 +4,8 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app kyoo
+  labels:
+    components.postgres/cpgo: init
 spec:
   components:
     - ../../../../components/gpu
@@ -20,8 +22,7 @@ spec:
     substitute:
       APP: *app
       CLUSTER: ${CLUSTER}
-      DATABASES: '["kyoo_back", "kyoo_transcoder"]'
-      USERNAME: kyoo-all
+      SSLMODE: allow
       VOLSYNC_CAPACITY: 50Gi
   prune: true
   sourceRef:
