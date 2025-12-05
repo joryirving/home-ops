@@ -13,8 +13,8 @@ terraform {
 }
 
 provider "onepassword" {
-  url   = var.OP_CONNECT_HOST
-  token = var.OP_CONNECT_TOKEN
+  connect_url   = var.OP_CONNECT_HOST
+  connect_token = var.OP_CONNECT_TOKEN
 }
 
 module "onepassword_authentik" {
