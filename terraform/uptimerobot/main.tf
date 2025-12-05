@@ -2,7 +2,7 @@ terraform {
   required_providers {
     onepassword = {
       source  = "1Password/onepassword"
-      version = "2.2.1"
+      version = "3.0.0"
     }
 
     uptimerobot = {
@@ -13,8 +13,8 @@ terraform {
 }
 
 provider "onepassword" {
-  url   = var.OP_CONNECT_HOST
-  token = var.OP_CONNECT_TOKEN
+  connect_url   = var.OP_CONNECT_HOST
+  connect_token = var.OP_CONNECT_TOKEN
 }
 
 data "onepassword_vault" "kubernetes" {
