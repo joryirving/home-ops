@@ -18,8 +18,25 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: certificate
+spec:
+  interval: 1h
+  path: ./kubernetes/apps/base/network/certificates/certificate
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: true
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: certificates-export
 spec:
+  dependOn:
+    name: certificate
   interval: 1h
   path: ./kubernetes/apps/base/network/certificates/export
   prune: true
