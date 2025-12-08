@@ -25,7 +25,7 @@ locals {
       client_secret = module.onepassword_application["ErsatzTV"].fields["ERSATZTV_CLIENT_SECRET"]
       group         = "media"
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/ersatztv.png"
-      redirect_uri  = "https://tv.${var.CLUSTER_DOMAIN}/signin-oidc"
+      redirect_uri  = "https://tv.${var.CLUSTER_DOMAIN}/callback"
       launch_url    = "https://tv.${var.CLUSTER_DOMAIN}"
     },
     Grafana = {
