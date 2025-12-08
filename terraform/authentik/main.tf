@@ -6,7 +6,7 @@ terraform {
     }
 
     onepassword = {
-      source  = "1password/onepassword"
+      source  = "registry.terraform.io/1password/onepassword"
       version = "3.0.0"
     }
   }
@@ -21,10 +21,6 @@ module "onepassword_authentik" {
   source = "github.com/joryirving/terraform-1password-item"
   vault  = "Kubernetes"
   item   = "authentik"
-
-  providers = {
-    onepassword = onepassword
-  }
 }
 
 provider "authentik" {
