@@ -25,6 +25,10 @@ module "onepassword_garage" {
   source = "github.com/joryirving/terraform-1password-item"
   vault  = data.onepassword_vault.kubernetes.name
   item   = "garage"
+
+  providers = {
+    onepassword = onepassword
+  }
 }
 
 provider "garage" {
