@@ -1,5 +1,6 @@
 locals {
   oauth_apps = [
+    "Arcane",
     "ErsatzTV",
     "Grafana",
     "Headlamp",
@@ -20,6 +21,14 @@ module "onepassword_application" {
 
 locals {
   applications = {
+    Arcane = {
+      client_id     = module.onepassword_application["Arcane"].fields["ARCANE_CLIENT_ID"]
+      client_secret = module.onepassword_application["Arcane"].fields["ARCANE_CLIENT_SECRET"]
+      group         = "media"
+      icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/arcane.png"
+      redirect_uri  = "https://arcane.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
+      launch_url    = "https://arcane.${var.CLUSTER_DOMAIN}"
+    },
     ErsatzTV = {
       client_id     = module.onepassword_application["ErsatzTV"].fields["ERSATZTV_CLIENT_ID"]
       client_secret = module.onepassword_application["ErsatzTV"].fields["ERSATZTV_CLIENT_SECRET"]
