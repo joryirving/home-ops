@@ -27,9 +27,7 @@ tasks:
     env:
       MACHINE_TYPE: '{{.MACHINE_TYPE}}'
       TALOS_SCHEMATIC:
-        sh: |-
-          curl --silent -X POST --data-binary @{{.TALOS_DIR}}/schematic.yaml https://factory.talos.dev/schematics \
-            | jq --raw-output '.id'
+        sh: task --silent talos:generate-schematic
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
@@ -176,6 +174,30 @@ tasks:
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
       - test -f {{.TALOS_DIR}}/talosconfig
       - which talosctl
+
+  generate-iso:
+    desc: Generate a Talos ISO for a specific version [VERSION=required] [CLUSTER=main]
+    cmd: |-
+      curl -L -o {{.TALOS_DIR}}/talos-{{.VERSION}}.iso \
+        https://factory.talos.dev/image/{{.TALOS_SCHEMATIC}}/{{.VERSION}}/metal-amd64.iso
+    vars:
+      TALOS_SCHEMATIC:
+        sh: task --silent talos:generate-schematic
+    requires:
+      vars: [VERSION, CLUSTER]
+    preconditions:
+      - which curl task
+
+  generate-schematic:
+    desc: Generate a Talos schematic [CLUSTER=main]
+    cmd: |-
+      curl --silent -X POST --data-binary @{{ .TALOS_DIR }}/schematic.yaml https://factory.talos.dev/schematics \
+        | jq --raw-output '.id'
+    requires:
+      vars: [CLUSTER]
+    preconditions:
+      - test -f {{.TALOS_DIR}}/schematic.yaml
+      - which curl jq
 
   down:
     internal: true
