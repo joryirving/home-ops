@@ -7,6 +7,10 @@ metadata:
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/flux-system/flux-operator
+  postBuild:
+    substitute:
+      CLUSTER: ${CLUSTER}
+      SUBDOMAIN: flux-${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository
