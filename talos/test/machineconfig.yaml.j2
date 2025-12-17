@@ -1,7 +1,6 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.12/website/content/v1.12/schemas/config.schema.json
 version: v1alpha1
-persist: true
 machine:
   ca:
     crt: op://Kubernetes/talos-test/MACHINE_CA_CRT
@@ -12,8 +11,8 @@ machine:
     diskQuotaSupport: true
     hostDNS:
       enabled: true
-      resolveMemberNames: true
       forwardKubeDNSToHost: true
+      resolveMemberNames: true
     kubePrism:
       enabled: true
       port: 7445
@@ -23,7 +22,6 @@ machine:
       allowedRoles: ["os:admin"]
       allowedKubernetesNamespaces: ["actions-runner-system", "kube-tools"]
     {% endif %}
-    rbac: true
   files:
     - op: create
       path: /etc/cri/conf.d/20-customization.part
@@ -38,7 +36,7 @@ machine:
       permissions: 0o644
       content: |
         [ NFSMount_Global_Options ]
-        nfsvers=4.2
+        nfsvers=4.1
         hard=True
         nconnect=16
         noatime=True
@@ -54,12 +52,10 @@ machine:
         ImageVolume: true
       serializeImagePulls: false
     image: ghcr.io/siderolabs/kubelet:v1.34.3
-    extraArgs:
-      max-pods: "200"
     nodeIP:
       validSubnets: ["10.69.1.0/24"]
   nodeLabels:
-    intel.feature.node.kubernetes.io/gpu: true
+    node.kubernetes.io/gpu: "true"
     topology.kubernetes.io/region: k8s
     topology.kubernetes.io/zone: {{ 'm' if ENV.MACHINE_TYPE == 'controlplane' else 'w' }}
   sysctls:
