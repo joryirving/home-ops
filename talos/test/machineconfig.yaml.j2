@@ -23,6 +23,7 @@ machine:
       allowedRoles: ["os:admin"]
       allowedKubernetesNamespaces: ["actions-runner-system", "kube-tools"]
     {% endif %}
+    rbac: true
   files:
     - op: create
       path: /etc/cri/conf.d/20-customization.part
@@ -116,7 +117,7 @@ cluster:
     key: op://Kubernetes/talos-test/CLUSTER_AGGREGATORCA_KEY
   allowSchedulingOnControlPlanes: true
   apiServer:
-    certSANs: ["k8s.test.internal"]
+    certSANs: ["k8s.test.internal", "127.0.0.1"]
     extraArgs:
       enable-aggregator-routing: true
       feature-gates: MutatingAdmissionPolicy=true,ImageVolume=true
