@@ -44,7 +44,7 @@ machine:
         rsize=1048576
         wsize=1048576
   install:
-    image: factory.talos.dev/installer/78120220993bad33c3c3cd744d13b85e2afb50de06daa3bbf682d239d5df91b1:v1.12.0-rc.1
+    image: factory.talos.dev/installer/6a8fd171109dc15c7c16f50326d74f86feedfd4fa1cc0624c60dd851d3760652:v1.12.0-rc.1
   kubelet:
     image: ghcr.io/siderolabs/kubelet:v1.35.0
     extraArgs:
@@ -178,38 +178,34 @@ provisioning:
   minSize: 480GB
 ---
 apiVersion: v1alpha1
-kind: LinkAliasConfig
-name: int0
-selector:
-  match: mac(link.permanent_addr) == "7c:83:34:b6:6a:2a"
+kind: BondConfig
+name: bond0
+links:
+  - enp2s0
+  - dummy0
+bondMode: active-backup
+miimon: 100
 ---
 apiVersion: v1alpha1
 kind: VLANConfig
-name: int0.70
+name: bond0.70
 vlanID: 70
-parent: int0
+parent: bond0
 mtu: 1500
 ---
 apiVersion: v1alpha1
 kind: DHCPv4Config
-name: int0
+name: bond0
 clientIdentifier: mac
 ---
 apiVersion: v1alpha1
 kind: DHCPv6Config
-name: int0
+name: bond0
 ---
 apiVersion: v1alpha1
 kind: Layer2VIPConfig
 name: 10.69.10.202
-link: int0
----
-apiVersion: v1alpha1
-kind: ResolverConfig
-nameservers:
-    - address: 10.69.1.1
-searchDomains:
-    disableDefault: true
+link: bond0
 ---
 apiVersion: v1alpha1
 kind: WatchdogTimerConfig
