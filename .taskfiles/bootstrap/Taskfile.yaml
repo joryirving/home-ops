@@ -35,7 +35,7 @@ tasks:
     cmds:
       - kubectl config set-cluster {{.CLUSTER}} --server https://{{.RANDOM_CONTROLLER}}:6443
       - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
-      - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
+      # - until kubectl --context {{.CLUSTER}} wait nodes --for=condition=Ready=False --all --timeout=10m; do sleep 5; done
       - op inject --in-file {{.BOOTSTRAP_DIR}}/templates/secrets.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
       - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml template  | kubectl --context {{.CLUSTER}} apply --server-side --filename -
       - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml sync --hide-notes
