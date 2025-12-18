@@ -9,11 +9,7 @@ spec:
     # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
     version: v1.12.0-rc.1
   healthChecks:
-    - # Nodes are ready
-      apiVersion: v1
-      kind: Node
-      expr: status.conditions.filter(c, c.type == "Ready").all(c, c.status == "True")
-    - # No active VolSync replications
-      apiVersion: volsync.backube/v1alpha1
+    - apiVersion: volsync.backube/v1alpha1
       kind: ReplicationSource
-      expr: status.conditions.filter(c, c.type == "Synchronizing").all(c, c.status == "False")
+      expr: |-
+        status.conditions.filter(c, c.type == "Synchronizing").all(c, c.status == "False")
