@@ -81,3 +81,17 @@
                   parameter:
                     source: payload
                     name: pull_request.user.login
+- id: github-joryirving-test
+  execute-command: /config/troubleshooting.sh
+  pass-arguments-to-command:
+    - source: entire-payload
+  trigger-rule:
+    and:
+      - # Validate the webhook secret
+        match:
+          type: payload-hmac-sha1
+          secret: >-
+            {{ getenv "GITHUB_WEBHOOK_SECRET" | js }}
+          parameter:
+            source: header
+            name: x-hub-signature
