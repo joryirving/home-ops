@@ -1,21 +1,34 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.11/website/content/v1.11/schemas/config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.12/website/content/v1.12/schemas/config.schema.json
 machine:
   install:
     diskSelector:
       serial: "S665NE0R500722" # m.2 PM9A3 960GB
-  network:
-    hostname: eula
-    interfaces:
-      - # ayaka
-        deviceSelector: { busPath: 0-1.0 }
-        dhcp: false
-        mtu: 65520
-        addresses: [169.254.255.22/32]
-        routes: [{ network: 169.254.255.21/32, metric: 2048 }]
-      - # ganyu
-        deviceSelector: { busPath: 1-1.0 }
-        dhcp: false
-        mtu: 65520
-        addresses: [169.254.255.22/32]
-        routes: [{ network: 169.254.255.23/32, metric: 2048 }]
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: eula
+---
+## Ayaka
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enx0217d2d63402
+up: true
+mtu: 65520
+addresses:
+  - address: 169.254.255.22/32
+routes:
+  - destination: 169.254.255.21/32
+    metric: 2048
+---
+## Ganyu
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enx02f409a6da2e
+up: true
+mtu: 65520
+addresses:
+  - address: 169.254.255.22/32
+routes:
+  - destination: 169.254.255.23/32
+    metric: 2048

@@ -1,33 +1,27 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.11/website/content/v1.11/schemas/config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.12/website/content/v1.12/schemas/config.schema.json
 version: v1alpha1
-persist: true
 machine:
-  type: {{ ENV.MACHINE_TYPE }}
-  token: op://Kubernetes/talos-main/MACHINE_TOKEN
   ca:
     crt: op://Kubernetes/talos-main/MACHINE_CA_CRT
     {% if ENV.MACHINE_TYPE == 'controlplane' %}
     key: op://Kubernetes/talos-main/MACHINE_CA_KEY
     {% endif %}
   features:
-    rbac: true
-    stableHostname: true
+    diskQuotaSupport: true
+    hostDNS:
+      enabled: true
+      forwardKubeDNSToHost: true
+      resolveMemberNames: true
+    kubePrism:
+      enabled: true
+      port: 7445
     {% if ENV.MACHINE_TYPE == 'controlplane' %}
     kubernetesTalosAPIAccess:
       enabled: true
       allowedRoles: ["os:admin"]
       allowedKubernetesNamespaces: ["actions-runner-system", "kube-tools"]
     {% endif %}
-    apidCheckExtKeyUsage: true
-    diskQuotaSupport: true
-    kubePrism:
-      enabled: true
-      port: 7445
-    hostDNS:
-      enabled: true
-      resolveMemberNames: true
-      forwardKubeDNSToHost: true # Requires Cilium socketLB features
   files:
     - op: create
       path: /etc/cri/conf.d/20-customization.part
@@ -42,9 +36,9 @@ machine:
       permissions: 0o644
       content: |
         [ NFSMount_Global_Options ]
-        nfsvers=4.2
+        nfsvers=4.1
         hard=True
-        nconnect=8
+        nconnect=16
         noatime=True
         rsize=1048576
         wsize=1048576
@@ -56,43 +50,22 @@ machine:
       - name: thunderbolt
       - name: thunderbolt_net
   kubelet:
-    # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
-    image: ghcr.io/siderolabs/kubelet:v1.34.3
+    defaultRuntimeSeccompProfileEnabled: true
+    disableManifestsDirectory: true
     extraArgs:
       max-pods: "200"
     extraConfig:
       featureGates:
         ImageVolume: true
       serializeImagePulls: false
-    defaultRuntimeSeccompProfileEnabled: true
+    image: ghcr.io/siderolabs/kubelet:v1.34.3
     nodeIP:
-      validSubnets: ["10.69.1.0/24", "10.69.2.0/24"]
-    disableManifestsDirectory: true
-  network:
-    interfaces:
-      - # 2.5G ignore for WoL/vPro
-        deviceSelector:
-          hardwareAddr: 58:47:ca:7d:*
-          driver: igc
-        ignore: true
-      - # 10G
-        interface: bond0
-        bond:
-          deviceSelectors: [{ hardwareAddr: "58:47:ca:7d:*", driver: i40e }]
-          mode: active-backup
-        mtu: 9000
-        dhcp: true
-        vlans:
-          - # Services VLAN (K8S svcs)
-            { vlanId: 70, dhcp: false, mtu: 9000 }
-          - # VPN VLAN
-            { vlanId: 90, dhcp: false, mtu: 9000 }
-    nameservers: ["10.69.1.1"]
-    disableSearchDomain: true
+      validSubnets: ["10.69.1.0/24"]
   nodeLabels:
     node.kubernetes.io/gpu: true
     intel.feature.node.kubernetes.io/gpu: true
     topology.kubernetes.io/region: k8s
+    topology.kubernetes.io/zone: {{ 'm' if ENV.MACHINE_TYPE == 'controlplane' else 'w' }}
   sysctls:
     fs.inotify.max_user_watches: "1048576"     # Watchdog
     fs.inotify.max_user_instances: "8192"      # Watchdog
@@ -115,6 +88,8 @@ machine:
     sunrpc.tcp_max_slot_table_entries: "128"   # 10Gb/s | NFS
     user.max_user_namespaces: "11255"          # User Namespaces
     vm.nr_hugepages: "1024"                    # PostgreSQL
+  token: op://Kubernetes/talos-main/MACHINE_TOKEN
+  type: {{ ENV.MACHINE_TYPE }}
   time:
     disabled: false
     servers: ["time.cloudflare.com"]
@@ -149,17 +124,16 @@ cluster:
     key: op://Kubernetes/talos-main/CLUSTER_AGGREGATORCA_KEY
   allowSchedulingOnControlPlanes: true
   apiServer:
-    image: registry.k8s.io/kube-apiserver:v1.35.0
+    certSANs: ["k8s.main.internal", "127.0.0.1"]
     extraArgs:
       enable-aggregator-routing: true
       feature-gates: ImageVolume=true,MutatingAdmissionPolicy=true
       runtime-config: admissionregistration.k8s.io/v1beta1=true
-    certSANs: ["k8s.main.internal", "127.0.0.1"]
-    disablePodSecurityPolicy: true
+    image: registry.k8s.io/kube-apiserver:v1.35.0
   controllerManager:
-    image: registry.k8s.io/kube-controller-manager:v1.35.0
     extraArgs:
       bind-address: 0.0.0.0
+    image: registry.k8s.io/kube-controller-manager:v1.35.0
   coreDNS:
     disabled: true
   etcd:
@@ -174,9 +148,6 @@ cluster:
     image: registry.k8s.io/kube-proxy:v1.35.0
   secretboxEncryptionSecret: op://Kubernetes/talos-main/CLUSTER_SECRETBOXENCRYPTIONSECRET
   scheduler:
-    image: registry.k8s.io/kube-scheduler:v1.35.0
-    extraArgs:
-      bind-address: 0.0.0.0
     config:
       apiVersion: kubescheduler.config.k8s.io/v1
       kind: KubeSchedulerConfiguration
@@ -194,6 +165,9 @@ cluster:
                   - maxSkew: 1
                     topologyKey: kubernetes.io/hostname
                     whenUnsatisfiable: ScheduleAnyway
+    image: registry.k8s.io/kube-scheduler:v1.35.0
+    extraArgs:
+      bind-address: 0.0.0.0
   serviceAccount:
     key: op://Kubernetes/talos-main/CLUSTER_SERVICEACCOUNT_KEY
   {% endif %}
@@ -211,6 +185,47 @@ name: enp2s0f1np1
 rings:
   rx: 8160
   tx: 8160
+---
+## 2.5G
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enp87s0
+up: false
+---
+## 2.5G
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enp90s0
+up: false
+---
+## 10G
+apiVersion: v1alpha1
+kind: BondConfig
+name: bond0
+links:
+  - enp2s0f0np0
+bondMode: active-backup
+miimon: 100
+mtu: 9000
+---
+apiVersion: v1alpha1
+kind: VLANConfig
+name: bond0.70
+vlanID: 70
+parent: bond0
+mtu: 9000
+---
+apiVersion: v1alpha1
+kind: VLANConfig
+name: bond0.90
+vlanID: 90
+parent: bond0
+mtu: 9000
+---
+apiVersion: v1alpha1
+kind: DHCPv4Config
+name: bond0
+clientIdentifier: mac
 ---
 apiVersion: v1alpha1
 kind: UserVolumeConfig
