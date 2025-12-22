@@ -17,3 +17,19 @@ resource "authentik_property_mapping_provider_scope" "email_verified" {
     }
   EOT
 }
+
+resource "authentik_property_mapping_provider_scope" "sftpgo_username" {
+  name       = "SFTGO Preferred Username"
+  scope_name = "preferred_username"
+  expression = <<-EOT
+    return user.attributes.get("preferred_username", user.username)
+  EOT
+}
+
+resource "authentik_property_mapping_provider_scope" "sftpgo_role" {
+  name       = "SFTGO Role"
+  scope_name = "sftpgo_role"
+  expression = <<-EOT
+    return user.attributes.get("sftpgo_role", "user")
+  EOT
+}
