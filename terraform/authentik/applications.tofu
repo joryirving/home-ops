@@ -8,7 +8,8 @@ locals {
     "Open-WebUI",
     "Paperless",
     "Portainer",
-    "RomM"
+    "RomM",
+    "SFTPGo"
   ]
 }
 
@@ -92,6 +93,14 @@ locals {
       icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/romm.png"
       redirect_uri  = "https://romm.${var.CLUSTER_DOMAIN}/api/oauth/openid"
       launch_url    = "https://romm.${var.CLUSTER_DOMAIN}"
+    },
+    SFTPGo = {
+      client_id     = module.onepassword_application["SFTPGo"].fields["OIDC_CLIENT_ID"]
+      client_secret = module.onepassword_application["SFTPGo"].fields["OIDC_CLIENT_SECRET"]
+      group         = "games"
+      icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/sftpgo.png"
+      redirect_uri  = "https://sftpgo.${var.CLUSTER_DOMAIN}/api/oauth/openid"
+      launch_url    = "https://sftpgo.${var.CLUSTER_DOMAIN}"
     },
   }
 }
