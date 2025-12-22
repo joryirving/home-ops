@@ -76,7 +76,7 @@ tasks:
 
   upgrade-k8s:
     desc: Upgrade Kubernetes across the whole cluster [CLUSTER=main]
-    cmd: talosctl --nodes {{.RANDOM_CONTROLLER}} upgrade-k8s --to {{.VERSION}}
+    cmd: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} upgrade-k8s --to {{.VERSION}}
     vars:
       RANDOM_CONTROLLER:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
@@ -84,7 +84,7 @@ tasks:
       vars: [CLUSTER, VERSION]
     preconditions:
       - talosctl config info
-      - talosctl --nodes {{.RANDOM_CONTROLLER}} get machineconfig
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - which jq talosctl
 
   reset-node:
