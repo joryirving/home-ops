@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.11/website/content/v1.11/schemas/config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.12/website/content/v1.12/schemas/config.schema.json
 version: v1alpha1
 machine:
   ca:
@@ -200,14 +200,6 @@ cluster:
   {% endif %}
 ---
 apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: local-hostpath
-provisioning:
-  diskSelector:
-    match: disk.model == "WD_BLACK SN770 1TB" && !system_disk
-  minSize: 1TB
----
-apiVersion: v1alpha1
 kind: BondConfig
 name: bond0
 links:
@@ -235,8 +227,12 @@ name: bond0
 clientIdentifier: mac
 ---
 apiVersion: v1alpha1
-kind: DHCPv6Config
-name: bond0
+kind: UserVolumeConfig
+name: local-hostpath
+provisioning:
+  diskSelector:
+    match: disk.model == "WD_BLACK SN770 1TB" && !system_disk
+  minSize: 1TB
 ---
 apiVersion: v1alpha1
 kind: WatchdogTimerConfig
