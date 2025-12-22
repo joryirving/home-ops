@@ -36,12 +36,10 @@ machine:
       permissions: 0o644
       content: |
         [ NFSMount_Global_Options ]
-        nfsvers=4.1
+        nfsvers=4.2
         hard=True
         nconnect=16
         noatime=True
-        rsize=1048576
-        wsize=1048576
   install:
     image: factory.talos.dev/installer/f4176a2c9144679daa66b1da85814ab3d85145cfb3a7522582b448e4ef3764ad:v1.12.0
   kernel:
@@ -62,8 +60,6 @@ machine:
     nodeIP:
       validSubnets: ["10.69.1.0/24"]
   nodeLabels:
-    node.kubernetes.io/gpu: true
-    intel.feature.node.kubernetes.io/gpu: true
     topology.kubernetes.io/region: k8s
     topology.kubernetes.io/zone: {{ 'm' if ENV.MACHINE_TYPE == 'controlplane' else 'w' }}
   sysctls:
