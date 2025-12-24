@@ -6,13 +6,8 @@ metadata:
   name: &app authentik
 spec:
   components:
-    - ../../../../components/dragonfly
     - ../../../../components/postgres
   healthCheckExprs:
-    - apiVersion: dragonflydb.io/v1alpha1
-      kind: Dragonfly
-      failed: status.phase != 'ready'
-      current: status.phase == 'ready'
     - apiVersion: postgres-operator.crunchydata.com/v1beta1
       kind: PostgresCluster
       failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
