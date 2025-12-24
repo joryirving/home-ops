@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scanservjs
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      scanservjs:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: sbs20/scanservjs
+              tag: v3.0.4@sha256:e42263444a8dd5d533ead7d9eb2ef5fd9ca7a4a80569a6f9c14b7a3c21b9c7ca
+            command: /bin/sh
+            args: [-c, service dbus start && /entrypoint.sh]
+            env:
+              AIRSCAN_DEVICES: '"Samsung C460" = http://samsung-printer.internal/eSCL'
+              SCANIMAGE_LIST_IGNORE: "true"
+              DEVICES: "airscan:e0:Samsung C460"
+              TZ: America/Edmonton
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+            resources:
+              requests:
+                cpu: 10m
+                memory: 250Mi
+    defaultPodOptions:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "multus-iot",
+            "namespace": "network",
+            "ips": ["192.168.10.124/24"]
+          }]
+    service:
+      app:
+        ports:
+          http:
+            port: 8080
+    route:
+      app:
+        hostnames: ["scan.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /var/lib/scanservjs
+      output:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/akademiya/scans/consume
+        globalMounts:
+          - path: /var/lib/scanservjs/output
+      scan-temp:
+        type: emptyDir
+        globalMounts:
+          - path: /var/lib/scanservjs/temp
+      dbus:
+        type: hostPath
+        hostPath: /var/run/dbus
+        advancedMounts:
+          scanservjs:
+            app:
+              - path: /var/run/dbus
