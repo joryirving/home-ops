@@ -37,7 +37,4 @@ resource "authentik_user" "Jory" {
     [data.authentik_group.admins.id],
     values(authentik_group.default)[*].id
   )
-  attributes = jsonencode({
-    sftpgo_role = "admin"
-  })
 }

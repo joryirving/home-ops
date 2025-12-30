@@ -9,7 +9,6 @@ locals {
     "Paperless",
     "Portainer",
     "RomM",
-    "SFTPGo"
   ]
 
   default_property_mappings = data.authentik_property_mapping_provider_scope.oauth2.ids
@@ -104,15 +103,6 @@ locals {
       redirect_uri      = "https://romm.${var.CLUSTER_DOMAIN}/api/oauth/openid"
       launch_url        = "https://romm.${var.CLUSTER_DOMAIN}"
       property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.email_verified.id])
-    },
-    SFTPGo = {
-      client_id         = module.onepassword_application["SFTPGo"].fields["OIDC_CLIENT_ID"]
-      client_secret     = module.onepassword_application["SFTPGo"].fields["OIDC_CLIENT_SECRET"]
-      group             = "infrastructure"
-      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/sftpgo.png"
-      redirect_uri      = "https://sftpgo.jory.dev/web/oidc/redirect"
-      launch_url        = "https://sftpgo.${var.CLUSTER_DOMAIN}"
-      property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.sftpgo_username.id], [authentik_property_mapping_provider_scope.sftpgo_role.id])
     },
   }
 }
