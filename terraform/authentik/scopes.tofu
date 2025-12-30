@@ -26,10 +26,3 @@ resource "authentik_property_mapping_provider_scope" "sftpgo_username" {
   EOT
 }
 
-resource "authentik_property_mapping_provider_scope" "sftpgo_role" {
-  name       = "SFTGO Role"
-  scope_name = "sftpgo_role"
-  expression = <<-EOT
-    return user.attributes.get("sftpgo_role", "user")
-  EOT
-}
