@@ -10,7 +10,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 5.0.0-prototype
+    tag: 5.0.0-prototype1
   url: oci://ghcr.io/zoriya/helm-charts/kyoo
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -127,7 +127,12 @@ spec:
       kyoo_transcoder:
         image:
           tag: edge@sha256:539ae1f57cb20bd09d6c8aa72cc1713eb4495aaf37ecf2b813c398fc0fc8f949
+        resourceClaims:
+          - name: &gpuclaim kyoo-gpu
+            resourceClaimTemplateName: kyoo-gpu
         resources:
+          claims:
+            - name: *gpuclaim
           requests:
             cpu: 100m
             memory: 500Mi
