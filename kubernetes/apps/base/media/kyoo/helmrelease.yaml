@@ -124,15 +124,15 @@ spec:
     transcoder:
       # persistence:
       #   existingClaim: *app
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: kyoo-gpu
       kyoo_transcoder:
         image:
           tag: edge@sha256:539ae1f57cb20bd09d6c8aa72cc1713eb4495aaf37ecf2b813c398fc0fc8f949
-        resourceClaims:
-          - name: &gpuclaim kyoo-gpu
-            resourceClaimTemplateName: kyoo-gpu
         resources:
           claims:
-            - name: *gpuclaim
+            - name: gpu
           requests:
             cpu: 100m
             memory: 500Mi
