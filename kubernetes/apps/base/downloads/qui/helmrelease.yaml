@@ -19,7 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/autobrr/qui
-              tag: v1.11.0@sha256:5c7c08d5e8d4c4fe966106b58d3705f19921a69606b3dc4f237009a6c25a0ac7
+              tag: main@sha256:034995dd984959fc6a131a61f5ef8fafce5a70cec896750843af81250cebc9a8
             env:
               QUI__HOST: 0.0.0.0
               QUI__PORT: &port 80
@@ -51,12 +51,11 @@ spec:
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
     defaultPodOptions:
-      hostUsers: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
+        runAsGroup: 1000
+        fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
     service:
       app:
@@ -72,3 +71,9 @@ spec:
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
+      media:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/akademiya/data
+        globalMounts:
+          - path: /media/Downloads
