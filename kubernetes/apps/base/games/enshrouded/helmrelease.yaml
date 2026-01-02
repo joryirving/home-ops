@@ -26,7 +26,7 @@ spec:
               GAME_PORT: &game_port 27015
               QUERY_PORT: &query_port 15637
               SERVER_SLOTS: 16
-              EXTERNAL_CONFIG: 1 ## Provide custom config
+              # EXTERNAL_CONFIG: 1 ## Provide custom config
             envFrom:
             - secretRef:
                 name: "{{ .Release.Name }}"
@@ -67,9 +67,9 @@ spec:
         globalMounts:
           - path: /home/steam/enshrouded/savegame
             readOnly: false
-      config:
-        type: secret
-        name: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /home/steam/enshrouded/enshrouded_server.json
-            subPath: enshrouded_server.json
+      # config:
+      #   type: secret
+      #   name: "{{ .Release.Name }}"
+      #   globalMounts:
+      #     - path: /home/steam/enshrouded/enshrouded_server.json
+      #       subPath: enshrouded_server.json
