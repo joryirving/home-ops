@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: autobrr
+spec:
+  groups:
+    - name: autobrr.rules
+      rules:
+        - alert: AutobrrNetworkUnmonitored
+          expr: |-
+            autobrr_irc_channel_enabled_total != autobrr_irc_channel_monitored_total
+          for: 1h
+          annotations:
+            summary: >-
+              {{ $labels.network }} is not being monitored by Autobrr
+          labels:
+            severity: critical
