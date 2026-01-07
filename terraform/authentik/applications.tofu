@@ -29,7 +29,7 @@ locals {
       client_secret     = module.onepassword_application["autobrr"].fields["AUTOBRR_CLIENT_SECRET"]
       group             = "media"
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/autobrr.png"
-      redirect_uri      = "https://autobrr.${var.CLUSTER_DOMAIN}/api/auth/oidc/callback
+      redirect_uri      = "https://autobrr.${var.CLUSTER_DOMAIN}/api/auth/oidc/callback"
       launch_url        = "https://autobrr.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
