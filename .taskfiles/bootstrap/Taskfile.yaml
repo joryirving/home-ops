@@ -37,8 +37,7 @@ tasks:
       - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
       - until kubectl --context {{.CLUSTER}} get nodes --no-headers 2>/dev/null | grep -q .; do sleep 5; done
       - op inject --in-file {{.BOOTSTRAP_DIR}}/templates/secrets.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
-      - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml template  | kubectl --context {{.CLUSTER}} apply --server-side --filename -
-      - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml sync --hide-notes
+      - task: helmfile
     requires:
       vars: [CLUSTER]
     vars:
@@ -48,8 +47,6 @@ tasks:
       CLUSTER: '{{.CLUSTER}}'
       CLUSTER_APPS: '{{.CLUSTER_APPS}}'
       CLUSTER_DIR: '{{.CLUSTER_DIR}}'
-      SHARED_APPS: '{{.SHARED_APPS}}'
-      SHARED_DIR: '{{.SHARED_DIR}}'
     preconditions:
       - op whoami
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
@@ -57,3 +54,25 @@ tasks:
       - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
       - test -d {{.BOOTSTRAP_DIR}}/templates
       - which helmfile jq kubectl op talosctl
+
+  helmfile:
+    internal: true
+    cmds:
+      - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml template | yq ea -e 'select(.kind == "CustomResourceDefinition")' \
+          | kubectl apply --server-side --field-manager bootstrap --force-conflicts --filename -
+      - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml sync --hide-notes
+    requires:
+      vars: [CLUSTER]
+    vars:
+      RANDOM_CONTROLLER:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
+    env:
+      CLUSTER: '{{.CLUSTER}}'
+      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
+    preconditions:
+      - op whoami
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
+      - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
+      - test -d {{.BOOTSTRAP_DIR}}/templates
+      - which helmfile kubectl yq
