@@ -53,13 +53,13 @@ spec:
               limits:
                 memory: 8Gi
     defaultPodOptions:
-      # annotations:
-      #   k8s.v1.cni.cncf.io/networks: |-
-      #     [{
-      #       "name": "multus-vpn",
-      #       "namespace": "network",
-      #       "ips": ["10.69.90.10/24"]
-      #     }]
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |-
+          [{
+            "name": "multus-vpn",
+            "namespace": "network",
+            "ips": ["10.69.90.10/24"]
+          }]
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -68,20 +68,20 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
     service:
       app:
-        forceRename: "{{ .Release.Name }}"
-        primary: true
+        # forceRename: "{{ .Release.Name }}"
+        # primary: true
         ports:
           http:
             port: *port
-      bittorrent:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.38
-        externalTrafficPolicy: Local
-        ports:
-          bittorrent-tcp:
-            port: *torrentPort
-            protocol: TCP
+      # bittorrent:
+      #   type: LoadBalancer
+      #   annotations:
+      #     lbipam.cilium.io/ips: 10.69.10.38
+      #   externalTrafficPolicy: Local
+      #   ports:
+      #     bittorrent-tcp:
+      #       port: *torrentPort
+      #       protocol: TCP
     route:
       app:
         hostnames: ["qb.jory.dev"]
