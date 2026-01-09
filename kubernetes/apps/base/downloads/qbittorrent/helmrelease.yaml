@@ -22,7 +22,7 @@ spec:
               tag: 5.1.4@sha256:16836a1b2697f8535c064f0469fc8c1e6f6d0b63aa2270ead3aa39d72c77f39a
             env:
               QBT_WEBUI_PORT: &port 80
-              QBT_TORRENTING_PORT: 59936
+              QBT_TORRENTING_PORT: &torrentPort 59936
               TZ: America/Edmonton
             probes:
               liveness: &probes
@@ -53,13 +53,13 @@ spec:
               limits:
                 memory: 8Gi
     defaultPodOptions:
-      annotations:
-        k8s.v1.cni.cncf.io/networks: |-
-          [{
-            "name": "multus-vpn",
-            "namespace": "network",
-            "ips": ["10.69.90.10/24"]
-          }]
+      # annotations:
+      #   k8s.v1.cni.cncf.io/networks: |-
+      #     [{
+      #       "name": "multus-vpn",
+      #       "namespace": "network",
+      #       "ips": ["10.69.90.10/24"]
+      #     }]
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -68,12 +68,22 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
     service:
       app:
+        forceRename: "{{ .Release.Name }}"
+        primary: true
         ports:
           http:
             port: *port
+      bittorrent:
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.38
+        externalTrafficPolicy: Local
+        ports:
+          bittorrent-tcp:
+            port: *torrentPort
+            protocol: TCP
     route:
       app:
-
         hostnames: ["qb.jory.dev"]
         parentRefs:
           - name: envoy-internal
