@@ -35,26 +35,6 @@ spec:
           kind: GithubAccessToken
           name: smurf-bot-auth-token
 ---
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: smurf-bot-auth-token-debug
-spec:
-  refreshInterval: 1m
-  target:
-    name: smurf-bot-auth-token-debug
-    template:
-      engineVersion: v2
-      data:
-        # This will dump the entire JSON object returned by the generator
-        DEBUG_OUTPUT: "{{ . | toJson }}"
-  dataFrom:
-    - sourceRef:
-        generatorRef:
-          apiVersion: generators.external-secrets.io/v1alpha1
-          kind: GithubAccessToken
-          name: smurf-bot-auth-token
----
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/renovate-operator.mogenius.com/renovatejob_v1alpha1.json
 apiVersion: renovate-operator.mogenius.com/v1alpha1
 kind: RenovateJob
