@@ -5,6 +5,7 @@ set -euo pipefail
 JOB=${1:-}
 NAMESPACE=${2:-}
 PROJECT=${3:-}
+RENOVATE_OPERATOR_WEBHOOK_URL=${4:-}
 
 # URL encode the project name
 PROJECT=$(echo "${PROJECT}" | jq -Rr @uri)
