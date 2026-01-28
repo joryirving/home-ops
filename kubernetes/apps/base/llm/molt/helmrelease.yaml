@@ -25,13 +25,57 @@ spec:
               - /bin/sh
               - -c
               - |
-                mkdir -p /home/node/.local/bin
+                set -e
+                mkdir -p /home/node/.local/bin /home/node/.local/go
+
+                # Install gh CLI if not present on PVC
+                if [ ! -f /home/node/.local/bin/gh ]; then
+                  echo "Installing gh CLI..."
+                  cd /tmp
+                  curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.gz
+                  tar xzf gh.tar.gz
+                  cp gh_2.61.0_linux_amd64/bin/gh /home/node/.local/bin/
+                  rm -rf gh.tar.gz gh_2.61.0_linux_amd64
+                fi
+
+                # Install Go if not present on PVC
+                if [ ! -f /home/node/.local/go/bin/go ]; then
+                  echo "Installing Go..."
+                  cd /tmp
+                  curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.gz
+                  tar xzf go.tar.gz
+                  mv go /home/node/.local/
+                  rm -rf go.tar.gz
+                fi
+
+                # Install Homebrew if not present on PVC
+                if [ ! -f /home/node/.local/homebrew/bin/brew ]; then
+                  echo "Installing Homebrew..."
+                  export HOMEBREW_PREFIX=/home/node/.local/homebrew
+                  export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
+                  export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
+                  mkdir -p $HOMEBREW_PREFIX
+                  cd /tmp
+                  git clone --depth 1 https://github.com/Homebrew/brew $HOMEBREW_PREFIX
+                fi
+
+                # Set up symlink and PATH
                 ln -sf /app/moltbot.mjs /home/node/.local/bin/moltbot
-                export PATH="/home/node/.local/bin:$PATH"
+                export PATH="/home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:$PATH"
+                export GOPATH=/home/node/go
+                export HOMEBREW_PREFIX=/home/node/.local/homebrew
+                export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
+                export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
+
                 exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
             env:
               HOME: &homepath /home/node
               TERM: xterm-256color
+              PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              GOPATH: /home/node/go
+              HOMEBREW_PREFIX: /home/node/.local/homebrew
+              HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
+              HOMEBREW_REPOSITORY: /home/node/.local/homebrew
               TZ: America/Edmonton
             envFrom:
               - secretRef:
