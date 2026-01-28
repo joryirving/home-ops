@@ -107,7 +107,7 @@ spec:
             namespace: network
     rbac:
       roles:
-        molt:
+        molt-read-all:
           type: ClusterRole
           rules:
             - apiGroups: [""]
@@ -131,13 +131,30 @@ spec:
             - apiGroups: ["metrics.k8s.io"]
               resources: ["nodes", "pods"]
               verbs: ["get", "list", "watch"]
+        molt-write-restricted:
+          type: Role
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["delete"]
+            - apiGroups: ["apps"]
+              resources: ["deployments"]
+              verbs: ["patch", "update"]
       bindings:
-        molt:
+        molt-read-all:
           type: ClusterRoleBinding
           roleRef:
-            identifier: molt
+            identifier: molt-read-all
           subjects:
             - identifier: molt
+              serviceAccount: molt
+        molt-write-restricted:
+          type: RoleBinding
+          roleRef:
+            identifier: molt-write-restricted
+          subjects:
+            - identifier: molt
+              serviceAccount: molt
     serviceAccount:
       molt: {}
     persistence:
