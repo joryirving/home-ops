@@ -1,0 +1,68 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: molt
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      molt:
+        replicas: 1
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/moltbot/moltbot
+              tag: main@sha256:a5e022e1a5d55ea3e35ec997eb16bbe9ec21aed8aff190bb0944977a1b72202c
+            command:
+              - /bin/sh
+              - -c
+              - |
+                mkdir -p /home/node/.local/bin
+                ln -sf /app/moltbot.mjs /home/node/.local/bin/moltbot
+                export PATH="/home/node/.local/bin:$PATH"
+                exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
+            env:
+              HOME: &homepath /home/node
+              TERM: xterm-256color
+              TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: molt
+            resources:
+              requests:
+                cpu: 500m
+                memory: 512Mi
+              limits:
+                cpu: 2000m
+                memory: 16Gi
+    defaultPodOptions:
+      shareProcessNamespace: true
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        ports:
+          http:
+            port: 18789
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: *homepath
