@@ -1,39 +1,27 @@
 # Terraform Infrastructure
 
-This directory contains Terraform configurations for managing infrastructure resources.
+This directory contains Terraform (OpenTofu) configurations for managing infrastructure resources.
 
 ## Modules
 
-- [authentik](./authentik/) - Authentik identity management resources
-- [garage](./garage/) - Garage S3-compatible storage resources  
-- [uptimerobot](./uptimerobot/) - UptimeRobot monitoring resources
+- [`authentik/`](./authentik/) — Authentik identity management
+- [`garage/`](./garage/) — Garage S3-compatible storage
+- [`uptimerobot/`](./uptimerobot/) — UptimeRobot monitoring
 
 ## Prerequisites
 
 - [OpenTofu](https://opentofu.org/) >= 1.6.0
 - 1Password CLI with Connect integration
-- Properly configured backend storage
+- Properly configured backend (S3-compatible, e.g., Garage)
 
 ## Usage
 
-### Initialize Terraform
-
 ```bash
 tofu init -upgrade -backend-config="access_key=YOUR_ACCESS_KEY" -backend-config="secret_key=YOUR_SECRET_KEY"
-```
-
-### Plan Changes
-
-```bash
 tofu plan -var="OP_CONNECT_HOST=your-connect-url" -var="OP_CONNECT_TOKEN=your-connect-token"
+tofu apply
 ```
 
-### Apply Changes
+## Backend
 
-```bash
-tofu apply -var="OP_CONNECT_HOST=your-connect-url" -var="OP_CONNECT_TOKEN=your-connect-token"
-```
-
-## Backend Configuration
-
-The backend is configured to use S3-compatible storage (Garage) with state locking. Backend credentials are provided via variables or environment variables.
+Shared backend configuration is in [`backend.hcl`](./backend.hcl).
