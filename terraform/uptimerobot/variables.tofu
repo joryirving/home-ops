@@ -1,6 +1,6 @@
 variable "OP_CONNECT_HOST" {
   type        = string
-  description = "Onepass Connect URL"
+  description = "1Password Connect URL"
 }
 
 variable "OP_CONNECT_TOKEN" {
