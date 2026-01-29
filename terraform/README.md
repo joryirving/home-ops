@@ -8,6 +8,10 @@ This directory contains Terraform configurations for managing infrastructure res
 - [garage](./garage/) - Garage S3-compatible storage resources  
 - [uptimerobot](./uptimerobot/) - UptimeRobot monitoring resources
 
+## Documentation
+
+Comprehensive documentation for Terraform best practices and patterns can be found in the [documentation repository](../terraform-docs/).
+
 ## Prerequisites
 
 - [OpenTofu](https://opentofu.org/) >= 1.6.0
