@@ -48,3 +48,54 @@ gh pr create --title "Title" --body "Description" --head branch-name --repo user
 - The access token expires after 1 hour
 - The token needs to be regenerated for long-running operations
 - The token provides write access to repositories based on the GitHub App permissions
+
+## Using the API to Edit Pull Requests
+
+GitHub Apps can programmatically update pull requests using the REST API. Here's how to edit a PR using the installation access token:
+
+### Update PR Description
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/OWNER/REPO/pulls/PULL_REQUEST_NUMBER \
+  -d '{"body":"New PR description content"}'
+```
+
+### Reopen a Closed PR
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/OWNER/REPO/pulls/PULL_REQUEST_NUMBER \
+  -d '{"state":"open"}'
+```
+
+### Update Other PR Properties
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/OWNER/REPO/pulls/PULL_REQUEST_NUMBER \
+  -d '{"title":"New Title", "body":"New description", "state":"open"}'
+```
+
+### Required Permissions
+
+Make sure your GitHub App has the following permissions:
+- Pull requests: Read & write
+- Issues: Read & write (sometimes required for PR operations)
+- Metadata: Read (required by GitHub for all apps)
+
+### Common Use Cases
+
+- Updating PR descriptions to add documentation
+- Adding instructions or footers to PRs
+- Reopening PRs that were closed by mistake
+- Updating PR titles or descriptions based on automated processes
