@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: molt
+  name: openclaw
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,15 +12,15 @@ spec:
   interval: 15m
   values:
     controllers:
-      molt:
+      openclaw:
         replicas: 1
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
           install-tools:
             image:
-              repository: ghcr.io/moltbot/moltbot
-              tag: main@sha256:a5e022e1a5d55ea3e35ec997eb16bbe9ec21aed8aff190bb0944977a1b72202c
+              repository: ghcr.io/openclaw/openclaw
+              tag: 2026.1.29@sha256:7b67c341d87f8e954dc1e8e9d7bb3aaeaf36acd49594abe4adb826ee89107170
             command:
               - /bin/sh
               - -c
@@ -80,14 +80,14 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/moltbot/moltbot
-              tag: main@sha256:a5e022e1a5d55ea3e35ec997eb16bbe9ec21aed8aff190bb0944977a1b72202c
+              repository: ghcr.io/openclaw/openclaw
+              tag: 2026.1.29@sha256:7b67c341d87f8e954dc1e8e9d7bb3aaeaf36acd49594abe4adb826ee89107170
             command:
               - /bin/sh
               - -c
               - |
-                # Set up moltbot CLI symlink
-                ln -sf /app/moltbot.mjs /home/node/.local/bin/moltbot
+                # Set up openclawbot CLI symlink
+                ln -sf /app/openclawbot.mjs /home/node/.local/bin/openclawbot
 
                 # Start gateway
                 exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
@@ -102,7 +102,7 @@ spec:
               TZ: America/Edmonton
             envFrom:
               - secretRef:
-                  name: molt
+                  name: openclaw
             resources:
               requests:
                 cpu: 500m
@@ -130,7 +130,7 @@ spec:
             namespace: network
     rbac:
       roles:
-        molt-read-all:
+        openclaw-read-all:
           type: ClusterRole
           rules:
             - apiGroups: [""]
@@ -154,7 +154,7 @@ spec:
             - apiGroups: ["metrics.k8s.io"]
               resources: ["nodes", "pods"]
               verbs: ["get", "list", "watch"]
-        molt-write-restricted:
+        openclaw-write-restricted:
           type: Role
           rules:
             - apiGroups: [""]
@@ -164,22 +164,22 @@ spec:
               resources: ["deployments"]
               verbs: ["patch", "update"]
       bindings:
-        molt-read-all:
+        openclaw-read-all:
           type: ClusterRoleBinding
           roleRef:
-            identifier: molt-read-all
+            identifier: openclaw-read-all
           subjects:
-            - identifier: molt
-              serviceAccount: molt
-        molt-write-restricted:
+            - identifier: openclaw
+              serviceAccount: openclaw
+        openclaw-write-restricted:
           type: RoleBinding
           roleRef:
-            identifier: molt-write-restricted
+            identifier: openclaw-write-restricted
           subjects:
-            - identifier: molt
-              serviceAccount: molt
+            - identifier: openclaw
+              serviceAccount: openclaw
     serviceAccount:
-      molt: {}
+      openclaw: {}
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
