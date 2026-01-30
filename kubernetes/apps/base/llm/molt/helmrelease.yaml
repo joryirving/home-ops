@@ -16,17 +16,19 @@ spec:
         replicas: 1
         annotations:
           reloader.stakater.com/auto: "true"
-        containers:
-          app:
+        initContainers:
+          install-tools:
             image:
               repository: ghcr.io/moltbot/moltbot
-              tag: main@sha256:3c5764691802fecd56165ed6b3463d2e62032da1b34d9c6597d42483eed523f5
+              tag: main@sha256:a5e022e1a5d55ea3e35ec997eb16bbe9ec21aed8aff190bb0944977a1b72202c
             command:
               - /bin/sh
               - -c
               - |
                 set -e
                 mkdir -p /home/node/.local/bin /home/node/.local/go
+
+                echo "Starting tool installation..."
 
                 # Install gh CLI if not present on PVC
                 if [ ! -f /home/node/.local/bin/gh ]; then
@@ -59,14 +61,35 @@ spec:
                   git clone --depth 1 https://github.com/Homebrew/brew $HOMEBREW_PREFIX
                 fi
 
-                # Set up symlink and PATH
-                ln -sf /app/moltbot.mjs /home/node/.local/bin/moltbot
-                export PATH="/home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:$PATH"
-                export GOPATH=/home/node/go
-                export HOMEBREW_PREFIX=/home/node/.local/homebrew
-                export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
-                export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
+                # Check if pip is available (either standalone or via python3 -m pip)
+                set +e  # Don't fail on pip errors
+                if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || python3 -m pip --version >/dev/null 2>&1; then
+                  echo "pip is available"
+                else
+                  echo "Installing pip..."
+                  cd /tmp
+                  curl -fsSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+                  python3 get-pip.py --user --no-warn-script-location --break-system-packages || \
+                  python3 get-pip.py --user --no-warn-script-location || \
+                  echo "pip install skipped (use python3 -m pip instead)"
+                  rm -f get-pip.py
+                fi
+                set -e  # Re-enable error checking
 
+                echo "Tool installation complete"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/moltbot/moltbot
+              tag: main@sha256:a5e022e1a5d55ea3e35ec997eb16bbe9ec21aed8aff190bb0944977a1b72202c
+            command:
+              - /bin/sh
+              - -c
+              - |
+                # Set up moltbot CLI symlink
+                ln -sf /app/moltbot.mjs /home/node/.local/bin/moltbot
+
+                # Start gateway
                 exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
             env:
               HOME: &homepath /home/node
@@ -86,7 +109,7 @@ spec:
                 memory: 512Mi
               limits:
                 cpu: 2000m
-                memory: 16Gi
+                memory: 2Gi
     defaultPodOptions:
       shareProcessNamespace: true
       securityContext:
