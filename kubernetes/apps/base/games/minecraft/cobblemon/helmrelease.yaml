@@ -1,0 +1,87 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: minecraft-cobblemon
+spec:
+  interval: 5m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 5.0.0
+  url: oci://ghcr.io/itzg/minecraft-server-charts/minecraft
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app minecraft-cobblemon
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: minecraft-cobblemon
+  dependsOn: []
+  interval: 15m
+  values:
+    fullnameOverride: *app
+    image:
+      repository: ghcr.io/itzg/minecraft-server
+      tag: 2026.1.3-java21@sha256:343a0349cfe04c70a95fc5a6d8c50ed69803001af58ba878e58906ca6a87d29c
+    resources:
+      requests:
+        cpu: 500m
+      limits:
+        cpu: 4000m
+        memory: 12Gi
+    securityContext:
+      runAsUser: 1000
+      fsGroup: 100
+    livenessProbe:
+      initialDelaySeconds: 30
+    readinessProbe:
+      initialDelaySeconds: 30
+    startupProbe:
+        enabled: true
+    extraEnv:
+      TZ: America/Edmonton
+    persistence:
+      dataDir:
+        enabled: true
+        existingClaim: *app
+    serviceAnnotations:
+      mc-router.itzg.me/externalServerName: cobblemon.jory.dev
+    minecraftServer:
+      eula: true
+      # renovate: datasource=custom.minecraft-release
+      version: 1.21.1
+      type: FABRIC
+      overrideServerProperties: true
+      jvmXXOpts: "-XX:MaxRAMPercentage=75"
+      difficulty: normal
+      spawnProtection: 0
+      gameMode: survival
+      pvp: false
+      onlineMode: true
+      #whitelist: "LilDrunkenSmurf"
+      ops: "LilDrunkenSmurf"
+      motd: "cobblemon for you."
+      modrinth:
+        projects:
+          - cobblemon
+          - fabric-api
+          - lithium
+          - ferrite-core
+          - krypton
+        downloadDependencies: required
+        allowedVersionType: release
+      worldSaveName: cobblemon
+      viewDistance: 12
+      rcon:
+        enabled: true
+  valuesFrom:
+  - kind: Secret
+    name: *app
+    valuesKey: RCON_PASSWORD
+    targetPath: minecraftServer.rcon.password
