@@ -31,9 +31,10 @@ spec:
       tag: 2026.1.3-java21@sha256:343a0349cfe04c70a95fc5a6d8c50ed69803001af58ba878e58906ca6a87d29c
     resources:
       requests:
-        cpu: 500m
+        cpu: 2
+        memory: 4Gi
       limits:
-        cpu: 4000m
+        cpu: 12
         memory: 12Gi
     securityContext:
       runAsUser: 1000
@@ -46,8 +47,9 @@ spec:
         enabled: true
     extraEnv:
       TZ: America/Edmonton
-      MODRINTH_MODPACK: "https://cdn.modrinth.com/data/Jkb29YJU/versions/DrJAo7Hk/COBBLEVERSE%201.6.mrpack"
-      MODRINTH_PROJECT: "Jkb29YJU"
+      MODPACK_PLATFORM: "MODRINTH"
+      MODRINTH_MODPACK: "https://modrinth.com/modpack/cobbleverse"
+      MODRINTH_VERSION: "1.7.2"
       MODRINTH_EXCLUDE_FILES: "mods/modmenu-*.jar,mods/RoughlyEnoughItems-*.jar,mods/sound-physics-remastered-*-fabric-*.jar,mods/moreculling-fabric-*.jar,mods/infinite-music-*.jar,mods/MusicNotification-*.jar,mods/Ping-Wheel-*.jar,mods/particle-rain-*.jar,mods/paginatedadvancements-*.jar,mods/notenoughcrashes-*.jar,mods/respackopts-*.jar,mods/defaultoptions-*.jar"
       MODRINTH_DOWNLOAD_DEPENDENCIES: "optional"
     persistence:
@@ -63,6 +65,7 @@ spec:
       type: FABRIC
       overrideServerProperties: true
       jvmXXOpts: "-XX:MaxRAMPercentage=85"
+      jvmOpts: "-Xms4G -Xmx8G"
       difficulty: normal
       spawnProtection: 0
       gameMode: survival
