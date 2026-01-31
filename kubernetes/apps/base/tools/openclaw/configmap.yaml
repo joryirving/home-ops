@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-config
+data:
+  # Main configuration file
+  openclaw.json: |
+    {
+      "agents": {
+        "defaults": {
+          "model": {
+            "primary": "qwen-portal/coder-model",
+            "fallbacks": [
+              "ollama-smurf/qwen3:8b",
+              "google/gemini-3-pro",
+              "openai/gpt-4o-mini",
+              "ollama-smurf/MrScratchcat22/GLM-4.7-Flash-REAP-23B-A3B:latest",
+              "ollama-k8s/gpt-oss-20b"
+            ]
+          }
+        }
+      },
+      "gateway": {
+        "port": 18789,
+        "mode": "local",
+        "auth": {
+          "mode": "token"
+        },
+        "trustedProxies": [
+          "10.0.0.0/8",
+          "172.16.0.0/12",
+          "192.168.0.0/16",
+          "127.0.0.1/8"
+        ]
+      },
+      "plugins": {
+        "entries": {
+          "discord": {
+            "enabled": true
+          },
+          "qwen-portal-auth": {
+            "enabled": true
+          }
+        }
+      }
+    }
