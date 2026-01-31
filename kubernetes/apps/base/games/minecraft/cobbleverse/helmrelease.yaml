@@ -3,7 +3,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
-  name: minecraft-cobblemon
+  name: minecraft-cobbleverse
 spec:
   interval: 5m
   layerSelector:
@@ -17,11 +17,11 @@ spec:
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app minecraft-cobblemon
+  name: &app minecraft-cobbleverse
 spec:
   chartRef:
     kind: OCIRepository
-    name: minecraft-cobblemon
+    name: minecraft-cobbleverse
   dependsOn: []
   interval: 15m
   values:
@@ -46,19 +46,22 @@ spec:
         enabled: true
     extraEnv:
       TZ: America/Edmonton
+      MODRINTH_MODPACK: "https://cdn.modrinth.com/data/Jkb29YJU/versions/DrJAo7Hk/COBBLEVERSE%201.6.mrpack"
+      MODRINTH_PROJECT: "Jkb29YJU"
+      MODRINTH_DOWNLOAD_DEPENDENCIES: "optional"
     persistence:
       dataDir:
         enabled: true
         existingClaim: *app
     serviceAnnotations:
-      mc-router.itzg.me/externalServerName: cobblemon.jory.dev
+      mc-router.itzg.me/externalServerName: cobbleverse.jory.dev
     minecraftServer:
       eula: true
       # renovate: datasource=custom.minecraft-release
       version: 1.21.1
       type: FABRIC
       overrideServerProperties: true
-      jvmXXOpts: "-XX:MaxRAMPercentage=75"
+      jvmXXOpts: "-XX:MaxRAMPercentage=85"
       difficulty: normal
       spawnProtection: 0
       gameMode: survival
@@ -66,14 +69,8 @@ spec:
       onlineMode: true
       #whitelist: "LilDrunkenSmurf"
       ops: "LilDrunkenSmurf"
-      motd: "cobblemon for you."
-      modrinth:
-        projects:
-          - cobblemon
-          - fabric-api
-        downloadDependencies: required
-        allowedVersionType: release
-      worldSaveName: cobblemon
+      motd: "cobbleverse for you."
+      worldSaveName: cobbleverse
       viewDistance: 12
       rcon:
         enabled: true
