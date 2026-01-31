@@ -89,6 +89,18 @@ spec:
                 # Set up openclawbot CLI symlink
                 ln -sf /app/openclawbot.mjs /home/node/.local/bin/openclawbot
 
+                # Create config directory if it doesn't exist
+                mkdir -p /home/node/.openclaw
+                
+                # Create/update the config file with the controlUi setting
+                cat > /home/node/.openclaw/config.json << EOF
+{
+  "controlUi": {
+    "allowInsecureAuth": true
+  }
+}
+EOF
+
                 # Start gateway
                 exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
             env:
