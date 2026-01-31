@@ -115,10 +115,6 @@ spec:
               limits:
                 cpu: 2000m
                 memory: 2Gi
-            volumeMounts:
-              - name: openclaw-config
-                mountPath: /home/node/.openclaw/openclaw.json
-                subPath: openclaw.json
     defaultPodOptions:
       shareProcessNamespace: true
       securityContext:
@@ -197,10 +193,9 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: *homepath
-    volumes:
-      - name: openclaw-config
-        secret:
-          secretName: openclaw
-          items:
-            - key: openclaw.json
-              path: openclaw.json
+      openclaw_config:
+        type: secret
+        name: "{{ .Release.Name }}-config"
+        globalMounts:
+          - path: /home/node/.openclaw/openclaw.json
+            subPath: openclaw.json
