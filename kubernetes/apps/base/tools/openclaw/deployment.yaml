@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openclaw
+  template:
+    metadata:
+      labels:
+        app: openclaw
+    spec:
+      containers:
+        - name: openclaw
+          image: ghcr.io/openclaw/openclaw:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 18789
+              name: gateway
+          env:
+            # Gateway configuration
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: OPENCLAW_GATEWAY_TOKEN
+            - name: OPENCLAW_GATEWAY_PORT
+              value: "18789"
+            # Model provider API keys
+            - name: QWEN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: QWEN_API_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: OPENAI_API_KEY
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: GOOGLE_API_KEY
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: GITHUB_TOKEN
+            # Configuration
+            - name: OPENCLAW_CONFIG_PATH
+              value: "/home/node/.openclaw"
+          volumeMounts:
+            - name: config
+              mountPath: /home/node/.openclaw
+              readOnly: false
+            - name: workspace
+              mountPath: /home/node/.openclaw/workspace
+          livenessProbe:
+            tcpSocket:
+              port: 18789
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 18789
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          startupProbe:
+            tcpSocket:
+              port: 18789
+            failureThreshold: 30
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: openclaw-config
+        - name: workspace
+          emptyDir: {}
