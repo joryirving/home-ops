@@ -78,49 +78,10 @@ spec:
 
                 echo "Tool installation complete"
 
-                # Create OpenClaw configuration file with proper gateway token
-                cat > /home/node/.openclaw/openclaw.json << 'EOF'
-{
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "qwen-portal/coder-model",
-        "fallbacks": [
-          "google/gemini-3-pro",
-          "openai/gpt-4o-mini",
-          "ollama-smurf/glm-4.7-flash-reap-23b-a3b",
-          "ollama-k8s/gpt-oss-20b"
-        ]
-      }
-    }
-  },
-  "gateway": {
-    "port": 18789,
-    "mode": "local",
-    "auth": {
-      "mode": "token"
-    },
-    "trustedProxies": [
-      "10.0.0.0/8",
-      "172.16.0.0/12",
-      "192.168.0.0/16",
-      "127.0.0.1/8"
-    ]
-  },
-  "plugins": {
-    "entries": {
-      "discord": {
-        "enabled": true
-      },
-      "qwen-portal-auth": {
-        "enabled": true
-      }
-    }
-  }
-}
-EOF
+                # Ensure config directory exists
+                mkdir -p /home/node/.openclaw
 
-                echo "OpenClaw configuration file created"
+                echo "Init container completed successfully"
         containers:
           app:
             image:
@@ -154,6 +115,10 @@ EOF
               limits:
                 cpu: 2000m
                 memory: 2Gi
+            volumeMounts:
+              - name: openclaw-config
+                mountPath: /home/node/.openclaw/openclaw.json
+                subPath: openclaw.json
     defaultPodOptions:
       shareProcessNamespace: true
       securityContext:
@@ -232,3 +197,10 @@ EOF
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: *homepath
+    volumes:
+      - name: openclaw-config
+        secret:
+          secretName: openclaw
+          items:
+            - key: openclaw.json
+              path: openclaw.json
