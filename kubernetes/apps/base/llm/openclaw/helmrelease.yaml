@@ -1,1 +1,190 @@
-"---#yaml-language-server:$schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.jsonapiVersion:helm.toolkit.fluxcd.io/v2kind:HelmReleasemetadata:name:openclawspec:chartRef:kind:OCIRepositoryname:app-templatedependsOn:[]interval:15mvalues:controllers:openclaw:replicas:1annotations:reloader.stakater.com/auto:"true"initContainers:install-tools:image:repository:ghcr.io/openclaw/openclawtag:2026.1.29@sha256:7b67c341d87f8e954dc1e8e9d7bb3aaeaf36acd49594abe4adb826ee89107170command:-/bin/sh--c-|set-emkdir-p/home/node/.local/bin/home/node/.local/goecho"Startingtoolinstallation..."#InstallghCLIifnotpresentonPVCif[!-f/home/node/.local/bin/gh];thenecho"InstallingghCLI..."cd/tmpcurl-fsSLhttps://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz-ogh.tar.gztarxzfgh.tar.gzcpgh_2.61.0_linux_amd64/bin/gh/home/node/.local/bin/rm-rfgh.tar.gzgh_2.61.0_linux_amd64fi#InstallGoifnotpresentonPVCif[!-f/home/node/.local/go/bin/go];thenecho"InstallingGo..."cd/tmpcurl-fsSLhttps://go.dev/dl/go1.23.5.linux-amd64.tar.gz-ogo.tar.gztarxzfgo.tar.gzmvgo/home/node/.local/rm-rfgo.tar.gzfi#InstallHomebrewifnotpresentonPVCif[!-f/home/node/.local/homebrew/bin/brew];thenecho"InstallingHomebrew..."exportHOMEBREW_PREFIX=/home/node/.local/homebrewexportHOMEBREW_CELLAR=/home/node/.local/homebrew/CellarexportHOMEBREW_REPOSITORY=/home/node/.local/homebrewmkdir-p$HOMEBREW_PREFIXcd/tmpgitclone--depth1https://github.com/Homebrew/brew$HOMEBREW_PREFIXfi#Checkifpipisavailable(eitherstandaloneorviapython3-mpip)set+e#Don'tfailonpiperrorsifcommand-vpip3>/dev/null2>&1||command-vpip>/dev/null2>&1||python3-mpip--version>/dev/null2>&1;thenecho"pipisavailable"elseecho"Installingpip..."cd/tmpcurl-fsSLhttps://bootstrap.pypa.io/get-pip.py-oget-pip.pypython3get-pip.py--user--no-warn-script-location--break-system-packages||\python3get-pip.py--user--no-warn-script-location||\echo"pipinstallskipped(usepython3-mpipinstead)"rm-fget-pip.pyfiset-e#Re-enableerrorcheckingecho"Toolinstallationcomplete"containers:app:image:repository:ghcr.io/openclaw/openclawtag:2026.1.29@sha256:7b67c341d87f8e954dc1e8e9d7bb3aaeaf36acd49594abe4adb826ee89107170command:-/bin/sh--c-|#SetupopenclawbotCLIsymlinkln-sf/app/openclawbot.mjs/home/node/.local/bin/openclawbot#Startgatewayexecnodedist/index.jsgateway--bindlan--port18789--allow-unconfiguredenv:HOME:&homepath/home/nodeTERM:xterm-256colorPATH:/home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/binGOPATH:/home/node/goHOMEBREW_PREFIX:/home/node/.local/homebrewHOMEBREW_CELLAR:/home/node/.local/homebrew/CellarHOMEBREW_REPOSITORY:/home/node/.local/homebrewTZ:America/EdmontonenvFrom:-secretRef:name:openclawresources:requests:cpu:500mmemory:512Milimits:cpu:2000mmemory:2GidefaultPodOptions:shareProcessNamespace:truesecurityContext:runAsUser:1000runAsGroup:100fsGroup:100fsGroupChangePolicy:OnRootMismatchservice:app:ports:http:port:18789route:app:hostnames:["{{.Release.Name}}.jory.dev"]parentRefs:-name:envoy-internalnamespace:networkrbac:roles:openclaw-read-all:type:ClusterRolerules:-apiGroups:[""]resources:["pods","nodes","services","namespaces","configmaps","persistentvolumes","persistentvolumeclaims","endpoints","resourcequotas","limitranges","serviceaccounts"]verbs:["get","list","watch"]-apiGroups:[""]resources:["pods/log"]verbs:["get","list"]-apiGroups:["apps"]resources:["deployments","daemonsets","statefulsets","replicasets"]verbs:["get","list","watch"]-apiGroups:["batch"]resources:["jobs","cronjobs"]verbs:["get","list","watch"]-apiGroups:["networking.k8s.io"]resources:["ingresses","networkpolicies"]verbs:["get","list","watch"]-apiGroups:["storage.k8s.io"]resources:["storageclasses"]verbs:["get","list","watch"]-apiGroups:["rbac.authorization.k8s.io"]resources:["roles","rolebindings","clusterroles","clusterrolebindings"]verbs:["get","list","watch"]-apiGroups:["metrics.k8s.io"]resources:["nodes","pods"]verbs:["get","list","watch"]openclaw-write-restricted:type:Rolerules:-apiGroups:[""]resources:["pods"]verbs:["delete"]-apiGroups:["apps"]resources:["deployments"]verbs:["patch","update"]bindings:openclaw-read-all:type:ClusterRoleBindingroleRef:identifier:openclaw-read-allsubjects:-identifier:openclawserviceAccount:openclawopenclaw-write-restricted:type:RoleBindingroleRef:identifier:openclaw-write-restrictedsubjects:-identifier:openclawserviceAccount:openclawserviceAccount:openclaw:{}persistence:config:existingClaim:"{{.Release.Name}}"globalMounts:-path:*homepath"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openclaw
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      openclaw:
+        replicas: 1
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          install-tools:
+            image:
+              repository: ghcr.io/openclaw/openclaw
+              tag: 2026.1.29@sha256:7b67c341d87f8e954dc1e8e9d7bb3aaeaf36acd49594abe4adb826ee89107170
+            command:
+              - /bin/sh
+              - -c
+              - |
+                set -e
+                mkdir -p /home/node/.local/bin /home/node/.local/go
+
+                echo "Starting tool installation..."
+
+                # Install gh CLI if not present on PVC
+                if [ ! -f /home/node/.local/bin/gh ]; then
+                  echo "Installing gh CLI..."
+                  cd /tmp
+                  curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.gz
+                  tar xzf gh.tar.gz
+                  cp gh_2.61.0_linux_amd64/bin/gh /home/node/.local/bin/
+                  rm -rf gh.tar.gz gh_2.61.0_linux_amd64
+                fi
+
+                # Install Go if not present on PVC
+                if [ ! -f /home/node/.local/go/bin/go ]; then
+                  echo "Installing Go..."
+                  cd /tmp
+                  curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.gz
+                  tar xzf go.tar.gz
+                  mv go /home/node/.local/
+                  rm -rf go.tar.gz
+                fi
+
+                # Install Homebrew if not present on PVC
+                if [ ! -f /home/node/.local/homebrew/bin/brew ]; then
+                  echo "Installing Homebrew..."
+                  export HOMEBREW_PREFIX=/home/node/.local/homebrew
+                  export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
+                  export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
+                  mkdir -p $HOMEBREW_PREFIX
+                  cd /tmp
+                  git clone --depth 1 https://github.com/Homebrew/brew $HOMEBREW_PREFIX
+                fi
+
+                # Check if pip is available (either standalone or via python3 -m pip)
+                set +e  # Don't fail on pip errors
+                if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || python3 -m pip --version >/dev/null 2>&1; then
+                  echo "pip is available"
+                else
+                  echo "Installing pip..."
+                  cd /tmp
+                  curl -fsSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+                  python3 get-pip.py --user --no-warn-script-location --break-system-packages || \
+                  python3 get-pip.py --user --no-warn-script-location || \
+                  echo "pip install skipped (use python3 -m pip instead)"
+                  rm -f get-pip.py
+                fi
+                set -e  # Re-enable error checking
+
+                echo "Tool installation complete"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/openclaw/openclaw
+              tag: 2026.1.29@sha256:7b67c341d87f8e954dc1e8e9d7bb3aaeaf36acd49594abe4adb826ee89107170
+            command:
+              - /bin/sh
+              - -c
+              - |
+                # Set up openclawbot CLI symlink
+                ln -sf /app/openclawbot.mjs /home/node/.local/bin/openclawbot
+
+                # Start gateway
+                exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
+            env:
+              HOME: &homepath /home/node
+              TERM: xterm-256color
+              PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              GOPATH: /home/node/go
+              HOMEBREW_PREFIX: /home/node/.local/homebrew
+              HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
+              HOMEBREW_REPOSITORY: /home/node/.local/homebrew
+              TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: openclaw
+            resources:
+              requests:
+                cpu: 500m
+                memory: 512Mi
+              limits:
+                cpu: 2000m
+                memory: 2Gi
+    defaultPodOptions:
+      shareProcessNamespace: true
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        ports:
+          http:
+            port: 18789
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    rbac:
+      roles:
+        openclaw-read-all:
+          type: ClusterRole
+          rules:
+            - apiGroups: [""]
+              resources: ["pods", "nodes", "services", "namespaces", "configmaps", "persistentvolumes", "persistentvolumeclaims", "endpoints", "resourcequotas", "limitranges", "serviceaccounts"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: [""]
+              resources: ["pods/log"]
+              verbs: ["get", "list"]
+            - apiGroups: ["apps"]
+              resources: ["deployments", "daemonsets", "statefulsets", "replicasets"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["batch"]
+              resources: ["jobs", "cronjobs"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["networking.k8s.io"]
+              resources: ["ingresses", "networkpolicies"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["storage.k8s.io"]
+              resources: ["storageclasses"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["rbac.authorization.k8s.io"]
+              resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["metrics.k8s.io"]
+              resources: ["nodes", "pods"]
+              verbs: ["get", "list", "watch"]
+        openclaw-write-restricted:
+          type: Role
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["delete"]
+            - apiGroups: ["apps"]
+              resources: ["deployments"]
+              verbs: ["patch", "update"]
+      bindings:
+        openclaw-read-all:
+          type: ClusterRoleBinding
+          roleRef:
+            identifier: openclaw-read-all
+          subjects:
+            - identifier: openclaw
+              serviceAccount: openclaw
+        openclaw-write-restricted:
+          type: RoleBinding
+          roleRef:
+            identifier: openclaw-write-restricted
+          subjects:
+            - identifier: openclaw
+              serviceAccount: openclaw
+    serviceAccount:
+      openclaw: {}
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: *homepath
