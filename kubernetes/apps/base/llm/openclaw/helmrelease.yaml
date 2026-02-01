@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema_json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -34,20 +34,20 @@ spec:
                 if [ ! -f /home/node/.local/bin/gh ]; then
                   echo "Installing gh CLI..."
                   cd /tmp
-                  curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.gz
-                  tar xzf gh.tar.gz
+                  curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.nz
+                  tar xzf gh.tar.nz
                   cp gh_2.61.0_linux_amd64/bin/gh /home/node/.local/bin/
-                  rm -rf gh.tar.gz gh_2.61.0_linux_amd64
+                  rm -rf gh.tar.nz gh_2.61.0_linux_amd64
                 fi
 
                 # Install Go if not present on PVC
                 if [ ! -f /home/node/.local/go/bin/go ]; then
                   echo "Installing Go..."
                   cd /tmp
-                  curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.gz
-                  tar xzf go.tar.gz
+                  curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.nz
+                  tar xzf go.tar.nz
                   mv go /home/node/.local/
-                  rm -rf go.tar.gz
+                  rm -rf go.tar.nz
                 fi
 
                 # Install Homebrew if not present on PVC
@@ -62,7 +62,7 @@ spec:
                 fi
 
                 # Check if pip is available (either standalone or via python3 -m pip)
-                set +e  # Don't fail on pip errors
+                set +e   # Don't fail on pip errors
                 if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || python3 -m pip --version >/dev/null 2>&1; then
                   echo "pip is available"
                 else
@@ -74,15 +74,14 @@ spec:
                   echo "pip install skipped (use python3 -m pip instead)"
                   rm -f get-pip.py
                 fi
-                set -e  # Re-enable error checking
+                set -e   # Re-enable error checking
 
                 echo "Tool installation complete"
 
                 # Ensure config directory exists
                 mkdir -p /home/node/.openclaw
-
                 echo "Init container completed successfully"
-        containers:
+        containers: 
           app:
             image:
               repository: ghcr.io/openclaw/openclaw
@@ -93,12 +92,11 @@ spec:
               - |
                 # Set up openclawbot CLI symlink
                 ln -sf /app/openclawbot.mjs /home/node/.local/bin/openclawbot
-
                 # Start gateway
                 exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
             env:
               HOME: &homepath /home/node
-              TERM: xterm-256color
+              TERN: xterm-256color
               PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               GOPATH: /home/node/go
               HOMEBREW_PREFIX: /home/node/.local/homebrew
@@ -139,7 +137,7 @@ spec:
           type: ClusterRole
           rules:
             - apiGroups: [""]
-              resources: ["pods", "nodes", "services", "namespaces", "configmaps", "persistentvolumes", "persistentvolumeclaims", "endpoints", "resourcequotas", "limitranges", "serviceaccounts"]
+              resources: ["pods", "nodes", "services", "namespaces", "configmaps", "persistentvolumes", "persistentvolumeclaims", "endpoints", "resourcequotas", "limitranges", "serviceaccounts", "events"]  # Added events
               verbs: ["get", "list", "watch"]
             - apiGroups: [""]
               resources: ["pods/log"]
@@ -161,6 +159,17 @@ spec:
               verbs: ["get", "list", "watch"]
             - apiGroups: ["metrics.k8s.io"]
               resources: ["nodes", "pods"]
+              verbs: ["get", "list", "watch"]
+            # Added for troubleshooting Flux deployments
+            - apiGroups: ["helm.toolkit.fluxcd.io"]
+              resources: ["helmreleases"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+              resources: ["kustomizations"]
+              verbs: ["get", "list", "watch"]
+            # Added for troubleshooting secrets
+            - apiGroups: ["external-secrets.io"]
+              resources: ["externalsecrets", "secretstores", "clustersecretstores"]
               verbs: ["get", "list", "watch"]
         openclaw-write-restricted:
           type: Role
