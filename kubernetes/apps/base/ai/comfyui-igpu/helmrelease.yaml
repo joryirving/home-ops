@@ -1,0 +1,103 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app comfyui-igpu
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controllers:
+      main:
+        replicas: 1
+        strategy: Recreate  # Recreate strategy for GPU workloads
+        annotations:
+          reloader.stakater.com/auto: "true"
+    
+    image:
+      repository: ghcr.io/alexkirsz/comfyui
+      tag: latest
+    
+    env:
+      - name: NVIDIA_VISIBLE_DEVICES
+        value: "void"  # Disable CUDA since we're using Intel iGPU
+      - name: ONEAPI_DEVICE_SELECTOR
+        value: "level_zero:gpu"  # Use Intel GPU via Level Zero
+      - name: OCL_ICD_FILENAMES
+        value: "intel_level_zero_gpgpu.icd"
+      - name: OMP_NUM_THREADS
+        value: "16"  # Adjust based on your CPU core count
+      - name: OPENBLAS_NUM_THREADS
+        value: "16"
+      - name: NUMEXPR_NUM_THREADS
+        value: "16"
+      - name: PYTHONPATH
+        value: "/opt/intel/oneapi/python/python-libs"
+      - name: LD_LIBRARY_PATH
+        value: "/opt/intel/oneapi/lib:/opt/intel/oneapi/compiler/latest/linux/lib:/usr/local/lib:/usr/lib/x86_64-linux-gnu:/usr/lib64"
+    
+    resources:
+      requests:
+        cpu: 2000m
+        memory: 8Gi
+        gpu.intel.com/i915: 1  # Request Intel GPU
+      limits:
+        cpu: 4000m
+        memory: 16Gi
+        gpu.intel.com/i915: 1  # Limit to 1 Intel GPU
+    
+    service:
+      main:
+        ports:
+          http:
+            port: 8188
+    
+    ingress:
+      main:
+        enabled: true
+        annotations:
+          kubernetes.io/ingress.class: nginx
+          cert-manager.io/cluster-issuer: letsencrypt-production
+        hosts:
+          - host: comfyui-igpu.jory.dev
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - secretName: comfyui-igpu-tls
+            hosts:
+              - comfyui-igpu.jory.dev
+    
+    persistence:
+      models:
+        enabled: true
+        existingClaim: comfyui-models-pvc
+        mountPath: /models
+        readOnly: false
+      outputs:
+        enabled: true
+        existingClaim: comfyui-outputs-pvc
+        mountPath: /ComfyUI/output
+      temp:
+        enabled: true
+        type: emptyDir
+        medium: Memory
+        sizeLimit: 2Gi
+        mountPath: /tmp
+    
+    securityContext:
+      runAsNonRoot: false  # May need to be false for GPU access
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 100
+      fsGroupChangePolicy: "OnRootMismatch"
+      supplementalGroups:
+        - 44  # video group for GPU access
