@@ -75,6 +75,14 @@ spec:
         existingClaim: "{{ .Release.Name }}-outputs"
         globalMounts:
           - path: /ComfyUI/output
+      deps:
+        enabled: true
+        type: pvc
+        size: 10Gi
+        accessMode: ReadWriteOnce
+        storageClass: ceph-block
+        globalMounts:
+          - path: /deps2
       temp:
         enabled: true
         type: emptyDir
