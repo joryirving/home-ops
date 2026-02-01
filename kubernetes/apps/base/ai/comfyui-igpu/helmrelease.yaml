@@ -57,7 +57,7 @@ spec:
       app:
         hostnames: ["comfyui.jory.dev"]
         parentRefs:
-          - name: envoy-external
+          - name: envoy-internal
             namespace: network
     persistence:
       models:
@@ -68,15 +68,11 @@ spec:
             readOnly: false
       outputs:
         enabled: true
-        type: persistentVolumeClaim
-        size: 50Gi
-        accessMode: ReadWriteOnce
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /ComfyUI/output
       temp:
         enabled: true
         type: emptyDir
-        medium: Memory
-        sizeLimit: 2Gi
         globalMounts:
           - path: /tmp
