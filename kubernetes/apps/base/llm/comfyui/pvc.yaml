@@ -2,6 +2,17 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  name: comfyui-main
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ceph-filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
   name: comfyui-models
 spec:
   accessModes: ["ReadWriteMany"]
@@ -19,4 +30,15 @@ spec:
   resources:
     requests:
       storage: 50Gi
+  storageClassName: ceph-filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: comfyui-deps
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 10Gi
   storageClassName: ceph-filesystem

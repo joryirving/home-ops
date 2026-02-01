@@ -19,7 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/simonlui/docker_ipex_comfyui
-              tag: latest
+              tag: v0.5.0@sha256:d556a7827ab358962cea184937dd9c9d7321f97efba61bafcac3deded60ae49a
             env:
               # Intel GPU specific environment variables based on the image's Dockerfile
               ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"  # Use Intel GPU via Level Zero
@@ -64,6 +64,12 @@ spec:
           - name: envoy-internal
             namespace: network
     persistence:
+      data:
+      comfyui:
+        enabled: true
+        existingClaim: "{{ .Release.Name }}-main"
+        globalMounts:
+          - path: /ComfyUI
       models:
         enabled: true
         existingClaim: "{{ .Release.Name }}-models"
@@ -75,6 +81,11 @@ spec:
         existingClaim: "{{ .Release.Name }}-outputs"
         globalMounts:
           - path: /ComfyUI/output
+      deps:
+        enabled: true
+        existingClaim: "{{ .Release.Name }}-deps"
+        globalMounts:
+          - path: /deps2
       temp:
         enabled: true
         type: emptyDir
