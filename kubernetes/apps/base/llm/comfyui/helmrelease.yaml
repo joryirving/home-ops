@@ -64,6 +64,11 @@ spec:
           - name: envoy-internal
             namespace: network
     persistence:
+      comfyui:
+        enabled: true
+        existingClaim: "{{ .Release.Name }}-main"
+        globalMounts:
+          - path: /ComfyUI
       models:
         enabled: true
         existingClaim: "{{ .Release.Name }}-models"
@@ -77,10 +82,7 @@ spec:
           - path: /ComfyUI/output
       deps:
         enabled: true
-        type: pvc
-        size: 10Gi
-        accessMode: ReadWriteOnce
-        storageClass: ceph-block
+        existingClaim: "{{ .Release.Name }}-deps"
         globalMounts:
           - path: /deps2
       temp:
