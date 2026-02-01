@@ -18,21 +18,13 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/simonlui/docker_ipex_comfyui
-              tag: v0.5.0@sha256:d556a7827ab358962cea184937dd9c9d7321f97efba61bafcac3deded60ae49a
+              repository: yanwk/comfyui-boot
+              tag: latest
             env:
-              # Intel GPU specific environment variables based on the image's Dockerfile
-              ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"  # Use Intel GPU via Level Zero
-              ZES_ENABLE_SYSMAN: "1"  # Enable Level Zero system management
-              NEOReadDebugKeys: "1"   # Enable debug keys for Intel GPU
-              ClDeviceGlobalMemSizeAvailablePercent: "100"  # Force 100% available VRAM
-              SYCL_CACHE_PERSISTENT: "1"  # Enable SYCL persistent cache
-              SYCL_PI_LEVEL_ZERO_SINGLE_THREAD_MODE: "1"  # Enable SYCL single thread mode
+              # Environment variables for Intel GPU support if available
+              NVIDIA_VISIBLE_DEVICES: "void"  # Disable CUDA
               # ComfyUI arguments to run in the container
               ComfyArgs: "--listen --port 8188 --auto-launch"
-              # Set Python path and library path as needed by the Intel oneAPI components
-              PYTHONPATH: "/opt/intel/oneapi/python/python-libs"
-              LD_LIBRARY_PATH: "/opt/intel/oneapi/lib:/opt/intel/oneapi/compiler/latest/linux/lib:/usr/local/lib:/usr/lib/x86_64-linux-gnu:/usr/lib64"
             resources:
               claims:
                 - name: gpu
@@ -64,12 +56,6 @@ spec:
           - name: envoy-internal
             namespace: network
     persistence:
-      data:
-      comfyui:
-        enabled: true
-        existingClaim: "{{ .Release.Name }}-main"
-        globalMounts:
-          - path: /ComfyUI
       models:
         enabled: true
         existingClaim: "{{ .Release.Name }}-models"
@@ -81,11 +67,6 @@ spec:
         existingClaim: "{{ .Release.Name }}-outputs"
         globalMounts:
           - path: /ComfyUI/output
-      deps:
-        enabled: true
-        existingClaim: "{{ .Release.Name }}-deps"
-        globalMounts:
-          - path: /deps2
       temp:
         enabled: true
         type: emptyDir
