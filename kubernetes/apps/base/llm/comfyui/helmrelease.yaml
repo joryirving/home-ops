@@ -21,12 +21,16 @@ spec:
               repository: ghcr.io/simonlui/docker_ipex_comfyui
               tag: latest
             env:
-              NVIDIA_VISIBLE_DEVICES: "void"  # Disable CUDA
+              # Intel GPU specific environment variables based on the image's Dockerfile
               ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"  # Use Intel GPU via Level Zero
-              OCL_ICD_FILENAMES: "intel_level_zero_gpgpu.icd"
-              OMP_NUM_THREADS: "16"  # Adjust based on your CPU core count
-              OPENBLAS_NUM_THREADS: "16"
-              NUMEXPR_NUM_THREADS: "16"
+              ZES_ENABLE_SYSMAN: "1"  # Enable Level Zero system management
+              NEOReadDebugKeys: "1"   # Enable debug keys for Intel GPU
+              ClDeviceGlobalMemSizeAvailablePercent: "100"  # Force 100% available VRAM
+              SYCL_CACHE_PERSISTENT: "1"  # Enable SYCL persistent cache
+              SYCL_PI_LEVEL_ZERO_SINGLE_THREAD_MODE: "1"  # Enable SYCL single thread mode
+              # ComfyUI arguments to run in the container
+              ComfyArgs: "--listen --port 8188 --auto-launch"
+              # Set Python path and library path as needed by the Intel oneAPI components
               PYTHONPATH: "/opt/intel/oneapi/python/python-libs"
               LD_LIBRARY_PATH: "/opt/intel/oneapi/lib:/opt/intel/oneapi/compiler/latest/linux/lib:/usr/local/lib:/usr/lib/x86_64-linux-gnu:/usr/lib64"
             resources:
