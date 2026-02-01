@@ -1,0 +1,41 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cobbleverse
+  namespace: games
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: minecraft
+      version: "4.x.x"
+      sourceRef:
+        kind: HelmRepository
+        name: minecraft
+      interval: 5m
+  values:
+    minecraftServer:
+      eula: true
+      version: "1.20.1"
+      ops: "LilDrunkenSmurf,inadequate"
+      motd: "Cobbleverse Minecraft Server"
+      maxPlayers: 20
+      difficulty: easy
+      gameMode: survival
+      onlineMode: true
+      serverProperties:
+        pvp: true
+        hardcore: false
+        max-world-size: 10000
+        view-distance: 10
+        max-build-height: 256
+        force-gamemode: false
+        spawn-npcs: true
+        spawn-animals: true
+        generate-structures: true
+        spawn-monsters: true
+        announce-player-achievements: true
+        enable-command-block: false
+        allow-flight: false
+        max-world-size: 10000
