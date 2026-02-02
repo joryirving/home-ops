@@ -81,7 +81,7 @@ spec:
                 # Ensure config directory exists
                 mkdir -p /home/node/.openclaw
                 echo "Init container completed successfully"
-        containers: 
+        containers:
           app:
             image:
               repository: ghcr.io/openclaw/openclaw
@@ -95,14 +95,16 @@ spec:
                 # Start gateway
                 exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
             env:
-              HOME: &homepath /home/node
-              TERM: xterm-256color
-              PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              BROWSER_WS_ENDPOINT: "ws://localhost:9222"
               GOPATH: /home/node/go
-              HOMEBREW_PREFIX: /home/node/.local/homebrew
+              HOME: &homepath /home/node
               HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
+              HOMEBREW_PREFIX: /home/node/.local/homebrew
               HOMEBREW_REPOSITORY: /home/node/.local/homebrew
-              TZ: America/Edmonton
+              PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              PIP_BREAK_SYSTEM_PACKAGES: "1"
+              TERM: xterm-256color
+              TZ: &tz America/Edmonton
             envFrom:
               - secretRef:
                   name: openclaw
@@ -113,6 +115,30 @@ spec:
               limits:
                 cpu: 2000m
                 memory: 2Gi
+          chrome:
+            image:
+             repository: zenika/alpine-chrome
+             tag: with-node
+            command:
+              - chromium-browser
+              - --headless=new
+              - --disable-gpu
+              - --remote-debugging-address=0.0.0.0
+              - --remote-debugging-port=9222
+              - --no-sandbox
+              - --disable-dev-shm-usage
+            env:
+              TZ: *tz
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 1000m
+                memory: 1Gi
+            securityContext:
+              runAsUser: 999
+              runAsGroup: 999
     defaultPodOptions:
       shareProcessNamespace: true
       securityContext:
@@ -160,16 +186,14 @@ spec:
             - apiGroups: ["metrics.k8s.io"]
               resources: ["nodes", "pods"]
               verbs: ["get", "list", "watch"]
-            # Added for troubleshooting Flux deployments
             - apiGroups: ["helm.toolkit.fluxcd.io"]
               resources: ["helmreleases"]
               verbs: ["get", "list", "watch"]
             - apiGroups: ["kustomize.toolkit.fluxcd.io"]
               resources: ["kustomizations"]
               verbs: ["get", "list", "watch"]
-            # Added for troubleshooting secrets
             - apiGroups: ["external-secrets.io"]
-              resources: ["externalsecrets", "secretstores", "clustersecretstores"]
+              resources: ["externalsecrets"]
               verbs: ["get", "list", "watch"]
         openclaw-write-restricted:
           type: Role
