@@ -23,6 +23,13 @@ spec:
             env:
               # Environment variables for Intel GPU support
               ComfyArgs: "--listen --port 8188 --auto-launch"
+            securityContext:
+              runAsNonRoot: false  # Allow running as root if needed by the container
+              runAsUser: 0        # Run as root user
+              runAsGroup: 0       # Run as root group
+              privileged: false
+              readOnlyRootFilesystem: false
+              allowPrivilegeEscalation: true
             resources:
               claims:
                 - name: gpu
@@ -34,10 +41,10 @@ spec:
                 memory: 16Gi
     defaultPodOptions:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
+        runAsNonRoot: false  # Allow running as root if needed by the container
+        runAsUser: 0        # Run as root user
+        runAsGroup: 0       # Run as root group
+        fsGroup: 0          # Set to root group
         fsGroupChangePolicy: "OnRootMismatch"
       resourceClaims:
         - name: gpu
