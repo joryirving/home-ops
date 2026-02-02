@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema_json
+# yaml-language-server: \$schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema_json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -48,7 +48,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       resourceClaims:
         - name: gpu
-          resourceClaimTemplateName: "${APP}-gpu"
+          resourceClaimTemplateName: "\${APP}-gpu"
     service:
       app:
         ports:
@@ -65,13 +65,13 @@ spec:
         enabled: true
         existingClaim: "{{ .Release.Name }}-models"
         globalMounts:
-          - path: /ComfyUI/models
+          - path: /root/ComfyUI/models  # Fixed: Correct path for yanwk/comfyui-boot image
             readOnly: false
       outputs:
         enabled: true
         existingClaim: "{{ .Release.Name }}-outputs"
         globalMounts:
-          - path: /ComfyUI/output
+          - path: /root/ComfyUI/output  # Fixed: Correct path for yanwk/comfyui-boot image
       temp:
         enabled: true
         type: emptyDir
