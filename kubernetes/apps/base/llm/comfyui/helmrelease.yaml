@@ -21,8 +21,15 @@ spec:
               repository: yanwk/comfyui-boot
               tag: xpu@sha256:7d941cdf359c612e5b5308528f36d23ddddce223dcf3cbc0d35f918b67b14ba6
             env:
-              # Environment variables for Intel GPU support
-              ComfyArgs: "--listen --port 8188 --auto-launch"
+              ComfyArgs: "--listen --port 8188 --auto-launch --force-cpu-clip"
+              USE_CPU_FOR_CLIP: "1"
+              XPU_FALLBACK_TO_CPU: "1"
+              ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"
+              SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS: "0"
+              SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR: "0"
+              SYCL_PI_LEVEL_ZERO_DEVICE_SCOPE_EVENTS: "0"
+              ZE_AFFINITY_MASK: "0"
+              UR_LOG_LEVEL: "error"
             securityContext:
               runAsNonRoot: false  # Allow running as root if needed by the container
               runAsUser: 0        # Run as root user
