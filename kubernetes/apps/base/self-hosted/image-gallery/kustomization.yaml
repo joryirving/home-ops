@@ -1,0 +1,12 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./helmrelease.yaml
+  - ./configmap.yaml
+configMapGenerator:
+  - name: image-gallery-nginx-config
+    options:
+      disableNameSuffixHash: true
+    files:
+      - config.yaml=nginx-config.yaml
