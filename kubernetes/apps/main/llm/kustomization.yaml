@@ -1,15 +1,12 @@
 ---
-# yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: llm
-components:
-  - ../../../components/namespace
-replacements:
-  - path: ../../../components/replacements/ks.yaml
 resources:
-  - ./comfyui.yaml
-  - ./ollama.yaml
-  - ./open-webui.yaml
-  - ./openclaw.yaml
-  - ./searxng.yaml
+  - ../../base/llm/openclaw/helmrelease.yaml
+  - ../../base/llm/comfyui/helmrelease.yaml
+  - ../../base/llm/image-gallery/helmrelease.yaml
+namespace: llm
+labels:
+  - pairs:
+      app.kubernetes.io/name: llm
+      app.kubernetes.io/instance: llm
