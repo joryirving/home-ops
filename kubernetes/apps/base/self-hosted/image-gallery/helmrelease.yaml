@@ -30,11 +30,6 @@ spec:
                 cpu: 50m
               limits:
                 memory: 128Mi
-            volumeMounts:
-              - name: nginx-config
-                mountPath: /etc/nginx/conf.d/default.conf
-                subPath: default.conf
-                readOnly: true
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -56,7 +51,7 @@ spec:
             - name: nginx-cache
               mountPath: /var/cache/nginx
           securityContext:
-            runAsUser: 0  # Run as root to set permissions
+            runAsUser: 0
     service:
       app:
         ports:
@@ -68,17 +63,24 @@ spec:
         parentRefs:
           - name: envoy-external
             namespace: network
-    volumes:
-      - name: nginx-config
-        configMap:
-          name: image-gallery-nginx-config
-      - name: nginx-cache
-        emptyDir: {}
     persistence:
       images:
         type: nfs
         server: voyager.internal
-        path: /mnt/daena/comfyui/output # Updated to match new export location
+        path: /mnt/daena/comfyui/output
         globalMounts:
           - path: /usr/share/nginx/html
             readOnly: true
+      nginx-cache:
+        type: emptyDir
+        globalMounts:
+          - path: /var/cache/nginx
+      config:
+        type: configMap
+        name: image-gallery-nginx-config
+        advancedMounts:
+          image-gallery:
+            app:
+              - path: /etc/nginx/conf.d/default.conf
+                readOnly: true
+                subPath: default.conf
