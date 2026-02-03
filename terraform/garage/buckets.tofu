@@ -2,9 +2,7 @@ locals {
   # Define buckets that should be managed by garage
   # Each bucket will be created using the garage module
   buckets = [
-    "postgresql",     # Database backups and persistent storage
-    "minio-backups",  # MinIO backup storage
-    "velero-backups"  # Kubernetes backup storage
+    "postgresql"     # Database backups and persistent storage
   ]
 }
 
