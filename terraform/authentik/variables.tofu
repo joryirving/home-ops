@@ -1,11 +1,11 @@
 variable "OP_CONNECT_HOST" {
   type        = string
-  description = "Oneopass Connect URL"
+  description = "1Password Connect API URL"
 }
 
 variable "OP_CONNECT_TOKEN" {
   type        = string
-  description = "The path to the service account JSON for OnePassword."
+  description = "1Password Connect API token"
   sensitive   = true
   default     = null
 }
