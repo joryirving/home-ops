@@ -51,26 +51,27 @@ spec:
         data:
           default.conf: |
             server {
-              listen 8080;
-              server_name _;
+                listen 8080;
+                server_name _;
 
-              root /images;
+                location = / {
+                  root /gallery;
+                  try_files /index.html =404;
+                }
 
-              location = / {
-                root /gallery;
-                index index.html;
-              }
+                location ^~ /images/ {
+                  alias /images/;
+                  autoindex on;
+                  autoindex_exact_size off;
+                  autoindex_localtime on;
 
-              location / {
-                autoindex on;
-                autoindex_exact_size off;
-                autoindex_localtime on;
-              }
+                  expires 30d;
+                  add_header Cache-Control "public, immutable, no-store";
 
-              location ~* \.(png|jpg|jpeg|webp)$ {
-                expires 30d;
-                add_header Cache-Control "public, immutable";
-              }
+                  include /etc/nginx/mime.types;
+                  default_type application/octet-stream;
+                  index off;
+                }
             }
       comfyui-gallery-index:
         data:
@@ -113,31 +114,31 @@ spec:
               <div class="grid" id="grid"></div>
 
               <script>
-                fetch("./")
-                  .then(r => r.text())
-                  .then(html => {
-                    const doc = new DOMParser().parseFromString(html, "text/html");
-                    const links = [...doc.querySelectorAll("a")]
-                      .map(a => a.getAttribute("href"))
-                      .filter(h =>
-                        h &&
-                        !h.endsWith("/") &&
-                        h.match(/\.(png|jpg|jpeg|webp)$/i)
-                      );
+              fetch("/images/")
+                .then(r => r.text())
+                .then(html => {
+                  const doc = new DOMParser().parseFromString(html, "text/html");
+                  const links = [...doc.querySelectorAll("a")]
+                    .map(a => a.getAttribute("href"))
+                    .filter(h =>
+                      h &&
+                      !h.endsWith("/") &&
+                      h.match(/\.(png|jpg|jpeg|webp)$/i)
+                    );
 
-                    const grid = document.getElementById("grid");
-                    links.forEach(href => {
-                      const a = document.createElement("a");
-                      a.href = href;
-                      a.target = "_blank";
+                  const grid = document.getElementById("grid");
+                  links.forEach(href => {
+                    const a = document.createElement("a");
+                    a.href = "/images/" + href;
+                    a.target = "_blank";
 
-                      const img = document.createElement("img");
-                      img.src = href;
+                    const img = document.createElement("img");
+                    img.src = "/images/" + href;
 
-                      a.appendChild(img);
-                      grid.appendChild(a);
-                    });
+                    a.appendChild(img);
+                    grid.appendChild(a);
                   });
+                });
               </script>
             </body>
             </html>
