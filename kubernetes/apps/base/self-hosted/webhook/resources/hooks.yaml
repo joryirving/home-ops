@@ -120,13 +120,13 @@
       echo "$(date): Received GitHub PR event: ${X_GITHUB_EVENT} for ${REPOSITORY_NAME}" >&2
       echo "Payload:" >&2
       echo "${HOOK_PAYLOAD}" >&2
-      
+
       # Extract the relevant data from the payload
       ACTION=$(echo "$HOOK_PAYLOAD" | jq -r '.action // "unknown"')
       REPO_NAME=$(echo "$HOOK_PAYLOAD" | jq -r '.repository.full_name // "unknown"')
       PR_NUMBER=$(echo "$HOOK_PAYLOAD" | jq -r '.pull_request.number // .issue.number // "unknown"')
       EVENT_TYPE=$(echo "$HOOK_PAYLOAD" | jq -r '.action // "unknown"')
-      
+
       # Prepare JSON payload for OpenClaw
       PAYLOAD_JSON=$(cat <<EOF
       {
@@ -137,16 +137,16 @@
         "sender": "$(echo "$HOOK_PAYLOAD" | jq -r '.sender.login')",
         "timestamp": "$(date -Iseconds)"
       }
-EOF
+      EOF
       )
-      
+
       # Send notification to OpenClaw
       curl -s -X POST http://openclaw.llm.svc.cluster.local:3000/webhook/github \
         -H "Content-Type: application/json" \
         -H "X-GitHub-Event: ${X_GITHUB_EVENT}" \
         -H "X-GitHub-Delivery: ${X_GITHUB_DELIVERY}" \
         -d "${PAYLOAD_JSON}"
-      
+
       if [ $? -eq 0 ]; then
         echo "Successfully sent notification to OpenClaw" >&2
       else
