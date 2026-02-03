@@ -5,8 +5,14 @@ kind: Kustomization
 metadata:
   name: &app image-gallery
 spec:
+  components:
+    - ../../../../components/nfs-scaler
   interval: 1h
   path: ./kubernetes/apps/base/self-hosted/image-gallery
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository
