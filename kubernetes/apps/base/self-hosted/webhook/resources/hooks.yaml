@@ -203,3 +203,60 @@
           parameter:
             source: payload
             name: comment.body
+
+# Hook to handle PR reviews (approvals) and notify OpenClaw
+- id: github-pr-review-notifications
+  execute-command: /config/github-pr-notifications.sh
+  pass-arguments-to-command:
+    - # repository name
+      source: payload
+      name: repository.full_name
+    - # github event
+      source: header
+      name: x-github-event
+    - # action
+      source: payload
+      name: action
+    - # pr number
+      source: payload
+      name: pull_request.number
+  include-command-output-in-response: true
+  pipe-working-directory: /tmp
+  trigger-rule:
+    and:
+      - # Validate the webhook secret
+        match:
+          type: payload-hmac-sha1
+          secret: >-
+            {{ getenv "GITHUB_WEBHOOK_SECRET" | js }}
+          parameter:
+            source: header
+            name: x-hub-signature
+      - # Trigger only for the joryirving repo owner
+        match:
+          type: value
+          value: joryirving
+          parameter:
+            source: payload
+            name: repository.owner.login
+      - # Trigger on pull request review events
+        match:
+          type: value
+          value: pull_request_review
+          parameter:
+            source: header
+            name: x-github-event
+      - # Trigger only on submitted reviews
+        match:
+          type: value
+          value: submitted
+          parameter:
+            source: payload
+            name: action
+      - # Trigger only for approved reviews
+        match:
+          type: value
+          value: approved
+          parameter:
+            source: payload
+            name: review.state
