@@ -56,6 +56,11 @@ spec:
 
               root /images;
 
+              location = / {
+                root /gallery;
+                index index.html;
+              }
+
               location / {
                 autoindex on;
                 autoindex_exact_size off;
@@ -67,6 +72,75 @@ spec:
                 add_header Cache-Control "public, immutable";
               }
             }
+      comfyui-gallery-index:
+        data:
+          index.html: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8" />
+              <title>ComfyUI Gallery</title>
+              <style>
+                body {
+                  margin: 0;
+                  padding: 1rem;
+                  background: #111;
+                  color: #eee;
+                  font-family: system-ui, sans-serif;
+                }
+                h1 {
+                  margin-bottom: 1rem;
+                }
+                .grid {
+                  display: grid;
+                  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                  gap: 12px;
+                }
+                img {
+                  width: 100%;
+                  height: auto;
+                  border-radius: 6px;
+                  background: #222;
+                }
+                a {
+                  text-decoration: none;
+                  color: inherit;
+                }
+              </style>
+            </head>
+            <body>
+              <h1>ComfyUI Outputs</h1>
+              <div class="grid" id="grid"></div>
+
+              <script>
+                fetch("./")
+                  .then(r => r.text())
+                  .then(html => {
+                    const doc = new DOMParser().parseFromString(html, "text/html");
+                    const links = [...doc.querySelectorAll("a")]
+                      .map(a => a.getAttribute("href"))
+                      .filter(h =>
+                        h &&
+                        !h.endsWith("/") &&
+                        h.match(/\.(png|jpg|jpeg|webp)$/i)
+                      );
+
+                    const grid = document.getElementById("grid");
+                    links.forEach(href => {
+                      const a = document.createElement("a");
+                      a.href = href;
+                      a.target = "_blank";
+
+                      const img = document.createElement("img");
+                      img.src = href;
+
+                      a.appendChild(img);
+                      grid.appendChild(a);
+                    });
+                  });
+              </script>
+            </body>
+            </html>
     persistence:
       images:
         type: nfs
@@ -78,10 +152,17 @@ spec:
       nginx-config:
         enabled: true
         type: configMap
-        name: "{{ .Release.Name }}"
+        name: "{{ .Release.Name }}-comfyui-images-nginx"
         globalMounts:
           - path: /etc/nginx/conf.d/default.conf
             subPath: default.conf
+      gallery-index:
+        enabled: true
+        type: configMap
+        name: "{{ .Release.Name}}-comfyui-gallery-index"
+        globalMounts:
+          - path: /gallery
+            readOnly: true
       nginx-runtime:
         type: emptyDir
         globalMounts:
