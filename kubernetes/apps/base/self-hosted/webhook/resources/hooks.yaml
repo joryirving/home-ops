@@ -54,7 +54,7 @@
                     name: issue.state
               - match:
                   type: value
-                  value: Renovate Dashboard 🤖
+                  value: "Renovate Dashboard 🤖"
                   parameter:
                     source: payload
                     name: issue.title
@@ -111,8 +111,8 @@
                     source: payload
                     name: pull_request.user.login
 
-# Hook to handle pull request events and notify OpenClaw
-- id: github-pr-notifications
+# Consolidated hook to handle all OpenClaw notifications
+- id: github-openclaw-notifications
   execute-command: /config/github-pr-notifications.sh
   pass-arguments-to-command:
     - # repository name
@@ -124,7 +124,7 @@
     - # action
       source: payload
       name: action
-    - # pr number
+    - # pr/issue number (will vary based on event type)
       source: payload
       name: number
   include-command-output-in-response: true
@@ -146,117 +146,46 @@
           parameter:
             source: payload
             name: repository.owner.login
-      - # Trigger on pull request events
-        match:
-          type: value
-          value: pull_request
-          parameter:
-            source: header
-            name: x-github-event
-
-# Hook to handle comments that mention OpenClaw and notify OpenClaw
-- id: github-comment-mention-notifications
-  execute-command: /config/github-pr-notifications.sh
-  pass-arguments-to-command:
-    - # repository name
-      source: payload
-      name: repository.full_name
-    - # github event
-      source: header
-      name: x-github-event
-    - # action
-      source: payload
-      name: action
-    - # issue/pr number
-      source: payload
-      name: issue.number
-  include-command-output-in-response: true
-  pipe-working-directory: /tmp
-  trigger-rule:
-    and:
-      - # Validate the webhook secret
-        match:
-          type: payload-hmac-sha1
-          secret: >-
-            {{ getenv "GITHUB_WEBHOOK_SECRET" | js }}
-          parameter:
-            source: header
-            name: x-hub-signature
-      - # Trigger only for the joryirving repo owner
-        match:
-          type: value
-          value: joryirving
-          parameter:
-            source: payload
-            name: repository.owner.login
-      - # Trigger on issue comment events
-        match:
-          type: value
-          value: issue_comment
-          parameter:
-            source: header
-            name: x-github-event
-      - # Trigger only when Miso Assistant is mentioned in the comment
-        match:
-          type: regexp
-          pattern: "@miso-assistant"
-          parameter:
-            source: payload
-            name: comment.body
-
-# Hook to handle PR reviews (approvals) and notify OpenClaw
-- id: github-pr-review-notifications
-  execute-command: /config/github-pr-notifications.sh
-  pass-arguments-to-command:
-    - # repository name
-      source: payload
-      name: repository.full_name
-    - # github event
-      source: header
-      name: x-github-event
-    - # action
-      source: payload
-      name: action
-    - # pr number
-      source: payload
-      name: pull_request.number
-  include-command-output-in-response: true
-  pipe-working-directory: /tmp
-  trigger-rule:
-    and:
-      - # Validate the webhook secret
-        match:
-          type: payload-hmac-sha1
-          secret: >-
-            {{ getenv "GITHUB_WEBHOOK_SECRET" | js }}
-          parameter:
-            source: header
-            name: x-hub-signature
-      - # Trigger only for the joryirving repo owner
-        match:
-          type: value
-          value: joryirving
-          parameter:
-            source: payload
-            name: repository.owner.login
-      - # Trigger on pull request review events
-        match:
-          type: value
-          value: pull_request_review
-          parameter:
-            source: header
-            name: x-github-event
-      - # Trigger only on submitted reviews
-        match:
-          type: value
-          value: submitted
-          parameter:
-            source: payload
-            name: action
-      - # Trigger only for approved reviews
-        match:
-          type: value
-          value: approved
-          parameter:
-            source: payload
-            name: review.state
+      - # Trigger on multiple event types with OR conditions
+        or:
+          - # Trigger on pull request events
+            match:
+              type: value
+              value: pull_request
+              parameter:
+                source: header
+                name: x-github-event
+          - # Trigger on issue comment events that mention OpenClaw
+            and:
+              - match:
+                  type: value
+                  value: issue_comment
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: regexp
+                  pattern: "@miso-assistant"
+                  parameter:
+                    source: payload
+                    name: comment.body
+          - # Trigger on pull request review events (approvals)
+            and:
+              - match:
+                  type: value
+                  value: pull_request_review
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: value
+                  value: submitted
+                  parameter:
+                    source: payload
+                    name: action
+              - match:
+                  type: value
+                  value: approved
+                  parameter:
+                    source: payload
+                    name: review.state
