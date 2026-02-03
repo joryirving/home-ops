@@ -54,7 +54,7 @@
                     name: issue.state
               - match:
                   type: value
-                  value: Renovate Dashboard 🤖
+                  value: "Renovate Dashboard 🤖"
                   parameter:
                     source: payload
                     name: issue.title
@@ -113,59 +113,22 @@
 
 # New hook to handle all PR events and notify OpenClaw
 - id: github-pr-notifications
-  execute-command: /bin/sh
-  command-arguments:
-    - -c
-    - |
-      echo "$(date): Received GitHub PR event: ${X_GITHUB_EVENT} for ${REPOSITORY_NAME}" >&2
-      echo "Payload:" >&2
-      echo "${HOOK_PAYLOAD}" >&2
-
-      # Extract the relevant data from the payload
-      ACTION=$(echo "$HOOK_PAYLOAD" | jq -r '.action // "unknown"')
-      REPO_NAME=$(echo "$HOOK_PAYLOAD" | jq -r '.repository.full_name // "unknown"')
-      PR_NUMBER=$(echo "$HOOK_PAYLOAD" | jq -r '.pull_request.number // .issue.number // "unknown"')
-      EVENT_TYPE=$(echo "$HOOK_PAYLOAD" | jq -r '.action // "unknown"')
-
-      # Prepare JSON payload for OpenClaw
-      PAYLOAD_JSON=$(cat <<EOF
-      {
-        "event": "${X_GITHUB_EVENT}",
-        "action": "${ACTION}",
-        "repository": "${REPO_NAME}",
-        "pr_number": "${PR_NUMBER}",
-        "sender": "$(echo "$HOOK_PAYLOAD" | jq -r '.sender.login')",
-        "timestamp": "$(date -Iseconds)"
-      }
-      EOF
-      )
-
-      # Send notification to OpenClaw
-      curl -s -X POST http://openclaw.llm.svc.cluster.local:3000/webhook/github \
-        -H "Content-Type: application/json" \
-        -H "X-GitHub-Event: ${X_GITHUB_EVENT}" \
-        -H "X-GitHub-Delivery: ${X_GITHUB_DELIVERY}" \
-        -d "${PAYLOAD_JSON}"
-
-      if [ $? -eq 0 ]; then
-        echo "Successfully sent notification to OpenClaw" >&2
-      else
-        echo "Failed to send notification to OpenClaw" >&2
-      fi
-  include-command-output-in-response: true
-  pipe-working-directory: /tmp
-  pass-environment-to-command:
-    - name: HOOK_PAYLOAD
-      source: payload
-    - name: X_GITHUB_EVENT
-      source: header
-      name: x-github-event
-    - name: X_GITHUB_DELIVERY
-      source: header
-      name: x-github-delivery
-    - name: REPOSITORY_NAME
+  execute-command: /config/github-pr-notifications.sh
+  pass-arguments-to-command:
+    - # repository name
       source: payload
       name: repository.full_name
+    - # github event
+      source: header
+      name: x-github-event
+    - # action
+      source: payload
+      name: action
+    - # pr number
+      source: payload
+      name: number
+  include-command-output-in-response: true
+  pipe-working-directory: /tmp
   trigger-rule:
     and:
       - # Validate the webhook secret
