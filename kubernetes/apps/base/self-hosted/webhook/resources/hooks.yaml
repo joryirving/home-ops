@@ -54,7 +54,7 @@
                     name: issue.state
               - match:
                   type: value
-                  value: Renovate Dashboard 🤖
+                  value: "Renovate Dashboard 🤖"
                   parameter:
                     source: payload
                     name: issue.title
@@ -111,7 +111,7 @@
                     source: payload
                     name: pull_request.user.login
 
-# New hook to handle all PR events and notify OpenClaw
+# Hook to handle pull request events and notify OpenClaw
 - id: github-pr-notifications
   execute-command: /config/github-pr-notifications.sh
   pass-arguments-to-command:
@@ -146,10 +146,60 @@
           parameter:
             source: payload
             name: repository.owner.login
-      - # Trigger on pull request events (not just for renovate bot)
+      - # Trigger on pull request events
         match:
           type: value
           value: pull_request
           parameter:
             source: header
             name: x-github-event
+
+# Hook to handle comments that mention OpenClaw and notify OpenClaw
+- id: github-comment-mention-notifications
+  execute-command: /config/github-pr-notifications.sh
+  pass-arguments-to-command:
+    - # repository name
+      source: payload
+      name: repository.full_name
+    - # github event
+      source: header
+      name: x-github-event
+    - # action
+      source: payload
+      name: action
+    - # issue/pr number
+      source: payload
+      name: issue.number
+  include-command-output-in-response: true
+  pipe-working-directory: /tmp
+  trigger-rule:
+    and:
+      - # Validate the webhook secret
+        match:
+          type: payload-hmac-sha1
+          secret: >-
+            {{ getenv "GITHUB_WEBHOOK_SECRET" | js }}
+          parameter:
+            source: header
+            name: x-hub-signature
+      - # Trigger only for the joryirving repo owner
+        match:
+          type: value
+          value: joryirving
+          parameter:
+            source: payload
+            name: repository.owner.login
+      - # Trigger on issue comment events
+        match:
+          type: value
+          value: issue_comment
+          parameter:
+            source: header
+            name: x-github-event
+      - # Trigger only when OpenClaw is mentioned in the comment
+        match:
+          type: regexp
+          pattern: "@(openclaw|miso)"
+          parameter:
+            source: payload
+            name: comment.body
