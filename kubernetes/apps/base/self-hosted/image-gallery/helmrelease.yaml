@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: image-gallery
+  name: comfyui-gallery
   namespace: llm
 spec:
   chartRef:
@@ -12,12 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      image-gallery:
-        replicas: 1
-        strategy: RollingUpdate
-        rollingUpdate:
-          maxUnavailable: 0
-          maxSurge: 1
+      comfyui-gallery:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -25,6 +20,10 @@ spec:
             image:
               repository: nginx
               tag: "1.25.3-alpine"
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 50m
@@ -32,7 +31,6 @@ spec:
                 memory: 128Mi
     defaultPodOptions:
       securityContext:
-        runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
         fsGroup: 100
@@ -41,27 +39,51 @@ spec:
       app:
         ports:
           http:
-            port: 80
+            port: 8080
     route:
       app:
-        hostnames: ["images.jory.dev"]
+        hostnames: ["comfy-output.jory.dev"]
         parentRefs:
           - name: envoy-external
             namespace: network
+    configMaps:
+      comfyui-images-nginx:
+        data:
+          default.conf: |
+            server {
+              listen 8080;
+              server_name _;
+
+              root /images;
+
+              location / {
+                autoindex on;
+                autoindex_exact_size off;
+                autoindex_localtime on;
+              }
+
+              location ~* \.(png|jpg|jpeg|webp)$ {
+                expires 30d;
+                add_header Cache-Control "public, immutable";
+              }
+            }
     persistence:
       images:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/comfyui/output
         globalMounts:
-          - path: /usr/share/nginx/html
+          - path: /images
             readOnly: true
-      config:
+      nginx-config:
+        enabled: true
         type: configMap
-        name: image-gallery-nginx-config
-        advancedMounts:
-          image-gallery:
-            app:
-              - path: /etc/nginx/conf.d/default.conf
-                readOnly: true
-                subPath: default.conf
+        name: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /etc/nginx/conf.d/default.conf
+            subPath: default.conf
+      nginx-runtime:
+        type: emptyDir
+        globalMounts:
+          - path: /var/cache/nginx
+          - path: /var/run
