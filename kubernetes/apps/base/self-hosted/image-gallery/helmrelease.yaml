@@ -20,21 +20,6 @@ spec:
           maxSurge: 1
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          - name: volume-permissions
-            image: busybox:1.35
-            command:
-              - sh
-              - -c
-              - |
-                mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp
-                chown -R 1000:100 /var/cache/nginx
-                chmod -R 755 /var/cache/nginx
-            volumeMounts:
-              - name: nginx-cache
-                mountPath: /var/cache/nginx
-            securityContext:
-              runAsUser: 0
         containers:
           app:
             image:
@@ -45,9 +30,6 @@ spec:
                 cpu: 50m
               limits:
                 memory: 128Mi
-            volumeMounts:
-              - name: nginx-cache
-                mountPath: /var/cache/nginx
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -74,10 +56,6 @@ spec:
         globalMounts:
           - path: /usr/share/nginx/html
             readOnly: true
-      nginx-cache:
-        type: emptyDir
-        globalMounts:
-          - path: /var/cache/nginx
       config:
         type: configMap
         name: image-gallery-nginx-config
