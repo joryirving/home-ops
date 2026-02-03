@@ -147,6 +147,25 @@ spec:
         fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
     service:
+    persistence:
+      config:
+        type: secret
+        name: openclaw-config
+        globalMounts:
+          - readOnly: true
+            path: /home/node/.openclaw/workspace/openclaw.json
+            subPath: openclaw.json
+      hooks-scripts:
+        type: configMap
+        name: openclaw-hooks-scripts
+        defaultMode: 0755
+        globalMounts:
+          - readOnly: true
+            path: /home/node/.openclaw/workspace/github-webhook-transform.js
+            subPath: github-webhook-transform.js
+          - readOnly: true
+            path: /home/node/.openclaw/workspace/github-app-token-manager.js
+            subPath: github-app-token-manager.js
       app:
         ports:
           http:
