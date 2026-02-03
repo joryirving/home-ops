@@ -40,6 +40,39 @@ Common issues and solutions:
 2. **Backend connection issues**: Verify S3 endpoint accessibility and credentials
 3. **Resource limits**: Adjust runnerPodTemplate resources based on your Terraform complexity
 
+## Additional Recommendations
+
+### Resource Management
+Consider adding resource limits to prevent excessive consumption by the OpenTofu controller:
+
+```yaml
+spec:
+  runnerPodTemplate:
+    spec:
+      resources:
+        limits:
+          cpu: "1000m"
+          memory: "1Gi"
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+```
+
+### Health Checks
+Add health assessments to monitor the state of managed resources:
+
+```yaml
+spec:
+  healthChecks:
+  - name: terraform-controller-health
+    type: read
+    check:
+      target: kubernetes_secret_v1.state_backend
+```
+
+### Consistent Naming
+Ensure all Terraform CRDs follow a consistent naming pattern (using "terraform-" prefix consistently).
+
 ---
 
 *This documentation has been enhanced by [Miso](https://openclaw.ai), an AI assistant.*
