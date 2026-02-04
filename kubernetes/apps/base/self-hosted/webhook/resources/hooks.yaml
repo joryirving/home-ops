@@ -54,7 +54,7 @@
                     name: issue.state
               - match:
                   type: value
-                  value: Renovate Dashboard 🤖
+                  value: "Renovate Dashboard 🤖"
                   parameter:
                     source: payload
                     name: issue.title
@@ -111,61 +111,29 @@
                     source: payload
                     name: pull_request.user.login
 
-# New hook to handle all PR events and notify OpenClaw
-- id: github-pr-notifications
-  execute-command: /bin/sh
-  command-arguments:
-    - -c
-    - |
-      echo "$(date): Received GitHub PR event: ${X_GITHUB_EVENT} for ${REPOSITORY_NAME}" >&2
-      echo "Payload:" >&2
-      echo "${HOOK_PAYLOAD}" >&2
-      
-      # Extract the relevant data from the payload
-      ACTION=$(echo "$HOOK_PAYLOAD" | jq -r '.action // "unknown"')
-      REPO_NAME=$(echo "$HOOK_PAYLOAD" | jq -r '.repository.full_name // "unknown"')
-      PR_NUMBER=$(echo "$HOOK_PAYLOAD" | jq -r '.pull_request.number // .issue.number // "unknown"')
-      EVENT_TYPE=$(echo "$HOOK_PAYLOAD" | jq -r '.action // "unknown"')
-      
-      # Prepare JSON payload for OpenClaw
-      PAYLOAD_JSON=$(cat <<EOF
-      {
-        "event": "${X_GITHUB_EVENT}",
-        "action": "${ACTION}",
-        "repository": "${REPO_NAME}",
-        "pr_number": "${PR_NUMBER}",
-        "sender": "$(echo "$HOOK_PAYLOAD" | jq -r '.sender.login')",
-        "timestamp": "$(date -Iseconds)"
-      }
-EOF
-      )
-      
-      # Send notification to OpenClaw
-      curl -s -X POST http://openclaw.llm.svc.cluster.local:3000/webhook/github \
-        -H "Content-Type: application/json" \
-        -H "X-GitHub-Event: ${X_GITHUB_EVENT}" \
-        -H "X-GitHub-Delivery: ${X_GITHUB_DELIVERY}" \
-        -d "${PAYLOAD_JSON}"
-      
-      if [ $? -eq 0 ]; then
-        echo "Successfully sent notification to OpenClaw" >&2
-      else
-        echo "Failed to send notification to OpenClaw" >&2
-      fi
+# Optimized hook to handle only essential OpenClaw notifications
+- id: github-openclaw-notifications
+  execute-command: /config/github-pr-notifications.sh
+  pass-arguments-to-command:
+    - # repository name
+      source: payload
+      name: repository.full_name
+    - # github event
+      source: header
+      name: x-github-event
+    - # action
+      source: payload
+      name: action
+    - # pr/issue number (will vary based on event type)
+      source: payload
+      name: number
   include-command-output-in-response: true
   pipe-working-directory: /tmp
   pass-environment-to-command:
-    - name: HOOK_PAYLOAD
-      source: payload
-    - name: X_GITHUB_EVENT
-      source: header
-      name: x-github-event
-    - name: X_GITHUB_DELIVERY
-      source: header
-      name: x-github-delivery
-    - name: REPOSITORY_NAME
-      source: payload
-      name: repository.full_name
+    - name: GITHUB_WEBHOOK_SECRET
+      source: secret
+      name: webhook
+      key: GITHUB_WEBHOOK_SECRET
   trigger-rule:
     and:
       - # Validate the webhook secret
@@ -183,10 +151,67 @@ EOF
           parameter:
             source: payload
             name: repository.owner.login
-      - # Trigger on pull request events (not just for renovate bot)
-        match:
-          type: value
-          value: pull_request
-          parameter:
-            source: header
-            name: x-github-event
+      - # Trigger on only essential event types with OR conditions
+        or:
+          - # Trigger on pull request OPENED events (new PRs)
+            and:
+              - match:
+                  type: value
+                  value: pull_request
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: value
+                  value: opened
+                  parameter:
+                    source: payload
+                    name: action
+          - # Trigger on pull request SYNCHRONIZE events (new commits pushed to existing PRs)
+            and:
+              - match:
+                  type: value
+                  value: pull_request
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: value
+                  value: synchronize
+                  parameter:
+                    source: payload
+                    name: action
+          - # Trigger on pull request review events (approvals)
+            and:
+              - match:
+                  type: value
+                  value: pull_request_review
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: value
+                  value: submitted
+                  parameter:
+                    source: payload
+                    name: action
+              - match:
+                  type: value
+                  value: approved
+                  parameter:
+                    source: payload
+                    name: review.state
+          - # Trigger on issue comment events that mention @miso-assistant
+            and:
+              - match:
+                  type: value
+                  value: issue_comment
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: regexp
+                  pattern: "@miso-assistant"
+                  parameter:
+                    source: payload
+                    name: comment.body
