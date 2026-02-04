@@ -54,7 +54,7 @@
                     name: issue.state
               - match:
                   type: value
-                  value: Renovate Dashboard 🤖
+                  value: "Renovate Dashboard 🤖"
                   parameter:
                     source: payload
                     name: issue.title
@@ -111,7 +111,7 @@
                     source: payload
                     name: pull_request.user.login
 
-# Consolidated hook to handle all OpenClaw notifications
+# Simplified hook to test basic functionality
 - id: github-openclaw-notifications
   execute-command: /config/github-pr-notifications.sh
   pass-arguments-to-command:
@@ -146,46 +146,10 @@
           parameter:
             source: payload
             name: repository.owner.login
-      - # Trigger on multiple event types with OR conditions
-        or:
-          - # Trigger on pull request events
-            match:
-              type: value
-              value: pull_request
-              parameter:
-                source: header
-                name: x-github-event
-          - # Trigger on issue comment events that mention OpenClaw
-            and:
-              - match:
-                  type: value
-                  value: issue_comment
-                  parameter:
-                    source: header
-                    name: x-github-event
-              - match:
-                  type: regexp
-                  pattern: "@miso-assistant"
-                  parameter:
-                    source: payload
-                    name: comment.body
-          - # Trigger on pull request review events (approvals)
-            and:
-              - match:
-                  type: value
-                  value: pull_request_review
-                  parameter:
-                    source: header
-                    name: x-github-event
-              - match:
-                  type: value
-                  value: submitted
-                  parameter:
-                    source: payload
-                    name: action
-              - match:
-                  type: value
-                  value: approved
-                  parameter:
-                    source: payload
-                    name: review.state
+      - # Simplified trigger - just listen for issue_comment events
+        match:
+          type: value
+          value: issue_comment
+          parameter:
+            source: header
+            name: x-github-event
