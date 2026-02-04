@@ -11,6 +11,9 @@ data:
     // Import the existing GitHub App token manager
     const { getTokenManager } = require('./github-app-token-manager.js');
 
+    // Import the grumpy-sysadmin agent to execute review directly
+    const { processPRReview } = require('./grumpy-sysadmin-agent.js');
+
     /**
      * Transform function for GitHub webhook events
      * @param {Object} ctx - Context object containing payload, headers, etc.
@@ -52,22 +55,26 @@ data:
           };
         }
 
-        // Prepare the message to send to the grumpy-sysadmin agent
-        const agentMessage = `Please review this newly opened pull request: $${prInfo.repo}#$${prInfo.pr_number}\n\nTitle: $${prInfo.title}\n\nDescription: $${prInfo.description}\n\nURL: $${prInfo.url}\n\nThis agent should review the PR and post a review directly to GitHub using the GitHub App authentication.`;
+        try {
+          // Execute the PR review directly instead of spawning an agent
+          const reviewResult = await processPRReview(
+            { repo: prInfo.repo, pr_number: prInfo.pr_number },
+            { pr_info: prInfo }
+          );
 
-        // Spawn the grumpy sysadmin agent to review the PR
-        return {
-          message: agentMessage,
-          agent: "grumpy-sysadmin",
-          channel: "last",
-          metadata: {
-            repo: prInfo.repo,
-            pr_number: prInfo.pr_number,
-            event_type: eventType,
-            delivery_id: deliveryId,
-            pr_info: prInfo
-          }
-        };
+          console.log('PR review completed:', reviewResult);
+
+          return {
+            message: `Grumpy sysadmin review completed for PR #$${prInfo.pr_number}`,
+            channel: "last"
+          };
+        } catch (error) {
+          console.error('Error during PR review:', error.message);
+          return {
+            message: `Error during PR review: $${error.message}`,
+            channel: "last"
+          };
+        }
       }
       else if (eventType === 'pull_request' && ['closed', 'merged'].includes(event.action)) {
         const pullRequest = event.pull_request || event;
