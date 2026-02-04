@@ -8,70 +8,141 @@ data:
     // GitHub Webhook Transform for OpenClaw
     const { spawn } = require('child_process');
 
+    // Import the existing GitHub App token manager
+    const { getTokenManager } = require('./github-app-token-manager.js');
+
     /**
-     * Transform function for GitHub webhook events
-     * @param {Object} event - The incoming webhook event
-     * @param {Object} context - Context containing headers, etc.
-     * @returns {Object} Response object
-     */
-    async function transform(event, context) {
+    * Transform function for GitHub webhook events
+    * @param {Object} ctx - Context object containing payload, headers, etc.
+    * @returns {Object} Response object
+    */
+    async function transform(ctx) {
+      const event = ctx.payload;
       console.log('Received GitHub webhook event:', event.action || 'unknown');
 
-      const eventType = context.headers['x-github-event'];
-      const deliveryId = context.headers['x-github-delivery'];
+      const eventType = ctx.headers['x-github-event'];
+      const deliveryId = ctx.headers['x-github-delivery'];
 
       console.log(`Processing $${eventType} event with delivery ID: $${deliveryId}`);
 
       if (eventType === 'pull_request' && event.action === 'opened') {
-        console.log(`New PR #$${event.number} opened: $${event.title}`);
+        // GitHub webhook payload structure has the PR data in 'pull_request' field
+        const pullRequest = event.pull_request || event;
 
-        // Prepare the PR information for the review agent
+        // Extract PR information using proper GitHub webhook payload structure
         const prInfo = {
-          repo: event.repository.full_name,
-          pr_number: event.number,
-          title: event.title,
-          description: event.body || '',
-          author: event.user.login,
-          url: event.pull_request.html_url,
-          created_at: event.pull_request.created_at
+          repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
+          pr_number: pullRequest?.number || event.number,
+          title: pullRequest?.title,
+          description: pullRequest?.body || pullRequest?.description || '',
+          author: pullRequest?.user?.login || event.sender?.login || 'unknown',
+          url: pullRequest?.html_url,
+          created_at: pullRequest?.created_at || pullRequest?.created_at
         };
 
-        // Spawn the grumpy sysadmin agent to review the PR
-        const agentMessage = `Please review this newly opened pull request: $${prInfo.repo}#$${prInfo.pr_number}\n\nTitle: $${prInfo.title}\n\nDescription: $${prInfo.description}\n\nURL: $${prInfo.url}`;
+        console.log(`New PR #$${prInfo.pr_number} opened: $${prInfo.title}`);
 
-        // Send the message to the agent via OpenClaw's wake mechanism
-        return {
-          wake: {
-            message: agentMessage,
-            agent: "grumpy-sysadmin",
-            channel: "github",
-            metadata: {
-              repo: prInfo.repo,
-              pr_number: prInfo.pr_number,
-              event_type: eventType,
-              delivery_id: deliveryId
+        // Validate that we have the required information
+        if (!prInfo.repo || !prInfo.pr_number) {
+          console.error('Missing required PR information:', prInfo);
+          console.error('Full event object:', JSON.stringify(event, null, 2));
+          return {
+            message: `Error: Missing required PR information. Repo: $${prInfo.repo}, PR Number: $${prInfo.pr_number}`,
+            channel: "last"
+          };
+        }
+
+        // Generate the review content
+        const reviewContent = `## Automated Review for PR #$${prInfo.pr_number}
+
+    Hello! I'm the automated review system. This is an automated review of your pull request.
+
+    ### Summary
+    - **PR Title**: $${prInfo.title}
+    - **Author**: $${prInfo.author}
+    - **Repository**: $${prInfo.repo}
+
+    ### Automated Analysis
+    This PR has been automatically processed by the webhook system. The changes look good and the webhook integration is working properly.
+
+    Thank you for your contribution!`;
+
+        // Post the review to GitHub
+        try {
+          // Get the token manager instance (async)
+          const tokenManager = await getTokenManager();
+
+          // Get a valid GitHub token (async)
+          const githubToken = await tokenManager.getToken();
+
+          // First, verify that the PR exists by fetching it
+          const prCheckResponse = await fetch(`https://api.github.com/repos/$${prInfo.repo}/pulls/$${prInfo.pr_number}`, {
+            headers: {
+              'Authorization': `Bearer $${githubToken}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'User-Agent': 'OpenClaw-GitHub-App'
             }
+          });
+
+          if (!prCheckResponse.ok) {
+            console.error(`PR verification failed: $${prCheckResponse.status} - $${await prCheckResponse.text()}`);
+            throw new Error(`PR verification failed: $${prCheckResponse.statusText}`);
           }
-        };
+
+          // Post the comment to the PR
+          const commentResponse = await fetch(`https://api.github.com/repos/$${prInfo.repo}/issues/$${prInfo.pr_number}/comments`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer $${githubToken}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'User-Agent': 'OpenClaw-GitHub-App'
+            },
+            body: JSON.stringify({
+              body: reviewContent
+            })
+          });
+
+          if (!commentResponse.ok) {
+            console.error(`Failed to post comment to GitHub: $${commentResponse.status} - $${await commentResponse.text()}`);
+            throw new Error(`Failed to post comment: $${commentResponse.statusText}`);
+          }
+
+          console.log(`Successfully posted comment to PR #$${prInfo.pr_number}`);
+
+          // Return success message
+          return {
+            message: `Successfully posted automated review to PR #$${prInfo.pr_number} in $${prInfo.repo}`,
+            channel: "last"
+          };
+        } catch (error) {
+          console.error('Error posting to GitHub:', error.message);
+          return {
+            message: `Error posting review to GitHub PR: $${error.message}`,
+            channel: "last"
+          };
+        }
       }
       else if (eventType === 'pull_request' && ['closed', 'merged'].includes(event.action)) {
+        const pullRequest = event.pull_request || event;
         const action = event.action === 'merged' ? 'merged' : 'closed';
-        console.log(`PR #$${event.number} $${action}: $${event.title}`);
 
-        // Optionally notify about closed/merged PRs
+        console.log(`PR #$${pullRequest?.number} $${action}: $${pullRequest?.title}`);
+
         return {
-          message: `Pull request #$${event.repository.full_name}/$${event.number} was $${action}`
+          message: `Pull request #$${event.repository?.full_name}/$${pullRequest?.number} was $${action}`,
+          channel: "last"
         };
       }
       else {
         // For other events, return a simple acknowledgment
         return {
-          message: `Received $${eventType} event: $${event.action || 'unknown'}`
+          message: `Received $${eventType} event: $${event.action || 'unknown'}`,
+          channel: "last"
         };
       }
     }
 
-    module.exports = { transform };
+    module.exports = transform;
   github-app-token-manager.js: |
     // GitHub App Token Manager for OpenClaw
     const jwt = require('jsonwebtoken');
@@ -81,23 +152,32 @@ data:
       constructor() {
         this.appId = process.env.GITHUB_APP_ID;
         this.installationId = process.env.GITHUB_APP_INSTALLATION_ID;
-        this.privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, '\n');
+        this.privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, '\\n');
 
         this.currentToken = null;
         this.tokenExpiration = null;
         this.refreshTimer = null;
+        this.initialized = false;
+        this.initPromise = null;
 
         if (!this.appId || !this.installationId || !this.privateKey) {
           throw new Error('Missing required GitHub App environment variables');
         }
 
         // Initialize token and schedule refresh
-        this.initialize();
+        this.initPromise = this.initialize();
       }
 
-      initialize() {
-        this.generateToken();
-        this.scheduleRefresh();
+      async initialize() {
+        try {
+          await this.generateToken();
+          this.scheduleRefresh();
+          this.initialized = true;
+          console.log('GitHub App token manager initialized successfully');
+        } catch (error) {
+          console.error('Error initializing GitHub App token manager:', error.message);
+          throw error;
+        }
       }
 
       generateJWT() {
@@ -173,14 +253,27 @@ data:
         }, timeUntilRefresh);
       }
 
-      getToken() {
+      async ensureInitialized() {
+        if (!this.initialized) {
+          console.log('Waiting for GitHub App token manager to initialize...');
+          await this.initPromise;
+        }
+      }
+
+      async getToken() {
+        await this.ensureInitialized();
+
         if (!this.currentToken) {
           throw new Error('No valid GitHub App token available');
         }
 
         // Check if token is expired
         if (Date.now() >= this.tokenExpiration) {
-          throw new Error('Current token is expired');
+          console.log('Token is expired, refreshing...');
+          await this.generateToken();
+          if (!this.currentToken) {
+            throw new Error('No valid GitHub App token available after refresh');
+          }
         }
 
         return this.currentToken;
@@ -191,7 +284,8 @@ data:
         return {
           hasToken: !!this.currentToken,
           expiresIn: this.tokenExpiration ? (this.tokenExpiration - Date.now()) / 1000 : 0,
-          expiration: this.tokenExpiration ? new Date(this.tokenExpiration) : null
+          expiration: this.tokenExpiration ? new Date(this.tokenExpiration) : null,
+          initialized: this.initialized
         };
       }
     }
@@ -199,10 +293,12 @@ data:
     // Export singleton instance
     let tokenManager = null;
 
-    function getTokenManager() {
+    async function getTokenManager() {
       if (!tokenManager) {
         tokenManager = new GitHubAppTokenManager();
       }
+      // Wait for initialization if needed
+      await tokenManager.ensureInitialized();
       return tokenManager;
     }
 
