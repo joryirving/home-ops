@@ -35,7 +35,7 @@ fi
 PAYLOAD_JSON="{\"event\": \"$EVENT_TYPE\", \"action\": \"$ACTION_TYPE\", \"repository\": \"$REPOSITORY_NAME\", \"issue_number\": \"$ISSUE_NUMBER\", \"sender\": \"$SENDER\", \"comment_body\": \"$COMMENT_BODY\", \"timestamp\": \"$(date -Iseconds)\"}"
 
 # Send notification to OpenClaw
-response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw.llm.svc.cluster.local:18789/webhook/github \
+response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw.llm.svc.cluster.local:18789/webhooks/github \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: $EVENT_TYPE" \
   -H "X-GitHub-Delivery: $(date +%s)" \
