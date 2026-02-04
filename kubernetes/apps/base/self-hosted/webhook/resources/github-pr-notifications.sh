@@ -18,14 +18,24 @@ echo "$(date): Received GitHub event: $EVENT_TYPE action: $ACTION_TYPE for $REPO
 HOOK_PAYLOAD=$(cat)
 
 # Process the payload and extract relevant information
-SENDER=$(echo "$HOOK_PAYLOAD" | jq -r '.sender.login // "unknown"')
-COMMENT_BODY=$(echo "$HOOK_PAYLOAD" | jq -r '.comment.body // empty')
+if command -v jq >/dev/null 2>&1; then
+  # Use jq if available
+  SENDER=$(echo "$HOOK_PAYLOAD" | jq -r '.sender.login // "unknown"')
+  COMMENT_BODY=$(echo "$HOOK_PAYLOAD" | jq -r '.comment.body // empty')
+else
+  # Fallback parsing without jq (basic extraction)
+  SENDER=$(echo "$HOOK_PAYLOAD" | sed -n 's/.*"login"[[:space:]*]:*[[:space:]*]"*\([^",}]*\)"*.*/\1/p' | head -1)
+  if [ -z "$SENDER" ]; then
+    SENDER="unknown"
+  fi
+  COMMENT_BODY=$(echo "$HOOK_PAYLOAD" | sed -n 's/.*"body"[[:space:]*]:*[[:space:]*]"*\([^"]*\)"*.*/\1/p' | head -1)
+fi
 
 # Prepare JSON payload for OpenClaw
 PAYLOAD_JSON="{\"event\": \"$EVENT_TYPE\", \"action\": \"$ACTION_TYPE\", \"repository\": \"$REPOSITORY_NAME\", \"issue_number\": \"$ISSUE_NUMBER\", \"sender\": \"$SENDER\", \"comment_body\": \"$COMMENT_BODY\", \"timestamp\": \"$(date -Iseconds)\"}"
 
 # Send notification to OpenClaw
-response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw.llm.svc.cluster.local:3000/webhook/github \
+response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw.llm.svc.cluster.local:18789/webhook/github \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: $EVENT_TYPE" \
   -H "X-GitHub-Delivery: $(date +%s)" \
