@@ -181,6 +181,26 @@
                   parameter:
                     source: payload
                     name: action
+          - # Trigger on pull request review events (approvals)
+            and:
+              - match:
+                  type: value
+                  value: pull_request_review
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: value
+                  value: submitted
+                  parameter:
+                    source: payload
+                    name: action
+              - match:
+                  type: value
+                  value: approved
+                  parameter:
+                    source: payload
+                    name: review.state
           - # Trigger on issue comment events that mention @miso-assistant
             and:
               - match:
