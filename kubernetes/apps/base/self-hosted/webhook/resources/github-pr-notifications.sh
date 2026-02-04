@@ -36,11 +36,11 @@ PAYLOAD_JSON="{\"event\": \"$EVENT_TYPE\", \"action\": \"$ACTION_TYPE\", \"repos
 
 # Send notification to OpenClaw with authentication
 # Using the webhook secret as the authentication token for OpenClaw
-response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw.llm:18789/webhook/github \
+response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw.llm.svc.cluster.local:18789/webhook/github \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: $EVENT_TYPE" \
   -H "X-GitHub-Delivery: $(date +%s)" \
-  -H "Authorization: Bearer $GITHUB_WEBHOOK_SECRET" \
+  -H "Authorization: Bearer $OPENCLAW_WEBHOOK_TOKEN" \
   -d "$PAYLOAD_JSON")
 
 http_code=$(echo "$response" | tail -n1)
