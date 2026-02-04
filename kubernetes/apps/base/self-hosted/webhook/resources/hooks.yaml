@@ -114,19 +114,6 @@
 # Optimized hook to handle only essential OpenClaw notifications
 - id: github-openclaw-notifications
   execute-command: /config/github-pr-notifications.sh
-  pass-arguments-to-command:
-    - # repository name
-      source: payload
-      name: repository.full_name
-    - # github event
-      source: header
-      name: x-github-event
-    - # action
-      source: payload
-      name: action
-    - # pr/issue number (will vary based on event type)
-      source: payload
-      name: number
   include-command-output-in-response: true
   pipe-working-directory: /tmp
   pass-environment-to-command:
