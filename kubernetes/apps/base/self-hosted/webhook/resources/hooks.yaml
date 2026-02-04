@@ -54,7 +54,7 @@
                     name: issue.state
               - match:
                   type: value
-                  value: Renovate Dashboard 🤖
+                  value: "Renovate Dashboard 🤖"
                   parameter:
                     source: payload
                     name: issue.title
@@ -129,6 +129,11 @@
       name: number
   include-command-output-in-response: true
   pipe-working-directory: /tmp
+  pass-environment-to-command:
+    - name: GITHUB_WEBHOOK_SECRET
+      source: secret
+      name: webhook
+      key: GITHUB_WEBHOOK_SECRET
   trigger-rule:
     and:
       - # Validate the webhook secret
