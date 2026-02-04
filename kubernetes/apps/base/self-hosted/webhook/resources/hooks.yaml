@@ -111,8 +111,8 @@
                     source: payload
                     name: pull_request.user.login
 
-# Restored full functionality with proper issue_comment trigger
-- id: github
+# Optimized hook to handle only essential OpenClaw notifications
+- id: github-openclaw-notifications
   execute-command: /config/github-pr-notifications.sh
   pass-arguments-to-command:
     - # repository name
@@ -151,29 +151,36 @@
           parameter:
             source: payload
             name: repository.owner.login
-      - # Trigger on multiple event types with OR conditions
+      - # Trigger on only essential event types with OR conditions
         or:
-          - # Trigger on pull request events
-            match:
-              type: value
-              value: pull_request
-              parameter:
-                source: header
-                name: x-github-event
-          - # Trigger on issue comment events that mention OpenClaw
+          - # Trigger on pull request OPENED events (new PRs)
             and:
               - match:
                   type: value
-                  value: issue_comment
+                  value: pull_request
                   parameter:
                     source: header
                     name: x-github-event
               - match:
-                  type: regexp
-                  pattern: "@miso-assistant"
+                  type: value
+                  value: opened
                   parameter:
                     source: payload
-                    name: comment.body
+                    name: action
+          - # Trigger on pull request SYNCHRONIZE events (new commits pushed to existing PRs)
+            and:
+              - match:
+                  type: value
+                  value: pull_request
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: value
+                  value: synchronize
+                  parameter:
+                    source: payload
+                    name: action
           - # Trigger on pull request review events (approvals)
             and:
               - match:
@@ -194,3 +201,17 @@
                   parameter:
                     source: payload
                     name: review.state
+          - # Trigger on issue comment events that mention @miso-assistant
+            and:
+              - match:
+                  type: value
+                  value: issue_comment
+                  parameter:
+                    source: header
+                    name: x-github-event
+              - match:
+                  type: regexp
+                  pattern: "@miso-assistant"
+                  parameter:
+                    source: payload
+                    name: comment.body
