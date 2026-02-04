@@ -26,7 +26,7 @@ data:
       const eventType = ctx.headers['x-github-event'];
       const deliveryId = ctx.headers['x-github-delivery'];
 
-      console.log(`Processing $${eventType} event with delivery ID: $${deliveryId}`);
+      console.log(`Processing ${eventType} event with delivery ID: ${deliveryId}`);
 
       if (eventType === 'pull_request' && event.action === 'opened') {
         // GitHub webhook payload structure has the PR data in 'pull_request' field
@@ -34,7 +34,7 @@ data:
 
         // Extract PR information using proper GitHub webhook payload structure
         const prInfo = {
-          repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
+          repo: event.repository?.full_name || `${event.organization?.login}/${event.repository?.name}`,
           pr_number: pullRequest?.number || event.number,
           title: pullRequest?.title,
           description: pullRequest?.body || pullRequest?.description || '',
@@ -43,14 +43,14 @@ data:
           created_at: pullRequest?.created_at || pullRequest?.created_at
         };
 
-        console.log(`New PR #$${prInfo.pr_number} opened: $${prInfo.title}`);
+        console.log(`New PR #${prInfo.pr_number} opened: ${prInfo.title}`);
 
         // Validate that we have the required information
         if (!prInfo.repo || !prInfo.pr_number) {
           console.error('Missing required PR information:', prInfo);
           console.error('Full event object:', JSON.stringify(event, null, 2));
           return {
-            message: `Error: Missing required PR information. Repo: $${prInfo.repo}, PR Number: $${prInfo.pr_number}`,
+            message: `Error: Missing required PR information. Repo: ${prInfo.repo}, PR Number: ${prInfo.pr_number}`,
             channel: "last"
           };
         }
@@ -65,13 +65,59 @@ data:
           console.log('PR review completed:', reviewResult);
 
           return {
-            message: `Grumpy sysadmin review completed for PR #$${prInfo.pr_number}`,
+            message: `Grumpy sysadmin review completed for PR #${prInfo.pr_number}`,
             channel: "last"
           };
         } catch (error) {
           console.error('Error during PR review:', error.message);
           return {
-            message: `Error during PR review: $${error.message}`,
+            message: `Error during PR review: ${error.message}`,
+            channel: "last"
+          };
+        }
+      }
+      else if (eventType === 'pull_request' && event.action === 'synchronize') {
+        // Handle PR updates (new commits pushed)
+        const pullRequest = event.pull_request || event;
+        
+        const prInfo = {
+          repo: event.repository?.full_name || `${event.organization?.login}/${event.repository?.name}`,
+          pr_number: pullRequest?.number || event.number,
+          title: pullRequest?.title,
+          description: pullRequest?.body || pullRequest?.description || '',
+          author: pullRequest?.user?.login || event.sender?.login || 'unknown',
+          url: pullRequest?.html_url,
+          created_at: pullRequest?.created_at || pullRequest?.created_at
+        };
+
+        console.log(`PR #${prInfo.pr_number} synchronized (updated): ${prInfo.title}`);
+
+        // Validate that we have the required information
+        if (!prInfo.repo || !prInfo.pr_number) {
+          console.error('Missing required PR information for sync event:', prInfo);
+          return {
+            message: `Error: Missing required PR information for sync. Repo: ${prInfo.repo}, PR Number: ${prInfo.pr_number}`,
+            channel: "last"
+          };
+        }
+
+        try {
+          // Execute the PR review directly for sync events too
+          const reviewResult = await processPRReview(
+            { repo: prInfo.repo, pr_number: prInfo.pr_number },
+            { pr_info: prInfo }
+          );
+
+          console.log('PR resync review completed:', reviewResult);
+
+          return {
+            message: `Grumpy sysadmin review completed for PR #${prInfo.pr_number} resync`,
+            channel: "last"
+          };
+        } catch (error) {
+          console.error('Error during PR resync review:', error.message);
+          return {
+            message: `Error during PR resync review: ${error.message}`,
             channel: "last"
           };
         }
@@ -80,17 +126,28 @@ data:
         const pullRequest = event.pull_request || event;
         const action = event.action === 'merged' ? 'merged' : 'closed';
 
-        console.log(`PR #$${pullRequest?.number} $${action}: $${pullRequest?.title}`);
+        console.log(`PR #${pullRequest?.number} ${action}: ${pullRequest?.title}`);
 
         return {
-          message: `Pull request #$${event.repository?.full_name}/$${pullRequest?.number} was $${action}`,
+          message: `Pull request #${event.repository?.full_name}/${pullRequest?.number} was ${action}`,
+          channel: "last"
+        };
+      }
+      else if (eventType === 'pull_request' && ['review_requested', 'ready_for_review'].includes(event.action)) {
+        const pullRequest = event.pull_request || event;
+        const action = event.action === 'review_requested' ? 'review requested' : 'ready for review';
+
+        console.log(`PR #${pullRequest?.number} ${action}: ${pullRequest?.title}`);
+
+        return {
+          message: `Pull request #${event.repository?.full_name}/${pullRequest?.number} is now ${action}`,
           channel: "last"
         };
       }
       else {
         // For other events, return a simple acknowledgment
         return {
-          message: `Received $${eventType} event: $${event.action || 'unknown'}`,
+          message: `Received ${eventType} event: ${event.action || 'unknown'}`,
           channel: "last"
         };
       }
@@ -106,7 +163,7 @@ data:
       constructor() {
         this.appId = process.env.GITHUB_APP_ID;
         this.installationId = process.env.GITHUB_APP_INSTALLATION_ID;
-        this.privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, '\n');
+        this.privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\n/g, '\n');
 
         this.currentToken = null;
         this.tokenExpiration = null;
@@ -282,7 +339,7 @@ data:
         return 'Error: Missing required PR information for review';
       }
 
-      console.log(`Reviewing PR #$${prNumber} in $${repo}`);
+      console.log(`Reviewing PR #${prNumber} in ${repo}`);
 
       try {
         // Get the token manager and token for GitHub API access
@@ -290,24 +347,24 @@ data:
         const githubToken = await tokenManager.getToken();
 
         // Fetch the PR details from GitHub API
-        const prResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}`, {
+        const prResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}`, {
           headers: {
-            'Authorization': `Bearer $${githubToken}`,
+            'Authorization': `Bearer ${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App'
           }
         });
 
         if (!prResponse.ok) {
-          throw new Error(`Failed to fetch PR: $${prResponse.status} - $${await prResponse.text()}`);
+          throw new Error(`Failed to fetch PR: ${prResponse.status} - ${await prResponse.text()}`);
         }
 
         const prDetails = await prResponse.json();
 
         // Fetch the PR files to analyze changes
-        const filesResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}/files`, {
+        const filesResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/files`, {
           headers: {
-            'Authorization': `Bearer $${githubToken}`,
+            'Authorization': `Bearer ${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App'
           }
@@ -323,10 +380,10 @@ data:
         const reviewComment = generateGrumpyReview(prDetails, files);
 
         // Post the review comment to the PR
-        const commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
+        const commentResponse = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer $${githubToken}`,
+            'Authorization': `Bearer ${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App',
             'Content-Type': 'application/json'
@@ -337,16 +394,16 @@ data:
         });
 
         if (!commentResponse.ok) {
-          throw new Error(`Failed to post review comment: $${commentResponse.status} - $${await commentResponse.text()}`);
+          throw new Error(`Failed to post review comment: ${commentResponse.status} - ${await commentResponse.text()}`);
         }
 
-        console.log(`Successfully posted review to PR #$${prNumber}`);
+        console.log(`Successfully posted review to PR #${prNumber}`);
 
-        return `Grumpy Sysadmin Agent: Successfully posted review to PR #$${prNumber} in $${repo}`;
+        return `Grumpy Sysadmin Agent: Successfully posted review to PR #${prNumber} in ${repo}`;
 
       } catch (error) {
         console.error('Error in PR review process:', error.message);
-        return `Error posting PR review: $${error.message}`;
+        return `Error posting PR review: ${error.message}`;
       }
     }
 
@@ -363,29 +420,29 @@ data:
       const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
 
       // Generate a grumpy but constructive review
-      let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prDetails.number}
+      let review = `## ⚠️ Grumpy Sysadmin Review for PR #${prDetails.number}
 
-    Hello @$${user.login},
+    Hello @${user.login},
 
-    As your resident grumpy sysadmin, I've reviewed your pull request "$${title}". Here are my observations:
+    As your resident grumpy sysadmin, I've reviewed your pull request "${title}". Here are my observations:
 
     ### 📋 Summary
-    - **Author**: @$${user.login}
-    - **Created**: $${created_at}
-    - **Files Changed**: $${fileCount}
-    - **Additions**: $${additions}
-    - **Deletions**: $${deletions}
+    - **Author**: @${user.login}
+    - **Created**: ${created_at}
+    - **Files Changed**: ${fileCount}
+    - **Additions**: ${additions}
+    - **Deletions**: ${deletions}
 
     ### 🔍 Technical Assessment
     `;
 
       // Add some grumpy but helpful commentary based on the changes
       if (fileCount > 10) {
-        review += `- **⚠️ Large PR**: This PR touches $${fileCount} files. Could this be broken down into smaller, more focused changes?\n`;
+        review += `- **⚠️ Large PR**: This PR touches ${fileCount} files. Could this be broken down into smaller, more focused changes?\n`;
       }
 
       if (additions > 200) {
-        review += `- **⚠️ Code Volume**: This PR adds $${additions} lines. Please ensure adequate testing.\n`;
+        review += `- **⚠️ Code Volume**: This PR adds ${additions} lines. Please ensure adequate testing.\n`;
       }
 
       if (!body || body.trim().length < 20) {
@@ -402,7 +459,7 @@ data:
       );
 
       if (sensitiveFiles.length > 0) {
-        review += `- **🚨 Sensitive Areas**: This PR touches infrastructure/configuration files ($${sensitiveFiles.map(f => f.filename).join(', ')}). Extra scrutiny required!\n`;
+        review += `- **🚨 Sensitive Areas**: This PR touches infrastructure/configuration files (${sensitiveFiles.map(f => f.filename).join(', ')}). Extra scrutiny required!\n`;
       }
 
       // If no specific issues found, add general grumpiness
@@ -454,7 +511,7 @@ data:
 
       } catch (error) {
         console.error('Grumpy Sysadmin Agent error:', error.message);
-        return `Grumpy Sysadmin Agent Error: $${error.message}`;
+        return `Grumpy Sysadmin Agent Error: ${error.message}`;
       }
     }
 
