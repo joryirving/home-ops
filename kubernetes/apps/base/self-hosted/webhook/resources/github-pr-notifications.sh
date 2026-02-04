@@ -34,12 +34,13 @@ fi
 # Prepare JSON payload for OpenClaw
 PAYLOAD_JSON="{\"event\": \"$EVENT_TYPE\", \"action\": \"$ACTION_TYPE\", \"repository\": \"$REPOSITORY_NAME\", \"issue_number\": \"$ISSUE_NUMBER\", \"sender\": \"$SENDER\", \"comment_body\": \"$COMMENT_BODY\", \"timestamp\": \"$(date -Iseconds)\"}"
 
-# Send notification to OpenClaw via the webhook receiver
-# The webhook receiver will handle authentication with the main OpenClaw instance
-response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw-webhook-receiver.llm.svc.cluster.local:8080 \
+# Send notification to OpenClaw with authentication
+# Using the webhook secret as the authentication token for OpenClaw
+response=$(curl -s -w "\n%{http_code}" -X POST http://openclaw.llm.svc.cluster.local:3000/webhook/github \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: $EVENT_TYPE" \
   -H "X-GitHub-Delivery: $(date +%s)" \
+  -H "Authorization: Bearer $OPENCLAW_WEBHOOK_TOKEN" \
   -d "$PAYLOAD_JSON")
 
 http_code=$(echo "$response" | tail -n1)
