@@ -132,6 +132,17 @@ data:
           channel: "last"
         };
       }
+      else if (eventType === 'pull_request' && ['review_requested', 'ready_for_review'].includes(event.action)) {
+        const pullRequest = event.pull_request || event;
+        const action = event.action === 'review_requested' ? 'review requested' : 'ready for review';
+
+        console.log(`PR #${pullRequest?.number} ${action}: ${pullRequest?.title}`);
+
+        return {
+          message: `Pull request #${event.repository?.full_name}/${pullRequest?.number} is now ${action}`,
+          channel: "last"
+        };
+      }
       else {
         // For other events, return a simple acknowledgment
         return {
