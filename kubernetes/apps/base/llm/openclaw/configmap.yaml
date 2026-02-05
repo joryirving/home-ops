@@ -5,7 +5,7 @@ metadata:
   name: openclaw-hooks-scripts
 data:
   github-webhook-transform.js: |-
-    // GitHub Webhook Transform for OpenClaw
+    // GitHub Webhook Transform for OpenClaw - Robust Version
     const { spawn } = require('child_process');
 
     // Import the existing GitHub App token manager
@@ -16,7 +16,6 @@ data:
 
     /**
      * Transform function for GitHub webhook events
-
      * Robustly handles both simplified payloads from webhook receiver and full GitHub payloads
      * @param {Object} ctx - Context object containing payload, headers, etc.
      * @returns {Object} Response object
@@ -393,29 +392,80 @@ data:
         const files = filesResponse.ok ? await filesResponse.json() : [];
 
         // Perform grumpy sysadmin review
-        const reviewComment = generateGrumpyReview(prDetails, files);
+        const reviewComment = await generateGrumpyReview(prDetails, files);
 
-        // Post the review comment to the PR
-        const commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
-          method: 'POST',
+        // First, check if we've already commented on this PR to avoid duplicate comments
+        const existingCommentsResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
           headers: {
             'Authorization': `Bearer $${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'OpenClaw-GitHub-App',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            body: reviewComment
-          })
+            'User-Agent': 'OpenClaw-GitHub-App'
+          }
         });
 
-        if (!commentResponse.ok) {
-          throw new Error(`Failed to post review comment: $${commentResponse.status} - $${await commentResponse.text()}`);
+        let commentResponse;
+        if (existingCommentsResponse.ok) {
+          const existingComments = await existingCommentsResponse.json();
+          // Look for a previous comment from this bot
+          const botComment = existingComments.find(comment =>
+            comment.user.type === 'Bot' &&
+            comment.body.includes('Grumpy Sysadmin Agent') &&
+            comment.body.includes('automatically generated')
+          );
+
+          if (botComment) {
+            // Update the existing comment instead of creating a new one
+            commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/comments/$${botComment.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer $${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'OpenClaw-GitHub-App',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                body: reviewComment
+              })
+            });
+            console.log(`Successfully updated existing review comment #$${botComment.id} for PR #$${prNumber}`);
+          } else {
+            // Create a new comment as before
+            commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer $${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'OpenClaw-GitHub-App',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                body: reviewComment
+              })
+            });
+            console.log(`Successfully posted new review to PR #$${prNumber}`);
+          }
+        } else {
+          // If we can't fetch existing comments, fall back to creating a new comment
+          commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer $${githubToken}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'User-Agent': 'OpenClaw-GitHub-App',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              body: reviewComment
+            })
+          });
+          console.log(`Successfully posted new review to PR #$${prNumber} (couldn't check for existing comments)`);
         }
 
-        console.log(`Successfully posted review to PR #$${prNumber}`);
+        if (!commentResponse.ok) {
+          throw new Error(`Failed to post/update review comment: $${commentResponse.status} - $${await commentResponse.text()}`);
+        }
 
-        return `Grumpy Sysadmin Agent: Successfully posted review to PR #$${prNumber} in $${repo}`;
+        return `Grumpy Sysadmin Agent: Successfully $${botComment ? 'updated' : 'posted'} review to PR #$${prNumber} in $${repo}`;
 
       } catch (error) {
         console.error('Error in PR review process:', error.message);
@@ -424,81 +474,192 @@ data:
     }
 
     /**
-     * Generate a grumpy sysadmin-style review based on PR details
+     * Generate a grumpy sysadmin-style review based on PR details using AI
      * @param {Object} prDetails - The PR details from GitHub API
      * @param {Array} files - Array of files changed in the PR
-     * @returns {string} The review comment
+     * @returns {string} The AI-generated review comment with grumpy personality
      */
-    function generateGrumpyReview(prDetails, files) {
-      const { title, user, created_at, body, html_url } = prDetails;
+    async function generateGrumpyReview(prDetails, files) {
+      const { title, user, created_at, body, html_url, number: prNumber } = prDetails;
       const fileCount = files.length;
       const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
       const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
 
-      // Generate a grumpy but constructive review
-      let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prDetails.number}
+      // Prepare a concise summary of changes with actual code diffs
+      const fileSummaries = files.slice(0, 10).map(file => ({
+        filename: file.filename,
+        status: file.status,
+        additions: file.additions,
+        deletions: file.deletions,
+        changes: file.patch ? file.patch.substring(0, 3000) + (file.patch.length > 3000 ? '...' : '') : null  // Increased to 3000 chars for more detail
+      }));
 
-    Hello @$${user.login},
+      // Create a detailed prompt that emphasizes code analysis and grumpy sysadmin personality
+      const aiPrompt = `You are an extremely grumpy, old-school Unix sysadmin who has been managing production infrastructure for 25 years.
+    You've seen countless disasters caused by careless developers and you take ZERO nonsense.
+    Your personality traits:
+    - Sarcastically gruff and impatient
+    - Speaks in gruff, direct statements
+    - Cynical about "modern dev practices"
+    - Obsessed with uptime, security, and "back in my day" stories
+    - Takes personal offense at poor security practices
+    - Uses phrases like "Listen here, kid", "Back in my day", "What could go wrong?", "I hope you have backups", "Are you kidding me?", "This is why we can't have nice things"
+    - Gets genuinely angry about hardcoded passwords, missing error handling, and insecure defaults
 
-    As your resident grumpy sysadmin, I've reviewed your pull request "$${title}". Here are my observations:
+    Analyze this pull request #$${prNumber}: "$${title}" by @$${user.login}.
 
-    ### 📋 Summary
-    - **Author**: @$${user.login}
+    PR Details:
+    - Created: $${created_at}
+    - Description: $${body || 'No description provided (typical...)'}
+    - Files Changed: $${fileCount}
+    - Additions: $${additions}, Deletions: $${deletions}
+
+    CRITICAL: Focus on analyzing the actual code changes in the file diffs below. Don't just comment on metadata - look at the actual code and provide specific feedback.
+
+    File Changes (first 10 files with actual code diffs):
+    $${JSON.stringify(fileSummaries, null, 2)}
+
+    Based on the actual code changes, provide a review that:
+    - Identifies specific security vulnerabilities in the code
+    - Points out potential runtime errors or bugs
+    - Comments on code quality, maintainability, and best practices
+    - Highlights any hardcoded credentials, passwords, or secrets
+    - Mentions potential performance issues
+    - Calls out missing error handling or logging
+    - Provides specific suggestions for improvement based on the actual code
+    - Shows your grumpy personality throughout with varied expressions of frustration
+    - Varies your conclusion based on what you find in the code (not repetitive boilerplate)
+
+    Make the review feel personalized and specific to the actual code changes. Don't use repetitive sign-off phrases. Instead, end with something that reflects what you found in the code review.`;
+
+      try {
+        // Send to OpenClaw's AI interface
+        const aiResponse = await fetch('http://localhost:3000/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer $${process.env.CLAWDBOT_GATEWAY_TOKEN}`
+          },
+          body: JSON.stringify({
+            message: aiPrompt,
+            thinking: 'high',
+            model: 'gemini' // or whatever model you prefer for personality
+          })
+        });
+
+        if (!aiResponse.ok) {
+          throw new Error(`AI service responded with status: $${aiResponse.status}`);
+        }
+
+        const aiData = await aiResponse.json();
+        const aiReview = aiData.response || aiData.message || "AI review generation failed";
+
+        // Format with consistent grumpy personality
+        return `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
+
+    $${aiReview}
+
+    ---
+    *This review was automatically generated by the Grumpy Sysadmin Agent.*
+    *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
+    `;
+      } catch (error) {
+        console.error('AI review generation failed:', error.message);
+
+        // Fallback with strong grumpy personality that focuses on code analysis
+        return generateGrumpyReviewFallbackWithCodeAnalysis(prDetails, files);
+      }
+    }
+
+    /**
+     * Fallback function with strong grumpy personality that focuses on code analysis
+     */
+    function generateGrumpyReviewFallbackWithCodeAnalysis(prDetails, files) {
+      const { title, user, created_at, body, html_url, number: prNumber } = prDetails;
+      const fileCount = files.length;
+      const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
+      const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
+
+      let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
+
+    Oh, great. Another pull request. Let me take a look at this disaster you've cooked up, @$${user.login}...
+
+    ### 📋 PR Overview
+    - **Title**: "$${title}"
     - **Created**: $${created_at}
     - **Files Changed**: $${fileCount}
-    - **Additions**: $${additions}
-    - **Deletions**: $${deletions}
-
-    ### 🔍 Technical Assessment
+    - **Additions**: $${additions}, Deletions: $${deletions}
     `;
 
-      // Add some grumpy but helpful commentary based on the changes
-      if (fileCount > 10) {
-        review += `- **⚠️ Large PR**: This PR touches $${fileCount} files. Could this be broken down into smaller, more focused changes?\n`;
+      // Analyze actual file changes for specific issues
+      let securityIssues = [];
+      let codeQualityIssues = [];
+      let performanceIssues = [];
+
+      files.forEach(file => {
+        const filename = file.filename;
+        const patch = file.patch || '';
+
+        // Look for security issues in the patch
+        if (patch.toLowerCase().includes('password') || patch.toLowerCase().includes('secret') || patch.toLowerCase().includes('token')) {
+          securityIssues.push(`$${filename}: Potential hardcoded credential detected`);
+        }
+
+        if (patch.includes('eval(') || patch.toLowerCase().includes('exec(')) {
+          securityIssues.push(`$${filename}: Dangerous function usage detected`);
+        }
+
+        // Look for code quality issues
+        if (patch.includes('TODO') || patch.includes('FIXME')) {
+          codeQualityIssues.push(`$${filename}: TODO/FIXME comment found`);
+        }
+
+        if ((patch.match(/console\.log/g) || []).length > 3) {
+          codeQualityIssues.push(`$${filename}: Multiple console.log statements found`);
+        }
+
+        // Look for potential performance issues
+        if (patch.includes('SELECT *') || (patch.includes('.includes(') && patch.includes('for loop'))) {
+          performanceIssues.push(`$${filename}: Potential performance issue detected`);
+        }
+      });
+
+      review += `\n### 🔍 Code Analysis\n`;
+
+      if (securityIssues.length > 0) {
+        review += `**🚨 Security Issues:**\n`;
+        securityIssues.forEach(issue => review += `- **$${issue}**\n`);
+        review += `\n`;
       }
 
-      if (additions > 200) {
-        review += `- **⚠️ Code Volume**: This PR adds $${additions} lines. Please ensure adequate testing.\n`;
+      if (codeQualityIssues.length > 0) {
+        review += `**⚠️ Code Quality Issues:**\n`;
+        codeQualityIssues.forEach(issue => review += `- $${issue}\n`);
+        review += `\n`;
       }
 
-      if (!body || body.trim().length < 20) {
-        review += `- **⚠️ Description**: The PR description is quite brief. Please provide more context about *why* these changes are needed.\n`;
+      if (performanceIssues.length > 0) {
+        review += `**⚡ Performance Issues:**\n`;
+        performanceIssues.forEach(issue => review += `- $${issue}\n`);
+        review += `\n`;
       }
 
-      // Check for common infrastructure files that might need special attention
-      const sensitiveFiles = files.filter(file =>
-        file.filename.includes('k8s') ||
-        file.filename.includes('yaml') ||
-        file.filename.includes('yml') ||
-        file.filename.includes('config') ||
-        file.filename.includes('secret')
-      );
-
-      if (sensitiveFiles.length > 0) {
-        review += `- **🚨 Sensitive Areas**: This PR touches infrastructure/configuration files ($${sensitiveFiles.map(f => f.filename).join(', ')}). Extra scrutiny required!\n`;
+      if (securityIssues.length === 0 && codeQualityIssues.length === 0 && performanceIssues.length === 0) {
+        review += `**✅ No major issues detected at first glance, but I didn't look very deeply...**\n\n`;
       }
 
-      // If no specific issues found, add general grumpiness
-      if (review.split('\n').filter(line => line.startsWith('-')).length === 0) {
-        review += `- **🔍 General**: Changes look reasonable, but please ensure all tests pass and consider edge cases.\n`;
+      // Vary the conclusion based on what was found
+      if (securityIssues.length > 0) {
+        review += `### 💥 Bottom Line\nThis PR has serious security concerns that need to be addressed immediately. I hope you have backups because this is definitely going to cause issues in production. Listen here, kid: security isn't optional.\n`;
+      } else if (codeQualityIssues.length > 0 || performanceIssues.length > 0) {
+        review += `### 💥 Bottom Line\nThis PR needs work before it goes anywhere near production. Clean up those code quality issues and address the performance concerns. Back in my day, we didn't ship code with this many problems.\n`;
+      } else {
+        review += `### 💥 Bottom Line\nThe changes look mostly reasonable, but I expect you to monitor this carefully in production. I've got a bad feeling about this, so make sure you have proper logging and monitoring in place.\n`;
       }
 
-      review += `
-    ### ✅ Approval Criteria
-    Before this PR can be merged, please ensure:
-
-    1. All CI checks are passing
-    2. Changes have been tested in a staging environment
-    3. Documentation has been updated if applicable
-    4. Another team member has reviewed this code
-
-    ### 📝 Final Thoughts
-    Thanks for your contribution to the infrastructure. Remember: "With great power comes great responsibility." Please make sure you understand the implications of these changes before merging.
-
-    Yours grumpily,
-    The Grumpy Sysadmin 🤖
-
+      review += `\n---
     *This review was automatically generated by the Grumpy Sysadmin Agent.*
+    *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
     `;
 
       return review;
