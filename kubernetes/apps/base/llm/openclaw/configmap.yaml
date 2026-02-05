@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -25,7 +26,7 @@ data:
 
       // Try to determine the event type from multiple sources
       let eventType = headers['x-github-event'] || event.action || 'unknown';
-      
+
       // Also check for other potential event indicators
       if (event.hasOwnProperty('pull_request') && event.pull_request) {
         eventType = 'pull_request';
@@ -55,20 +56,20 @@ data:
       });
 
       // Extract information with fallbacks
-      const repo = event.repository?.full_name || 
-                  (event.pull_request?.html_url ? 
-                    event.pull_request.html_url.split('/')[3] + '/' + event.pull_request.html_url.split('/')[4] : 
+      const repo = event.repository?.full_name ||
+                  (event.pull_request?.html_url ?
+                    event.pull_request.html_url.split('/')[3] + '/' + event.pull_request.html_url.split('/')[4] :
                     'unknown/unknown');
-                  
-      const prNumber = event.pull_request?.number || 
-                      (event.issue?.pull_request ? 
-                        parseInt(event.issue.url.split('/').pop()) : 
+
+      const prNumber = event.pull_request?.number ||
+                      (event.issue?.pull_request ?
+                        parseInt(event.issue.url.split('/').pop()) :
                         null);
 
       // Handle different event types based on the payload
       if (repo !== 'unknown/unknown' && prNumber && action !== 'unknown') {
         // This looks like a pull request event
-        
+
         const prInfo = {
           repo: repo,
           pr_number: prNumber,
@@ -122,14 +123,14 @@ data:
       else {
         // Handle other event types or return a default response
         console.log('Received non-PR event or incomplete event:', { action, repo, prNumber });
-        
+
         // If it's a test delivery from our webhook receiver, try to extract from nested payload
         if (event.delivery_id && event.delivery_id.startsWith('test-delivery') && event.payload) {
           const nestedEvent = event.payload;
           const nestedAction = nestedEvent.action || 'unknown';
           const nestedRepo = nestedEvent.repository?.full_name || 'unknown/unknown';
           const nestedPrNumber = nestedEvent.pull_request?.number || null;
-          
+
           if (nestedRepo !== 'unknown/unknown' && nestedPrNumber) {
             if (nestedAction === 'opened' || nestedAction === 'synchronize') {
               try {
@@ -145,7 +146,7 @@ data:
                     created_at: nestedEvent.pull_request?.created_at
                   }}
                 );
-                
+
                 return {
                   message: 'Grumpy sysadmin review completed for PR #' + nestedPrNumber,
                   channel: "last"
@@ -331,10 +332,10 @@ data:
 grumpy-sysadmin-agent.js: |
     // Grumpy Sysadmin Agent for GitHub PR Reviews
     const { spawn } = require('child_process');
-    
+
     // Import the GitHub App token manager
     const { getTokenManager } = require('./github-app-token-manager.js');
-    
+
     /**
      * Process a pull request review request
      * @param {Object} context - The context containing PR information
@@ -342,82 +343,82 @@ grumpy-sysadmin-agent.js: |
      */
     async function processPRReview(context, metadata) {
       console.log('Grumpy Sysadmin Agent: Processing PR review request');
-    
+
       // Extract PR information from context or metadata
       const prInfo = metadata?.pr_info || {};
       const repo = prInfo.repo || context.repo;
       const prNumber = prInfo.pr_number || context.pr_number;
-    
+
       if (!repo || !prNumber) {
         console.error('Missing required PR information:', { repo, prNumber, prInfo, metadata });
         return 'Error: Missing required PR information for review';
       }
-    
-      console.log(`Reviewing PR #${prNumber} in ${repo}`);
-    
+
+      console.log(`Reviewing PR #$${prNumber} in $${repo}`);
+
       try {
         // Get the token manager and token for GitHub API access
         const tokenManager = await getTokenManager();
         const githubToken = await tokenManager.getToken();
-    
+
         // Fetch the PR details from GitHub API
-        const prResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}`, {
+        const prResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}`, {
           headers: {
-            'Authorization': `Bearer ${githubToken}`,
+            'Authorization': `Bearer $${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App'
           }
         });
-    
+
         if (!prResponse.ok) {
-          throw new Error(`Failed to fetch PR: ${prResponse.status} - ${await prResponse.text()}`);
+          throw new Error(`Failed to fetch PR: $${prResponse.status} - $${await prResponse.text()}`);
         }
-    
+
         const prDetails = await prResponse.json();
-    
+
         // Fetch the PR files to analyze changes
-        const filesResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/files`, {
+        const filesResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}/files`, {
           headers: {
-            'Authorization': `Bearer ${githubToken}`,
+            'Authorization': `Bearer $${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App'
           }
         });
-    
+
         if (!filesResponse.ok) {
           console.warn('Could not fetch PR files:', await filesResponse.text());
         }
-    
+
         const files = filesResponse.ok ? await filesResponse.json() : [];
-    
+
         // Perform grumpy sysadmin review
         const reviewComment = await generateGrumpyReview(prDetails, files);
-    
+
         // First, check if we've already commented on this PR to avoid duplicate comments
-        const existingCommentsResponse = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, {
+        const existingCommentsResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
           headers: {
-            'Authorization': `Bearer ${githubToken}`,
+            'Authorization': `Bearer $${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App'
           }
         });
-    
+
         let commentResponse;
         if (existingCommentsResponse.ok) {
           const existingComments = await existingCommentsResponse.json();
           // Look for a previous comment from this bot
-          const botComment = existingComments.find(comment => 
-            comment.user.type === 'Bot' && 
+          const botComment = existingComments.find(comment =>
+            comment.user.type === 'Bot' &&
             comment.body.includes('Grumpy Sysadmin Agent') &&
             comment.body.includes('automatically generated')
           );
-    
+
           if (botComment) {
             // Update the existing comment instead of creating a new one
-            commentResponse = await fetch(`https://api.github.com/repos/${repo}/issues/comments/${botComment.id}`, {
+            commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/comments/$${botComment.id}`, {
               method: 'PATCH',
               headers: {
-                'Authorization': `Bearer ${githubToken}`,
+                'Authorization': `Bearer $${githubToken}`,
                 'Accept': 'application/vnd.github.v3+json',
                 'User-Agent': 'OpenClaw-GitHub-App',
                 'Content-Type': 'application/json'
@@ -426,13 +427,13 @@ grumpy-sysadmin-agent.js: |
                 body: reviewComment
               })
             });
-            console.log(`Successfully updated existing review comment #${botComment.id} for PR #${prNumber}`);
+            console.log(`Successfully updated existing review comment #$${botComment.id} for PR #$${prNumber}`);
           } else {
             // Create a new comment as before
-            commentResponse = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, {
+            commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${githubToken}`,
+                'Authorization': `Bearer $${githubToken}`,
                 'Accept': 'application/vnd.github.v3+json',
                 'User-Agent': 'OpenClaw-GitHub-App',
                 'Content-Type': 'application/json'
@@ -441,14 +442,14 @@ grumpy-sysadmin-agent.js: |
                 body: reviewComment
               })
             });
-            console.log(`Successfully posted new review to PR #${prNumber}`);
+            console.log(`Successfully posted new review to PR #$${prNumber}`);
           }
         } else {
           // If we can't fetch existing comments, fall back to creating a new comment
-          commentResponse = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, {
+          commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${githubToken}`,
+              'Authorization': `Bearer $${githubToken}`,
               'Accept': 'application/vnd.github.v3+json',
               'User-Agent': 'OpenClaw-GitHub-App',
               'Content-Type': 'application/json'
@@ -457,21 +458,21 @@ grumpy-sysadmin-agent.js: |
               body: reviewComment
             })
           });
-          console.log(`Successfully posted new review to PR #${prNumber} (couldn't check for existing comments)`);
+          console.log(`Successfully posted new review to PR #$${prNumber} (couldn't check for existing comments)`);
         }
-    
+
         if (!commentResponse.ok) {
-          throw new Error(`Failed to post/update review comment: ${commentResponse.status} - ${await commentResponse.text()}`);
+          throw new Error(`Failed to post/update review comment: $${commentResponse.status} - $${await commentResponse.text()}`);
         }
-    
-        return `Grumpy Sysadmin Agent: Successfully ${botComment ? 'updated' : 'posted'} review to PR #${prNumber} in ${repo}`;
-    
+
+        return `Grumpy Sysadmin Agent: Successfully $${botComment ? 'updated' : 'posted'} review to PR #$${prNumber} in $${repo}`;
+
       } catch (error) {
         console.error('Error in PR review process:', error.message);
-        return `Error posting PR review: ${error.message}`;
+        return `Error posting PR review: $${error.message}`;
       }
     }
-    
+
     /**
      * Generate a grumpy sysadmin-style review based on PR details using AI
      * @param {Object} prDetails - The PR details from GitHub API
@@ -483,7 +484,7 @@ grumpy-sysadmin-agent.js: |
       const fileCount = files.length;
       const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
       const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
-      
+
       // Prepare a concise summary of changes with actual code diffs
       const fileSummaries = files.slice(0, 10).map(file => ({
         filename: file.filename,
@@ -492,32 +493,32 @@ grumpy-sysadmin-agent.js: |
         deletions: file.deletions,
         changes: file.patch ? file.patch.substring(0, 3000) + (file.patch.length > 3000 ? '...' : '') : null  // Increased to 3000 chars for more detail
       }));
-    
+
       // Create a detailed prompt that emphasizes code analysis and grumpy sysadmin personality
-      const aiPrompt = `You are an extremely grumpy, old-school Unix sysadmin who has been managing production infrastructure for 25 years. 
-    You've seen countless disasters caused by careless developers and you take ZERO nonsense. 
-    Your personality traits: 
+      const aiPrompt = `You are an extremely grumpy, old-school Unix sysadmin who has been managing production infrastructure for 25 years.
+    You've seen countless disasters caused by careless developers and you take ZERO nonsense.
+    Your personality traits:
     - Sarcastically gruff and impatient
-    - Speaks in gruff, direct statements 
+    - Speaks in gruff, direct statements
     - Cynical about "modern dev practices"
     - Obsessed with uptime, security, and "back in my day" stories
     - Takes personal offense at poor security practices
     - Uses phrases like "Listen here, kid", "Back in my day", "What could go wrong?", "I hope you have backups", "Are you kidding me?", "This is why we can't have nice things"
     - Gets genuinely angry about hardcoded passwords, missing error handling, and insecure defaults
-    
-    Analyze this pull request #${prNumber}: "${title}" by @${user.login}.
-    
+
+    Analyze this pull request #$${prNumber}: "$${title}" by @$${user.login}.
+
     PR Details:
-    - Created: ${created_at}
-    - Description: ${body || 'No description provided (typical...)'}
-    - Files Changed: ${fileCount}
-    - Additions: ${additions}, Deletions: ${deletions}
-    
+    - Created: $${created_at}
+    - Description: $${body || 'No description provided (typical...)'}
+    - Files Changed: $${fileCount}
+    - Additions: $${additions}, Deletions: $${deletions}
+
     CRITICAL: Focus on analyzing the actual code changes in the file diffs below. Don't just comment on metadata - look at the actual code and provide specific feedback.
-    
+
     File Changes (first 10 files with actual code diffs):
-    ${JSON.stringify(fileSummaries, null, 2)}
-    
+    $${JSON.stringify(fileSummaries, null, 2)}
+
     Based on the actual code changes, provide a review that:
     - Identifies specific security vulnerabilities in the code
     - Points out potential runtime errors or bugs
@@ -528,16 +529,16 @@ grumpy-sysadmin-agent.js: |
     - Provides specific suggestions for improvement based on the actual code
     - Shows your grumpy personality throughout with varied expressions of frustration
     - Varies your conclusion based on what you find in the code (not repetitive boilerplate)
-    
+
     Make the review feel personalized and specific to the actual code changes. Don't use repetitive sign-off phrases. Instead, end with something that reflects what you found in the code review.`;
-    
+
       try {
         // Send to OpenClaw's AI interface
         const aiResponse = await fetch('http://localhost:3000/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.CLAWDBOT_GATEWAY_TOKEN}`
+            'Authorization': `Bearer $${process.env.CLAWDBOT_GATEWAY_TOKEN}`
           },
           body: JSON.stringify({
             message: aiPrompt,
@@ -545,31 +546,31 @@ grumpy-sysadmin-agent.js: |
             model: 'gemini' // or whatever model you prefer for personality
           })
         });
-    
+
         if (!aiResponse.ok) {
-          throw new Error(`AI service responded with status: ${aiResponse.status}`);
+          throw new Error(`AI service responded with status: $${aiResponse.status}`);
         }
-    
+
         const aiData = await aiResponse.json();
         const aiReview = aiData.response || aiData.message || "AI review generation failed";
-    
+
         // Format with consistent grumpy personality
-        return `## ⚠️ Grumpy Sysadmin Review for PR #${prNumber}
-    
-    ${aiReview}
-    
+        return `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
+
+    $${aiReview}
+
     ---
-    *This review was automatically generated by the Grumpy Sysadmin Agent.*  
+    *This review was automatically generated by the Grumpy Sysadmin Agent.*
     *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
     `;
       } catch (error) {
         console.error('AI review generation failed:', error.message);
-        
+
         // Fallback with strong grumpy personality that focuses on code analysis
         return generateGrumpyReviewFallbackWithCodeAnalysis(prDetails, files);
       }
     }
-    
+
     /**
      * Fallback function with strong grumpy personality that focuses on code analysis
      */
@@ -578,75 +579,75 @@ grumpy-sysadmin-agent.js: |
       const fileCount = files.length;
       const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
       const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
-    
-      let review = `## ⚠️ Grumpy Sysadmin Review for PR #${prNumber}
-    
-    Oh, great. Another pull request. Let me take a look at this disaster you've cooked up, @${user.login}...
-    
+
+      let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
+
+    Oh, great. Another pull request. Let me take a look at this disaster you've cooked up, @$${user.login}...
+
     ### 📋 PR Overview
-    - **Title**: "${title}"
-    - **Created**: ${created_at}
-    - **Files Changed**: ${fileCount}
-    - **Additions**: ${additions}, Deletions: ${deletions}
+    - **Title**: "$${title}"
+    - **Created**: $${created_at}
+    - **Files Changed**: $${fileCount}
+    - **Additions**: $${additions}, Deletions: $${deletions}
     `;
-    
+
       // Analyze actual file changes for specific issues
       let securityIssues = [];
       let codeQualityIssues = [];
       let performanceIssues = [];
-      
+
       files.forEach(file => {
         const filename = file.filename;
         const patch = file.patch || '';
-        
+
         // Look for security issues in the patch
         if (patch.toLowerCase().includes('password') || patch.toLowerCase().includes('secret') || patch.toLowerCase().includes('token')) {
-          securityIssues.push(`${filename}: Potential hardcoded credential detected`);
+          securityIssues.push(`$${filename}: Potential hardcoded credential detected`);
         }
-        
+
         if (patch.includes('eval(') || patch.toLowerCase().includes('exec(')) {
-          securityIssues.push(`${filename}: Dangerous function usage detected`);
+          securityIssues.push(`$${filename}: Dangerous function usage detected`);
         }
-        
+
         // Look for code quality issues
         if (patch.includes('TODO') || patch.includes('FIXME')) {
-          codeQualityIssues.push(`${filename}: TODO/FIXME comment found`);
+          codeQualityIssues.push(`$${filename}: TODO/FIXME comment found`);
         }
-        
+
         if ((patch.match(/console\.log/g) || []).length > 3) {
-          codeQualityIssues.push(`${filename}: Multiple console.log statements found`);
+          codeQualityIssues.push(`$${filename}: Multiple console.log statements found`);
         }
-        
+
         // Look for potential performance issues
         if (patch.includes('SELECT *') || (patch.includes('.includes(') && patch.includes('for loop'))) {
-          performanceIssues.push(`${filename}: Potential performance issue detected`);
+          performanceIssues.push(`$${filename}: Potential performance issue detected`);
         }
       });
-    
+
       review += `\n### 🔍 Code Analysis\n`;
-    
+
       if (securityIssues.length > 0) {
         review += `**🚨 Security Issues:**\n`;
-        securityIssues.forEach(issue => review += `- **${issue}**\n`);
+        securityIssues.forEach(issue => review += `- **$${issue}**\n`);
         review += `\n`;
       }
-    
+
       if (codeQualityIssues.length > 0) {
         review += `**⚠️ Code Quality Issues:**\n`;
-        codeQualityIssues.forEach(issue => review += `- ${issue}\n`);
+        codeQualityIssues.forEach(issue => review += `- $${issue}\n`);
         review += `\n`;
       }
-    
+
       if (performanceIssues.length > 0) {
         review += `**⚡ Performance Issues:**\n`;
-        performanceIssues.forEach(issue => review += `- ${issue}\n`);
+        performanceIssues.forEach(issue => review += `- $${issue}\n`);
         review += `\n`;
       }
-    
+
       if (securityIssues.length === 0 && codeQualityIssues.length === 0 && performanceIssues.length === 0) {
         review += `**✅ No major issues detected at first glance, but I didn't look very deeply...**\n\n`;
       }
-    
+
       // Vary the conclusion based on what was found
       if (securityIssues.length > 0) {
         review += `### 💥 Bottom Line\nThis PR has serious security concerns that need to be addressed immediately. I hope you have backups because this is definitely going to cause issues in production. Listen here, kid: security isn't optional.\n`;
@@ -655,15 +656,15 @@ grumpy-sysadmin-agent.js: |
       } else {
         review += `### 💥 Bottom Line\nThe changes look mostly reasonable, but I expect you to monitor this carefully in production. I've got a bad feeling about this, so make sure you have proper logging and monitoring in place.\n`;
       }
-    
+
       review += `\n---
-    *This review was automatically generated by the Grumpy Sysadmin Agent.*  
+    *This review was automatically generated by the Grumpy Sysadmin Agent.*
     *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
     `;
-    
+
       return review;
     }
-    
+
     /**
      * Main function to handle the agent task
      * @param {Object} context - The context object
@@ -672,23 +673,23 @@ grumpy-sysadmin-agent.js: |
     async function handleAgentTask(context, options = {}) {
       try {
         console.log('Grumpy Sysadmin Agent activated');
-    
+
         // Check if this is a PR review request
         if (context.message &&
             (context.message.toLowerCase().includes('review') ||
              context.message.toLowerCase().includes('pull request') ||
              context.metadata?.pr_number)) {
-    
+
           return await processPRReview(context, context.metadata);
         }
-    
+
         // Default response for other requests
         return "Grumpy Sysadmin Agent: I specialize in reviewing pull requests. Please provide PR details for review.";
-    
+
       } catch (error) {
         console.error('Grumpy Sysadmin Agent error:', error.message);
-        return `Grumpy Sysadmin Agent Error: ${error.message}`;
+        return `Grumpy Sysadmin Agent Error: $${error.message}`;
       }
     }
-    
+
     module.exports = { handleAgentTask, processPRReview, generateGrumpyReview };
