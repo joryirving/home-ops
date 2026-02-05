@@ -330,160 +330,153 @@ data:
     }
 
     module.exports = { getTokenManager, GitHubAppTokenManager };
-  grumpy-sysadmin-agent.js: |
-    // Grumpy Sysadmin Agent for GitHub PR Reviews
-    const { spawn } = require('child_process');
+grumpy-sysadmin-agent.js: |
+  // Grumpy Sysadmin Agent for GitHub PR Reviews
+  const { spawn } = require('child_process');
 
-    // Import the GitHub App token manager
-    const { getTokenManager } = require('./github-app-token-manager.js');
+  // Import the GitHub App token manager
+  const { getTokenManager } = require('./github-app-token-manager.js');
 
-    /**
-     * Process a pull request review request
-     * @param {Object} context - The context containing PR information
-     * @param {Object} metadata - Metadata from the webhook
-     */
-    async function processPRReview(context, metadata) {
-      console.log('Grumpy Sysadmin Agent: Processing PR review request');
+  /**
+   * Process a pull request review request
+   * @param {Object} context - The context containing PR information
+   * @param {Object} metadata - Metadata from the webhook
+   */
+  async function processPRReview(context, metadata) {
+    console.log('Grumpy Sysadmin Agent: Processing PR review request');
 
-      // Extract PR information from context or metadata
-      const prInfo = metadata?.pr_info || {};
-      const repo = prInfo.repo || context.repo;
-      const prNumber = prInfo.pr_number || context.pr_number;
+    // Extract PR information from context or metadata
+    const prInfo = metadata?.pr_info || {};
+    const repo = prInfo.repo || context.repo;
+    const prNumber = prInfo.pr_number || context.pr_number;
 
-      if (!repo || !prNumber) {
-        console.error('Missing required PR information:', { repo, prNumber, prInfo, metadata });
-        return 'Error: Missing required PR information for review';
-      }
-
-      console.log(`Reviewing PR #$${prNumber} in $${repo}`);
-
-      try {
-        // Get the token manager and token for GitHub API access
-        const tokenManager = await getTokenManager();
-        const githubToken = await tokenManager.getToken();
-
-        // Fetch the PR details from GitHub API
-        const prResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}`, {
-          headers: {
-            'Authorization': `Bearer $${githubToken}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'OpenClaw-GitHub-App'
-          }
-        });
-
-        if (!prResponse.ok) {
-          throw new Error(`Failed to fetch PR: $${prResponse.status} - $${await prResponse.text()}`);
-        }
-
-        const prDetails = await prResponse.json();
-
-        // Fetch the PR files to analyze changes
-        const filesResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}/files`, {
-          headers: {
-            'Authorization': `Bearer $${githubToken}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'OpenClaw-GitHub-App'
-          }
-        });
-
-        if (!filesResponse.ok) {
-          console.warn('Could not fetch PR files:', await filesResponse.text());
-        }
-
-        const files = filesResponse.ok ? await filesResponse.json() : [];
-
-        // Perform grumpy sysadmin review
-        const reviewComment = generateGrumpyReview(prDetails, files);
-
-        // Post the review comment to the PR
-        const commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer $${githubToken}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'OpenClaw-GitHub-App',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            body: reviewComment
-          })
-        });
-
-        if (!commentResponse.ok) {
-          throw new Error(`Failed to post review comment: $${commentResponse.status} - $${await commentResponse.text()}`);
-        }
-
-        console.log(`Successfully posted review to PR #$${prNumber}`);
-
-        return `Grumpy Sysadmin Agent: Successfully posted review to PR #$${prNumber} in $${repo}`;
-
-      } catch (error) {
-        console.error('Error in PR review process:', error.message);
-        return `Error posting PR review: $${error.message}`;
-      }
+    if (!repo || !prNumber) {
+      console.error('Missing required PR information:', { repo, prNumber, prInfo, metadata });
+      return 'Error: Missing required PR information for review';
     }
 
-    /**
-     * Generate a grumpy sysadmin-style review based on PR details
-     * @param {Object} prDetails - The PR details from GitHub API
-     * @param {Array} files - Array of files changed in the PR
-     * @returns {string} The review comment
-     */
-    function generateGrumpyReview(prDetails, files) {
-      /**
-      * Generate a grumpy sysadmin-style review based on PR details using AI
-      * @param {Object} prDetails - The PR details from GitHub API
-      * @param {Array} files - Array of files changed in the PR
-      * @returns {string} The AI-generated review comment with grumpy personality
-      */
-      async function generateGrumpyReview(prDetails, files) {
-        const { title, user, created_at, body, html_url, number: prNumber } = prDetails;
-        const fileCount = files.length;
-        const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
-        const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
+    console.log(`Reviewing PR #$${prNumber} in $${repo}`);
 
-        // Prepare a concise summary of changes
-        const fileSummaries = files.slice(0, 10).map(file => ({
-          filename: file.filename,
-          status: file.status,
-          additions: file.additions,
-          deletions: file.deletions,
-          changes: file.patch ? file.patch.substring(0, 2000) + (file.patch.length > 2000 ? '...' : '') : null
-        }));
+    try {
+      // Get the token manager and token for GitHub API access
+      const tokenManager = await getTokenManager();
+      const githubToken = await tokenManager.getToken();
 
-        // Create a detailed prompt that emphasizes grumpy sysadmin personality
-        const aiPrompt = `You are an extremely grumpy, old-school Unix sysadmin who has been managing production infrastructure for 25 years.
-      You've seen countless disasters caused by careless developers and you take ZERO nonsense.
-      Your personality traits:
-      - Sarcastically gruff and impatient
-      - Speaks in gruff, direct statements
-      - Cynical about "modern dev practices"
-      - Obsessed with uptime, security, and "back in my day" stories
-      - Takes personal offense at poor security practices
-      - Uses phrases like "Listen here, kid", "Back in my day", "What could go wrong?", "I hope you have backups", "Are you kidding me?", "This is why we can't have nice things"
-      - Gets genuinely angry about hardcoded passwords, missing error handling, and insecure defaults
+      // Fetch the PR details from GitHub API
+      const prResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}`, {
+        headers: {
+          'Authorization': `Bearer $${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'OpenClaw-GitHub-App'
+        }
+      });
 
-      Review this pull request #$${prNumber}: "$${title}" by @$${user.login}.
+      if (!prResponse.ok) {
+        throw new Error(`Failed to fetch PR: $${prResponse.status} - $${await prResponse.text()}`);
+      }
 
-      PR Details:
-      - Created: $${created_at}
-      - Description: $${body || 'No description provided (typical...)'}
-      - Files Changed: $${fileCount}
-      - Additions: $${additions}, Deletions: $${deletions}
+      const prDetails = await prResponse.json();
 
-      File Changes (first 10 files):
-      $${JSON.stringify(fileSummaries, null, 2)}
+      // Fetch the PR files to analyze changes
+      const filesResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}/files`, {
+        headers: {
+          'Authorization': `Bearer $${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'OpenClaw-GitHub-App'
+        }
+      });
 
-      Provide a review that embodies your grumpy sysadmin personality throughout:
-      - Start with immediate skepticism: "Oh, great. Another PR..." or "What fresh hell is this?"
-      - Express frustration with modern development practices
-      - Point out security vulnerabilities with genuine anger
-      - Complain about lack of proper documentation or testing
-      - Mention how this could bring down production on a Sunday morning
-      - Give grudging approval if it's actually decent, but still complain about something
-      - Use the grumpy tone consistently throughout, not just in signoff
+      if (!filesResponse.ok) {
+        console.warn('Could not fetch PR files:', await filesResponse.text());
+      }
 
-      Make it sound like a veteran sysadmin who's tired of cleaning up other people's messes.`;
+      const files = filesResponse.ok ? await filesResponse.json() : [];
+
+      // Perform grumpy sysadmin review
+      const reviewComment = await generateGrumpyReview(prDetails, files);
+
+      // Post the review comment to the PR
+      const commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer $${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'OpenClaw-GitHub-App',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          body: reviewComment
+        })
+      });
+
+      if (!commentResponse.ok) {
+        throw new Error(`Failed to post review comment: $${commentResponse.status} - $${await commentResponse.text()}`);
+      }
+
+      console.log(`Successfully posted review to PR #$${prNumber}`);
+
+      return `Grumpy Sysadmin Agent: Successfully posted review to PR #$${prNumber} in $${repo}`;
+
+    } catch (error) {
+      console.error('Error in PR review process:', error.message);
+      return `Error posting PR review: $${error.message}`;
+    }
+  }
+
+  /**
+   * Generate a grumpy sysadmin-style review based on PR details using AI
+   * @param {Object} prDetails - The PR details from GitHub API
+   * @param {Array} files - Array of files changed in the PR
+   * @returns {string} The AI-generated review comment with grumpy personality
+   */
+  async function generateGrumpyReview(prDetails, files) {
+    const { title, user, created_at, body, html_url, number: prNumber } = prDetails;
+    const fileCount = files.length;
+    const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
+    const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
+
+    // Prepare a concise summary of changes (first 10 files to avoid token limits)
+    const fileSummaries = files.slice(0, 10).map(file => ({
+      filename: file.filename,
+      status: file.status,
+      additions: file.additions,
+      deletions: file.deletions,
+      changes: file.patch ? file.patch.substring(0, 2000) + (file.patch.length > 2000 ? '...' : '') : null
+    }));
+
+    // Create a detailed prompt that emphasizes grumpy sysadmin personality
+    const aiPrompt = `You are an extremely grumpy, old-school Unix sysadmin who has been managing production infrastructure for 25 years.
+    You've seen countless disasters caused by careless developers and you take ZERO nonsense.
+    Your personality traits:
+    - Sarcastically gruff and impatient
+    - Speaks in gruff, direct statements
+    - Cynical about "modern dev practices"
+    - Obsessed with uptime, security, and "back in my day" stories
+    - Takes personal offense at poor security practices
+    - Uses phrases like "Listen here, kid", "Back in my day", "What could go wrong?", "I hope you have backups", "Are you kidding me?", "This is why we can't have nice things"
+    - Gets genuinely angry about hardcoded passwords, missing error handling, and insecure defaults
+
+    Review this pull request #$${prNumber}: "$${title}" by @$${user.login}.
+
+    PR Details:
+    - Created: $${created_at}
+    - Description: $${body || 'No description provided (typical...)'}
+    - Files Changed: $${fileCount}
+    - Additions: $${additions}, Deletions: $${deletions}
+
+    File Changes (first 10 files):
+    $${JSON.stringify(fileSummaries, null, 2)}
+
+    Provide a review that embodies your grumpy sysadmin personality throughout:
+    - Start with immediate skepticism: "Oh, great. Another PR..." or "What fresh hell is this?"
+    - Express frustration with modern development practices
+    - Point out security vulnerabilities with genuine anger
+    - Complain about lack of proper documentation or testing
+    - Mention how this could bring down production on a Sunday morning
+    - Give grudging approval if it's actually decent, but still complain about something
+    - Use the grumpy tone consistently throughout, not just in signoff
+
+    Make it sound like a veteran sysadmin who's tired of cleaning up other people's messes.`;
 
         try {
           // Send to OpenClaw's AI interface
@@ -510,12 +503,12 @@ data:
           // Format with consistent grumpy personality
           return `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
 
-      $${aiReview}
+    $${aiReview}
 
-      ---
-      *This review was automatically generated by the Grumpy Sysadmin Agent.*
-      *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
-      `;
+    ---
+    *This review was automatically generated by the Grumpy Sysadmin Agent.*
+    *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
+    `;
         } catch (error) {
           console.error('AI review generation failed:', error.message);
 
@@ -535,17 +528,17 @@ data:
 
         let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
 
-      Oh, great. Another pull request. Let me take a look at this disaster you've cooked up, @$${user.login}...
+    Oh, great. Another pull request. Let me take a look at this disaster you've cooked up, @$${user.login}...
 
-      ### 📋 The Basics (What I Hope Are the Least of My Problems)
-      - **Title**: "$${title}" - At least you named it something
-      - **Created**: $${created_at} - Probably at 5 PM on a Friday, knowing my luck
-      - **Files Changed**: $${fileCount} - $${fileCount > 10 ? 'Of course it\'s a massive change. Why wouldn\'t it be?' : 'Small mercies, I suppose.'}
-      - **Additions**: $${additions} - More code means more problems
-      - **Description**: $${body ? 'Briefly mentions what it does' : 'No description provided (typical...) - I hope the code is self-documenting, kid.'}
+    ### 📋 The Basics (What I Hope Are the Least of My Problems)
+    - **Title**: "$${title}" - At least you named it something
+    - **Created**: $${created_at} - Probably at 5 PM on a Friday, knowing my luck
+    - **Files Changed**: $${fileCount} - $${fileCount > 10 ? 'Of course it\'s a massive change. Why wouldn\'t it be?' : 'Small mercies, I suppose.'}
+    - **Additions**: $${additions} - More code means more problems
+    - **Description**: $${body ? 'Briefly mentions what it does' : 'No description provided (typical...) - I hope the code is self-documenting, kid.'}
 
-      ### 🔍 The Grumpy Analysis
-      `;
+    ### 🔍 The Grumpy Analysis
+    `;
 
         // Add grumpy commentary based on metrics
         if (fileCount > 10) {
@@ -580,57 +573,57 @@ data:
         }
 
         review += `
-      ### ✅ Things That Might Actually Pass My Standards (Don't Get Cocky)
-      Before this PR can be merged, you'll need to:
+    ### ✅ Things That Might Actually Pass My Standards (Don't Get Cocky)
+    Before this PR can be merged, you'll need to:
 
-      1. All CI checks better pass (I'll be watching)
-      2. Someone who's not you should review this code
-      3. Document what happens when this breaks at 3 AM
-      4. Pray that I don't find any hardcoded passwords
+    1. All CI checks better pass (I'll be watching)
+    2. Someone who's not you should review this code
+    3. Document what happens when this breaks at 3 AM
+    4. Pray that I don't find any hardcoded passwords
 
-      ### 📝 Final Grumpy Thoughts
-      $${fileCount > 5 ? `This is too big. Break it down, kid. I've seen smaller deployments bring down entire data centers.` : `Well, it's not the worst PR I've seen today...`}
+    ### 📝 Final Grumpy Thoughts
+    $${fileCount > 5 ? `This is too big. Break it down, kid. I've seen smaller deployments bring down entire data centers.` : `Well, it's not the worst PR I've seen today...`}
 
-      Remember: "With great power comes great responsibility." Please make sure you understand the implications of these changes before merging. I don't want to be woken up on Sunday because of your "quick fix."
+    Remember: "With great power comes great responsibility." Please make sure you understand the implications of these changes before merging. I don't want to be woken up on Sunday because of your "quick fix."
 
-      Yours grumpily,
-      The Grumpy Sysadmin 🤖
+    Yours grumpily,
+    The Grumpy Sysadmin 🤖
 
-      P.S. I hope you have backups of everything this touches.
+    P.S. I hope you have backups of everything this touches.
 
-      ---
-      *This review was automatically generated by the Grumpy Sysadmin Agent.*
-      *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
-      `;
+    ---
+    *This review was automatically generated by the Grumpy Sysadmin Agent.*
+    *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
+    `;
 
         return review;
       }
 
-    /**
-     * Main function to handle the agent task
-     * @param {Object} context - The context object
-     * @param {Object} options - Additional options
-     */
-    async function handleAgentTask(context, options = {}) {
-      try {
-        console.log('Grumpy Sysadmin Agent activated');
+      /**
+      * Main function to handle the agent task
+      * @param {Object} context - The context object
+      * @param {Object} options - Additional options
+      */
+      async function handleAgentTask(context, options = {}) {
+        try {
+          console.log('Grumpy Sysadmin Agent activated');
 
-        // Check if this is a PR review request
-        if (context.message &&
-            (context.message.toLowerCase().includes('review') ||
-             context.message.toLowerCase().includes('pull request') ||
-             context.metadata?.pr_number)) {
+          // Check if this is a PR review request
+          if (context.message &&
+              (context.message.toLowerCase().includes('review') ||
+              context.message.toLowerCase().includes('pull request') ||
+              context.metadata?.pr_number)) {
 
-          return await processPRReview(context, context.metadata);
+            return await processPRReview(context, context.metadata);
+          }
+
+          // Default response for other requests
+          return "Grumpy Sysadmin Agent: I specialize in reviewing pull requests. Please provide PR details for review.";
+
+        } catch (error) {
+          console.error('Grumpy Sysadmin Agent error:', error.message);
+          return `Grumpy Sysadmin Agent Error: $${error.message}`;
         }
-
-        // Default response for other requests
-        return "Grumpy Sysadmin Agent: I specialize in reviewing pull requests. Please provide PR details for review.";
-
-      } catch (error) {
-        console.error('Grumpy Sysadmin Agent error:', error.message);
-        return `Grumpy Sysadmin Agent Error: $${error.message}`;
       }
-    }
 
-    module.exports = { handleAgentTask, processPRReview, generateGrumpyReview };
+      module.exports = { handleAgentTask, processPRReview, generateGrumpyReview };
