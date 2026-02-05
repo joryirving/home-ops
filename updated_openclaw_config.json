@@ -1,0 +1,569 @@
+{
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "qwen-portal/coder-model",
+        "fallbacks": [
+          "google/gemini-3-flash",
+          "openai/gpt-4o-mini",
+          "ollama-smurf/glm-4.7-flash-reap-23b-a3b",
+          "ollama-k8s/qwen2.5-coder:32b"
+        ]
+      },
+      "models": {
+        "qwen-portal/coder-model": {
+          "alias": "qwen"
+        },
+        "google/gemini-3-flash": {
+          "alias": "gemini"
+        },
+        "google/gemini-3-pro": {
+          "alias": "gemini3pro"
+        },
+        "openai/gpt-4o-mini": {
+          "alias": "openai"
+        },
+        "ollama-smurf/glm-4.7-flash-reap-23b-a3b": {
+          "alias": "smurf"
+        },
+        "ollama-k8s/qwen2.5-coder:32b": {
+          "alias": "k8s"
+        },
+        "ollama-smurf/llama2-uncensored:7b": {
+          "alias": "smurf-llama2"
+        },
+        "ollama-smurf/deepseek-coder-v2:16b": {
+          "alias": "smurf-deepseek-coder"
+        },
+        "ollama-smurf/deepseek-v2:16b": {
+          "alias": "smurf-deepseek"
+        },
+        "ollama-smurf/llava:13b": {
+          "alias": "smurf-llava"
+        },
+        "ollama-smurf/gpt-oss:20b": {
+          "alias": "smurf-gpt-oss"
+        },
+        "ollama-smurf/mistral-nemo:12b": {
+          "alias": "smurf-mistral"
+        },
+        "ollama-smurf/qwen3:8b": {
+          "alias": "smurf-qwen3-8b"
+        },
+        "ollama-smurf/qwen3:14b": {
+          "alias": "smurf-qwen3-14b"
+        },
+        "ollama-smurf/deepseek-r1:14b": {
+          "alias": "smurf-deepseek-r1"
+        },
+        "ollama-smurf/qwen2.5-coder:14b": {
+          "alias": "smurf-qwen25-coder"
+        },
+        "ollama-k8s/deepseek-r1:8b": {
+          "alias": "k8s-deepseek-r1"
+        },
+        "ollama-k8s/qwen3:8b": {
+          "alias": "k8s-qwen3-8b"
+        },
+        "ollama-k8s/qwen2.5-coder:7b": {
+          "alias": "k8s-qwen25-coder-7b"
+        },
+        "ollama-k8s/llama3.1:8b": {
+          "alias": "k8s-llama31"
+        },
+        "ollama-k8s/qwen3:14b": {
+          "alias": "k8s-qwen3-14b"
+        }
+      },
+      "memorySearch": {
+        "provider": "gemini",
+        "model": "gemini-embedding-001",
+        "fallback": "local",
+        "local": {
+          "modelPath": "hf:ggml-org/embeddinggemma-300M-GGUF/embeddinggemma-300M-Q8_0.gguf"
+        },
+        "sync": {
+          "watch": true
+        },
+        "query": {
+          "hybrid": {
+            "enabled": true,
+            "vectorWeight": 0.7,
+            "textWeight": 0.3
+          }
+        }
+      }
+    }
+  },
+  "models": {
+    "providers": {
+      "qwen-portal": {
+        "baseUrl": "https://portal.qwen.ai/v1",
+        "apiKey": "qwen-oauth",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "coder-model",
+            "name": "Qwen Coder",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 128000,
+            "maxTokens": 8192
+          },
+          {
+            "id": "vision-model",
+            "name": "Qwen Vision",
+            "reasoning": false,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 128000,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "google": {
+        "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+        "apiKey": "{{ .GOOGLE_GEMINI_API_KEY }}",
+        "api": "google-generative-ai",
+        "models": [
+          {
+            "id": "gemini-3-flash",
+            "name": "Gemini 3 Flash",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32760,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "ollama-smurf": {
+        "baseUrl": "http://smurf-pc:11434/v1",
+        "apiKey": "ollama-smurf",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "glm-4.7-flash-reap-23b-a3b",
+            "name": "GLM-4.7 Flash REAP-23B-A3B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "llama2-uncensored:7b",
+            "name": "Llama2 Uncensored 7B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "deepseek-coder-v2:16b",
+            "name": "DeepSeek Coder V2 16B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "deepseek-v2:16b",
+            "name": "DeepSeek V2 16B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "llava:13b",
+            "name": "LLaVA 13B",
+            "reasoning": false,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "gpt-oss:20b",
+            "name": "GPT-OSS 20B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "mistral-nemo:12b",
+            "name": "Mistral Nemo 12B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen3:8b",
+            "name": "Qwen3 8B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen3:14b",
+            "name": "Qwen3 14B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "deepseek-r1:14b",
+            "name": "DeepSeek R1 14B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen2.5-coder:14b",
+            "name": "Qwen2.5 Coder 14B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "ollama-k8s": {
+        "baseUrl": "http://ollama.llm:11434/v1",
+        "apiKey": "ollama-k8s",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "gpt-oss-20b",
+            "name": "GPT-OSS 20B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 4096,
+            "maxTokens": 4096
+          },
+          {
+            "id": "qwen2.5-coder:32b",
+            "name": "Qwen2.5 Coder 32B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "deepseek-r1:8b",
+            "name": "DeepSeek R1 8B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen3:8b",
+            "name": "Qwen3 8B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen2.5-coder:7b",
+            "name": "Qwen2.5 Coder 7B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "llama3.1:8b",
+            "name": "Llama3.1 8B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen3:14b",
+            "name": "Qwen3 14B",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 32768,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "openai": {
+        "baseUrl": "https://api.openai.com/v1",
+        "apiKey": "{{ .OPENAI_API_KEY }}",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "gpt-4o-mini",
+            "name": "GPT-4o Mini",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 128000,
+            "maxTokens": 16384
+          }
+        ]
+      }
+    }
+  },
+  "auth": {
+    "profiles": {
+      "qwen-portal:default": {
+        "provider": "qwen-portal",
+        "mode": "oauth"
+      },
+      "ollama-smurf:default": {
+        "provider": "ollama-smurf",
+        "mode": "api_key"
+      },
+      "ollama-k8s:default": {
+        "provider": "ollama-k8s",
+        "mode": "api_key"
+      },
+      "openai:default": {
+        "provider": "openai",
+        "mode": "api_key"
+      }
+    }
+  },
+  "hooks": {
+    "enabled": true,
+    "path": "/webhooks",
+    "token": "{{ .GITHUB_WEBHOOK_SECRET }}",
+    "maxBodyBytes": 262144,
+    "transformsDir": "/home/node/.openclaw/workspace",
+    "mappings": [
+      {
+        "id": "github-pr-notifications",
+        "match": {
+          "path": "github"
+        },
+        "action": "agent",
+        "wakeMode": "now",
+        "name": "GitHub PR Handler",
+        "transform": {
+          "module": "./github-webhook-transform-improved.js"
+        }
+      }
+    ]
+  },
+  "plugins": {
+    "entries": {
+      "discord": {
+        "enabled": true
+      },
+      "qwen-portal-auth": {
+        "enabled": true
+      }
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "auth": {
+      "mode": "token",
+      "token": "{{ .OPENCLAW_GATEWAY_TOKEN }}"
+    },
+    "port": 18789,
+    "bind": "loopback",
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "trustedProxies": ["10.42.0.0/16", "192.168.0.0/16"]
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "wizard": {
+    "lastRunAt": "2026-01-30T18:09:59.466Z",
+    "lastRunVersion": "2026.1.29",
+    "lastRunCommand": "onboard",
+    "lastRunMode": "local"
+  }
+}
