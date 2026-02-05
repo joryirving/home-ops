@@ -5,9 +5,15 @@ kind: Certificate
 metadata:
   name: jory-dev
 spec:
-  secretName: jory-dev-tls
+  dnsNames: ["jory.dev", "*.jory.dev"]
+  duration: 160h
   issuerRef:
     name: letsencrypt-production
     kind: ClusterIssuer
-  commonName: jory.dev
-  dnsNames: ["jory.dev", "*.jory.dev"]
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  secretName: jory-dev-tls
+  usages:
+    - digital signature
