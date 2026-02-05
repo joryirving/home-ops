@@ -1,10 +1,11 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: openclaw-hooks-scripts
 data:
   github-webhook-transform.js: |-
-    // GitHub Webhook Transform for OpenClaw - Robust Version
+    // GitHub Webhook Transform for OpenClaw
     const { spawn } = require('child_process');
 
     // Import the existing GitHub App token manager
@@ -15,6 +16,7 @@ data:
 
     /**
      * Transform function for GitHub webhook events
+
      * Robustly handles both simplified payloads from webhook receiver and full GitHub payloads
      * @param {Object} ctx - Context object containing payload, headers, etc.
      * @returns {Object} Response object
@@ -25,7 +27,7 @@ data:
 
       // Try to determine the event type from multiple sources
       let eventType = headers['x-github-event'] || event.action || 'unknown';
-      
+
       // Also check for other potential event indicators
       if (event.hasOwnProperty('pull_request') && event.pull_request) {
         eventType = 'pull_request';
@@ -55,20 +57,20 @@ data:
       });
 
       // Extract information with fallbacks
-      const repo = event.repository?.full_name || 
-                  (event.pull_request?.html_url ? 
-                    event.pull_request.html_url.split('/')[3] + '/' + event.pull_request.html_url.split('/')[4] : 
+      const repo = event.repository?.full_name ||
+                  (event.pull_request?.html_url ?
+                    event.pull_request.html_url.split('/')[3] + '/' + event.pull_request.html_url.split('/')[4] :
                     'unknown/unknown');
-                  
-      const prNumber = event.pull_request?.number || 
-                      (event.issue?.pull_request ? 
-                        parseInt(event.issue.url.split('/').pop()) : 
+
+      const prNumber = event.pull_request?.number ||
+                      (event.issue?.pull_request ?
+                        parseInt(event.issue.url.split('/').pop()) :
                         null);
 
       // Handle different event types based on the payload
       if (repo !== 'unknown/unknown' && prNumber && action !== 'unknown') {
         // This looks like a pull request event
-        
+
         const prInfo = {
           repo: repo,
           pr_number: prNumber,
@@ -122,14 +124,14 @@ data:
       else {
         // Handle other event types or return a default response
         console.log('Received non-PR event or incomplete event:', { action, repo, prNumber });
-        
+
         // If it's a test delivery from our webhook receiver, try to extract from nested payload
         if (event.delivery_id && event.delivery_id.startsWith('test-delivery') && event.payload) {
           const nestedEvent = event.payload;
           const nestedAction = nestedEvent.action || 'unknown';
           const nestedRepo = nestedEvent.repository?.full_name || 'unknown/unknown';
           const nestedPrNumber = nestedEvent.pull_request?.number || null;
-          
+
           if (nestedRepo !== 'unknown/unknown' && nestedPrNumber) {
             if (nestedAction === 'opened' || nestedAction === 'synchronize') {
               try {
@@ -145,7 +147,7 @@ data:
                     created_at: nestedEvent.pull_request?.created_at
                   }}
                 );
-                
+
                 return {
                   message: 'Grumpy sysadmin review completed for PR #' + nestedPrNumber,
                   channel: "last"
@@ -353,7 +355,7 @@ data:
         return 'Error: Missing required PR information for review';
       }
 
-      console.log(`Reviewing PR #${prNumber} in ${repo}`);
+      console.log(`Reviewing PR #$${prNumber} in $${repo}`);
 
       try {
         // Get the token manager and token for GitHub API access
@@ -361,24 +363,24 @@ data:
         const githubToken = await tokenManager.getToken();
 
         // Fetch the PR details from GitHub API
-        const prResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}`, {
+        const prResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}`, {
           headers: {
-            'Authorization': `Bearer ${githubToken}`,
+            'Authorization': `Bearer $${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App'
           }
         });
 
         if (!prResponse.ok) {
-          throw new Error(`Failed to fetch PR: ${prResponse.status} - ${await prResponse.text()}`);
+          throw new Error(`Failed to fetch PR: $${prResponse.status} - $${await prResponse.text()}`);
         }
 
         const prDetails = await prResponse.json();
 
         // Fetch the PR files to analyze changes
-        const filesResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/files`, {
+        const filesResponse = await fetch(`https://api.github.com/repos/$${repo}/pulls/$${prNumber}/files`, {
           headers: {
-            'Authorization': `Bearer ${githubToken}`,
+            'Authorization': `Bearer $${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App'
           }
@@ -394,10 +396,10 @@ data:
         const reviewComment = generateGrumpyReview(prDetails, files);
 
         // Post the review comment to the PR
-        const commentResponse = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, {
+        const commentResponse = await fetch(`https://api.github.com/repos/$${repo}/issues/$${prNumber}/comments`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${githubToken}`,
+            'Authorization': `Bearer $${githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'OpenClaw-GitHub-App',
             'Content-Type': 'application/json'
@@ -408,16 +410,16 @@ data:
         });
 
         if (!commentResponse.ok) {
-          throw new Error(`Failed to post review comment: ${commentResponse.status} - ${await commentResponse.text()}`);
+          throw new Error(`Failed to post review comment: $${commentResponse.status} - $${await commentResponse.text()}`);
         }
 
-        console.log(`Successfully posted review to PR #${prNumber}`);
+        console.log(`Successfully posted review to PR #$${prNumber}`);
 
-        return `Grumpy Sysadmin Agent: Successfully posted review to PR #${prNumber} in ${repo}`;
+        return `Grumpy Sysadmin Agent: Successfully posted review to PR #$${prNumber} in $${repo}`;
 
       } catch (error) {
         console.error('Error in PR review process:', error.message);
-        return `Error posting PR review: ${error.message}`;
+        return `Error posting PR review: $${error.message}`;
       }
     }
 
@@ -434,29 +436,29 @@ data:
       const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
 
       // Generate a grumpy but constructive review
-      let review = `## ⚠️ Grumpy Sysadmin Review for PR #${prDetails.number}
+      let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prDetails.number}
 
-    Hello @${user.login},
+    Hello @$${user.login},
 
-    As your resident grumpy sysadmin, I've reviewed your pull request "${title}". Here are my observations:
+    As your resident grumpy sysadmin, I've reviewed your pull request "$${title}". Here are my observations:
 
     ### 📋 Summary
-    - **Author**: @${user.login}
-    - **Created**: ${created_at}
-    - **Files Changed**: ${fileCount}
-    - **Additions**: ${additions}
-    - **Deletions**: ${deletions}
+    - **Author**: @$${user.login}
+    - **Created**: $${created_at}
+    - **Files Changed**: $${fileCount}
+    - **Additions**: $${additions}
+    - **Deletions**: $${deletions}
 
     ### 🔍 Technical Assessment
     `;
 
       // Add some grumpy but helpful commentary based on the changes
       if (fileCount > 10) {
-        review += `- **⚠️ Large PR**: This PR touches ${fileCount} files. Could this be broken down into smaller, more focused changes?\n`;
+        review += `- **⚠️ Large PR**: This PR touches $${fileCount} files. Could this be broken down into smaller, more focused changes?\n`;
       }
 
       if (additions > 200) {
-        review += `- **⚠️ Code Volume**: This PR adds ${additions} lines. Please ensure adequate testing.\n`;
+        review += `- **⚠️ Code Volume**: This PR adds $${additions} lines. Please ensure adequate testing.\n`;
       }
 
       if (!body || body.trim().length < 20) {
@@ -473,7 +475,7 @@ data:
       );
 
       if (sensitiveFiles.length > 0) {
-        review += `- **🚨 Sensitive Areas**: This PR touches infrastructure/configuration files (${sensitiveFiles.map(f => f.filename).join(', ')}). Extra scrutiny required!\n`;
+        review += `- **🚨 Sensitive Areas**: This PR touches infrastructure/configuration files ($${sensitiveFiles.map(f => f.filename).join(', ')}). Extra scrutiny required!\n`;
       }
 
       // If no specific issues found, add general grumpiness
@@ -525,7 +527,7 @@ data:
 
       } catch (error) {
         console.error('Grumpy Sysadmin Agent error:', error.message);
-        return `Grumpy Sysadmin Agent Error: ${error.message}`;
+        return `Grumpy Sysadmin Agent Error: $${error.message}`;
       }
     }
 
