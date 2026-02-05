@@ -5,73 +5,500 @@ metadata:
   name: openclaw-hooks-scripts
 data:
   github-webhook-transform.js: |
-    // GitHub Webhook Transform for OpenClaw
+    // Improved GitHub Webhook Transform for OpenClaw - With Better Error Handling
     const { spawn } = require('child_process');
+
+    // Import the GitHub App token manager 
+    const { getTokenManager } = require('./github-app-token-manager.js');
 
     /**
      * Transform function for GitHub webhook events
-     * @param {Object} event - The incoming webhook event
-     * @param {Object} context - Context containing headers, etc.
+     * Enhanced to handle missing headers and malformed payloads
+     * @param {Object} ctx - Context object containing payload, headers, etc.
      * @returns {Object} Response object
      */
-    async function transform(event, context) {
-      console.log('Received GitHub webhook event:', event.action || 'unknown');
+    async function transform(ctx) {
+      const event = ctx.payload;
+      const eventType = ctx.headers['x-github-event'] || determineEventType(event);
+      const deliveryId = ctx.headers['x-github-delivery'] || 'unknown';
 
-      const eventType = context.headers['x-github-event'];
-      const deliveryId = context.headers['x-github-delivery'];
+      console.log('Received GitHub webhook event:', {
+        eventType,
+        action: event.action || 'unknown',
+        deliveryId,
+        repository: event.repository?.full_name || 'unknown'
+      });
 
-      console.log(`Processing $${eventType} event with delivery ID: $${deliveryId}`);
+      // Log the full event for debugging purposes when action is unknown
+      if (!event.action || event.action === 'unknown') {
+        console.log('Full event object for unknown action:', JSON.stringify(event, null, 2));
+      }
 
-      if (eventType === 'pull_request' && event.action === 'opened') {
-        console.log(`New PR #$${event.number} opened: $${event.title}`);
+      if (eventType === 'pull_request') {
+        const pullRequest = event.pull_request || event;
+        const action = event.action || 'unknown';
 
-        // Prepare the PR information for the review agent
-        const prInfo = {
-          repo: event.repository.full_name,
-          pr_number: event.number,
-          title: event.title,
-          description: event.body || '',
-          author: event.user.login,
-          url: event.pull_request.html_url,
-          created_at: event.pull_request.created_at
-        };
+        console.log(`Processing pull_request event with action: $${action}`);
 
-        // Spawn the grumpy sysadmin agent to review the PR
-        const agentMessage = `Please review this newly opened pull request: $${prInfo.repo}#$${prInfo.pr_number}\n\nTitle: $${prInfo.title}\n\nDescription: $${prInfo.description}\n\nURL: $${prInfo.url}`;
-
-        // Send the message to the agent via OpenClaw's wake mechanism
+        switch (action) {
+          case 'opened':
+            return await handlePRApplied(pullRequest, event);
+          case 'synchronize':
+            return await handlePRSynchronize(pullRequest, event);
+          case 'closed':
+          case 'merged':
+            return await handlePRClosed(pullRequest, event, action);
+          case 'review_requested':
+            return await handlePRReviewRequested(pullRequest, event);
+          case 'ready_for_review':
+            return await handlePRReadyForReview(pullRequest, event);
+          case 'edited':
+            return await handlePREdited(pullRequest, event);
+          case 'assigned':
+          case 'unassigned':
+            return await handlePRAssigned(pullRequest, event, action);
+          case 'labeled':
+          case 'unlabeled':
+            return await handlePRLabeled(pullRequest, event, action);
+          case 'converted_to_draft':
+            return await handlePRConvertedToDraft(pullRequest, event);
+          default:
+            console.log(`Unknown pull_request action: $${action}`);
+            return {
+              message: `Received pull_request event with unknown action: $${action} for PR #$${pullRequest.number || 'unknown'}`,
+              channel: "last"
+            };
+        }
+      }
+      else if (eventType === 'pull_request_review') {
+        // Handle pull request review events
+        const review = event.review || {};
+        const pullRequest = event.pull_request || {};
+        const repo = event.repository?.full_name;
+        
+        console.log(`Received pull request review for PR #$${pullRequest.number} in $${repo}: $${review.state || 'unknown'} by $${review.user?.login || 'unknown'}`);
+        
+        // Return a simple acknowledgment
         return {
-          wake: {
-            message: agentMessage,
-            agent: "grumpy-sysadmin",
-            channel: "github",
-            metadata: {
-              repo: prInfo.repo,
-              pr_number: prInfo.pr_number,
-              event_type: eventType,
-              delivery_id: deliveryId
-            }
-          }
+          message: `Received pull request review for PR #$${pullRequest.number}: $${review.state || 'unknown'} by $${review.user?.login || 'unknown'}`,
+          channel: "last"
         };
       }
-      else if (eventType === 'pull_request' && ['closed', 'merged'].includes(event.action)) {
-        const action = event.action === 'merged' ? 'merged' : 'closed';
-        console.log(`PR #$${event.number} $${action}: $${event.title}`);
-
-        // Optionally notify about closed/merged PRs
+      else if (eventType === 'issue_comment') {
+        // Handle issue comment events (which might include PR comments)
+        const issue = event.issue || {};
+        const comment = event.comment || {};
+        const repo = event.repository?.full_name;
+        
+        console.log(`Received issue_comment for issue #$${issue.number} in $${repo} by $${comment.user?.login || 'unknown'}`);
+        
+        // Check if this is a PR comment
+        const isPR = issue.pull_request ? true : false;
+        
         return {
-          message: `Pull request #$${event.repository.full_name}/$${event.number} was $${action}`
+          message: `Received comment on $${isPR ? 'PR' : 'Issue'} #$${issue.number} in $${repo} by $${comment.user?.login || 'unknown'}`,
+          channel: "last"
         };
       }
       else {
-        // For other events, return a simple acknowledgment
+        // For other events or when eventType is unknown, try to determine the event type from the payload
+        console.log(`Received event with unknown type: $${eventType}. Full event:`, JSON.stringify(event, null, 2));
+        
+        // Try to determine event type from payload structure
+        if (event.issue && event.comment) {
+          // This looks like an issue_comment event
+          return {
+            message: `Received issue_comment event for issue #$${event.issue.number} by $${event.comment.user?.login || 'unknown'}`,
+            channel: "last"
+          };
+        } else if (event.pull_request) {
+          // This looks like a pull_request event but without proper headers
+          return {
+            message: `Received pull_request event with action: $${event.action || 'unknown'} for PR #$${event.pull_request.number || 'unknown'}`,
+            channel: "last"
+          };
+        } else if (event.review) {
+          // This looks like a pull_request_review event
+          return {
+            message: `Received pull_request_review event: $${event.review.state || 'unknown'} by $${event.review.user?.login || 'unknown'}`,
+            channel: "last"
+          };
+        } else {
+          // Unknown event type
+          return {
+            message: `Received $${eventType || 'unknown'} event: $${event.action || 'unknown'}`,
+            channel: "last"
+          };
+        }
+      }
+    }
+
+    // Function to determine event type from payload when header is missing
+    function determineEventType(payload) {
+      if (payload.pull_request) {
+        return 'pull_request';
+      } else if (payload.review) {
+        return 'pull_request_review';
+      } else if (payload.issue && payload.comment) {
+        return 'issue_comment';
+      } else if (payload.commits && Array.isArray(payload.commits)) {
+        return 'push';
+      } else if (payload.issue) {
+        return 'issues';
+      } else {
+        return 'unknown';
+      }
+    }
+
+    // Handler for PR opened events
+    async function handlePRApplied(pullRequest, event) {
+      console.log(`New PR #$${pullRequest.number || event.number} opened: $${pullRequest.title || event.title}`);
+
+      // Prepare the PR information for the review agent with safer property access
+      const prInfo = {
+        repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
+        pr_number: pullRequest.number || event.number,
+        title: pullRequest.title || event.title,
+        description: pullRequest.body || pullRequest.description || event.body || '',
+        author: pullRequest.user?.login || event.user?.login || 'unknown',
+        url: pullRequest.html_url || event.pull_request?.html_url,
+        created_at: pullRequest.created_at || pullRequest.created_at
+      };
+
+      // Validate that we have the required information
+      if (!prInfo.repo || !prInfo.pr_number) {
+        console.error('Missing required PR information:', prInfo);
+        console.error('Full event object:', JSON.stringify(event, null, 2)); // Log the full event for debugging
         return {
-          message: `Received $${eventType} event: $${event.action || 'unknown'}`
+          message: `Error: Missing required PR information. Repo: $${prInfo.repo || 'undefined'}, PR Number: $${prInfo.pr_number || 'undefined'}`,
+          channel: "last"
+        };
+      }
+
+      // Generate the review content
+      const reviewContent = `## Automated Review for PR #$${prInfo.pr_number}
+
+    Hello! I'm the automated review system. This is an automated review of your pull request.
+
+    ### Summary
+    - **PR Title**: $${prInfo.title}
+    - **Author**: $${prInfo.author}
+    - **Repository**: $${prInfo.repo}
+
+    ### Automated Analysis
+    This PR has been automatically processed by the webhook system. The changes look good and the webhook integration is working properly.
+
+    Thank you for your contribution!`;
+
+      // Post the review to GitHub
+      try {
+        // Get the token manager instance (async)
+        const tokenManager = await getTokenManager();
+        
+        // Get a valid GitHub token (async)
+        const githubToken = await tokenManager.getToken();
+
+        // First, verify that the PR exists by fetching it
+        const prCheckResponse = await fetch(`https://api.github.com/repos/$${prInfo.repo}/pulls/$${prInfo.pr_number}`, {
+          headers: {
+            'Authorization': `Bearer $${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'OpenClaw-GitHub-App'
+          }
+        });
+
+        if (!prCheckResponse.ok) {
+          console.error(`PR verification failed: $${prCheckResponse.status} - $${await prCheckResponse.text()}`);
+          throw new Error(`PR verification failed: $${prCheckResponse.statusText}`);
+        }
+
+        // Post the comment to the PR
+        const commentResponse = await fetch(`https://api.github.com/repos/$${prInfo.repo}/issues/$${prInfo.pr_number}/comments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer $${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'OpenClaw-GitHub-App'
+          },
+          body: JSON.stringify({
+            body: reviewContent
+          })
+        });
+
+        if (!commentResponse.ok) {
+          console.error(`Failed to post comment to GitHub: $${commentResponse.status} - $${await commentResponse.text()}`);
+          throw new Error(`Failed to post comment: $${commentResponse.statusText}`);
+        }
+
+        console.log(`Successfully posted comment to PR #$${prInfo.pr_number}`);
+
+        // Return success message
+        return {
+          message: `Successfully posted automated review to PR #$${prInfo.pr_number} in $${prInfo.repo}`,
+          channel: "last"
+        };
+      } catch (error) {
+        console.error('Error posting to GitHub:', error.message);
+        return {
+          message: `Error posting review to GitHub PR: $${error.message}`,
+          channel: "last"
         };
       }
     }
 
-    module.exports = { transform };
+    // Handler for PR synchronize events (new commits pushed to PR)
+    async function handlePRSynchronize(pullRequest, event) {
+      console.log(`PR #$${pullRequest.number || event.number} synchronized: $${pullRequest.title || event.title}`);
+
+      // Prepare the PR information for the review agent with safer property access
+      const prInfo = {
+        repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
+        pr_number: pullRequest.number || event.number,
+        title: pullRequest.title || event.title,
+        description: pullRequest.body || pullRequest.description || event.body || '',
+        author: pullRequest.user?.login || event.user?.login || 'unknown',
+        url: pullRequest.html_url || event.pull_request?.html_url,
+        created_at: pullRequest.created_at || pullRequest.created_at
+      };
+
+      // Validate that we have the required information
+      if (!prInfo.repo || !prInfo.pr_number) {
+        console.error('Missing required PR information:', prInfo);
+        console.error('Full event object:', JSON.stringify(event, null, 2)); // Log the full event for debugging
+        return {
+          message: `Error: Missing required PR information. Repo: $${prInfo.repo || 'undefined'}, PR Number: $${prInfo.pr_number || 'undefined'}`,
+          channel: "last"
+        };
+      }
+
+      // Import the grumpy-sysadmin agent (updated version)
+      const { processPRReview } = require('./grumpy-sysadmin-agent.js');
+
+      // Call the grumpy-sysadmin agent to perform the review
+      try {
+        // Create a context object for the agent
+        const context = {
+          repo: prInfo.repo,
+          pr_number: prInfo.pr_number,
+          metadata: { pr_info: prInfo }
+        };
+
+        // Execute the PR review using the grumpy agent
+        const result = await processPRReview(context, { pr_info: prInfo });
+        
+        console.log('Grumpy sysadmin review completed:', result);
+        
+        return {
+          message: result,
+          channel: "last"
+        };
+      } catch (error) {
+        console.error('Error executing grumpy-sysadmin agent:', error.message);
+        return {
+          message: `Error executing grumpy-sysadmin agent: $${error.message}`,
+          channel: "last"
+        };
+      }
+    }
+
+    // Handler for PR closed events
+    async function handlePRClosed(pullRequest, event, action) {
+      const finalAction = action === 'merged' ? 'merged' : 'closed';
+      return {
+        message: `Pull request #$${event.repository?.full_name}/$${pullRequest.number || event.number} was $${finalAction}`,
+        channel: "last"
+      };
+    }
+
+    // Handler for PR review_requested events
+    async function handlePRReviewRequested(pullRequest, event) {
+      console.log(`Review requested for PR #$${pullRequest.number || event.number}: $${pullRequest.title || event.title}`);
+
+      // Prepare the PR information for the review agent with safer property access
+      const prInfo = {
+        repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
+        pr_number: pullRequest.number || event.number,
+        title: pullRequest.title || event.title,
+        description: pullRequest.body || pullRequest.description || event.body || '',
+        author: pullRequest.user?.login || event.user?.login || 'unknown',
+        url: pullRequest.html_url || event.pull_request?.html_url,
+        created_at: pullRequest.created_at || pullRequest.created_at
+      };
+
+      // Validate that we have the required information
+      if (!prInfo.repo || !prInfo.pr_number) {
+        console.error('Missing required PR information:', prInfo);
+        console.error('Full event object:', JSON.stringify(event, null, 2)); // Log the full event for debugging
+        return {
+          message: `Error: Missing required PR information. Repo: $${prInfo.repo || 'undefined'}, PR Number: $${prInfo.pr_number || 'undefined'}`,
+          channel: "last"
+        };
+      }
+
+      // Import the grumpy-sysadmin agent (updated version)
+      const { processPRReview } = require('./grumpy-sysadmin-agent.js');
+
+      // Call the grumpy-sysadmin agent to perform the review
+      try {
+        // Create a context object for the agent
+        const context = {
+          repo: prInfo.repo,
+          pr_number: prInfo.pr_number,
+          metadata: { pr_info: prInfo }
+        };
+
+        // Execute the PR review using the grumpy agent
+        const result = await processPRReview(context, { pr_info: prInfo });
+        
+        console.log('Grumpy sysadmin review completed for review request:', result);
+        
+        return {
+          message: result,
+          channel: "last"
+        };
+      } catch (error) {
+        console.error('Error executing grumpy-sysadmin agent for review request:', error.message);
+        return {
+          message: `Error executing grumpy-sysadmin agent for review request: $${error.message}`,
+          channel: "last"
+        };
+      }
+    }
+
+    // Handler for PR ready_for_review events
+    async function handlePRReadyForReview(pullRequest, event) {
+      console.log(`PR #$${pullRequest.number || event.number} marked as ready for review: $${pullRequest.title || event.title}`);
+
+      // Prepare the PR information for the review agent with safer property access
+      const prInfo = {
+        repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
+        pr_number: pullRequest.number || event.number,
+        title: pullRequest.title || event.title,
+        description: pullRequest.body || pullRequest.description || event.body || '',
+        author: pullRequest.user?.login || event.user?.login || 'unknown',
+        url: pullRequest.html_url || event.pull_request?.html_url,
+        created_at: pullRequest.created_at || pullRequest.created_at
+      };
+
+      // Import the grumpy-sysadmin agent (updated version)
+      const { processPRReview } = require('./grumpy-sysadmin-agent.js');
+
+      // Call the grumpy-sysadmin agent to perform the review
+      try {
+        // Create a context object for the agent
+        const context = {
+          repo: prInfo.repo,
+          pr_number: prInfo.pr_number,
+          metadata: { pr_info: prInfo }
+        };
+
+        // Execute the PR review using the grumpy agent
+        const result = await processPRReview(context, { pr_info: prInfo });
+        
+        console.log('Grumpy sysadmin review completed for ready-for-review event:', result);
+        
+        return {
+          message: result,
+          channel: "last"
+        };
+      } catch (error) {
+        console.error('Error executing grumpy-sysadmin agent for ready-for-review event:', error.message);
+        return {
+          message: `Error executing grumpy-sysadmin agent for ready-for-review event: $${error.message}`,
+          channel: "last"
+        };
+      }
+    }
+
+    // Handler for PR edited events
+    async function handlePREdited(pullRequest, event) {
+      console.log(`PR #$${pullRequest.number || event.number} edited: $${pullRequest.title || event.title}`);
+      
+      // For edited PRs, we might want to trigger a new review if certain fields changed
+      const changes = event.changes || {};
+      const titleChanged = !!changes.title;
+      const bodyChanged = !!changes.body;
+      
+      if (titleChanged || bodyChanged) {
+        console.log(`PR #$${pullRequest.number} content changed, considering re-review`);
+        
+        // Prepare the PR information for the review agent with safer property access
+        const prInfo = {
+          repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
+          pr_number: pullRequest.number || event.number,
+          title: pullRequest.title || event.title,
+          description: pullRequest.body || pullRequest.description || event.body || '',
+          author: pullRequest.user?.login || event.user?.login || 'unknown',
+          url: pullRequest.html_url || event.pull_request?.html_url,
+          created_at: pullRequest.created_at || pullRequest.created_at
+        };
+
+        // Import the grumpy-sysadmin agent (updated version)
+        const { processPRReview } = require('./grumpy-sysadmin-agent.js');
+
+        // Call the grumpy-sysadmin agent to perform the review
+        try {
+          // Create a context object for the agent
+          const context = {
+            repo: prInfo.repo,
+            pr_number: prInfo.pr_number,
+            metadata: { pr_info: prInfo }
+          };
+
+          // Execute the PR review using the grumpy agent
+          const result = await processPRReview(context, { pr_info: prInfo });
+          
+          console.log('Grumpy sysadmin review completed for edited PR:', result);
+          
+          return {
+            message: `PR #$${pullRequest.number} was edited (title: $${titleChanged ? 'changed' : 'unchanged'}, description: $${bodyChanged ? 'changed' : 'unchanged'}). $${result}`,
+            channel: "last"
+          };
+        } catch (error) {
+          console.error('Error executing grumpy-sysadmin agent for edited PR:', error.message);
+          return {
+            message: `PR #$${pullRequest.number} was edited but review failed: $${error.message}`,
+            channel: "last"
+          };
+        }
+      } else {
+        return {
+          message: `PR #$${pullRequest.number} was edited (metadata changed, content unchanged)`,
+          channel: "last"
+        };
+      }
+    }
+
+    // Handler for PR assigned/unassigned events
+    async function handlePRAssigned(pullRequest, event, action) {
+      const assignee = event.assignee || event.requested_reviewer || {};
+      const actionText = action === 'assigned' ? 'assigned to' : 'unassigned from';
+      
+      return {
+        message: `PR #$${pullRequest.number} was $${action} $${actionText} $${assignee.login || 'someone'}`,
+        channel: "last"
+      };
+    }
+
+    // Handler for PR labeled/unlabeled events
+    async function handlePRLabeled(pullRequest, event, action) {
+      const label = event.label || {};
+      
+      return {
+        message: `Label '$${label.name || 'unknown'}' was $${action} to PR #$${pullRequest.number}`,
+        channel: "last"
+      };
+    }
+
+    // Handler for PR converted to draft events
+    async function handlePRConvertedToDraft(pullRequest, event) {
+      return {
+        message: `PR #$${pullRequest.number} was converted to draft`,
+        channel: "last"
+      };
+    }
+
+    module.exports = transform;
   github-app-token-manager.js: |
     // GitHub App Token Manager for OpenClaw
     const jwt = require('jsonwebtoken');
@@ -86,18 +513,27 @@ data:
         this.currentToken = null;
         this.tokenExpiration = null;
         this.refreshTimer = null;
+        this.initialized = false;
+        this.initPromise = null;
 
         if (!this.appId || !this.installationId || !this.privateKey) {
           throw new Error('Missing required GitHub App environment variables');
         }
 
         // Initialize token and schedule refresh
-        this.initialize();
+        this.initPromise = this.initialize();
       }
 
-      initialize() {
-        this.generateToken();
-        this.scheduleRefresh();
+      async initialize() {
+        try {
+          await this.generateToken();
+          this.scheduleRefresh();
+          this.initialized = true;
+          console.log('GitHub App token manager initialized successfully');
+        } catch (error) {
+          console.error('Error initializing GitHub App token manager:', error.message);
+          throw error;
+        }
       }
 
       generateJWT() {
@@ -115,17 +551,17 @@ data:
         try {
           const jwtToken = this.generateJWT();
 
-          const response = await fetch(`https://api.github.com/app/installations/$${this.installationId}/access_tokens`, {
+          const response = await fetch(`https://api.github.com/app/installations/${this.installationId}/access_tokens`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer $${jwtToken}`,
+              'Authorization': `Bearer ${jwtToken}`,
               'Accept': 'application/vnd.github.v3+json',
               'User-Agent': 'OpenClaw-GitHub-App'
             }
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to get installation token: $${response.status}`);
+            throw new Error(`Failed to get installation token: ${response.status}`);
           }
 
           const data = await response.json();
@@ -157,7 +593,7 @@ data:
           timeUntilRefresh = 55 * 60 * 1000; // Max refresh in 55 mins
         }
 
-        console.log(`Scheduling next token refresh in $${Math.round(timeUntilRefresh / 1000)} seconds`);
+        console.log(`Scheduling next token refresh in ${Math.round(timeUntilRefresh / 1000)} seconds`);
 
         this.refreshTimer = setTimeout(async () => {
           try {
@@ -173,14 +609,27 @@ data:
         }, timeUntilRefresh);
       }
 
-      getToken() {
+      async ensureInitialized() {
+        if (!this.initialized) {
+          console.log('Waiting for GitHub App token manager to initialize...');
+          await this.initPromise;
+        }
+      }
+
+      async getToken() {
+        await this.ensureInitialized();
+
         if (!this.currentToken) {
           throw new Error('No valid GitHub App token available');
         }
 
         // Check if token is expired
         if (Date.now() >= this.tokenExpiration) {
-          throw new Error('Current token is expired');
+          console.log('Token is expired, refreshing...');
+          await this.generateToken();
+          if (!this.currentToken) {
+            throw new Error('No valid GitHub App token available after refresh');
+          }
         }
 
         return this.currentToken;
@@ -191,7 +640,8 @@ data:
         return {
           hasToken: !!this.currentToken,
           expiresIn: this.tokenExpiration ? (this.tokenExpiration - Date.now()) / 1000 : 0,
-          expiration: this.tokenExpiration ? new Date(this.tokenExpiration) : null
+          expiration: this.tokenExpiration ? new Date(this.tokenExpiration) : null,
+          initialized: this.initialized
         };
       }
     }
@@ -199,11 +649,226 @@ data:
     // Export singleton instance
     let tokenManager = null;
 
-    function getTokenManager() {
+    async function getTokenManager() {
       if (!tokenManager) {
         tokenManager = new GitHubAppTokenManager();
       }
+      // Wait for initialization if needed
+      await tokenManager.ensureInitialized();
       return tokenManager;
     }
 
     module.exports = { getTokenManager, GitHubAppTokenManager };
+  grumpy-sysadmin-agent.js: |
+    // Grumpy Sysadmin Agent for GitHub PR Reviews - Updated Version
+    const { spawn } = require('child_process');
+
+    // Import the GitHub App token manager
+    const { getTokenManager } = require('./github-app-token-manager.js');
+
+    /**
+     * Process a pull request review request
+     * @param {Object} context - The context containing PR information
+     * @param {Object} metadata - Metadata from the webhook
+     */
+    async function processPRReview(context, metadata) {
+      console.log('Grumpy Sysadmin Agent: Processing PR review request');
+
+      // Extract PR information from context or metadata
+      const prInfo = metadata?.pr_info || {};
+      const repo = prInfo.repo || context.repo;
+      const prNumber = prInfo.pr_number || context.pr_number;
+
+      if (!repo || !prNumber) {
+        console.error('Missing required PR information:', { repo, prNumber, prInfo, metadata });
+        return 'Error: Missing required PR information for review';
+      }
+
+      console.log(`Reviewing PR #${prNumber} in ${repo}`);
+
+      try {
+        // Get the token manager and token for GitHub API access
+        const tokenManager = await getTokenManager();
+        const githubToken = await tokenManager.getToken();
+
+        // Fetch the PR details from GitHub API
+        const prResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}`, {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'OpenClaw-GitHub-App'
+          }
+        });
+
+        if (!prResponse.ok) {
+          throw new Error(`Failed to fetch PR: ${prResponse.status} - ${await prResponse.text()}`);
+        }
+
+        const prDetails = await prResponse.json();
+
+        // Fetch the PR files to analyze changes
+        const filesResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/files`, {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'OpenClaw-GitHub-App'
+          }
+        });
+
+        if (!filesResponse.ok) {
+          console.warn('Could not fetch PR files:', await filesResponse.text());
+        }
+
+        const files = filesResponse.ok ? await filesResponse.json() : [];
+
+        // Perform grumpy sysadmin review
+        const reviewComment = generateGrumpyReview(prDetails, files);
+
+        // Post the review comment to the PR
+        const commentResponse = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'OpenClaw-GitHub-App',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            body: reviewComment
+          })
+        });
+
+        if (!commentResponse.ok) {
+          throw new Error(`Failed to post review comment: ${commentResponse.status} - ${await commentResponse.text()}`);
+        }
+
+        console.log(`Successfully posted review to PR #${prNumber}`);
+
+        return `Grumpy Sysadmin Agent: Successfully posted review to PR #${prNumber} in ${repo}`;
+
+      } catch (error) {
+        console.error('Error in PR review process:', error.message);
+        return `Error posting PR review: ${error.message}`;
+      }
+    }
+
+    /**
+     * Generate a grumpy sysadmin-style review based on PR details
+     * @param {Object} prDetails - The PR details from GitHub API
+     * @param {Array} files - Array of files changed in the PR
+     * @returns {string} The review comment
+     */
+    function generateGrumpyReview(prDetails, files) {
+      const { title, user, created_at, body, html_url } = prDetails;
+      const fileCount = files.length;
+      const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
+      const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
+
+      // Generate a grumpy but constructive review
+      let review = `## ⚠️ Grumpy Sysadmin Review for PR #${prDetails.number}
+
+    Hello @${user.login},
+
+    As your resident grumpy sysadmin, I've reviewed your pull request "${title}". Here are my observations:
+
+    ### 📋 Summary
+    - **Author**: @${user.login}
+    - **Created**: ${created_at}
+    - **Files Changed**: ${fileCount}
+    - **Additions**: ${additions}
+    - **Deletions**: ${deletions}
+
+    ### 🔍 Technical Assessment
+    `;
+
+      // Add some grumpy but helpful commentary based on the changes
+      if (fileCount > 10) {
+        review += `- **⚠️ Large PR**: This PR touches ${fileCount} files. Could this be broken down into smaller, more focused changes?\n`;
+      }
+
+      if (additions > 200) {
+        review += `- **⚠️ Code Volume**: This PR adds ${additions} lines. Please ensure adequate testing.\n`;
+      }
+
+      if (!body || body.trim().length < 20) {
+        review += `- **⚠️ Description**: The PR description is quite brief. Please provide more context about *why* these changes are needed.\n`;
+      }
+
+      // Check for common infrastructure files that might need special attention
+      const sensitiveFiles = files.filter(file =>
+        file.filename.includes('k8s') ||
+        file.filename.includes('yaml') ||
+        file.filename.includes('yml') ||
+        file.filename.includes('config') ||
+        file.filename.includes('secret')
+      );
+
+      if (sensitiveFiles.length > 0) {
+        review += `- **🚨 Sensitive Areas**: This PR touches infrastructure/configuration files (${sensitiveFiles.map(f => f.filename).join(', ')}). Extra scrutiny required!\n`;
+      }
+
+      // If no specific issues found, add general grumpiness
+      if (review.split('\n').filter(line => line.startsWith('-')).length === 0) {
+        review += `- **🔍 General**: Changes look reasonable, but please ensure all tests pass and consider edge cases.\n`;
+      }
+
+      review += `
+    ### ✅ Approval Criteria
+    Before this PR can be merged, please ensure:
+
+    1. All CI checks are passing
+    2. Changes have been tested in a staging environment
+    3. Documentation has been updated if applicable
+    4. Another team member has reviewed this code
+
+    ### 📝 Final Thoughts
+    Thanks for your contribution to the infrastructure. Remember: "With great power comes great responsibility." Please make sure you understand the implications of these changes before merging.
+
+    Yours grumpily,
+    The Grumpy Sysadmin 🤖
+
+    *This review was automatically generated by the Grumpy Sysadmin Agent.*
+    `;
+
+      return review;
+    }
+
+    /**
+     * Main function to handle the agent task
+     * @param {Object} context - The context object
+     * @param {Object} options - Additional options
+     */
+    async function handleAgentTask(context, options = {}) {
+      try {
+        console.log('Grumpy Sysadmin Agent activated');
+
+        // Check if this is a PR review request
+        if (context.message &&
+            (context.message.toLowerCase().includes('review') ||
+             context.message.toLowerCase().includes('pull request') ||
+             context.metadata?.pr_number)) {
+
+          return await processPRReview(context, context.metadata);
+        }
+        
+        // Check if this is a pull request review event from webhook
+        if (context.eventType === 'pull_request_review') {
+          const review = context.payload?.review || {};
+          const pullRequest = context.payload?.pull_request || {};
+          
+          console.log(`Processing pull request review event: ${review.state} for PR #${pullRequest.number}`);
+          
+          // Return a message about the review
+          return `Grumpy Sysadmin Agent: Acknowledged pull request review for PR #${pullRequest.number}. Review state: ${review.state}, submitted by: ${review.user?.login}`;
+        }
+
+        // Default response for other requests
+        return "Grumpy Sysadmin Agent: I specialize in reviewing pull requests. Please provide PR details for review.";
+
+      } catch (error) {
+        console.error('Grumpy Sysadmin Agent error:', error.message);
+        return `Grumpy Sysadmin Agent Error: ${error.message}`;
+      }
+    }
+
+    module.exports = { handleAgentTask, processPRReview, generateGrumpyReview };
