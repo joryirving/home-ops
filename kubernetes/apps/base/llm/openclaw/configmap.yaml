@@ -430,79 +430,181 @@ data:
      * @returns {string} The review comment
      */
     function generateGrumpyReview(prDetails, files) {
-      const { title, user, created_at, body, html_url } = prDetails;
-      const fileCount = files.length;
-      const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
-      const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
+      /**
+      * Generate a grumpy sysadmin-style review based on PR details using AI
+      * @param {Object} prDetails - The PR details from GitHub API
+      * @param {Array} files - Array of files changed in the PR
+      * @returns {string} The AI-generated review comment with grumpy personality
+      */
+      async function generateGrumpyReview(prDetails, files) {
+        const { title, user, created_at, body, html_url, number: prNumber } = prDetails;
+        const fileCount = files.length;
+        const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
+        const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
 
-      // Generate a grumpy but constructive review
-      let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prDetails.number}
+        // Prepare a concise summary of changes
+        const fileSummaries = files.slice(0, 10).map(file => ({
+          filename: file.filename,
+          status: file.status,
+          additions: file.additions,
+          deletions: file.deletions,
+          changes: file.patch ? file.patch.substring(0, 2000) + (file.patch.length > 2000 ? '...' : '') : null
+        }));
 
-    Hello @$${user.login},
+        // Create a detailed prompt that emphasizes grumpy sysadmin personality
+        const aiPrompt = `You are an extremely grumpy, old-school Unix sysadmin who has been managing production infrastructure for 25 years.
+      You've seen countless disasters caused by careless developers and you take ZERO nonsense.
+      Your personality traits:
+      - Sarcastically gruff and impatient
+      - Speaks in gruff, direct statements
+      - Cynical about "modern dev practices"
+      - Obsessed with uptime, security, and "back in my day" stories
+      - Takes personal offense at poor security practices
+      - Uses phrases like "Listen here, kid", "Back in my day", "What could go wrong?", "I hope you have backups", "Are you kidding me?", "This is why we can't have nice things"
+      - Gets genuinely angry about hardcoded passwords, missing error handling, and insecure defaults
 
-    As your resident grumpy sysadmin, I've reviewed your pull request "$${title}". Here are my observations:
+      Review this pull request #$${prNumber}: "$${title}" by @$${user.login}.
 
-    ### 📋 Summary
-    - **Author**: @$${user.login}
-    - **Created**: $${created_at}
-    - **Files Changed**: $${fileCount}
-    - **Additions**: $${additions}
-    - **Deletions**: $${deletions}
+      PR Details:
+      - Created: $${created_at}
+      - Description: $${body || 'No description provided (typical...)'}
+      - Files Changed: $${fileCount}
+      - Additions: $${additions}, Deletions: $${deletions}
 
-    ### 🔍 Technical Assessment
-    `;
+      File Changes (first 10 files):
+      $${JSON.stringify(fileSummaries, null, 2)}
 
-      // Add some grumpy but helpful commentary based on the changes
-      if (fileCount > 10) {
-        review += `- **⚠️ Large PR**: This PR touches $${fileCount} files. Could this be broken down into smaller, more focused changes?\n`;
+      Provide a review that embodies your grumpy sysadmin personality throughout:
+      - Start with immediate skepticism: "Oh, great. Another PR..." or "What fresh hell is this?"
+      - Express frustration with modern development practices
+      - Point out security vulnerabilities with genuine anger
+      - Complain about lack of proper documentation or testing
+      - Mention how this could bring down production on a Sunday morning
+      - Give grudging approval if it's actually decent, but still complain about something
+      - Use the grumpy tone consistently throughout, not just in signoff
+
+      Make it sound like a veteran sysadmin who's tired of cleaning up other people's messes.`;
+
+        try {
+          // Send to OpenClaw's AI interface
+          const aiResponse = await fetch('http://localhost:3000/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer $${process.env.CLAWDBOT_GATEWAY_TOKEN}`
+            },
+            body: JSON.stringify({
+              message: aiPrompt,
+              thinking: 'high',
+              model: 'gemini' // or whatever model you prefer for personality
+            })
+          });
+
+          if (!aiResponse.ok) {
+            throw new Error(`AI service responded with status: $${aiResponse.status}`);
+          }
+
+          const aiData = await aiResponse.json();
+          const aiReview = aiData.response || aiData.message || "AI review generation failed";
+
+          // Format with consistent grumpy personality
+          return `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
+
+      $${aiReview}
+
+      ---
+      *This review was automatically generated by the Grumpy Sysadmin Agent.*
+      *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
+      `;
+        } catch (error) {
+          console.error('AI review generation failed:', error.message);
+
+          // Fallback with strong grumpy personality
+          return generateGrumpyReviewFallbackWithPersonality(prDetails, files);
+        }
       }
 
-      if (additions > 200) {
-        review += `- **⚠️ Code Volume**: This PR adds $${additions} lines. Please ensure adequate testing.\n`;
+      /**
+      * Fallback function with strong grumpy personality
+      */
+      function generateGrumpyReviewFallbackWithPersonality(prDetails, files) {
+        const { title, user, created_at, body, html_url, number: prNumber } = prDetails;
+        const fileCount = files.length;
+        const additions = files.reduce((sum, file) => sum + (file.additions || 0), 0);
+        const deletions = files.reduce((sum, file) => sum + (file.deletions || 0), 0);
+
+        let review = `## ⚠️ Grumpy Sysadmin Review for PR #$${prNumber}
+
+      Oh, great. Another pull request. Let me take a look at this disaster you've cooked up, @$${user.login}...
+
+      ### 📋 The Basics (What I Hope Are the Least of My Problems)
+      - **Title**: "$${title}" - At least you named it something
+      - **Created**: $${created_at} - Probably at 5 PM on a Friday, knowing my luck
+      - **Files Changed**: $${fileCount} - $${fileCount > 10 ? 'Of course it\'s a massive change. Why wouldn\'t it be?' : 'Small mercies, I suppose.'}
+      - **Additions**: $${additions} - More code means more problems
+      - **Description**: $${body ? 'Briefly mentions what it does' : 'No description provided (typical...) - I hope the code is self-documenting, kid.'}
+
+      ### 🔍 The Grumpy Analysis
+      `;
+
+        // Add grumpy commentary based on metrics
+        if (fileCount > 10) {
+          review += `- **⚠️ Listen here, kid**: This PR touches $${fileCount} files. Back in my day, we kept PRs focused! What could go wrong with this massive change? Oh, I know - EVERYTHING.\n`;
+        }
+
+        if (additions > 200) {
+          review += `- **⚠️ Are you kidding me?**: This PR adds $${additions} lines. I hope you have backups, because this is why we can't have nice things.\n`;
+        }
+
+        if (!body || body.trim().length < 20) {
+          review += `- **⚠️ No description**: The PR description is practically empty. How am I supposed to know what this does without reading every line? I hope you tested this in production... oh wait, that's my job.\n`;
+        }
+
+        // Check for grumpy infrastructure concerns
+        const sensitiveFiles = files.filter(file =>
+          file.filename.includes('k8s') ||
+          file.filename.includes('yaml') ||
+          file.filename.includes('yml') ||
+          file.filename.includes('config') ||
+          file.filename.includes('secret') ||
+          file.filename.includes('env')
+        );
+
+        if (sensitiveFiles.length > 0) {
+          review += `- **🚨 SECURITY NIGHTMARE**: This PR touches critical infrastructure files ($${sensitiveFiles.map(f => f.filename).join(', ')}). I hope you have a rollback plan because this is going to break something on a Sunday morning.\n`;
+        }
+
+        // Add some grumpy sysadmin wisdom
+        if (review.split('\n').filter(line => line.startsWith('-')).length === 0) {
+          review += `- **🔍 The usual suspects**: I haven't looked at the actual code yet, but I'm already concerned. Are there proper error handlers? What about logging? Did you test this in prod yet?\n`;
+        }
+
+        review += `
+      ### ✅ Things That Might Actually Pass My Standards (Don't Get Cocky)
+      Before this PR can be merged, you'll need to:
+
+      1. All CI checks better pass (I'll be watching)
+      2. Someone who's not you should review this code
+      3. Document what happens when this breaks at 3 AM
+      4. Pray that I don't find any hardcoded passwords
+
+      ### 📝 Final Grumpy Thoughts
+      $${fileCount > 5 ? `This is too big. Break it down, kid. I've seen smaller deployments bring down entire data centers.` : `Well, it's not the worst PR I've seen today...`}
+
+      Remember: "With great power comes great responsibility." Please make sure you understand the implications of these changes before merging. I don't want to be woken up on Sunday because of your "quick fix."
+
+      Yours grumpily,
+      The Grumpy Sysadmin 🤖
+
+      P.S. I hope you have backups of everything this touches.
+
+      ---
+      *This review was automatically generated by the Grumpy Sysadmin Agent.*
+      *Sent from my terminal while monitoring production at 3 AM on a Sunday.*
+      `;
+
+        return review;
       }
-
-      if (!body || body.trim().length < 20) {
-        review += `- **⚠️ Description**: The PR description is quite brief. Please provide more context about *why* these changes are needed.\n`;
-      }
-
-      // Check for common infrastructure files that might need special attention
-      const sensitiveFiles = files.filter(file =>
-        file.filename.includes('k8s') ||
-        file.filename.includes('yaml') ||
-        file.filename.includes('yml') ||
-        file.filename.includes('config') ||
-        file.filename.includes('secret')
-      );
-
-      if (sensitiveFiles.length > 0) {
-        review += `- **🚨 Sensitive Areas**: This PR touches infrastructure/configuration files ($${sensitiveFiles.map(f => f.filename).join(', ')}). Extra scrutiny required!\n`;
-      }
-
-      // If no specific issues found, add general grumpiness
-      if (review.split('\n').filter(line => line.startsWith('-')).length === 0) {
-        review += `- **🔍 General**: Changes look reasonable, but please ensure all tests pass and consider edge cases.\n`;
-      }
-
-      review += `
-    ### ✅ Approval Criteria
-    Before this PR can be merged, please ensure:
-
-    1. All CI checks are passing
-    2. Changes have been tested in a staging environment
-    3. Documentation has been updated if applicable
-    4. Another team member has reviewed this code
-
-    ### 📝 Final Thoughts
-    Thanks for your contribution to the infrastructure. Remember: "With great power comes great responsibility." Please make sure you understand the implications of these changes before merging.
-
-    Yours grumpily,
-    The Grumpy Sysadmin 🤖
-
-    *This review was automatically generated by the Grumpy Sysadmin Agent.*
-    `;
-
-      return review;
-    }
 
     /**
      * Main function to handle the agent task
