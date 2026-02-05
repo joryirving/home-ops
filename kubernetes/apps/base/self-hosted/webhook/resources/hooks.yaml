@@ -114,13 +114,40 @@
 # Optimized hook to handle only essential OpenClaw notifications
 - id: github-openclaw-notifications
   execute-command: /config/github-pr-notifications.sh
-  include-command-output-in-response: true
-  pipe-working-directory: /tmp
+  include-stdin: true
   pass-environment-to-command:
     - name: GITHUB_WEBHOOK_SECRET
       source: secret
       name: webhook
       key: GITHUB_WEBHOOK_SECRET
+  pass-arguments-to-command:
+    - # event type
+      source: header
+      name: x-github-event
+    - # action type
+      source: payload
+      name: action
+    - # project
+      source: payload
+      name: repository.full_name
+    - # owner
+      source: payload
+      name: repository.owner.login
+    - # PR Number
+      source: payload
+      name: number
+    - # PR Title
+      source: payload
+      name: pull_request.title
+    - # PR User
+      source: payload
+      name: repository.user.login
+    - # PR URL
+      source: payload
+      name: pull_request.html_url
+    - # PR Body
+      source: payload
+      name: pull_request.body
   trigger-rule:
     and:
       - # Validate the webhook secret

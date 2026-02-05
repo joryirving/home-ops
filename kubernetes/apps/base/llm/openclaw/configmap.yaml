@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: openclaw-hooks-scripts
 data:
-  github-webhook-transform.js: |
+  github-webhook-transform.js: |-
     // GitHub Webhook Transform for OpenClaw
     const { spawn } = require('child_process');
 
@@ -16,138 +16,154 @@ data:
 
     /**
      * Transform function for GitHub webhook events
+
+     * Robustly handles both simplified payloads from webhook receiver and full GitHub payloads
      * @param {Object} ctx - Context object containing payload, headers, etc.
      * @returns {Object} Response object
      */
     async function transform(ctx) {
-      const event = ctx.payload;
-      console.log('Received GitHub webhook event:', event.action || 'unknown');
+      const event = ctx.payload || {};
+      const headers = ctx.headers || {};
 
-      const eventType = ctx.headers['x-github-event'];
-      const deliveryId = ctx.headers['x-github-delivery'];
+      // Try to determine the event type from multiple sources
+      let eventType = headers['x-github-event'] || event.action || 'unknown';
 
-      console.log(`Processing $${eventType} event with delivery ID: $${deliveryId}`);
-
-      if (eventType === 'pull_request' && event.action === 'opened') {
-        // GitHub webhook payload structure has the PR data in 'pull_request' field
-        const pullRequest = event.pull_request || event;
-
-        // Extract PR information using proper GitHub webhook payload structure
-        const prInfo = {
-          repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
-          pr_number: pullRequest?.number || event.number,
-          title: pullRequest?.title,
-          description: pullRequest?.body || pullRequest?.description || '',
-          author: pullRequest?.user?.login || event.sender?.login || 'unknown',
-          url: pullRequest?.html_url,
-          created_at: pullRequest?.created_at || pullRequest?.created_at
-        };
-
-        console.log(`New PR #$${prInfo.pr_number} opened: $${prInfo.title}`);
-
-        // Validate that we have the required information
-        if (!prInfo.repo || !prInfo.pr_number) {
-          console.error('Missing required PR information:', prInfo);
-          console.error('Full event object:', JSON.stringify(event, null, 2));
-          return {
-            message: `Error: Missing required PR information. Repo: $${prInfo.repo}, PR Number: $${prInfo.pr_number}`,
-            channel: "last"
-          };
-        }
-
-        try {
-          // Execute the PR review directly instead of spawning an agent
-          const reviewResult = await processPRReview(
-            { repo: prInfo.repo, pr_number: prInfo.pr_number },
-            { pr_info: prInfo }
-          );
-
-          console.log('PR review completed:', reviewResult);
-
-          return {
-            message: `Grumpy sysadmin review completed for PR #$${prInfo.pr_number}`,
-            channel: "last"
-          };
-        } catch (error) {
-          console.error('Error during PR review:', error.message);
-          return {
-            message: `Error during PR review: $${error.message}`,
-            channel: "last"
-          };
-        }
+      // Also check for other potential event indicators
+      if (event.hasOwnProperty('pull_request') && event.pull_request) {
+        eventType = 'pull_request';
+      } else if (event.hasOwnProperty('issue') && event.issue) {
+        eventType = 'issue';
+      } else if (event.hasOwnProperty('repository') && event.repository) {
+        eventType = 'repository';
       }
-      else if (eventType === 'pull_request' && event.action === 'synchronize') {
-        // Handle PR updates (new commits pushed)
-        const pullRequest = event.pull_request || event;
+
+      // Extract action from various possible locations
+      let action = 'unknown';
+      if (event.action) {
+        action = event.action;
+      } else if (event.delivery_id && event.delivery_id.startsWith('test-delivery')) {
+        // This is likely from our webhook receiver with artificial delivery ID
+        action = event.payload?.action || 'unknown';
+      }
+
+      // Log incoming event for debugging
+      console.log('Received GitHub webhook event:', {
+        eventType,
+        action,
+        has_pull_request: !!event.pull_request,
+        has_repository: !!event.repository,
+        delivery_id: event.delivery_id,
+        headers_present: Object.keys(headers)
+      });
+
+      // Extract information with fallbacks
+      const repo = event.repository?.full_name ||
+                  (event.pull_request?.html_url ?
+                    event.pull_request.html_url.split('/')[3] + '/' + event.pull_request.html_url.split('/')[4] :
+                    'unknown/unknown');
+
+      const prNumber = event.pull_request?.number ||
+                      (event.issue?.pull_request ?
+                        parseInt(event.issue.url.split('/').pop()) :
+                        null);
+
+      // Handle different event types based on the payload
+      if (repo !== 'unknown/unknown' && prNumber && action !== 'unknown') {
+        // This looks like a pull request event
 
         const prInfo = {
-          repo: event.repository?.full_name || `$${event.organization?.login}/$${event.repository?.name}`,
-          pr_number: pullRequest?.number || event.number,
-          title: pullRequest?.title,
-          description: pullRequest?.body || pullRequest?.description || '',
-          author: pullRequest?.user?.login || event.sender?.login || 'unknown',
-          url: pullRequest?.html_url,
-          created_at: pullRequest?.created_at || pullRequest?.created_at
+          repo: repo,
+          pr_number: prNumber,
+          title: event.pull_request?.title || event.issue?.title || 'Unknown Title',
+          description: event.pull_request?.body || event.issue?.body || '',
+          author: event.pull_request?.user?.login || event.repository?.owner?.login || 'unknown',
+          url: event.pull_request?.html_url || event.issue?.html_url,
+          created_at: event.pull_request?.created_at || event.issue?.created_at
         };
 
-        console.log(`PR #$${prInfo.pr_number} synchronized (updated): $${prInfo.title}`);
+        console.log('Processing PR #' + prInfo.pr_number + ' in ' + prInfo.repo + ' with action: ' + action);
 
-        // Validate that we have the required information
-        if (!prInfo.repo || !prInfo.pr_number) {
-          console.error('Missing required PR information for sync event:', prInfo);
+        if (action === 'opened' || action === 'synchronize') {
+          try {
+            // Execute the PR review directly instead of spawning an agent
+            const reviewResult = await processPRReview(
+              { repo: prInfo.repo, pr_number: prInfo.pr_number },
+              { pr_info: prInfo }
+            );
+
+            console.log('PR review completed:', reviewResult);
+
+            return {
+              message: 'Grumpy sysadmin review completed for PR #' + prInfo.pr_number,
+              channel: "last"
+            };
+          } catch (error) {
+            console.error('Error during PR review:', error.message);
+            return {
+              message: 'Error during PR review: ' + error.message,
+              channel: "last"
+            };
+          }
+        }
+        else if (['closed', 'merged'].includes(action)) {
+          console.log('PR #' + prInfo.pr_number + ' ' + action + ': ' + prInfo.title);
+
           return {
-            message: `Error: Missing required PR information for sync. Repo: $${prInfo.repo}, PR Number: $${prInfo.pr_number}`,
+            message: 'Pull request #' + prInfo.repo + '/' + prInfo.pr_number + ' was ' + action,
             channel: "last"
           };
         }
-
-        try {
-          // Execute the PR review directly for sync events too
-          const reviewResult = await processPRReview(
-            { repo: prInfo.repo, pr_number: prInfo.pr_number },
-            { pr_info: prInfo }
-          );
-
-          console.log('PR resync review completed:', reviewResult);
-
+        else {
+          // For other PR actions
           return {
-            message: `Grumpy sysadmin review completed for PR #$${prInfo.pr_number} resync`,
-            channel: "last"
-          };
-        } catch (error) {
-          console.error('Error during PR resync review:', error.message);
-          return {
-            message: `Error during PR resync review: $${error.message}`,
+            message: 'Received pull request event for PR #' + prInfo.pr_number + ': ' + action,
             channel: "last"
           };
         }
-      }
-      else if (eventType === 'pull_request' && ['closed', 'merged'].includes(event.action)) {
-        const pullRequest = event.pull_request || event;
-        const action = event.action === 'merged' ? 'merged' : 'closed';
-
-        console.log(`PR #$${pullRequest?.number} $${action}: $${pullRequest?.title}`);
-
-        return {
-          message: `Pull request #$${event.repository?.full_name}/$${pullRequest?.number} was $${action}`,
-          channel: "last"
-        };
-      }
-      else if (eventType === 'pull_request' && ['review_requested', 'ready_for_review'].includes(event.action)) {
-        const pullRequest = event.pull_request || event;
-        const action = event.action === 'review_requested' ? 'review requested' : 'ready for review';
-
-        console.log(`PR #$${pullRequest?.number} $${action}: $${pullRequest?.title}`);
-
-        return {
-          message: `Pull request #$${event.repository?.full_name}/$${pullRequest?.number} is now $${action}`,
-          channel: "last"
-        };
       }
       else {
-        // For other events, return a simple acknowledgment
+        // Handle other event types or return a default response
+        console.log('Received non-PR event or incomplete event:', { action, repo, prNumber });
+
+        // If it's a test delivery from our webhook receiver, try to extract from nested payload
+        if (event.delivery_id && event.delivery_id.startsWith('test-delivery') && event.payload) {
+          const nestedEvent = event.payload;
+          const nestedAction = nestedEvent.action || 'unknown';
+          const nestedRepo = nestedEvent.repository?.full_name || 'unknown/unknown';
+          const nestedPrNumber = nestedEvent.pull_request?.number || null;
+
+          if (nestedRepo !== 'unknown/unknown' && nestedPrNumber) {
+            if (nestedAction === 'opened' || nestedAction === 'synchronize') {
+              try {
+                const reviewResult = await processPRReview(
+                  { repo: nestedRepo, pr_number: nestedPrNumber },
+                  { pr_info: {
+                    repo: nestedRepo,
+                    pr_number: nestedPrNumber,
+                    title: nestedEvent.pull_request?.title || 'Unknown Title',
+                    description: nestedEvent.pull_request?.body || '',
+                    author: nestedEvent.pull_request?.user?.login || 'unknown',
+                    url: nestedEvent.pull_request?.html_url,
+                    created_at: nestedEvent.pull_request?.created_at
+                  }}
+                );
+
+                return {
+                  message: 'Grumpy sysadmin review completed for PR #' + nestedPrNumber,
+                  channel: "last"
+                };
+              } catch (error) {
+                return {
+                  message: 'Error during PR review: ' + error.message,
+                  channel: "last"
+                };
+              }
+            }
+          }
+        }
+
         return {
-          message: `Received $${eventType} event: $${event.action || 'unknown'}`,
+          message: 'Received webhook event with action: ' + action,
           channel: "last"
         };
       }
