@@ -1,0 +1,50 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: promtail
+  namespace: observability
+spec:
+  chart:
+    spec:
+      chart: promtail
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+      version: "6.x"
+  interval: 10m
+  values:
+    config:
+      clients:
+        - url: https://victorialogs.jory.dev/api/v1/push
+          basic_auth:
+            username: "${VICTORIA_LOGS_USERNAME}"
+            password_file: /etc/promtail/auth/password
+    auth:
+      enabled: true
+    secret:
+      enabled: true
+      data:
+        password: "${VICTORIA_LOGS_PASSWORD}"
+    serviceMonitor:
+      enabled: true
+    resources:
+      limits:
+        cpu: 200m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 64Mi
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+                - key: node-role.kubernetes.io/master
+                  operator: In
+                  values: [""]
