@@ -19,26 +19,12 @@ spec:
         containers:
           app:
             image:
-              repository: intelanalytics/ipex-llm-inference-cpp-xpu
-              # repository: ghcr.io/joryirving/ollama-intel-gpu
-              tag: 2.3.0-SNAPSHOT
-              # tag: ipex-llm-v.0.0.1-2
-            command:
-              - /bin/sh
-              - -c
-              - mkdir -p /llm/ollama && cd /llm/ollama && init-ollama && exec ./ollama serve
+              repository: ollama/ollama
+              tag: 0.15.5
             securityContext:
               privileged: true
             env:
-              OLLAMA_MODELS: &modelPath /models
-              # ONEAPI_DEVICE_SELECTOR: level_zero:0
-              # IPEX_LLM_NUM_CTX: 16384
-              no_proxy: localhost,127.0.0.1
-              OLLAMA_HOST: 0.0.0.0
-              DEVICE: Arc
-              OLLAMA_INTEL_GPU: true
-              OLLAMA_NUM_GPU: 999
-              ZES_ENABLE_SYSMAN: 1
+              OLLAMA_VULKAN: 1
             resources:
               claims:
                 - name: gpu
@@ -78,7 +64,7 @@ spec:
       ollama:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-          - path: *modelPath
+          - path: /root/.ollama/models
             subPath: models
           - path: /root/.ollama
             subPath: config
