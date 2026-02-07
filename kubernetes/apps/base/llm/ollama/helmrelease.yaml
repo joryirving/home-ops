@@ -25,6 +25,7 @@ spec:
               privileged: true
             env:
               OLLAMA_VULKAN: 1
+              OLLAMA_FLASH_ATTENTION: 0
             resources:
               claims:
                 - name: gpu
@@ -85,7 +86,7 @@ spec:
   values:
     controllers:
       ollama:
-        replicas: 3 # 1 per node
+        replicas: 1
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -120,18 +121,15 @@ spec:
             port: 11434
     route:
       app:
-        hostnames: ["{{ .Release.Name }}-cpu.jory.dev"]
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: envoy-internal
             namespace: network
     persistence:
       ollama:
-        existingClaim: "{{ .Release.Name }}"
+        existingClaim: ollama
         globalMounts:
           - path: /root/.ollama/models
             subPath: models
           - path: /root/.ollama
             subPath: config
-      dri:
-        type: hostPath
-        hostPath: /dev/dri
