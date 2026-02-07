@@ -13,7 +13,7 @@ spec:
   values:
     controllers:
       ollama:
-        replicas: 3 # 1 per node
+        replicas: 2 # 1 per node
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -25,7 +25,6 @@ spec:
               privileged: true
             env:
               OLLAMA_VULKAN: 1
-              OLLAMA_FLASH_ATTENTION: 0
             resources:
               claims:
                 - name: gpu
@@ -101,7 +100,7 @@ spec:
                 cpu: 1000m
                 memory: 24Gi
               limits:
-                cpu: 8000m
+                cpu: 10000m
                 memory: 80Gi
         pod:
           affinity:
@@ -113,7 +112,7 @@ spec:
                       - key: app.kubernetes.io/name
                         operator: In
                         values:
-                          - "{{ .Release.Name }}"
+                          - ollama
     service:
       app:
         ports:
