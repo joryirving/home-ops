@@ -20,7 +20,7 @@ spec:
           install-tools:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 2026.2.3@sha256:acc3631077173c8050278a44896947b6052dd5c8ebace4ee1a452a276bd28bab
+              tag: 2026.2.6@sha256:4efc318a6570e4aac66d8ce0ab94c9a577c2f5d4afe914aa73e9678f82799e26
             command:
               - /bin/sh
               - -c
@@ -85,7 +85,7 @@ spec:
           app:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 2026.2.3@sha256:acc3631077173c8050278a44896947b6052dd5c8ebace4ee1a452a276bd28bab
+              tag: 2026.2.6@sha256:4efc318a6570e4aac66d8ce0ab94c9a577c2f5d4afe914aa73e9678f82799e26
             command:
               - /bin/sh
               - -c
@@ -95,7 +95,7 @@ spec:
                 # Start gateway
                 exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
             env:
-              BROWSER_WS_ENDPOINT: "ws://localhost:9222"
+              # BROWSER_WS_ENDPOINT: "ws://localhost:9222"
               GOPATH: /home/node/go
               HOME: &homepath /home/node
               HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
@@ -115,30 +115,30 @@ spec:
               limits:
                 cpu: 2000m
                 memory: 4Gi
-          # chrome:
-          #   image:
-          #     repository: zenika/alpine-chrome
-          #     tag: with-node
-          #   command:
-          #     - chromium-browser
-          #     - --headless=new
-          #     - --disable-gpu
-          #     - --remote-debugging-address=0.0.0.0
-          #     - --remote-debugging-port=9222
-          #     - --no-sandbox
-          #     - --disable-dev-shm-usage
-          #   env:
-          #     TZ: *tz
-          #   resources:
-          #     requests:
-          #       cpu: 100m
-          #       memory: 256Mi
-          #     limits:
-          #       cpu: 1000m
-          #       memory: 1Gi
-          #   securityContext:
-          #     runAsUser: 999
-          #     runAsGroup: 999
+          chrome:
+            image:
+              repository: zenika/alpine-chrome
+              tag: with-node
+            command:
+              - chromium-browser
+              - --headless=new
+              - --disable-gpu
+              - --remote-debugging-address=0.0.0.0
+              - --remote-debugging-port=9222
+              - --no-sandbox
+              - --disable-dev-shm-usage
+              # Stealth flags to reduce bot detection
+              - --disable-blink-features=AutomationControlled
+              - --user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+            env:
+              TZ: *tz
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 1000m
+                memory: 1Gi
     defaultPodOptions:
       shareProcessNamespace: true
       securityContext:
