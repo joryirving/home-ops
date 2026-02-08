@@ -139,6 +139,29 @@ spec:
               limits:
                 cpu: 1000m
                 memory: 1Gi
+          codeserver:
+            image:
+              repository: ghcr.io/coder/code-server
+              tag: 4.108.2@sha256:31ad23cda720476e7eb3371a9b02fd7a5738843f6ef43beef97e9edf1960fc47
+            env:
+              TZ: America/Edmonton
+            args:
+              [
+                "--auth",
+                "none",
+                "--user-data-dir",
+                "/home/node/.vscode",
+                "--extensions-dir",
+                "/home/node/.vscode",
+                "--port",
+                "12321",
+                "/config",
+              ]
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 1Gi
     defaultPodOptions:
       shareProcessNamespace: true
       securityContext:
@@ -150,13 +173,28 @@ spec:
       app:
         ports:
           http:
-            port: 18789
+            port: &port 18789
+          codeserver:
+            port: &codeserverPort 12321
     route:
       app:
         hostnames: ["miso.jory.dev"]
         parentRefs:
           - name: envoy-internal
             namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *port
+      codeserver:
+        hostnames: ["miso-code.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *codeserverPort
     rbac:
       roles:
         openclaw-read-all:
