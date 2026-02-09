@@ -1,0 +1,67 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: local-ai
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      local-ai:
+        replicas: 1
+        containers:
+          app:
+            image:
+              repository: quay.io/go-skynet/local-ai
+              tag: v3.11.0-gpu-vulkan
+            env:
+              MODELS_PATH: /models
+              # Enable debug logs to see the generation progress in 'kubectl logs'
+              DEBUG: "true"
+            resources:
+              claims:
+                - name: gpu
+              requests:
+                cpu: 3
+                memory: 28Gi
+              limits:
+                cpu: 6
+                memory: 48Gi
+        pod:
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: "kubernetes.io/hostname"
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                          - ollama
+                          - ollama-cpu
+    service:
+      app:
+        ports:
+          http:
+            port: 8080
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      ollama:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /models
+            subPath: flux-models
+      dri:
+        type: hostPath
+        hostPath: /dev/dri
+
