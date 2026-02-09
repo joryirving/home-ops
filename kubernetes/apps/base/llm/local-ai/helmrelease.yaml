@@ -60,11 +60,16 @@ spec:
           - name: envoy-internal
             namespace: network
     persistence:
-      ollama:
-        existingClaim: "{{ .Release.Name }}"
+      local-ai-models:
+        existingClaim: "{{ .Release.Name }}-models"
         globalMounts:
           - path: /models
             subPath: flux-models
+      local-ai-backends:
+        existingClaim: "{{ .Release.Name }}-backends"
+        globalMounts:
+          - path: /backends
+            subPath: flux-backends
       dri:
         type: hostPath
         hostPath: /dev/dri
