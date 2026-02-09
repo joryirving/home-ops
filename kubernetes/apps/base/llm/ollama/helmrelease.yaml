@@ -13,7 +13,7 @@ spec:
   values:
     controllers:
       ollama:
-        replicas: 2 # 1 per node
+        replicas: 1 # 1 per node
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -26,7 +26,7 @@ spec:
             env:
               OLLAMA_VULKAN: 1
               OLLAMA_CONTEXT_LENGTH: 32768
-              OLLAMA_FLASH_ATTENTION: 0
+              # OLLAMA_FLASH_ATTENTION: 0
               OLLAMA_NUM_PARALLEL: 1
               OLLAMA_KV_CACHE_TYPE: q8_0
             resources:
@@ -38,6 +38,10 @@ spec:
               limits:
                 cpu: 6
                 memory: 48Gi
+          exporter:
+            image:
+              repository: lucabecker42/ollama-exporter
+              tag: 1.0.1@sha256:4d1d96fae76dbefd6b763d576a12fb9799913ae9a585990a464eacab2b600f55
         pod:
           affinity:
             podAntiAffinity:
@@ -58,6 +62,8 @@ spec:
         ports:
           http:
             port: 11434
+          metrics:
+            port: 8000
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
@@ -90,7 +96,7 @@ spec:
   values:
     controllers:
       ollama:
-        replicas: 1
+        replicas: 2
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
