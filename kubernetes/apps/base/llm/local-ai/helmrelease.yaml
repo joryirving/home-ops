@@ -18,11 +18,16 @@ spec:
           app:
             image:
               repository: quay.io/go-skynet/local-ai
-              tag: v3.11.0-gpu-vulkan
+              tag: v3.11.0-gpu-intel
+            securityContext:
+              privileged: true
             env:
               MODELS_PATH: /models
-              # Enable debug logs to see the generation progress in 'kubectl logs'
               DEBUG: "true"
+              VK_ICD_FILENAMES: "/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
+              ANV_VIDEO_DECODE: "1"
+              XDG_RUNTIME_DIRvalue: "/tmp"
+              DIFFUSERS_FORCE_CPU: "false"
             resources:
               claims:
                 - name: gpu
