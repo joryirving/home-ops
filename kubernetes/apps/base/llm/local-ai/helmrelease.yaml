@@ -13,7 +13,7 @@ spec:
   values:
     controllers:
       local-ai:
-        replicas: 3
+        replicas: 2
         containers:
           app:
             image:
@@ -29,11 +29,9 @@ spec:
               privileged: true
             env:
               LOCALAI_MODELS_PATH: /models
+              LOCALAI_FORCE_META_BACKEND_CAPABILITY: intel
+              LOCALAI_CONFIG_DIR: &config /configuration
               DEBUG: "true"
-              VK_ICD_FILENAMES: "/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
-              ANV_VIDEO_DECODE: "1"
-              XDG_RUNTIME_DIR: "/tmp"
-              DIFFUSERS_FORCE_CPU: "false"
             envFrom:
               - secretRef:
                   name: local-ai
@@ -85,6 +83,8 @@ spec:
         globalMounts:
           - path: /backends
             subPath: flux-backends
+          - path: *config
+            subPath: flux-configs
       dri:
         type: hostPath
         hostPath: /dev/dri
