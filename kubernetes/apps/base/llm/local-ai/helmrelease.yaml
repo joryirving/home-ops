@@ -13,8 +13,11 @@ spec:
   values:
     controllers:
       local-ai:
-        replicas: 2
+        replicas: 3
         strategy: RollingUpdate
+        rollingUpdate:
+          maxSurge: 0
+          maxUnavailable: 1
         containers:
           app:
             image:
@@ -79,8 +82,11 @@ spec:
   values:
     controllers:
       local-ai:
-        replicas: 2
+        replicas: 3
         strategy: RollingUpdate
+        rollingUpdate:
+          maxSurge: 0
+          maxUnavailable: 1
         containers:
           app:
             image:
@@ -110,7 +116,7 @@ spec:
                 memory: 32Gi
               limits:
                 cpu: 8
-                memory: 64Gi
+                memory: 100Gi
         pod:
           affinity:
             podAntiAffinity:
