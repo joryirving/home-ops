@@ -3,6 +3,72 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
+  name: local-ai-load-balancer
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      local-ai:
+        replicas: 2
+        strategy: RollingUpdate
+        containers:
+          app:
+            image:
+              repository: quay.io/go-skynet/local-ai
+              tag: v3.11.0
+            args:
+              [
+                "federated",
+              ]
+            env:
+              LOCALAI_CONFIG_DIR: &config /configuration
+            envFrom:
+              - secretRef:
+                  name: local-ai
+            resources:
+              requests:
+                cpu: 100m
+                memory: 50Mi
+              limits:
+                cpu: 500m
+                memory: 250Mi
+        pod:
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: "kubernetes.io/hostname"
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                          - "{{ .Release.Name }}"
+    service:
+      app:
+        ports:
+          http:
+            port: 8080
+    route:
+      app:
+        hostnames: ["local-ai.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      local-ai-backends:
+        existingClaim: "local-ai-backends"
+        globalMounts:
+          - path: *config
+            subPath: flux-configs
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
   name: local-ai
 spec:
   chartRef:
@@ -67,12 +133,12 @@ spec:
         ports:
           http:
             port: 8080
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+    # route:
+    #   app:
+    #     hostnames: ["{{ .Release.Name }}-worker.jory.dev"]
+    #     parentRefs:
+    #       - name: envoy-internal
+    #         namespace: network
     persistence:
       local-ai-models:
         existingClaim: "{{ .Release.Name }}-models"
