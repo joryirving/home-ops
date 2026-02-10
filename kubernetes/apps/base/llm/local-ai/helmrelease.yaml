@@ -13,21 +13,30 @@ spec:
   values:
     controllers:
       local-ai:
-        replicas: 1
+        replicas: 3
         containers:
           app:
             image:
               repository: quay.io/go-skynet/local-ai
               tag: v3.11.0-gpu-intel
+            args:
+              [
+                "run",
+                "--p2p",
+                "--federated",
+              ]
             securityContext:
               privileged: true
             env:
-              MODELS_PATH: /models
+              LOCALAI_MODELS_PATH: /models
               DEBUG: "true"
               VK_ICD_FILENAMES: "/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
               ANV_VIDEO_DECODE: "1"
-              XDG_RUNTIME_DIRvalue: "/tmp"
+              XDG_RUNTIME_DIR: "/tmp"
               DIFFUSERS_FORCE_CPU: "false"
+            envFrom:
+              - secretRef:
+                  name: local-ai
             resources:
               claims:
                 - name: gpu
@@ -49,6 +58,7 @@ spec:
                         values:
                           - ollama
                           - ollama-cpu
+                          - "{{ .Release.Name }}"
     defaultPodOptions:
       resourceClaims:
         - name: gpu
