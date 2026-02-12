@@ -13,11 +13,6 @@ spec:
   values:
     controllers:
       local-ai:
-        replicas: 3
-        strategy: RollingUpdate
-        rollingUpdate:
-          surge: 0
-          unavailable: 1
         containers:
           app:
             image:
@@ -37,7 +32,7 @@ spec:
                 cpu: 100m
                 memory: 250Mi
               limits:
-                cpu: 400m
+                cpu: 500m
                 memory: 500Mi
         pod:
           affinity:
@@ -102,7 +97,7 @@ spec:
               privileged: true
             env:
               LOCALAI_MODELS_PATH: /models
-              LOCALAI_FORCE_META_BACKEND_CAPABILITY: intel
+              LOCALAI_FORCE_META_BACKEND_CAPABILITY: default
               LOCALAI_CONFIG_DIR: &config /configuration
               DEBUG: "true"
             envFrom:
