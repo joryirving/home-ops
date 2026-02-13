@@ -24,6 +24,10 @@ spec:
     name: kube-prometheus-stack
   dependsOn: []
   interval: 15m
+  valuesFrom:
+    - kind: ConfigMap
+      name: flux-metrics-configmap
+      valuesKey: flux-metrics.yaml
   values:
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
