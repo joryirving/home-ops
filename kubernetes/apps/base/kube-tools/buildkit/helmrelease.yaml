@@ -19,7 +19,7 @@ spec:
           app:
             image:
               repository: docker.io/moby/buildkit
-              tag: v0.27.1-rootless
+              tag: v0.27.1-rootless@sha256:1b1546a0a39cd819da0dee156649512ae46793890f38bb83c339f5802913c199
             args:
               - --addr
               - tcp://0.0.0.0:1234
@@ -35,6 +35,8 @@ spec:
                 memory: 2Gi
     service:
       app:
+        type: ClusterIP
         ports:
           http:
             port: 1234
+            targetPort: 1234
