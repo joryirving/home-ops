@@ -19,7 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/idiap/coqui-tts-cpu
-              tag: v0.27.5@sha256:2cdebc24e2baa944fd066671794edec3f0264511320196c92bc3e8b4f59b3e33
+              tag: v0.27.3@sha256:ed6ebacb9acb20658223e4a3ab48196d7a3f566749c0d3acb3c66cc0eeb76293
             command:
               - /bin/bash
               - -c
@@ -37,3 +37,8 @@ spec:
         ports:
           http:
             port: 5002
+    persistence:
+      models:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /root/.local/share/tts
