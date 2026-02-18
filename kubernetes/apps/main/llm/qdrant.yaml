@@ -5,16 +5,15 @@ kind: Kustomization
 metadata:
   name: &app qdrant
 spec:
-  healthCheckExprs:
-    - apiVersion: v1
-      kind: Service
-      failed: status.phase != 'ready'
-      current: status.phase == 'ready'
+  components:
+    - ../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/llm/qdrant
   postBuild:
     substitute:
       APP: *app
+      CLUSTER: ${CLUSTER}
+      VOLSYNC_CAPACITY: 10Gi
   prune: true
   sourceRef:
     kind: GitRepository
