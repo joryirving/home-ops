@@ -1,0 +1,27 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/volsync.backube/replicationsource_v1alpha1.json
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: qdrant
+spec:
+  sourcePVC: qdrant
+  trigger:
+    schedule: "0 2 * * *"  # Daily at 2am
+  kopia:
+    accessModes: ["ReadWriteOnce"]
+    compression: zstd-fastest
+    copyMethod: Snapshot
+    moverSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 100
+      fsGroup: 100
+    parallelism: 2
+    repository: qdrant-volsync
+    retain:
+      hourly: 24
+      daily: 7
+      weekly: 4
+      monthly: 6
+    storageClassName: ceph-block
+    volumeSnapshotClassName: csi-ceph-blockpool
