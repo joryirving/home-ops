@@ -1,0 +1,48 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: qdrant
+spec:
+  interval: 1h
+  url: https://qdrant.github.io/qdrant-helm
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: qdrant
+spec:
+  chart:
+    spec:
+      chart: qdrant
+      version: 1.16.3
+      sourceRef:
+        kind: HelmRepository
+        name: qdrant
+  dependsOn: []
+  interval: 15m
+  values:
+    config:
+      service:
+        host: "::"
+    metrics:
+      serviceMonitor:
+        enabled: true
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: qdrant
+            patch: |-
+              - op: remove
+                path: /spec/volumeClaimTemplates
+
+              - op: add
+                path: /spec/template/spec/volumes/-
+                value:
+                  name: qdrant-storage
+                  persistentVolumeClaim:
+                    claimName: qdrant
