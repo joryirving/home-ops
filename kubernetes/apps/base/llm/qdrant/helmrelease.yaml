@@ -1,0 +1,40 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: qdrant
+spec:
+  interval: 15m
+  url: https://qdrant.github.io/qdrant/helm/
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: qdrant
+spec:
+  chart:
+    spec:
+      chart: qdrant
+      version: 1.12.0
+      sourceRef:
+        kind: HelmRepository
+        name: qdrant
+  dependsOn: []
+  interval: 15m
+  values:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ceph-block
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+    service:
+      grpc: 6334
+      http: 6333
