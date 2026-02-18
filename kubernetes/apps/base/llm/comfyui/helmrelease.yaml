@@ -1,0 +1,60 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: comfyui
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      comfyui:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ai-dock/comfyui
+              tag: v2-cpu-22.04-v0.2.2@sha256:617f43dfe01bdb33487472d01998a6153dec33e8c6195f35d2434c6f1dd6e36b
+            securityContext:
+              privileged: true
+            env:
+              AUTO_UPDATE: "false"
+              DIRECT_ADDRESS_GET_WAN: "true"
+              SERVICEPORTAL_URL: "comfyui.jory.dev"
+              WEB_ENABLE_AUTH: "false"
+              WORKSPACE: "/workspace"
+              CF_QUICK_TUNNELS: "false"
+              SERVERLESS: "false"
+              PROVISIONING_SCRIPT: "https://raw.githubusercontent.com/ai-dock/comfyui/main/config/provisioning/flux.sh"
+            resources:
+              requests:
+                cpu: 500m
+                memory: 4Gi
+              limits:
+                cpu: 6
+                memory: 32Gi
+    service:
+      app:
+        ports:
+          http:
+            port: 8188
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      workspace:
+        existingClaim: "{{ .Release.Name }}"
+      images:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/daena/comfyui
+        globalMounts:
+          - path: /workspace/ComfyUI

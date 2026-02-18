@@ -77,7 +77,7 @@ spec:
   values:
     controllers:
       local-ai:
-        replicas: 3
+        replicas: 2
         strategy: RollingUpdate
         rollingUpdate:
           surge: 0
@@ -107,9 +107,10 @@ spec:
               claims:
                 - name: gpu
               requests:
+                cpu: 800m
                 memory: 32Gi
               limits:
-                cpu: 6 # Try to pin this to the P cores?
+                cpu: 8000m
                 memory: 100Gi
         pod:
           affinity:

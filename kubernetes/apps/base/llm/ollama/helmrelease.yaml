@@ -27,7 +27,6 @@ spec:
               OLLAMA_CONTEXT_LENGTH: 32768
               OLLAMA_KV_CACHE_TYPE: q8_0
               OLLAMA_FLASH_ATTENTION: 0
-              OLLAMA_MODEL: qwen3:8b
               OLLAMA_KEEP_ALIVE: 30m
             resources:
               requests:
@@ -47,12 +46,12 @@ spec:
             port: 11434
           metrics:
             port: 8000
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+    # route:
+    #   app:
+    #     hostnames: ["{{ .Release.Name }}.jory.dev"]
+    #     parentRefs:
+    #       - name: envoy-internal
+    #         namespace: network
     persistence:
       ollama:
         existingClaim: "{{ .Release.Name }}"
