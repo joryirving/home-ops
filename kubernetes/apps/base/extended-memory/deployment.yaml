@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extended-memory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extended-memory
+  template:
+    metadata:
+      labels:
+        app: extended-memory
+    spec:
+      containers:
+      - name: extended-memory
+        image: python:3.12-alpine
+        workingDir: /app
+        command: ["sh", "-c", "pip install flask && python3 /app/server.py"]
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        - name: server-py
+          mountPath: /app/server.py
+          subPath: server.py
+      volumes:
+      - name: app-data
+        emptyDir: {}
+      - name: server-py
+        configMap:
+          name: extended-memory-py-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extended-memory
+spec:
+  selector:
+    app: extended-memory
+  ports:
+  - port: 80
+    targetPort: 3000
+    name: http
