@@ -1,0 +1,77 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vllm
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      vllm:
+        replicas: 1
+        containers:
+          app:
+            image:
+              repository: vllm/vllm-openai
+              tag: v0.8.3
+            securityContext:
+              capabilities:
+                add:
+                  - SYS_ADMIN
+                drop:
+                  - ALL
+            args:
+              [
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--tensor-parallel-size",
+                "1",
+                "--dtype",
+                "half",
+                "--max-model-len",
+                "4096",
+                "--enforce-eager",
+              ]
+            env:
+              VLLM_ATTENTION_BACKEND: "FLASHINFER"
+              HF_HOME: /models
+            ports:
+              http:
+                container: 8000
+            resources:
+              requests:
+                cpu: 4
+                memory: 8Gi
+              limits:
+                cpu: 8
+                memory: 32Gi
+        pod:
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    topologyKey: kubernetes.io/hostname
+                    labelSelector:
+                      matchExpressions:
+                        - key: app.kubernetes.io/name
+                          operator: In
+                          values:
+                            - "{{ .Release.Name }}"
+    service:
+      app:
+        ports:
+          http:
+            port: 8000
+    persistence:
+      vllm-models:
+        existingClaim: "ollama-models"
+        globalMounts:
+          - path: /models
