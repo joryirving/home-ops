@@ -18,13 +18,7 @@ spec:
           app:
             image:
               repository: vllm/vllm-openai
-              tag: v0.8.3
-            securityContext:
-              capabilities:
-                add:
-                  - SYS_ADMIN
-                drop:
-                  - ALL
+              tag: latest
             args:
               [
                 "--host",
@@ -42,9 +36,6 @@ spec:
             env:
               VLLM_ATTENTION_BACKEND: "FLASHINFER"
               HF_HOME: /models
-            ports:
-              http:
-                container: 8000
             resources:
               requests:
                 cpu: 4
@@ -72,6 +63,6 @@ spec:
             port: 8000
     persistence:
       vllm-models:
-        existingClaim: "ollama-models"
+        existingClaim: "{{ .Release.Name }}-models"
         globalMounts:
           - path: /models
