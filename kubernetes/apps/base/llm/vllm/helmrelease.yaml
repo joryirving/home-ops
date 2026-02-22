@@ -18,7 +18,7 @@ spec:
           app:
             image:
               repository: vllm/vllm-openai
-              tag: latest
+              tag: 0.14.1-xpu@sha256:6aeeaba11a27dfb57da6448676f5eec23117823c6eae4a1c82978e8693b5a9c3
             args:
               [
                 "--host",
@@ -33,16 +33,21 @@ spec:
                 "4096",
                 "--enforce-eager",
               ]
+            securityContext:
+              privileged: true
             env:
               VLLM_ATTENTION_BACKEND: "FLASHINFER"
               HF_HOME: /models
             resources:
+              claims:
+                - name: gpu
               requests:
                 cpu: 4
                 memory: 8Gi
               limits:
                 cpu: 8
                 memory: 32Gi
+
         pod:
           affinity:
             podAntiAffinity:
@@ -56,6 +61,10 @@ spec:
                           operator: In
                           values:
                             - "{{ .Release.Name }}"
+    defaultPodOptions:
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: "{{ .Release.Name }}-gpu"
     service:
       app:
         ports:
@@ -66,3 +75,7 @@ spec:
         existingClaim: "{{ .Release.Name }}-models"
         globalMounts:
           - path: /models
+      dri:
+        type: hostPath
+        hostPath: /dev/dri
+
