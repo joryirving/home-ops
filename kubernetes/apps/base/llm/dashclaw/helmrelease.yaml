@@ -26,9 +26,10 @@ spec:
                   secretKeyRef:
                     name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: pgbouncer-uri
-              NODE_ENV: production
               NEXTAUTH_URL: "https://{{ .Release.Name }}.jory.dev"
-              ALLOWED_ORIGIN: "https://{{ .Release.Name }}.jory.dev"
+              REALTIME_BACKEND: redis
+              REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
+              REALTIME_ENFORCE_REDIS: true
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
