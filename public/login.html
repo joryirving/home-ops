@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - OpenClaw Chat</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-box {
+      background: #0f3460;
+      padding: 40px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    h1 { color: #fff; text-align: center; margin-bottom: 30px; }
+    input {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 16px;
+    }
+    input:focus { outline: 2px solid #e94560; }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.02); }
+    .error { color: #ff4757; text-align: center; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h1>🍲 OpenClaw Chat</h1>
+    <form action="/login" method="POST">
+      <input type="text" name="username" placeholder="Username" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p class="error" id="error"></p>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'invalid') {
+      document.getElementById('error').textContent = 'Invalid username or password';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  openclaw-chat:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - GATEWAY_URL=ws://host.docker.internal:18789
+      - SESSION_SECRET=dev-secret-change-in-production
+      - OIDC_ENABLED=false
+      - LOCAL_USERS=admin:password123
+    volumes:
+      - .:/app
+    restart: unless-stopped
