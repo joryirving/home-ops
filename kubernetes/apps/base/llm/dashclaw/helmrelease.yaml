@@ -19,16 +19,17 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/dashclaw
-              tag: 2.0.0@sha256:7cd068d71d8fd246d190bb25fce727e8a3e8e8d8a500ed004cac948c2df28a8f
+              tag: 2.0.0@sha256:39514a6b233286b3cf9d4c8119e1e02c3c51522cf10ee087dba128b8a351d4dc
             env:
               DATABASE_URL:
                 valueFrom:
                   secretKeyRef:
                     name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: pgbouncer-uri
-              NODE_ENV: production
               NEXTAUTH_URL: "https://{{ .Release.Name }}.jory.dev"
-              ALLOWED_ORIGIN: "https://{{ .Release.Name }}.jory.dev"
+              REALTIME_BACKEND: redis
+              REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
+              REALTIME_ENFORCE_REDIS: true
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
