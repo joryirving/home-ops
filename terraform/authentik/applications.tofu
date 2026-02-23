@@ -49,7 +49,7 @@ locals {
       group             = "media"
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/openclaw.png"
       redirect_uri      = "https://dashclaw.${var.CLUSTER_DOMAIN}/api/auth/callback/oidc"
-      launch_url        = "https://dashclaw.${var.CLUSTER_DOMAIN}"
+      launch_url        = "https://dashclaw.${var.CLUSTER_DOMAIN}/login"
       property_mappings = local.default_property_mappings
     },
     ErsatzTV = {
