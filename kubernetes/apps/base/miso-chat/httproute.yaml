@@ -1,0 +1,17 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: miso-chat
+  namespace: miso-chat
+spec:
+  parentRefs:
+  - name: envoy-external
+    namespace: network
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /chat
+    backendRefs:
+    - name: miso-chat
+      port: 80

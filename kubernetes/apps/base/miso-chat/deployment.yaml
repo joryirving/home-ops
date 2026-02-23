@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: miso-chat
+  namespace: miso-chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: miso-chat
+  template:
+    metadata:
+      labels:
+        app: miso-chat
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: web-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+          requests:
+            memory: "32Mi"
+            cpu: "50m"
+      volumes:
+      - name: web-content
+        configMap:
+          name: miso-chat-web
+kind: HTTPRoute
+metadata:
+  name: miso-chat
+  namespace: miso-chat
+spec:
+  parentRefs:
+  - name: envoy-external
+    namespace: network
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /chat
+    backendRefs:
+    - name: miso-chat
+      port: 80

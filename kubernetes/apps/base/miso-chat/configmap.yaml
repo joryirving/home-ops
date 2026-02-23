@@ -1,0 +1,577 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: miso-chat-web
+  namespace: miso-chat
+data:
+  index.html: |
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="format-detection" content="telephone=no">
+    
+    <title>Miso</title>
+    
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23e94560'/><text y='65' x='50' text-anchor='middle' font-size='50'>🍲</text></svg>">
+    <link rel="apple-touch-startup-image" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231a1a2e' width='100' height='100'/><text y='65' x='50' text-anchor='middle' font-size='50'>🍲</text></svg>">
+    
+    <style>
+        :root {
+            --bg-primary: #0d0d14;
+            --bg-secondary: #161625;
+            --bg-tertiary: #1e1e32;
+            --accent: #e94560;
+            --accent-gradient: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --border: #2a2a40;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --safe-area-top: env(safe-area-inset-top, 20px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            overscroll-behavior: none;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            padding: calc(var(--safe-area-top) + 12px) 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 2px 12px rgba(233, 69, 96, 0.4);
+        }
+        
+        .header-info h1 {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        
+        .header-info .status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4757;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.connected {
+            background: #2ed573;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Messages */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+        
+        .message {
+            max-width: 85%;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.miso {
+            align-self: flex-start;
+        }
+        
+        .message.user {
+            align-self: flex-end;
+        }
+        
+        .bubble {
+            padding: 14px 18px;
+            border-radius: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            position: relative;
+        }
+        
+        .message.miso .bubble {
+            background: var(--bg-tertiary);
+            border-bottom-left-radius: 6px;
+            color: var(--text-primary);
+        }
+        
+        .message.user .bubble {
+            background: var(--accent-gradient);
+            border-bottom-right-radius: 6px;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .message .image-attachment {
+            margin-top: 10px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--bg-tertiary);
+        }
+        
+        .message .image-attachment img {
+            display: block;
+            max-width: 100%;
+            width: 100%;
+            height: auto;
+        }
+        
+        .message.system {
+            align-self: center;
+            max-width: 90%;
+        }
+        
+        .message.system .bubble {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-size: 13px;
+            text-align: center;
+            border-radius: 12px;
+            padding: 10px 16px;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .quick-actions::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .quick-btn {
+            flex-shrink: 0;
+            padding: 10px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .quick-btn:active {
+            transform: scale(0.95);
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        /* Input */
+        .input-area {
+            background: var(--bg-secondary);
+            padding: calc(var(--safe-area-bottom) + 12px) 16px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+        }
+        
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .input-wrapper input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+        
+        .input-wrapper input:focus {
+            border-color: var(--accent);
+        }
+        
+        .input-wrapper input::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .send-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: none;
+            background: var(--accent-gradient);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 16px rgba(233, 69, 96, 0.4);
+        }
+        
+        .send-btn:active {
+            transform: scale(0.92);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+        }
+        
+        /* Typing indicator */
+        .typing {
+            display: none;
+            padding: 0 16px 12px;
+        }
+        
+        .typing.active {
+            display: block;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            width: fit-content;
+        }
+        
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+        
+        /* Pull to refresh hint */
+        .refresh-hint {
+            text-align: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .refresh-hint.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="avatar">🍲</div>
+        <div class="header-info">
+            <h1>Miso</h1>
+            <div class="status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Connecting...</span>
+            </div>
+        </div>
+    </header>
+    
+    <div class="messages" id="messages">
+        <div class="message miso">
+            <div class="bubble">Hey there! 👋 Connected! What would you like?</div>
+        </div>
+    </div>
+    
+    <div class="typing" id="typingIndicator">
+        <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    
+    <div class="quick-actions" id="quickActions">
+        <button class="quick-btn" onclick="quickAction('generate')">🎲 Generate</button>
+        <button class="quick-btn" onclick="quickAction('casual')">👕 Casual</button>
+        <button class="quick-btn" onclick="quickAction('elegant')">👗 Elegant</button>
+        <button class="quick-btn" onclick="quickAction('cute')">✨ Cute</button>
+    </div>
+    
+    <div class="input-area">
+        <div class="input-wrapper">
+            <input type="text" id="messageInput" placeholder="Message Miso..." autocomplete="off" autocorrect="off" autocapitalize="sentences">
+        </div>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        // Configuration
+        const GATEWAY_HOST = window.location.hostname || '10.69.1.50';
+        const GATEWAY_PORT = '18789';
+        const SESSION_KEY = 'main';
+        
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const typingIndicator = document.getElementById('typingIndicator');
+        
+        function connect() {
+            statusText.textContent = 'Connecting...';
+            
+            ws = new WebSocket(`ws://${GATEWAY_HOST}:${GATEWAY_PORT}/api/sessions/${SESSION_KEY}/ws`);
+            
+            ws.onopen = () => {
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Online';
+                reconnectAttempts = 0;
+                addMessage('system', '🔗 Connected');
+            };
+            
+            ws.onclose = () => {
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'Offline';
+                
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    statusText.textContent = `Reconnecting (${reconnectAttempts})...`;
+                    setTimeout(connect, delay);
+                } else {
+                    addMessage('system', '❌ Connection lost. Refresh to retry.');
+                }
+            };
+            
+            ws.onerror = (e) => {
+                console.error('WebSocket error:', e);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleMessage(data);
+                } catch (e) {
+                    // Plain text
+                    if (event.data.trim()) {
+                        addMessage('miso', event.data);
+                    }
+                }
+            };
+        }
+        
+        function handleMessage(data) {
+            // Hide typing indicator
+            typingIndicator.classList.remove('active');
+            
+            if (data.type === 'message' || data.content) {
+                const content = data.content || data.text || data.message || JSON.stringify(data);
+                addMessage('miso', content);
+            }
+            
+            // Handle images
+            const images = data.images || data.attachments || [];
+            images.forEach(img => {
+                addImage(img.url || img);
+            });
+            
+            // Handle rich content
+            if (data.components || data.buttons) {
+                // Could add button handling here
+            }
+        }
+        
+        function addMessage(sender, content) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = content;
+            
+            div.appendChild(bubble);
+            messagesDiv.appendChild(div);
+            
+            scrollToBottom();
+        }
+        
+        function addImage(imageUrl) {
+            const div = document.createElement('div');
+            div.className = 'message miso';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            const attachment = document.createElement('div');
+            attachment.className = 'image-attachment';
+            
+            const img = document.createElement('img');
+            // Handle relative URLs
+            if (!imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
+                imageUrl = `http://${GATEWAY_HOST}:${GATEWAY_PORT}${imageUrl}`;
+            }
+            img.src = imageUrl;
+            img.loading = 'lazy';
+            img.onload = () => scrollToBottom();
+            
+            attachment.appendChild(img);
+            bubble.appendChild(attachment);
+            div.appendChild(bubble);
+            messagesDiv.appendChild(div);
+            
+            scrollToBottom();
+        }
+        
+        function scrollToBottom() {
+            setTimeout(() => {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, 100);
+        }
+        
+        function sendMessage(text = null) {
+            const messageText = text || messageInput.value.trim();
+            if (!messageText || !ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            addMessage('user', messageText);
+            messageInput.value = '';
+            messageInput.focus();
+            
+            ws.send(JSON.stringify({
+                type: 'message',
+                content: messageText
+            }));
+            
+            // Show typing indicator briefly
+            setTimeout(() => {
+                typingIndicator.classList.add('active');
+            }, 500);
+        }
+        
+        function quickAction(action) {
+            const messages = {
+                'generate': '🎲 Generate a random image',
+                'casual': '👕 Show me something casual',
+                'elegant': '👗 Show me something elegant',
+                'cute': '✨ Show me something cute'
+            };
+            sendMessage(messages[action] || action);
+        }
+        
+        // Event listeners
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Handle visibility change - reconnect if needed
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
+                connect();
+            }
+        });
+        
+        // Initial connect
+        connect();
+        
+        // Focus input on load (mobile)
+        window.addEventListener('load', () => {
+            // Don't auto-focus on mobile as it shows keyboard
+        });
+    </script>
+</body>
+</html>
+
