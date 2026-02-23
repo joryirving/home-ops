@@ -15,6 +15,8 @@ spec:
       failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 1h
+  labels:
+    components.postgres/cpgo: init ## Initialize an empty DB - Remove this after
   path: ./kubernetes/apps/base/llm/dashclaw
   postBuild:
     substitute:
