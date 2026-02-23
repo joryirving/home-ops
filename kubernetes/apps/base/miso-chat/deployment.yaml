@@ -14,31 +14,37 @@ spec:
         app: miso-chat
     spec:
       containers:
-      - name: nginx
-        image: nginx:alpine
+      - name: miso-chat
+        image: ghcr.io/joryirving/miso-chat:latest
         ports:
         - containerPort: 80
-        volumeMounts:
-        - name: web-content
-          mountPath: /usr/share/nginx/html
         resources:
-          limits:
-            memory: "64Mi"
-            cpu: "100m"
           requests:
-            memory: "32Mi"
-            cpu: "50m"
-      volumes:
-      - name: web-content
-        configMap:
-          name: miso-chat-web
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: miso-chat
+  namespace: miso-chat
+spec:
+  selector:
+    app: miso-chat
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: miso-chat
   namespace: miso-chat
 spec:
   parentRefs:
-  - name: envoy-external
+  - name: envoy-internal
     namespace: network
   rules:
   - matches:
