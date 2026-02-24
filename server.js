@@ -11,6 +11,39 @@ require('dotenv').config();
 // Import security middleware
 const securityMiddleware = require('./security');
 
+function validateConfig() {
+  if (process.env.OIDC_ENABLED === 'true') {
+    const required = ['OIDC_ISSUER', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET'];
+    const missing = required.filter((k) => !process.env[k]);
+    if (missing.length) {
+      throw new Error(`OIDC_ENABLED=true but missing required env vars: ${missing.join(', ')}`);
+    }
+  }
+  if (process.env.NODE_ENV === 'production' && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.includes('change-this'))) {
+    throw new Error('SESSION_SECRET must be set to a strong value in production');
+  }
+}
+
+function buildSessionStore() {
+  if (!process.env.REDIS_URL) {
+    return new MemoryStore({ checkPeriod: 24 * 60 * 60 * 1000 });
+  }
+  try {
+    // Optional dependency path
+    const RedisStoreFactory = require('connect-redis').default || require('connect-redis');
+    const { createClient } = require('redis');
+    const redisClient = createClient({ url: process.env.REDIS_URL });
+    redisClient.connect().catch((err) => console.error('Redis connect failed, falling back to MemoryStore:', err.message));
+    console.log('Using Redis session store');
+    return new RedisStoreFactory({ client: redisClient, prefix: 'miso-chat:' });
+  } catch (err) {
+    console.warn('REDIS_URL set but redis/connect-redis not installed; using MemoryStore fallback');
+    return new MemoryStore({ checkPeriod: 24 * 60 * 60 * 1000 });
+  }
+}
+
+validateConfig();
+
 const app = express();
 app.set('trust proxy', 1);
 const server = http.createServer(app);
@@ -35,7 +68,7 @@ app.use(express.static('public', { index: false }));
 // Session config
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
-  store: new MemoryStore({ checkPeriod: 24 * 60 * 60 * 1000 }),
+  store: buildSessionStore(),
   resave: false,
   saveUninitialized: false,
   cookie: { 
@@ -147,6 +180,7 @@ app.get('/', isAuthenticated, (req, res) => {
 
 // API: Check auth status
 app.get('/api/auth', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.json({ 
     authenticated: req.isAuthenticated(), 
     user: req.user,
@@ -183,14 +217,24 @@ server.on('upgrade', (request, socket, head) => {
 
 // Gateway WebSocket connection
 let gatewayWs = null;
+let reconnectAttempts = 0;
+
+function nextReconnectDelayMs() {
+  const base = 1000;
+  const max = 30000;
+  const exp = Math.min(max, base * Math.pow(2, reconnectAttempts));
+  const jitter = Math.floor(Math.random() * 500);
+  return exp + jitter;
+}
 
 function connectToGateway() {
   const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
   console.log(`Connecting to gateway: ${gatewayUrl}`);
-  
+
   gatewayWs = new WebSocket(gatewayUrl);
   
   gatewayWs.on('open', () => {
+    reconnectAttempts = 0;
     console.log('Connected to gateway!');
     startHeartbeat();
   });
@@ -205,9 +249,11 @@ function connectToGateway() {
   });
   
   gatewayWs.on('close', () => {
-    console.log('Gateway disconnected, reconnecting in 5s...');
     if (heartbeat) clearInterval(heartbeat);
-    setTimeout(connectToGateway, 5000);
+    reconnectAttempts += 1;
+    const delay = nextReconnectDelayMs();
+    console.log(`Gateway disconnected, reconnecting in ${delay}ms...`);
+    setTimeout(connectToGateway, delay);
   });
   
   gatewayWs.on('error', (err) => {
@@ -222,47 +268,24 @@ let heartbeat;
 // Connect to gateway on start
 function startHeartbeat() {
   if (heartbeat) clearInterval(heartbeat);
+  let awaitingPong = false;
+  gatewayWs.on('pong', () => { awaitingPong = false; });
   heartbeat = setInterval(() => {
-    if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
-      gatewayWs.ping();
+    if (!gatewayWs || gatewayWs.readyState !== WebSocket.OPEN) return;
+    if (awaitingPong) {
+      console.warn('Gateway pong timeout, terminating socket');
+      try { gatewayWs.terminate(); } catch (_) {}
+      return;
     }
+    awaitingPong = true;
+    gatewayWs.ping();
   }, 25000);
 }
 
-// Start gateway connection
-connectToGateway();
+function start() {
+  connectToGateway();
+  if (require.main === module) {
+  start();
+}
 
-// Handle client WebSocket connections
-wss.on('connection', (ws, req) => {
-  console.log('Client connected');
-  
-  ws.on('message', (message) => {
-    // Forward to gateway
-    if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
-      gatewayWs.send(message.toString());
-    } else {
-      ws.send(JSON.stringify({ error: 'Not connected to gateway' }));
-    }
-  });
-  
-  ws.on('close', () => {
-    console.log('Client disconnected');
-  });
-
-  ws.on('error', (err) => {
-    console.error('Client websocket error:', err.message);
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`
-🎉 OpenClaw Chat Server running on port ${PORT}
-   
-   Gateway: ${process.env.GATEWAY_URL || 'ws://localhost:18789'}
-   Auth: ${process.env.OIDC_ENABLED === 'true' ? 'OIDC' : 'Local'}
-   Node Env: ${process.env.NODE_ENV || 'development'}
-   
-   Login at: http://localhost:${PORT}/login
-  `);
-});
+module.exports = { app, server, start, validateConfig, nextReconnectDelayMs };
