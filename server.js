@@ -107,12 +107,15 @@ if (process.env.OIDC_ENABLED !== 'true') {
   ));
 } else {
   // OIDC Strategy
-  const oidcIssuer = process.env.OIDC_ISSUER;
+  const providerBase = process.env.OIDC_PROVIDER_URL
+    ? process.env.OIDC_PROVIDER_URL.replace('/.well-known/openid-configuration', '')
+    : null;
+  const oidcIssuer = process.env.OIDC_EXPECTED_ISSUER || providerBase || process.env.OIDC_ISSUER;
   passport.use('oidc', new (require('passport-openidconnect').Strategy)({
     issuer: oidcIssuer,
-    authorizationURL: process.env.OIDC_AUTH_URL || (oidcIssuer + '/application/o/authorize/'),
-    tokenURL: process.env.OIDC_TOKEN_URL || (oidcIssuer + '/application/o/token/'),
-    userInfoURL: process.env.OIDC_USERINFO_URL || (oidcIssuer + '/application/o/userinfo/'),
+    authorizationURL: process.env.OIDC_AUTH_URL || ((providerBase || process.env.OIDC_ISSUER) + '/authorize/'),
+    tokenURL: process.env.OIDC_TOKEN_URL || ((providerBase || process.env.OIDC_ISSUER) + '/token/'),
+    userInfoURL: process.env.OIDC_USERINFO_URL || ((providerBase || process.env.OIDC_ISSUER) + '/userinfo/'),
     clientID: process.env.OIDC_CLIENT_ID,
     clientSecret: process.env.OIDC_CLIENT_SECRET,
     callbackURL: process.env.OIDC_CALLBACK_URL || '/auth/oidc/callback',
