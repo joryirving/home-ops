@@ -12,7 +12,6 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Lint and test
   test:
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +33,6 @@ jobs:
       - name: Run tests
         run: npm test || true
 
-  # Multi-platform build
   build:
     needs: test
     strategy:
@@ -90,12 +88,11 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ matrix.platform }}
+          name: digests-${{ matrix.platform }}-${{ matrix.runner }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
 
-  # Merge and create manifest
   merge:
     needs: build
     runs-on: ubuntu-latest
