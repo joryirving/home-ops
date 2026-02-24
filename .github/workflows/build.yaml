@@ -20,7 +20,8 @@ jobs:
             platform: linux/arm64
             arch: arm64
     concurrency:
-      group: ${{ github.workflow }}-${{ matrix.arch }}
+      group: ${{ github.workflow }}-${{ matrix.arch }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -44,6 +45,9 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ghcr.io/${{ github.repository }}
+          tags: |-
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         id: build
@@ -51,9 +55,9 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          tags: ghcr.io/${{ github.repository }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
 
       - name: Export digest
         run: |
@@ -98,6 +102,9 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ghcr.io/${{ github.repository }}
+          tags: |-
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
           tags: |-
             type=sha,prefix={{branch}}-
 
