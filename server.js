@@ -248,9 +248,15 @@ server.on('upgrade', (request, socket, head) => {
   });
 });
 
-// Gateway WebSocket connection
+// Gateway WebSocket connection (OpenClaw protocol v3)
+const crypto = require('crypto');
 let gatewayWs = null;
+let gatewayReady = false;
 let reconnectAttempts = 0;
+let heartbeat;
+let gatewayConnReqId = null;
+const gatewayPendingSends = [];
+const GATEWAY_SESSION_KEY = process.env.OPENCLAW_SESSION_KEY || 'main';
 
 function nextReconnectDelayMs() {
   const base = 1000;
@@ -260,45 +266,156 @@ function nextReconnectDelayMs() {
   return exp + jitter;
 }
 
+function broadcastToClients(payload) {
+  const wire = JSON.stringify(payload);
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(wire);
+    }
+  });
+}
+
+function sendGatewayReq(method, params = {}) {
+  if (!gatewayWs || gatewayWs.readyState !== WebSocket.OPEN) return null;
+  const id = crypto.randomUUID();
+  gatewayWs.send(JSON.stringify({ type: 'req', id, method, params }));
+  return id;
+}
+
+function flushQueuedMessages() {
+  while (gatewayPendingSends.length > 0 && gatewayReady) {
+    const msg = gatewayPendingSends.shift();
+    sendGatewayReq('chat.send', {
+      sessionKey: GATEWAY_SESSION_KEY,
+      message: msg,
+      idempotencyKey: crypto.randomUUID(),
+    });
+  }
+}
+
+function parseGatewayChatEvent(payload) {
+  const msg = payload?.message;
+  if (!msg) return null;
+  if (typeof msg === 'string') return msg;
+  if (typeof msg?.content === 'string') return msg.content;
+  if (Array.isArray(msg?.content)) {
+    return msg.content.map((c) => (typeof c === 'string' ? c : c?.text || '')).join('');
+  }
+  if (typeof msg?.text === 'string') return msg.text;
+  return null;
+}
+
+function requestHistory() {
+  sendGatewayReq('chat.history', { sessionKey: GATEWAY_SESSION_KEY, limit: 40 });
+}
+
+function handleGatewayFrame(raw) {
+  let frame;
+  try {
+    frame = JSON.parse(raw.toString());
+  } catch {
+    return;
+  }
+
+  if (frame.type === 'event' && frame.event === 'connect.challenge') {
+    const params = {
+      minProtocol: 3,
+      maxProtocol: 3,
+      client: {
+        id: 'miso-chat',
+        version: '1.0.0',
+        platform: 'node',
+        mode: 'operator',
+      },
+      role: 'operator',
+      scopes: ['operator.read', 'operator.write'],
+      auth: {},
+      locale: 'en-US',
+      userAgent: 'miso-chat/1.0.0',
+    };
+    if (process.env.GATEWAY_AUTH_TOKEN) {
+      params.auth.token = process.env.GATEWAY_AUTH_TOKEN;
+    }
+    gatewayConnReqId = crypto.randomUUID();
+    gatewayWs.send(JSON.stringify({ type: 'req', id: gatewayConnReqId, method: 'connect', params }));
+    return;
+  }
+
+  if (frame.type === 'res') {
+    if (frame.id === gatewayConnReqId) {
+      if (frame.ok) {
+        gatewayReady = true;
+        reconnectAttempts = 0;
+        console.log('Gateway protocol connect complete');
+        requestHistory();
+        flushQueuedMessages();
+        broadcastToClients({ type: 'status', connected: true });
+      } else {
+        gatewayReady = false;
+        console.error('Gateway connect rejected:', frame.error?.message || frame.error || 'unknown');
+        broadcastToClients({ type: 'error', content: `Gateway auth/connect failed: ${frame.error?.message || 'unknown'}` });
+      }
+      return;
+    }
+
+    if (!frame.ok) return;
+
+    // chat.history response
+    const payload = frame.payload;
+    if (Array.isArray(payload)) {
+      for (const item of payload) {
+        const text = parseGatewayChatEvent({ message: item?.message || item });
+        if (text) broadcastToClients({ content: text });
+      }
+    } else if (Array.isArray(payload?.messages)) {
+      for (const item of payload.messages) {
+        const text = parseGatewayChatEvent({ message: item?.message || item });
+        if (text) broadcastToClients({ content: text });
+      }
+    }
+    return;
+  }
+
+  if (frame.type === 'event' && frame.event === 'chat') {
+    const text = parseGatewayChatEvent(frame.payload);
+    if (text) {
+      broadcastToClients({ content: text });
+    }
+    return;
+  }
+}
+
 function connectToGateway() {
   const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
   console.log(`Connecting to gateway: ${gatewayUrl}`);
 
+  gatewayReady = false;
   gatewayWs = new WebSocket(gatewayUrl);
-  
+
   gatewayWs.on('open', () => {
-    reconnectAttempts = 0;
-    console.log('Connected to gateway!');
+    console.log('Gateway socket opened; waiting for connect.challenge...');
     startHeartbeat();
   });
-  
-  gatewayWs.on('message', (data) => {
-    // Broadcast to all connected clients
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(data.toString());
-      }
-    });
-  });
-  
+
+  gatewayWs.on('message', handleGatewayFrame);
+
   gatewayWs.on('close', () => {
+    gatewayReady = false;
     if (heartbeat) clearInterval(heartbeat);
     reconnectAttempts += 1;
     const delay = nextReconnectDelayMs();
     console.log(`Gateway disconnected, reconnecting in ${delay}ms...`);
+    broadcastToClients({ type: 'status', connected: false });
     setTimeout(connectToGateway, delay);
   });
-  
+
   gatewayWs.on('error', (err) => {
+    gatewayReady = false;
     console.error('Gateway error:', err.message);
     if (heartbeat) clearInterval(heartbeat);
   });
 }
 
-// Heartbeat variable (declared outside function)
-let heartbeat;
-
-// Connect to gateway on start
 function startHeartbeat() {
   if (heartbeat) clearInterval(heartbeat);
   let awaitingPong = false;
@@ -319,11 +436,35 @@ function startHeartbeat() {
 wss.on('connection', (ws) => {
   console.log('Client connected');
 
+  if (gatewayReady) {
+    ws.send(JSON.stringify({ type: 'status', connected: true }));
+    requestHistory();
+  } else {
+    ws.send(JSON.stringify({ type: 'status', connected: false }));
+  }
+
   ws.on('message', (message) => {
-    if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
-      gatewayWs.send(message.toString());
-    } else {
-      ws.send(JSON.stringify({ error: 'Not connected to gateway' }));
+    let payload;
+    try {
+      payload = JSON.parse(message.toString());
+    } catch {
+      return;
+    }
+
+    if (payload?.type === 'message' && typeof payload?.content === 'string') {
+      const msg = payload.content.trim();
+      if (!msg) return;
+
+      if (gatewayReady) {
+        sendGatewayReq('chat.send', {
+          sessionKey: GATEWAY_SESSION_KEY,
+          message: msg,
+          idempotencyKey: crypto.randomUUID(),
+        });
+      } else {
+        gatewayPendingSends.push(msg);
+        ws.send(JSON.stringify({ error: 'Gateway offline, message queued' }));
+      }
     }
   });
 
