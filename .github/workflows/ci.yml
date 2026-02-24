@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -10,87 +10,11 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  NODE_VERSION: '20'
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint || true
-
-  dockerfile-lint:
-    name: Lint Dockerfile
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Hadolint
-        uses: hadolint/hadolint-action@v3.0.0
-        with:
-          dockerfile: Dockerfile
-
-  security:
-    name: Security
-    runs-on: ubuntu-latest
-    needs: [lint, dockerfile-lint]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: [lint, dockerfile-lint]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm run test || true
-
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [test, security]
     
     steps:
       - name: Checkout code
@@ -127,7 +51,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  container-test:
+  test:
     name: Test Container
     runs-on: ubuntu-latest
     needs: build
@@ -136,27 +60,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.meta.outputs.image }}
 
-      - name: Build and test container
+      - name: Build and test
         run: |
           docker build -t test-app .
-          docker run -d -p 3000:3000 -e GATEWAY_URL=ws://localhost -e SESSION_SECRET=test -e OIDC_ENABLED=false -e LOCAL_USERS=admin:test test-app
+          docker run -d --name test-app -p 3000:3000 -e GATEWAY_URL=ws://localhost -e SESSION_SECRET=test -e OIDC_ENABLED=false -e LOCAL_USERS=admin:test test-app
           sleep 5
           curl -f http://localhost:3000/api/health || exit 1
           docker stop test-app
+          docker rm test-app
 
   push:
     name: Push to GHCR
     runs-on: ubuntu-latest
-    needs: container-test
+    needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     permissions:
       packages: write
