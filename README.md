@@ -74,3 +74,10 @@ npm run lint   # Lint
 ## License
 
 MIT License - see [LICENSE](LICENSE).
+
+
+## Notes
+
+- When running behind Envoy/Ingress over HTTPS, this app trusts one proxy hop for secure session cookies.
+- WebSocket upgrades require an authenticated session (unauthenticated upgrades are rejected with 401).
+- With OIDC enabled, `/login` redirects directly to `/auth/oidc`.
