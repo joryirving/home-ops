@@ -110,7 +110,7 @@ if (process.env.OIDC_ENABLED !== 'true') {
   const providerBase = process.env.OIDC_PROVIDER_URL
     ? process.env.OIDC_PROVIDER_URL.replace('/.well-known/openid-configuration', '')
     : null;
-  const oidcIssuer = process.env.OIDC_EXPECTED_ISSUER || providerBase || process.env.OIDC_ISSUER;
+  const oidcIssuer = process.env.OIDC_EXPECTED_ISSUER || (providerBase ? `${providerBase}/` : process.env.OIDC_ISSUER);
   const publicIssuer = process.env.OIDC_ISSUER;
   passport.use('oidc', new (require('passport-openidconnect').Strategy)({
     issuer: oidcIssuer,
