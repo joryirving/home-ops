@@ -333,8 +333,9 @@ function handleGatewayFrame(raw) {
       locale: 'en-US',
       userAgent: 'miso-chat/1.0.0',
     };
-    if (process.env.GATEWAY_AUTH_TOKEN) {
-      params.auth.token = process.env.GATEWAY_AUTH_TOKEN;
+    const gatewayToken = process.env.GATEWAY_AUTH_TOKEN || process.env.OPENCLAW_GATEWAY_TOKEN || process.env.GATEWAY_TOKEN;
+    if (gatewayToken) {
+      params.auth.token = gatewayToken;
     }
     gatewayConnReqId = crypto.randomUUID();
     gatewayWs.send(JSON.stringify({ type: 'req', id: gatewayConnReqId, method: 'connect', params }));
@@ -346,7 +347,8 @@ function handleGatewayFrame(raw) {
       if (frame.ok) {
         gatewayReady = true;
         reconnectAttempts = 0;
-        console.log('Gateway protocol connect complete');
+        const grantedScopes = frame.payload?.auth?.scopes || [];
+        console.log('Gateway protocol connect complete. scopes=', grantedScopes.join(','));
         requestHistory();
         flushQueuedMessages();
         broadcastToClients({ type: 'status', connected: true });
