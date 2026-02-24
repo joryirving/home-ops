@@ -137,10 +137,18 @@ const isAuthenticated = (req, res, next) => {
 
 // Login page
 app.get('/login', (req, res) => {
-  // When OIDC is enabled, send users directly to SSO
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return res.redirect('/');
+  }
+
+  // When OIDC is enabled, send users to SSO unless we're returning with an error.
   if (process.env.OIDC_ENABLED === 'true') {
+    if (req.query?.error) {
+      return res.status(401).send(`OIDC login failed: ${req.query.error}. Check client ID, secret, and callback URL.`);
+    }
     return res.redirect('/auth/oidc');
   }
+
   res.sendFile(__dirname + '/public/login.html');
 });
 
