@@ -84,3 +84,15 @@ MIT License - see [LICENSE](LICENSE).
 - With OIDC enabled, `/login` redirects directly to `/auth/oidc`.
 
 - Startup validation fails fast when OIDC is enabled but required env vars are missing.
+
+
+### Home-ops tip (Dragonfly)
+
+If you enable the `dragonfly` component in home-ops, set:
+
+```yaml
+env:
+  REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
+```
+
+This is optional. If `REDIS_URL` is not set, miso-chat falls back to in-memory sessions.
