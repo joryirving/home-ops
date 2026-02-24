@@ -5,17 +5,14 @@ const WebSocket = require('ws');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const rateLimit = require('express-rate-limit');
+const MemoryStore = require('memorystore')(session);
 require('dotenv').config();
 
 // Import security middleware
 const securityMiddleware = require('./security');
 
-console.log("=== DEBUG ENV ===");
-console.log("OIDC_ENABLED:", process.env.OIDC_ENABLED);
-console.log("OIDC_ISSUER:", process.env.OIDC_ISSUER);
-console.log("OIDC_CLIENT_ID:", process.env.OIDC_CLIENT_ID);
-console.log("=== END DEBUG ===");
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
@@ -30,19 +27,6 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// WebSocket rate limiting (simple)
-let wsConnections = new Map();
-const wsRateLimit = (ws) => {
-  const ip = ws.upgradeReq?.connection?.remoteAddress;
-  const now = Date.now();
-  const last = wsConnections.get(ip) || 0;
-  if (now - last < 100) { // Max 10 msg/sec
-    ws.close();
-    return false;
-  }
-  wsConnections.set(ip, now);
-  return true;
-};
 
 // Middleware
 app.use(express.json({ limit: '10kb' }));
@@ -51,6 +35,7 @@ app.use(express.static('public', { index: false }));
 // Session config
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  store: new MemoryStore({ checkPeriod: 24 * 60 * 60 * 1000 }),
   resave: false,
   saveUninitialized: false,
   cookie: { 
@@ -98,7 +83,7 @@ if (process.env.OIDC_ENABLED !== 'true') {
     clientID: process.env.OIDC_CLIENT_ID,
     clientSecret: process.env.OIDC_CLIENT_SECRET,
     callbackURL: process.env.OIDC_CALLBACK_URL || '/auth/oidc/callback',
-    scope: ['openid', 'profile', 'email']
+    scope: ['profile', 'email']
   },
   (issuer, profile, done) => {
     return done(null, {
@@ -178,10 +163,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// WebSocket upgrade handling
+// WebSocket upgrade handling (require authenticated session)
 server.on('upgrade', (request, socket, head) => {
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    wss.emit('connection', ws, request);
+  sessionMiddleware(request, {}, () => {
+    passport.initialize()(request, {}, () => {
+      passport.session()(request, {}, () => {
+        if (!request.isAuthenticated || !request.isAuthenticated()) {
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request);
+        });
+      });
+    });
   });
 });
 
@@ -251,6 +247,10 @@ wss.on('connection', (ws, req) => {
   
   ws.on('close', () => {
     console.log('Client disconnected');
+  });
+
+  ws.on('error', (err) => {
+    console.error('Client websocket error:', err.message);
   });
 });
 
