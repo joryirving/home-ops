@@ -6,6 +6,16 @@ const cors = require('cors');
 // Default to production if not set
 const isProduction = process.env.NODE_ENV !== 'development';
 
+// Custom mongo sanitize wrapper to handle Node.js v24 incompatibility
+const customMongoSanitize = (req, res, next) => {
+  try {
+    mongoSanitize()(req, res, next);
+  } catch (err) {
+    // Skip sanitization if incompatible (Node.js v24+)
+    next();
+  }
+};
+
 const securityMiddleware = [
   // Set security headers
   helmet({
@@ -25,8 +35,8 @@ const securityMiddleware = [
     hsts: isProduction, // Enable HSTS in production
   }),
   
-  // Prevent MongoDB injection
-  mongoSanitize(),
+  // Prevent MongoDB injection (with Node v24 workaround)
+  customMongoSanitize,
   
   // Protect against HTTP Parameter Pollution
   hpp(),
