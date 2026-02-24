@@ -206,7 +206,9 @@ server.on('upgrade', (request, socket, head) => wss.handleUpgrade(request, socke
 // Gateway auth token (optional)
 
 function connectToGateway() {
-  const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
+  const GATEWAY_AUTH_TOKEN = process.env.GATEWAY_AUTH_TOKEN;
+
+const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
   console.log(`Connecting to gateway: ${gatewayUrl}`);
   
   const wsOptions = { 
