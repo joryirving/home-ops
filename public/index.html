@@ -89,8 +89,26 @@
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'typing') { showTyping(data.show); }
-          else if (data.content || data.text) { addMessage('miso', data.content || data.text); hideTyping(); }
+          if (data.type === 'status') {
+            if (data.connected) {
+              statusDot.className = 'status-dot connected';
+              statusText.textContent = 'Online';
+              offlineBanner.classList.remove('show');
+              messageInput.disabled = false;
+              sendBtn.disabled = false;
+            } else {
+              statusDot.className = 'status-dot connecting';
+              statusText.textContent = 'Connecting gateway...';
+              offlineBanner.classList.add('show');
+            }
+          } else if (data.type === 'typing') {
+            showTyping(data.show);
+          } else if (data.error) {
+            addMessage('error', data.error);
+          } else if (data.content || data.text) {
+            addMessage('miso', data.content || data.text);
+            hideTyping();
+          }
           if (data.images) { data.images.forEach(img => addImage(img)); }
         } catch { addMessage('miso', event.data); }
       };
