@@ -17,27 +17,22 @@ const wss = new WebSocket.Server({ noServer: true });
 // Apply security middleware
 securityMiddleware.forEach(middleware => app.use(middleware));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+// Rate limiting - strict on auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: { error: 'Too many requests, please try again later.' }
 });
-app.use('/api/', limiter);
 
-// WebSocket rate limiting (simple)
-let wsConnections = new Map();
-const wsRateLimit = (ws) => {
-  const ip = ws.upgradeReq?.connection?.remoteAddress;
-  const now = Date.now();
-  const last = wsConnections.get(ip) || 0;
-  if (now - last < 100) { // Max 10 msg/sec
-    ws.close();
-    return false;
-  }
-  wsConnections.set(ip, now);
-  return true;
-};
+app.use('/api/', apiLimiter);
 
 // Middleware
 app.use(express.json({ limit: '10kb' }));
@@ -52,7 +47,7 @@ const sessionMiddleware = session({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'strict',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   }
 });
 app.use(sessionMiddleware);
@@ -76,14 +71,11 @@ if (process.env.OIDC_ENABLED !== 'true') {
   passport.use(new LocalStrategy(
     (username, password, done) => {
       const valid = validUsers.find(u => u.user === username && u.pass === password);
-      if (valid) {
-        return done(null, { username });
-      }
+      if (valid) return done(null, { username });
       return done(null, false, { message: 'Invalid credentials' });
     }
   ));
 } else {
-  // OIDC Strategy
   passport.use('oidc', new (require('passport-openidconnect').Strategy)({
     issuerURL: process.env.OIDC_ISSUER,
     authorizationURL: process.env.OIDC_ISSUER + '/authorization/',
@@ -95,148 +87,85 @@ if (process.env.OIDC_ENABLED !== 'true') {
     scope: ['openid', 'profile', 'email']
   },
   (issuer, profile, done) => {
-    return done(null, {
-      username: profile.displayName || profile.username,
-      email: profile.emails?.[0]?.value
-    });
-  }
-  ));
+    return done(null, { username: profile.displayName || profile.username, email: profile.emails?.[0]?.value });
+  }));
 }
 
 // Auth middleware
-const isAuthenticated = (req, res, next) => {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect('/login');
-};
+const isAuthenticated = (req, res, next) => req.isAuthenticated() ? next() : res.redirect('/login');
 
 // Login page
-app.get('/login', (req, res) => {
-  res.sendFile(__dirname + '/public/login.html');
-});
+app.get('/login', (req, res) => res.sendFile(__dirname + '/public/login.html'));
 
-// Login handler (local auth)
-app.post('/login', 
-  passport.authenticate('local', { 
-    successRedirect: '/',
-    failureRedirect: '/login?error=invalid'
-  })
-);
+// Login with rate limiting
+app.post('/login', authLimiter, passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login?error=invalid' }));
 
 // OIDC auth routes
 app.get('/auth/oidc', passport.authenticate('oidc'));
-
-app.get('/auth/oidc/callback', 
-  passport.authenticate('oidc', { 
-    successRedirect: '/',
-    failureRedirect: '/login?error=oidc_failed'
-  })
-);
+app.get('/auth/oidc/callback', passport.authenticate('oidc', { successRedirect: '/', failureRedirect: '/login?error=oidc_failed' }));
 
 // Logout
 app.post('/logout', (req, res) => {
   req.logout(() => {
     if (process.env.OIDC_ENABLED === 'true' && process.env.OIDC_ISSUER) {
-      const logoutUrl = process.env.OIDC_ISSUER + '/logout/';
-      return res.redirect(logoutUrl + '?next=' + encodeURIComponent(req.protocol + '://' + req.get('host') + '/login'));
+      return res.redirect(process.env.OIDC_ISSUER + '/logout/?next=' + encodeURIComponent(req.protocol + '://' + req.get('host') + '/login'));
     }
     res.redirect('/login');
   });
 });
 
-// Chat page (protected)
-app.get('/', isAuthenticated, (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
+// Protected routes
+app.get('/', isAuthenticated, (req, res) => res.sendFile(__dirname + '/public/index.html'));
+app.get('/api/auth', (req, res) => res.json({ authenticated: req.isAuthenticated(), user: req.user, oidc: process.env.OIDC_ENABLED === 'true' }));
+app.get('/api/health', (req, res) => res.json({ status: 'healthy', uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
-// API: Check auth status
-app.get('/api/auth', (req, res) => {
-  res.json({ 
-    authenticated: req.isAuthenticated(), 
-    user: req.user,
-    oidc: process.env.OIDC_ENABLED === 'true'
-  });
-});
+// WebSocket
+server.on('upgrade', (request, socket, head) => wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request)));
 
-// API: Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
-
-// WebSocket upgrade handling
-server.on('upgrade', (request, socket, head) => {
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    wss.emit('connection', ws, request);
-  });
-});
-
-// Gateway WebSocket connection
 let gatewayWs = null;
 
 function connectToGateway() {
   const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
   console.log(`Connecting to gateway: ${gatewayUrl}`);
-  
   gatewayWs = new WebSocket(gatewayUrl);
   
-  gatewayWs.on('open', () => {
-    console.log('Connected to gateway!');
-  });
-  
-  gatewayWs.on('message', (data) => {
-    // Broadcast to all connected clients
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(data.toString());
-      }
-    });
-  });
-  
-  gatewayWs.on('close', () => {
-    console.log('Gateway disconnected, reconnecting in 5s...');
-    setTimeout(connectToGateway, 5000);
-  });
-  
-  gatewayWs.on('error', (err) => {
-    console.error('Gateway error:', err.message);
-  });
+  gatewayWs.on('open', () => console.log('Connected to gateway!'));
+  gatewayWs.on('message', data => wss.clients.forEach(client => { if (client.readyState === WebSocket.OPEN) client.send(data.toString()); }));
+  gatewayWs.on('close', () => { console.log('Gateway disconnected, reconnecting in 5s...'); setTimeout(connectToGateway, 5000); });
+  gatewayWs.on('error', err => console.error('Gateway error:', err.message));
 }
 
-// Connect to gateway on start
 connectToGateway();
 
-// Handle client WebSocket connections
-wss.on('connection', (ws, req) => {
+wss.on('connection', ws => {
   console.log('Client connected');
-  
-  ws.on('message', (message) => {
-    // Forward to gateway
-    if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
-      gatewayWs.send(message.toString());
-    } else {
-      ws.send(JSON.stringify({ error: 'Not connected to gateway' }));
-    }
-  });
-  
-  ws.on('close', () => {
-    console.log('Client disconnected');
-  });
+  ws.on('message', message => gatewayWs && gatewayWs.readyState === WebSocket.OPEN ? gatewayWs.send(message.toString()) : ws.send(JSON.stringify({ error: 'Not connected to gateway' })));
+  ws.on('close', () => console.log('Client disconnected'));
 });
 
+// Graceful shutdown
+const shutdown = () => {
+  console.log('Shutting down gracefully...');
+  server.close(() => {
+    console.log('HTTP server closed');
+    if (gatewayWs) gatewayWs.close();
+    wss.close(() => {
+      console.log('WebSocket servers closed');
+      process.exit(0);
+    });
+  });
+  // Force exit after 10s
+  setTimeout(() => { console.log('Forced exit'); process.exit(1); }, 10000);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`
+server.listen(PORT, () => console.log(`
 🎉 OpenClaw Chat Server running on port ${PORT}
-   
    Gateway: ${process.env.GATEWAY_URL || 'ws://localhost:18789'}
    Auth: ${process.env.OIDC_ENABLED === 'true' ? 'OIDC' : 'Local'}
    Node Env: ${process.env.NODE_ENV || 'development'}
-   
    Login at: http://localhost:${PORT}/login
-  `);
-});
+`));
