@@ -7,6 +7,7 @@ locals {
     "Grafana",
     "Headlamp",
     "Kyoo",
+    "Miso",
     "Open-WebUI",
     "Paperless",
     "Portainer",
@@ -88,10 +89,19 @@ locals {
       launch_url        = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.CLUSTER_DOMAIN}/login/callback"
       property_mappings = local.default_property_mappings
     },
+    Miso = {
+      client_id         = module.onepassword_application["Miso-Chat"].fields["MISO_CHAT_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Miso-Chat"].fields["MISO_CHAT_CLIENT_SECRET"]
+      group             = "ai"
+      icon_url          = "https://avatars.githubusercontent.com/u/263493777?v=4"
+      redirect_uri      = "https://miso-chat.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
+      launch_url        = "https://miso-chat.${var.CLUSTER_DOMAIN}/auth/oidc"
+      property_mappings = local.default_property_mappings
+    },
     Open-WebUI = {
       client_id         = module.onepassword_application["Open-WebUI"].fields["OPEN_WEBUI_CLIENT_ID"]
       client_secret     = module.onepassword_application["Open-WebUI"].fields["OPEN_WEBUI_CLIENT_SECRET"]
-      group             = "home"
+      group             = "ai"
       icon_url          = "https://raw.githubusercontent.com/open-webui/open-webui/refs/heads/main/static/favicon.png"
       redirect_uri      = "https://chat.${var.CLUSTER_DOMAIN}/oauth/oidc/callback"
       launch_url        = "https://chat.${var.CLUSTER_DOMAIN}/auth"
