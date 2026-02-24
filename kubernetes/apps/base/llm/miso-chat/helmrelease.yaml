@@ -19,14 +19,10 @@ spec:
               repository: ghcr.io/joryirving/openclaw-chat
               tag: v0.1.0
             env:
-              - name: GATEWAY_URL
-                value: "wss://miso.jory.dev"
-              - name: NODE_ENV
-                value: "production"
-              - name: OIDC_ENABLED
-                value: "false"
-              - name: LOCAL_USERS
-                value: "admin:changeme"
+              GATEWAY_URL: "wss://miso.jory.dev"
+              NODE_ENV: "production"
+              OIDC_ENABLED: "false"
+              LOCAL_USERS: "admin:changeme"
             resources:
               requests:
                 cpu: 10m
@@ -40,7 +36,7 @@ spec:
             port: 3000
     route:
       app:
-        hostnames: ["miso.jory.dev"]
+        hostnames: ["miso-chat.jory.dev"]
         parentRefs:
           - name: envoy-internal
             namespace: network
