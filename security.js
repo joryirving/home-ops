@@ -3,7 +3,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const cors = require('cors');
 
-const isProduction = process.env.NODE_ENV === 'production';
+// Default to production if not set
+const isProduction = process.env.NODE_ENV !== 'development';
 
 const securityMiddleware = [
   // Set security headers
@@ -21,7 +22,7 @@ const securityMiddleware = [
         frameSrc: ["'none'"],
       },
     },
-    hsts: isProduction, // Only enable HSTS in production
+    hsts: isProduction, // Enable HSTS in production
   }),
   
   // Prevent MongoDB injection
