@@ -52,6 +52,9 @@ jobs:
             type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
             type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
 
       - name: Build and push Docker image
         id: build
@@ -59,7 +62,7 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/${{ github.repository }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
 
@@ -109,6 +112,9 @@ jobs:
           tags: |-
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
             type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
             type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
