@@ -105,8 +105,6 @@ jobs:
           tags: |-
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
-          tags: |-
-            type=sha,prefix={{branch}}-
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
@@ -118,4 +116,5 @@ jobs:
       - name: Inspect image
         if: github.event_name != 'pull_request'
         run: |
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+          first_tag=$(jq -r '.tags[0]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          docker buildx imagetools inspect "$first_tag"
