@@ -46,7 +46,7 @@ const wsRateLimit = (ws) => {
 
 // Middleware
 app.use(express.json({ limit: '10kb' }));
-app.use(express.static('public'));
+app.use(express.static('public', { index: false }));
 
 // Session config
 const sessionMiddleware = session({
@@ -89,11 +89,12 @@ if (process.env.OIDC_ENABLED !== 'true') {
   ));
 } else {
   // OIDC Strategy
+  const oidcIssuer = process.env.OIDC_ISSUER;
   passport.use('oidc', new (require('passport-openidconnect').Strategy)({
-    issuer: process.env.OIDC_ISSUER,
-    authorizationURL: process.env.OIDC_ISSUER + '/authorization/',
-    tokenURL: process.env.OIDC_ISSUER + '/token/',
-    userInfoURL: process.env.OIDC_ISSUER + '/userinfo/',
+    issuer: oidcIssuer,
+    authorizationURL: process.env.OIDC_AUTH_URL || (oidcIssuer + '/application/o/authorize/'),
+    tokenURL: process.env.OIDC_TOKEN_URL || (oidcIssuer + '/application/o/token/'),
+    userInfoURL: process.env.OIDC_USERINFO_URL || (oidcIssuer + '/application/o/userinfo/'),
     clientID: process.env.OIDC_CLIENT_ID,
     clientSecret: process.env.OIDC_CLIENT_SECRET,
     callbackURL: process.env.OIDC_CALLBACK_URL || '/auth/oidc/callback',
