@@ -191,6 +191,7 @@ function connectToGateway() {
   
   gatewayWs.on('open', () => {
     console.log('Connected to gateway!');
+    startHeartbeat();
   });
   
   gatewayWs.on('message', (data) => {
@@ -204,26 +205,30 @@ function connectToGateway() {
   
   gatewayWs.on('close', () => {
     console.log('Gateway disconnected, reconnecting in 5s...');
-    clearInterval(heartbeat);
-    setTimeout(connectToGateway, 5000);
-  });
-
-  // Heartbeat to keep connection alive
-  const heartbeat = setInterval(() => {
-    if (gatewayWs.readyState === WebSocket.OPEN) {
-      gatewayWs.ping();
-    }
-  }, 30000);
-    console.log('Gateway disconnected, reconnecting in 5s...');
+    if (heartbeat) clearInterval(heartbeat);
     setTimeout(connectToGateway, 5000);
   });
   
   gatewayWs.on('error', (err) => {
     console.error('Gateway error:', err.message);
+    if (heartbeat) clearInterval(heartbeat);
   });
 }
 
+// Heartbeat variable (declared outside function)
+let heartbeat;
+
 // Connect to gateway on start
+function startHeartbeat() {
+  if (heartbeat) clearInterval(heartbeat);
+  heartbeat = setInterval(() => {
+    if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
+      gatewayWs.ping();
+    }
+  }, 25000);
+}
+
+// Start gateway connection
 connectToGateway();
 
 // Handle client WebSocket connections
