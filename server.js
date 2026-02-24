@@ -199,9 +199,11 @@ app.use((err, req, res, next) => {
 
 // WebSocket with gateway auth support
 const clients = new Set();
-const GATEWAY_AUTH_TOKEN = process.env.GATEWAY_AUTH_TOKEN;
 
 server.on('upgrade', (request, socket, head) => wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request)));
+
+
+// Gateway auth token (optional)
 
 function connectToGateway() {
   const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
