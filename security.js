@@ -9,11 +9,12 @@ const isProduction = process.env.NODE_ENV !== 'development';
 // Custom mongo sanitize wrapper to handle Node.js v24 incompatibility
 const customMongoSanitize = (req, res, next) => {
   try {
-    mongoSanitize()(req, res, next);
+    if (req.body && typeof req.body === 'object') req.body = mongoSanitize.sanitize(req.body);
+    if (req.params && typeof req.params === 'object') req.params = mongoSanitize.sanitize(req.params);
   } catch (err) {
-    // Skip sanitization if incompatible (Node.js v24+)
-    next();
+    // best effort only
   }
+  next();
 };
 
 const securityMiddleware = [
