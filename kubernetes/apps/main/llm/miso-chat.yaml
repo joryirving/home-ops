@@ -5,6 +5,13 @@ kind: Kustomization
 metadata:
   name: &app miso-chat
 spec:
+  components:
+    - ../../../../components/dragonfly
+  healthCheckExprs:
+    - apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      failed: status.phase != 'ready'
+      current: status.phase == 'ready'
   interval: 1h
   path: ./kubernetes/apps/base/llm/miso-chat
   postBuild:
