@@ -282,9 +282,44 @@ function startHeartbeat() {
   }, 25000);
 }
 
+// Handle client WebSocket connections
+wss.on('connection', (ws) => {
+  console.log('Client connected');
+
+  ws.on('message', (message) => {
+    if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
+      gatewayWs.send(message.toString());
+    } else {
+      ws.send(JSON.stringify({ error: 'Not connected to gateway' }));
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
+  });
+
+  ws.on('error', (err) => {
+    console.error('Client websocket error:', err.message);
+  });
+});
+
 function start() {
   connectToGateway();
-  if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  return server.listen(PORT, () => {
+    console.log(`
+🎉 OpenClaw Chat Server running on port ${PORT}
+   
+   Gateway: ${process.env.GATEWAY_URL || 'ws://localhost:18789'}
+   Auth: ${process.env.OIDC_ENABLED === 'true' ? 'OIDC' : 'Local'}
+   Node Env: ${process.env.NODE_ENV || 'development'}
+   
+   Login at: http://localhost:${PORT}/login
+  `);
+  });
+}
+
+if (require.main === module) {
   start();
 }
 
