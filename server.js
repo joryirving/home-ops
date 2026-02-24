@@ -8,69 +8,13 @@ const LocalStrategy = require('passport-local').Strategy;
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const fs = require('fs');
-const dns = require('dns');
 require('dotenv').config();
 
 const securityMiddleware = require('./security');
 
 const app = express();
 
-// DNS cache for security
-const dnsCache = new Map();
-const resolveHostname = (hostname) => {
-  return new Promise((resolve, reject) => {
-    if (dnsCache.has(hostname)) {
-      return resolve(dnsCache.get(hostname));
-    }
-    dns.resolve4(hostname, (err, addresses) => {
-      if (err) return reject(err);
-      dnsCache.set(hostname, addresses);
-      resolve(addresses);
-    });
-  });
-};
-
-// Verify gateway URL is from allowed domains
-const ALLOWED_GATEWAY_DOMAINS = (process.env.ALLOWED_GATEWAY_DOMAINS || 'localhost,jory.dev,internal').split(',');
-
-const isAllowedGateway = async (url) => {
-  try {
-    const parsed = new URL(url);
-    const hostname = parsed.hostname;
-    
-    // Allow localhost and IP addresses
-    if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      return true;
-    }
-    
-    // Check against allowed domains
-    for (const domain of ALLOWED_GATEWAY_DOMAINS) {
-      if (hostname === domain || hostname.endsWith('.' + domain)) {
-        return true;
-      }
-    }
-    
-    // Resolve and check IP ranges (basic)
-    try {
-      const addresses = await resolveHostname(hostname);
-      // Block private ranges
-      const privateRanges = ['10.', '172.16.', '192.168.', '127.'];
-      for (const ip of addresses) {
-        if (!privateRanges.some(r => ip.startsWith(r))) {
-          return true;
-        }
-      }
-    } catch (e) {
-      console.error('DNS resolution failed:', e.message);
-    }
-    
-    return false;
-  } catch {
-    return false;
-  }
-};
-
-// HTML escape
+// HTML escape to prevent XSS
 const escapeHtml = (str) => {
   if (typeof str !== 'string') return '';
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -82,22 +26,14 @@ const TLS_KEY = process.env.TLS_KEY_PATH || process.env.TLS_KEY;
 const TLS_CERT = process.env.TLS_CERT_PATH || process.env.TLS_CERT;
 const hasTLS = TLS_KEY && TLS_CERT && fs.existsSync(TLS_KEY) && fs.existsSync(TLS_CERT);
 
-// Enforce HTTPS in production
-const enforceHTTPS = process.env.ENFORCE_HTTPS !== 'false';
-
 const server = hasTLS 
   ? https.createServer({ 
       key: fs.readFileSync(TLS_KEY),
       cert: fs.readFileSync(TLS_CERT),
       minVersion: 'TLSv1.2',
-      ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384',
-      // Reject unauthorized certificates
-      rejectUnauthorized: process.env.NODE_ENV !== 'development'
+      ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384'
     }, app) 
   : http.createServer(app);
-
-// Trust proxy for HTTPS termination
-app.enable('trust proxy');
 
 const wss = new WebSocket.Server({ 
   noServer: true,
@@ -107,8 +43,7 @@ const wss = new WebSocket.Server({
 securityMiddleware.forEach(middleware => app.use(middleware));
 
 app.use((req, res, next) => {
-  // HSTS in production
-  if (enforceHTTPS && hasTLS) {
+  if (hasTLS) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
@@ -162,7 +97,7 @@ app.use(passport.session());
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Auth - same as before but with escapeHtml on username
+// Local Auth
 if (process.env.OIDC_ENABLED !== 'true') {
   const localUsers = (process.env.LOCAL_USERS || 'admin:password123').split(',');
   const validUsers = localUsers.map(u => {
@@ -251,7 +186,6 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
     tls: hasTLS,
-    enforceHTTPS,
     uptime: process.uptime(), 
     timestamp: new Date().toISOString() 
   });
@@ -263,39 +197,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// WebSocket with MITM protection
+// WebSocket with gateway auth support
 const clients = new Set();
-let gatewayWs = null;
 
-server.on('upgrade', (request, socket, head) => {
-  const origin = request.headers.origin;
-  if (origin) {
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
-    if (!allowedOrigins.some(o => new URL(o).hostname === new URL(origin).hostname)) {
-      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-      socket.destroy();
-      return;
-    }
-  }
-  wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request));
-});
+server.on('upgrade', (request, socket, head) => wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request)));
 
-// Gateway connection with certificate validation
-async function connectToGateway() {
-  let gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
-  
-  // Validate gateway URL
-  if (!gatewayUrl.startsWith('ws://') && !gatewayUrl.startsWith('wss://')) {
-    console.error('Invalid gateway protocol');
-    return;
-  }
-  
-  // Security check for gateway
-  if (!await isAllowedGateway(gatewayUrl)) {
-    console.error('Gateway not in allowed domains:', gatewayUrl);
-    return;
-  }
-  
+
+// Gateway auth token (optional)
+
+function connectToGateway() {
+  const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
   console.log(`Connecting to gateway: ${gatewayUrl}`);
   
   const wsOptions = { 
@@ -303,9 +214,11 @@ async function connectToGateway() {
     maxPayload: 64 * 1024
   };
   
-  // For wss://, add certificate rejection in production
-  if (gatewayUrl.startsWith('wss://')) {
-    wsOptions.rejectUnauthorized = process.env.NODE_ENV === 'production';
+  // Add auth token if configured
+  if (GATEWAY_AUTH_TOKEN) {
+    wsOptions.headers = {
+      'Authorization': `Bearer ${GATEWAY_AUTH_TOKEN}`
+    };
   }
   
   gatewayWs = new WebSocket(gatewayUrl, wsOptions);
@@ -313,14 +226,8 @@ async function connectToGateway() {
   gatewayWs.on('open', () => console.log('Connected to gateway!'));
   
   gatewayWs.on('message', (data) => {
-    try {
-      const msg = JSON.parse(data.toString());
-      if (msg.content) msg.content = escapeHtml(msg.content);
-      if (msg.text) msg.text = escapeHtml(msg.text);
-      clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(JSON.stringify(msg)));
-    } catch {
-      clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(data.toString()));
-    }
+    const msg = data.toString();
+    clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(msg));
   });
   
   gatewayWs.on('close', () => {
@@ -332,6 +239,7 @@ async function connectToGateway() {
 }
 
 setInterval(() => { if (gatewayWs?.readyState === WebSocket.OPEN) gatewayWs.ping(); }, 30000);
+
 connectToGateway();
 
 wss.on('connection', (ws) => {
@@ -388,6 +296,8 @@ process.on('SIGINT', shutdown);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`
-🎉 OpenClaw Chat running on ${hasTLS ? 'https' : 'http'}://:${PORT}
-   TLS: ${hasTLS} | Enforce HTTPS: ${enforceHTTPS}
+🎉 Miso Chat running on ${hasTLS ? 'https' : 'http'}://:${PORT}
+   Gateway: ${process.env.GATEWAY_URL || 'ws://localhost:18789'}
+   Gateway Auth: ${GATEWAY_AUTH_TOKEN ? 'enabled' : 'disabled'}
+   TLS: ${hasTLS} | Auth: ${process.env.OIDC_ENABLED === 'true' ? 'OIDC' : 'Local'}
 `));
