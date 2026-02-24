@@ -1,98 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - OpenClaw Chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Miso Chat Login</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .login-box {
-      background: #0f3460;
-      padding: 40px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    }
-    h1 { color: #fff; text-align: center; margin-bottom: 30px; }
-    input {
-      width: 100%;
-      padding: 14px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-      background: #1a1a2e;
-      color: #fff;
-      font-size: 16px;
-    }
-    input:focus { outline: 2px solid #e94560; }
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 20px;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    button:hover { transform: scale(1.02); }
-    .oidc-btn {
-      background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
-    }
-    .divider {
-      color: #fff;
-      text-align: center;
-      margin: 20px 0;
-      opacity: 0.6;
-    }
-    .error { color: #ff4757; text-align: center; margin-top: 10px; }
+    body { font-family: system-ui, sans-serif; background:#0d0d14; color:#fff; display:flex; min-height:100vh; align-items:center; justify-content:center; }
+    .card { background:#161625; border:1px solid #2a2a40; border-radius:12px; padding:24px; width:320px; }
+    input { width:100%; margin:8px 0; padding:10px; border-radius:8px; border:1px solid #2a2a40; background:#1e1e32; color:#fff; }
+    button { width:100%; margin-top:12px; padding:10px; border:0; border-radius:8px; background:#e94560; color:#fff; font-weight:600; cursor:pointer; }
+    .hint { color:#a0a0b8; font-size:12px; margin-top:8px; }
   </style>
 </head>
 <body>
-  <div class="login-box">
-    <h1>🍲 OpenClaw Chat</h1>
-    <div id="oidc-section" style="display: none;">
-      <a href="/auth/oidc">
-        <button type="button" class="oidc-btn">Login with SSO</button>
-      </a>
-      <div class="divider">or</div>
-    </div>
-    <form action="/login" method="POST" id="local-form">
-      <input type="text" name="username" placeholder="Username" required>
-      <input type="password" name="password" placeholder="Password" required>
-      <button type="submit">Login</button>
-    </form>
-    <p class="error" id="error"></p>
-  </div>
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'invalid') {
-      document.getElementById('error').textContent = 'Invalid username or password';
-    }
-    if (params.get('error') === 'oidc_failed') {
-      document.getElementById('error').textContent = 'SSO login failed. Try again.';
-    }
-    // Check if OIDC is enabled
-    fetch('/api/auth')
-      .then(r => r.json())
-      .then(data => {
-        if (data.oidc) {
-          document.getElementById('oidc-section').style.display = 'block';
-        }
-      })
-      .catch(() => {});
-  </script>
+  <form class="card" method="post" action="/login">
+    <h2>🍲 Miso Chat</h2>
+    <input name="username" placeholder="Username" required />
+    <input name="password" type="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+    <div class="hint">Use LOCAL_USERS credentials or OIDC route.</div>
+  </form>
 </body>
 </html>
