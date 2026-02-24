@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -48,6 +49,9 @@ jobs:
           tags: |-
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
 
       - name: Build and push Docker image
         id: build
@@ -105,6 +109,9 @@ jobs:
           tags: |-
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
