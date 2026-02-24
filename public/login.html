@@ -48,13 +48,28 @@
       transition: transform 0.2s;
     }
     button:hover { transform: scale(1.02); }
+    .oidc-btn {
+      background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+    }
+    .divider {
+      color: #fff;
+      text-align: center;
+      margin: 20px 0;
+      opacity: 0.6;
+    }
     .error { color: #ff4757; text-align: center; margin-top: 10px; }
   </style>
 </head>
 <body>
   <div class="login-box">
     <h1>🍲 OpenClaw Chat</h1>
-    <form action="/login" method="POST">
+    <div id="oidc-section" style="display: none;">
+      <a href="/auth/oidc">
+        <button type="button" class="oidc-btn">Login with SSO</button>
+      </a>
+      <div class="divider">or</div>
+    </div>
+    <form action="/login" method="POST" id="local-form">
       <input type="text" name="username" placeholder="Username" required>
       <input type="password" name="password" placeholder="Password" required>
       <button type="submit">Login</button>
@@ -66,6 +81,18 @@
     if (params.get('error') === 'invalid') {
       document.getElementById('error').textContent = 'Invalid username or password';
     }
+    if (params.get('error') === 'oidc_failed') {
+      document.getElementById('error').textContent = 'SSO login failed. Try again.';
+    }
+    // Check if OIDC is enabled
+    fetch('/api/auth')
+      .then(r => r.json())
+      .then(data => {
+        if (data.oidc) {
+          document.getElementById('oidc-section').style.display = 'block';
+        }
+      })
+      .catch(() => {});
   </script>
 </body>
 </html>
