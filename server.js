@@ -7,23 +7,18 @@ const LocalStrategy = require('passport-local').Strategy;
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-// Import security middleware
 const securityMiddleware = require('./security');
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
-// Apply security middleware
 securityMiddleware.forEach(middleware => app.use(middleware));
 
-// Rate limiting - strict on auth endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: 'Too many login attempts, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
 });
 
 const apiLimiter = rateLimit({
@@ -34,11 +29,9 @@ const apiLimiter = rateLimit({
 
 app.use('/api/', apiLimiter);
 
-// Middleware
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static('public'));
 
-// Session config
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
@@ -52,15 +45,13 @@ const sessionMiddleware = session({
 });
 app.use(sessionMiddleware);
 
-// Passport initialization
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Serialize/deserialize user
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Local Auth Strategy
+// Local Auth
 if (process.env.OIDC_ENABLED !== 'true') {
   const localUsers = (process.env.LOCAL_USERS || 'admin:password123').split(',');
   const validUsers = localUsers.map(u => {
@@ -91,20 +82,13 @@ if (process.env.OIDC_ENABLED !== 'true') {
   }));
 }
 
-// Auth middleware
 const isAuthenticated = (req, res, next) => req.isAuthenticated() ? next() : res.redirect('/login');
 
-// Login page
 app.get('/login', (req, res) => res.sendFile(__dirname + '/public/login.html'));
-
-// Login with rate limiting
 app.post('/login', authLimiter, passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login?error=invalid' }));
-
-// OIDC auth routes
 app.get('/auth/oidc', passport.authenticate('oidc'));
 app.get('/auth/oidc/callback', passport.authenticate('oidc', { successRedirect: '/', failureRedirect: '/login?error=oidc_failed' }));
 
-// Logout
 app.post('/logout', (req, res) => {
   req.logout(() => {
     if (process.env.OIDC_ENABLED === 'true' && process.env.OIDC_ISSUER) {
@@ -114,48 +98,155 @@ app.post('/logout', (req, res) => {
   });
 });
 
-// Protected routes
 app.get('/', isAuthenticated, (req, res) => res.sendFile(__dirname + '/public/index.html'));
 app.get('/api/auth', (req, res) => res.json({ authenticated: req.isAuthenticated(), user: req.user, oidc: process.env.OIDC_ENABLED === 'true' }));
 app.get('/api/health', (req, res) => res.json({ status: 'healthy', uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
-// WebSocket
+// WebSocket with connection tracking
+const clients = new Set();
+
 server.on('upgrade', (request, socket, head) => wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws, request)));
 
 let gatewayWs = null;
+let gatewayConnected = false;
 
 function connectToGateway() {
   const gatewayUrl = process.env.GATEWAY_URL || 'ws://localhost:18789';
   console.log(`Connecting to gateway: ${gatewayUrl}`);
-  gatewayWs = new WebSocket(gatewayUrl);
   
-  gatewayWs.on('open', () => console.log('Connected to gateway!'));
-  gatewayWs.on('message', data => wss.clients.forEach(client => { if (client.readyState === WebSocket.OPEN) client.send(data.toString()); }));
-  gatewayWs.on('close', () => { console.log('Gateway disconnected, reconnecting in 5s...'); setTimeout(connectToGateway, 5000); });
-  gatewayWs.on('error', err => console.error('Gateway error:', err.message));
+  gatewayWs = new WebSocket(gatewayUrl, { 
+    handshakeTimeout: 5000,
+    maxPayload: 1024 * 1024 // 1MB max message
+  });
+  
+  gatewayWs.on('open', () => {
+    console.log('Connected to gateway!');
+    gatewayConnected = true;
+    broadcastToClients({ type: 'gateway', connected: true });
+  });
+  
+  gatewayWs.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      // Forward to all clients
+      clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(data.toString());
+        }
+      });
+    } catch {
+      clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(data.toString());
+        }
+      });
+    }
+  });
+  
+  gatewayWs.on('close', () => {
+    console.log('Gateway disconnected, reconnecting in 5s...');
+    gatewayConnected = false;
+    broadcastToClients({ type: 'gateway', connected: false });
+    setTimeout(connectToGateway, 5000);
+  });
+  
+  gatewayWs.on('error', (err) => {
+    console.error('Gateway error:', err.message);
+    gatewayConnected = false;
+  });
+  
+  gatewayWs.on('pong', () => {
+    // Heartbeat response
+  });
 }
+
+function broadcastToClients(data) {
+  const msg = JSON.stringify(data);
+  clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(msg);
+    }
+  });
+}
+
+function heartbeat() {
+  if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
+    gatewayWs.ping();
+  }
+}
+
+// Gateway heartbeat
+setInterval(heartbeat, 30000);
 
 connectToGateway();
 
-wss.on('connection', ws => {
+wss.on('connection', (ws, req) => {
   console.log('Client connected');
-  ws.on('message', message => gatewayWs && gatewayWs.readyState === WebSocket.OPEN ? gatewayWs.send(message.toString()) : ws.send(JSON.stringify({ error: 'Not connected to gateway' })));
-  ws.on('close', () => console.log('Client disconnected'));
+  clients.add(ws);
+  
+  // Send initial connection status
+  ws.send(JSON.stringify({ 
+    type: 'connection', 
+    gateway: gatewayConnected,
+    timestamp: new Date().toISOString()
+  }));
+  
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      
+      // Handle typing indicator
+      if (data.type === 'typing') {
+        // Could forward to gateway if needed
+        return;
+      }
+      
+      // Forward to gateway
+      if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
+        gatewayWs.send(message.toString());
+      } else {
+        ws.send(JSON.stringify({ error: 'Not connected to gateway', type: 'error' }));
+      }
+    } catch {
+      if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
+        gatewayWs.send(message.toString());
+      }
+    }
+  });
+  
+  ws.on('close', () => {
+    console.log('Client disconnected');
+    clients.delete(ws);
+  });
+  
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+});
+
+// Client heartbeat - remove dead connections
+const clientHeartbeat = setInterval(() => {
+  wss.clients.forEach(ws => {
+    if (ws.isAlive === false) {
+      clients.delete(ws);
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
+
+wss.on('close', () => {
+  clearInterval(clientHeartbeat);
 });
 
 // Graceful shutdown
 const shutdown = () => {
-  console.log('Shutting down gracefully...');
+  console.log('Shutting down...');
   server.close(() => {
-    console.log('HTTP server closed');
     if (gatewayWs) gatewayWs.close();
-    wss.close(() => {
-      console.log('WebSocket servers closed');
-      process.exit(0);
-    });
+    wss.close(() => process.exit(0));
   });
-  // Force exit after 10s
-  setTimeout(() => { console.log('Forced exit'); process.exit(1); }, 10000);
+  setTimeout(() => process.exit(1), 10000);
 };
 
 process.on('SIGTERM', shutdown);
@@ -166,6 +257,5 @@ server.listen(PORT, () => console.log(`
 🎉 OpenClaw Chat Server running on port ${PORT}
    Gateway: ${process.env.GATEWAY_URL || 'ws://localhost:18789'}
    Auth: ${process.env.OIDC_ENABLED === 'true' ? 'OIDC' : 'Local'}
-   Node Env: ${process.env.NODE_ENV || 'development'}
    Login at: http://localhost:${PORT}/login
 `));
