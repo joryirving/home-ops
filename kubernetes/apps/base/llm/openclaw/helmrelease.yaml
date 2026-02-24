@@ -92,7 +92,7 @@ spec:
                 # Set up openclawbot CLI symlink
                 ln -sf /app/openclawbot.mjs /home/node/.local/bin/openclawbot
                 # Start gateway
-                exec node dist/index.js gateway --bind lan --port 18789
+                exec node dist/index.js gateway --bind lan
             env:
               BROWSER_WS_ENDPOINT: "ws://localhost:9222"
               GOPATH: /home/node/go
@@ -100,6 +100,7 @@ spec:
               HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
               HOMEBREW_PREFIX: /home/node/.local/homebrew
               HOMEBREW_REPOSITORY: /home/node/.local/homebrew
+              OPENCLAW_GATEWAY_PORT: &port 18789
               PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               PIP_BREAK_SYSTEM_PACKAGES: "1"
               TERM: xterm-256color
@@ -176,7 +177,7 @@ spec:
         externalTrafficPolicy: Cluster
         ports:
           http:
-            port: &port 18789
+            port: *port
           codeserver:
             port: &codeserverPort 12321
     route:
