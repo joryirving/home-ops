@@ -322,10 +322,10 @@ function handleGatewayFrame(raw) {
       minProtocol: 3,
       maxProtocol: 3,
       client: {
-        id: 'openclaw-control-ui',
+        id: 'cli',
         version: '1.0.0',
         platform: 'node',
-        mode: 'ui',
+        mode: 'cli',
       },
       role: 'operator',
       scopes: ['operator.read', 'operator.write'],
