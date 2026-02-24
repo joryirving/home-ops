@@ -90,7 +90,7 @@ if (process.env.OIDC_ENABLED !== 'true') {
 } else {
   // OIDC Strategy
   passport.use('oidc', new (require('passport-openidconnect').Strategy)({
-    issuerURL: process.env.OIDC_ISSUER,
+    issuer: process.env.OIDC_ISSUER,
     authorizationURL: process.env.OIDC_ISSUER + '/authorization/',
     tokenURL: process.env.OIDC_ISSUER + '/token/',
     userInfoURL: process.env.OIDC_ISSUER + '/userinfo/',
