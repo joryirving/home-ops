@@ -204,6 +204,17 @@ function connectToGateway() {
   
   gatewayWs.on('close', () => {
     console.log('Gateway disconnected, reconnecting in 5s...');
+    clearInterval(heartbeat);
+    setTimeout(connectToGateway, 5000);
+  });
+
+  // Heartbeat to keep connection alive
+  const heartbeat = setInterval(() => {
+    if (gatewayWs.readyState === WebSocket.OPEN) {
+      gatewayWs.ping();
+    }
+  }, 30000);
+    console.log('Gateway disconnected, reconnecting in 5s...');
     setTimeout(connectToGateway, 5000);
   });
   
