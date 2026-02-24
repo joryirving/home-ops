@@ -13,9 +13,9 @@ env:
   NODE_VERSION: '18'
 
 jobs:
-  # Lint
+  # Lint - Code
   lint:
-    name: Lint
+    name: Lint (Code)
     runs-on: ubuntu-latest
     
     steps:
@@ -34,11 +34,25 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+  # Lint - Dockerfile
+  dockerfile-lint:
+    name: Lint (Dockerfile)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.0.0
+        with:
+          dockerfile: Dockerfile
+
   # Security Scan
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, dockerfile-lint]
     permissions:
       contents: read
       security-events: write
@@ -52,7 +66,7 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
-      - name: Run Trivy vulnerability scanner (filesystem)
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
@@ -60,17 +74,17 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
 
-      - name: Upload Trivy results to GitHub Security
+      - name: Upload Trivy results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy'
 
-  # Test
+  # Test - Unit Tests
   test:
-    name: Test
+    name: Test (Unit)
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, dockerfile-lint]
     
     steps:
       - name: Checkout code
@@ -95,7 +109,7 @@ jobs:
           name: test-results
           path: test-results.json
 
-  # Build and Test Container
+  # Build Container
   build:
     name: Build Container
     runs-on: ubuntu-latest
@@ -138,14 +152,113 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run container structure test
+      - name: Store image for testing
         run: |
-          docker run --rm ${{ steps.meta.outputs.tags }} /bin/sh -c "node --version && ls -la"
+          docker save -o /tmp/image.tar ${{ steps.meta.outputs.tags }}
 
-      - name: Run Trivy container scan
+      - name: Upload image
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-image
+          path: /tmp/image.tar
+          retention-days: 1
+
+  # Test Container
+  container-test:
+    name: Test (Container)
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Download image
+        uses: actions/download-artifact@v4
+        with:
+          name: container-image
+          path: /tmp
+
+      - name: Load image
+        run: docker load -i /tmp/image.tar
+
+      - name: Get image name
+        id: meta
+        run: |
+          IMAGE=$(docker load -i /tmp/image.tar | sed 's/Loaded image: //')
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Test - Container runs
+        run: |
+          docker run -d --name test-app -p 3000:3000 \
+            -e GATEWAY_URL=ws://localhost:18789 \
+            -e SESSION_SECRET=test-secret-for-testing \
+            -e OIDC_ENABLED=false \
+            -e LOCAL_USERS=admin:test123 \
+            ${{ steps.meta.outputs.image }}
+          
+          sleep 5
+          
+          # Check container is running
+          docker ps | grep test-app
+
+      - name: Test - Health endpoint
+        run: |
+          sleep 2
+          curl -f http://localhost:3000/api/health || exit 1
+
+      - name: Test - Auth endpoint (unauthenticated)
+        run: |
+          curl -f http://localhost:3000/api/auth | grep '"authenticated":false' || exit 1
+
+      - name: Test - Login page accessible
+        run: |
+          curl -f http://localhost:3000/login | grep -q "Login" || exit 1
+
+      - name: Test - Static assets served
+        run: |
+          curl -f http://localhost:3000/ | grep -q "OpenClaw" || exit 1
+
+      - name: Test - User login works
+        run: |
+          curl -c /tmp/cookies.txt -X POST http://localhost:3000/login \
+            -d "username=admin&password=test123" \
+            -L -f || true
+          
+          # Check if authenticated
+          curl -b /tmp/cookies.txt http://localhost:3000/api/auth | grep '"authenticated":true' || exit 1
+
+      - name: Test - Logout works
+        run: |
+          curl -b /tmp/cookies.txt -X POST http://localhost:3000/logout -L -f || true
+          
+          # Should be logged out now
+          curl http://localhost:3000/api/auth | grep '"authenticated":false' || exit 1
+
+      - name: Test - Invalid login rejected
+        run: |
+          RESULT=$(curl -c /tmp/badcookies.txt -X POST http://localhost:3000/login \
+            -d "username=admin&password=wrongpassword" \
+            -w "%{http_code}" -o /dev/null -L)
+          
+          [ "$RESULT" = "302" ] || exit 1
+
+      - name: Test - Container stops cleanly
+        run: |
+          docker stop test-app
+          docker rm test-app
+
+      - name: Test - Container security
+        run: |
+          # Check container runs as non-root
+          docker run --rm ${{ steps.meta.outputs.image }} id | grep -q "uid=1000" || exit 1
+          
+          # Check no sensitive files
+          docker run --rm ${{ steps.meta.outputs.image }} ls -la /app 2>&1 | grep -v "package.json\|server.js\|public\|node_modules" | grep -q "README.md\|.env" && exit 1
+
+      - name: Container Scan
         uses: aquasecurity/trivy-action@master
         with:
-          image: ${{ steps.meta.outputs.tags }}
+          image: ${{ steps.meta.outputs.image }}
           format: 'sarif'
           output: 'trivy-container.sarif'
 
@@ -159,7 +272,7 @@ jobs:
   push:
     name: Push to GHCR
     runs-on: ubuntu-latest
-    needs: build
+    needs: container-test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     permissions:
       contents: read
@@ -200,37 +313,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  # Build Mobile APK
-  mobile:
-    name: Build Mobile APK
-    runs-on: ubuntu-latest
-    needs: [test, build]
-    if: false  # Disable for now, requires manual trigger
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
-
-      - name: Install Node dependencies
-        run: npm ci
-
-      - name: Build mobile
-        run: ./scripts/build-mobile.sh
-        env:
-          CAPACITOR_URL: ${{ secrets.CAPACITOR_URL }}
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
