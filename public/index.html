@@ -8,35 +8,11 @@
   <link rel="manifest" href="/manifest.json">
   <title>OpenClaw Chat</title>
   <style>
-    :root {
-      --bg-primary: #0d0d14;
-      --bg-secondary: #161625;
-      --bg-tertiary: #1e1e32;
-      --accent: #e94560;
-      --accent-gradient: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-      --text-primary: #ffffff;
-      --text-secondary: #a0a0b8;
-      --border: #2a2a40;
-      --safe-area-top: env(safe-area-inset-top, 20px);
-      --safe-area-bottom: env(safe-area-inset-bottom, 20px);
-    }
+    :root { --bg-primary: #0d0d14; --bg-secondary: #161625; --bg-tertiary: #1e1e32; --accent: #e94560; --accent-gradient: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%); --text-primary: #ffffff; --text-secondary: #a0a0b8; --border: #2a2a40; --safe-area-top: env(safe-area-inset-top, 20px); --safe-area-bottom: env(safe-area-inset-bottom, 20px); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      display: flex;
-      flex-direction: column;
-    }
-    .header {
-      background: var(--bg-secondary);
-      padding: calc(var(--safe-area-top) + 12px) 16px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; background: var(--bg-primary); color: var(--text-primary); display: flex; flex-direction: column; }
+    .header { background: var(--bg-secondary); padding: calc(var(--safe-area-top) + 12px) 16px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
     .header h1 { font-size: 18px; }
     .logout { background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -44,7 +20,13 @@
     .message.miso { background: var(--bg-tertiary); align-self: flex-start; border-bottom-left-radius: 4px; }
     .message.user { background: var(--accent-gradient); align-self: flex-end; border-bottom-right-radius: 4px; }
     .message.error { background: #ff4757; color: white; }
-    .message img { max-width: 100%; border-radius: 12px; margin-top: 8px; }
+    .message a { color: #6b9fff; text-decoration: underline; }
+    .message img { max-width: 100%; border-radius: 12px; margin-top: 8px; display: block; }
+    .message .link-preview { background: var(--bg-secondary); border-radius: 12px; padding: 12px; margin-top: 8px; }
+    .message .link-preview img { margin-top: 8px; border-radius: 8px; }
+    .message .link-preview .link-title { font-weight: bold; margin-bottom: 4px; }
+    .message .link-preview .link-desc { font-size: 12px; color: var(--text-secondary); }
+    .message .link-preview .link-url { font-size: 10px; color: var(--text-secondary); opacity: 0.7; }
     .message .time { font-size: 10px; opacity: 0.6; margin-top: 4px; }
     .typing { display: flex; gap: 4px; padding: 8px 16px; }
     .typing span { width: 8px; height: 8px; background: var(--text-secondary); border-radius: 50%; animation: typing 1.4s infinite; }
@@ -72,212 +54,113 @@
 <body>
   <div class="offline-banner" id="offlineBanner">📡 Reconnecting...</div>
   <header class="header">
-    <div>
-      <h1>🍲 Miso</h1>
-      <div class="status">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Connecting...</span>
-      </div>
-    </div>
+    <div><h1>🍲 Miso</h1><div class="status"><span class="status-dot" id="statusDot"></span><span id="statusText">Connecting...</span></div></div>
     <form action="/logout" method="POST"><button class="logout" type="submit">Logout</button></form>
   </header>
-  
-  <div class="messages" id="messages">
-    <div class="message miso">Hey there! 👋 Connected! What would you like?</div>
-  </div>
-  
-  <div class="typing" id="typingIndicator" style="display: none;">
-    <span></span><span></span><span></span>
-  </div>
-  
+  <div class="messages" id="messages"><div class="message miso">Hey there! 👋 Connected! What would you like?</div></div>
+  <div class="typing" id="typingIndicator" style="display: none;"><span></span><span></span><span></span></div>
   <div class="quick-actions">
     <button class="quick-btn" onclick="quickAction('generate')">🎲 Generate</button>
     <button class="quick-btn" onclick="quickAction('casual')">👕 Casual</button>
     <button class="quick-btn" onclick="quickAction('elegant')">👗 Elegant</button>
     <button class="quick-btn" onclick="quickAction('cute')">✨ Cute</button>
   </div>
-  
   <div class="input-area">
-    <div class="input-wrapper">
-      <input type="text" id="messageInput" placeholder="Message Miso..." autocomplete="off">
-    </div>
+    <div class="input-wrapper"><input type="text" id="messageInput" placeholder="Message Miso..." autocomplete="off"></div>
     <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
   </div>
-
   <script>
-    let ws = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 10;
-    let reconnectTimeout = null;
-    let messageQueue = [];
-    const messagesDiv = document.getElementById('messages');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
-    const offlineBanner = document.getElementById('offlineBanner');
-    const typingIndicator = document.getElementById('typingIndicator');
+    // Image regex patterns
+    const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i;
+    const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
+    
+    let ws = null, reconnectAttempts = 0, maxReconnectAttempts = 10, reconnectTimeout = null, messageQueue = [];
+    const messagesDiv = document.getElementById('messages'), messageInput = document.getElementById('messageInput'), sendBtn = document.getElementById('sendBtn');
+    const statusDot = document.getElementById('statusDot'), statusText = document.getElementById('statusText'), offlineBanner = document.getElementById('offlineBanner'), typingIndicator = document.getElementById('typingIndicator');
 
     function connect() {
-      if (reconnectAttempts >= maxReconnectAttempts) {
-        statusText.textContent = 'Connection failed';
-        addMessage('error', 'Unable to connect. Please refresh the page.');
-        return;
-      }
-
+      if (reconnectAttempts >= maxReconnectAttempts) { statusText.textContent = 'Connection failed'; addMessage('error', 'Unable to connect. Please refresh the page.'); return; }
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      statusDot.className = 'status-dot connecting';
-      statusText.textContent = 'Connecting...';
-      
+      statusDot.className = 'status-dot connecting'; statusText.textContent = 'Connecting...';
       ws = new WebSocket(`${protocol}//${window.location.host}`);
-
-      ws.onopen = () => {
-        statusDot.className = 'status-dot connected';
-        statusText.textContent = 'Online';
-        offlineBanner.classList.remove('show');
-        reconnectAttempts = 0;
-        sendQueuedMessages();
-      };
-
-      ws.onclose = () => {
-        statusDot.className = 'status-dot';
-        statusText.textContent = 'Disconnected';
-        scheduleReconnect();
-      };
-
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-      };
-
+      ws.onopen = () => { statusDot.className = 'status-dot connected'; statusText.textContent = 'Online'; offlineBanner.classList.remove('show'); reconnectAttempts = 0; sendQueuedMessages(); };
+      ws.onclose = () => { statusDot.className = 'status-dot'; statusText.textContent = 'Disconnected'; scheduleReconnect(); };
+      ws.onerror = (err) => console.error('WebSocket error:', err);
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'typing') {
-            showTyping(data.show);
-          } else if (data.content || data.text) {
-            addMessage('miso', data.content || data.text);
-            hideTyping();
-          }
-          if (data.images) {
-            data.images.forEach(img => addImage(img));
-          }
-        } catch {
-          addMessage('miso', event.data);
-        }
+          if (data.type === 'typing') { showTyping(data.show); }
+          else if (data.content || data.text) { addMessage('miso', data.content || data.text); hideTyping(); }
+          if (data.images) { data.images.forEach(img => addImage(img)); }
+        } catch { addMessage('miso', event.data); }
       };
     }
 
     function scheduleReconnect() {
       reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-      statusText.textContent = `Reconnecting in ${delay/1000}s...`;
-      offlineBanner.classList.add('show');
-      
-      messageInput.disabled = true;
-      sendBtn.disabled = true;
-
+      statusText.textContent = `Reconnecting in ${delay/1000}s...`; offlineBanner.classList.add('show');
+      messageInput.disabled = true; sendBtn.disabled = true;
       reconnectTimeout = setTimeout(connect, delay);
     }
 
-    function sendQueuedMessages() {
-      while (messageQueue.length > 0 && ws?.readyState === WebSocket.OPEN) {
-        const msg = messageQueue.shift();
-        ws.send(JSON.stringify(msg));
-      }
-    }
+    function sendQueuedMessages() { while (messageQueue.length > 0 && ws?.readyState === WebSocket.OPEN) { ws.send(JSON.stringify(messageQueue.shift())); } }
 
     function sendMessage(text = null) {
       const msg = text || messageInput.value.trim();
       if (!msg) return;
-      
-      // Disable while sending
-      messageInput.disabled = true;
-      sendBtn.disabled = true;
-      messageInput.value = '';
-      addMessage('user', msg);
-
-      const payload = JSON.stringify({ type: 'message', content: msg });
-
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(payload);
-        messageInput.disabled = false;
-        sendBtn.disabled = false;
-        messageInput.focus();
-      } else {
-        // Queue message
-        messageQueue.push({ type: 'message', content: msg });
-        addMessage('error', 'Message queued (offline)');
-        setTimeout(() => {
-          messageInput.disabled = false;
-          sendBtn.disabled = false;
-        }, 1000);
-      }
+      messageInput.disabled = true; sendBtn.disabled = true; messageInput.value = ''; addMessage('user', msg);
+      if (ws?.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: 'message', content: msg })); messageInput.disabled = false; sendBtn.disabled = false; messageInput.focus(); }
+      else { messageQueue.push({ type: 'message', content: msg }); addMessage('error', 'Message queued (offline)'); setTimeout(() => { messageInput.disabled = false; sendBtn.disabled = false; }, 1000); }
     }
 
-    function showTyping(show) {
-      typingIndicator.style.display = show ? 'flex' : 'none';
-      if (show) {
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      }
-    }
-
-    function hideTyping() {
-      typingIndicator.style.display = 'none';
-    }
+    function showTyping(show) { typingIndicator.style.display = show ? 'flex' : 'none'; if (show) messagesDiv.scrollTop = messagesDiv.scrollHeight; }
+    function hideTyping() { typingIndicator.style.display = 'none'; }
 
     function addMessage(sender, content) {
-      const div = document.createElement('div');
-      div.className = 'message ' + sender;
-      div.textContent = content;
+      const div = document.createElement('div'); div.className = 'message ' + sender;
+      // Parse content for URLs and images
+      const processed = processContent(content);
+      div.innerHTML = processed;
+      const time = document.createElement('div'); time.className = 'time'; time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      div.appendChild(time); messagesDiv.appendChild(div); messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function processContent(text) {
+      // First escape HTML
+      let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       
-      const time = document.createElement('div');
-      time.className = 'time';
-      time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      div.appendChild(time);
-      
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      // Find URLs and process them
+      return escaped.replace(URL_REGEX, (url) => {
+        const cleanUrl = url.replace(/[)>]+$/, ''); // Remove trailing characters
+        const isImage = IMAGE_EXTENSIONS.test(cleanUrl);
+        
+        if (isImage) {
+          return `<img src="${cleanUrl}" alt="Image" loading="lazy" onerror="this.style.display='none'">`;
+        } else {
+          // Link with preview - truncated display
+          const displayUrl = cleanUrl.length > 50 ? cleanUrl.substring(0, 47) + '...' : cleanUrl;
+          return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${displayUrl}</a>`;
+        }
+      });
     }
 
     function addImage(url) {
-      const div = document.createElement('div');
-      div.className = 'message miso';
-      const img = document.createElement('img');
-      img.src = url;
+      const div = document.createElement('div'); div.className = 'message miso';
+      const img = document.createElement('img'); img.src = url; img.loading = 'lazy';
       img.onload = () => messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      div.appendChild(img);
-      messagesDiv.appendChild(div);
+      img.onerror = () => { div.innerHTML = '<a href="' + url + '" target="_blank">View Image</a>'; };
+      div.appendChild(img); messagesDiv.appendChild(div);
     }
 
     function quickAction(action) {
-      const messages = {
-        'generate': '🎲 Generate a random image',
-        'casual': '👕 Show me something casual',
-        'elegant': '👗 Show me something elegant',
-        'cute': '✨ Show me something cute'
-      };
+      const messages = { 'generate': '🎲 Generate a random image', 'casual': '👕 Show me something casual', 'elegant': '👗 Show me something elegant', 'cute': '✨ Show me something cute' };
       sendMessage(messages[action] || action);
     }
 
-    // Event listeners
-    messageInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
-
-    // Handle online/offline
-    window.addEventListener('online', () => {
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        reconnectAttempts = 0;
-        connect();
-      }
-    });
-
-    window.addEventListener('offline', () => {
-      statusText.textContent = 'Offline';
-      offlineBanner.classList.add('show');
-    });
-
-    // Initial connect
+    messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    window.addEventListener('online', () => { if (!ws || ws.readyState !== WebSocket.OPEN) { reconnectAttempts = 0; connect(); } });
+    window.addEventListener('offline', () => { statusText.textContent = 'Offline'; offlineBanner.classList.add('show'); });
     connect();
   </script>
 </body>
