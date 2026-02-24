@@ -144,7 +144,8 @@ app.get('/login', (req, res) => {
   // When OIDC is enabled, send users to SSO unless we're returning with an error.
   if (process.env.OIDC_ENABLED === 'true') {
     if (req.query?.error) {
-      return res.status(401).send(`OIDC login failed: ${req.query.error}. Check client ID, secret, and callback URL.`);
+      const reason = req.query.reason ? ` (${req.query.reason})` : '';
+      return res.status(401).send(`OIDC login failed: ${req.query.error}${reason}. Check client ID, secret, and callback URL.`);
     }
     return res.redirect('/auth/oidc');
   }
@@ -163,12 +164,28 @@ app.post('/login',
 // OIDC auth routes
 app.get('/auth/oidc', passport.authenticate('oidc'));
 
-app.get('/auth/oidc/callback', 
-  passport.authenticate('oidc', { 
-    successRedirect: '/',
-    failureRedirect: '/login?error=oidc_failed'
-  })
-);
+app.get('/auth/oidc/callback', (req, res, next) => {
+  passport.authenticate('oidc', (err, user, info) => {
+    if (err) {
+      const reason = encodeURIComponent(err.message || 'auth_error');
+      console.error('OIDC callback error:', err.message || err);
+      return res.redirect(`/login?error=oidc_failed&reason=${reason}`);
+    }
+    if (!user) {
+      const reason = encodeURIComponent(info?.message || 'no_user');
+      console.error('OIDC callback rejected user:', info || 'no info');
+      return res.redirect(`/login?error=oidc_failed&reason=${reason}`);
+    }
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        const reason = encodeURIComponent(loginErr.message || 'login_error');
+        console.error('OIDC login session error:', loginErr.message || loginErr);
+        return res.redirect(`/login?error=oidc_failed&reason=${reason}`);
+      }
+      return res.redirect('/');
+    });
+  })(req, res, next);
+});
 
 // Logout
 app.post('/logout', (req, res) => {
