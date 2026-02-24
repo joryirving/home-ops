@@ -17,18 +17,21 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/miso-chat
-              tag: 1.0.0@sha256:0411ef6492ab8140ab922bd309c1ec8bd27bd298072e0e1b5765a147ccde835b
+              tag: 0.1.1@sha256:a8ab5bdb053f577d800ff762ff1ac57977a76814a99399bd5d9a24c56cc4be3e
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 10m
-                memory: 32Mi
-              limits:
                 memory: 64Mi
+              limits:
+                memory: 128Mi
     service:
       app:
         ports:
           http:
-            port: 80
+            port: 3000
     route:
       app:
         hostnames: ["miso-chat.jory.dev"]
