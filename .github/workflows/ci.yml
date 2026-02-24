@@ -1,30 +1,30 @@
-name: CI
+name: Build
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Docker
-        run: |
-          docker buildx create --use
+      - name: Build Docker image
+        run: docker build -t test-app .
       
-      - name: Login to GHCR
+      - name: Test container
+        run: |
+          docker run -d -p 3000:3000 -e GATEWAY_URL=ws://localhost -e SESSION_SECRET=test -e OIDC_ENABLED=false -e LOCAL_USERS=admin:test test-app
+          sleep 5
+          curl http://localhost:3000/api/health
+          docker stop $(docker ps -q)
+      
+      - name: Push
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      
-      - name: Build
-        run: |
-          docker buildx build --push --tag ghcr.io/joryirving/openclaw-chat:latest --tag ghcr.io/joryirving/openclaw-chat:${{ github.sha }} .
+          docker build -t ghcr.io/joryirving/openclaw-chat:latest .
+          docker push ghcr.io/joryirving/openclaw-chat:latest
