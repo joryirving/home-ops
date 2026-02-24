@@ -7,7 +7,7 @@ locals {
     "Grafana",
     "Headlamp",
     "Kyoo",
-    "Miso",
+    "Miso-Chat",
     "Open-WebUI",
     "Paperless",
     "Portainer",
@@ -47,7 +47,7 @@ locals {
     Dashclaw = {
       client_id         = module.onepassword_application["Dashclaw"].fields["DASHCLAW_CLIENT_ID"]
       client_secret     = module.onepassword_application["Dashclaw"].fields["DASHCLAW_CLIENT_SECRET"]
-      group             = "media"
+      group             = "ai"
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/openclaw.png"
       redirect_uri      = "https://dashclaw.${var.CLUSTER_DOMAIN}/api/auth/callback/oidc"
       launch_url        = "https://dashclaw.${var.CLUSTER_DOMAIN}/login"
@@ -89,7 +89,7 @@ locals {
       launch_url        = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.CLUSTER_DOMAIN}/login/callback"
       property_mappings = local.default_property_mappings
     },
-    Miso = {
+    Miso-Chat = {
       client_id         = module.onepassword_application["Miso-Chat"].fields["MISO_CHAT_CLIENT_ID"]
       client_secret     = module.onepassword_application["Miso-Chat"].fields["MISO_CHAT_CLIENT_SECRET"]
       group             = "ai"
