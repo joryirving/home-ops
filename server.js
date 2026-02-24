@@ -6,7 +6,11 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const rateLimit = require('express-rate-limit');
 const MemoryStore = require('memorystore')(session);
-require('dotenv').config();
+
+if (!process.env.NODE_ENV) process.env.NODE_ENV = 'production';
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ quiet: true });
+}
 
 // Import security middleware
 const securityMiddleware = require('./security');
@@ -30,14 +34,14 @@ function buildSessionStore() {
   }
   try {
     // Optional dependency path
-    const RedisStoreFactory = require('connect-redis').default || require('connect-redis');
+    const { RedisStore } = require('connect-redis');
     const { createClient } = require('redis');
     const redisClient = createClient({ url: process.env.REDIS_URL });
     redisClient.connect().catch((err) => console.error('Redis connect failed, falling back to MemoryStore:', err.message));
     console.log('Using Redis session store');
-    return new RedisStoreFactory({ client: redisClient, prefix: 'miso-chat:' });
+    return new RedisStore({ client: redisClient, prefix: 'miso-chat:' });
   } catch (err) {
-    console.warn('REDIS_URL set but redis/connect-redis not installed; using MemoryStore fallback');
+    console.warn(`REDIS_URL set but Redis store init failed (${err.message}); using MemoryStore fallback`);
     return new MemoryStore({ checkPeriod: 24 * 60 * 60 * 1000 });
   }
 }
