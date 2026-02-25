@@ -22,6 +22,7 @@ spec:
               tag: main-259d195
             env:
               REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
+              GATEWAY_DEVICE_IDENTITY_PATH: &path /secrets/device.json
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
@@ -42,3 +43,10 @@ spec:
         parentRefs:
           - name: envoy-external
             namespace: network
+    persistence:
+      miso-chat-device:
+        type: secret
+        name: "{{ .Release.Name }}-device"
+        globalMounts:
+          - path: *path
+            subPath: device.json
