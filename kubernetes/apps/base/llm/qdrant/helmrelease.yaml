@@ -30,6 +30,17 @@ spec:
     metrics:
       serviceMonitor:
         enabled: true
+    service:
+      app:
+        ports:
+          http:
+            port: 6333
+    route:
+      app:
+        hostnames: ["qdrant.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
   postRenderers:
     - kustomize:
         patches:
