@@ -221,4 +221,45 @@ data:
     
     if __name__ == '__main__':
         app.run(host='0.0.0.0', port=3000)
+    # Item CRUD endpoints (added to fix missing API)
+    @app.route('/api/items', methods=['GET'])
+    def get_all_items():
+        list_id = request.args.get('list_id')
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        if list_id:
+            rows = conn.execute('SELECT * FROM items WHERE list_id = ?', (list_id,)).fetchall()
+        else:
+            rows = conn.execute('SELECT * FROM items').fetchall()
+        conn.close()
+        return jsonify({"items": [dict(r) for r in rows]})
+    
+    @app.route('/api/items/<int:item_id>', methods=['GET'])
+    def get_item(item_id):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        row = conn.execute('SELECT * FROM items WHERE id = ?', (item_id,)).fetchone()
+        conn.close()
+        if row:
+            return jsonify(dict(row))
+        return jsonify({"error": "Item not found"}), 404
+    
+    @app.route('/api/items/<int:item_id>', methods=['PUT'])
+    def update_item(item_id):
+        data = request.json
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('UPDATE items SET title = ?, description = ?, status = ? WHERE id = ?',
+                  (data.get('title'), data.get('description'), data.get('status'), item_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"updated": True})
+    
+    @app.route('/api/items/<int:item_id>', methods=['DELETE'])
+    def delete_item(item_id):
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute('DELETE FROM items WHERE id = ?', (item_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"deleted": True})
     
