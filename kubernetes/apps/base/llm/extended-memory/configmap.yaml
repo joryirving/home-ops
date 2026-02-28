@@ -5,263 +5,220 @@ metadata:
   name: extended-memory-py-config
 data:
   server.py: |
-        from flask import Flask, jsonify, request
-        import sqlite3
-        import os
-        
-        app = Flask(__name__)
-        DB_PATH = '/app/data/memory.db'
-        
-        def init_db():
-            os.makedirs('/app/data', exist_ok=True)
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute('CREATE TABLE IF NOT EXISTS lists (id INTEGER PRIMARY KEY, name TEXT, agent_instructions TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
-            c.execute('CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, list_id INTEGER, title TEXT, description TEXT, status TEXT DEFAULT "todo", created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
-            c.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, item_id INTEGER, text TEXT, author TEXT DEFAULT "human", seen_by_agent INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
-            conn.commit()
-            conn.close()
-        
-        init_db()
-        
-        HTML_PAGE = """<!DOCTYPE html>
-        <html>
-        <head><title>Extended Memory</title>
-        <style>
-        body{font-family:system-ui;max-width:800px;margin:40px auto;padding:20px;background:#0d1117;color:#c9d1d9}
-        h1{color:#58a6ff}
-        .list{background:#161b22;border:1px solid #30363d;padding:15px;margin:10px 0;border-radius:6px}
-        .item{background:#21262d;padding:10px;margin:5px 0;border-radius:4px;border-left:3px solid #58a6ff}
-        .status{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;margin-right:8px;background:#238636}
-        .status-thinking{background:#d29922;color:#000}
-        .empty{color:#8b949e;font-style:italic}
-        .add-form{background:#161b22;border:1px solid #30363d;padding:15px;margin:20px 0;border-radius:6px}
-        input,select,textarea{width:100%;padding:8px;margin:5px 0;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;border-radius:4px;box-sizing:border-box}
-        button{background:#238636;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;margin-top:10px}
-        button:hover{background:#2ea043}
-        .section-title{color:#8b949e;font-size:14px;margin-top:20px;margin-bottom:10px;text-transform:uppercase}
-        </style></head>
-        <body>
-        <h1>Extended Memory</h1>
-        <div class="section-title">Create New List</div>
-        <div class="add-form">
-        <input type="text" id="newListName" placeholder="List name (e.g., Work Projects)">
-        <textarea id="newListInstr" rows="2" placeholder="Agent instructions (optional)"></textarea>
-        <button onclick="createList()">Create List</button>
-        <div id="createListResult"></div>
-        </div>
-        <div class="section-title">Add New Item</div>
-        <div class="add-form">
-        <select id="listId"><option value="">Loading lists...</option></select>
-        <input type="text" id="title" placeholder="Title">
-        <textarea id="description" rows="2" placeholder="Description (optional)"></textarea>
-        <select id="status">
-          <option value="todo">Todo</option>
-          <option value="thinking">Thinking</option>
-          <option value="doing">Doing</option>
-          <option value="done">Done</option>
-        </select>
-        <button onclick="addItem()">Add Item</button>
-        <div id="addResult"></div>
-        </div>
-        <div id="app">Loading...</div>
-        <script>
-        async function createList(){
-          const name = document.getElementById('newListName').value;
-          const instructions = document.getElementById('newListInstr').value;
-          if(!name){alert('Please enter a list name');return;}
-          const resp = await fetch('/api/lists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,agent_instructions:instructions})});
-          if(resp.ok){
-            document.getElementById('newListName').value='';
-            document.getElementById('newListInstr').value='';
-            document.getElementById('createListResult').innerHTML='<p style="color:#238636">List created!</p>';
-            setTimeout(()=>{document.getElementById('createListResult').innerHTML='';},2000);
-            loadLists();
-            loadData();
-          }
-        }
-        async function loadLists(){
-          const resp = await fetch('/api/lists');
-          const data = await resp.json();
-          const select = document.getElementById('listId');
-          select.innerHTML = '';
-          for(const list of data.lists){
-            select.innerHTML += '<option value="' + list.id + '"' + (list.id===1?' selected':'') + '>' + list.name + '</option>';
-          }
-        }
-        async function addItem(){
-          const listId = document.getElementById('listId').value;
-          const title = document.getElementById('title').value;
-          const description = document.getElementById('description').value;
-          const status = document.getElementById('status').value;
-          if(!title){alert('Please enter a title');return;}
-          const resp = await fetch('/api/lists/' + listId + '/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,status})});
-          if(resp.ok){
-            document.getElementById('title').value='';
-            document.getElementById('description').value='';
-            document.getElementById('addResult').innerHTML='<p style="color:#238636">Added!</p>';
-            setTimeout(()=>{document.getElementById('addResult').innerHTML='';},2000);
-            loadData();
-          }
-        }
-        async function loadData(){
-          try{
-            const resp = await fetch('/api/lists');
-            const data = await resp.json();
-            const app = document.getElementById('app');
-            if(!data.lists||data.lists.length===0){
-              app.innerHTML='<p class="empty">No lists yet. Create one above!</p>';
-              return;
-            }
-            let html='';
-            for(const list of data.lists){
-              const itemsResp=await fetch('/api/lists/'+list.id+'/items');
-              const items=await itemsResp.json();
-              html+='<div class="list"><h3>'+list.name+'</h3>';
-              if(list.agent_instructions)html+='<p><em>'+list.agent_instructions+'</em></p>';
-              if(items.items&&items.items.length>0){
-                for(const item of items.items){
-                  html+='<div class="item"><span class="status status-'+item.status+'">'+item.status+'</span><b>'+item.title+'</b>';
-                  if(item.description)html+='<br><small>'+item.description+'</small>';
-                  html+='</div>';
-                }
-              }else{
-                html+='<p class="empty">No items in this list.</p>';
-              }
-              html+='</div>';
-            }
-            app.innerHTML=html;
-          }catch(e){
-            document.getElementById('app').innerHTML='<p style="color:#f85149">Error: '+e.message+'</p>';
-          }
-        }
+    from flask import Flask, jsonify, request
+    import sqlite3
+    import os
+    
+    app = Flask(__name__)
+    DB_PATH = '/app/data/memory.db'
+    
+    def init_db():
+        os.makedirs('/app/data', exist_ok=True)
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('CREATE TABLE IF NOT EXISTS lists (id INTEGER PRIMARY KEY, name TEXT, agent_instructions TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
+        c.execute('CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, list_id INTEGER, title TEXT, description TEXT, status TEXT DEFAULT "todo", created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
+        c.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, item_id INTEGER, text TEXT, author TEXT DEFAULT "human", seen_by_agent INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
+        conn.commit()
+        conn.close()
+    
+    init_db()
+    
+    HTML_PAGE = """<!DOCTYPE html>
+    <html>
+    <head><title>Extended Memory</title>
+    <style>
+    body{font-family:system-ui;max-width:800px;margin:40px auto;padding:20px;background:#0d1117;color:#c9d1d9}
+    h1{color:#58a6ff}
+    .list{background:#161b22;border:1px solid #30363d;padding:15px;margin:10px 0;border-radius:6px}
+    .item{background:#21262d;padding:10px;margin:5px 0;border-radius:4px;border-left:3px solid #58a6ff}
+    .status{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;margin-right:8px;background:#238636}
+    .status-thinking{background:#d29922;color:#000}
+    .empty{color:#8b949e;font-style:italic}
+    .add-form{background:#161b22;border:1px solid #30363d;padding:15px;margin:20px 0;border-radius:6px}
+    input,select,textarea{width:100%;padding:8px;margin:5px 0;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;border-radius:4px;box-sizing:border-box}
+    button{background:#238636;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;margin-top:10px}
+    button:hover{background:#2ea043}
+    .section-title{color:#8b949e;font-size:14px;margin-top:20px;margin-bottom:10px;text-transform:uppercase}
+    </style></head>
+    <body>
+    <h1>Extended Memory</h1>
+    <div class="section-title">Create New List</div>
+    <div class="add-form">
+    <input type="text" id="newListName" placeholder="List name (e.g., Work Projects)">
+    <textarea id="newListInstr" rows="2" placeholder="Agent instructions (optional)"></textarea>
+    <button onclick="createList()">Create List</button>
+    <div id="createListResult"></div>
+    </div>
+    <div class="section-title">Add New Item</div>
+    <div class="add-form">
+    <select id="listId"><option value="">Loading lists...</option></select>
+    <input type="text" id="title" placeholder="Title">
+    <textarea id="description" rows="2" placeholder="Description (optional)"></textarea>
+    <select id="status">
+      <option value="todo">Todo</option>
+      <option value="thinking">Thinking</option>
+      <option value="doing">Doing</option>
+      <option value="done">Done</option>
+    </select>
+    <button onclick="addItem()">Add Item</button>
+    <div id="addResult"></div>
+    </div>
+    <div id="app">Loading...</div>
+    <script>
+    async function createList(){
+      const name = document.getElementById('newListName').value;
+      const instructions = document.getElementById('newListInstr').value;
+      if(!name){alert('Please enter a list name');return;}
+      const resp = await fetch('/api/lists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,agent_instructions:instructions})});
+      if(resp.ok){
+        document.getElementById('newListName').value='';
+        document.getElementById('newListInstr').value='';
+        document.getElementById('createListResult').innerHTML='<p style="color:#238636">List created!</p>';
+        setTimeout(()=>{document.getElementById('createListResult').innerHTML='';},2000);
         loadLists();
         loadData();
-        </script>
-        </body>
-        </html>"""
-        
-        @app.route('/')
-        def index():
-            return HTML_PAGE
-        
-        @app.route('/api/lists', methods=['GET'])
-        def get_lists():
-            conn = sqlite3.connect(DB_PATH)
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute('SELECT * FROM lists').fetchall()
-            conn.close()
-            return jsonify({"lists": [dict(r) for r in rows]})
-        
-        @app.route('/api/lists', methods=['POST'])
-        def create_list():
-            data = request.json
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute('INSERT INTO lists (name, agent_instructions) VALUES (?, ?)', (data.get('name', ''), data.get('agent_instructions', '')))
-            conn.commit()
-            new_id = c.lastrowid
-            conn.close()
-            return jsonify({"id": new_id})
-        
-        @app.route('/api/lists/<int:list_id>/items', methods=['GET'])
-        def get_items(list_id):
-            conn = sqlite3.connect(DB_PATH)
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute('SELECT * FROM items WHERE list_id = ?', (list_id,)).fetchall()
-            conn.close()
-            return jsonify({"items": [dict(r) for r in rows]})
-        
-        @app.route('/api/lists/<int:list_id>/items', methods=['POST'])
-        def create_item(list_id):
-            data = request.json
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute('INSERT INTO items (list_id, title, description, status) VALUES (?, ?, ?, ?)',
-                      (list_id, data.get('title', ''), data.get('description', ''), data.get('status', 'todo')))
-            conn.commit()
-            new_id = c.lastrowid
-            conn.close()
-            return jsonify({"id": new_id})
-        
-        @app.route('/api/items/<int:item_id>/comments', methods=['GET'])
-        def get_comments(item_id):
-            conn = sqlite3.connect(DB_PATH)
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute('SELECT * FROM comments WHERE item_id = ?', (item_id,)).fetchall()
-            conn.close()
-            return jsonify({"comments": [dict(r) for r in rows]})
-        
-        @app.route('/api/items/<int:item_id>/comments', methods=['POST'])
-        def add_comment(item_id):
-            data = request.json
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute('INSERT INTO comments (item_id, text, author) VALUES (?, ?, ?)', (item_id, data.get('text', ''), data.get('author', 'human')))
-            conn.commit()
-            new_id = c.lastrowid
-            conn.close()
-            return jsonify({"id": new_id})
-        
-        @app.route('/api/unseen', methods=['GET'])
-        def get_unseen():
-            conn = sqlite3.connect(DB_PATH)
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute('SELECT c.*, i.title as item_title FROM comments c JOIN items i ON c.item_id = i.id WHERE c.seen_by_agent = 0 AND c.author = "human"').fetchall()
-            conn.close()
-            return jsonify({"comments": [dict(r) for r in rows]})
-        
-        @app.route('/api/comments/<int:comment_id>/seen', methods=['PUT'])
-        def mark_seen(comment_id):
-            conn = sqlite3.connect(DB_PATH)
-            conn.execute('UPDATE comments SET seen_by_agent = 1 WHERE id = ?', (comment_id,))
-            conn.commit()
-            conn.close()
-            return jsonify({"updated": True})
-        
-        if __name__ == '__main__':
-            app.run(host='0.0.0.0', port=3000)
-        
+      }
+    }
+    async function loadLists(){
+      const resp = await fetch('/api/lists');
+      const data = await resp.json();
+      const select = document.getElementById('listId');
+      select.innerHTML = '';
+      for(const list of data.lists){
+        select.innerHTML += '<option value="' + list.id + '"' + (list.id===1?' selected':'') + '>' + list.name + '</option>';
+      }
+    }
+    async function addItem(){
+      const listId = document.getElementById('listId').value;
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const status = document.getElementById('status').value;
+      if(!title){alert('Please enter a title');return;}
+      const resp = await fetch('/api/lists/' + listId + '/items',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,status})});
+      if(resp.ok){
+        document.getElementById('title').value='';
+        document.getElementById('description').value='';
+        document.getElementById('addResult').innerHTML='<p style="color:#238636">Added!</p>';
+        setTimeout(()=>{document.getElementById('addResult').innerHTML='';},2000);
+        loadData();
+      }
+    }
+    async function loadData(){
+      try{
+        const resp = await fetch('/api/lists');
+        const data = await resp.json();
+        const app = document.getElementById('app');
+        if(!data.lists||data.lists.length===0){
+          app.innerHTML='<p class="empty">No lists yet. Create one above!</p>';
+          return;
+        }
+        let html='';
+        for(const list of data.lists){
+          const itemsResp=await fetch('/api/lists/'+list.id+'/items');
+          const items=await itemsResp.json();
+          html+='<div class="list"><h3>'+list.name+'</h3>';
+          if(list.agent_instructions)html+='<p><em>'+list.agent_instructions+'</em></p>';
+          if(items.items&&items.items.length>0){
+            for(const item of items.items){
+              html+='<div class="item"><span class="status status-'+item.status+'">'+item.status+'</span><b>'+item.title+'</b>';
+              if(item.description)html+='<br><small>'+item.description+'</small>';
+              html+='</div>';
+            }
+          }else{
+            html+='<p class="empty">No items in this list.</p>';
+          }
+          html+='</div>';
+        }
+        app.innerHTML=html;
+      }catch(e){
+        document.getElementById('app').innerHTML='<p style="color:#f85149">Error: '+e.message+'</p>';
+      }
+    }
+    loadLists();
+    loadData();
+    </script>
+    </body>
+    </html>"""
     
-    # Item CRUD endpoints (added to fix missing API)
-    @app.route('/api/items', methods=['GET'])
-    def get_all_items():
-        list_id = request.args.get('list_id')
+    @app.route('/')
+    def index():
+        return HTML_PAGE
+    
+    @app.route('/api/lists', methods=['GET'])
+    def get_lists():
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        if list_id:
-            rows = conn.execute('SELECT * FROM items WHERE list_id = ?', (list_id,)).fetchall()
-        else:
-            rows = conn.execute('SELECT * FROM items').fetchall()
+        rows = conn.execute('SELECT * FROM lists').fetchall()
         conn.close()
-        return jsonify({"items": [dict(r) for r in rows]})
+        return jsonify({"lists": [dict(r) for r in rows]})
     
-    @app.route('/api/items/<int:item_id>', methods=['GET'])
-    def get_item(item_id):
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        row = conn.execute('SELECT * FROM items WHERE id = ?', (item_id,)).fetchone()
-        conn.close()
-        if row:
-            return jsonify(dict(row))
-        return jsonify({"error": "Item not found"}), 404
-    
-    @app.route('/api/items/<int:item_id>', methods=['PUT'])
-    def update_item(item_id):
+    @app.route('/api/lists', methods=['POST'])
+    def create_list():
         data = request.json
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute('UPDATE items SET title = ?, description = ?, status = ? WHERE id = ?',
-                  (data.get('title'), data.get('description'), data.get('status'), item_id))
+        c.execute('INSERT INTO lists (name, agent_instructions) VALUES (?, ?)', (data.get('name', ''), data.get('agent_instructions', '')))
+        conn.commit()
+        new_id = c.lastrowid
+        conn.close()
+        return jsonify({"id": new_id})
+    
+    @app.route('/api/lists/<int:list_id>/items', methods=['GET'])
+    def get_items(list_id):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute('SELECT * FROM items WHERE list_id = ?', (list_id,)).fetchall()
+        conn.close()
+        return jsonify({"items": [dict(r) for r in rows]})
+    
+    @app.route('/api/lists/<int:list_id>/items', methods=['POST'])
+    def create_item(list_id):
+        data = request.json
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('INSERT INTO items (list_id, title, description, status) VALUES (?, ?, ?, ?)',
+                  (list_id, data.get('title', ''), data.get('description', ''), data.get('status', 'todo')))
+        conn.commit()
+        new_id = c.lastrowid
+        conn.close()
+        return jsonify({"id": new_id})
+    
+    @app.route('/api/items/<int:item_id>/comments', methods=['GET'])
+    def get_comments(item_id):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute('SELECT * FROM comments WHERE item_id = ?', (item_id,)).fetchall()
+        conn.close()
+        return jsonify({"comments": [dict(r) for r in rows]})
+    
+    @app.route('/api/items/<int:item_id>/comments', methods=['POST'])
+    def add_comment(item_id):
+        data = request.json
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('INSERT INTO comments (item_id, text, author) VALUES (?, ?, ?)', (item_id, data.get('text', ''), data.get('author', 'human')))
+        conn.commit()
+        new_id = c.lastrowid
+        conn.close()
+        return jsonify({"id": new_id})
+    
+    @app.route('/api/unseen', methods=['GET'])
+    def get_unseen():
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute('SELECT c.*, i.title as item_title FROM comments c JOIN items i ON c.item_id = i.id WHERE c.seen_by_agent = 0 AND c.author = "human"').fetchall()
+        conn.close()
+        return jsonify({"comments": [dict(r) for r in rows]})
+    
+    @app.route('/api/comments/<int:comment_id>/seen', methods=['PUT'])
+    def mark_seen(comment_id):
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute('UPDATE comments SET seen_by_agent = 1 WHERE id = ?', (comment_id,))
         conn.commit()
         conn.close()
         return jsonify({"updated": True})
     
-    @app.route('/api/items/<int:item_id>', methods=['DELETE'])
-    def delete_item(item_id):
-        conn = sqlite3.connect(DB_PATH)
-        conn.execute('DELETE FROM items WHERE id = ?', (item_id,))
-        conn.commit()
-        conn.close()
-        return jsonify({"deleted": True})
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=3000)
     
