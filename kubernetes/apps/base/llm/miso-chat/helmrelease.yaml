@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: miso-chat
+  name: &app miso-chat
 spec:
   chartRef:
     kind: OCIRepository
@@ -19,7 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/miso-chat
-              tag: 0.3.5@sha256:35ab69b6c35d6370ad04cbaeeb1ca1aed6f1467ce134f05f1a5a8500ec0fa2b2 
+              tag: 0.3.5@sha256:35ab69b6c35d6370ad04cbaeeb1ca1aed6f1467ce134f05f1a5a8500ec0fa2b2
             env:
               REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
               GATEWAY_DEVICE_IDENTITY_PATH: &path /secrets/device.json
@@ -43,12 +43,12 @@ spec:
         parentRefs:
           - name: envoy-external
             namespace: network
-        rules:
-          - backendRefs: [{}]
-            sessionPersistence:
-              sessionName: miso-chat
-              type: Cookie
-              absoluteTimeout: 35m
+        # rules:
+        #   - backendRefs: [{}]
+        #     sessionPersistence:
+        #       sessionName: *app
+        #       type: Cookie
+        #       absoluteTimeout: 35m
     persistence:
       miso-chat-device:
         type: secret
