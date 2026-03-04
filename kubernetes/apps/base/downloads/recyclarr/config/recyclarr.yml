@@ -1,84 +1,41 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/recyclarr/recyclarr/refs/tags/v8.2.1/schemas/config-schema.json
 sonarr:
-  sonarr:
+  series:
     base_url: http://sonarr.downloads.svc.cluster.local
     api_key: !env_var SONARR_API_KEY
 
     # Custom Format Configuration
     delete_old_custom_formats: true
-    # replace_existing_custom_formats - REMOVED in v8, use: recyclarr state repair --adopt
+    media_management:
+      propers_and_repacks: do_not_prefer
     media_naming:
       episodes:
+        anime: default
+        daily: default
         rename: true
         standard: default
-        daily: default
-        anime: default
       season: default
       series: plex-imdb
-
-    # v8: Use trash_id for guide-backed quality profiles instead of include templates
-    # See: https://recyclarr.dev/reference/configuration/quality-profiles/#trash-id
+    quality_definition:
+      type: series
     quality_profiles:
-      - name: ANY
-        trash_id: d7c871d6f1a4c20d40e0e7a584724de7  # WEB 1080p
+      - trash_id: 20e0fc959f1f1704bed501f23bdae76f # [Anime] Remux-1080p
         reset_unmatched_scores:
           enabled: true
-        upgrade:
-          allowed: true
-          until_quality: WEB 1080p
-          until_score: 10000
-        quality_sort: top
-        qualities:
-          - name: WEB 1080p
-            qualities: ["WEBDL-1080p", "WEBRip-1080p"]
-          - name: HDTV-1080p
-          - name: WEB 720p
-            qualities: ["WEBDL-720p", "WEBRip-720p"]
-          - name: HDTV-720p
-          - name: WEB 480p
-            qualities: ["WEBDL-480p", "WEBRip-480p"]
-          - name: DVD
-          - name: SDTV
-      - name: x265
-        trash_id: 718d6c9d1e1c5c7e4f3a2b8c9d0e1f2  # HD Web
+      - trash_id: 72dae194fc92bf828f32cde7744e51a1 # WEB-1080p
         reset_unmatched_scores:
           enabled: true
-        upgrade:
-          allowed: true
-          until_quality: HDTV-1080p
-          until_score: 10000
-        quality_sort: top
-        qualities:
-          - name: Bluray-1080p
-          - name: WEB 1080p
-            qualities: ["WEBDL-1080p", "WEBRip-1080p"]
-          - name: HDTV-1080p
-          - name: WEB 720p
-            qualities: ["WEBDL-720p", "WEBRip-720p"]
-          - name: HDTV-720p
-          - name: WEB 480p
-            qualities: ["WEBDL-480p", "WEBRip-480p"]
-          - name: DVD
-          - name: SDTV
-
-    # v8: Use custom_format_groups instead of include templates
-    # See: https://recyclarr.dev/reference/configuration/custom-formats/#custom-format-groups
-    custom_format_groups:
-      - name: WEB-2160p
-        trash_ids:
-          - 505d871304820ba7106b693be6fe4a9e # HDR
-          - 0c4b99df9206d2cfac3c05ab897dd62a # HDR10+ Boost
-        default: true
-
+      - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7 # WEB-2160p (Combined)
+        reset_unmatched_scores:
+          enabled: true
     custom_formats:
       - # FLUX trumps REPACKS
         trash_ids:
           - 5d9fd1b1e06cd8a475462f40214b7df6 # FLUX
         assign_scores_to:
-          - trash_id: d7c871d6f1a4c20d40e0e7a584724de7  # WEB 1080p
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7 # WEB-2160p (Combined)
             score: 100
-
       - # Unwanted
         trash_ids:
           - 32b367365729d530ca1c124a0b180c64 # Bad Dual Groups
@@ -86,99 +43,38 @@ sonarr:
           - e1a997ddb54e3ecbfe06341ad323c458 # Obfuscated
           - 06d66ab109d4d2eddb2794d21526d140 # Retags
         assign_scores_to:
-          - trash_id: d7c871d6f1a4c20d40e0e7a584724de7  # WEB 1080p
-
-      - trash_ids:
-          - 1b3994c551cbb92a2c781af061f4ab44 # Scene
-        assign_scores_to:
-          - trash_id: d7c871d6f1a4c20d40e0e7a584724de7
-            score: 0
-
-      # HDR Formats
-      - trash_ids:
-          - 505d871304820ba7106b693be6fe4a9e # HDR
-          - 0c4b99df9206d2cfac3c05ab897dd62a # HDR10+ Boost
-
-      - trash_ids:
-          - 026d5aadd1a6b4e550b134cb6c72b3ca # Uncensored
-
-      - trash_ids:
-          - b2550eb333d27b75833e25b8c2557b38 # 10bit
-
-      - trash_ids:
-          - 418f50b10f1907201b6cfdf881f467b7 # Anime Dual Audio
-
-      # x265 Formats
-      - trash_ids:
-          - 47435ece6b99a0b477caf360e79ba0bb # x265 (HD)
-          - 9b64dff695c2115facf1b6ea59c9bd07 # x265 (no HDR/DV)
-          - c9eafd50846d299b862ca9bb6ea91950 # x265
-          - 15a05bc7c1a36e2b57fd628f8977e2fc # AV1
-        assign_scores_to:
-          - name: x265
-            score: 10000
-
-      - trash_ids:
-          - 5d9fd1b1e06cd8a475462f40214b7df6 # FLUX (Sonarr)
-        assign_scores_to:
-          - name: WEB-1080p
-            score: 100
-          - name: WEB-2160p
-            score: 100
+          - trash_id: c4cadd6b35b95f62c3d47a408e53e2f7 # WEB-2160p (Combined)
 
 radarr:
-  radarr:
+  movies:
     base_url: http://radarr.downloads.svc.cluster.local
     api_key: !env_var RADARR_API_KEY
-
-    # Custom Format Configuration
     delete_old_custom_formats: true
-    # replace_existing_custom_formats - REMOVED in v8
+    media_management:
+      propers_and_repacks: do_not_prefer
     media_naming:
       folder: plex-imdb
       movie:
         rename: true
         standard: plex-imdb
-
     quality_definition:
-      type: movie
-
-    # v8: Use trash_id for guide-backed quality profiles
+      type: sqp-uhd
     quality_profiles:
-      - name: SQP-1 (1080p)
-        trash_id: e6251a4cf19bc15555a8588c2070616  # SQP-1 1080p
-      - name: SQP-1 (2160p)
-        trash_id: 9b43d08ebc02eb1511e8e5d9d65e9bb2  # SQP-1 2160p
-
-    custom_format_groups:
-      - name: SQP-1
-        default: true
-
+      - trash_id: 0896c29d74de619df168d23b98104b22 # [SQP] SQP-1 (1080p)
+        reset_unmatched_scores:
+          enabled: true
+      - trash_id: 5128baeb2b081b72126bc8482b2a86a0 # [SQP] SQP-1 (2160p)
+        reset_unmatched_scores:
+          enabled: true
     custom_formats:
-      - trash_ids:
-          - 7a0d1ad358fee9f5b074af3ef3f9d9ef # HALLOWED
+      - # Unwanted
+        trash_ids:
+          - 957d0f44b592285f26449575e8b1167e # Special Edition
           - b6832f586342ef70d9c128d40c07b872 # Bad Dual Groups
+          - cc444569854e9de0b084ab2b8b1532b2 # Black and White Editions
           - ae9b7c9ebde1f3bd336a8cbd1ec4c5e5 # No-RlsGroup
           - 7357cf5161efbf8c4d5d0c30b4815ee2 # Obfuscated
           - 5c44f52a8714fdd79bb4d98e2673be1f # Retags
           - f537cf427b64c38c8e36298f657e4828 # Scene
         assign_scores_to:
-          - trash_id: e6251a4cf19bc15555a8588c2070616  # SQP-1 1080p
-          - trash_id: 9b43d08ebc02eb1511e8e5d9d65e9bb2  # SQP-1 2160p
-
-      - trash_ids:
-          - 839bea857ed2c0a8e084f3cbdbd65ecb # x265 (no HDR/DV)
-        assign_scores_to:
-          - trash_id: e6251a4cf19bc15555a8588c2070616
-            score: 0
-          - trash_id: 9b43d08ebc02eb1511e8e5d9d65e9bb2
-            score: 0
-
-      - trash_ids:
-          - 064af5f084a0a24458cc8ecd3220f93f # Uncensored
-
-      - trash_ids:
-          - a5d148168c4506b55cf53984107c396e # 10bit
-
-      - trash_ids:
-          - 4a3b087eea2ce012fcc1ce319259a3be # Anime Dual Audio
+          - trash_id: 5128baeb2b081b72126bc8482b2a86a0 # [SQP] SQP-1 (2160p)
