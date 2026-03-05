@@ -8,6 +8,7 @@ locals {
     "Headlamp",
     "Kyoo",
     "Miso-Chat",
+    "Miso-Gallery",
     "Open-WebUI",
     "Paperless",
     "Portainer",
@@ -96,6 +97,15 @@ locals {
       icon_url          = "https://avatars.githubusercontent.com/u/263493777?v=4"
       redirect_uri      = "https://miso-chat.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://miso-chat.${var.CLUSTER_DOMAIN}/auth/oidc"
+      property_mappings = local.default_property_mappings
+    },
+    Miso-Gallery = {
+      client_id         = module.onepassword_application["Miso-Gallery"].fields["MISO_GALLERY_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Miso-Gallery"].fields["MISO_GALLERY_CLIENT_SECRET"]
+      group             = "ai"
+      icon_url          = "https://avatars.githubusercontent.com/u/263493777?v=4"
+      redirect_uri      = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
+      launch_url        = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc"
       property_mappings = local.default_property_mappings
     },
     Open-WebUI = {
