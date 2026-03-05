@@ -5,22 +5,16 @@ kind: HelmRelease
 metadata:
   name: &app mcp-grafana
 spec:
-  interval: 1h
   chartRef:
     kind: OCIRepository
     name: app-template
-    namespace: flux-system
-  install:
-    remediation:
-      retries: 3
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-      strategy: rollback
+  dependsOn: []
+  interval: 15m
   values:
     controllers:
       mcp-grafana:
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
@@ -40,11 +34,15 @@ spec:
               - "sse"
             env:
               GRAFANA_URL: "http://grafana.observability:80"
-              GRAFANA_AUTH: "admin:admin"  # TODO: Use secret
+            envFrom:
+              - secretRef:
+                  name: mcp-grafana
             probes:
               liveness:
                 enabled: false
               readiness:
+                enabled: false
+              startup:
                 enabled: false
             resources:
               requests:
@@ -52,6 +50,25 @@ spec:
                 memory: 128Mi
               limits:
                 memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
     service:
       app:
-        enabled: false
+        controller: *app
+        ports:
+          http:
+            port: 8000
+    persistence:
+      tmp:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
