@@ -103,7 +103,7 @@ locals {
       client_id         = module.onepassword_application["Miso-Gallery"].fields["MISO_GALLERY_CLIENT_ID"]
       client_secret     = module.onepassword_application["Miso-Gallery"].fields["MISO_GALLERY_CLIENT_SECRET"]
       group             = "ai"
-      icon_url          = "https://miso-gallery.${var.CLUSTER_DOMAIN}/view/chibi/Miso_1772668503_chibi_photo_00001_.png"
+      icon_url          = "https://raw.githubusercontent.com/joryirving/miso-gallery/main/assets/miso-gallery-logo.png"
       redirect_uri      = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc"
       property_mappings = local.default_property_mappings
