@@ -22,6 +22,14 @@ spec:
               tag: 0.1.2@sha256:69be65d7236aaecb31642b03bafd09b91711ae60ff28e29ac6d7dedd4f9e866e
             env:
               IMAGE_BASE_URL: https://miso-gallery.jory.dev
+              AUTH_TYPE: oidc
+              OIDC_ENABLED: "true"
+              OIDC_ISSUER: https://sso.jory.dev
+              OIDC_PROVIDER_NAME: Authentik
+              OIDC_CALLBACK_URL: https://miso-gallery.jory.dev/auth/oidc/callback
+            envFrom:
+              - secretRef:
+                  name: miso-gallery
             securityContext:
               allowPrivilegeEscalation: false
               capabilities: {drop: ["ALL"]}
