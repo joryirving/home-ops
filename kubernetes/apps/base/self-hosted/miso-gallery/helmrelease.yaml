@@ -3,48 +3,52 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: actual
+  name: miso-gallery
+  namespace: llm
 spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
   values:
     controllers:
-      actual:
+      miso-gallery:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: ghcr.io/actualbudget/actual-server
-              tag: 26.3.0
+              repository: ghcr.io/joryirving/miso-gallery
+              tag: 0.1.0@sha256:ef4a27c5191c949a1d5d1561aa5df3c8ab1b6301398f9ee8208c3edd9235d452
             env:
-              GENERIC_TIMEZONE: America/Edmonton
+              IMAGE_BASE_URL: https://miso-gallery.jory.dev
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
-                cpu: 15m
-                memory: 80M
+                cpu: 50m
               limits:
-                memory: 256M
+                memory: 128Mi
     defaultPodOptions:
       securityContext:
-        runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
-
+        fsGroup: 100
+        fsGroupChangePolicy: "OnRootMismatch"
     service:
       app:
         ports:
           http:
-            port: 5006
+            port: 5000
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        hostnames: ["miso-gallery.jory.dev"]
         parentRefs:
-          - name: envoy-internal
+          - name: envoy-external
             namespace: network
     persistence:
       data:
-        existingClaim: "{{ .Release.Name }}"
+        type: nfs
+        server: voyager.internal
+        path: /mnt/daena/comfyui/output
