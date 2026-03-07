@@ -39,6 +39,12 @@ spec:
                   rm -rf gh.tar.gz gh_2.61.0_linux_amd64
                 fi
 
+                if [ ! -f /home/node/.local/bin/openclaw ]; then
+                # Set up openclawbot CLI symlink
+                  echo "Installing creating symlink..."
+                  ln -s /app/openclaw.mjs /home/node/.local/bin/openclaw
+                fi
+
                 # Install Go if not present on PVC
                 if [ ! -f /home/node/.local/go/bin/go ]; then
                   echo "Installing Go..."
@@ -89,8 +95,6 @@ spec:
               - /bin/sh
               - -c
               - |
-                # Set up openclawbot CLI symlink
-                ln -s /app/openclaw.mjs /home/node/.local/bin/openclaw
                 # Start gateway
                 exec node dist/index.js gateway --bind lan
             env:
@@ -281,7 +285,7 @@ spec:
         type: secret
         name: "{{ .Release.Name }}-config"
         globalMounts:
-          - path: /home/node/.openclaw/openclaw-main.json
+          - path: /home/node/.openclaw/openclaw.json
             subPath: openclaw.json
       downloads:
         type: nfs
