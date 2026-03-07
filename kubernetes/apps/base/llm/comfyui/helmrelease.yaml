@@ -1,0 +1,47 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: comfyui
+  namespace: llm
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 4.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controller:
+      type: deployment
+    image:
+      repository: yanwk/comfyui-boot
+      tag: rocm7
+      pullPolicy: IfNotPresent
+    service:
+      type: NodePort
+      ports:
+        http:
+          port: 8188
+          nodePort: 31888
+    persistence:
+      enabled: true
+      existingClaim: nfs-client
+      mountPath: /data
+    gpu:
+      enabled: true
+      deviceSelector:
+        - vendor: amd.com
+    env:
+      HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+      ROCBLAS_USE_HIPBLASLT: "1"
+      GGML_CUDA_ENABLE_UNIFIED_MEMORY: "1"
+    resources:
+      amd/gpu:
+        limits:
+          amd.com/gpu: 1
+    nodeSelector:
+      topology.kubernetes.io/gpus: amd
