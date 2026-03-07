@@ -5,12 +5,16 @@ kind: Kustomization
 metadata:
   name: &app comfyui
 spec:
+  healthCheckExprs:
+    - apiVersion: apps/v1
+      kind: Deployment
+      failed: status.readyReplicas == 0
+      current: status.readyReplicas >= 1
   interval: 1h
   path: ./kubernetes/apps/base/llm/comfyui
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: ${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository
