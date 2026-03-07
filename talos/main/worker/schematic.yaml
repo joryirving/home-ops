@@ -4,11 +4,11 @@ customization:
     - -init_on_alloc                      # Less security, faster puter
     - -init_on_free                       # Less security, faster puter
     - -selinux                            # Less security, faster puter
-    - apparmor=0                          # Less security, faster puter
-    - i915.enable_guc=3                   # Intel iGPU
+    - amd_iommu=on                        # PCI Passthrough
+    - amdgpu.gttsize=131072               # AMD GPU GTT memory size
+    - ttm.pages_limit=33554432            # AMD GPU TTM memory limit
     - init_on_alloc=0                     # Less security, faster puter
     - init_on_free=0                      # Less security, faster puter
-    - intel_iommu=on                      # PCI Passthrough
     - iommu=pt                            # PCI Passthrough
     - mitigations=off                     # Less security, faster puter
     - security=none                       # Less security, faster puter
@@ -16,8 +16,5 @@ customization:
 
   systemExtensions:
     officialExtensions:
-      - siderolabs/i915                   # Intel iGPU
-      - siderolabs/intel-ucode            # Intel iGPU
-      - siderolabs/mei                    # Intel iGPU
-      - siderolabs/nfsrahead              # NFS Performance
-      - siderolabs/thunderbolt            # Thunderbolt Ports
+      - siderolabs/amdgpu
+      - siderolabs/amd-ucode

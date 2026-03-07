@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.12/website/content/v1.12/schemas/config.schema.json
+machine:
+  install:
+    diskSelector:
+      model: "WDS500G3X0C-00SJG0"
+    image: factory.talos.dev/installer/06ee3a9b10f3e7398b3054eb3ccdbbc8b609d4e1e527af371193d5adfb5f435a:v1.12.4
+  nodeLabels:
+    topology.kubernetes.io/gpus: amd
+    node-role.kubernetes.io/rocm-worker: "true"
+  kubelet:
+    extraArgs:
+      max-pods: "50"
+    extraConfig:
+      registerWithTaints:
+        - key: llm-workload
+          value: "true"
+          effect: NoSchedule
+---
+# OS disk - 500GB WD Black
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: local-hostpath
+provisioning:
+  diskSelector:
+    match: disk.model == "YMTC PC41Q-2TB-B"
+  minSize: 1800GB
+---
+apiVersion: v1alpha1
+kind: WatchdogTimerConfig
+device: /dev/watchdog0
+timeout: 5m
+---
+apiVersion: v1alpha1
+kind: OOMConfig
+triggerExpression: "false"
+---
+apiVersion: v1alpha1
+kind: BondConfig
+name: bond0
+links:
+  - eno1
+bondMode: active-backup
+miimon: 100
+---
+apiVersion: v1alpha1
+kind: VLANConfig
+name: bond0.70
+vlanID: 70
+parent: bond0
+mtu: 1500
+---
+apiVersion: v1alpha1
+kind: VLANConfig
+name: bond0.90
+vlanID: 90
+parent: bond0
+mtu: 1500
+---
+apiVersion: v1alpha1
+kind: DHCPv4Config
+name: bond0
+clientIdentifier: mac
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: skirk
