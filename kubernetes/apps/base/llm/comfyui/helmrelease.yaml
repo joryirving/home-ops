@@ -47,6 +47,12 @@ spec:
         ports:
           http:
             port: 8188
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
     persistence:
       comfyui:
         existingClaim: "comfyui"
