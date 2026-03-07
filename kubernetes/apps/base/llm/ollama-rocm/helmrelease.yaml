@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      ollama:
+      ollama-rocm:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -59,13 +59,10 @@ spec:
           metrics:
             port: 8000
     persistence:
-      ollama:
+      ollama-rocm:
         existingClaim: "ollama-rocm"
         globalMounts:
-          - path: /root/.ollama/models
-            subPath: models
-          - path: /root/.ollama
-            subPath: config
+          - path: /root/.ollama/
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
