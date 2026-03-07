@@ -27,16 +27,26 @@ spec:
         http:
           port: 8188
           nodePort: 31888
-    persistence:
-      enabled: true
-      existingClaim: nfs-client
-      mountPath: /data
+    extraVolumes:
+      - name: nfs-comfyui
+        nfs:
+          server: voyager.internal
+          path: /mnt/daena/comfyui
+    extraVolumeMounts:
+      - name: nfs-comfyui
+        mountPath: /root/ComfyUI/output
+        subPath: output
+      - name: nfs-comfyui
+        mountPath: /root/ComfyUI/input
+        subPath: input
+      - name: nfs-comfyui
+        mountPath: /data/models
+        subPath: models
     gpu:
       enabled: true
       deviceSelector:
         - vendor: amd.com
     env:
-      COMFYUI_OUTPUT_DIR: /data/output
       HSA_OVERRIDE_GFX_VERSION: "11.5.1"
       ROCBLAS_USE_HIPBLASLT: "1"
       GGML_CUDA_ENABLE_UNIFIED_MEMORY: "1"
