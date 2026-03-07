@@ -70,6 +70,9 @@ kvmd:
       wol_server5:
         type: wol
         mac: b4:2e:99:3e:2c:f3
+      wol_server6:
+        type: wol
+        mac: 84:47:09:77:79:61
       reboot:
         type: cmd
         cmd: ["/usr/bin/sudo", "reboot"]
@@ -170,6 +173,11 @@ kvmd:
         pin: 6
         mode: output
         switch: false
+      server6_wol:
+        driver: wol_server5
+        pin: 0
+        mode: output
+        switch: false
       server7_led:
         driver: tes
         pin: 7
@@ -200,7 +208,7 @@ kvmd:
       - ["#Voyager", "server3_led", "server3_btn | KVM", "server3_wol | WOL"]
       - ["#Citlali", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
       - ["#Smurf PC", "server5_led", "server5_btn | KVM", "server5_wol | WOL"]
-      - ["#7", "server6_led", "server6_btn | KVM"]
+      - ["#Skirk", "server6_led", "server6_btn | KVM", "server6_wol | WOL"]
       - ["#8", "server7_led", "server7_btn | KVM"]
 
 ```
