@@ -12,14 +12,19 @@ spec:
   interval: 15m
   values:
     controllers:
-      ollama-rocm:
+      llama-swap:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: ollama/ollama
-              tag: 0.17.7-rocm@sha256:0fd5eac2bcb4235e3368656621a4c3a13ef02aec3a257a27941ca84b18ccf4fc
+              repository: ghcr.io/joryirving/llama-swap-rocm
+              tag: 0.0.26@sha256:29ac8510ceb3db9760a88aae70b4cc8b4976c8b8d52c7d1870ed7f3f336fcdfc
+            args:
+              - --config
+              - /config/config.yaml
+              - --listen
+              - 0.0.0.0:8080
             securityContext:
               privileged: true
             env:
@@ -28,21 +33,33 @@ spec:
               HSA_ENABLE_SDMA: "0"
               ROCBLAS_USE_HIPBLASLT: "1"
               HIP_VISIBLE_DEVICES: "0"
-              OLLAMA_KEEP_ALIVE: "-1"        # don't unload models, you're managing this via requests
-              OLLAMA_MAX_LOADED_MODELS: "1"  # only one model in memory at a time given your constraints
-              OLLAMA_NUM_PARALLEL: "1"       # single request at a time, matches your --parallel 1
-              OLLAMA_FLASH_ATTENTION: "1"    # equivalent to -fa 1
-              OLLAMA_CONTEXT_LENGTH: "262144" # 256k context
             resources:
               requests:
                 cpu: 1
                 memory: 32Gi
               limits:
                 memory: 110Gi
-          exporter:
-            image:
-              repository: lucabecker42/ollama-exporter
-              tag: 1.0.1@sha256:4d1d96fae76dbefd6b763d576a12fb9799913ae9a585990a464eacab2b600f55
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /upstream/health
+                    port: 8080
+                  initialDelaySeconds: 10
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /upstream/health
+                    port: 8080
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  failureThreshold: 3
     defaultPodOptions:
       hostIPC: true
       nodeSelector:
@@ -53,16 +70,20 @@ spec:
           effect: NoSchedule
     service:
       app:
+        controller: llama-swap
         ports:
           http:
-            port: 11434
-          metrics:
-            port: 8000
+            port: 8080
     persistence:
-      ollama-rocm:
-        existingClaim: "ollama-rocm"
+      config:
+        type: configMap
+        name: llama-swap-config
         globalMounts:
-          - path: /root/.ollama/
+          - path: /config
+      models:
+        existingClaim: ollama-rocm
+        globalMounts:
+          - path: /root/.ollama
       dev-dri:
         type: hostPath
         hostPath: /dev/dri

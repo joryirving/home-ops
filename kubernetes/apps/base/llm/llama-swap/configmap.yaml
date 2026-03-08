@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llama-swap-config
+  namespace: llm
+data:
+  config.yaml: |
+    windowSize: 5
+    models:
+      qwen35b:
+        cmd: >-
+          /usr/local/bin/llama-server
+          --host 127.0.0.1
+          --port 9001
+          --model /root/.ollama/models/blobs/sha256-56ddab06cc049b66fee8cff294c0b0e5e848f3381ed0da1a3a16a7bd80e8280a
+          --ctx-size 131072
+          --n-gpu-layers 99
+          --flash-attn
+          --parallel 1
+          --cont-batching
+        proxy: http://127.0.0.1:9001
+        ttl: 300
+
+      gpt-oss-120b:
+        cmd: >-
+          /usr/local/bin/llama-server
+          --host 127.0.0.1
+          --port 9002
+          --model /root/.ollama/models/blobs/sha256-2d1f0298ae4b6c874d5a468598c5ce17c1763b3fea99de10b1a07df93cef014f
+          --ctx-size 131072
+          --n-gpu-layers 99
+          --flash-attn
+          --parallel 1
+          --cont-batching
+        proxy: http://127.0.0.1:9002
+        ttl: 300
