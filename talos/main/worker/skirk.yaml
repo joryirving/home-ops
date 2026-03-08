@@ -15,6 +15,12 @@ machine:
         - key: llm-workload
           value: "true"
           effect: NoSchedule
+  files:
+    - path: /etc/udev/rules.d/99-amdgpu-perf.rules
+      permissions: 0o644
+      op: create
+      content: |
+        SUBSYSTEM=="drm", KERNEL=="card0", DRIVERS=="amdgpu", ATTR{device/power_dpm_force_performance_level}="high"
 ---
 # OS disk - 500GB WD Black
 apiVersion: v1alpha1

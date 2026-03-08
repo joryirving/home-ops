@@ -29,6 +29,13 @@ spec:
         labels:
           app.kubernetes.io/name: ${APP}-crunchy-postgres
       replicas: 3
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/gpus
+                    operator: DoesNotExist
       dataVolumeClaimSpec:
         storageClassName: local-hostpath
         accessModes: ["ReadWriteOnce"]
@@ -39,6 +46,7 @@ spec:
         - maxSkew: 1
           topologyKey: "kubernetes.io/hostname"
           whenUnsatisfiable: "DoNotSchedule"
+          nodeTaintsPolicy: Honor
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: ${APP}-crunchy-postgres
@@ -79,6 +87,13 @@ spec:
         # repo2-s3-uri-style: path
       jobs:
         ttlSecondsAfterFinished: 60
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: topology.kubernetes.io/gpus
+                      operator: DoesNotExist
       manual:
         repoName: repo1
         options:
