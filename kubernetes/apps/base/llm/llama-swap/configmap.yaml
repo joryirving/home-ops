@@ -14,45 +14,49 @@ data:
         exclusive: false
         members:
           - qwen35b
-          - gpt-oss-120b
+          - qwen3-coder
     models:
       qwen35b:
         cmd: >-
           /usr/local/bin/llama-server
           --host 127.0.0.1
           --port 9001
-          --model /models/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf
+          --model /models/Huihui-Qwen3.5-35B-A3B-abliterated.i1-Q4_K_M.gguf
           --mmproj /models/mmproj-F32.gguf
+          --chat-template-file /models/chat_template.jinja
           --ctx-size 131072
           --n-gpu-layers 99
-          -fa 1
-          --mmap
-          --numa distribute
+          -fa
           --parallel 1
           --cont-batching
           --cache-prompt
           --cache-type-k q8_0
           --cache-type-v q8_0
           --batch-size 2048
+          --mmap
+          --numa distribute
         proxy: http://127.0.0.1:9001
         ttl: 0
+        group: qwen
 
-      gpt-oss-120b:
+      qwen3-coder:
         cmd: >-
           /usr/local/bin/llama-server
           --host 127.0.0.1
           --port 9002
-          --model /models/Q4_K_M/gpt-oss-120b-Q4_K_M-00001-of-00002.gguf
+          --model /models/huihui-ai_Qwen3-Coder-Next-abliterated-Q4_K_M.gguf
+          --chat-template-file /models/chat_template.jinja
           --ctx-size 131072
           --n-gpu-layers 99
-          -fa 1
-          --mmap
-          --numa distribute
+          -fa
           --parallel 1
           --cont-batching
           --cache-prompt
           --cache-type-k q8_0
           --cache-type-v q8_0
           --batch-size 2048
+          --mmap
+          --numa distribute
         proxy: http://127.0.0.1:9002
         ttl: 0
+        group: coder
