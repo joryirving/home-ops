@@ -15,45 +15,49 @@ spec:
         name: bjw-s
         namespace: flux-system
   values:
-    controller:
-      type: deployment
-    image:
-      repository: ghcr.io/ggerganov/llama.cpp
-      tag: server-rocm-full-rocm7.2
-      pullPolicy: IfNotPresent
+    controllers:
+      llama-server:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ggerganov/llama.cpp
+              tag: server-rocm-full-rocm7.2
+              pullPolicy: IfNotPresent
+            args:
+              - "-m"
+              - "/models/qwen3.5-35b-a3b-q8_0.gguf"
+              - "--ctx-size"
+              - "131072"
+              - "--n-gpu-layers"
+              - "100"
+              - "--host"
+              - "0.0.0.0"
+              - "--port"
+              - "8080"
+            env:
+              HSA_OVERRIDE_GFX_VERSION: "11.5.0"
+              HSA_ENABLE_SDMA: "0"
+              ROCM_USE_GTT: "1"
+            resources:
+              limits:
+                amd.com/gpu: 1
+            securityContext:
+              capabilities:
+                add:
+                  - SYS_PTRACE
+        nodeSelector:
+          topology.kubernetes.io/gpus: amd
+        tolerations:
+          - effect: NoSchedule
+            key: llm-workload
+            operator: Exists
     service:
-      type: ClusterIP
-      ports:
-        http:
-          port: 8080
-    args:
-      - "-m"
-      - "/models/qwen3.5-35b-a3b-q8_0.gguf"
-      - "--ctx-size"
-      - "131072"
-      - "--n-gpu-layers"
-      - "100"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8080"
-    env:
-      HSA_OVERRIDE_GFX_VERSION: "11.5.0"
-      HSA_ENABLE_SDMA: "0"
-      ROCM_USE_GTT: "1"
-    resources:
-      limits:
-        amd.com/gpu: 1
-    securityContext:
-      capabilities:
-        add:
-          - SYS_PTRACE
-    nodeSelector:
-      topology.kubernetes.io/gpus: amd
-    tolerations:
-      - effect: NoSchedule
-        key: llm-workload
-        operator: Exists
+      app:
+        ports:
+          http:
+            port: 8080
     persistence:
       enabled: true
       existingClaim: nfs-client
