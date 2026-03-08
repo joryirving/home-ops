@@ -21,13 +21,12 @@ data:
           /usr/local/bin/llama-server
           --host 127.0.0.1
           --port 9001
-          --model /models/Huihui-Qwen3.5-35B-A3B-abliterated.i1-Q4_K_M.gguf
+          --model /models/Qwen3.5-35B-A3B-heretic.Q4_K_M.gguf
           --mmproj /models/mmproj-F32.gguf
-          --chat-template-file /models/chat_template.jinja
           --ctx-size 131072
           --n-gpu-layers 99
-          -fa
-          --parallel 1
+          --flash-attn on
+          --parallel 2
           --cont-batching
           --cache-prompt
           --cache-type-k q8_0
@@ -35,6 +34,7 @@ data:
           --batch-size 2048
           --mmap
           --numa distribute
+          --chat-template chatml
         proxy: http://127.0.0.1:9001
         ttl: 0
         group: qwen
@@ -44,12 +44,11 @@ data:
           /usr/local/bin/llama-server
           --host 127.0.0.1
           --port 9002
-          --model /models/huihui-ai_Qwen3-Coder-Next-abliterated-Q4_K_M.gguf
-          --chat-template-file /models/chat_template.jinja
+          --model /models/Qwen3-Coder-Next-UD-Q4_K_XL.gguf
           --ctx-size 131072
           --n-gpu-layers 99
-          -fa
-          --parallel 1
+          --flash-attn on
+          --parallel 2
           --cont-batching
           --cache-prompt
           --cache-type-k q8_0
