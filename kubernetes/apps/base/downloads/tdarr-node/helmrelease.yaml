@@ -38,6 +38,13 @@ spec:
       resourceClaims:
         - name: gpu
           resourceClaimTemplateName: tdarr-node-gpu
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/gpus
+                    operator: DoesNotExist
       securityContext:
         fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
