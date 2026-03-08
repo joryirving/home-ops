@@ -5,7 +5,7 @@ export TLS_NAMESPACE="network"
 CERT_DIR="/tmp/cert"
 CERT_TMP="$CERT_DIR/tmp"
 CERT_JSON="$CERT_DIR/certificate/certificate-tls.json"
-CLUSTER="${1:-utility}"
+CLUSTER="${1:-main}"
 DESTINATION="${2:-caddy}"
 
 # Set default values based on DESTINATION
