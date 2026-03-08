@@ -40,6 +40,16 @@ spec:
               limits:
                 memory: 110Gi
             probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 8080
+                  initialDelaySeconds: 120
+                  periodSeconds: 10
+                  failureThreshold: 30
               liveness:
                 enabled: true
                 custom: true
