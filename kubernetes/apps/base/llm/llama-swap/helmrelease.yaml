@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: ollama-rocm
+  name: llama-swap
 spec:
   chartRef:
     kind: OCIRepository
@@ -18,7 +18,7 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/joryirving/llama-swap-rocm
+              repository: ghcr.io/joryirving/llama-swap
               tag: 0.0.26@sha256:29ac8510ceb3db9760a88aae70b4cc8b4976c8b8d52c7d1870ed7f3f336fcdfc
             args:
               - --config
@@ -81,9 +81,9 @@ spec:
         globalMounts:
           - path: /config
       models:
-        existingClaim: ollama-rocm
+        existingClaim: llama-swap
         globalMounts:
-          - path: /root/.ollama
+          - path: /models
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
