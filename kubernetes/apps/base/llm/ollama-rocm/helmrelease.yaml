@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: comfyui
+  name: ollama-rocm
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,28 +12,37 @@ spec:
   interval: 15m
   values:
     controllers:
-      comfyui:
+      ollama-rocm:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: yanwk/comfyui-boot
-              tag: rocm7@sha256:c1ab99123cc8902d9bd08a654c303181c2ec26651b2db03b51f849812e6b277b
+              repository: ollama/ollama
+              tag: 0.17.7-rocm@sha256:0fd5eac2bcb4235e3368656621a4c3a13ef02aec3a257a27941ca84b18ccf4fc
             securityContext:
               privileged: true
             env:
               HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+              GGML_CUDA_ENABLE_UNIFIED_MEMORY: "1"
               HSA_ENABLE_SDMA: "0"
+              ROCBLAS_USE_HIPBLASLT: "1"
               HIP_VISIBLE_DEVICES: "0"
-              ROCR_VISIBLE_DEVICES: "0"
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention"
+              OLLAMA_KEEP_ALIVE: "-1"        # don't unload models, you're managing this via requests
+              OLLAMA_MAX_LOADED_MODELS: "1"  # only one model in memory at a time given your constraints
+              OLLAMA_NUM_PARALLEL: "1"       # single request at a time, matches your --parallel 1
+              OLLAMA_FLASH_ATTENTION: "1"    # equivalent to -fa 1
+              OLLAMA_CONTEXT_LENGTH: "262144" # 256k context
             resources:
               requests:
                 cpu: 1
-                memory: 8Gi
+                memory: 32Gi
               limits:
-                memory: 16Gi
+                memory: 110Gi
+          exporter:
+            image:
+              repository: lucabecker42/ollama-exporter
+              tag: 1.0.1@sha256:4d1d96fae76dbefd6b763d576a12fb9799913ae9a585990a464eacab2b600f55
     defaultPodOptions:
       hostIPC: true
       nodeSelector:
@@ -46,27 +55,14 @@ spec:
       app:
         ports:
           http:
-            port: 8188
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+            port: 11434
+          metrics:
+            port: 8000
     persistence:
-      comfyui:
-        existingClaim: "comfyui"
+      ollama-rocm:
+        existingClaim: "ollama-rocm"
         globalMounts:
-          - path: /root/ComfyUI/
-      data:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/daena/comfyui/
-        globalMounts:
-          - path: /root/ComfyUI/output
-            subPath: output
-          - path: /root/ComfyUI/input
-            subPath: input
+          - path: /root/.ollama/
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
