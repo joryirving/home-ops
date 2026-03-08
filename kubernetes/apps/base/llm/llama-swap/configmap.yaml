@@ -8,9 +8,13 @@ data:
   config.yaml: |
     windowSize: 5
     logLevel: "DEBUG"
-    preloadModels:
-      - qwen35b
-      - gpt-oss-120b
+    groups:
+      always-on:
+        swap: false
+        exclusive: false
+        members:
+          - qwen35b
+          - gpt-oss-120b
     models:
       qwen35b:
         cmd: >-
@@ -27,7 +31,6 @@ data:
           --chat-template chatml
         proxy: http://127.0.0.1:9001
         ttl: 0
-        group: qwen
 
       gpt-oss-120b:
         cmd: >-
@@ -35,7 +38,7 @@ data:
           --host 127.0.0.1
           --port 9002
           --model /models/Q4_K_M/gpt-oss-120b-Q4_K_M-00001-of-00002.gguf
-          --ctx-size 131072
+          --ctx-size 100000
           --n-gpu-layers 99
           -fa 1
           --parallel 1
@@ -44,4 +47,3 @@ data:
           --chat-template chatml
         proxy: http://127.0.0.1:9002
         ttl: 0
-        group: gpt
