@@ -2,7 +2,43 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: llama-swap-config
+  name: llama-swap-config-single
+  namespace: llm
+data:
+  config.yaml: |
+    windowSize: 5
+    logLevel: "DEBUG"
+    models:
+      qwen27b:
+        cmd: >-
+          /usr/local/bin/llama-server
+          --host 127.0.0.1
+          --port 9001
+          --model /models/BF16/Qwen3.5-27B-BF16-00001-of-00002.gguf
+          --mmproj /models/qwen27b-mmproj-F32.gguf
+          --ctx-size 131072
+          --n-gpu-layers 99
+          --flash-attn on
+          --parallel 4
+          --cont-batching
+          --cache-prompt
+          --temp 0.6
+          --top-p 0.95
+          --top-k 20
+          --min-p 0
+          --batch-size 2048
+          --mmap
+          --numa distribute
+          --chat-template chatml
+          --jinja
+          --swa-full
+        proxy: http://127.0.0.1:9001
+        ttl: 0
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llama-swap-config-dual
   namespace: llm
 data:
   config.yaml: |
@@ -39,7 +75,6 @@ data:
           --mmap
           --numa distribute
           --chat-template chatml
-          --reasoning-budget 0
           --jinja
           --swa-full
         proxy: http://127.0.0.1:9001
@@ -66,7 +101,6 @@ data:
           --temp 0.4
           --top-p 0.95
           --top-k 20
-          --reasoning-budget 0
           --jinja
         proxy: http://127.0.0.1:9002
         ttl: 0
