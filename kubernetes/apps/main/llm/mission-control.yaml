@@ -5,11 +5,15 @@ kind: Kustomization
 metadata:
   name: &app mission-control
 spec:
+  components:
+    - ../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/llm/mission-control
   postBuild:
     substitute:
       APP: *app
+      CLUSTER: ${CLUSTER}
+      VOLSYNC_CAPACITY: 10Gi
   prune: true
   sourceRef:
     kind: GitRepository

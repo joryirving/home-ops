@@ -19,7 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/mission-control
-              tag: rolling
+              tag: v1.3.0
             env:
               PORT: "3000"
               OPENCLAW_GATEWAY_HOST: "openclaw.llm"
@@ -51,9 +51,6 @@ spec:
             namespace: network
     persistence:
       data:
-        enabled: true
-        type: persistentVolumeClaim
-        accessMode: ReadWriteOnce
-        size: 10Gi
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /app/.data
