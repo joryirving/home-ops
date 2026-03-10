@@ -70,7 +70,10 @@ spec:
           effect: NoSchedule
     service:
       app:
-        controller: llama-swap
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.20
+        externalTrafficPolicy: Cluster
         ports:
           http:
             port: 8080
