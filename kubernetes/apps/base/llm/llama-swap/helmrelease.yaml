@@ -60,6 +60,45 @@ spec:
                   initialDelaySeconds: 10
                   periodSeconds: 10
                   failureThreshold: 3
+          warmup:
+            image:
+              repository: curlimages/curl
+              tag: 8.16.0
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                for i in $(seq 1 120); do
+                  if curl -fsS http://127.0.0.1:8080/v1/models >/dev/null; then
+                    break
+                  fi
+                  sleep 2
+                done
+
+                curl -fsS http://127.0.0.1:8080/v1/chat/completions \
+                  -H 'Content-Type: application/json' \
+                  -H 'Authorization: Bearer skirk' \
+                  -d '{"model":"qwen35b","messages":[{"role":"user","content":"warmup"}],"max_tokens":1}' >/dev/null || true
+
+                curl -fsS http://127.0.0.1:8080/v1/chat/completions \
+                  -H 'Content-Type: application/json' \
+                  -H 'Authorization: Bearer skirk' \
+                  -d '{"model":"qwen3-coder","messages":[{"role":"user","content":"warmup"}],"max_tokens":1}' >/dev/null || true
+
+                exec sleep infinity
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
     defaultPodOptions:
       hostIPC: true
       nodeSelector:
