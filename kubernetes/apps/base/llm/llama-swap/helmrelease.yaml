@@ -38,7 +38,7 @@ spec:
                 cpu: 1
                 memory: 32Gi
               limits:
-                memory: 110Gi
+                memory: 115Gi
             probes:
               liveness:
                 enabled: true
@@ -78,13 +78,7 @@ spec:
                 curl -fsS http://127.0.0.1:8080/v1/chat/completions \
                   -H 'Content-Type: application/json' \
                   -H 'Authorization: Bearer skirk' \
-                  -d '{"model":"qwen35b","messages":[{"role":"user","content":"warmup"}],"max_tokens":1}' >/dev/null || true
-
-                curl -fsS http://127.0.0.1:8080/v1/chat/completions \
-                  -H 'Content-Type: application/json' \
-                  -H 'Authorization: Bearer skirk' \
-                  -d '{"model":"qwen3-coder","messages":[{"role":"user","content":"warmup"}],"max_tokens":1}' >/dev/null || true
-
+                  -d '{"model":"qwen122b","messages":[{"role":"user","content":"warmup"}],"max_tokens":1}' >/dev/null || true
                 exec sleep infinity
             resources:
               requests:
@@ -119,7 +113,7 @@ spec:
     persistence:
       config:
         type: configMap
-        name: llama-swap-config-dual
+        name: llama-swap-config-single
         globalMounts:
           - path: /config
       models:
