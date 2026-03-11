@@ -1,0 +1,56 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app mission-control
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      mission-control:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/mission-control
+              tag: 1.3.0@sha256:a233ce2796f8abf554ffd1a9149b1404b2b847125a7067920dbdf3a1b999e94c 
+            env:
+              PORT: "3000"
+              OPENCLAW_GATEWAY_HOST: "openclaw.llm"
+              OPENCLAW_GATEWAY_PORT: "18789"
+              NEXT_PUBLIC_GATEWAY_HOST: "miso.jory.dev"
+              NEXT_PUBLIC_GATEWAY_PORT: "443"
+              NEXT_PUBLIC_GATEWAY_PROTOCOL: "wss"
+              NEXT_PUBLIC_GATEWAY_URL: "wss://miso.jory.dev"
+              MC_ALLOWED_HOSTS: "mission-control.jory.dev"
+            envFrom:
+              - secretRef:
+                  name: *app
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+    service:
+      app:
+        ports:
+          http:
+            port: 3000
+    route:
+      app:
+        hostnames: ["mission-control.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /app/.data
