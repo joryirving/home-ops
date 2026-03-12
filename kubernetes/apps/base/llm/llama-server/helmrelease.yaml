@@ -15,6 +15,46 @@ spec:
       llama-server:
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          model-download:
+            image:
+              repository: curlimages/curl
+              tag: 8.18.0
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                set -euo pipefail
+
+                MODEL_DST="/models/qwen122b/UD-Q4_K_XL/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf"
+                MMPROJ_DST="/models/qwen122b/mmproj-F32.gguf"
+
+                mkdir -p "$(dirname "$MODEL_DST")" "$(dirname "$MMPROJ_DST")"
+
+                if [ ! -s "$MODEL_DST" ]; then
+                  echo "Downloading model shard..."
+                  curl -fL --retry 10 --retry-delay 5 --retry-all-errors \
+                    "$MODEL_URL" -o "$MODEL_DST"
+                else
+                  echo "Model shard already exists, skipping download"
+                fi
+
+                if [ ! -s "$MMPROJ_DST" ]; then
+                  echo "Downloading mmproj..."
+                  curl -fL --retry 10 --retry-delay 5 --retry-all-errors \
+                    "$MMPROJ_URL" -o "$MMPROJ_DST"
+                else
+                  echo "mmproj already exists, skipping download"
+                fi
+            env:
+              MODEL_URL: https://huggingface.co/unsloth/Qwen3.5-122B-A10B-UD-Q4_K_XL/resolve/main/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
+              MMPROJ_URL: https://huggingface.co/unsloth/Qwen3.5-122B-A10B-UD-Q4_K_XL/resolve/main/mmproj-F32.gguf
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
         containers:
           app:
             image:
