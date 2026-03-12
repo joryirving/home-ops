@@ -1,0 +1,141 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: llama-server
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      llama-server:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
+              tag: rocm-7.2
+            securityContext:
+              privileged: true
+            command:
+              - /usr/local/bin/llama-server
+            args:
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8080"
+              - --model
+              - /models/qwen122b/UD-Q4_K_XL/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
+              - --mmproj
+              - /models/qwen122b/mmproj-F32.gguf
+              - --ctx-size
+              - "300000"
+              - --n-gpu-layers
+              - "99"
+              - --flash-attn
+              - "on"
+              - --parallel
+              - "3"
+              - --cont-batching
+              - --cache-prompt
+              - --cache-reuse
+              - "256"
+              - --temp
+              - "0.5"
+              - --top-p
+              - "0.95"
+              - --top-k
+              - "20"
+              - --min-p
+              - "0"
+              - --cache-type-k
+              - q8_0
+              - --cache-type-v
+              - q4_0
+              - --batch-size
+              - "2048"
+              - --ubatch-size
+              - "512"
+              - --threads
+              - "12"
+              - --no-mmap
+              - --jinja
+              - --swa-full
+            env:
+              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+              HSA_ENABLE_SDMA: "0"
+              ROCBLAS_USE_HIPBLASLT: "1"
+              HIP_VISIBLE_DEVICES: "0"
+            resources:
+              requests:
+                cpu: 1
+                memory: 32Gi
+              limits:
+                memory: 115Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                  failureThreshold: 6
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  failureThreshold: 360
+                  periodSeconds: 10
+    defaultPodOptions:
+      hostIPC: true
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+    service:
+      app:
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.20
+        externalTrafficPolicy: Cluster
+        ports:
+          http:
+            port: 8080
+    persistence:
+      models:
+        existingClaim: llama-server-models
+        globalMounts:
+          - path: /models
+      dev-dri:
+        type: hostPath
+        hostPath: /dev/dri
+        globalMounts:
+          - path: /dev/dri
+      dev-kfd:
+        type: hostPath
+        hostPath: /dev/kfd
+        globalMounts:
+          - path: /dev/kfd
