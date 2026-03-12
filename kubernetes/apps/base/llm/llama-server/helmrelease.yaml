@@ -82,14 +82,19 @@ spec:
               - --mmproj
               - /models/qwen122b/mmproj-F16.gguf
               - --ctx-size
-              - "300000"
+              - "262144"
               - --n-gpu-layers
               - "99"
               - --flash-attn
               - "on"
               - --parallel
-              - "3"
+              - "2"
               - --cont-batching
+              - --slot-save-path
+              - "/models/qwen122b/slots"
+              - -sps
+              - "0.95"
+              - --no-context-shift
               - --cache-prompt
               - --cache-ram
               - "16384"
@@ -106,12 +111,11 @@ spec:
               - --cache-type-v
               - q8_0
               - --batch-size
-              - "1024"
+              - "2048"
               - --ubatch-size
-              - "512"
+              - "1024"
               - --no-mmap
               - --jinja
-              - --swa-full
             env:
               HSA_OVERRIDE_GFX_VERSION: "11.5.1"
               HSA_ENABLE_SDMA: "0"
