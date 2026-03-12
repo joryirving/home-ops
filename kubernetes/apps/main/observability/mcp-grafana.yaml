@@ -3,14 +3,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app vllm
+  name: &app mcp-grafana
 spec:
   interval: 1h
-  path: ./kubernetes/apps/base/llm/vllm
+  path: ./kubernetes/apps/base/observability/mcp-grafana
   postBuild:
     substitute:
       APP: *app
-      CLUSTER: ${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository

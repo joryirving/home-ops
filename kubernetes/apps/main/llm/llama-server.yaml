@@ -3,13 +3,14 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app mcp-grafana
+  name: &app llama-server
 spec:
   interval: 1h
-  path: ./kubernetes/apps/base/llm/mcp-grafana
+  path: ./kubernetes/apps/base/llm/llama-server
   postBuild:
     substitute:
       APP: *app
+      CLUSTER: ${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository
