@@ -26,7 +26,12 @@ spec:
               - /bin/bash
               - -lc
             args:
-              - cd /opt/ComfyUI && python main.py ${CLI_ARGS}
+              - |
+                set -euo pipefail
+                cd /opt/ComfyUI
+                /opt/venv/bin/python -m pip install --disable-pip-version-check -r /opt/ComfyUI/requirements.txt
+                /opt/venv/bin/python -m pip install --disable-pip-version-check webcolors matplotlib || true
+                python main.py ${CLI_ARGS}
             env:
               HSA_OVERRIDE_GFX_VERSION: "11.5.1"
               HSA_ENABLE_SDMA: "0"
