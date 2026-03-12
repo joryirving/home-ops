@@ -76,7 +76,7 @@ spec:
               - --port
               - "8080"
               - --model
-              - /models/qwen122b/UD-Q4_K_XL/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
+              - /models/qwen122b/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
               - --mmproj
               - /models/qwen122b/mmproj-F32.gguf
               - --ctx-size
@@ -112,11 +112,6 @@ spec:
               - --no-mmap
               - --jinja
               - --swa-full
-            env:
-              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
-              HSA_ENABLE_SDMA: "0"
-              ROCBLAS_USE_HIPBLASLT: "1"
-              HIP_VISIBLE_DEVICES: "0"
             resources:
               requests:
                 cpu: 1
@@ -172,7 +167,7 @@ spec:
             port: 8080
     persistence:
       models:
-        existingClaim: llama-server-models
+        existingClaim: llm-models
         globalMounts:
           - path: /models
       dev-dri:
