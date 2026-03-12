@@ -22,6 +22,11 @@ spec:
               tag: 20260213-143435@sha256:20e1b4385a0975fcbc188cd842ac121d8feff34813fff5c52b68a3d024a0ea6a
             securityContext:
               privileged: true
+            command:
+              - /bin/bash
+              - -lc
+            args:
+              - cd /opt/ComfyUI && python main.py ${CLI_ARGS}
             env:
               HSA_OVERRIDE_GFX_VERSION: "11.5.1"
               HSA_ENABLE_SDMA: "0"
@@ -57,15 +62,15 @@ spec:
       comfyui:
         existingClaim: "comfyui"
         globalMounts:
-          - path: /root/ComfyUI/
+          - path: /opt/ComfyUI/
       data:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/comfyui/
         globalMounts:
-          - path: /root/ComfyUI/output
+          - path: /opt/ComfyUI/output
             subPath: output
-          - path: /root/ComfyUI/input
+          - path: /opt/ComfyUI/input
             subPath: input
       dev-dri:
         type: hostPath
