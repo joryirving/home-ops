@@ -31,11 +31,15 @@ spec:
                 --host 0.0.0.0
                 --port 8080
                 --model unsloth/Qwen3.5-122B-A10B-UD-Q4_K_XL
+                --tokenizer Qwen/Qwen3.5-122B-A10B
                 --served-model-name qwen122b
                 --max-model-len 300000
                 --max-num-seqs 3
                 --enable-prefix-caching
-                --gpu-memory-utilization 0.95
+                --enable-chunked-prefill
+                --max-num-batched-tokens 2048
+                --kv-cache-dtype fp8
+                --gpu-memory-utilization 0.92
                 --dtype auto
                 --trust-remote-code
                 --limit-mm-per-prompt image=4
@@ -81,7 +85,7 @@ spec:
                   httpGet:
                     path: /health
                     port: 8080
-                  failureThreshold: 180
+                  failureThreshold: 360  # 60min: 360 × 10s - first run compiles Triton kernels
                   periodSeconds: 10
     defaultPodOptions:
       hostIPC: true
