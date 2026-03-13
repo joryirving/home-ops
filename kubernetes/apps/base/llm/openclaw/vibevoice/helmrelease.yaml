@@ -3,40 +3,43 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: comfyui
+  name: vibevoice
 spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
   values:
     controllers:
-      comfyui:
-        annotations:
-          reloader.stakater.com/auto: "true"
+      vibevoice:
+        replicas: 1
         containers:
           app:
             image:
-              repository: yanwk/comfyui-boot
-              tag: rocm7@sha256:a3fc56581adf590736ca6b37629dfa5280fa53dfe17a6157fd5572591186eda6
+              repository: docker.io/kyuz0/amd-strix-halo-voice
+              tag: 20250920-172959@sha256:5e795f0457ab5ccef77016b1464bb983b15a48dc2d5b16165d8d59f854bdaaae
             securityContext:
               privileged: true
+              seccompProfile:
+                type: Unconfined
             env:
               HSA_OVERRIDE_GFX_VERSION: "11.5.1"
               HSA_ENABLE_SDMA: "0"
               HIP_VISIBLE_DEVICES: "0"
               ROCR_VISIBLE_DEVICES: "0"
-              TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL: "1"
-              TORCH_BLAS_PREFER_HIPBLASLT: "1"
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --bf16-vae --disable-mmap --cache-lru 1 --highvram --fast"
+            command:
+              - /bin/bash
+              - -lc
+            args:
+              - |
+                set -euo pipefail
+                vibevoice --model_path aoi-ot/VibeVoice-Large --port 8000
             resources:
               requests:
-                cpu: 1
+                cpu: 500m
                 memory: 4Gi
               limits:
-                cpu: 6
-                memory: 16Gi
+                memory: 12Gi
     defaultPodOptions:
       hostIPC: true
       nodeSelector:
@@ -47,29 +50,15 @@ spec:
           effect: NoSchedule
     service:
       app:
+        controller: vibevoice
         ports:
           http:
-            port: 8188
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+            port: 8000
     persistence:
-      comfyui:
-        existingClaim: "comfyui"
+      models:
+        existingClaim: llm-models
         globalMounts:
-          - path: /root/ComfyUI/
-      data:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/daena/comfyui/
-        globalMounts:
-          - path: /root/ComfyUI/output
-            subPath: output
-          - path: /root/ComfyUI/input
-            subPath: input
+          - path: /models
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
