@@ -24,7 +24,7 @@ spec:
             args:
               - |
                 set -euo pipefail
-                vibevoice --model_path /models/VibeVoice-Large --port 8000 --custom-voices-folder /voices
+                vibevoice --model_path /models/VibeVoice-Large --port 8000
             resources:
               requests:
                 cpu: 500m
@@ -49,12 +49,6 @@ spec:
         existingClaim: llm-models
         globalMounts:
           - path: /models
-      voices:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/daena/voices
-        globalMounts:
-          - path: /voices
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
