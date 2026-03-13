@@ -18,6 +18,15 @@ spec:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-voice
               tag: 20250920-172959@sha256:5e795f0457ab5ccef77016b1464bb983b15a48dc2d5b16165d8d59f854bdaaae
+            securityContext:
+              privileged: true
+              seccompProfile:
+                type: Unconfined
+            env:
+              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+              HSA_ENABLE_SDMA: "0"
+              HIP_VISIBLE_DEVICES: "0"
+              ROCR_VISIBLE_DEVICES: "0"
             command:
               - /bin/bash
               - -lc
@@ -32,6 +41,7 @@ spec:
               limits:
                 memory: 12Gi
     defaultPodOptions:
+      hostIPC: true
       nodeSelector:
         topology.kubernetes.io/gpus: amd
       tolerations:
