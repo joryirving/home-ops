@@ -25,17 +25,16 @@ spec:
               - |
                 set -euo pipefail
 
-
-                if [ ! -f /models/qwen3-coder-next/vocab.json ]; then
+                if [ ! -f /models/qwen35-0p8b/vocab.json ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen3-coder-next
+                  mkdir -p /models/qwen35-0p8b
                   hf download \
-                    unsloth/Qwen3-Coder-Next \
-                    --local-dir /models/qwen3-coder-next
+                    unsloth/Qwen3.5-0.8B \
+                    --local-dir /models/qwen35-0p8b
 
-                  echo "Qwen3-Coder-Next download complete"
+                  echo "Qwen3.5-0.8B download complete"
                 else
-                  echo "Qwen3-Coder-Next already downloaded, skipping"
+                  echo "Qwen3.5-0.8B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -45,7 +44,7 @@ spec:
             resources:
               requests:
                 cpu: 250m
-                memory: 512Mi
+                memory: 6Gi
         containers:
           app:
             image:
@@ -57,17 +56,15 @@ spec:
               - vllm
             args:
               - serve
-              - /models/qwen3-coder-next
+              - /models/qwen35-0p8b
               - --host
               - 0.0.0.0
               - --port
               - "8000"
               - --served-model-name
-              - qwen3-coder-next
-              - --max-model-len
-              - "131072"
+              - qwen35-0.8b
               - --gpu-memory-utilization
-              - "0.92"
+              - "0.85"
               - --enable-auto-tool-choice
               - --tool-call-parser
               - qwen3_coder
@@ -94,9 +91,9 @@ spec:
             resources:
               requests:
                 cpu: 1
-                memory: 40Gi
+                memory: 1Gi
               limits:
-                memory: 80Gi
+                memory: 8Gi
             probes:
               liveness:
                 enabled: true
@@ -144,7 +141,6 @@ spec:
         ports:
           http:
             port: 8000
-
     persistence:
       models:
         existingClaim: llm-models
