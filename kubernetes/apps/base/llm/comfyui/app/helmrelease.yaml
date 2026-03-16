@@ -19,31 +19,18 @@ spec:
           app:
             image:
               repository: yanwk/comfyui-boot
-              tag: rocm7@sha256:a3fc56581adf590736ca6b37629dfa5280fa53dfe17a6157fd5572591186eda6
-            securityContext:
-              privileged: true
+              tag: xpu@sha256:64ae15969eb677bd99cdeb92e19a5f6559d6596d803da2e68def68e12451af1a
             env:
-              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
-              HSA_ENABLE_SDMA: "0"
-              HIP_VISIBLE_DEVICES: "0"
-              ROCR_VISIBLE_DEVICES: "0"
-              TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL: "1"
-              TORCH_BLAS_PREFER_HIPBLASLT: "1"
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --bf16-vae --disable-mmap --cache-none"
+              ONEAPI_DEVICE_SELECTOR: "level_zero:0"
+              SYCL_CACHE_PERSISTENT: "1"
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention"
             resources:
-              requests:
-                cpu: 1
-                memory: 8Gi
-              limits:
-                memory: 16Gi
+              claims:
+                - name: gpu
     defaultPodOptions:
-      hostIPC: true
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: comfyui-gpu
     service:
       app:
         ports:
@@ -69,13 +56,4 @@ spec:
             subPath: output
           - path: /root/ComfyUI/input
             subPath: input
-      dev-dri:
-        type: hostPath
-        hostPath: /dev/dri
-        globalMounts:
-          - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd
+
