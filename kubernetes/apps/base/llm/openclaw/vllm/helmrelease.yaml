@@ -1,0 +1,158 @@
+--- # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vllm
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      vllm:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          model-download:
+            image:
+              repository: python
+              tag: 3.12-slim
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                set -euo pipefail
+
+                if [ ! -f /models/qwen35-0p8b/vocab.json ]; then
+                  pip install --no-cache-dir huggingface_hub
+                  mkdir -p /models/qwen35-0p8b
+                  hf download \
+                    unsloth/Qwen3.5-0.8B \
+                    --local-dir /models/qwen35-0p8b
+
+                  echo "Qwen3.5-0.8B download complete"
+                else
+                  echo "Qwen3.5-0.8B already downloaded, skipping"
+                fi
+            env:
+              HF_HUB_ENABLE_HF_TRANSFER: "1"
+            envFrom:
+              - secretRef:
+                  name: huggingface
+            resources:
+              requests:
+                cpu: 250m
+                memory: 6Gi
+        containers:
+          app:
+            image:
+              repository: docker.io/kyuz0/vllm-therock-gfx1151
+              tag: 20260314-134257@sha256:b2fb85a7f95360f6a47a6b650ef4446a35e9eab299bb676292226bbc11c5310d
+            securityContext:
+              privileged: true
+            command:
+              - vllm
+            args:
+              - serve
+              - /models/qwen35-0p8b
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8000"
+              - --served-model-name
+              - qwen35-0.8b
+              - --gpu-memory-utilization
+              - "0.85"
+              - --enable-auto-tool-choice
+              - --tool-call-parser
+              - qwen3_coder
+              - --enable-prefix-caching
+              - --enable-chunked-prefill
+              - --max-num-batched-tokens
+              - "2048"
+              - --max-num-seqs
+              - "8"
+              - --max-num-partial-prefills
+              - "2"
+              - --max-long-partial-prefills
+              - "1"
+              - --long-prefill-token-threshold
+              - "8192"
+              - --tensor-parallel-size
+              - "1"
+              - --trust-remote-code
+            env:
+              HIP_VISIBLE_DEVICES: "0"
+              HF_HOME: /models/.hf
+              HUGGINGFACE_HUB_CACHE: /models/.hf
+              VLLM_USE_V1: "1"
+            resources:
+              requests:
+                cpu: 1
+                memory: 1Gi
+              limits:
+                memory: 8Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8000
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8000
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  failureThreshold: 12
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8000
+                  failureThreshold: 720
+                  periodSeconds: 10
+    defaultPodOptions:
+      hostIPC: true
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+    service:
+      app:
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.22
+        externalTrafficPolicy: Cluster
+        ports:
+          http:
+            port: 8000
+    persistence:
+      models:
+        existingClaim: llm-models
+        globalMounts:
+          - path: /models
+      dev-dri:
+        type: hostPath
+        hostPath: /dev/dri
+        globalMounts:
+          - path: /dev/dri
+      dev-kfd:
+        type: hostPath
+        hostPath: /dev/kfd
+        globalMounts:
+          - path: /dev/kfd
