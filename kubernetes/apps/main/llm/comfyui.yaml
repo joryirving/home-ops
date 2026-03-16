@@ -7,12 +7,14 @@ metadata:
 spec:
   components:
     - ../../../../../components/gpu
+    - ../../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/llm/comfyui/app
   postBuild:
     substitute:
       APP: *app
       CLUSTER: ${CLUSTER}
+      VOLSYNC_CAPACITY: 10Gi
   prune: true
   sourceRef:
     kind: GitRepository
