@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-27b
+  name: llama-122b
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      llama-27b:
+      llama-122b:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -26,19 +26,21 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen27b/Qwen3.5-27B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen27b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen122b/Qwen3.5-122B-A10B-UD-Q4_K_XL-00003-of-00003.gguf ] || [ ! -s /models/qwen122b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen27b
-                  rm -rf /models/qwen27b/.cache/huggingface/download/Qwen3.5-27B-UD-Q8_K_XL.gguf.lock
+                  mkdir -p /models/qwen122b
+                  rm -rf /models/qwen122b/.cache/huggingface/download/Qwen3.5-122B-A10B-UD-Q4_K_XL-00003-of-00003.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-27B-GGUF \
-                    Qwen3.5-27B-UD-Q8_K_XL.gguf \
+                    unsloth/Qwen3.5-122B-GGUF \
+                    Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf \
+                    Qwen3.5-122B-A10B-UD-Q4_K_XL-00002-of-00003.gguf \
+                    Qwen3.5-122B-A10B-UD-Q4_K_XL-00003-of-00003.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/qwen27b
+                    --local-dir /models/qwen122b
 
-                  echo "Qwen3.5-27b download complete"
+                  echo "Qwen3.5-122B-A10B download complete"
                 else
-                  echo "Qwen3.5-27b already downloaded, skipping"
+                  echo "Qwen3.5-122B-A10B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -66,24 +68,27 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen27b
+              - qwen122b
               - --model
-              - /models/qwen27b/Qwen3.5-27B-UD-Q8_K_XL.gguf
+              - /models/qwen122b/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
               - --mmproj
-              - /models/qwen27b/mmproj-F16.gguf
+              - /models/qwen122b/mmproj-F16.gguf
               - --ctx-size
-              - "600000"
+              - "300000"
               - --n-gpu-layers
               - "99"
               - --flash-attn
               - "on"
               - --parallel
-              - "6"
+              - "3"
               - --cont-batching
               - -sps
-              - "0.95"
+              - "0.90"
               - --no-context-shift
               - --cache-prompt
+              - --cram
+              - "512"
+              - --debug-slot
               - --kv-unified
               - --image-min-tokens
               - "1024"
@@ -100,9 +105,9 @@ spec:
               - --cache-type-v
               - q8_0
               - --batch-size
-              - "2048"
+              - "4096"
               - --ubatch-size
-              - "2048"
+              - "4096"
               - --no-mmap
               - --jinja
             # env:
