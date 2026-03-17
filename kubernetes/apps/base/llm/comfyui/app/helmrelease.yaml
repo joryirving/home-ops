@@ -15,46 +15,86 @@ spec:
       comfyui:
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          seed-openvino-hook:
+            image:
+              repository: docker.io/library/alpine
+              tag: "3.23"
+            command:
+              - /bin/sh
+              - -ec
+            args:
+              - |
+                #!/bin/sh
+                set -eu
+
+                COMFY_ROOT="/root/ComfyUI"
+                CUSTOM_NODES="$COMFY_ROOT/custom_nodes"
+
+                mkdir -p "$CUSTOM_NODES"
+
+                cd "$CUSTOM_NODES"
+
+                # Install/update OpenVINO node
+                if [ ! -d comfyui_openvino ]; then
+                  git clone https://github.com/openvino-dev-samples/comfyui_openvino.git comfyui_openvino
+                else
+                  git -C comfyui_openvino pull --ff-only || true
+                fi
+
+                cd comfyui_openvino
+
+                # Match the plugin's documented dependency ceiling.
+                python3 -m pip install --no-cache-dir "torch<=2.6.0" "torchaudio<=2.6.0"
+                python3 -m pip install --no-cache-dir -r requirements.txt
+
+                # Disable smZNodes on this Intel/OpenVINO pod if present.
+                # Your traceback is going through ComfyUI_smZNodes during sampling.
+                cd "$CUSTOM_NODES"
+                if [ -d ComfyUI_smZNodes ] && [ ! -d .disabled_ComfyUI_smZNodes ]; then
+                  mv ComfyUI_smZNodes .disabled_ComfyUI_smZNodes
+                fi
+
+                # Optional: disable other old sampler patch packs here the same way.
+                # Example:
+                # if [ -d SomeOtherNodePack ] && [ ! -d .disabled_SomeOtherNodePack ]; then
+                #   mv SomeOtherNodePack .disabled_SomeOtherNodePack
+                # fi
+
+                # Install sitecustomize.py directly into site-packages so Python always loads it.
+                PY_SITE="$(python3 - <<'PY'
+                import site, sys
+                paths = site.getsitepackages()
+                print(paths[0] if paths else next(p for p in sys.path if "site-packages" in p))
+                PY
+                )"
+
+                cat > "${PY_SITE}/sitecustomize.py" <<'PY'
+                import torch._dynamo
+                torch._dynamo.config.suppress_errors = True
+                PY
+
+                # Clear stale torch compile caches after dependency changes.
+                rm -rf /root/.cache/torchinductor /root/.cache/torch_extensions 2>/dev/null || true
         containers:
           app:
             image:
-              repository: docker.io/kyuz0/amd-strix-halo-comfyui
-              tag: 20260213-143435@sha256:20e1b4385a0975fcbc188cd842ac121d8feff34813fff5c52b68a3d024a0ea6a
-            securityContext:
-              privileged: true
-            command:
-              - /bin/bash
-              - -lc
-            args:
-              - |
-                set -euo pipefail
-                cd /opt/ComfyUI
-                /opt/venv/bin/python -m pip install --disable-pip-version-check -r /opt/ComfyUI/requirements.txt
-                /opt/venv/bin/python -m pip install --disable-pip-version-check webcolors matplotlib || true
-                python main.py $CLI_ARGS
+              repository: yanwk/comfyui-boot
+              tag: cpu@sha256:15cdc0d610680462c5597222c3f91e61af0b8a3f31f8f0cf28231d6d2348100b
             env:
-              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
-              HSA_ENABLE_SDMA: "0"
-              HIP_VISIBLE_DEVICES: "0"
-              ROCR_VISIBLE_DEVICES: "0"
-              TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL: "1"
-              TORCH_BLAS_PREFER_HIPBLASLT: "1"
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --bf16-vae --disable-mmap --cache-lru 1"
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --cpu --use-pytorch-cross-attention"
             resources:
+              claims:
+                - name: gpu
               requests:
                 cpu: 1
                 memory: 4Gi
               limits:
-                cpu: 6
                 memory: 16Gi
     defaultPodOptions:
-      hostIPC: true
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: comfyui-gpu
     service:
       app:
         ports:
@@ -70,23 +110,13 @@ spec:
       comfyui:
         existingClaim: "comfyui"
         globalMounts:
-          - path: /opt/ComfyUI/
+          - path: /root/
       data:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/comfyui/
         globalMounts:
-          - path: /opt/ComfyUI/output
+          - path: /root/ComfyUI/output
             subPath: output
-          - path: /opt/ComfyUI/input
+          - path: /root/ComfyUI/input
             subPath: input
-      dev-dri:
-        type: hostPath
-        hostPath: /dev/dri
-        globalMounts:
-          - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd

@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-server
+  name: llama-35b
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,92 +12,83 @@ spec:
   interval: 15m
   values:
     controllers:
-      llama-server:
+      llama-35b:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
           model-download:
             image:
-              repository: curlimages/curl
-              tag: 8.18.0
+              repository: python
+              tag: 3.14-slim
             command:
               - /bin/sh
               - -ec
               - |
                 set -euo pipefail
 
-                MODEL_DST="/models/qwen122b/wen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf"
-                MMPROJ_DST="/models/qwen122b/mmproj-F16.gguf"
+                if [ ! -s /models/qwen35b/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf ] || [ ! -s /models/qwen35b/mmproj-F16.gguf ]; then
+                  pip install --no-cache-dir huggingface_hub
+                  mkdir -p /models/qwen35b
+                  rm -rf /models/qwen35b/.cache/huggingface/download/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf.lock
+                  hf download \
+                    unsloth/Qwen3.5-35B-A3B-GGUF \
+                    Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf \
+                    mmproj-F16.gguf \
+                    --local-dir /models/qwen35b
 
-                mkdir -p "$(dirname "$MODEL_DST")" "$(dirname "$MMPROJ_DST")"
-
-                for shard in \
-                  Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf \
-                  Qwen3.5-122B-A10B-UD-Q4_K_XL-00002-of-00003.gguf \
-                  Qwen3.5-122B-A10B-UD-Q4_K_XL-00003-of-00003.gguf; do
-                  shard_dst="/models/qwen122b/${shard}"
-                  if [ ! -s "$shard_dst" ]; then
-                    echo "Downloading $shard..."
-                    curl -fL --retry 10 --retry-delay 5 --retry-all-errors \
-                      "${MODEL_BASE_URL}/${shard}" -o "$shard_dst"
-                  else
-                    echo "$shard already exists, skipping download"
-                  fi
-                done
-
-                if [ ! -s "$MMPROJ_DST" ]; then
-                  echo "Downloading mmproj..."
-                  curl -fL --retry 10 --retry-delay 5 --retry-all-errors \
-                    "$MMPROJ_URL" -o "$MMPROJ_DST"
+                  echo "Qwen3.5-35B-A3B download complete"
                 else
-                  echo "mmproj already exists, skipping download"
+                  echo "Qwen3.5-35B-A3B already downloaded, skipping"
                 fi
             env:
-              MODEL_BASE_URL: https://huggingface.co/unsloth/Qwen3.5-122B-A10B-UD-Q4_K_XL/resolve/main
-              MMPROJ_URL: https://huggingface.co/unsloth/Qwen3.5-122B-A10B-GGUF/resolve/main/mmproj-F16.gguf
+              HF_HUB_ENABLE_HF_TRANSFER: "1"
+            envFrom:
+              - secretRef:
+                  name: huggingface
             resources:
               requests:
-                cpu: 100m
-                memory: 256Mi
+                cpu: 250m
+                memory: 512Mi
               limits:
-                memory: 1Gi
+                memory: 4Gi
         containers:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm7-nightlies_20260312T131453@sha256:98fac00c98eeee250dc0ee694890871bf5c51146667577df15e83454dbece95b
+              tag: vulkan-radv@sha256:92152ba182dffc3037311c30e3905a594b7bbcae42aec23876c72cd4348a65db
             securityContext:
               privileged: true
             command:
-              - /usr/local/bin/llama-server
+              - llama-server
             args:
               - --host
               - 0.0.0.0
               - --port
               - "8080"
               - --alias
-              - qwen122b
+              - qwen35b
               - --model
-              - /models/qwen122b/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
+              - /models/qwen35b/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf
               - --mmproj
-              - /models/qwen122b/mmproj-F16.gguf
+              - /models/qwen35b/mmproj-F16.gguf
               - --ctx-size
-              - "200000"
+              - "131072"
               - --n-gpu-layers
               - "99"
               - --flash-attn
               - "on"
               - --parallel
-              - "2"
+              - "1"
               - --cont-batching
-              - --slot-save-path
-              - "/models/qwen122b/slots"
               - -sps
-              - "0.95"
+              - "0.90"
               - --no-context-shift
               - --cache-prompt
+              - --kv-unified
+              - --image-min-tokens
+              - "1024"
               - --temp
-              - "0.5"
+              - "0.2"
               - --top-p
               - "0.95"
               - --top-k
@@ -105,26 +96,26 @@ spec:
               - --min-p
               - "0"
               - --cache-type-k
-              - q8_0
+              - q4_0
               - --cache-type-v
-              - q8_0
+              - q4_0
               - --batch-size
               - "2048"
               - --ubatch-size
-              - "1024"
+              - "2048"
               - --no-mmap
               - --jinja
-            env:
-              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
-              HSA_ENABLE_SDMA: "0"
-              ROCBLAS_USE_HIPBLASLT: "1"
-              HIP_VISIBLE_DEVICES: "0"
+            # env:
+            #   HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+            #   HSA_ENABLE_SDMA: "0"
+            #   ROCBLAS_USE_HIPBLASLT: "1"
+            #   HIP_VISIBLE_DEVICES: "0"
             resources:
               requests:
                 cpu: 1
-                memory: 32Gi
+                memory: 20Gi
               limits:
-                memory: 100Gi
+                memory: 60Gi
             probes:
               liveness:
                 enabled: true
@@ -182,8 +173,3 @@ spec:
         hostPath: /dev/dri
         globalMounts:
           - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd
