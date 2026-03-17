@@ -18,34 +18,22 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/kyuz0/amd-strix-halo-comfyui
-              tag: 20260213-143435@sha256:20e1b4385a0975fcbc188cd842ac121d8feff34813fff5c52b68a3d024a0ea6a
+              repository: yanwk/comfyui-boot
+              tag: rocm7@sha256:dd435f0b8b5abc49c64e37557e04ff25662d853fc6baa25ca2d8f2e6e6503726
             securityContext:
               privileged: true
-            command:
-              - /bin/bash
-              - -lc
-            args:
-              - |
-                set -euo pipefail
-                cd /opt/ComfyUI
-                /opt/venv/bin/python -m pip install --disable-pip-version-check -r /opt/ComfyUI/requirements.txt
-                /opt/venv/bin/python -m pip install --disable-pip-version-check webcolors matplotlib || true
-                python main.py $CLI_ARGS
             env:
               HSA_OVERRIDE_GFX_VERSION: "11.5.1"
               HSA_ENABLE_SDMA: "0"
               HIP_VISIBLE_DEVICES: "0"
               ROCR_VISIBLE_DEVICES: "0"
-              TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL: "1"
-              TORCH_BLAS_PREFER_HIPBLASLT: "1"
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --bf16-vae --disable-mmap --cache-lru 1"
+              PYTORCH_HIP_ALLOC_CONF: "max_split_size_mb:256,garbage_collection_threshold:0.6"
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --lowvram --reserve-vram 118"
             resources:
               requests:
                 cpu: 1
-                memory: 4Gi
+                memory: 8Gi
               limits:
-                cpu: 6
                 memory: 16Gi
     defaultPodOptions:
       hostIPC: true
@@ -70,15 +58,15 @@ spec:
       comfyui:
         existingClaim: "comfyui"
         globalMounts:
-          - path: /opt/ComfyUI/
+          - path: /root/ComfyUI/
       data:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/comfyui/
         globalMounts:
-          - path: /opt/ComfyUI/output
+          - path: /root/ComfyUI/output
             subPath: output
-          - path: /opt/ComfyUI/input
+          - path: /root/ComfyUI/input
             subPath: input
       dev-dri:
         type: hostPath
