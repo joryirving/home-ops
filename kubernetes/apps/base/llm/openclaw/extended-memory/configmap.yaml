@@ -219,9 +219,7 @@ data:
         conn.close()
         return jsonify({"updated": True})
     
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=3000)
-    # Item CRUD endpoints (added to fix missing API)
+    # Item CRUD endpoints
     @app.route('/api/items', methods=['GET'])
     def get_all_items():
         list_id = request.args.get('list_id')
@@ -262,4 +260,7 @@ data:
         conn.commit()
         conn.close()
         return jsonify({"deleted": True})
+    
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=3000)
     
