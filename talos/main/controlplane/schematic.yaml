@@ -11,10 +11,14 @@ customization:
     - mitigations=off                     # Less security, faster puter
     - security=none                       # Less security, faster puter
     - talos.auditd.disabled=1             # Less security, faster puter
+    - i915.enable_guc=3                   # Enable GuC and HuC for better graphics performance and stability
+    - i915.force_probe=!a7a0              # Disable iGPU deviceID for i915
+    - xe.force_probe=a7a0                 # Enable iGPU deviceID for xe
 
   systemExtensions:
     officialExtensions:
       - siderolabs/xe                     # Intel iGPU (XE)
+      - siderolabs/i915                   # Intel iGPU (i915)
       - siderolabs/intel-ucode            # Intel iGPU
       - siderolabs/mei                    # Intel iGPU
       - siderolabs/nfsrahead              # NFS Performance
