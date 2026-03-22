@@ -27,6 +27,9 @@ jobs:
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-coder.llm:8080/v1' }}
       AI_MODEL: ${{ vars.AI_MODEL || 'qwen3-coder-next' }}
+      OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL || 'https://api.openai.com/v1' }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL || '' }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout
@@ -73,6 +76,10 @@ jobs:
           set -euo pipefail
           : "${AI_BASE_URL:?Missing variable AI_BASE_URL}"
           : "${AI_MODEL:?Missing variable AI_MODEL}"
+
+          if [ -n "${OPENAI_API_KEY:-}" ] && [ -z "${OPENAI_MODEL:-}" ]; then
+            echo "OPENAI_API_KEY is set but OPENAI_MODEL is empty; fallback will be disabled" >&2
+          fi
 
       - name: Collect PR context
         run: |
@@ -303,16 +310,41 @@ jobs:
             --rawfile corpus review-corpus.truncated.md \
             '{model:$model,messages:[{role:"system",content:$system},{role:"user",content:($user + "\n\n" + $corpus)}],temperature:0.1}' > ai-request.json
 
-          curl -fsSL "$AI_BASE_URL/chat/completions" \
+          parse_and_validate() {
+            local response_file="$1"
+            jq -r '.choices[0].message.content // empty' "$response_file" > ai-output.raw
+            sed -e 's/^```json$//' -e 's/^```$//' ai-output.raw | sed '/^$/d' > ai-output.json
+            jq . ai-output.json > /dev/null
+            jq -e '.verdict == "approve" or .verdict == "request_changes"' ai-output.json > /dev/null
+            jq -e '.review_markdown and (.review_markdown | length > 0)' ai-output.json > /dev/null
+          }
+
+          echo "Using primary model: $AI_MODEL @ $AI_BASE_URL"
+          if curl -fsSL "$AI_BASE_URL/chat/completions" \
             -H "Content-Type: application/json" \
-            --data @ai-request.json > ai-response.json
+            --data @ai-request.json > ai-response.primary.json \
+            && parse_and_validate ai-response.primary.json; then
+            echo "Primary model succeeded"
+          else
+            echo "Primary model failed or returned invalid output" >&2
 
-          jq -r '.choices[0].message.content // empty' ai-response.json > ai-output.raw
-          sed -e 's/^```json$//' -e 's/^```$//' ai-output.raw | sed '/^$/d' > ai-output.json
-          jq . ai-output.json > /dev/null
+            if [ -n "${OPENAI_API_KEY:-}" ] && [ -n "${OPENAI_MODEL:-}" ]; then
+              echo "Trying OpenAI fallback model: $OPENAI_MODEL @ $OPENAI_BASE_URL" >&2
 
-          jq -e '.verdict == "approve" or .verdict == "request_changes"' ai-output.json > /dev/null
-          jq -e '.review_markdown and (.review_markdown | length > 0)' ai-output.json > /dev/null
+              jq --arg model "$OPENAI_MODEL" '.model = $model' ai-request.json > ai-request.fallback.json
+
+              curl -fsSL "$OPENAI_BASE_URL/chat/completions" \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $OPENAI_API_KEY" \
+                --data @ai-request.fallback.json > ai-response.fallback.json
+
+              parse_and_validate ai-response.fallback.json
+              echo "OpenAI fallback succeeded" >&2
+            else
+              echo "OpenAI fallback not configured (need OPENAI_API_KEY and OPENAI_MODEL)." >&2
+              exit 1
+            fi
+          fi
 
       - name: Build final review body
         run: |
