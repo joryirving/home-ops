@@ -303,7 +303,17 @@ jobs:
           set -euo pipefail
 
           reviewer_login=$(gh api user --jq '.login')
-          review_ids=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews"             --jq ".[] | select(.user.login==\"${reviewer_login}\" and .state!=\"DISMISSED\") | .id")
+
+          set +e
+          review_ids=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews"             --jq ".[] | select(.user.login==\"${reviewer_login}\" and .state!=\"DISMISSED\") | .id" 2>dismiss-error.log)
+          list_rc=$?
+          set -e
+
+          if [ $list_rc -ne 0 ]; then
+            echo "Skipping prior-review dismissal (insufficient permissions for ${reviewer_login})."
+            cat dismiss-error.log || true
+            exit 0
+          fi
 
           if [ -z "$review_ids" ]; then
             echo "No prior non-dismissed bot reviews to dismiss for ${reviewer_login}."
@@ -312,7 +322,13 @@ jobs:
 
           while read -r review_id; do
             [ -z "$review_id" ] && continue
-            gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$review_id/dismissals"               -f message="Superseded by updated automated review for ${HEAD_SHA}." || true
+            set +e
+            gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$review_id/dismissals"               -f message="Superseded by updated automated review for ${HEAD_SHA}." >/dev/null 2>&1
+            dismiss_rc=$?
+            set -e
+            if [ $dismiss_rc -ne 0 ]; then
+              echo "Could not dismiss review ${review_id} (continuing)."
+            fi
           done <<< "$review_ids"
 
       - name: Submit updated review
