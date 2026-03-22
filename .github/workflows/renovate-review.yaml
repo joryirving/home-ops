@@ -1,0 +1,171 @@
+---
+name: Renovate PR Review (AI)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: renovate-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.event.pull_request.user.login == 'renovate[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+      AI_MODEL: ${{ vars.AI_MODEL }}
+      AI_API_KEY: ${{ secrets.AI_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate AI config
+        run: |
+          set -euo pipefail
+          : "${AI_BASE_URL:?Missing repo/org variable AI_BASE_URL}"
+          : "${AI_MODEL:?Missing repo/org variable AI_MODEL}"
+          : "${AI_API_KEY:?Missing repo/org secret AI_API_KEY}"
+
+      - name: Build review context
+        id: ctx
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json number,title,body,headRefOid,baseRefName,headRefName,author,changedFiles,additions,deletions > pr.json
+          gh pr diff "$PR_NUMBER" --repo "$REPO" > pr.diff
+
+          # Skip if we've already reviewed this exact head SHA
+          HEAD_SHA=$(jq -r '.headRefOid' pr.json)
+          if gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --jq '.[] | select(.user.login=="github-actions[bot]") | .body' | grep -Fq "<!-- renovate-review-sha:${HEAD_SHA} -->"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Limit diff size to avoid runaway prompts
+          head -c 180000 pr.diff > pr.diff.truncated
+
+          jq -n \
+            --argjson pr "$(cat pr.json)" \
+            --arg diff "$(cat pr.diff.truncated)" \
+            '{pr:$pr,diff:$diff}' > review-context.json
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Analyze with AI (no Claude)
+        if: steps.ctx.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+
+          SYSTEM_PROMPT=$(cat <<'EOF'
+You are an expert dependency upgrade reviewer for a Flux/Kubernetes GitOps repository.
+
+Goal: Produce a PR review for Renovate upgrades.
+- Determine if upgrade is safe.
+- Identify breaking changes/deprecations that affect this repo.
+- Mention useful new features worth adoption.
+- Be specific with impacted files when possible.
+
+Output STRICT JSON only with this schema:
+{
+  "verdict": "approve" | "request_changes",
+  "summary": "short sentence",
+  "packages": [
+    {
+      "name": "string",
+      "from": "string",
+      "to": "string",
+      "verdict": "safe" | "changes_required",
+      "breaking_changes": ["..."],
+      "deprecations": ["..."],
+      "new_features": ["..."],
+      "affected_files": ["path"],
+      "fixes": ["..."]
+    }
+  ],
+  "sources": ["url or release/changelog location used"]
+}
+
+Rules:
+- If uncertain, be explicit; do not invent.
+- If no actionable risk: verdict=approve.
+- If actionable breaking/deprecation in this repo: verdict=request_changes.
+EOF
+)
+
+          USER_PROMPT=$(cat <<'EOF'
+Analyze this Renovate PR context and return JSON per schema.
+
+EOF
+)
+
+          jq -n \
+            --arg model "$AI_MODEL" \
+            --arg system "$SYSTEM_PROMPT" \
+            --arg user "$USER_PROMPT" \
+            --argjson ctx "$(cat review-context.json)" \
+            '{model:$model, messages:[{role:"system",content:$system},{role:"user",content:($user + "\n" + ($ctx|tojson))}], temperature:0.1}' > ai-request.json
+
+          curl -fsSL "$AI_BASE_URL/chat/completions" \
+            -H "Authorization: Bearer $AI_API_KEY" \
+            -H "Content-Type: application/json" \
+            --data @ai-request.json > ai-response.json
+
+          jq -r '.choices[0].message.content' ai-response.json > ai-output.raw
+          # tolerate fenced json
+          sed -e 's/^```json$//' -e 's/^```$//' ai-output.raw | sed '/^$/d' > ai-output.json
+          jq . ai-output.json > /dev/null
+
+      - name: Post review
+        if: steps.ctx.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          HEAD_SHA=$(jq -r '.headRefOid' pr.json)
+          VERDICT=$(jq -r '.verdict' ai-output.json)
+
+          {
+            echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
+            echo "### Renovate Review"
+            echo
+            echo "**Summary**: $(jq -r '.summary' ai-output.json)"
+            echo
+            jq -r '
+              .packages[]? |
+              "### \(.name): \(.from) → \(.to)\n" +
+              "**Verdict**: " + (if .verdict=="safe" then "Safe to merge" else "Changes required before merge" end) + "\n\n" +
+              (if (.breaking_changes|length)>0 then "**Breaking changes**:\n" + ((.breaking_changes[] | "- " + .) | join("\n")) + "\n\n" else "" end) +
+              (if (.deprecations|length)>0 then "**Deprecations**:\n" + ((.deprecations[] | "- " + .) | join("\n")) + "\n\n" else "" end) +
+              (if (.new_features|length)>0 then "**New features worth adopting**:\n" + ((.new_features[] | "- " + .) | join("\n")) + "\n\n" else "" end) +
+              (if (.affected_files|length)>0 then "**Affected files**:\n" + ((.affected_files[] | "- `" + . + "`") | join("\n")) + "\n\n" else "" end) +
+              (if (.fixes|length)>0 then "**Fixes**:\n" + ((.fixes[] | "- " + .) | join("\n")) + "\n\n" else "" end)
+            ' ai-output.json
+            echo "**Sources consulted**:"
+            jq -r '.sources[]? | "- " + .' ai-output.json
+          } > review-body.md
+
+          if [ "$VERDICT" = "request_changes" ]; then
+            gh pr review "$PR_NUMBER" --repo "$REPO" --request-changes --body-file review-body.md
+          else
+            gh pr review "$PR_NUMBER" --repo "$REPO" --approve --body-file review-body.md
+          fi
+
+      - name: Skip note
+        if: steps.ctx.outputs.skip == 'true'
+        run: echo "Already reviewed this exact head SHA; skipping."
