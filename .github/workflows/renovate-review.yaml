@@ -1,0 +1,302 @@
+---
+name: Renovate PR Review (AI Deep)
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: renovate-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review-renovate-pr:
+    name: Deep Renovate Review
+    if: github.event.pull_request.user.login == 'renovate[bot]'
+    runs-on: home-ops-runner-main
+    timeout-minutes: 35
+
+    env:
+      REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-coder.llm:8080/v1' }}
+      AI_MODEL: ${{ vars.AI_MODEL || 'qwen3-coder-next' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Validate runtime dependencies
+        run: |
+          set -euo pipefail
+          command -v gh >/dev/null
+          command -v jq >/dev/null
+          command -v curl >/dev/null
+          command -v git >/dev/null
+
+      - name: Validate AI config
+        run: |
+          set -euo pipefail
+          : "${AI_BASE_URL:?Missing variable AI_BASE_URL}"
+          : "${AI_MODEL:?Missing variable AI_MODEL}"
+
+      - name: Collect PR context
+        run: |
+          set -euo pipefail
+
+          gh pr view "$PR_NUMBER" --repo "$REPO" \
+            --json number,title,body,headRefOid,baseRefName,headRefName,author,changedFiles,additions,deletions,files,url > pr.json
+
+          gh pr diff "$PR_NUMBER" --repo "$REPO" > pr.diff
+          head -c 140000 pr.diff > pr.diff.truncated
+
+          gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate > pr-files.raw.json
+          jq '[.[] | {filename,status,additions,deletions,changes,previous_filename,patch}]' pr-files.raw.json > pr-files.json
+          head -c 70000 pr-files.json > pr-files.truncated.json
+
+          jq -r '.body // ""' pr.json > pr-body.txt
+
+          cat pr-body.txt pr.diff.truncated \
+            | grep -Eo 'https?://[^ )]+' \
+            | sed 's/[",.;]$//' \
+            | sort -u \
+            | head -n 12 > urls.txt || true
+
+          grep -E '^[+-].*(image:|tag:|version:|chart:|appVersion:|digest:)' pr.diff.truncated > version-hints.txt || true
+          head -n 180 version-hints.txt > version-hints.truncated.txt || true
+
+      - name: Gather linked sources
+        run: |
+          set -euo pipefail
+
+          : > linked-sources.md
+          if [ ! -s urls.txt ]; then
+            echo "No URLs found in PR body/diff." > linked-sources.md
+            exit 0
+          fi
+
+          i=0
+          while IFS= read -r url; do
+            [ -z "$url" ] && continue
+            i=$((i+1))
+            [ "$i" -gt 12 ] && break
+
+            {
+              echo "## Source $i"
+              echo "URL: $url"
+              echo
+              echo "### Fetched Content (truncated)"
+            } >> linked-sources.md
+
+            if curl -fsSL -L --max-time 25 "$url" | tr '\0' ' ' | head -c 5000 > source.tmp 2>/dev/null; then
+              if [ -s source.tmp ]; then
+                echo '```text' >> linked-sources.md
+                cat source.tmp >> linked-sources.md
+                echo >> linked-sources.md
+                echo '```' >> linked-sources.md
+              else
+                echo "(No content captured from URL)" >> linked-sources.md
+              fi
+            else
+              echo "(Failed to fetch URL content)" >> linked-sources.md
+            fi
+
+            if [[ "$url" =~ ^https?://github\.com/([^/]+)/([^/]+)/releases/tag/([^/?#]+) ]]; then
+              owner="${BASH_REMATCH[1]}"
+              repo="${BASH_REMATCH[2]}"
+              tag="${BASH_REMATCH[3]}"
+
+              echo >> linked-sources.md
+              echo "### GitHub Release Metadata: $owner/$repo@$tag" >> linked-sources.md
+
+              if gh api "repos/$owner/$repo/releases/tags/$tag" > gh-release.json 2>/dev/null; then
+                jq '{tag_name,name,published_at,html_url,body}' gh-release.json > gh-release.filtered.json
+                echo '```json' >> linked-sources.md
+                head -c 5000 gh-release.filtered.json >> linked-sources.md
+                echo >> linked-sources.md
+                echo '```' >> linked-sources.md
+              else
+                echo "(Could not fetch release metadata for tag $tag)" >> linked-sources.md
+              fi
+
+              if gh api "repos/$owner/$repo/releases?per_page=8" > gh-releases.json 2>/dev/null; then
+                jq '[.[] | {tag_name,name,published_at,html_url}]' gh-releases.json > gh-releases.filtered.json
+                echo "### Recent Releases" >> linked-sources.md
+                echo '```json' >> linked-sources.md
+                head -c 3000 gh-releases.filtered.json >> linked-sources.md
+                echo >> linked-sources.md
+                echo '```' >> linked-sources.md
+              fi
+            fi
+
+            echo >> linked-sources.md
+          done < urls.txt
+
+      - name: Gather repo impact + history context
+        run: |
+          set -euo pipefail
+
+          {
+            jq -r '.title, (.body // "")' pr.json
+            cat version-hints.truncated.txt 2>/dev/null || true
+          } \
+            | tr '[:upper:]' '[:lower:]' \
+            | grep -Eo '[a-z0-9][a-z0-9._/-]{2,}' \
+            | grep -Ev '^(https?|from|into|that|this|with|without|renovate|pull|request|release|notes|digest|sha|main|chart|image|version|kubernetes|github|com|www|docker|ghcr|io)$' \
+            | sort -u \
+            | head -n 14 > terms.txt || true
+
+          : > repo-impact.md
+          : > repo-history.md
+
+          if [ ! -s terms.txt ]; then
+            echo "No candidate dependency terms extracted." > repo-impact.md
+            echo "No candidate dependency terms extracted." > repo-history.md
+            exit 0
+          fi
+
+          while IFS= read -r term; do
+            [ -z "$term" ] && continue
+
+            {
+              echo "## Term: $term"
+              echo
+              echo "### git grep hits"
+              echo '```text'
+              git grep -n -- "$term" -- \
+                kubernetes \
+                .github \
+                docs \
+                2>/dev/null | head -n 60 || true
+              echo '```'
+              echo
+            } >> repo-impact.md
+
+            {
+              echo "## Term: $term"
+              echo
+              echo "### git log context"
+              echo '```text'
+              git log --oneline --decorate --grep="$term" -n 10 || true
+              echo '```'
+              echo
+            } >> repo-history.md
+          done < terms.txt
+
+          head -c 45000 repo-impact.md > repo-impact.truncated.md
+          head -c 20000 repo-history.md > repo-history.truncated.md
+
+      - name: Build review corpus
+        run: |
+          set -euo pipefail
+
+          {
+            echo "# PR Metadata"
+            echo '```json'
+            jq . pr.json
+            echo '```'
+            echo
+            echo "# PR Files (truncated)"
+            echo '```json'
+            cat pr-files.truncated.json
+            echo
+            echo '```'
+            echo
+            echo "# Version Hints from Diff"
+            echo '```text'
+            cat version-hints.truncated.txt 2>/dev/null || echo "(none)"
+            echo '```'
+            echo
+            echo "# PR Diff (truncated)"
+            echo '```diff'
+            cat pr.diff.truncated
+            echo
+            echo '```'
+            echo
+            echo "# Linked Sources"
+            cat linked-sources.md
+            echo
+            echo "# Repository Impact Scan"
+            cat repo-impact.truncated.md
+            echo
+            echo "# Repository History"
+            cat repo-history.truncated.md
+          } > review-corpus.md
+
+          head -c 220000 review-corpus.md > review-corpus.truncated.md
+
+      - name: Analyze with local AI model
+        run: |
+          set -euo pipefail
+
+          SYSTEM_PROMPT="You research dependency upgrades in Renovate pull requests and produce a GitHub PR review. You do NOT modify files. This is a Flux GitOps Kubernetes repository. Use ONLY the provided corpus (PR metadata, diff, linked sources, repo impact scan, repo history). Do not invent facts. Method: identify upgrades (including wrapper vs upstream), trace release/changelog evidence, map findings to actual repo usage, classify breaking changes/deprecations/new features, then choose verdict approve or request_changes. Return STRICT JSON with keys verdict, review_markdown, and packages[]. review_markdown must be fully human-readable markdown with summary/recommendation, per-package sections, sources, and an Unknowns/Needs verification section if evidence is incomplete."
+
+          jq -n \
+            --arg model "$AI_MODEL" \
+            --arg system "$SYSTEM_PROMPT" \
+            --arg user "Analyze this Renovate PR corpus and return STRICT JSON." \
+            --rawfile corpus review-corpus.truncated.md \
+            '{model:$model,messages:[{role:"system",content:$system},{role:"user",content:($user + "\n\n" + $corpus)}],temperature:0.1}' > ai-request.json
+
+          curl -fsSL "$AI_BASE_URL/chat/completions" \
+            -H "Content-Type: application/json" \
+            --data @ai-request.json > ai-response.json
+
+          jq -r '.choices[0].message.content // empty' ai-response.json > ai-output.raw
+          sed -e 's/^```json$//' -e 's/^```$//' ai-output.raw | sed '/^$/d' > ai-output.json
+          jq . ai-output.json > /dev/null
+
+          jq -e '.verdict == "approve" or .verdict == "request_changes"' ai-output.json > /dev/null
+          jq -e '.review_markdown and (.review_markdown | length > 0)' ai-output.json > /dev/null
+
+      - name: Build final review body
+        run: |
+          set -euo pipefail
+
+          VERDICT=$(jq -r '.verdict' ai-output.json)
+          REVIEW_BODY=$(jq -r '.review_markdown' ai-output.json)
+
+          {
+            echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
+            echo "$REVIEW_BODY"
+          } > review-body.md
+
+          echo "$VERDICT" > verdict.txt
+
+      - name: Dismiss prior bot reviews (superseded)
+        run: |
+          set -euo pipefail
+
+          review_ids=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+            --jq '.[] | select(.user.login=="github-actions[bot]" and .state!="DISMISSED") | .id')
+
+          if [ -z "$review_ids" ]; then
+            echo "No prior non-dismissed bot reviews to dismiss."
+            exit 0
+          fi
+
+          while read -r review_id; do
+            [ -z "$review_id" ] && continue
+            gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$review_id/dismissals" \
+              -f message="Superseded by updated automated review for ${HEAD_SHA}." || true
+          done <<< "$review_ids"
+
+      - name: Submit updated review
+        run: |
+          set -euo pipefail
+          VERDICT=$(cat verdict.txt)
+
+          if [ "$VERDICT" = "request_changes" ]; then
+            gh pr review "$PR_NUMBER" --repo "$REPO" --request-changes --body-file review-body.md
+          else
+            gh pr review "$PR_NUMBER" --repo "$REPO" --approve --body-file review-body.md
+          fi
