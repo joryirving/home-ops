@@ -35,6 +35,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@dafbe7cb03502b260e2b2893c753c352eee545bf # v3.2.1
+        with:
+          connect-host: ${{ secrets.dashboardsCONNECT_HOST || secrets.OP_CONNECT_HOST }}
+          connect-token: ${{ secrets.dashboardsCONNECT_TOKEN || secrets.OP_CONNECT_TOKEN }}
+
+      - name: Get Secrets
+        uses: 1password/load-secrets-action@dafbe7cb03502b260e2b2893c753c352eee545bf # v3.2.1
+        with:
+          export-env: true
+        env:
+          BOT_APP_ID: op://Kubernetes/openclaw/MISO_BOT_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/openclaw/MISO_BOT_PRIVATE_KEY
+
+      - name: Generate bot token (miso-assistant)
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ env.BOT_APP_ID }}
+          private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
+
+      - name: Prefer bot token for GitHub API/reviews
+        run: |
+          set -euo pipefail
+          echo "GH_TOKEN=${{ steps.app-token.outputs.token }}" >> "$GITHUB_ENV"
+
       - name: Validate runtime dependencies
         run: |
           set -euo pipefail
@@ -276,18 +302,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          review_ids=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
-            --jq '.[] | select(.user.login=="github-actions[bot]" and .state!="DISMISSED") | .id')
+          reviewer_login=$(gh api user --jq '.login')
+          review_ids=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews"             --jq ".[] | select(.user.login==\"${reviewer_login}\" and .state!=\"DISMISSED\") | .id")
 
           if [ -z "$review_ids" ]; then
-            echo "No prior non-dismissed bot reviews to dismiss."
+            echo "No prior non-dismissed bot reviews to dismiss for ${reviewer_login}."
             exit 0
           fi
 
           while read -r review_id; do
             [ -z "$review_id" ] && continue
-            gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$review_id/dismissals" \
-              -f message="Superseded by updated automated review for ${HEAD_SHA}." || true
+            gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$review_id/dismissals"               -f message="Superseded by updated automated review for ${HEAD_SHA}." || true
           done <<< "$review_ids"
 
       - name: Submit updated review
@@ -296,7 +321,35 @@ jobs:
           VERDICT=$(cat verdict.txt)
 
           if [ "$VERDICT" = "request_changes" ]; then
-            gh pr review "$PR_NUMBER" --repo "$REPO" --request-changes --body-file review-body.md
+            REVIEW_FLAG="--request-changes"
+            FALLBACK_PREFIX="⚠️ **Automated recommendation: REQUEST CHANGES** (fallback comment)"
           else
-            gh pr review "$PR_NUMBER" --repo "$REPO" --approve --body-file review-body.md
+            REVIEW_FLAG="--approve"
+            FALLBACK_PREFIX="✅ **Automated recommendation: APPROVE** (fallback comment)"
           fi
+
+          set +e
+          gh pr review "$PR_NUMBER" --repo "$REPO" "$REVIEW_FLAG" --body-file review-body.md 2>review-error.log
+          rc=$?
+          set -e
+
+          if [ $rc -eq 0 ]; then
+            echo "Submitted PR review successfully."
+            exit 0
+          fi
+
+          if grep -qiE "not permitted to approve pull requests|not permitted to request changes|Resource not accessible by integration" review-error.log; then
+            echo "Formal review not permitted for GITHUB_TOKEN; posting fallback comment instead."
+            {
+              echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
+              echo "$FALLBACK_PREFIX"
+              echo
+              cat review-body.md
+            } > review-comment.md
+            gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file review-comment.md
+            exit 0
+          fi
+
+          echo "Failed to submit review for an unexpected reason:"
+          cat review-error.log
+          exit $rc
