@@ -18,7 +18,6 @@ jobs:
   review-renovate-pr:
     name: Deep Renovate Review
     if: github.event.pull_request.user.login == 'renovate[bot]'
-    # In-cluster self-hosted runner so internal DNS endpoints are reachable.
     runs-on: home-ops-runner-main
     timeout-minutes: 35
 
@@ -111,7 +110,6 @@ jobs:
               echo "(Failed to fetch URL content)" >> linked-sources.md
             fi
 
-            # Enrich GitHub release URLs with structured release metadata.
             if [[ "$url" =~ ^https?://github\.com/([^/]+)/([^/]+)/releases/tag/([^/?#]+) ]]; then
               owner="${BASH_REMATCH[1]}"
               repo="${BASH_REMATCH[2]}"
@@ -147,7 +145,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Candidate terms from title/body/version hints for local impact checks.
           {
             jq -r '.title, (.body // "")' pr.json
             cat version-hints.truncated.txt 2>/dev/null || true
@@ -241,59 +238,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          SYSTEM_PROMPT=$(cat <<'EOF'
-You research dependency upgrades in Renovate pull requests and produce a GitHub PR review.
-You do NOT modify files.
-
-You are reviewing a Flux GitOps Kubernetes repository where dependencies include:
-- Container images in manifests/HelmRelease CRDs
-- Helm chart versions
-- GitHub Actions and tooling versions
-- Regex-managed dependencies in YAML
-
-Use ONLY the provided corpus (PR metadata, diff, linked sources, repo impact scan, repo history).
-Do not invent facts. If evidence is missing, state exactly what is missing.
-
-Required method:
-1) Identify what is being upgraded (wrapper and underlying component when applicable).
-2) Trace release/changelog evidence across relevant versions when present.
-3) Map findings to actual usage in this repo using impacted files/search hits.
-4) Classify into:
-   - Breaking changes (actionable now)
-   - Deprecations (treat as actionable)
-   - New features worth adopting
-5) Decide verdict:
-   - approve: no actionable break/deprecation risk
-   - request_changes: actionable risk exists
-
-Return STRICT JSON:
-{
-  "verdict": "approve" | "request_changes",
-  "review_markdown": "human-readable markdown review body",
-  "packages": [
-    {
-      "name": "string",
-      "from": "string",
-      "to": "string",
-      "verdict": "safe" | "changes_required",
-      "breaking_changes": ["..."],
-      "deprecations": ["..."],
-      "new_features": ["..."],
-      "affected_files": ["path"],
-      "fixes": ["..."],
-      "sources": ["url or source reference"]
-    }
-  ]
-}
-
-For review_markdown:
-- Must be fully human-readable markdown (no JSON blocks).
-- Include a top summary + recommendation.
-- Include per-package sections with concrete file paths where relevant.
-- Include a Sources section.
-- If uncertain, include an explicit "Unknowns / Needs verification" section.
-EOF
-)
+          SYSTEM_PROMPT="You research dependency upgrades in Renovate pull requests and produce a GitHub PR review. You do NOT modify files. This is a Flux GitOps Kubernetes repository. Use ONLY the provided corpus (PR metadata, diff, linked sources, repo impact scan, repo history). Do not invent facts. Method: identify upgrades (including wrapper vs upstream), trace release/changelog evidence, map findings to actual repo usage, classify breaking changes/deprecations/new features, then choose verdict approve or request_changes. Return STRICT JSON with keys verdict, review_markdown, and packages[]. review_markdown must be fully human-readable markdown with summary/recommendation, per-package sections, sources, and an Unknowns/Needs verification section if evidence is incomplete."
 
           jq -n \
             --arg model "$AI_MODEL" \
