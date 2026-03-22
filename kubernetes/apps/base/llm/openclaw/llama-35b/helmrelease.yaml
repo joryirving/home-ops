@@ -26,19 +26,13 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen35b/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled.i1-Q4_K_M.gguf ] || [ ! -s /models/qwen35b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen35b/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf ] || [ ! -s /models/qwen35b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   mkdir -p /models/qwen35b
-                  rm -rf /models/qwen35b/.cache/huggingface/download/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled.i1-Q4_K_M.gguf.lock
-                  rm -rf /models/qwen35b/.cache/huggingface/download/mmproj-F16.gguf.lock
-
-                  hf download \
-                    mradermacher/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled-i1-GGUF \
-                    Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled.i1-Q4_K_M.gguf \
-                    --local-dir /models/qwen35b
-
+                  rm -rf /models/qwen35b/.cache/huggingface/download/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf.lock
                   hf download \
                     unsloth/Qwen3.5-35B-A3B-GGUF \
+                    Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf \
                     mmproj-F16.gguf \
                     --local-dir /models/qwen35b
 
@@ -74,7 +68,7 @@ spec:
               - --alias
               - qwen35b
               - --model
-              - /models/qwen35b/Qwen3.5-35B-A3B-Claude-4.6-Opus-Reasoning-Distilled.i1-Q4_K_M.gguf
+              - /models/qwen35b/Qwen3.5-35B-A3B-UD-Q4_K_XL.gguf
               - --mmproj
               - /models/qwen35b/mmproj-F16.gguf
               - --ctx-size
