@@ -23,7 +23,6 @@ jobs:
 
     env:
       REPO: ${{ github.repository }}
-      GH_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-coder.llm:8080/v1' }}
@@ -291,8 +290,6 @@ jobs:
           jq -r '.review_markdown' ai-output.json > review-body.md
 
       - name: Upsert automated review comment
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           REVIEW_MARKER='<!-- renovate-review-bot -->'
