@@ -1,10 +1,25 @@
 ---
-name: Renovate PR Review (AI Polling)
+name: Renovate PR Review (AI Polling, In-Cluster)
 
 on:
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Analyze only; do not submit gh pr review"
+        required: false
+        default: false
+        type: boolean
+      model_override:
+        description: "Optional model override"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: renovate-review-poll
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -12,26 +27,37 @@ permissions:
 
 jobs:
   review-renovate-prs:
-    runs-on: ubuntu-latest
+    name: Poll + Review Renovate PRs
+    # Same self-hosted in-cluster runner pattern as image-pull workflow
+    runs-on: home-ops-runner-main
     timeout-minutes: 30
 
     env:
-      AI_BASE_URL: ${{ vars.AI_BASE_URL }}
-      AI_MODEL: ${{ vars.AI_MODEL }}
-      AI_API_KEY: ${{ secrets.AI_API_KEY }}
       REPO: ${{ github.repository }}
       GH_TOKEN: ${{ github.token }}
+      AI_BASE_URL: ${{ vars.AI_BASE_URL }}
+      AI_MODEL_DEFAULT: ${{ vars.AI_MODEL }}
+      AI_MODEL_FALLBACK: ${{ vars.AI_MODEL_FALLBACK }}
+      AI_API_KEY: ${{ secrets.AI_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+
+      - name: Validate runtime dependencies
+        run: |
+          set -euo pipefail
+          command -v gh >/dev/null
+          command -v jq >/dev/null
+          command -v curl >/dev/null
 
       - name: Validate AI config
         run: |
           set -euo pipefail
           : "${AI_BASE_URL:?Missing variable AI_BASE_URL}"
-          : "${AI_MODEL:?Missing variable AI_MODEL}"
+          : "${AI_MODEL_DEFAULT:?Missing variable AI_MODEL}"
           : "${AI_API_KEY:?Missing secret AI_API_KEY}"
 
       - name: Poll open Renovate PRs
@@ -47,11 +73,20 @@ jobs:
           COUNT=$(jq 'length' prs.json)
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "Found $COUNT open Renovate PR(s)."
+          jq -r '.[] | "- #\(.number) \(.title)"' prs.json || true
 
       - name: Review each PR
         if: steps.poll.outputs.count != '0'
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          MODEL_OVERRIDE: ${{ github.event_name == 'workflow_dispatch' && inputs.model_override || '' }}
         run: |
           set -euo pipefail
+
+          MODEL="${AI_MODEL_DEFAULT}"
+          if [ -n "${MODEL_OVERRIDE}" ]; then
+            MODEL="${MODEL_OVERRIDE}"
+          fi
 
           SYSTEM_PROMPT=$(cat <<'EOF'
 You are an expert dependency upgrade reviewer for a Flux/Kubernetes GitOps repository.
@@ -77,35 +112,18 @@ Return STRICT JSON with schema:
 }
 
 Rules:
-- If no actionable risk, verdict=approve.
-- If actionable breaking/deprecations relevant to this repo, verdict=request_changes.
+- Evaluate against the repo usage shown in PR metadata and diff.
+- If no actionable risk: verdict=approve.
+- If actionable breaking/deprecations for this repo: verdict=request_changes.
+- Prefer concrete, file-specific impact notes.
 - Do not invent facts.
 EOF
 )
 
-          jq -c '.[]' prs.json | while read -r pr; do
-            PR_NUMBER=$(echo "$pr" | jq -r '.number')
-            HEAD_SHA=$(echo "$pr" | jq -r '.headRefOid')
-
-            echo "--- Processing PR #$PR_NUMBER ($HEAD_SHA) ---"
-
-            # Skip if we already reviewed this exact head SHA
-            if gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --jq '.[] | select(.user.login=="github-actions[bot]") | .body' | grep -Fq "<!-- renovate-review-sha:${HEAD_SHA} -->"; then
-              echo "PR #$PR_NUMBER already reviewed for this SHA; skipping."
-              continue
-            fi
-
-            gh pr view "$PR_NUMBER" --repo "$REPO" --json number,title,body,headRefOid,baseRefName,headRefName,author,changedFiles,additions,deletions > pr.json
-            gh pr diff "$PR_NUMBER" --repo "$REPO" > pr.diff
-            head -c 180000 pr.diff > pr.diff.truncated
-
+          call_model() {
+            local model_name="$1"
             jq -n \
-              --argjson pr "$(cat pr.json)" \
-              --arg diff "$(cat pr.diff.truncated)" \
-              '{pr:$pr,diff:$diff}' > review-context.json
-
-            jq -n \
-              --arg model "$AI_MODEL" \
+              --arg model "$model_name" \
               --arg system "$SYSTEM_PROMPT" \
               --arg user "Analyze this Renovate PR context and return JSON per schema." \
               --argjson ctx "$(cat review-context.json)" \
@@ -115,8 +133,41 @@ EOF
               -H "Authorization: Bearer $AI_API_KEY" \
               -H "Content-Type: application/json" \
               --data @ai-request.json > ai-response.json
+          }
 
-            jq -r '.choices[0].message.content' ai-response.json > ai-output.raw
+          jq -c '.[]' prs.json | while read -r pr; do
+            PR_NUMBER=$(echo "$pr" | jq -r '.number')
+            HEAD_SHA=$(echo "$pr" | jq -r '.headRefOid')
+
+            echo "--- Processing PR #$PR_NUMBER ($HEAD_SHA) ---"
+
+            # Skip if we've already reviewed this exact head SHA
+            if gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --jq '.[] | select(.user.login=="github-actions[bot]") | .body' | grep -Fq "<!-- renovate-review-sha:${HEAD_SHA} -->"; then
+              echo "PR #$PR_NUMBER already reviewed for this SHA; skipping."
+              continue
+            fi
+
+            gh pr view "$PR_NUMBER" --repo "$REPO" \
+              --json number,title,body,headRefOid,baseRefName,headRefName,author,changedFiles,additions,deletions,files > pr.json
+            gh pr diff "$PR_NUMBER" --repo "$REPO" > pr.diff
+            head -c 180000 pr.diff > pr.diff.truncated
+
+            jq -n \
+              --argjson pr "$(cat pr.json)" \
+              --arg diff "$(cat pr.diff.truncated)" \
+              '{pr:$pr,diff:$diff}' > review-context.json
+
+            if ! call_model "$MODEL"; then
+              if [ -n "${AI_MODEL_FALLBACK:-}" ]; then
+                echo "Primary model failed, retrying with fallback model: $AI_MODEL_FALLBACK"
+                call_model "$AI_MODEL_FALLBACK"
+              else
+                echo "Model call failed and no fallback configured; skipping PR #$PR_NUMBER"
+                continue
+              fi
+            fi
+
+            jq -r '.choices[0].message.content // empty' ai-response.json > ai-output.raw
             sed -e 's/^```json$//' -e 's/^```$//' ai-output.raw | sed '/^$/d' > ai-output.json
             jq . ai-output.json > /dev/null
 
@@ -141,6 +192,12 @@ EOF
               echo "**Sources consulted**:"
               jq -r '.sources[]? | "- " + .' ai-output.json
             } > review-body.md
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "[DRY_RUN] Would post review on PR #$PR_NUMBER with verdict: $VERDICT"
+              cat review-body.md
+              continue
+            fi
 
             if [ "$VERDICT" = "request_changes" ]; then
               gh pr review "$PR_NUMBER" --repo "$REPO" --request-changes --body-file review-body.md
