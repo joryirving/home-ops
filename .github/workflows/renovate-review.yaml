@@ -35,12 +35,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure 1password
+        uses: 1password/load-secrets-action/configure@dafbe7cb03502b260e2b2893c753c352eee545bf # v3.2.1
+        with:
+          connect-host: ${{ secrets.dashboardsCONNECT_HOST || secrets.OP_CONNECT_HOST }}
+          connect-token: ${{ secrets.dashboardsCONNECT_TOKEN || secrets.OP_CONNECT_TOKEN }}
+
+      - name: Get Secrets
+        uses: 1password/load-secrets-action@dafbe7cb03502b260e2b2893c753c352eee545bf # v3.2.1
+        with:
+          export-env: true
+        env:
+          BOT_APP_ID: op://Kubernetes/openclaw/MISO_BOT_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/openclaw/MISO_BOT_PRIVATE_KEY
+
       - name: Generate bot token (miso-assistant)
         id: app-token
         uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
-          app-id: ${{ secrets.BOT_APP_ID }}
-          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          app-id: ${{ env.BOT_APP_ID }}
+          private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
       - name: Prefer bot token for GitHub API/reviews
         run: |
