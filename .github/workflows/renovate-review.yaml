@@ -291,10 +291,10 @@ jobs:
           jq -r '.review_markdown' ai-output.json > review-body.md
 
       - name: Upsert automated review comment
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-
-          reviewer_login=$(gh api user --jq '.login')
           REVIEW_MARKER='<!-- renovate-review-bot -->'
 
           VERDICT=$(jq -r '.verdict' ai-output.json)
@@ -312,18 +312,4 @@ jobs:
             cat review-body.md
           } > review-comment.md
 
-          jq -Rs '{body: .}' < review-comment.md > review-comment.json
-
-          existing_comment_id=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --paginate             | jq -r --arg login "$reviewer_login" --arg marker "$REVIEW_MARKER" '
-                .[]
-                | select(.user.login == $login and ((.body // "") | contains($marker)))
-                | .id
-              '             | tail -n 1)
-
-          if [ -n "$existing_comment_id" ]; then
-            gh api -X PATCH "repos/$REPO/issues/comments/$existing_comment_id" --input review-comment.json >/dev/null
-            echo "Updated existing automated review comment: $existing_comment_id"
-          else
-            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" --input review-comment.json >/dev/null
-            echo "Created new automated review comment."
-          fi
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --edit-last --create-if-none --body-file review-comment.md
