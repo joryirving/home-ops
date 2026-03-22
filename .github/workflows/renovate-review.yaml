@@ -101,7 +101,7 @@ jobs:
             | grep -Eo 'https?://[^ )]+' \
             | sed 's/[",.;]$//' \
             | sort -u \
-            | head -n 12 > urls.txt || true
+            | head -n 25 > urls.txt || true
 
           grep -E '^[+-].*(image:|tag:|version:|chart:|appVersion:|digest:)' pr.diff.truncated > version-hints.txt || true
           head -n 180 version-hints.txt > version-hints.truncated.txt || true
@@ -116,11 +116,17 @@ jobs:
             exit 0
           fi
 
+          TARGET_VERSION="$(jq -r '.title' pr.json | sed -n 's/.*→ *v\?\([0-9][0-9.]*\).*/\1/p' | head -n1)"
+          if [ -z "$TARGET_VERSION" ]; then
+            TARGET_VERSION="$(grep -Eo 'v?[0-9]+\.[0-9]+\.[0-9]+' version-hints.truncated.txt 2>/dev/null | sed 's/^v//' | tail -n1 || true)"
+          fi
+
+          : > seen-repos.txt
           i=0
           while IFS= read -r url; do
             [ -z "$url" ] && continue
             i=$((i+1))
-            [ "$i" -gt 12 ] && break
+            [ "$i" -gt 25 ] && break
 
             normalized_url="$(printf '%s' "$url" | sed -E 's#^https?://redirect.github.com/#https://github.com/#')"
 
@@ -198,6 +204,43 @@ jobs:
                 echo '```' >> linked-sources.md
               else
                 echo "(Could not fetch compare metadata for $owner/$repo@$compare_spec)" >> linked-sources.md
+              fi
+            fi
+
+            if [[ "$normalized_url" =~ ^https?://github\.com/([^/]+)/([^/?#]+) ]]; then
+              owner="${BASH_REMATCH[1]}"
+              repo="${BASH_REMATCH[2]}"
+              repo_key="$owner/$repo"
+
+              if ! grep -qx "$repo_key" seen-repos.txt 2>/dev/null; then
+                echo "$repo_key" >> seen-repos.txt
+
+                echo >> linked-sources.md
+                echo "### GitHub Releases Enrichment: $repo_key" >> linked-sources.md
+
+                if gh api "repos/$owner/$repo/releases?per_page=30" > gh-releases.repo.json 2>/dev/null; then
+                  jq '[.[] | {tag_name,name,published_at,html_url}]' gh-releases.repo.json > gh-releases.repo.filtered.json
+                  echo "#### Recent Releases (tags)" >> linked-sources.md
+                  echo '```json' >> linked-sources.md
+                  head -c 5000 gh-releases.repo.filtered.json >> linked-sources.md
+                  echo >> linked-sources.md
+                  echo '```' >> linked-sources.md
+
+                  if [ -n "$TARGET_VERSION" ]; then
+                    jq --arg v "$TARGET_VERSION" '[.[] | select(((.tag_name // "") | ascii_downcase | contains(($v|ascii_downcase))) or (((.name // "") | ascii_downcase | contains(($v|ascii_downcase)))) | {tag_name,name,published_at,html_url,body}] | .[:5]' gh-releases.repo.json > gh-releases.target.filtered.json
+                    if [ "$(jq 'length' gh-releases.target.filtered.json)" -gt 0 ]; then
+                      echo "#### Releases matching target version $TARGET_VERSION" >> linked-sources.md
+                      echo '```json' >> linked-sources.md
+                      head -c 8000 gh-releases.target.filtered.json >> linked-sources.md
+                      echo >> linked-sources.md
+                      echo '```' >> linked-sources.md
+                    else
+                      echo "(No release tags matched target version $TARGET_VERSION in $repo_key)" >> linked-sources.md
+                    fi
+                  fi
+                else
+                  echo "(Could not fetch releases list for $repo_key)" >> linked-sources.md
+                fi
               fi
             fi
 
