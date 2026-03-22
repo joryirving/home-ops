@@ -140,7 +140,8 @@ jobs:
               echo "### Fetched Content (truncated)"
             } >> linked-sources.md
 
-            if curl -fsSL -L --max-time 25 "$normalized_url" | tr '\0' ' ' | head -c 5000 > source.tmp 2>/dev/null; then
+            if curl -fsSL -L --max-time 25 "$normalized_url" -o source.raw 2>/dev/null; then
+              head -c 5000 source.raw | tr '\0' ' ' > source.tmp
               if [ -s source.tmp ]; then
                 echo '```text' >> linked-sources.md
                 cat source.tmp >> linked-sources.md
@@ -227,7 +228,16 @@ jobs:
                   echo '```' >> linked-sources.md
 
                   if [ -n "$TARGET_VERSION" ]; then
-                    jq --arg v "$TARGET_VERSION" '[.[] | select(((.tag_name // "") | ascii_downcase | contains(($v|ascii_downcase))) or (((.name // "") | ascii_downcase | contains(($v|ascii_downcase)))) | {tag_name,name,published_at,html_url,body}] | .[:5]' gh-releases.repo.json > gh-releases.target.filtered.json
+                    jq --arg v "$TARGET_VERSION" '
+                      [ .[]
+                        | select(
+                            ((.tag_name // "" | ascii_downcase) | contains(($v | ascii_downcase)))
+                            or
+                            ((.name // "" | ascii_downcase) | contains(($v | ascii_downcase)))
+                          )
+                        | {tag_name,name,published_at,html_url,body}
+                      ][:5]
+                    ' gh-releases.repo.json > gh-releases.target.filtered.json
                     if [ "$(jq 'length' gh-releases.target.filtered.json)" -gt 0 ]; then
                       echo "#### Releases matching target version $TARGET_VERSION" >> linked-sources.md
                       echo '```json' >> linked-sources.md
