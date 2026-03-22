@@ -115,14 +115,19 @@ jobs:
             i=$((i+1))
             [ "$i" -gt 12 ] && break
 
+            normalized_url="$(printf '%s' "$url" | sed -E 's#^https?://redirect.github.com/#https://github.com/#')"
+
             {
               echo "## Source $i"
               echo "URL: $url"
+              if [ "$normalized_url" != "$url" ]; then
+                echo "Normalized URL: $normalized_url"
+              fi
               echo
               echo "### Fetched Content (truncated)"
             } >> linked-sources.md
 
-            if curl -fsSL -L --max-time 25 "$url" | tr '\0' ' ' | head -c 5000 > source.tmp 2>/dev/null; then
+            if curl -fsSL -L --max-time 25 "$normalized_url" | tr '\0' ' ' | head -c 5000 > source.tmp 2>/dev/null; then
               if [ -s source.tmp ]; then
                 echo '```text' >> linked-sources.md
                 cat source.tmp >> linked-sources.md
@@ -135,7 +140,7 @@ jobs:
               echo "(Failed to fetch URL content)" >> linked-sources.md
             fi
 
-            if [[ "$url" =~ ^https?://github\.com/([^/]+)/([^/]+)/releases/tag/([^/?#]+) ]]; then
+            if [[ "$normalized_url" =~ ^https?://github\.com/([^/]+)/([^/]+)/releases/tag/([^/?#]+) ]]; then
               owner="${BASH_REMATCH[1]}"
               repo="${BASH_REMATCH[2]}"
               tag="${BASH_REMATCH[3]}"
@@ -160,6 +165,32 @@ jobs:
                 head -c 3000 gh-releases.filtered.json >> linked-sources.md
                 echo >> linked-sources.md
                 echo '```' >> linked-sources.md
+              fi
+            fi
+
+            if [[ "$normalized_url" =~ ^https?://github\.com/([^/]+)/([^/]+)/compare/([^?#]+)$ ]]; then
+              owner="${BASH_REMATCH[1]}"
+              repo="${BASH_REMATCH[2]}"
+              compare_spec="${BASH_REMATCH[3]}"
+
+              echo >> linked-sources.md
+              echo "### GitHub Compare Metadata: $owner/$repo@$compare_spec" >> linked-sources.md
+
+              if gh api "repos/$owner/$repo/compare/$compare_spec" > gh-compare.json 2>/dev/null; then
+                jq '{html_url,status,ahead_by,behind_by,total_commits,commits:[.commits[]? | {sha,commit:{message,author,date}}]}' gh-compare.json > gh-compare.filtered.json
+                echo '```json' >> linked-sources.md
+                head -c 7000 gh-compare.filtered.json >> linked-sources.md
+                echo >> linked-sources.md
+                echo '```' >> linked-sources.md
+
+                jq '[.files[]? | {filename,status,additions,deletions,changes,patch}]' gh-compare.json > gh-compare.files.json
+                echo "### GitHub Compare Files" >> linked-sources.md
+                echo '```json' >> linked-sources.md
+                head -c 7000 gh-compare.files.json >> linked-sources.md
+                echo >> linked-sources.md
+                echo '```' >> linked-sources.md
+              else
+                echo "(Could not fetch compare metadata for $owner/$repo@$compare_spec)" >> linked-sources.md
               fi
             fi
 
@@ -263,7 +294,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          SYSTEM_PROMPT="You research dependency upgrades in Renovate pull requests and produce a GitHub PR review. You do NOT modify files. This is a Flux GitOps Kubernetes repository. Use ONLY the provided corpus (PR metadata, diff, linked sources, repo impact scan, repo history). Do not invent facts. Method: identify upgrades (including wrapper vs upstream), trace release/changelog evidence, map findings to actual repo usage, classify breaking changes/deprecations/new features, then choose verdict approve or request_changes. Return STRICT JSON with keys verdict, review_markdown, and packages[]. review_markdown must be fully human-readable markdown with summary/recommendation, per-package sections, sources, and an Unknowns/Needs verification section if evidence is incomplete."
+          SYSTEM_PROMPT="You research dependency upgrades in Renovate pull requests and produce a GitHub PR review. You do NOT modify files. This is a Flux GitOps Kubernetes repository. Use ONLY the provided corpus (PR metadata, diff, linked sources, repo impact scan, repo history). Do not invent facts. Method: identify upgrades (including wrapper vs upstream), trace release/changelog evidence, map findings to actual repo usage, classify breaking changes/deprecations/new features, then choose verdict approve or request_changes. Never claim an upgrade is safe solely because it is a minor/patch bump. If evidence quality is weak or fetches fail, explicitly say what evidence is missing and keep the recommendation conservative. Return STRICT JSON with keys verdict, review_markdown, and packages[]. review_markdown must be fully human-readable markdown with summary/recommendation, per-package sections, sources, and an Unknowns/Needs verification section if evidence is incomplete."
 
           jq -n \
             --arg model "$AI_MODEL" \
