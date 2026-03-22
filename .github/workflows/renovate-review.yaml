@@ -288,84 +288,42 @@ jobs:
         run: |
           set -euo pipefail
 
-          VERDICT=$(jq -r '.verdict' ai-output.json)
-          REVIEW_BODY=$(jq -r '.review_markdown' ai-output.json)
+          jq -r '.review_markdown' ai-output.json > review-body.md
 
-          {
-            echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
-            echo "$REVIEW_BODY"
-          } > review-body.md
-
-          echo "$VERDICT" > verdict.txt
-
-      - name: Dismiss prior bot reviews (superseded)
+      - name: Upsert automated review comment
         run: |
           set -euo pipefail
 
           reviewer_login=$(gh api user --jq '.login')
+          REVIEW_MARKER='<!-- renovate-review-bot -->'
 
-          set +e
-          review_ids=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews"             --jq ".[] | select(.user.login==\"${reviewer_login}\" and .state!=\"DISMISSED\") | .id" 2>dismiss-error.log)
-          list_rc=$?
-          set -e
-
-          if [ $list_rc -ne 0 ]; then
-            echo "Skipping prior-review dismissal (insufficient permissions for ${reviewer_login})."
-            cat dismiss-error.log || true
-            exit 0
-          fi
-
-          if [ -z "$review_ids" ]; then
-            echo "No prior non-dismissed bot reviews to dismiss for ${reviewer_login}."
-            exit 0
-          fi
-
-          while read -r review_id; do
-            [ -z "$review_id" ] && continue
-            set +e
-            gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/reviews/$review_id/dismissals"               -f message="Superseded by updated automated review for ${HEAD_SHA}." >/dev/null 2>&1
-            dismiss_rc=$?
-            set -e
-            if [ $dismiss_rc -ne 0 ]; then
-              echo "Could not dismiss review ${review_id} (continuing)."
-            fi
-          done <<< "$review_ids"
-
-      - name: Submit updated review
-        run: |
-          set -euo pipefail
-          VERDICT=$(cat verdict.txt)
-
+          VERDICT=$(jq -r '.verdict' ai-output.json)
           if [ "$VERDICT" = "request_changes" ]; then
-            REVIEW_FLAG="--request-changes"
-            FALLBACK_PREFIX="⚠️ **Automated recommendation: REQUEST CHANGES** (fallback comment)"
+            VERDICT_PREFIX="⚠️ **Automated recommendation: REQUEST CHANGES**"
           else
-            REVIEW_FLAG="--approve"
-            FALLBACK_PREFIX="✅ **Automated recommendation: APPROVE** (fallback comment)"
+            VERDICT_PREFIX="✅ **Automated recommendation: APPROVE**"
           fi
 
-          set +e
-          gh pr review "$PR_NUMBER" --repo "$REPO" "$REVIEW_FLAG" --body-file review-body.md 2>review-error.log
-          rc=$?
-          set -e
+          {
+            echo "$REVIEW_MARKER"
+            echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
+            echo "$VERDICT_PREFIX"
+            echo
+            cat review-body.md
+          } > review-comment.md
 
-          if [ $rc -eq 0 ]; then
-            echo "Submitted PR review successfully."
-            exit 0
+          jq -Rs '{body: .}' < review-comment.md > review-comment.json
+
+          existing_comment_id=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --paginate             | jq -r --arg login "$reviewer_login" --arg marker "$REVIEW_MARKER" '
+                .[]
+                | select(.user.login == $login and ((.body // "") | contains($marker)))
+                | .id
+              '             | tail -n 1)
+
+          if [ -n "$existing_comment_id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing_comment_id" --input review-comment.json >/dev/null
+            echo "Updated existing automated review comment: $existing_comment_id"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" --input review-comment.json >/dev/null
+            echo "Created new automated review comment."
           fi
-
-          if grep -qiE "not permitted to approve pull requests|not permitted to request changes|Resource not accessible by integration" review-error.log; then
-            echo "Formal review not permitted for GITHUB_TOKEN; posting fallback comment instead."
-            {
-              echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
-              echo "$FALLBACK_PREFIX"
-              echo
-              cat review-body.md
-            } > review-comment.md
-            gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file review-comment.md
-            exit 0
-          fi
-
-          echo "Failed to submit review for an unexpected reason:"
-          cat review-error.log
-          exit $rc
