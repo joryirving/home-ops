@@ -1,9 +1,8 @@
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: echo
+  name: brrpolice
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,55 +11,53 @@ spec:
   interval: 15m
   values:
     controllers:
-      echo:
-        strategy: RollingUpdate
+      brrpolice:
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: ghcr.io/mendhak/http-https-echo
-              tag: 40
+              repository: ghcr.io/zariel/brrpolice
+              tag: v0.12.1@sha256:dfad36b5de5b49c2180dbe45d04e52d7b3681d27987a8780d6306e8455d8b1d2
             env:
-              HTTP_PORT: &port 80
-              LOG_WITHOUT_NEWLINE: true
-              LOG_IGNORE_PATH: /healthz
-              PROMETHEUS_ENABLED: true
+              BRRPOLICE_HTTP__PORT: &port 80
+              BRRPOLICE_LOGGING__LEVEL: info
+              BRRPOLICE_QBITTORRENT__BASE_URL: http://qbittorrent.downloads.svc.cluster.local
+              TZ: America/Edmonton
             probes:
-              liveness: &probes
+              liveness:
+                enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness:
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
-                    path: /healthz
+                    path: /readyz
                     port: *port
                   initialDelaySeconds: 0
                   periodSeconds: 10
-                  timeoutSeconds: 1
+                  timeoutSeconds: 5
                   failureThreshold: 3
-              readiness: *probes
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-              seccompProfile:
-                type: RuntimeDefault
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
               limits:
-                memory: 64Mi
+                memory: 128Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
+        fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: "{{ .Release.Name }}"
     service:
       app:
         ports:
@@ -68,16 +65,8 @@ spec:
             port: *port
     serviceMonitor:
       app:
-        serviceName: "{{ .Release.Name }}"
         endpoints:
           - port: http
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
-    route:
-      app:
-        hostnames: ["${SUBDOMAIN}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"

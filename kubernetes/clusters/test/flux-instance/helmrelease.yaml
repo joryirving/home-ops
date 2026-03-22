@@ -11,7 +11,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 0.45.0
+    tag: 0.45.1
   url: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-instance
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -32,7 +32,7 @@ spec:
   values:
     instance:
       distribution:
-        artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:v0.45.0
+        artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:v0.45.1
         version: 2.x
       cluster:
         networkPolicy: false
@@ -139,11 +139,11 @@ spec:
             target:
               kind: Deployment
               name: helm-controller
-          - # Disable chart digest tracking
+          - # Default to retry on failure and disable chart digest tracking
             patch: |-
               - op: add
                 path: /spec/template/spec/containers/0/args/-
-                value: --feature-gates=DisableChartDigestTracking=true
+                value: --feature-gates=DefaultToRetryOnFailure=true,DisableChartDigestTracking=true
             target:
               kind: Deployment
               name: helm-controller
