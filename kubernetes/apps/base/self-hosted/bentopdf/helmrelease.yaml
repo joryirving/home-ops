@@ -35,8 +35,10 @@ spec:
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile: {type: RuntimeDefault}
     service:
       app:
@@ -57,4 +59,6 @@ spec:
           - path: /var/cache/nginx
             subPath: cache
           - path: /etc/nginx/tmp
-            subPath: tmp
+            subPath: etc-tmp
+          - path: /var/lib/nginx/tmp
+            subPath: var-tmp
