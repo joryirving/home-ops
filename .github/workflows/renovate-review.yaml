@@ -115,31 +115,55 @@ EOF
           sed -e 's/^```json$//' -e 's/^```$//' ai-output.raw | sed '/^$/d' > ai-output.json
           jq . ai-output.json > /dev/null
 
-      - name: Build review body
+      - name: Build review body (human-readable)
         run: |
           set -euo pipefail
 
+          VERDICT=$(jq -r '.verdict' ai-output.json)
+          SUMMARY=$(jq -r '.summary // "No summary provided."' ai-output.json)
+
+          if [ "$VERDICT" = "request_changes" ]; then
+            RECOMMENDATION="❌ Request changes"
+          else
+            RECOMMENDATION="✅ Approve"
+          fi
+
           {
             echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
-            echo "### Renovate Review"
+            echo "## Renovate Review"
             echo
-            echo "**Summary**: $(jq -r '.summary' ai-output.json)"
+            echo "**Recommendation:** ${RECOMMENDATION}"
             echo
-            jq -r '
-              .packages[]? |
-              "### \(.name): \(.from) → \(.to)\n" +
-              "**Verdict**: " + (if .verdict=="safe" then "Safe to merge" else "Changes required before merge" end) + "\n\n" +
-              (if (.breaking_changes|length)>0 then "**Breaking changes**:\n" + ((.breaking_changes[] | "- " + .) | join("\n")) + "\n\n" else "" end) +
-              (if (.deprecations|length)>0 then "**Deprecations**:\n" + ((.deprecations[] | "- " + .) | join("\n")) + "\n\n" else "" end) +
-              (if (.new_features|length)>0 then "**New features worth adopting**:\n" + ((.new_features[] | "- " + .) | join("\n")) + "\n\n" else "" end) +
-              (if (.affected_files|length)>0 then "**Affected files**:\n" + ((.affected_files[] | "- `" + . + "`") | join("\n")) + "\n\n" else "" end) +
-              (if (.fixes|length)>0 then "**Fixes**:\n" + ((.fixes[] | "- " + .) | join("\n")) + "\n\n" else "" end)
-            ' ai-output.json
-            echo "**Sources consulted**:"
-            jq -r '.sources[]? | "- " + .' ai-output.json
+            echo "**Summary:** ${SUMMARY}"
+            echo
+
+            PACKAGE_COUNT=$(jq '.packages | length' ai-output.json)
+            if [ "$PACKAGE_COUNT" -gt 0 ]; then
+              echo "### Package Analysis"
+              echo
+              jq -r '
+                def bullets($arr):
+                  if ($arr|length) > 0 then ($arr | map("- " + .) | join("\n")) else "- None" end;
+                def file_bullets($arr):
+                  if ($arr|length) > 0 then ($arr | map("- `" + . + "`") | join("\n")) else "- None" end;
+
+                .packages[] |
+                "#### \(.name): \(.from) → \(.to)\n" +
+                "- **Verdict:** " + (if .verdict=="safe" then "✅ Safe to merge" else "⚠️ Needs changes before merge" end) + "\n" +
+                "- **Affected files:**\n" + file_bullets(.affected_files) + "\n\n" +
+                "**Breaking changes**\n" + bullets(.breaking_changes) + "\n\n" +
+                "**Deprecations**\n" + bullets(.deprecations) + "\n\n" +
+                "**New features worth adopting**\n" + bullets(.new_features) + "\n\n" +
+                "**Suggested fixes/actions**\n" + bullets(.fixes) + "\n"
+              ' ai-output.json
+            fi
+
+            echo
+            echo "### Sources"
+            jq -r 'if (.sources|length)>0 then .sources[] | "- " + . else "- None provided by model" end' ai-output.json
           } > review-body.md
 
-          jq -r '.verdict' ai-output.json > verdict.txt
+          echo "$VERDICT" > verdict.txt
 
       - name: Dismiss prior bot reviews (superseded)
         run: |
