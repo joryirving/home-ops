@@ -27,9 +27,10 @@ jobs:
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-coder.llm:8080/v1' }}
       AI_MODEL: ${{ vars.AI_MODEL || 'qwen3-coder-next' }}
-      OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL || 'https://api.openai.com/v1' }}
-      OPENAI_MODEL: ${{ vars.OPENAI_MODEL || '' }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      AI_FALLBACK_BASE_URL: ${{ vars.AI_FALLBACK_BASE_URL || 'http://ollama.llm:11434/v1' }}
+      AI_FALLBACK_MODEL: ${{ vars.AI_FALLBACK_MODEL || 'qwen3.5:9b' }}
+      AI_PRIMARY_RETRIES: ${{ vars.AI_PRIMARY_RETRIES || '8' }}
+      AI_PRIMARY_RETRY_DELAY_SEC: ${{ vars.AI_PRIMARY_RETRY_DELAY_SEC || '15' }}
 
     steps:
       - name: Checkout
@@ -77,9 +78,8 @@ jobs:
           : "${AI_BASE_URL:?Missing variable AI_BASE_URL}"
           : "${AI_MODEL:?Missing variable AI_MODEL}"
 
-          if [ -n "${OPENAI_API_KEY:-}" ] && [ -z "${OPENAI_MODEL:-}" ]; then
-            echo "OPENAI_API_KEY is set but OPENAI_MODEL is empty; fallback will be disabled" >&2
-          fi
+          : "${AI_FALLBACK_BASE_URL:?Missing variable AI_FALLBACK_BASE_URL}"
+          : "${AI_FALLBACK_MODEL:?Missing variable AI_FALLBACK_MODEL}"
 
       - name: Collect PR context
         run: |
@@ -298,17 +298,17 @@ jobs:
           head -c 220000 review-corpus.md > review-corpus.truncated.md
 
       - name: Analyze with local AI model
+        id: analyze
         run: |
           set -euo pipefail
 
           SYSTEM_PROMPT="You research dependency upgrades in Renovate pull requests and produce a GitHub PR review. You do NOT modify files. This is a Flux GitOps Kubernetes repository. Use ONLY the provided corpus (PR metadata, diff, linked sources, repo impact scan, repo history). Do not invent facts. Method: identify upgrades (including wrapper vs upstream), trace release/changelog evidence, map findings to actual repo usage, classify breaking changes/deprecations/new features, then choose verdict approve or request_changes. Never claim an upgrade is safe solely because it is a minor/patch bump. If evidence quality is weak or fetches fail, explicitly say what evidence is missing and keep the recommendation conservative. Return STRICT JSON with keys verdict, review_markdown, and packages[]. review_markdown must be fully human-readable markdown with summary/recommendation, per-package sections, sources, and an Unknowns/Needs verification section if evidence is incomplete."
 
-          jq -n \
-            --arg model "$AI_MODEL" \
-            --arg system "$SYSTEM_PROMPT" \
-            --arg user "Analyze this Renovate PR corpus and return STRICT JSON." \
-            --rawfile corpus review-corpus.truncated.md \
-            '{model:$model,messages:[{role:"system",content:$system},{role:"user",content:($user + "\n\n" + $corpus)}],temperature:0.1}' > ai-request.json
+          jq -n             --arg model "$AI_MODEL"             --arg system "$SYSTEM_PROMPT"             --arg user "Analyze this Renovate PR corpus and return STRICT JSON."             --rawfile corpus review-corpus.truncated.md             '{model:$model,messages:[{role:"system",content:$system},{role:"user",content:($user + "\n\n" + $corpus)}],temperature:0.1}' > ai-request.primary.json
+
+          # Smaller corpus for CPU fallback model
+          head -c 120000 review-corpus.md > review-corpus.fallback.truncated.md
+          jq -n             --arg model "$AI_FALLBACK_MODEL"             --arg system "$SYSTEM_PROMPT"             --arg user "Analyze this Renovate PR corpus and return STRICT JSON."             --rawfile corpus review-corpus.fallback.truncated.md             '{model:$model,messages:[{role:"system",content:$system},{role:"user",content:($user + "\n\n" + $corpus)}],temperature:0.1}' > ai-request.fallback.json
 
           parse_and_validate() {
             local response_file="$1"
@@ -319,32 +319,32 @@ jobs:
             jq -e '.review_markdown and (.review_markdown | length > 0)' ai-output.json > /dev/null
           }
 
-          echo "Using primary model: $AI_MODEL @ $AI_BASE_URL"
-          if curl -fsSL "$AI_BASE_URL/chat/completions" \
-            -H "Content-Type: application/json" \
-            --data @ai-request.json > ai-response.primary.json \
-            && parse_and_validate ai-response.primary.json; then
+          PRIMARY_OK=0
+          ATTEMPT=1
+          while [ "$ATTEMPT" -le "$AI_PRIMARY_RETRIES" ]; do
+            echo "Primary model attempt ${ATTEMPT}/${AI_PRIMARY_RETRIES}: $AI_MODEL @ $AI_BASE_URL"
+            if curl -fsSL "$AI_BASE_URL/chat/completions"               -H "Content-Type: application/json"               --data @ai-request.primary.json > ai-response.primary.json               && parse_and_validate ai-response.primary.json; then
+              PRIMARY_OK=1
+              break
+            fi
+
+            echo "Primary model attempt $ATTEMPT failed; waiting ${AI_PRIMARY_RETRY_DELAY_SEC}s" >&2
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep "$AI_PRIMARY_RETRY_DELAY_SEC"
+          done
+
+          if [ "$PRIMARY_OK" -eq 1 ]; then
+            ANALYSIS_ENGINE="$AI_MODEL@$AI_BASE_URL"
             echo "Primary model succeeded"
           else
-            echo "Primary model failed or returned invalid output" >&2
-
-            if [ -n "${OPENAI_API_KEY:-}" ] && [ -n "${OPENAI_MODEL:-}" ]; then
-              echo "Trying OpenAI fallback model: $OPENAI_MODEL @ $OPENAI_BASE_URL" >&2
-
-              jq --arg model "$OPENAI_MODEL" '.model = $model' ai-request.json > ai-request.fallback.json
-
-              curl -fsSL "$OPENAI_BASE_URL/chat/completions" \
-                -H "Content-Type: application/json" \
-                -H "Authorization: Bearer $OPENAI_API_KEY" \
-                --data @ai-request.fallback.json > ai-response.fallback.json
-
-              parse_and_validate ai-response.fallback.json
-              echo "OpenAI fallback succeeded" >&2
-            else
-              echo "OpenAI fallback not configured (need OPENAI_API_KEY and OPENAI_MODEL)." >&2
-              exit 1
-            fi
+            echo "Primary model unavailable after retries; trying fallback: $AI_FALLBACK_MODEL @ $AI_FALLBACK_BASE_URL" >&2
+            curl -fsSL "$AI_FALLBACK_BASE_URL/chat/completions"               -H "Content-Type: application/json"               --data @ai-request.fallback.json > ai-response.fallback.json
+            parse_and_validate ai-response.fallback.json
+            ANALYSIS_ENGINE="$AI_FALLBACK_MODEL@$AI_FALLBACK_BASE_URL"
+            echo "Fallback model succeeded" >&2
           fi
+
+          echo "analysis_engine=$ANALYSIS_ENGINE" >> "$GITHUB_OUTPUT"
 
       - name: Build final review body
         run: |
@@ -368,6 +368,8 @@ jobs:
             echo "$REVIEW_MARKER"
             echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
             echo "$VERDICT_PREFIX"
+            echo
+            echo "_Analysis engine: ${{ steps.analyze.outputs.analysis_engine }}_"
             echo
             cat review-body.md
           } > review-comment.md
