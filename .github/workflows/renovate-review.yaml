@@ -266,7 +266,8 @@ jobs:
           import json
           import re
           from pathlib import Path
-          from urllib import request, parse
+          from urllib import parse
+          import subprocess
 
           diff_path = Path("pr.diff.truncated")
           out_path = Path("image-digest-context.md")
@@ -334,9 +335,19 @@ jobs:
               return changes
 
           def http_json(url, headers=None):
-              req = request.Request(url, headers=headers or {})
-              with request.urlopen(req, timeout=25) as resp:
-                  return json.loads(resp.read().decode("utf-8", errors="replace"))
+              cmd = [
+                  "curl",
+                  "-fsSL",
+                  "--connect-timeout",
+                  "20",
+                  "--max-time",
+                  "40",
+                  url,
+              ]
+              for key, value in (headers or {}).items():
+                  cmd.extend(["-H", f"{key}: {value}"])
+              raw = subprocess.check_output(cmd)
+              return json.loads(raw.decode("utf-8", errors="replace"))
 
           def registry_targets(repo: str):
               if repo.startswith("docker.io/"):
@@ -431,6 +442,86 @@ jobs:
                   result["error"] = str(exc)
               return result
 
+          def github_repo_from_source(source: str | None):
+              if not source:
+                  return None
+              src = source.strip()
+              m = re.search(r"github\.com[:/](?P<owner>[^/\s]+)/(?P<repo>[^/\s?#]+)", src, re.IGNORECASE)
+              if m:
+                  owner = m.group("owner")
+                  repo = m.group("repo")
+                  if repo.endswith(".git"):
+                      repo = repo[:-4]
+                  return f"{owner}/{repo}"
+              if re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", src):
+                  return src
+              return None
+
+          def guess_repo_from_image(image_repo: str):
+              if image_repo.startswith("docker.io/"):
+                  tail = image_repo[len("docker.io/"):]
+              elif image_repo.startswith("ghcr.io/"):
+                  tail = image_repo[len("ghcr.io/"):]
+              else:
+                  tail = image_repo
+              parts = tail.split("/")
+              if len(parts) >= 2:
+                  return f"{parts[0]}/{parts[1]}"
+              return None
+
+          def fetch_github_compare(repo: str | None, old_rev: str | None, new_rev: str | None):
+              result = {
+                  "repo": repo,
+                  "old_revision": old_rev,
+                  "new_revision": new_rev,
+                  "status": None,
+                  "ahead_by": None,
+                  "behind_by": None,
+                  "total_commits": None,
+                  "html_url": None,
+                  "commits": [],
+                  "files": [],
+                  "error": None,
+                  "repo_source": None,
+              }
+              if not repo:
+                  result["error"] = "repo unavailable"
+                  return result
+              if not old_rev or not new_rev:
+                  result["error"] = "revision labels missing"
+                  return result
+              try:
+                  data = http_json(
+                      f"https://api.github.com/repos/{repo}/compare/{old_rev}...{new_rev}",
+                      headers={
+                          "Accept": "application/vnd.github+json",
+                          "User-Agent": "home-ops-renovate-review",
+                      },
+                  )
+                  result["status"] = data.get("status")
+                  result["ahead_by"] = data.get("ahead_by")
+                  result["behind_by"] = data.get("behind_by")
+                  result["total_commits"] = data.get("total_commits")
+                  result["html_url"] = data.get("html_url")
+                  result["commits"] = [
+                      {
+                          "sha": (c.get("sha") or "")[:12],
+                          "message": ((c.get("commit") or {}).get("message") or "").splitlines()[0],
+                      }
+                      for c in (data.get("commits") or [])[:15]
+                  ]
+                  result["files"] = [
+                      {
+                          "filename": f.get("filename"),
+                          "status": f.get("status"),
+                          "changes": f.get("changes"),
+                      }
+                      for f in (data.get("files") or [])[:20]
+                  ]
+              except Exception as exc:  # noqa: BLE001
+                  result["error"] = str(exc)
+              return result
+
           def short(value):
               if not value:
                   return "(unknown)"
@@ -471,6 +562,54 @@ jobs:
                           lines.append("- Revision changed: **no** (likely rebuild/republish of same source revision)")
                   else:
                       lines.append("- Revision changed: **unknown** (missing OCI revision labels)")
+
+                  old_repo = github_repo_from_source(old_meta.get("source"))
+                  new_repo = github_repo_from_source(new_meta.get("source"))
+                  compare_repo = None
+                  compare_repo_source = ""
+                  if old_repo and new_repo and old_repo == new_repo:
+                      compare_repo = old_repo
+                      compare_repo_source = "oci-source-label"
+                  elif old_repo and not new_repo:
+                      compare_repo = old_repo
+                      compare_repo_source = "oci-source-label-old"
+                  elif new_repo and not old_repo:
+                      compare_repo = new_repo
+                      compare_repo_source = "oci-source-label-new"
+                  elif old_repo and new_repo and old_repo != new_repo:
+                      lines.append(f"- Root repo mismatch between old/new labels: `{old_repo}` vs `{new_repo}`")
+                  if not compare_repo:
+                      guessed = guess_repo_from_image(change["repository"])
+                      if guessed:
+                          compare_repo = guessed
+                          compare_repo_source = "image-repo-heuristic"
+
+                  compare = fetch_github_compare(compare_repo, old_rev, new_rev)
+                  compare["repo_source"] = compare_repo_source or None
+
+                  lines.append(f"- Root repo for commit compare: `{short(compare_repo)}` (source: `{short(compare_repo_source or 'none')}`)")
+                  if compare.get("html_url"):
+                      lines.append(f"- Commit compare URL: {compare['html_url']}")
+                  if compare.get("total_commits") is not None:
+                      lines.append(
+                          f"- Compare summary: status={short(compare.get('status'))}, total_commits={short(compare.get('total_commits'))}, ahead_by={short(compare.get('ahead_by'))}, behind_by={short(compare.get('behind_by'))}"
+                      )
+                  elif compare.get("error"):
+                      lines.append(f"- Compare lookup: **unavailable** ({short(compare.get('error'))})")
+
+                  commits = compare.get("commits") or []
+                  if commits:
+                      lines.append("- Commits between old/new revision:")
+                      for c in commits:
+                          lines.append(f"  - `{short(c.get('sha'))}` {short(c.get('message'))}")
+
+                  files = compare.get("files") or []
+                  if files:
+                      lines.append("- Changed files in root repo compare (first 20):")
+                      for f in files:
+                          lines.append(
+                              f"  - `{short(f.get('filename'))}` status={short(f.get('status'))} changes={short(f.get('changes'))}"
+                          )
 
                   lines.append("- Old digest metadata:")
                   lines.append("```json")
