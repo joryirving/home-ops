@@ -210,41 +210,28 @@ spec:
                 port: *codeserverPort
     rbac:
       roles:
-        openclaw-read-all:
+        openclaw-cluster-observe:
           type: ClusterRole
           rules:
+            # Additional cluster-scoped observability beyond built-in "view".
+            # Secrets are intentionally not granted.
             - apiGroups: [""]
-              resources: ["pods", "nodes", "services", "namespaces", "configmaps", "persistentvolumes", "persistentvolumeclaims", "endpoints", "resourcequotas", "limitranges", "serviceaccounts", "events"]  # Added events
-              verbs: ["get", "list", "watch"]
-            - apiGroups: [""]
-              resources: ["pods/log"]
-              verbs: ["get", "list"]
-            - apiGroups: ["apps"]
-              resources: ["deployments", "daemonsets", "statefulsets", "replicasets"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["batch"]
-              resources: ["jobs", "cronjobs"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["networking.k8s.io"]
-              resources: ["ingresses", "networkpolicies"]
+              resources: ["nodes", "namespaces", "persistentvolumes", "events"]
               verbs: ["get", "list", "watch"]
             - apiGroups: ["storage.k8s.io"]
-              resources: ["storageclasses"]
+              resources: ["storageclasses", "csinodes", "csidrivers", "volumeattachments"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["apiextensions.k8s.io"]
+              resources: ["customresourcedefinitions"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["apiregistration.k8s.io"]
+              resources: ["apiservices"]
               verbs: ["get", "list", "watch"]
             - apiGroups: ["rbac.authorization.k8s.io"]
               resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
               verbs: ["get", "list", "watch"]
             - apiGroups: ["metrics.k8s.io"]
               resources: ["nodes", "pods"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["helm.toolkit.fluxcd.io"]
-              resources: ["helmreleases"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["kustomize.toolkit.fluxcd.io"]
-              resources: ["kustomizations"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["external-secrets.io"]
-              resources: ["externalsecrets"]
               verbs: ["get", "list", "watch"]
         openclaw-write-restricted:
           type: Role
@@ -259,10 +246,17 @@ spec:
               resources: ["deployments"]
               verbs: ["patch", "update"]
       bindings:
-        openclaw-read-all:
+        openclaw-view:
           type: ClusterRoleBinding
           roleRef:
-            identifier: openclaw-read-all
+            identifier: view
+          subjects:
+            - identifier: openclaw
+              serviceAccount: openclaw
+        openclaw-cluster-observe:
+          type: ClusterRoleBinding
+          roleRef:
+            identifier: openclaw-cluster-observe
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
