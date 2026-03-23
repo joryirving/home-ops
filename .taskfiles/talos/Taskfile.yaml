@@ -64,8 +64,7 @@ tasks:
       TALOS_IMAGE:
         sh: |-
           talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig --output=jsonpath='{.spec}' \
-            | yq -r '.machine.install.image // empty' \
-            | head -n1
+            | yq '.machine.install.image'
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
