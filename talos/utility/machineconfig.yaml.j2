@@ -52,6 +52,7 @@ machine:
       max-pods: "200"
     extraConfig:
       serializeImagePulls: false
+      imageMaximumGCAge: 24h
     image: ghcr.io/siderolabs/kubelet:v1.35.3
     nodeIP:
       validSubnets: ["10.69.1.0/24"]
@@ -62,6 +63,8 @@ machine:
     fs.inotify.max_user_watches: "1048576"     # Watchdog
     fs.inotify.max_user_instances: "8192"      # Watchdog
     net.core.default_qdisc: fq                 # 10Gb/s
+    net.core.somaxconn: "8192"                # Raise listen backlog for burst handling
+    net.core.netdev_max_backlog: "16384"      # Raise kernel ingress queue depth
     net.core.rmem_max: "67108864"              # 10Gb/s | Cloudflared / QUIC
     net.core.wmem_max: "67108864"              # 10Gb/s | Cloudflared / QUIC
     net.ipv4.neigh.default.gc_thresh1: "4096"  # Prevent ARP cache overflows
@@ -76,45 +79,18 @@ machine:
     net.ipv4.tcp_wmem: 4096 65536 33554432     # 10Gb/s
     net.ipv4.tcp_slow_start_after_idle: "0"    # Allow Ping
     net.ipv4.tcp_window_scaling: "1"           # 10Gb/s
+    net.ipv4.tcp_max_syn_backlog: "8192"       # Larger SYN queue for bursty connection rates
     sunrpc.tcp_slot_table_entries: "128"       # 10Gb/s | NFS
     sunrpc.tcp_max_slot_table_entries: "128"   # 10Gb/s | NFS
     user.max_user_namespaces: "11255"          # User Namespaces
-    vm.nr_hugepages: "1024"                    # PostgreSQL
+    vm.dirty_background_ratio: "5"            # Start writeback earlier
+    vm.dirty_ratio: "20"                      # Cap dirty page buildup
+    vm.dirty_expire_centisecs: "3000"         # Expire dirty data after 30s
+    vm.dirty_writeback_centisecs: "500"       # Flush dirty pages every 5s
   token: op://Kubernetes/talos-utility/MACHINE_TOKEN
   type: {{ ENV.MACHINE_TYPE }}
   sysfs:
-    devices.system.cpu.cpu0.cpufreq.boost: 1
-    devices.system.cpu.cpu1.cpufreq.boost: 1
-    devices.system.cpu.cpu2.cpufreq.boost: 1
-    devices.system.cpu.cpu3.cpufreq.boost: 1
-    devices.system.cpu.cpu4.cpufreq.boost: 1
-    devices.system.cpu.cpu5.cpufreq.boost: 1
-    devices.system.cpu.cpu6.cpufreq.boost: 1
-    devices.system.cpu.cpu7.cpufreq.boost: 1
-    devices.system.cpu.cpu8.cpufreq.boost: 1
-    devices.system.cpu.cpu9.cpufreq.boost: 1
-    devices.system.cpu.cpu10.cpufreq.boost: 1
-    devices.system.cpu.cpu11.cpufreq.boost: 1
-    devices.system.cpu.cpu12.cpufreq.boost: 1
-    devices.system.cpu.cpu13.cpufreq.boost: 1
-    devices.system.cpu.cpu14.cpufreq.boost: 1
-    devices.system.cpu.cpu15.cpufreq.boost: 1
-    devices.system.cpu.cpu0.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu1.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu2.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu3.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu4.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu5.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu6.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu7.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu8.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu9.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu10.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu11.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu12.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu13.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu14.cpufreq.energy_performance_preference: balance_power
-    devices.system.cpu.cpu15.cpufreq.energy_performance_preference: balance_power
+    devices.system.cpu.cpufreq.policy0.scaling_governor: performance  # Ryzen 7 5700U: prefer deterministic perf
   time:
     disabled: false
     servers: ["time.cloudflare.com"]
