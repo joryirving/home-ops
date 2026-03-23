@@ -59,11 +59,8 @@ tasks:
   upgrade-node:
     desc: Upgrade Talos on a single node [CLUSTER=main] [NODE=required]
     cmds:
-      - task: apply-node
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} upgrade --image={{.TALOS_IMAGE}} --timeout=10m
     vars:
-      MACHINE_TYPE:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machinetypes --output=jsonpath='{.spec}'
       TALOS_IMAGE:
         sh: |-
           talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig --output=jsonpath='{.spec}' \

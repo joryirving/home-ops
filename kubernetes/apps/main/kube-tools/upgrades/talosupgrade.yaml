@@ -1,5 +1,4 @@
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/tuppr.home-operations.com/talosupgrade_v1alpha1.json
 apiVersion: tuppr.home-operations.com/v1alpha1
 kind: TalosUpgrade
 metadata:
@@ -8,6 +7,14 @@ spec:
   talos:
     # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
     version: v1.12.6
+  policy:
+    timeout: 30m
+    debug: true
+    placement: hard
+  drain:
+    force: true
+    ignoreDaemonSets: true
+    deleteLocalData: true
   healthChecks:
     - apiVersion: volsync.backube/v1alpha1
       kind: ReplicationSource
