@@ -48,14 +48,20 @@ machine:
   kubelet:
     defaultRuntimeSeccompProfileEnabled: true
     disableManifestsDirectory: true
+    extraArgs:
+      max-pods: "200"
     extraConfig:
       serializeImagePulls: false
+      imageMaximumGCAge: 24h
     image: ghcr.io/siderolabs/kubelet:v1.35.3
     nodeIP:
       validSubnets: ["10.69.1.0/24"]
   nodeLabels:
     topology.kubernetes.io/region: k8s
     topology.kubernetes.io/zone: {{ 'm' if ENV.MACHINE_TYPE == 'controlplane' else 'w' }}
+  sysfs:
+    devices.system.cpu.cpufreq.policy0.scaling_governor: performance
+    devices.system.cpu.cpufreq.policy0.energy_performance_preference: performance
   sysctls:
     fs.inotify.max_user_watches: "1048576"     # Watchdog
     fs.inotify.max_user_instances: "8192"      # Watchdog
