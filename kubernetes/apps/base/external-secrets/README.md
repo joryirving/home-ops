@@ -17,8 +17,8 @@ services:
     restart: unless-stopped
     volumes:
       - data:/config
-  onepassword-=sync:
-    container_name: onepassword-=sync
+  onepassword-sync:
+    container_name: onepassword-sync
     environment:
       OP_HTTP_PORT: 7071
       OP_SESSION: <credentials.json>
