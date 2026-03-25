@@ -5,6 +5,7 @@
 ---
 
 - [Introduction](introduction.md)
+- [Architecture](architecture.md)
 
 # Basement Notes
 
