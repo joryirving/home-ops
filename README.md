@@ -128,13 +128,14 @@ In my cluster there are two instances of [ExternalDNS](https://github.com/kubern
 | Ayaka | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
 | Eula  | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
 | Ganyu | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD | 2TB NVMe | - | 128GB | Talos | k8s worker (LLM) |
 
-OS Disk: m.2 Samsung PM9A3 960GB
-Local Disk: m.2 WD SN770 1TB
-Rook Disk: u.2 Samsung PM9A3 1.92TB
+Control Plane OS Disk: m.2 Samsung PM9A3 960GB
+Control Plane Local Disk: m.2 WD SN770 1TB
+Control Plane Rook Disk: u.2 Samsung PM9A3 1.92TB
 
-Total CPU: 60 Cores/60 Threads
-Total RAM: 384GB
+Total CPU: 58 Cores/92 Threads
+Total RAM: 512GB
 
 ### Utility Kubernetes Cluster
 
