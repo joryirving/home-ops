@@ -100,6 +100,7 @@ spec:
             env:
               OPENCLAW_LOG_LEVEL: debug
               BROWSER_WS_ENDPOINT: "ws://localhost:9222"
+              DOCKER_HOST: "tcp://localhost:2375"
               GOPATH: /home/node/go
               HOME: &homepath /home/node
               HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
@@ -124,6 +125,26 @@ spec:
               limits:
                 cpu: 6000m
                 memory: 4Gi
+          dind:
+            image:
+              repository: docker.io/docker
+              tag: 28.0.4-dind@sha256:85f47411d4dfdbfbc0b8e397f84f2c13795c6404fb6e6ae3868790c9e9161d4b
+            env:
+              DOCKER_TLS_CERTDIR: ""
+              TZ: *tz
+            securityContext:
+              privileged: true
+            args:
+              - dockerd
+              - --host=tcp://0.0.0.0:2375
+              - --host=unix:///var/run/docker.sock
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 2000m
+                memory: 2Gi
           chrome:
             image:
               repository: zenika/alpine-chrome
@@ -304,6 +325,14 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: *homepath
+      docker-graph:
+        type: emptyDir
+        globalMounts:
+          - path: /var/lib/docker
+      docker-sock:
+        type: emptyDir
+        globalMounts:
+          - path: /var/run
       data:
         type: nfs
         server: voyager.internal
