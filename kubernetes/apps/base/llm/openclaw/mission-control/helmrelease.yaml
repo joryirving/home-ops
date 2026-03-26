@@ -33,7 +33,7 @@ spec:
               OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw-main.json"
               NEXT_PUBLIC_GATEWAY_URL: "wss://miso.jory.dev"
               NEXT_PUBLIC_GATEWAY_CLIENT_ID: "openclaw-control-ui"
-              MC_ALLOWED_HOSTS: "mission-control.jory.dev"
+              MC_ALLOWED_HOSTS: "mission-control.jory.dev,localhost,127.0.0.1"
             envFrom:
               - secretRef:
                   name: *app
@@ -66,3 +66,8 @@ spec:
         globalMounts:
           - path: /home/node/.openclaw/openclaw-main.json
             subPath: openclaw.json
+
+      next-cache:
+        type: emptyDir
+        globalMounts:
+          - path: /app/.next/cache
