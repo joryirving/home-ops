@@ -27,8 +27,12 @@ spec:
               repository: ghcr.io/joryirving/mission-control
               tag: 2.0.1@sha256:36e8ecbbd850d44d2f29a01834a6a735d152c4bf0f480786145b4aa9a9bc2043 
             env:
-              OPENCLAW_GATEWAY_HOST: "openclaw.llm"
+              OPENCLAW_GATEWAY_HOST: "openclaw.llm.svc.cluster.local"
+              OPENCLAW_GATEWAY_PORT: "18789"
+              OPENCLAW_HOME: "/home/node/.openclaw"
+              OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw-main.json"
               NEXT_PUBLIC_GATEWAY_URL: "wss://miso.jory.dev"
+              NEXT_PUBLIC_GATEWAY_CLIENT_ID: "openclaw-control-ui"
               MC_ALLOWED_HOSTS: "mission-control.jory.dev"
             envFrom:
               - secretRef:
@@ -55,3 +59,10 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /app/.data
+      openclaw-config:
+        type: secret
+        name: openclaw-config
+        defaultMode: 0400
+        globalMounts:
+          - path: /home/node/.openclaw/openclaw-main.json
+            subPath: openclaw.json
