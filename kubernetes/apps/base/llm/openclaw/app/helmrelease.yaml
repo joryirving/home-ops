@@ -377,9 +377,15 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: *homepath
-          - path: /app/.data
-            subPath: mission-control
-            container: mission-control
+      mission-control-data:
+        enabled: true
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        advancedMounts:
+          main:
+            mission-control:
+              - path: /app/.data
       data:
         type: nfs
         server: voyager.internal
