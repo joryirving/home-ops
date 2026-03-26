@@ -89,7 +89,7 @@ spec:
           daemon:
             image:
               repository: docker
-              tag: 29.3.1-dind@sha256:4d90f1f6c400315c2dba96d3ec93c01e64198395cbba04f79d12adce4f737029
+              tag: 29.3.0-dind@sha256:1ba18449911d01f477a3fc104123c85d677addc60701b14b3fcb5381f9c4a537
             restartPolicy: Always
             env:
               DOCKER_TLS_CERTDIR: /certs
@@ -396,6 +396,10 @@ spec:
         path: /mnt/daena/comfyui/output
         globalMounts:
           - path: /home/node/.openclaw/workspace/images
+      mission-control-data:
+        existingClaim: "{{ .Release.Name }}-mission-control"
+        globalMounts:
+          - path: /app/.data
       openclaw-config:
         type: secret
         name: "{{ .Release.Name }}-config"
