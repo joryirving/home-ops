@@ -26,18 +26,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen9b/Qwen3.5-9B-UD-Q4_K_XL.gguf ]; then
+                if [ ! -s /models/qwen9b/Qwen3.5-4B-UD-Q4_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   mkdir -p /models/qwen9b
-                  rm -rf /models/qwen9b/.cache/huggingface/download/Qwen3.5-9B-UD-Q4_K_XL.gguf.lock
+                  rm -rf /models/qwen9b/.cache/huggingface/download/Qwen3.5-4B-UD-Q4_K_XL.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-9B-GGUF \
-                    Qwen3.5-9B-UD-Q4_K_XL.gguf \
+                    unsloth/Qwen3.5-4B-GGUF \
+                    Qwen3.5-4B-UD-Q4_K_XL.gguf \
                     --local-dir /models/qwen9b
 
-                  echo "Qwen3.5-9B download complete"
+                  echo "Qwen3.5-4B download complete"
                 else
-                  echo "Qwen3.5-9B already downloaded, skipping"
+                  echo "Qwen3.5-4B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -67,7 +67,7 @@ spec:
               - --alias
               - qwen9b
               - --model
-              - /models/qwen9b/Qwen3.5-9B-UD-Q4_K_XL.gguf
+              - /models/qwen9b/Qwen3.5-4B-UD-Q4_K_XL.gguf
               - --ctx-size
               - "8192"
               - --n-gpu-layers
