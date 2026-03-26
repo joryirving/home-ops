@@ -26,15 +26,15 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen9b/Qwen3.5-4B-UD-Q4_K_XL.gguf ] || [ ! -s /models/qwen9b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen4b/Qwen3.5-4B-UD-Q4_K_XL.gguf ] || [ ! -s /models/qwen4b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen9b
-                  rm -rf /models/qwen9b/.cache/huggingface/download/Qwen3.5-4B-UD-Q4_K_XL.gguf.lock
+                  mkdir -p /models/qwen4b
+                  rm -rf /models/qwen4b/.cache/huggingface/download/Qwen3.5-4B-UD-Q4_K_XL.gguf.lock
                   hf download \
                     unsloth/Qwen3.5-4B-GGUF \
                     Qwen3.5-4B-UD-Q4_K_XL.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/qwen9b
+                    --local-dir /models/qwen4b
 
                   echo "Qwen3.5-4B download complete"
                 else
@@ -66,11 +66,11 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen9b
+              - qwen4b
               - --model
-              - /models/qwen9b/Qwen3.5-4B-UD-Q4_K_XL.gguf
+              - /models/qwen4b/Qwen3.5-4B-UD-Q4_K_XL.gguf
               - --mmproj
-              - /models/qwen9b/mmproj-F16.gguf
+              - /models/qwen4b/mmproj-F16.gguf
               - --ctx-size
               - "8192"
               - --n-gpu-layers
