@@ -100,7 +100,9 @@ spec:
             env:
               OPENCLAW_LOG_LEVEL: debug
               BROWSER_WS_ENDPOINT: "ws://localhost:9222"
-              DOCKER_HOST: "tcp://localhost:2375"
+              DOCKER_HOST: "tcp://localhost:2376"
+              DOCKER_CERT_PATH: /certs/client
+              DOCKER_TLS_VERIFY: "1"
               GOPATH: /home/node/go
               HOME: &homepath /home/node
               HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
@@ -148,17 +150,39 @@ spec:
                 memory: 1Gi
           dind:
             image:
-              repository: docker.io/docker
-              tag: 28.0.4-dind@sha256:85f47411d4dfdbfbc0b8e397f84f2c13795c6404fb6e6ae3868790c9e9161d4b
+              repository: docker
+              tag: 29.3.0-dind@sha256:1ba18449911d01f477a3fc104123c85d677addc60701b14b3fcb5381f9c4a537
             env:
-              DOCKER_TLS_CERTDIR: ""
+              DOCKER_TLS_CERTDIR: /certs
               TZ: *tz
             securityContext:
               privileged: true
-            args:
-              - dockerd
-              - --host=tcp://0.0.0.0:2375
-              - --host=unix:///var/run/docker.sock
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec: &dockerProbe
+                  exec:
+                    command: ["docker", "info"]
+                  periodSeconds: 2
+                  timeoutSeconds: 3
+                  failureThreshold: 60
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  <<: *dockerProbe
+                  periodSeconds: 5
+                  timeoutSeconds: 3
+                  failureThreshold: 3
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  <<: *dockerProbe
+                  periodSeconds: 20
+                  timeoutSeconds: 3
+                  failureThreshold: 3
             resources:
               requests:
                 cpu: 100m
@@ -365,6 +389,10 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /var/run
+      docker-certs:
+        type: emptyDir
+        globalMounts:
+          - path: /certs
       next-cache:
         type: emptyDir
         globalMounts:
