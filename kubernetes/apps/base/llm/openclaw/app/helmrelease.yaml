@@ -125,6 +125,27 @@ spec:
               limits:
                 cpu: 6000m
                 memory: 4Gi
+          mission-control:
+            image:
+              repository: ghcr.io/joryirving/mission-control
+              tag: 2.0.1@sha256:36e8ecbbd850d44d2f29a01834a6a735d152c4bf0f480786145b4aa9a9bc2043
+            env:
+              OPENCLAW_GATEWAY_HOST: "127.0.0.1"
+              OPENCLAW_GATEWAY_PORT: "18789"
+              OPENCLAW_HOME: "/home/node/.openclaw"
+              OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw.json"
+              NEXT_PUBLIC_GATEWAY_URL: "wss://miso.jory.dev"
+              NEXT_PUBLIC_GATEWAY_CLIENT_ID: "openclaw-control-ui"
+              MC_ALLOWED_HOSTS: "mission-control.jory.dev,localhost,127.0.0.1"
+            envFrom:
+              - secretRef:
+                  name: mission-control
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
           dind:
             image:
               repository: docker.io/docker
@@ -212,6 +233,8 @@ spec:
             port: *port
           codeserver:
             port: &codeserverPort 12321
+          missioncontrol:
+            port: &missioncontrolPort 3000
     route:
       app:
         hostnames: ["miso.jory.dev"]
@@ -222,6 +245,15 @@ spec:
           - backendRefs:
               - name: "{{ .Release.Name }}"
                 port: *port
+      missioncontrol:
+        hostnames: ["mission-control.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *missioncontrolPort
       codeserver:
         hostnames: ["miso-code.jory.dev"]
         parentRefs:
@@ -333,6 +365,10 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /var/run
+      next-cache:
+        type: emptyDir
+        globalMounts:
+          - path: /app/.next/cache
       data:
         type: nfs
         server: voyager.internal
