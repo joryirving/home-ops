@@ -86,6 +86,44 @@ spec:
                 # Ensure config directory exists
                 mkdir -p /home/node/.openclaw
                 echo "Init container completed successfully"
+          daemon:
+            image:
+              repository: docker
+              tag: 29.3.0-dind@sha256:1ba18449911d01f477a3fc104123c85d677addc60701b14b3fcb5381f9c4a537
+            restartPolicy: Always
+            env:
+              DOCKER_TLS_CERTDIR: /certs
+            securityContext:
+              privileged: true
+              runAsUser: 0
+              runAsGroup: 0
+              allowPrivilegeEscalation: true
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec: &dockerProbe
+                  exec:
+                    command: ["docker", "info"]
+                  periodSeconds: 2
+                  timeoutSeconds: 3
+                  failureThreshold: 60
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  <<: *dockerProbe
+                  periodSeconds: 5
+                  timeoutSeconds: 3
+                  failureThreshold: 3
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  <<: *dockerProbe
+                  periodSeconds: 20
+                  timeoutSeconds: 3
+                  failureThreshold: 3
         containers:
           app:
             image:
@@ -100,6 +138,9 @@ spec:
             env:
               OPENCLAW_LOG_LEVEL: debug
               BROWSER_WS_ENDPOINT: "ws://localhost:9222"
+              DOCKER_HOST: "tcp://localhost:2376"
+              DOCKER_CERT_PATH: /certs/client
+              DOCKER_TLS_VERIFY: "1"
               GOPATH: /home/node/go
               HOME: &homepath /home/node
               HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
@@ -124,6 +165,27 @@ spec:
               limits:
                 cpu: 6000m
                 memory: 4Gi
+          mission-control:
+            image:
+              repository: ghcr.io/joryirving/mission-control
+              tag: 2.0.1@sha256:36e8ecbbd850d44d2f29a01834a6a735d152c4bf0f480786145b4aa9a9bc2043
+            env:
+              OPENCLAW_GATEWAY_HOST: "127.0.0.1"
+              OPENCLAW_GATEWAY_PORT: "18789"
+              OPENCLAW_HOME: "/home/node/.openclaw"
+              OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw.json"
+              NEXT_PUBLIC_GATEWAY_URL: "wss://miso.jory.dev"
+              NEXT_PUBLIC_GATEWAY_CLIENT_ID: "openclaw-control-ui"
+              MC_ALLOWED_HOSTS: "mission-control.jory.dev,localhost,127.0.0.1"
+            envFrom:
+              - secretRef:
+                  name: openclaw-mission-control
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
           chrome:
             image:
               repository: zenika/alpine-chrome
@@ -191,6 +253,8 @@ spec:
             port: *port
           codeserver:
             port: &codeserverPort 12321
+          missioncontrol:
+            port: &missioncontrolPort 3000
     route:
       app:
         hostnames: ["miso.jory.dev"]
@@ -201,6 +265,15 @@ spec:
           - backendRefs:
               - name: "{{ .Release.Name }}"
                 port: *port
+      missioncontrol:
+        hostnames: ["mission-control.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *missioncontrolPort
       codeserver:
         hostnames: ["miso-code.jory.dev"]
         parentRefs:
@@ -310,13 +383,6 @@ spec:
         path: /mnt/delta/miso
         globalMounts:
           - path: /data
-      openclaw-config:
-        type: secret
-        name: "{{ .Release.Name }}-config"
-        defaultMode: 0400
-        globalMounts:
-          - path: /home/node/.openclaw/openclaw-main.json
-            subPath: openclaw.json
       downloads:
         type: nfs
         server: voyager.internal
@@ -330,3 +396,18 @@ spec:
         path: /mnt/daena/comfyui/output
         globalMounts:
           - path: /home/node/.openclaw/workspace/images
+      openclaw-config:
+        type: secret
+        name: "{{ .Release.Name }}-config"
+        defaultMode: 0400
+        globalMounts:
+          - path: /home/node/.openclaw/openclaw-main.json
+            subPath: openclaw.json
+      next-cache:
+        type: emptyDir
+        globalMounts:
+          - path: /app/.next/cache
+      tmp:
+        type: emptyDir
+      certs:
+        type: emptyDir
