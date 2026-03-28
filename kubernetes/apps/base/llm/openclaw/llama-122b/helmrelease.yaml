@@ -57,7 +57,7 @@ spec:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-7.2
+              tag: rocm-6.4.4
             securityContext:
               privileged: true
             command:
@@ -86,11 +86,13 @@ spec:
               - "0.90"
               - --no-context-shift
               - --cache-prompt
-              - --checkpoint-every-n-tokens
-              - "-1"
               - --cache-ram
               - "16384"
               - --kv-unified
+              - --ctx-checkpoints
+              - "4"
+              - --checkpoint-every-n-tokens
+              - "16384"
               - --image-min-tokens
               - "1024"
               - --temp
