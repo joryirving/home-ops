@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-122b
+  name: llama-server
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      llama-122b:
+      llama-server:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -68,7 +68,7 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen35b
+              - qwen122b
               - --model
               - /models/qwen122b/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
               - --mmproj
