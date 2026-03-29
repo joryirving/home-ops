@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-4b
+  name: llama-memory
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      llama-4b:
+      llama-memory:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -26,19 +26,19 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen4b/Qwen3.5-4B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen4b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen9b/Qwen3.5-9B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen9b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen4b
-                  rm -rf /models/qwen4b/.cache/huggingface/download/Qwen3.5-4B-UD-Q8_K_XL.gguf.lock
+                  mkdir -p /models/qwen9b
+                  rm -rf /models/qwen9b/.cache/huggingface/download/Qwen3.5-9B-UD-Q8_K_XL.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-4B-GGUF \
-                    Qwen3.5-4B-UD-Q8_K_XL.gguf \
+                    unsloth/Qwen3.5-9B-GGUF \
+                    Qwen3.5-9B-UD-Q8_K_XL.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/qwen4b
+                    --local-dir /models/qwen9b
 
-                  echo "Qwen3.5-4B download complete"
+                  echo "Qwen3.5-9B download complete"
                 else
-                  echo "Qwen3.5-4B already downloaded, skipping"
+                  echo "Qwen3.5-9B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -66,11 +66,11 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen4b
+              - qwen9b
               - --model
-              - /models/qwen4b/Qwen3.5-4B-UD-Q8_K_XL.gguf
+              - /models/qwen9b/Qwen3.5-9B-UD-Q8_K_XL.gguf
               - --mmproj
-              - /models/qwen4b/mmproj-F16.gguf
+              - /models/qwen9b/mmproj-F16.gguf
               - --ctx-size
               - "32768"
               - --n-gpu-layers
