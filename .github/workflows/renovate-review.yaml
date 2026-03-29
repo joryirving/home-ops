@@ -7,8 +7,9 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
 
 concurrency:
-  group: renovate-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: renovate-llm-review
+  cancel-in-progress: false
+  max-concurrent-runs: 2
 
 permissions:
   contents: read
@@ -24,6 +25,7 @@ jobs:
     env:
       REPO: ${{ github.repository }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-server.llm:8080/v1' }}
       AI_MODEL: ${{ vars.AI_MODEL || 'qwen35b' }}
@@ -33,18 +35,47 @@ jobs:
       AI_PRIMARY_RETRY_DELAY_SEC: ${{ vars.AI_PRIMARY_RETRY_DELAY_SEC || '15' }}
 
     steps:
+      - name: Check if version already reviewed
+        id: version-check
+        run: |
+          set -euo pipefail
+
+          TARGET_VERSION=$(echo "$PR_TITLE" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+
+          if [ -z "$TARGET_VERSION" ]; then
+            echo "version_found=false" >> "$GITHUB_OUTPUT"
+            echo "skip_review=false" >> "$GITHUB_OUTPUT"
+            echo "No version detected in title, proceeding with review"
+            exit 0
+          fi
+
+          echo "version_found=true" >> "$GITHUB_OUTPUT"
+          echo "target_version=$TARGET_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Checking if version $TARGET_VERSION was already reviewed..."
+
+          if gh api "repos/$REPO/pulls/$PR_NUMBER/comments" \
+            --jq '.[] | select(.body | contains("'$TARGET_VERSION'")) | .id' 2>/dev/null | grep -q .; then
+            echo "skip_review=true" >> "$GITHUB_OUTPUT"
+            echo "Version $TARGET_VERSION already reviewed, skipping LLM review"
+          else
+            echo "skip_review=false" >> "$GITHUB_OUTPUT"
+            echo "Version $TARGET_VERSION not yet reviewed, proceeding with LLM review"
+          fi
+
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Configure 1password
+        if: steps.version-check.outputs.skip_review != 'true'
         uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
           connect-host: ${{ secrets.dashboardsCONNECT_HOST || secrets.OP_CONNECT_HOST }}
           connect-token: ${{ secrets.dashboardsCONNECT_TOKEN || secrets.OP_CONNECT_TOKEN }}
 
       - name: Get Secrets
+        if: steps.version-check.outputs.skip_review != 'true'
         uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
           export-env: true
@@ -53,6 +84,7 @@ jobs:
           BOT_APP_PRIVATE_KEY: op://Kubernetes/openclaw/MISO_BOT_PRIVATE_KEY
 
       - name: Generate bot token (miso-assistant)
+        if: steps.version-check.outputs.skip_review != 'true'
         id: app-token
         uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
@@ -60,11 +92,13 @@ jobs:
           private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
       - name: Prefer bot token for GitHub API/reviews
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
           echo "GH_TOKEN=${{ steps.app-token.outputs.token }}" >> "$GITHUB_ENV"
 
       - name: Validate runtime dependencies
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
           command -v gh >/dev/null
@@ -73,6 +107,7 @@ jobs:
           command -v git >/dev/null
 
       - name: Validate AI config
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
           : "${AI_BASE_URL:?Missing variable AI_BASE_URL}"
@@ -82,6 +117,7 @@ jobs:
           : "${AI_FALLBACK_MODEL:?Missing variable AI_FALLBACK_MODEL}"
 
       - name: Collect PR context
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
 
@@ -107,6 +143,7 @@ jobs:
           head -n 180 version-hints.txt > version-hints.truncated.txt || true
 
       - name: Gather linked sources
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
 
@@ -259,6 +296,7 @@ jobs:
 
 
       - name: Gather image digest provenance context
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
 
@@ -625,6 +663,7 @@ jobs:
           PY2
 
       - name: Gather repo impact + history context
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
 
@@ -679,6 +718,7 @@ jobs:
           head -c 20000 repo-history.md > repo-history.truncated.md
 
       - name: Build review corpus
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
 
@@ -721,6 +761,7 @@ jobs:
           head -c 220000 review-corpus.md > review-corpus.truncated.md
 
       - name: Analyze with local AI model
+        if: steps.version-check.outputs.skip_review != 'true'
         id: analyze
         run: |
           set -euo pipefail
@@ -770,12 +811,14 @@ jobs:
           echo "analysis_engine=$ANALYSIS_ENGINE" >> "$GITHUB_OUTPUT"
 
       - name: Build final review body
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
 
           jq -r '.review_markdown' ai-output.json > review-body.md
 
       - name: Upsert automated review comment
+        if: steps.version-check.outputs.skip_review != 'true'
         run: |
           set -euo pipefail
           REVIEW_MARKER='<!-- renovate-review-bot -->'
