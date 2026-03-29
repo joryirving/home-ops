@@ -26,13 +26,13 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen4b/Qwen3.5-4B-UD-Q4_K_XL.gguf ] || [ ! -s /models/qwen4b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen4b/Qwen3.5-4B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen4b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   mkdir -p /models/qwen4b
-                  rm -rf /models/qwen4b/.cache/huggingface/download/Qwen3.5-4B-UD-Q4_K_XL.gguf.lock
+                  rm -rf /models/qwen4b/.cache/huggingface/download/Qwen3.5-4B-UD-Q8_K_XL.gguf.lock
                   hf download \
                     unsloth/Qwen3.5-4B-GGUF \
-                    Qwen3.5-4B-UD-Q4_K_XL.gguf \
+                    Qwen3.5-4B-UD-Q8_K_XL.gguf \
                     mmproj-F16.gguf \
                     --local-dir /models/qwen4b
 
@@ -68,11 +68,11 @@ spec:
               - --alias
               - qwen4b
               - --model
-              - /models/qwen4b/Qwen3.5-4B-UD-Q4_K_XL.gguf
+              - /models/qwen4b/Qwen3.5-4B-UD-Q8_K_XL.gguf
               - --mmproj
               - /models/qwen4b/mmproj-F16.gguf
               - --ctx-size
-              - "8192"
+              - "32768"
               - --n-gpu-layers
               - "99"
               - --fit
@@ -80,34 +80,41 @@ spec:
               - --flash-attn
               - "on"
               - --parallel
-              - "1"
+              - "2"
               - --cont-batching
               - -sps
               - "0.90"
+              - --no-context-shift
               - --cache-prompt
-              - --cache-reuse
-              - "256"
               - --kv-unified
+              - --ctx-checkpoints
+              - "4"
+              - --checkpoint-every-n-tokens
+              - "16384"
+              - --image-min-tokens
+              - "1024"
               - --temp
-              - "0.2"
+              - "0.6"
               - --top-p
               - "0.95"
               - --top-k
               - "20"
               - --min-p
               - "0"
-              - --cache-type-k
-              - q8_0
-              - --cache-type-v
-              - q8_0
+              - --presence-penalty
+              - "0"
+              - --repeat-penalty
+              - "1.0"
               - --batch-size
-              - "1024"
+              - "4096"
               - --ubatch-size
-              - "1024"
-              - --mmap
+              - "2048"
+              - --threads
+              - "12"
+              - --threads-batch
+              - "16"
+              - --no-mmap
               - --jinja
-              - --reasoning-format
-              - none
             resources:
               requests:
                 cpu: 500m
