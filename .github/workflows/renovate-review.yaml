@@ -259,21 +259,13 @@ jobs:
             [ -z "$repo_key" ] && continue
             grep -qx "$repo_key" repo-candidates.txt 2>/dev/null || echo "$repo_key" >> repo-candidates.txt
           done < <(
-            python3 - <<'PY_REPO_SCAN'
-from pathlib import Path
-text = Path('pr.diff.truncated').read_text(encoding='utf-8', errors='replace') if Path('pr.diff.truncated').exists() else ''
-seen = set()
-for line in text.splitlines():
-    if 'repository:' not in line:
-        continue
-    value = line.split('repository:', 1)[1].strip().strip('"'')
-    token = value.split()[0].rstrip(',') if value else ''
-    parts = token.split('/')
-    if len(parts) >= 2:
-        seen.add('/'.join(parts[-2:]))
-for item in sorted(seen):
-    print(item)
-PY_REPO_SCAN
+            grep -E 'repository:' pr.diff.truncated 2>/dev/null \
+              | sed -E 's/.*repository:[[:space:]]*//' \
+              | tr -d '"' \
+              | tr -d "'" \
+              | sed -E 's/[[:space:],].*$//' \
+              | awk -F/ 'NF >= 2 { print $(NF-1) "/" $NF }' \
+              | sort -u || true
           )
 
           while IFS= read -r repo_key; do
