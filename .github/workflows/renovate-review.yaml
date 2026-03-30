@@ -158,6 +158,7 @@ jobs:
           fi
 
           : > seen-repos.txt
+          : > repo-candidates.txt
           i=0
           while IFS= read -r url; do
             [ -z "$url" ] && continue
@@ -248,51 +249,74 @@ jobs:
               owner="${BASH_REMATCH[1]}"
               repo="${BASH_REMATCH[2]}"
               repo_key="$owner/$repo"
-
-              if ! grep -qx "$repo_key" seen-repos.txt 2>/dev/null; then
-                echo "$repo_key" >> seen-repos.txt
-
-                echo >> linked-sources.md
-                echo "### GitHub Releases Enrichment: $repo_key" >> linked-sources.md
-
-                if gh api "repos/$owner/$repo/releases?per_page=30" > gh-releases.repo.json 2>/dev/null; then
-                  jq '[.[] | {tag_name,name,published_at,html_url}]' gh-releases.repo.json > gh-releases.repo.filtered.json
-                  echo "#### Recent Releases (tags)" >> linked-sources.md
-                  echo '```json' >> linked-sources.md
-                  head -c 5000 gh-releases.repo.filtered.json >> linked-sources.md
-                  echo >> linked-sources.md
-                  echo '```' >> linked-sources.md
-
-                  if [ -n "$TARGET_VERSION" ]; then
-                    jq --arg v "$TARGET_VERSION" '
-                      [ .[]
-                        | select(
-                            ((.tag_name // "" | ascii_downcase) | contains(($v | ascii_downcase)))
-                            or
-                            ((.name // "" | ascii_downcase) | contains(($v | ascii_downcase)))
-                          )
-                        | {tag_name,name,published_at,html_url,body}
-                      ][:5]
-                    ' gh-releases.repo.json > gh-releases.target.filtered.json
-                    if [ "$(jq 'length' gh-releases.target.filtered.json)" -gt 0 ]; then
-                      echo "#### Releases matching target version $TARGET_VERSION" >> linked-sources.md
-                      echo '```json' >> linked-sources.md
-                      head -c 8000 gh-releases.target.filtered.json >> linked-sources.md
-                      echo >> linked-sources.md
-                      echo '```' >> linked-sources.md
-                    else
-                      echo "(No release tags matched target version $TARGET_VERSION in $repo_key)" >> linked-sources.md
-                    fi
-                  fi
-                else
-                  echo "(Could not fetch releases list for $repo_key)" >> linked-sources.md
-                fi
-              fi
+              grep -qx "$repo_key" repo-candidates.txt 2>/dev/null || echo "$repo_key" >> repo-candidates.txt
             fi
 
             echo >> linked-sources.md
           done < urls.txt
 
+          while IFS= read -r repo_key; do
+            [ -z "$repo_key" ] && continue
+            grep -qx "$repo_key" repo-candidates.txt 2>/dev/null || echo "$repo_key" >> repo-candidates.txt
+          done < <(
+            grep -Eo 'image:[[:space:]]*([[:alnum:]._-]+/)?[[:alnum:]._-]+/[[:alnum:]._-]+' pr.diff.truncated               | sed -E 's/^image:[[:space:]]*//'               | awk -F/ '{ if (NF >= 2) print $(NF-1) "/" $NF }'               | sort -u || true
+          )
+
+          while IFS= read -r repo_key; do
+            [ -z "$repo_key" ] && continue
+            if ! grep -qx "$repo_key" seen-repos.txt 2>/dev/null; then
+              echo "$repo_key" >> seen-repos.txt
+              owner="${repo_key%/*}"
+              repo="${repo_key#*/}"
+
+              echo >> linked-sources.md
+              echo "### GitHub Releases Enrichment: $repo_key" >> linked-sources.md
+
+              if gh api "repos/$owner/$repo/releases?per_page=30" > gh-releases.repo.json 2>/dev/null; then
+                jq '[.[] | {tag_name,name,published_at,html_url}]' gh-releases.repo.json > gh-releases.repo.filtered.json
+                echo "#### Recent Releases (tags)" >> linked-sources.md
+                echo '```json' >> linked-sources.md
+                head -c 5000 gh-releases.repo.filtered.json >> linked-sources.md
+                echo >> linked-sources.md
+                echo '```' >> linked-sources.md
+
+                if [ -n "$TARGET_VERSION" ]; then
+                  jq --arg v "$TARGET_VERSION" '
+                    [ .[]
+                      | select(
+                          ((.tag_name // "" | ascii_downcase) == ($v | ascii_downcase))
+                          or ((.tag_name // "" | ascii_downcase) == ("v" + ($v | ascii_downcase)))
+                          or ((.tag_name // "" | ascii_downcase) | contains(($v | ascii_downcase)))
+                          or ((.name // "" | ascii_downcase) | contains(($v | ascii_downcase)))
+                        )
+                      | {tag_name,name,published_at,html_url,body}
+                    ][:5]
+                  ' gh-releases.repo.json > gh-releases.target.filtered.json
+                  if [ "$(jq 'length' gh-releases.target.filtered.json)" -gt 0 ]; then
+                    echo "#### Releases matching target version $TARGET_VERSION" >> linked-sources.md
+                    echo '```json' >> linked-sources.md
+                    head -c 8000 gh-releases.target.filtered.json >> linked-sources.md
+                    echo >> linked-sources.md
+                    echo '```' >> linked-sources.md
+                  else
+                    echo "(No release tags matched target version $TARGET_VERSION in $repo_key)" >> linked-sources.md
+                    if gh api "repos/$owner/$repo/tags?per_page=50" > gh-tags.repo.json 2>/dev/null; then
+                      jq '[.[] | {name,commit:.commit.sha}]' gh-tags.repo.json > gh-tags.repo.filtered.json
+                      echo "#### Recent Tags" >> linked-sources.md
+                      echo '```json' >> linked-sources.md
+                      head -c 4000 gh-tags.repo.filtered.json >> linked-sources.md
+                      echo >> linked-sources.md
+                      echo '```' >> linked-sources.md
+                    else
+                      echo "(Could not fetch tags list for $repo_key)" >> linked-sources.md
+                    fi
+                  fi
+                fi
+              else
+                echo "(Could not fetch releases list for $repo_key)" >> linked-sources.md
+              fi
+            fi
+          done < repo-candidates.txt
 
       - name: Gather image digest provenance context
         if: steps.version-check.outputs.skip_review != 'true'
