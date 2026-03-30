@@ -259,7 +259,7 @@ jobs:
             [ -z "$repo_key" ] && continue
             grep -qx "$repo_key" repo-candidates.txt 2>/dev/null || echo "$repo_key" >> repo-candidates.txt
           done < <(
-            grep -Eo 'image:[[:space:]]*([[:alnum:]._-]+/)?[[:alnum:]._-]+/[[:alnum:]._-]+' pr.diff.truncated               | sed -E 's/^image:[[:space:]]*//'               | awk -F/ '{ if (NF >= 2) print $(NF-1) "/" $NF }'               | sort -u || true
+            grep -Eo 'repository:[[:space:]]*["''' ]*([[:alnum:]._-]+/)?[[:alnum:]._-]+/[[:alnum:]._-]+' pr.diff.truncated               | sed -E 's/^repository:[[:space:]]*["''' ]*//'               | sort -u || true
           )
 
           while IFS= read -r repo_key; do
@@ -361,6 +361,19 @@ jobs:
                           key = (current_file, current_repo, tag_base)
                           buckets.setdefault(key, {"old": [], "new": []})
                           buckets[key]["old" if sign == '-' else "new"].append(digest)
+                      elif current_repo:
+                          key = (current_file, current_repo, tag_val)
+                          buckets.setdefault(key, {"old": [], "new": []})
+                      continue
+
+                  m_digest_only = re.match(r'^([+-])\s*digest:\s*[\'"]?(sha256:[0-9a-f]{64})', raw)
+                  if m_digest_only and current_repo:
+                      sign = m_digest_only.group(1)
+                      digest = m_digest_only.group(2)
+                      tag_base = "(digest-only)"
+                      key = (current_file, current_repo, tag_base)
+                      buckets.setdefault(key, {"old": [], "new": []})
+                      buckets[key]["old" if sign == '-' else "new"].append(digest)
                       continue
 
                   m_image = re.match(r'^([+-])\s*image:\s*[\'"]?([^\'"\s,]+@sha256:[0-9a-f]{64})', raw)
