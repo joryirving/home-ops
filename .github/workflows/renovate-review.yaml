@@ -34,33 +34,6 @@ jobs:
       AI_PRIMARY_RETRY_DELAY_SEC: ${{ vars.AI_PRIMARY_RETRY_DELAY_SEC || '15' }}
 
     steps:
-      - name: Check if version already reviewed
-        id: version-check
-        run: |
-          set -euo pipefail
-
-          TARGET_VERSION=$(echo "$PR_TITLE" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-
-          if [ -z "$TARGET_VERSION" ]; then
-            echo "version_found=false" >> "$GITHUB_OUTPUT"
-            echo "skip_review=false" >> "$GITHUB_OUTPUT"
-            echo "No version detected in title, proceeding with review"
-            exit 0
-          fi
-
-          echo "version_found=true" >> "$GITHUB_OUTPUT"
-          echo "target_version=$TARGET_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Checking if version $TARGET_VERSION was already reviewed..."
-
-          if gh api "repos/$REPO/pulls/$PR_NUMBER/comments" \
-            --jq '.[] | select(.body | contains("'$TARGET_VERSION'")) | .id' 2>/dev/null | grep -q .; then
-            echo "skip_review=true" >> "$GITHUB_OUTPUT"
-            echo "Version $TARGET_VERSION already reviewed, skipping LLM review"
-          else
-            echo "skip_review=false" >> "$GITHUB_OUTPUT"
-            echo "Version $TARGET_VERSION not yet reviewed, proceeding with LLM review"
-          fi
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
