@@ -259,7 +259,19 @@ jobs:
             [ -z "$repo_key" ] && continue
             grep -qx "$repo_key" repo-candidates.txt 2>/dev/null || echo "$repo_key" >> repo-candidates.txt
           done < <(
-            grep -Eo 'repository:[[:space:]]*["''' ]*([[:alnum:]._-]+/)?[[:alnum:]._-]+/[[:alnum:]._-]+' pr.diff.truncated               | sed -E 's/^repository:[[:space:]]*["''' ]*//'               | sort -u || true
+            python3 - <<'PY_REPO_SCAN'
+import re
+from pathlib import Path
+text = Path('pr.diff.truncated').read_text(encoding='utf-8', errors='replace') if Path('pr.diff.truncated').exists() else ''
+pattern = re.compile(r'repository:\s*["']?((?:[A-Za-z0-9._-]+/)?[A-Za-z0-9._-]+/[A-Za-z0-9._-]+)')
+seen = set()
+for line in text.splitlines():
+    m = pattern.search(line)
+    if m:
+        seen.add(m.group(1))
+for item in sorted(seen):
+    print(item)
+PY_REPO_SCAN
           )
 
           while IFS= read -r repo_key; do
