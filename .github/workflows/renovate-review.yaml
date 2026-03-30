@@ -259,7 +259,13 @@ jobs:
             [ -z "$repo_key" ] && continue
             grep -qx "$repo_key" repo-candidates.txt 2>/dev/null || echo "$repo_key" >> repo-candidates.txt
           done < <(
-            grep -Eo 'repository:[[:space:]]*["''' ]*([[:alnum:]._-]+/)?[[:alnum:]._-]+/[[:alnum:]._-]+' pr.diff.truncated               | sed -E 's/^repository:[[:space:]]*["''' ]*//'               | sort -u || true
+            grep -E 'repository:' pr.diff.truncated 2>/dev/null \
+              | sed -E 's/.*repository:[[:space:]]*//' \
+              | tr -d '"' \
+              | tr -d "'" \
+              | sed -E 's/[[:space:],].*$//' \
+              | awk -F/ 'NF >= 2 { print $(NF-1) "/" $NF }' \
+              | sort -u || true
           )
 
           while IFS= read -r repo_key; do
