@@ -62,13 +62,12 @@ spec:
         runAsGroup: 0
     service:
       app:
-        controller: *app
         ports:
           http:
             port: 8000
-    persistence:
-      tmp:
-        enabled: true
-        type: emptyDir
-        globalMounts:
-          - path: /tmp
+    route:
+      app:
+        hostnames: ["grafana-mcp.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
