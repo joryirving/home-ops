@@ -26,7 +26,7 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q8_K_XL.gguf ] || [ ! -s /models/gemma4-26b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q8_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   mkdir -p /models/gemma4-26b
                   rm -rf /models/gemma4-26b/.cache/huggingface/download/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf.lock
@@ -69,8 +69,6 @@ spec:
               - self-hosted
               - --model
               - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q8_K_XL.gguf
-              - --mmproj
-              - /models/gemma4-26b/mmproj-F16.gguf
               - --ctx-size
               - "1048576"
               - --n-gpu-layers
@@ -89,8 +87,6 @@ spec:
               - "4"
               - --checkpoint-every-n-tokens
               - "16384"
-              - --image-min-tokens
-              - "1024"
               - --temp
               - "1.0"
               - --top-p
