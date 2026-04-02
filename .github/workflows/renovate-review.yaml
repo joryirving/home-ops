@@ -17,7 +17,7 @@ permissions:
 jobs:
   review-renovate-pr:
     name: Deep Renovate Review
-    if: github.event.pull_request.user.login == 'smurf-bot[bot]'
+    if: github.event.pull_request.user.login == 'smurf-bot[bot]' || github.event.pull_request.user.login == 'itsmiso-ai'
     runs-on: home-ops-runner-main
     timeout-minutes: 35
 
@@ -32,12 +32,20 @@ jobs:
       AI_FALLBACK_MODEL: ${{ vars.AI_FALLBACK_MODEL || 'qwen9b' }}
       AI_PRIMARY_RETRIES: ${{ vars.AI_PRIMARY_RETRIES || '8' }}
       AI_PRIMARY_RETRY_DELAY_SEC: ${{ vars.AI_PRIMARY_RETRY_DELAY_SEC || '15' }}
+      ALLOWED_SOURCE_HOSTS: ${{ vars.RENOVATE_REVIEW_ALLOWED_SOURCE_HOSTS || 'github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Decide whether to skip review
+        id: version-check
+        run: |
+          set -euo pipefail
+          echo "skip_review=false" >> "$GITHUB_OUTPUT"
 
       - name: Configure 1password
         if: steps.version-check.outputs.skip_review != 'true'
@@ -114,6 +122,46 @@ jobs:
           grep -E '^[+-].*(image:|tag:|version:|chart:|appVersion:|digest:)' pr.diff.truncated > version-hints.txt || true
           head -n 180 version-hints.txt > version-hints.truncated.txt || true
 
+      - name: Gather HelmValues context
+        if: steps.version-check.outputs.skip_review != 'true'
+        run: |
+          set -euo pipefail
+
+          CHANGED_HELMRELEASES=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[] | select(.filename | endswith("helmrelease.yaml")) | .filename' 2>/dev/null || true)
+
+          : > helmvalues-context.md
+          if [ -z "$CHANGED_HELMRELEASES" ]; then
+            echo "No helmrelease.yaml files changed in this PR." >> helmvalues-context.md
+            exit 0
+          fi
+
+          echo "# HelmRelease Values Context (modified files only)" >> helmvalues-context.md
+          echo >> helmvalues-context.md
+
+          TOTAL=0
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            if [ ! -f "$f" ]; then
+              echo "## File: $f" >> helmvalues-context.md
+              echo "(file not present in checked-out tree at this ref)" >> helmvalues-context.md
+              echo >> helmvalues-context.md
+              continue
+            fi
+
+            LINES=$(wc -l < "$f")
+            if [ $((TOTAL + LINES)) -gt 1200 ]; then
+              echo "(helmrelease content truncated — too many total lines)" >> helmvalues-context.md
+              break
+            fi
+
+            TOTAL=$((TOTAL + LINES))
+            echo "## File: $f (${LINES} lines)" >> helmvalues-context.md
+            echo '```yaml' >> helmvalues-context.md
+            cat "$f" >> helmvalues-context.md
+            echo '```' >> helmvalues-context.md
+            echo >> helmvalues-context.md
+          done <<< "$CHANGED_HELMRELEASES"
+
       - name: Gather linked sources
         if: steps.version-check.outputs.skip_review != 'true'
         run: |
@@ -150,18 +198,34 @@ jobs:
               echo "### Fetched Content (truncated)"
             } >> linked-sources.md
 
-            if curl -fsSL -L --max-time 25 "$normalized_url" -o source.raw 2>/dev/null; then
-              head -c 5000 source.raw | tr '\0' ' ' > source.tmp
-              if [ -s source.tmp ]; then
-                echo '```text' >> linked-sources.md
-                cat source.tmp >> linked-sources.md
-                echo >> linked-sources.md
-                echo '```' >> linked-sources.md
+            host=$(printf '%s' "$normalized_url" | sed -E 's#^https?://([^/]+).*#\1#' | tr '[:upper:]' '[:lower:]')
+            allowed=0
+            IFS=',' read -ra allowed_hosts <<< "$ALLOWED_SOURCE_HOSTS"
+            for raw_host in "${allowed_hosts[@]}"; do
+              candidate=$(printf '%s' "$raw_host" | xargs | tr '[:upper:]' '[:lower:]')
+              [ -n "$candidate" ] || continue
+              if [ "$host" = "$candidate" ]; then
+                allowed=1
+                break
+              fi
+            done
+
+            if [ "$allowed" -eq 1 ]; then
+              if curl -fsSL -L --max-time 25 "$normalized_url" -o source.raw 2>/dev/null; then
+                head -c 5000 source.raw | tr ' ' ' ' > source.tmp
+                if [ -s source.tmp ]; then
+                  echo '```text' >> linked-sources.md
+                  cat source.tmp >> linked-sources.md
+                  echo >> linked-sources.md
+                  echo '```' >> linked-sources.md
+                else
+                  echo "(No content captured from URL)" >> linked-sources.md
+                fi
               else
-                echo "(No content captured from URL)" >> linked-sources.md
+                echo "(Failed to fetch allowlisted URL content from $host)" >> linked-sources.md
               fi
             else
-              echo "(Failed to fetch URL content)" >> linked-sources.md
+              echo "(Skipped non-allowlisted URL on self-hosted runner: $host)" >> linked-sources.md
             fi
 
             if [[ "$normalized_url" =~ ^https?://github\.com/([^/]+)/([^/]+)/releases/tag/([^/?#]+) ]]; then
@@ -738,6 +802,9 @@ jobs:
           set -euo pipefail
 
           {
+            echo "# HelmRelease Values Context"
+            cat helmvalues-context.md
+            echo
             echo "# PR Metadata"
             echo '```json'
             jq . pr.json
