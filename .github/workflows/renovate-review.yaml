@@ -17,7 +17,7 @@ permissions:
 jobs:
   review-renovate-pr:
     name: Deep Renovate Review
-    if: github.event.pull_request.user.login == 'smurf-bot[bot]'
+    if: github.event.pull_request.user.login == 'smurf-bot[bot]' || github.event.pull_request.user.login == 'itsmiso-ai'
     runs-on: home-ops-runner-main
     timeout-minutes: 35
 
@@ -113,6 +113,42 @@ jobs:
 
           grep -E '^[+-].*(image:|tag:|version:|chart:|appVersion:|digest:)' pr.diff.truncated > version-hints.txt || true
           head -n 180 version-hints.txt > version-hints.truncated.txt || true
+
+      - name: Gather HelmValues context
+        if: steps.version-check.outputs.skip_review != 'true'
+        run: |
+          set -euo pipefail
+
+          # Find helmrelease.yaml files changed in this PR
+          HELMRELEASES=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate \
+            | jq -r '.[] | select(.filename | test("helmrelease\.yaml$")) | .filename' 2>/dev/null)
+
+          : > helmvalues-context.md
+          if [ -z "$HELMRELEASES" ]; then
+            echo "No helmrelease.yaml files changed in this PR." >> helmvalues-context.md
+          else
+            echo "# HelmValues Context (from PR diff)" >> helmvalues-context.md
+            echo "" >> helmvalues-context.md
+            TOTAL=0
+            for f in $HELMRELEASES; do
+              # Try to get the file at PR head SHA, fall back to base SHA
+              CONTENT=$(gh api "repos/$REPO/contents/$f" --ref "$HEAD_SHA" 2>/dev/null | jq -r '.content // ""' | base64 -d 2>/dev/null || echo "(file not found at HEAD SHA)")
+              if [ "$CONTENT" = "(file not found at HEAD SHA)" ]; then
+                CONTENT=$(gh api "repos/$REPO/contents/$f" 2>/dev/null | jq -r '.content // ""' | base64 -d 2>/dev/null || echo "(file not found)")
+              fi
+              LINES=$(echo "$CONTENT" | wc -l)
+              TOTAL=$((TOTAL + LINES))
+              if [ $TOTAL -gt 1200 ]; then
+                echo "(helmrelease content truncated — too many files)" >> helmvalues-context.md
+                break
+              fi
+              echo "## File: $f (${LINES} lines)" >> helmvalues-context.md
+              echo "\`\`\`yaml" >> helmvalues-context.md
+              echo "$CONTENT" >> helmvalues-context.md
+              echo "\`\`\`" >> helmvalues-context.md
+              echo "" >> helmvalues-context.md
+            done
+          fi
 
       - name: Gather linked sources
         if: steps.version-check.outputs.skip_review != 'true'
@@ -738,6 +774,9 @@ jobs:
           set -euo pipefail
 
           {
+            echo "# HelmRelease Values Context"
+            cat helmvalues-context.md
+            echo
             echo "# PR Metadata"
             echo '```json'
             jq . pr.json
