@@ -38,6 +38,13 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Decide whether to skip review
+        id: version-check
+        run: |
+          set -euo pipefail
+          echo "skip_review=false" >> "$GITHUB_OUTPUT"
 
       - name: Configure 1password
         if: steps.version-check.outputs.skip_review != 'true'
@@ -148,9 +155,9 @@ jobs:
 
             TOTAL=$((TOTAL + LINES))
             echo "## File: $f (${LINES} lines)" >> helmvalues-context.md
-            echo '\`\`\`yaml' >> helmvalues-context.md
+            echo '```yaml' >> helmvalues-context.md
             cat "$f" >> helmvalues-context.md
-            echo '\`\`\`' >> helmvalues-context.md
+            echo '```' >> helmvalues-context.md
             echo >> helmvalues-context.md
           done <<< "$CHANGED_HELMRELEASES"
 
@@ -190,18 +197,22 @@ jobs:
               echo "### Fetched Content (truncated)"
             } >> linked-sources.md
 
-            if curl -fsSL -L --max-time 25 "$normalized_url" -o source.raw 2>/dev/null; then
-              head -c 5000 source.raw | tr '\0' ' ' > source.tmp
-              if [ -s source.tmp ]; then
-                echo '```text' >> linked-sources.md
-                cat source.tmp >> linked-sources.md
-                echo >> linked-sources.md
-                echo '```' >> linked-sources.md
+            if [[ "$normalized_url" =~ ^https?://github\.com/ ]]; then
+              if curl -fsSL -L --max-time 25 "$normalized_url" -o source.raw 2>/dev/null; then
+                head -c 5000 source.raw | tr '\0' ' ' > source.tmp
+                if [ -s source.tmp ]; then
+                  echo '```text' >> linked-sources.md
+                  cat source.tmp >> linked-sources.md
+                  echo >> linked-sources.md
+                  echo '```' >> linked-sources.md
+                else
+                  echo "(No content captured from URL)" >> linked-sources.md
+                fi
               else
-                echo "(No content captured from URL)" >> linked-sources.md
+                echo "(Failed to fetch GitHub URL content)" >> linked-sources.md
               fi
             else
-              echo "(Failed to fetch URL content)" >> linked-sources.md
+              echo "(Skipped non-GitHub URL on self-hosted runner)" >> linked-sources.md
             fi
 
             if [[ "$normalized_url" =~ ^https?://github\.com/([^/]+)/([^/]+)/releases/tag/([^/?#]+) ]]; then
