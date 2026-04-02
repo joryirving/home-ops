@@ -311,12 +311,17 @@ spec:
             - apiGroups: ["snapshot.storage.k8s.io"]
               resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
               verbs: ["get", "list", "watch"]
-        openclaw-write-restricted:
-          type: Role
+        # Cluster-wide pod delete — restart any pod in any namespace
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRole
           rules:
             - apiGroups: [""]
               resources: ["pods"]
               verbs: ["delete"]
+        # Namespace-scoped exec + deploy patch — llm namespace only
+        openclaw-exec-deploy-llm:
+          type: Role
+          rules:
             - apiGroups: [""]
               resources: ["pods/exec"]
               verbs: ["create"]
@@ -331,13 +336,23 @@ spec:
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
-        openclaw-write-restricted:
-          type: RoleBinding
+        # Cluster-wide binding for pod delete
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRoleBinding
           roleRef:
-            identifier: openclaw-write-restricted
+            identifier: openclaw-pod-delete-cluster-wide
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
+        # Namespace-scoped binding for exec+deploy — llm namespace only
+        openclaw-exec-deploy-llm:
+          type: RoleBinding
+          roleRef:
+            identifier: openclaw-exec-deploy-llm
+          subjects:
+            - identifier: openclaw
+              serviceAccount: openclaw
+              namespace: llm
     serviceAccount:
       openclaw: {}
     persistence:
