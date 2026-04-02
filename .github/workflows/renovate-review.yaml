@@ -119,47 +119,40 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Find helmrelease.yaml files changed in this PR
-          HELMRELEASES=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate \
-            | jq -r '.[] | select(.filename | test("helmrelease\.yaml$")) | .filename' 2>/dev/null)
+          CHANGED_HELMRELEASES=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[] | select(.filename | endswith("helmrelease.yaml")) | .filename' 2>/dev/null || true)
 
           : > helmvalues-context.md
-          if [ -z "$HELMRELEASES" ]; then
+          if [ -z "$CHANGED_HELMRELEASES" ]; then
             echo "No helmrelease.yaml files changed in this PR." >> helmvalues-context.md
-          else
-            echo "# HelmValues Context (from PR diff)" >> helmvalues-context.md
-            echo "" >> helmvalues-context.md
-            TOTAL=0
-            for f in $HELMRELEASES; do
-              # Try to get the file at PR head SHA, fall back to base SHA
-              RAW=$(gh api "repos/$REPO/contents/$f" --ref "$HEAD_SHA" 2>/dev/null)
-              if [ $? -eq 0 ] && [ -n "$RAW" ]; then
-                CONTENT=$(echo "$RAW" | jq -r '.content // ""' 2>/dev/null | base64 -d 2>/dev/null || echo "(decode failed)")
-              else
-                CONTENT=""
-              fi
-              if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
-                RAW2=$(gh api "repos/$REPO/contents/$f" 2>/dev/null)
-                if [ $? -eq 0 ] && [ -n "$RAW2" ]; then
-                  CONTENT=$(echo "$RAW2" | jq -r '.content // ""' 2>/dev/null | base64 -d 2>/dev/null || echo "(decode failed)")
-                else
-                  CONTENT="(file not retrievable)"
-                fi
-              fi
-              fi
-              LINES=$(echo "$CONTENT" | wc -l)
-              TOTAL=$((TOTAL + LINES))
-              if [ $TOTAL -gt 1200 ]; then
-                echo "(helmrelease content truncated — too many files)" >> helmvalues-context.md
-                break
-              fi
-              echo "## File: $f (${LINES} lines)" >> helmvalues-context.md
-              echo "\`\`\`yaml" >> helmvalues-context.md
-              echo "$CONTENT" >> helmvalues-context.md
-              echo "\`\`\`" >> helmvalues-context.md
-              echo "" >> helmvalues-context.md
-            done
+            exit 0
           fi
+
+          echo "# HelmRelease Values Context (modified files only)" >> helmvalues-context.md
+          echo >> helmvalues-context.md
+
+          TOTAL=0
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            if [ ! -f "$f" ]; then
+              echo "## File: $f" >> helmvalues-context.md
+              echo "(file not present in checked-out tree at this ref)" >> helmvalues-context.md
+              echo >> helmvalues-context.md
+              continue
+            fi
+
+            LINES=$(wc -l < "$f")
+            if [ $((TOTAL + LINES)) -gt 1200 ]; then
+              echo "(helmrelease content truncated — too many total lines)" >> helmvalues-context.md
+              break
+            fi
+
+            TOTAL=$((TOTAL + LINES))
+            echo "## File: $f (${LINES} lines)" >> helmvalues-context.md
+            echo '\`\`\`yaml' >> helmvalues-context.md
+            cat "$f" >> helmvalues-context.md
+            echo '\`\`\`' >> helmvalues-context.md
+            echo >> helmvalues-context.md
+          done <<< "$CHANGED_HELMRELEASES"
 
       - name: Gather linked sources
         if: steps.version-check.outputs.skip_review != 'true'
