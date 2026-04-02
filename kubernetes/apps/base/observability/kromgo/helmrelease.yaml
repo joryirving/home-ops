@@ -24,10 +24,8 @@ spec:
               tag: v0.8.2@sha256:bd2213c7e471ada38bfec5600f17ede76177815d560d2d6b9a0f433054c93080
             env:
               PROMETHEUS_URL: http://prometheus-operated.observability.svc.cluster.local:9090
-              SERVER_HOST: 0.0.0.0
               SERVER_PORT: &port 80
-              HEALTH_HOST: 0.0.0.0
-              HEALTH_PORT: &healthport 8888
+              HEALTH_PORT: &healthPort 8080
             probes:
               liveness: &probes
                 enabled: true
@@ -35,7 +33,7 @@ spec:
                 spec:
                   httpGet:
                     path: /readyz
-                    port: *healthport
+                    port: *healthPort
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
@@ -44,17 +42,17 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 64Mi
-        pod:
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 100
-            runAsNonRoot: true
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
           topologySpreadConstraints:
             - maxSkew: 1
               topologyKey: kubernetes.io/hostname
@@ -69,9 +67,6 @@ spec:
             port: *port
     route:
       app:
-        annotations:
-          gatus.home-operations.com/endpoint: |-
-            conditions: ["[STATUS] == 404"]
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
           - name: envoy-external
@@ -83,4 +78,3 @@ spec:
         globalMounts:
           - path: /kromgo/config.yaml
             subPath: config.yaml
-            readOnly: true
