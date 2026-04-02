@@ -212,7 +212,7 @@ jobs:
 
             if [ "$allowed" -eq 1 ]; then
               if curl -fsSL -L --max-time 25 "$normalized_url" -o source.raw 2>/dev/null; then
-                head -c 5000 source.raw | tr ' ' ' ' > source.tmp
+                head -c 5000 source.raw | tr $'\0' ' ' > source.tmp
                 if [ -s source.tmp ]; then
                   echo '```text' >> linked-sources.md
                   cat source.tmp >> linked-sources.md
