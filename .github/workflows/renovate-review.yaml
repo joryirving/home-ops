@@ -32,6 +32,7 @@ jobs:
       AI_FALLBACK_MODEL: ${{ vars.AI_FALLBACK_MODEL || 'qwen9b' }}
       AI_PRIMARY_RETRIES: ${{ vars.AI_PRIMARY_RETRIES || '8' }}
       AI_PRIMARY_RETRY_DELAY_SEC: ${{ vars.AI_PRIMARY_RETRY_DELAY_SEC || '15' }}
+      ALLOWED_SOURCE_HOSTS: ${{ vars.RENOVATE_REVIEW_ALLOWED_SOURCE_HOSTS || 'github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net' }}
 
     steps:
       - name: Checkout
@@ -197,9 +198,21 @@ jobs:
               echo "### Fetched Content (truncated)"
             } >> linked-sources.md
 
-            if [[ "$normalized_url" =~ ^https?://github\.com/ ]]; then
+            host=$(printf '%s' "$normalized_url" | sed -E 's#^https?://([^/]+).*#\1#' | tr '[:upper:]' '[:lower:]')
+            allowed=0
+            IFS=',' read -ra allowed_hosts <<< "$ALLOWED_SOURCE_HOSTS"
+            for raw_host in "${allowed_hosts[@]}"; do
+              candidate=$(printf '%s' "$raw_host" | xargs | tr '[:upper:]' '[:lower:]')
+              [ -n "$candidate" ] || continue
+              if [ "$host" = "$candidate" ]; then
+                allowed=1
+                break
+              fi
+            done
+
+            if [ "$allowed" -eq 1 ]; then
               if curl -fsSL -L --max-time 25 "$normalized_url" -o source.raw 2>/dev/null; then
-                head -c 5000 source.raw | tr '\0' ' ' > source.tmp
+                head -c 5000 source.raw | tr ' ' ' ' > source.tmp
                 if [ -s source.tmp ]; then
                   echo '```text' >> linked-sources.md
                   cat source.tmp >> linked-sources.md
@@ -209,10 +222,10 @@ jobs:
                   echo "(No content captured from URL)" >> linked-sources.md
                 fi
               else
-                echo "(Failed to fetch GitHub URL content)" >> linked-sources.md
+                echo "(Failed to fetch allowlisted URL content from $host)" >> linked-sources.md
               fi
             else
-              echo "(Skipped non-GitHub URL on self-hosted runner)" >> linked-sources.md
+              echo "(Skipped non-allowlisted URL on self-hosted runner: $host)" >> linked-sources.md
             fi
 
             if [[ "$normalized_url" =~ ^https?://github\.com/([^/]+)/([^/]+)/releases/tag/([^/?#]+) ]]; then
