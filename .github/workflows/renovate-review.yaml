@@ -132,9 +132,20 @@ jobs:
             TOTAL=0
             for f in $HELMRELEASES; do
               # Try to get the file at PR head SHA, fall back to base SHA
-              CONTENT=$(gh api "repos/$REPO/contents/$f" --ref "$HEAD_SHA" 2>/dev/null | jq -r '.content // ""' | base64 -d 2>/dev/null || echo "(file not found at HEAD SHA)")
-              if [ "$CONTENT" = "(file not found at HEAD SHA)" ]; then
-                CONTENT=$(gh api "repos/$REPO/contents/$f" 2>/dev/null | jq -r '.content // ""' | base64 -d 2>/dev/null || echo "(file not found)")
+              RAW=$(gh api "repos/$REPO/contents/$f" --ref "$HEAD_SHA" 2>/dev/null)
+              if [ $? -eq 0 ] && [ -n "$RAW" ]; then
+                CONTENT=$(echo "$RAW" | jq -r '.content // ""' 2>/dev/null | base64 -d 2>/dev/null || echo "(decode failed)")
+              else
+                CONTENT=""
+              fi
+              if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
+                RAW2=$(gh api "repos/$REPO/contents/$f" 2>/dev/null)
+                if [ $? -eq 0 ] && [ -n "$RAW2" ]; then
+                  CONTENT=$(echo "$RAW2" | jq -r '.content // ""' 2>/dev/null | base64 -d 2>/dev/null || echo "(decode failed)")
+                else
+                  CONTENT="(file not retrievable)"
+                fi
+              fi
               fi
               LINES=$(echo "$CONTENT" | wc -l)
               TOTAL=$((TOTAL + LINES))
