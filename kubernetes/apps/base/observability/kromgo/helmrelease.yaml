@@ -53,18 +53,20 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
-          topologySpreadConstraints:
-            - maxSkew: 1
-              topologyKey: kubernetes.io/hostname
-              whenUnsatisfiable: DoNotSchedule
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/name: "{{ .Release.Name }}"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: "{{ .Release.Name }}"
     service:
       app:
         ports:
           http:
             port: *port
+          health:
+            port: *healthPort
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
