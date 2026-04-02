@@ -1,256 +1,3 @@
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: openclaw
-spec:
-  chartRef:
-    kind: OCIRepository
-    name: app-template
-  dependsOn: []
-  interval: 15m
-  values:
-    controllers:
-      openclaw:
-        annotations:
-          reloader.stakater.com/auto: "true"
-        initContainers:
-          install-tools:
-            image:
-              repository: ghcr.io/openclaw/openclaw
-              tag: 2026.4.1@sha256:66c1f2a17e151cbf513bbed55d2c3e9059c738bb5848db76e0af582802975d23
-            command:
-              - /bin/sh
-              - -c
-              - |
-                set -e
-                mkdir -p /home/node/.local/bin /home/node/.local/go
-
-                echo "Starting tool installation..."
-
-                # Install gh CLI if not present on PVC
-                if [ ! -f /home/node/.local/bin/gh ]; then
-                  echo "Installing gh CLI..."
-                  cd /tmp
-                  curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.gz
-                  tar xzf gh.tar.gz
-                  cp gh_2.61.0_linux_amd64/bin/gh /home/node/.local/bin/
-                  rm -rf gh.tar.gz gh_2.61.0_linux_amd64
-                fi
-
-                if [ ! -f /home/node/.local/bin/openclaw ]; then
-                # Set up openclawbot CLI symlink
-                  echo "Installing creating symlink..."
-                  ln -s /app/openclaw.mjs /home/node/.local/bin/openclaw
-                fi
-
-                # Install Go if not present on PVC
-                if [ ! -f /home/node/.local/go/bin/go ]; then
-                  echo "Installing Go..."
-                  cd /tmp
-                  curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.gz
-                  tar xzf go.tar.gz
-                  mv go /home/node/.local/
-                  rm -rf go.tar.gz
-                fi
-
-                # Install Homebrew if not present on PVC
-                if [ ! -f /home/node/.local/homebrew/bin/brew ]; then
-                  echo "Installing Homebrew..."
-                  export HOMEBREW_PREFIX=/home/node/.local/homebrew
-                  export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
-                  export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
-                  mkdir -p $HOMEBREW_PREFIX
-                  cd /tmp
-                  git clone --depth 1 https://github.com/Homebrew/brew $HOMEBREW_PREFIX
-                fi
-
-                # Check if pip is available (either standalone or via python3 -m pip)
-                set +e # Don't fail on pip errors
-                if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || python3 -m pip --version >/dev/null 2>&1; then
-                  echo "pip is available"
-                else
-                  echo "Installing pip..."
-                  cd /tmp
-                  curl -fsSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-                  python3 get-pip.py --user --no-warn-script-location --break-system-packages || \
-                  python3 get-pip.py --user --no-warn-script-location || \
-                  echo "pip install skipped (use python3 -m pip instead)"
-                  rm -f get-pip.py
-                fi
-                set -e # Re-enable error checking
-
-                echo "Tool installation complete"
-
-                # Ensure config directory exists
-                mkdir -p /home/node/.openclaw
-                echo "Init container completed successfully"
-          daemon:
-            image:
-              repository: docker
-              tag: 29.3.1-dind@sha256:4d90f1f6c400315c2dba96d3ec93c01e64198395cbba04f79d12adce4f737029
-            restartPolicy: Always
-            env:
-              DOCKER_TLS_CERTDIR: /certs
-            securityContext:
-              privileged: true
-              runAsUser: 0
-              runAsGroup: 0
-              allowPrivilegeEscalation: true
-            probes:
-              startup:
-                enabled: true
-                custom: true
-                spec: &dockerProbe
-                  exec:
-                    command: ["docker", "info"]
-                  periodSeconds: 2
-                  timeoutSeconds: 3
-                  failureThreshold: 60
-              readiness:
-                enabled: true
-                custom: true
-                spec:
-                  <<: *dockerProbe
-                  periodSeconds: 5
-                  timeoutSeconds: 3
-                  failureThreshold: 3
-              liveness:
-                enabled: true
-                custom: true
-                spec:
-                  <<: *dockerProbe
-                  periodSeconds: 20
-                  timeoutSeconds: 3
-                  failureThreshold: 3
-        containers:
-          app:
-            image:
-              repository: ghcr.io/openclaw/openclaw
-              tag: 2026.4.1@sha256:66c1f2a17e151cbf513bbed55d2c3e9059c738bb5848db76e0af582802975d23
-            command:
-              - /bin/sh
-              - -c
-              - |
-                # Start gateway
-                exec node dist/index.js gateway --bind lan
-            env:
-              OPENCLAW_LOG_LEVEL: debug
-              BROWSER_WS_ENDPOINT: "ws://localhost:9222"
-              DOCKER_HOST: "tcp://localhost:2376"
-              DOCKER_CERT_PATH: /certs/client
-              DOCKER_TLS_VERIFY: "1"
-              GOPATH: /home/node/go
-              HOME: &homepath /home/node
-              HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar
-              HOMEBREW_PREFIX: /home/node/.local/homebrew
-              HOMEBREW_REPOSITORY: /home/node/.local/homebrew
-              OPENCLAW_GATEWAY_PORT: &port 18789
-              PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-              PIP_BREAK_SYSTEM_PACKAGES: "1"
-              TERM: xterm-256color
-              TZ: &tz America/Edmonton
-            envFrom:
-              - secretRef:
-                  name: openclaw
-              - secretRef:
-                  name: openclaw-garmin
-              - secretRef:
-                  name: openclaw-actual
-            resources:
-              requests:
-                cpu: 1
-                memory: 2Gi
-              limits:
-                cpu: 10
-                memory: 16Gi
-          chrome:
-            image:
-              repository: zenika/alpine-chrome
-              tag: with-node
-            command:
-              - chromium-browser
-              - --headless=new
-              - --disable-gpu
-              - --remote-debugging-address=0.0.0.0
-              - --remote-debugging-port=9222
-              - --no-sandbox
-              - --disable-dev-shm-usage
-              # Stealth flags to reduce bot detection
-              - --disable-blink-features=AutomationControlled
-              - --user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
-              # Allow WebSocket connections from any origin
-              - --remote-allow-origins=*
-            env:
-              TZ: *tz
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                cpu: 1000m
-                memory: 1Gi
-          codeserver:
-            image:
-              repository: ghcr.io/coder/code-server
-              tag: 4.113.0@sha256:1cc68ebb18b6de53dadf95a69f186b80535b49821937697ef148fe4751ef92e1
-            env:
-              TZ: America/Edmonton
-            args:
-              [
-                "--auth",
-                "none",
-                "--user-data-dir",
-                "/home/node/.vscode",
-                "--extensions-dir",
-                "/home/node/.vscode",
-                "--port",
-                "12321",
-                "/config",
-              ]
-            resources:
-              requests:
-                cpu: 10m
-              limits:
-                memory: 1Gi
-    defaultPodOptions:
-      shareProcessNamespace: true
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.41
-        externalTrafficPolicy: Cluster
-        ports:
-          http:
-            port: *port
-          codeserver:
-            port: &codeserverPort 12321
-    route:
-      app:
-        hostnames: ["miso.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *port
-      codeserver:
-        hostnames: ["miso-code.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *codeserverPort
     rbac:
       roles:
         openclaw-read-all:
@@ -311,12 +58,17 @@ spec:
             - apiGroups: ["snapshot.storage.k8s.io"]
               resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
               verbs: ["get", "list", "watch"]
-        openclaw-write-restricted:
-          type: Role
+        # Cluster-wide pod delete — for restarting any pod across all namespaces
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRole
           rules:
             - apiGroups: [""]
               resources: ["pods"]
               verbs: ["delete"]
+        # Namespace-limited exec and deployment patch — stays scoped to llm namespace only
+        openclaw-exec-deploy-llm:
+          type: Role
+          rules:
             - apiGroups: [""]
               resources: ["pods/exec"]
               verbs: ["create"]
@@ -331,51 +83,19 @@ spec:
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
-        openclaw-write-restricted:
-          type: RoleBinding
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRoleBinding
           roleRef:
-            identifier: openclaw-write-restricted
+            identifier: openclaw-pod-delete-cluster-wide
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
-    serviceAccount:
-      openclaw: {}
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: *homepath
-      data:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/delta/miso
-        globalMounts:
-          - path: /data
-      downloads:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/akademiya/data
-        globalMounts:
-          - path: /downloads
-            subPath: metube
-      images:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/daena/comfyui/output
-        globalMounts:
-          - path: /home/node/.openclaw/workspace/images
-      openclaw-config:
-        type: secret
-        name: "{{ .Release.Name }}-config"
-        defaultMode: 0400
-        globalMounts:
-          - path: /home/node/.openclaw/openclaw.json
-            subPath: openclaw.json
-      next-cache:
-        type: emptyDir
-        globalMounts:
-          - path: /app/.next/cache
-      tmp:
-        type: emptyDir
-      certs:
-        type: emptyDir
+        # Bind exec+deploy Role to the llm namespace only
+        openclaw-exec-deploy-llm:
+          type: RoleBinding
+          roleRef:
+            identifier: openclaw-exec-deploy-llm
+          subjects:
+            - identifier: openclaw
+              serviceAccount: openclaw
+              namespace: llm
