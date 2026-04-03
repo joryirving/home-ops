@@ -31,10 +31,11 @@ spec:
               NAME: "Tako Tuesday"
               WORLD: "Tako Tuesday"
               TZ: America/Edmonoton
-              PORT: 2456
-              AUTO_UPDATE: 1
-              AUTO_UPDATE_SCHEDULE: 0 4 * * *
-              AUTO_UPDATE_PAUSE_WITH_PLAYERS: 1
+              Type: BepInEx # Installs BepInEx mod loader for down the road
+              PORT: &port 2456
+              # AUTO_UPDATE: 1
+              # AUTO_UPDATE_SCHEDULE: 0 4 * * *
+              # AUTO_UPDATE_PAUSE_WITH_PLAYERS: 1
               PUBLIC: 0
             envFrom:
               - secretRef:
@@ -45,6 +46,17 @@ spec:
                 memory: 1Gi
               limits:
                 memory: 10Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     service:
       app:
         type: LoadBalancer
@@ -55,7 +67,7 @@ spec:
             port: 80
           gameplay:
             enabled: true
-            port: 2456
+            port: *port
             protocol: UDP
           auth:
             enabled: true
