@@ -801,67 +801,67 @@ jobs:
           head -c 45000 repo-impact.md > repo-impact.truncated.md
           head -c 20000 repo-history.md > repo-history.truncated.md
 
-       - name: Gather repository standards (CLAUDE.md)
-         if: steps.version-check.outputs.skip_review != 'true'
-         run: |
-           set -euo pipefail
+      - name: Gather repository standards (CLAUDE.md)
+        if: steps.version-check.outputs.skip_review != 'true'
+        run: |
+          set -euo pipefail
 
-           : > clude-standards.md
-           if [ -f CLAUDE.md ]; then
-             echo "# Repository Standards and Conventions" >> clude-standards.md
-             echo "Derived from CLAUDE.md — AI assistant guidelines for this repository." >> clude-standards.md
-             echo >> clude-standards.md
-             cat CLAUDE.md >> clude-standards.md
-           else
-             echo "(CLAUDE.md not found; standards context unavailable.)" >> clude-standards.md
-           fi
+          : > clude-standards.md
+          if [ -f CLAUDE.md ]; then
+            echo "# Repository Standards and Conventions" >> clude-standards.md
+            echo "Derived from CLAUDE.md — AI assistant guidelines for this repository." >> clude-standards.md
+            echo >> clude-standards.md
+            cat CLAUDE.md >> clude-standards.md
+          else
+            echo "(CLAUDE.md not found; standards context unavailable.)" >> clude-standards.md
+          fi
 
-       - name: Build review corpus
-         if: steps.version-check.outputs.skip_review != 'true'
-         run: |
-           set -euo pipefail
+      - name: Build review corpus
+        if: steps.version-check.outputs.skip_review != 'true'
+        run: |
+          set -euo pipefail
 
-           {
-             echo "# HelmRelease Values Context"
-             cat helmvalues-context.md
-             echo
-             echo "# PR Metadata"
-             echo '```json'
-             jq . pr.json
-             echo '```'
-             echo
-             echo "# PR Files (truncated)"
-             echo '```json'
-             cat pr-files.truncated.json
-             echo
-             echo '```'
-             echo
-             echo "# Version Hints from Diff"
-             echo '```text'
-             cat version-hints.truncated.txt 2>/dev/null || echo "(none)"
-             echo '```'
-             echo
-             echo "# PR Diff (truncated)"
-             echo '```diff'
-             cat pr.diff.truncated
-             echo
-             echo '```'
-             echo
-             echo "# Linked Sources"
-             cat linked-sources.md
-             echo
-             echo "# Image Digest Provenance"
-             cat image-digest-context.md
-             echo
-             echo "# Repository Impact Scan"
-             cat repo-impact.truncated.md
-             echo
-             echo "# Repository History"
-             cat repo-history.truncated.md
-             echo
-             echo "# Repository Standards and Conventions (CLAUDE.md)"
-             cat clude-standards.md
-           } > review-corpus.md
+          {
+            echo "# HelmRelease Values Context"
+            cat helmvalues-context.md
+            echo
+            echo "# PR Metadata"
+            echo '```json'
+            jq . pr.json
+            echo '```'
+            echo
+            echo "# PR Files (truncated)"
+            echo '```json'
+            cat pr-files.truncated.json
+            echo
+            echo '```'
+            echo
+            echo "# Version Hints from Diff"
+            echo '```text'
+            cat version-hints.truncated.txt 2>/dev/null || echo "(none)"
+            echo '```'
+            echo
+            echo "# PR Diff (truncated)"
+            echo '```diff'
+            cat pr.diff.truncated
+            echo
+            echo '```'
+            echo
+            echo "# Linked Sources"
+            cat linked-sources.md
+            echo
+            echo "# Image Digest Provenance"
+            cat image-digest-context.md
+            echo
+            echo "# Repository Impact Scan"
+            cat repo-impact.truncated.md
+            echo
+            echo "# Repository History"
+            cat repo-history.truncated.md
+            echo
+            echo "# Repository Standards and Conventions (CLAUDE.md)"
+            cat clude-standards.md
+          } > review-corpus.md
 
           head -c 220000 review-corpus.md > review-corpus.truncated.md
 
