@@ -26,19 +26,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q8_K_XL.gguf ]; then
+                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   mkdir -p /models/gemma4-26b
-                  rm -rf /models/gemma4-26b/.cache/huggingface/download/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf.lock
+                  rm -rf /models/gemma4-26b/.cache/huggingface/download/gemma-4-26B-A4B-UD-Q6_K_XL.gguf.lock
                   hf download \
                     unsloth/gemma-4-26B-A4B-it-GGUF \
-                    gemma-4-26B-A4B-it-UD-Q8_K_XL.gguf \
-                    mmproj-F16.gguf \
+                    gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf \
                     --local-dir /models/gemma4-26b
 
-                  echo "Qwen3.5-35B-A3B download complete"
+                  echo "Gemma-4-26B-A4B Q6_K_XL download complete"
                 else
-                  echo "Qwen3.5-35B-A3B already downloaded, skipping"
+                  echo "Gemma-4-26B-A4B Q6_K_XL already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -68,7 +67,7 @@ spec:
               - --alias
               - self-hosted
               - --model
-              - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q8_K_XL.gguf
+              - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf
               - --ctx-size
               - "1048576"
               - --n-gpu-layers
