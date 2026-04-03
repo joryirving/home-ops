@@ -84,7 +84,7 @@ When reviewing Renovate PRs, enforce these criteria:
 
 ### HelmRelease Requirements
 - All applications MUST use `HelmRelease` via Flux, not raw manifests
-- Must include `spec.chart.spec.version` for pinned chart versions
+- Must include `spec.chart.spec.version` for pinned chart versions outside of `app-template`
 - Must include `spec.interval` for reconciliation frequency
 - Resource limits (CPU/memory) MUST be specified for production workloads
 - `valuesFrom` should reference ConfigMaps/Secrets, not inline values
