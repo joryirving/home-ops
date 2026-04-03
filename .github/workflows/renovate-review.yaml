@@ -17,7 +17,12 @@ permissions:
 jobs:
   review-renovate-pr:
     name: Deep Renovate Review
-    if: !github.event.pull_request.draft && (github.event.pull_request.user.login == 'smurf-bot[bot]' || github.event.pull_request.user.login == 'itsmiso-ai')
+    if: >-
+      ${{
+        !github.event.pull_request.draft &&
+        (github.event.pull_request.user.login == 'smurf-bot[bot]' ||
+         github.event.pull_request.user.login == 'itsmiso-ai')
+      }}
     runs-on: home-ops-runner-main
     timeout-minutes: 35
 
