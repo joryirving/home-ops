@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &name valheim
+  name: &app valheim
 spec:
   chartRef:
     kind: OCIRepository
@@ -18,32 +18,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/lloesche/valheim-server
-              tag: latest
-            env:
-              TZ: America/Edmonton
-              SERVER_NAME: Valhalla Awaits
-              SERVER_PASSWORD: "{{ .VALHEIM_PASSWORD }}"
-              SERVER_PORT: &game-port 2456
-              QUERY_PORT: &query-port 2457
-              VOICE_PORT: &voice-port 2458
-              BACKUP_INTERVAL: 6
-              BACKUPS_TO_KEEP: 3
-              BACKUP_LOCATION: /config/backups
-              Worlds: "{{ .VALHEIM_WORLD_NAME }}"
-            envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
-            ports:
-              - containerPort: *game-port
-                protocol: UDP
-                name: game
-              - containerPort: *query-port
-                protocol: UDP
-                name: query
-              - containerPort: *voice-port
-                protocol: UDP
-                name: voice
+              repository: ghcr.io/mbround18/valheim
+              tag: 3.6.0@sha256:abb98466d453f128b96e41d9730cd52f2938013cae7980ce6d3dccc14168d228
             probes:
               liveness:
                 enabled: false
@@ -51,44 +27,47 @@ spec:
                 enabled: false
               startup:
                 enabled: false
+            env:
+              NAME: "Tako Tuesday"
+              WORLD: "Tako Tuesday"
+              TZ: America/Edmonoton
+              PORT: 2456
+              AUTO_UPDATE: 1
+              AUTO_UPDATE_SCHEDULE: 0 4 * * *
+              AUTO_UPDATE_PAUSE_WITH_PLAYERS: 1
+              PUBLIC: 0
+            envFrom:
+              - secretRef:
+                  name: valheim-secret
             resources:
               requests:
-                cpu: 1000m
-                memory: 2Gi
+                cpu: 10m
+                memory: 1Gi
               limits:
-                memory: 4Gi
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities:
-                drop: ["ALL"]
-        pod:
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            fsGroup: 1000
-            fsGroupChangePolicy: OnRootMismatch
+                memory: 10Gi
     service:
       app:
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: 10.69.10.40
+          lbipam.cilium.io/ips: 10.69.10.42
         ports:
-          game:
+          http:
+            port: 80
+          gameplay:
+            enabled: true
+            port: 2456
             protocol: UDP
-            port: *game-port
-          query:
+          auth:
+            enabled: true
+            port: 2457
             protocol: UDP
-            port: *query-port
-          voice:
+          voip:
+            enabled: true
+            port: 2458
             protocol: UDP
-            port: *voice-port
     persistence:
-      config:
+      data:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-          - path: /config
-      backups:
-        existingClaim: "{{ .Release.Name }}-backups"
-        globalMounts:
-          - path: /config/backups
+          - path: /home/steam/.config/unity3d/IronGate/Valheim/
+          - path: /home/steam/valheim/
