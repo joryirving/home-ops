@@ -13,10 +13,112 @@ spec:
     substitute:
       APP: *app
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 20Gi
+      VOLSYNC_CAPACITY: 50Gi
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
   wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app llama-memory
+spec:
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/openclaw/llama-memory
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app llama-server
+spec:
+  interval: 1h
+  # path: ./kubernetes/apps/base/llm/openclaw/Gemma4-26B-A4B
+  # path: ./kubernetes/apps/base/llm/openclaw/Qwen3-Coder-Next
+  path: ./kubernetes/apps/base/llm/openclaw/Qwen3.5-35B-A3B
+  # path: ./kubernetes/apps/base/llm/openclaw/Qwen3.5-122B-A10B
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app extended-memory
+spec:
+  components:
+    - ../../../../../components/volsync
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/openclaw/extended-memory
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
+      VOLSYNC_CAPACITY: 5Gi
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app miso-chat
+spec:
+  components:
+    - ../../../../../components/dragonfly
+  healthCheckExprs:
+    - apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      failed: status.phase != 'ready'
+      current: status.phase == 'ready'
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/openclaw/miso-chat
+  postBuild:
+    substitute:
+      APP: *app
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-models
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: local-hostpath

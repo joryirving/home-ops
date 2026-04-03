@@ -26,19 +26,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen35b/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf ] || [ ! -s /models/qwen35b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen35b
-                  rm -rf /models/qwen35b/.cache/huggingface/download/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf.lock
+                  mkdir -p /models/gemma4-26b
+                  rm -rf /models/gemma4-26b/.cache/huggingface/download/gemma-4-26B-A4B-UD-Q6_K_XL.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-35B-A3B-GGUF \
-                    Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf \
-                    mmproj-F16.gguf \
-                    --local-dir /models/qwen35b
+                    unsloth/gemma-4-26B-A4B-it-GGUF \
+                    gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf \
+                    --local-dir /models/gemma4-26b
 
-                  echo "Qwen3.5-35B-A3B download complete"
+                  echo "Gemma-4-26B-A4B Q6_K_XL download complete"
                 else
-                  echo "Qwen3.5-35B-A3B already downloaded, skipping"
+                  echo "Gemma-4-26B-A4B Q6_K_XL already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -50,12 +49,12 @@ spec:
                 cpu: 250m
                 memory: 512Mi
               limits:
-                memory: 4Gi
+                memory: 10Gi
         containers:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: vulkan-radv
+              tag: vulkan-radv@sha256:cb0b482e0a8b17997ae025709fb31ab35fc2654e31e7f7d5c16508fe6396147e
             securityContext:
               privileged: true
             command:
@@ -66,11 +65,9 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen35b
+              - self-hosted
               - --model
-              - /models/qwen35b/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf
-              - --mmproj
-              - /models/qwen35b/mmproj-F16.gguf
+              - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf
               - --ctx-size
               - "1048576"
               - --n-gpu-layers
@@ -89,20 +86,14 @@ spec:
               - "4"
               - --checkpoint-every-n-tokens
               - "16384"
-              - --image-min-tokens
-              - "1024"
               - --temp
-              - "0.6"
+              - "1.0"
               - --top-p
               - "0.95"
               - --top-k
-              - "20"
+              - "64"
               - --min-p
               - "0"
-              - --presence-penalty
-              - "0"
-              - --repeat-penalty
-              - "1.0"
               - --batch-size
               - "4096"
               - --ubatch-size

@@ -19,7 +19,7 @@ spec:
           install-tools:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 2026.4.1@sha256:66c1f2a17e151cbf513bbed55d2c3e9059c738bb5848db76e0af582802975d23
+              tag: 2026.4.2@sha256:0b2170d5ec3a487a6313ed0556d377c5c5c80a0f806043daa2e685a4bedd45e3
             command:
               - /bin/sh
               - -c
@@ -128,7 +128,7 @@ spec:
           app:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 2026.4.1@sha256:66c1f2a17e151cbf513bbed55d2c3e9059c738bb5848db76e0af582802975d23
+              tag: 2026.4.2@sha256:0b2170d5ec3a487a6313ed0556d377c5c5c80a0f806043daa2e685a4bedd45e3
             command:
               - /bin/sh
               - -c
@@ -165,27 +165,6 @@ spec:
               limits:
                 cpu: 10
                 memory: 16Gi
-          mission-control:
-            image:
-              repository: ghcr.io/joryirving/mission-control
-              tag: 2.0.1@sha256:36e8ecbbd850d44d2f29a01834a6a735d152c4bf0f480786145b4aa9a9bc2043
-            env:
-              OPENCLAW_GATEWAY_HOST: "127.0.0.1"
-              OPENCLAW_GATEWAY_PORT: "18789"
-              OPENCLAW_HOME: "/home/node/.openclaw"
-              OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw.json"
-              NEXT_PUBLIC_GATEWAY_URL: "wss://miso.jory.dev"
-              NEXT_PUBLIC_GATEWAY_CLIENT_ID: "openclaw-control-ui"
-              MC_ALLOWED_HOSTS: "mission-control.jory.dev,localhost,127.0.0.1"
-            envFrom:
-              - secretRef:
-                  name: openclaw-mission-control
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                memory: 1Gi
           chrome:
             image:
               repository: zenika/alpine-chrome
@@ -215,7 +194,7 @@ spec:
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
-              tag: 4.112.0@sha256:ddd9b0b854fec5a3c65ec0095b5c59fb8505ad44d8a18d00d6fcf6a3179692dd
+              tag: 4.113.0@sha256:1cc68ebb18b6de53dadf95a69f186b80535b49821937697ef148fe4751ef92e1
             env:
               TZ: America/Edmonton
             args:
@@ -253,8 +232,6 @@ spec:
             port: *port
           codeserver:
             port: &codeserverPort 12321
-          missioncontrol:
-            port: &missioncontrolPort 3000
     route:
       app:
         hostnames: ["miso.jory.dev"]
@@ -265,15 +242,6 @@ spec:
           - backendRefs:
               - name: "{{ .Release.Name }}"
                 port: *port
-      missioncontrol:
-        hostnames: ["mission-control.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *missioncontrolPort
       codeserver:
         hostnames: ["miso-code.jory.dev"]
         parentRefs:
@@ -343,12 +311,17 @@ spec:
             - apiGroups: ["snapshot.storage.k8s.io"]
               resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
               verbs: ["get", "list", "watch"]
-        openclaw-write-restricted:
-          type: Role
+        # Cluster-wide pod delete — restart any pod in any namespace
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRole
           rules:
             - apiGroups: [""]
               resources: ["pods"]
               verbs: ["delete"]
+        # Namespace-scoped exec + deploy patch — llm namespace only
+        openclaw-exec-deploy-llm:
+          type: Role
+          rules:
             - apiGroups: [""]
               resources: ["pods/exec"]
               verbs: ["create"]
@@ -363,13 +336,23 @@ spec:
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
-        openclaw-write-restricted:
-          type: RoleBinding
+        # Cluster-wide binding for pod delete
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRoleBinding
           roleRef:
-            identifier: openclaw-write-restricted
+            identifier: openclaw-pod-delete-cluster-wide
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
+        # Namespace-scoped binding for exec+deploy — llm namespace only
+        openclaw-exec-deploy-llm:
+          type: RoleBinding
+          roleRef:
+            identifier: openclaw-exec-deploy-llm
+          subjects:
+            - identifier: openclaw
+              serviceAccount: openclaw
+              namespace: llm
     serviceAccount:
       openclaw: {}
     persistence:
@@ -396,10 +379,6 @@ spec:
         path: /mnt/daena/comfyui/output
         globalMounts:
           - path: /home/node/.openclaw/workspace/images
-      mission-control-data:
-        existingClaim: "{{ .Release.Name }}-mission-control"
-        globalMounts:
-          - path: /app/.data
       openclaw-config:
         type: secret
         name: "{{ .Release.Name }}-config"
