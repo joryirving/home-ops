@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-server
+  name: llama-coder
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      llama-server:
+      llama-coder:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -26,19 +26,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen35b/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf ] || [ ! -s /models/qwen35b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   mkdir -p /models/qwen35b
-                  rm -rf /models/qwen35b/.cache/huggingface/download/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf.lock
+                  rm -rf /models/qwen3-coder-next/.cache/huggingface/download/Qwen3-Coder-Next-UD-Q4_K_XL.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-35B-A3B-GGUF \
-                    Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf \
-                    mmproj-F16.gguf \
-                    --local-dir /models/qwen35b
+                    unsloth/Qwen3-Coder-Next-GGUF \
+                    Qwen3-Coder-Next-UD-Q4_K_XL.gguf \
+                    --local-dir /models/qwen3-coder-next
 
-                  echo "Qwen3.5-35B-A3B download complete"
+                  echo "Qwen3-Coder-Next GGUF download complete"
                 else
-                  echo "Qwen3.5-35B-A3B already downloaded, skipping"
+                  echo "Qwen3-Coder-Next GGUF already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -66,57 +65,54 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen35b
+              - self-hosted
               - --model
-              - /models/qwen35b/Qwen3.5-35B-A3B-UD-Q6_K_XL.gguf
-              - --mmproj
-              - /models/qwen35b/mmproj-F16.gguf
+              - /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf
               - --ctx-size
-              - "1048576"
+              - "262144"
               - --n-gpu-layers
               - "99"
+              - --fit
+              - "off"
               - --flash-attn
               - "on"
               - --parallel
-              - "4"
+              - "2"
               - --cont-batching
               - -sps
               - "0.90"
               - --no-context-shift
               - --cache-prompt
+              - --cache-reuse
+              - "256"
               - --kv-unified
-              - --ctx-checkpoints
-              - "4"
-              - --checkpoint-every-n-tokens
-              - "16384"
-              - --image-min-tokens
-              - "1024"
               - --temp
-              - "0.6"
+              - "0.2"
               - --top-p
               - "0.95"
               - --top-k
               - "20"
               - --min-p
               - "0"
-              - --presence-penalty
-              - "0"
-              - --repeat-penalty
-              - "1.0"
+              - --cache-type-k
+              - q8_0
+              - --cache-type-v
+              - q8_0
               - --batch-size
-              - "4096"
+              - "2048"
               - --ubatch-size
               - "2048"
-              - --threads
-              - "12"
-              - --threads-batch
-              - "16"
-              - --no-mmap
+              - --mmap
               - --jinja
+            # env:
+            #   HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+            #   HSA_ENABLE_SDMA: "0"
+            #   ROCBLAS_USE_HIPBLASLT: "1"
+            #   HIP_VISIBLE_DEVICES: "0"
             resources:
               requests:
                 cpu: 1
-                memory: 20Gi
+                memory: 40Gi
               limits:
                 memory: 80Gi
             probes:
@@ -161,7 +157,7 @@ spec:
       app:
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: 10.69.10.20
+          lbipam.cilium.io/ips: 10.69.10.21
         externalTrafficPolicy: Cluster
         ports:
           http:
