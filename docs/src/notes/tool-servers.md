@@ -1,4 +1,4 @@
-# Open WebUI Tool Servers (Kubernetes plan)
+# Tool Servers (Kubernetes plan)
 
 ## Goal
 
@@ -17,7 +17,7 @@ That keeps the Open WebUI-facing proxy private to the LLM cluster while still al
 
 ## First implementation included in this PR
 
-This PR adds a deployable **Open WebUI tool servers** bundle in `main` using [`mcpo`](https://github.com/open-webui/mcpo) to expose existing MCP endpoints as OpenAPI-compatible HTTP services for Open WebUI.
+This PR adds a deployable **tool-server bundle** in `main` using [`mcpo`](https://github.com/open-webui/mcpo) to expose existing MCP endpoints as OpenAPI-compatible HTTP services for Open WebUI.
 
 ### Included upstreams
 - Home Assistant MCP via `https://hass.jory.dev/api/mcp`
@@ -35,8 +35,8 @@ This PR adds a deployable **Open WebUI tool servers** bundle in `main` using [`m
 After deployment, register these in Open WebUI as **global tool servers**:
 
 ```text
-http://open-webui-tool-servers.llm.svc.cluster.local:8000/homeassistant
-http://open-webui-tool-servers.llm.svc.cluster.local:8000/grafana
+http://tool-servers.llm.svc.cluster.local:8000/homeassistant
+http://tool-servers.llm.svc.cluster.local:8000/grafana
 ```
 
 No public route is created in this first pass.

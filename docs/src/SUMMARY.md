@@ -12,7 +12,7 @@
 ---
 
 - [Certs](./notes/certs.md)
-- [Open WebUI tool servers](./notes/open-webui-tool-servers.md)
+- [Tool servers](./notes/tool-servers.md)
 - [PiKVM](./notes/pikvm.md)
 - [rclone](./notes/rclone.md)
 - [rpi-nut](./notes/rpi-nut.md)

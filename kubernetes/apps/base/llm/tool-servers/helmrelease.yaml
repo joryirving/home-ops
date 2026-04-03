@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: open-webui-tool-servers
+  name: tool-servers
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      open-webui-tool-servers:
+      tool-servers:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -28,7 +28,7 @@ spec:
               - --port
               - "8000"
               - --name
-              - open-webui-tool-servers
+              - tool-servers
               - --description
               - Open WebUI MCP-to-OpenAPI proxy bundle
             probes:
