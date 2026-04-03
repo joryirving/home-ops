@@ -6,7 +6,37 @@ Add a small set of **self-hosted, Open WebUI-compatible tool servers** that fit 
 
 This cluster-hosted Open WebUI deployment should prefer **global/shared tool servers** that are reachable from the backend over workstation-local tools.
 
-## Recommended first wave
+## Current topology decision
+
+For Home Assistant specifically, the cleanest split is:
+
+- **Home Assistant stays in `utility`** where it already lives
+- the **Open WebUI-facing tool server lives in `main`** next to the LLM apps that consume it
+
+That keeps the tool server private to the LLM cluster while still allowing it to talk upstream to Home Assistant.
+
+## First implementation included in this PR
+
+This PR adds a deployable **Home Assistant tool server** in `main` using [`mcpo`](https://github.com/open-webui/mcpo) to expose the existing Home Assistant MCP endpoint as an OpenAPI-compatible HTTP service for Open WebUI.
+
+### Shape
+- namespace: `llm`
+- cluster: `main`
+- exposure: `ClusterIP` only
+- upstream: `https://hass.jory.dev/api/mcp`
+- auth to upstream: Home Assistant token from the existing `openclaw` 1Password item
+
+### Intended Open WebUI registration
+
+After deployment, register it in Open WebUI as a **global tool server** using:
+
+```text
+http://home-assistant-tool-server.llm.svc.cluster.local:8000/homeassistant
+```
+
+No public route is created in this first pass.
+
+## Recommended next wave
 
 ### 1. Ops / status server
 **Value:** Highest
@@ -39,7 +69,7 @@ Expose safe endpoints for:
 **Why:** Real daily utility, but still constrain writes to a small allowlist.
 
 **Deployment shape:**
-- namespace: `llm` (consumer-adjacent) or `home-automation` (owner-adjacent)
+- namespace: `llm`
 - exposure: `ClusterIP` only at first
 - secrets: Home Assistant token via `ExternalSecret`
 
@@ -126,16 +156,16 @@ Use:
 
 Before merging a real tool server manifest, require:
 - internal-only reachability unless sharing is intentional
-- auth on every non-public endpoint
+- auth on every non-public endpoint when practical
 - explicit read-only mode where possible
 - bounded actions instead of arbitrary command/query execution
 - resource requests/limits
 - health probes
 - no host mounts unless explicitly justified
 
-## Proposed first implementation
+## Proposed next implementation
 
-The first actual deployment should be an **ops-status server** because it is:
+The next actual deployment after Home Assistant should be an **ops-status server** because it is:
 - the most broadly useful to Open WebUI
 - safer than shell access
 - easy to keep read-only
@@ -147,12 +177,3 @@ A minimal first API should answer:
 - `GET /services/{name}`
 - `GET /alerts`
 - `GET /backups`
-
-## Follow-up work after this planning PR
-
-1. Pick the first tool server to implement.
-2. Confirm image source (existing upstream image vs. separate app repo).
-3. Add `base/llm/<tool-server>` manifests.
-4. Add `main/llm/<tool-server>.yaml` Flux kustomization.
-5. Add secrets in 1Password + `ExternalSecret` if needed.
-6. Register the service in Open WebUI as a global tool server.
