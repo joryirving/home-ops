@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: home-assistant-tool-server
+  name: open-webui-tool-servers
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,7 +12,7 @@ spec:
   interval: 15m
   values:
     controllers:
-      home-assistant-tool-server:
+      open-webui-tool-servers:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -28,9 +28,9 @@ spec:
               - --port
               - "8000"
               - --name
-              - home-assistant-tool-server
+              - open-webui-tool-servers
               - --description
-              - Home Assistant OpenAPI proxy for Open WebUI
+              - Open WebUI MCP-to-OpenAPI proxy bundle
             probes:
               liveness: &probes
                 enabled: true

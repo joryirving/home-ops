@@ -11,27 +11,32 @@ This cluster-hosted Open WebUI deployment should prefer **global/shared tool ser
 For Home Assistant specifically, the cleanest split is:
 
 - **Home Assistant stays in `utility`** where it already lives
-- the **Open WebUI-facing tool server lives in `main`** next to the LLM apps that consume it
+- the **Open WebUI-facing tool servers live in `main`** next to the LLM apps that consume them
 
-That keeps the tool server private to the LLM cluster while still allowing it to talk upstream to Home Assistant.
+That keeps the Open WebUI-facing proxy private to the LLM cluster while still allowing it to talk upstream to the services it wraps.
 
 ## First implementation included in this PR
 
-This PR adds a deployable **Home Assistant tool server** in `main` using [`mcpo`](https://github.com/open-webui/mcpo) to expose the existing Home Assistant MCP endpoint as an OpenAPI-compatible HTTP service for Open WebUI.
+This PR adds a deployable **Open WebUI tool servers** bundle in `main` using [`mcpo`](https://github.com/open-webui/mcpo) to expose existing MCP endpoints as OpenAPI-compatible HTTP services for Open WebUI.
+
+### Included upstreams
+- Home Assistant MCP via `https://hass.jory.dev/api/mcp`
+- Grafana MCP via `http://mcp-grafana.observability:8000/sse`
 
 ### Shape
 - namespace: `llm`
 - cluster: `main`
 - exposure: `ClusterIP` only
-- upstream: `https://hass.jory.dev/api/mcp`
-- auth to upstream: Home Assistant token from the existing `openclaw` 1Password item
+- implementation: one `mcpo` container with multiple mounted upstream MCP servers
+- auth to Home Assistant upstream: Home Assistant token from the existing `openclaw` 1Password item
 
-### Intended Open WebUI registration
+### Intended Open WebUI registrations
 
-After deployment, register it in Open WebUI as a **global tool server** using:
+After deployment, register these in Open WebUI as **global tool servers**:
 
 ```text
-http://home-assistant-tool-server.llm.svc.cluster.local:8000/homeassistant
+http://open-webui-tool-servers.llm.svc.cluster.local:8000/homeassistant
+http://open-webui-tool-servers.llm.svc.cluster.local:8000/grafana
 ```
 
 No public route is created in this first pass.
@@ -57,25 +62,7 @@ Expose read-only endpoints for:
 
 ---
 
-### 2. Home Assistant wrapper
-**Value:** High
-
-Expose safe endpoints for:
-- entity state lookup
-- sensors
-- scenes
-- light/climate control
-
-**Why:** Real daily utility, but still constrain writes to a small allowlist.
-
-**Deployment shape:**
-- namespace: `llm`
-- exposure: `ClusterIP` only at first
-- secrets: Home Assistant token via `ExternalSecret`
-
----
-
-### 3. Read-only Postgres/query server
+### 2. Read-only Postgres/query server
 **Value:** High
 
 Expose:
@@ -94,7 +81,7 @@ Expose:
 
 ---
 
-### 4. GitHub helper server
+### 3. GitHub helper server
 **Value:** Medium-high
 
 Expose:
@@ -115,12 +102,13 @@ Expose:
 - broad shell wrappers
 - arbitrary SQL execution
 - unauthenticated public tool routes
+- SearXNG through this proxy layer when Open WebUI already supports it natively
 
 Those are great ways to turn "helpful assistant" into "incident retrospective material."
 
 ## Repo structure to follow
 
-For each tool server, follow the existing app pattern:
+For each tool-server bundle or standalone tool server, follow the existing app pattern:
 
 ```text
 kubernetes/apps/base/llm/<tool-server>/
@@ -145,8 +133,8 @@ Use:
 ## Suggested rollout order
 
 ### Phase 1
-1. ops-status server
-2. Home Assistant wrapper
+1. Home Assistant + Grafana bundle
+2. ops-status server
 
 ### Phase 2
 3. read-only Postgres/query server
@@ -165,7 +153,7 @@ Before merging a real tool server manifest, require:
 
 ## Proposed next implementation
 
-The next actual deployment after Home Assistant should be an **ops-status server** because it is:
+The next actual deployment after this bundle should be an **ops-status server** because it is:
 - the most broadly useful to Open WebUI
 - safer than shell access
 - easy to keep read-only
