@@ -12,6 +12,7 @@
 ---
 
 - [Certs](./notes/certs.md)
+- [Tool servers](./notes/tool-servers.md)
 - [PiKVM](./notes/pikvm.md)
 - [rclone](./notes/rclone.md)
 - [rpi-nut](./notes/rpi-nut.md)
