@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/fluxcd.io/flux_v2beta2.json
+apiVersion: fluxcd.io/v2beta2
+kind: Kustomization
+metadata:
+  name: kanban
+  namespace: flux-system
+spec:
+  path: ./kubernetes/apps/base/self-hosted/kanban
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: home-ops
+  targetNamespace: self-hosted
+  wait: false
+  interval: 1h
+  retryInterval: 1m
+  retryLimit: 2
