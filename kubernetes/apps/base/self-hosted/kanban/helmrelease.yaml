@@ -1,0 +1,74 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kanban
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      kanban:
+        containers:
+          app:
+            image:
+              repository: ghcr.io/kanboard/kanboard
+              tag: latest
+            envFrom:
+              - secretRef:
+                  name: kanban
+            env:
+              TZ: America/Edmonton
+              PLUGIN_INSTALLER: "true"
+            ports:
+              - name: http
+                containerPort: 80
+            livenessProbe:
+              httpGet:
+                path: /healthcheck.php
+                port: http
+              initialDelaySeconds: 10
+              periodSeconds: 30
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /healthcheck.php
+                port: http
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              failureThreshold: 3
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+        pod:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 100
+            fsGroup: 100
+            fsGroupChangePolicy: "OnRootMismatch"
+    service:
+      app:
+        ports:
+          http:
+            port: 80
+    route:
+      app:
+        hostnames: ["kanban.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
+    persistence:
+      data:
+        type: emptyDir
