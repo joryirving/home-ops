@@ -17,30 +17,13 @@ spec:
           app:
             image:
               repository: ghcr.io/kanboard/kanboard
-              tag: sha256:1172a87e64a9084927356d427bc4d04167c7674b7f9caf8c7d6a98fd099599ff
-            envFrom:
-              - secretRef:
-                  name: kanban
+              tag: v1.2.52@sha256:8cd46677f1f3b97bb45e8bcf30512ab92f30a9578cee51b406d2dd297a223859
             env:
               TZ: America/Edmonton
               PLUGIN_INSTALLER: "true"
-            ports:
-              - name: http
-                containerPort: 80
-            livenessProbe:
-              httpGet:
-                path: /healthcheck.php
-                port: http
-              initialDelaySeconds: 10
-              periodSeconds: 30
-              failureThreshold: 3
-            readinessProbe:
-              httpGet:
-                path: /healthcheck.php
-                port: http
-              initialDelaySeconds: 5
-              periodSeconds: 10
-              failureThreshold: 3
+            envFrom:
+              - secretRef:
+                  name: kanban
             resources:
               requests:
                 cpu: 10m
