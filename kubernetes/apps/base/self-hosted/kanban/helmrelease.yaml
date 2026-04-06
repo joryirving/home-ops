@@ -23,7 +23,6 @@ spec:
                   name: kanban
             env:
               TZ: America/Edmonton
-              # Enable plugin installer for GitHub plugin (install via web UI)
               PLUGIN_INSTALLER: "true"
             ports:
               - name: http
@@ -68,8 +67,8 @@ spec:
       app:
         hostnames: ["kanban.jory.dev"]
         parentRefs:
-          - name: envoy-external
+          - name: envoy-internal
             namespace: network
     persistence:
       data:
-        type: emptyDir
+        existingClaim: "{{ .Release.Name }}"
