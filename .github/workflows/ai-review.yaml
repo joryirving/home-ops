@@ -1,0 +1,41 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, reopened, synchronize, ready_for_review, review_requested]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: home-ops-runner-main
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+
+      - uses: qodo-ai/pr-agent@v0.31
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          config.model: ${{ secrets.OPENAI_COMPATIBLE_MODEL }}
+          OPENAI_KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
+          OLLAMA.API_BASE: ${{ secrets.OPENAI_COMPATIBLE_URL }}
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "true"
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested"]'
