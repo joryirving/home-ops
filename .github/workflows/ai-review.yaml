@@ -29,13 +29,13 @@ jobs:
           app-id: ${{ secrets.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
 
-      - uses: qodo-ai/pr-agent@d82f7d3e696cd00822694aaa3096265d3889f3f1 # v0.34
+      - uses: docker://codiumai/pr-agent:0.26-github_action
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          config.model: ${{ secrets.OPENAI_COMPATIBLE_MODEL }}
-          OPENAI_KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
-          OLLAMA.API_BASE: ${{ secrets.OPENAI_COMPATIBLE_URL }}
+          CONFIG__MODEL: ${{ secrets.OPENAI_COMPATIBLE_MODEL }}
+          OPENAI__KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
+          OPENAI__API_BASE: ${{ secrets.OPENAI_COMPATIBLE_URL }}
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
           github_action_config.auto_improve: "true"
-          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested"]'
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested", "synchronize"]'
