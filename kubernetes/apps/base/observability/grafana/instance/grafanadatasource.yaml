@@ -3,14 +3,14 @@
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
-  name: prometheus
+  name: &name prometheus
 spec:
   instanceSelector:
     matchLabels:
       dashboards: grafana
   datasource:
     type: prometheus
-    name: prometheus
+    name: *name
     access: proxy
     isDefault: true
     url: http://prometheus-operated.observability.svc.cluster.local:9090
@@ -19,15 +19,47 @@ spec:
 apiVersion: grafana.integreatly.org/v1beta1
 kind: GrafanaDatasource
 metadata:
-  name: alertmanager
+  name: &name alertmanager
 spec:
   instanceSelector:
     matchLabels:
       dashboards: grafana
   datasource:
     type: alertmanager
-    name: alertmanager
+    name: *name
     access: proxy
     jsonData:
       implementation: prometheus
     url: http://alertmanager-operated.observability.svc.cluster.local:9093
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/grafana.integreatly.org/grafanadatasource_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: &name prometheus-utility
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  datasource:
+    type: prometheus
+    name: *name
+    access: proxy
+    url: https://prometheus-utility.jory.dev
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/grafana.integreatly.org/grafanadatasource_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: &name alertmanager-utility
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  datasource:
+    type: alertmanager
+    name: *name
+    access: proxy
+    jsonData:
+      implementation: prometheus
+    url: https://alertmanager-utility.jory.dev
