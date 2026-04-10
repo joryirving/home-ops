@@ -17,21 +17,75 @@ error() {
 # --- Environment & Inputs ---
 # These will be passed as environment variables by the action runner or defined in the script.
 
-REPO="${REPO:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="${REPO:-${GITHUB_REPOSITORY:-}}"
 PR_NUMBER="${PR_NUMBER:-}"
 AI_BASE_URL="${AI_BASE_URL:-}"
 AI_MODEL="${AI_MODEL:-}"
+AI_API_KEY="${AI_API_KEY:-}"
 AI_FALLBACK_BASE_URL="${AI_FALLBACK_BASE_URL:-}"
 AI_FALLBACK_MODEL="${AI_FALLBACK_MODEL:-}"
+AI_FALLBACK_API_KEY="${AI_FALLBACK_API_KEY:-}"
 AI_PRIMARY_RETRIES="${AI_PRIMARY_RETRIES:-8}"
 AI_PRIMARY_RETRY_DELAY_SEC="${AI_PRIMARY_RETRY_DELAY_SEC:-15}"
 ALLOWED_SOURCE_HOSTS="${ALLOWED_SOURCE_HOSTS:-github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net}"
-GH_TOKEN="${GH_TOKEN:-}"
+GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+SYSTEM_PROMPT="${SYSTEM_PROMPT:-}"
+STANDARDS_FILE="${STANDARDS_FILE:-CLAUDE.md}"
+OUTPUT_FILE="${GITHUB_OUTPUT:-/dev/null}"
 
 if [[ -z "$REPO" || -z "$PR_NUMBER" || -z "$AI_BASE_URL" || -z "$AI_MODEL" ]]; then
   error "Missing required environment variables: REPO, PR_NUMBER, AI_BASE_URL, or AI_MODEL"
   exit 1
 fi
+
+if [[ -z "$GH_TOKEN" ]]; then
+  error "Missing GitHub token in GH_TOKEN or GITHUB_TOKEN"
+  exit 1
+fi
+
+if [[ -n "$AI_FALLBACK_BASE_URL" && -z "$AI_FALLBACK_MODEL" ]]; then
+  error "AI_FALLBACK_MODEL is required when AI_FALLBACK_BASE_URL is set"
+  exit 1
+fi
+
+if [[ -z "$AI_FALLBACK_BASE_URL" && -n "$AI_FALLBACK_MODEL" ]]; then
+  error "AI_FALLBACK_BASE_URL is required when AI_FALLBACK_MODEL is set"
+  exit 1
+fi
+
+if [[ -z "$SYSTEM_PROMPT" ]]; then
+  SYSTEM_PROMPT="$(<"$SCRIPT_DIR/default_system_prompt.txt")"
+fi
+
+curl_model() {
+  local base_url="$1"
+  local api_key="$2"
+  local payload_file="$3"
+  local output_file="$4"
+
+  local args=(
+    -fsSL
+    "$base_url/chat/completions"
+    -H "Content-Type: application/json"
+    --data "@$payload_file"
+  )
+
+  if [[ -n "$api_key" ]]; then
+    args+=( -H "Authorization: Bearer $api_key" )
+  fi
+
+  curl "${args[@]}" > "$output_file"
+}
+
+parse_and_validate() {
+  local response_file="$1"
+  jq -r '.choices[0].message.content // empty' "$response_file" > ai-output.raw
+  sed -e 's/^```json$//' -e 's/^```$//' ai-output.raw | sed '/^$/d' > ai-output.json
+  jq . ai-output.json > /dev/null
+  jq -e '.verdict == "approve" or .verdict == "request_changes"' ai-output.json > /dev/null
+  jq -e '.review_markdown and (.review_markdown | length > 0)' ai-output.json > /dev/null
+}
 
 # --- Step 1: Collect PR Context ---
 
@@ -279,7 +333,7 @@ fi
 # --- Step 4: Gather image digest provenance context ---
 
 log "Gathering image digest provenance..."
-python3 scripts/image_digest_analysis.py || error "Image digest analysis failed"
+python3 "$SCRIPT_DIR/image_digest_analysis.py" || error "Image digest analysis failed"
 
 # --- Step 5: Gather repo impact + history context ---
 
@@ -320,7 +374,7 @@ if [ -s terms.txt ]; then
       echo
       echo "### git log context"
       echo '```text'
-      git log --online --decorate --grep="$term" -n 10 || true
+      git log --oneline --decorate --grep="$term" -n 10 || true
       echo '```'
       echo
     } >> repo-history.md
@@ -336,14 +390,14 @@ fi
 # --- Step 6: Build review corpus ---
 
 log "Building review corpus..."
-: > clude-standards.md
-if [ -f CLAUDE.md ]; then
-  echo "# Repository Standards and Conventions" >> clude-standards.md
-  echo "Derived from CLAUDE.md — AI assistant guidelines for this repository." >> clude-standards.md
-  echo >> clude-standards.md
-  cat CLAUDE.md >> clude-standards.md
+: > standards-context.md
+if [ -f "$STANDARDS_FILE" ]; then
+  echo "# Repository Standards and Conventions" >> standards-context.md
+  echo "Derived from $STANDARDS_FILE for this repository." >> standards-context.md
+  echo >> standards-context.md
+  cat "$STANDARDS_FILE" >> standards-context.md
 else
-  echo "(CLAUDE.md not found; standards context unavailable.)" >> clude-standards.md
+  echo "($STANDARDS_FILE not found; standards context unavailable.)" >> standards-context.md
 fi
 
 {
@@ -382,8 +436,8 @@ fi
   echo "# Repository History"
   cat repo-history.truncated.md
   echo
-  echo "# Repository Standards and Conventions (CLAUDE.md)"
-  cat clude-standards.md
+  echo "# Repository Standards and Conventions ($STANDARDS_FILE)"
+  cat standards-context.md
 } > review-corpus.md
 
 head -c 220000 review-corpus.md > review-corpus.truncated.md
@@ -391,7 +445,6 @@ head -c 220000 review-corpus.md > review-corpus.truncated.md
 # --- Step 7: Analyze with AI ---
 
 log "Analyzing with $AI_MODEL..."
-SYSTEM_PROMPT="You research pull requests in a Flux GitOps Kubernetes repository and produce a GitHub PR review. You do NOT modify files. PRs may include dependency upgrades (from Renovate) or new features/implementations (from AI agents). Use ONLY the provided corpus (PR metadata, diff, linked sources, image digest provenance, repo impact scan, repo history, and repository standards/conventions from CLAUDE.md). Do not invent facts. Method: for dependency upgrades, trace release/changelog evidence and classify breaking changes. For new features, verify implementation follows repository conventions. Then choose verdict approve or request_changes. CRITICAL: Always verify that the PR conforms to repository standards and conventions defined in CLAUDE.md — if a PR violates those standards, you MUST request changes with specific feedback on what needs to be fixed. For digest-only image updates (same tag, new sha256), analyze OCI metadata (revision/source/created) and explicitly state whether provenance shows code change vs rebuild. If evidence quality is weak or fetches fail, explicitly say what evidence is missing and keep the recommendation conservative. Return STRICT JSON with keys verdict, review_markdown, and packages[]. review_markdown must be fully human-readable markdown with summary/recommendation, per-package/per-change sections, sources, a Standards Compliance section explicitly checking against CLAUDE.md requirements, and an Unknowns/Needs verification section if evidence is incomplete."
 
 jq -n \
   --arg model "$AI_MODEL" \
@@ -405,18 +458,10 @@ PRIMARY_OK=0
 ATTEMPT=1
 while [ "$ATTEMPT" -le "$AI_PRIMARY_RETRIES" ]; do
   echo "Primary model attempt ${ATTEMPT}/${AI_PRIMARY_RETRIES}: $AI_MODEL @ $AI_BASE_URL"
-  if curl -fsSL "$AI_BASE_URL/chat/completions" \
-    -H "Content-Type: application/json" \
-    --data @ai-request.primary.json > ai-response.primary.json && \
-    jq -e '.choices[0].message.content // empty' ai-response.primary.json > /dev/null; then
-    
-    # Validate JSON structure
-    jq -r '.choices[0].message.content' ai-response.primary.json | sed -e 's/^```json//' -e 's/^```//' -e '/^$/d' > ai-output.json
-    if jq . ai-output.json > /dev/null 2>&1 && \
-       jq -e '.verdict == "approve" or .verdict == "request_changes"' ai-output.json > /dev/null; then
-      PRIMARY_OK=1
-      break
-    fi
+  if curl_model "$AI_BASE_URL" "$AI_API_KEY" ai-request.primary.json ai-response.primary.json && \
+    parse_and_validate ai-response.primary.json; then
+    PRIMARY_OK=1
+    break
   fi
 
   echo "Primary model attempt $ATTEMPT failed; waiting ${AI_PRIMARY_RETRY_DELAY_SEC}s" >&2
@@ -428,6 +473,11 @@ if [ "$PRIMARY_OK" -eq 1 ]; then
   ANALYSIS_ENGINE="$AI_MODEL@$AI_BASE_URL"
   echo "Primary model succeeded"
 else
+  if [[ -z "$AI_FALLBACK_BASE_URL" || -z "$AI_FALLBACK_MODEL" ]]; then
+    error "Primary model unavailable and no fallback model configured"
+    exit 1
+  fi
+
   echo "Primary model unavailable after retries; trying fallback: $AI_FALLBACK_MODEL @ $AI_FALLBACK_BASE_URL" >&2
   head -c 120000 review-corpus.md > review-corpus.fallback.truncated.md
   jq -n \
@@ -437,24 +487,24 @@ else
     --rawfile corpus review-corpus.fallback.truncated.md \
     '{model:$model,messages:[{role:"system",content:$system},{role:"user",content:($user + "\n\n" + $corpus)}],temperature:0.1}' > ai-request.fallback.json
 
-  if curl -fsSL "$AI_FALLBACK_BASE_URL/chat/completations" \
-    -H "Content-Type: application/json" \
-    --data @ai-request.fallback.json > ai-response.fallback.json; then
-    jq -r '.choices[0].message.content' ai-response.fallback.json | sed -e 's/^```json//' -e 's/^```//' -e '/^$/d' > ai-output.json
-    if jq . ai-output.json > /dev/null 2>&1; then
-      ANALYSIS_ENGINE="$AI_FALLBACK_MODEL@$AI_FALLBACK_BASE_URL"
-      echo "Fallback model succeeded" >&2
-    else
-      error "Fallback model returned invalid JSON"
-      exit 1
-    fi
+  if curl_model "$AI_FALLBACK_BASE_URL" "$AI_FALLBACK_API_KEY" ai-request.fallback.json ai-response.fallback.json && \
+    parse_and_validate ai-response.fallback.json; then
+    ANALYSIS_ENGINE="$AI_FALLBACK_MODEL@$AI_FALLBACK_BASE_URL"
+    echo "Fallback model succeeded" >&2
   else
     error "Fallback model failed"
     exit 1
   fi
 fi
 
-echo "analysis_engine=$ANALYSIS_ENGINE" >> "$GITHUB_OUTPUT"
+echo "analysis_engine=$ANALYSIS_ENGINE" >> "$OUTPUT_FILE"
+echo "verdict=$(jq -r '.verdict' ai-output.json)" >> "$OUTPUT_FILE"
+
+{
+  echo 'review_markdown<<EOF'
+  jq -r '.review_markdown' ai-output.json
+  echo 'EOF'
+} >> "$OUTPUT_FILE"
 
 # --- Step 8: Output Results ---
 

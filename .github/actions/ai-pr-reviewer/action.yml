@@ -1,0 +1,93 @@
+name: AI PR Reviewer
+description: Analyze a pull request with a local or cloud OpenAI-compatible model and return a review verdict.
+
+inputs:
+  github_token:
+    description: GitHub token for PR and API access
+    required: true
+  ai_base_url:
+    description: Base URL of the primary OpenAI-compatible API
+    required: true
+  ai_model:
+    description: Model name for the primary analysis pass
+    required: true
+  ai_api_key:
+    description: Optional bearer token for the primary AI endpoint
+    required: false
+    default: ""
+  ai_fallback_base_url:
+    description: Optional base URL of a fallback OpenAI-compatible API
+    required: false
+    default: ""
+  ai_fallback_model:
+    description: Optional model name for the fallback analysis pass
+    required: false
+    default: ""
+  ai_fallback_api_key:
+    description: Optional bearer token for the fallback AI endpoint
+    required: false
+    default: ""
+  ai_primary_retries:
+    description: Number of retries for the primary model
+    required: false
+    default: "8"
+  ai_primary_retry_delay_sec:
+    description: Delay between primary retries in seconds
+    required: false
+    default: "15"
+  allowed_source_hosts:
+    description: Comma-separated list of hosts allowed for linked source fetching
+    required: false
+    default: github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net
+  system_prompt:
+    description: Optional system prompt override
+    required: false
+    default: ""
+  standards_file:
+    description: Repository standards file path
+    required: false
+    default: CLAUDE.md
+
+outputs:
+  verdict:
+    description: AI verdict, approve or request_changes
+    value: ${{ steps.review.outputs.verdict }}
+  review_markdown:
+    description: Human-readable markdown review body
+    value: ${{ steps.review.outputs.review_markdown }}
+  analysis_engine:
+    description: Model and endpoint that produced the final result
+    value: ${{ steps.review.outputs.analysis_engine }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate runtime dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        command -v gh >/dev/null
+        command -v jq >/dev/null
+        command -v curl >/dev/null
+        command -v git >/dev/null
+        command -v python3 >/dev/null
+
+    - name: Run AI review
+      id: review
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        AI_BASE_URL: ${{ inputs.ai_base_url }}
+        AI_MODEL: ${{ inputs.ai_model }}
+        AI_API_KEY: ${{ inputs.ai_api_key }}
+        AI_FALLBACK_BASE_URL: ${{ inputs.ai_fallback_base_url }}
+        AI_FALLBACK_MODEL: ${{ inputs.ai_fallback_model }}
+        AI_FALLBACK_API_KEY: ${{ inputs.ai_fallback_api_key }}
+        AI_PRIMARY_RETRIES: ${{ inputs.ai_primary_retries }}
+        AI_PRIMARY_RETRY_DELAY_SEC: ${{ inputs.ai_primary_retry_delay_sec }}
+        ALLOWED_SOURCE_HOSTS: ${{ inputs.allowed_source_hosts }}
+        SYSTEM_PROMPT: ${{ inputs.system_prompt }}
+        STANDARDS_FILE: ${{ inputs.standards_file }}
+      run: bash "${{ github.action_path }}/scripts/run_review.sh"
