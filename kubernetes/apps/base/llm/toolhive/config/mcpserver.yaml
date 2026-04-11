@@ -1,0 +1,109 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: arr
+spec:
+  image: docker.io/node:20-alpine
+  transport: stdio
+  proxyMode: streamable-http
+  proxyPort: 8080
+  env:
+    - name: SONARR_URL
+      value: http://sonarr.downloads
+    - name: RADARR_URL
+      value: http://radarr.downloads
+    - name: PROWLARR_URL
+      value: http://prowlarr.downloads
+  secrets:
+    - name: toolhive-sonarr
+      key: SONARR_API_KEY
+      targetEnvName: SONARR_API_KEY
+    - name: toolhive-radarr
+      key: RADARR_API_KEY
+      targetEnvName: RADARR_API_KEY
+    - name: toolhive-prowlarr
+      key: PROWLARR_API_KEY
+      targetEnvName: PROWLARR_API_KEY
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          command:
+            - npx
+          args:
+            - -y
+            - mcp-arr-server@1.5.4
+  groupRef: mcp-tools
+---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: memory
+spec:
+  image: docker.io/node:20-alpine
+  transport: stdio
+  proxyMode: streamable-http
+  proxyPort: 8080
+  env:
+    - name: MEMORY_FILE_PATH
+      value: /memory/memory.jsonl
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          command:
+            - npx
+          args:
+            - -y
+            - '@modelcontextprotocol/server-memory@2026.1.26'
+          volumeMounts:
+            - name: memory-storage
+              mountPath: /memory
+      volumes:
+        - name: memory-storage
+          persistentVolumeClaim:
+            claimName: toolhive-memory
+  groupRef: mcp-tools
+---
+# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: github
+spec:
+  image: ghcr.io/github/github-mcp-server
+  transport: stdio
+  proxyMode: streamable-http
+  proxyPort: 8080
+  env:
+    - name: GITHUB_API_URL
+      value: https://api.github.com
+    - name: LOG_LEVEL
+      value: info
+  secrets:
+    - name: toolhive-github
+      key: token
+      targetEnvName: GITHUB_PERSONAL_ACCESS_TOKEN
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  groupRef: mcp-tools
