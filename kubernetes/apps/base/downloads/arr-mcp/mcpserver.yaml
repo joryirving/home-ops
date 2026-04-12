@@ -1,0 +1,55 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: arr
+spec:
+  image: docker.io/node:20-alpine
+  transport: stdio
+  proxyMode: streamable-http
+  proxyPort: 8080
+  env:
+    - name: HOME
+      value: /tmp
+    - name: NPM_CONFIG_CACHE
+      value: /tmp/.npm
+    - name: SONARR_URL
+      value: http://sonarr.downloads
+    - name: RADARR_URL
+      value: http://radarr.downloads
+    - name: PROWLARR_URL
+      value: http://prowlarr.downloads
+  secrets:
+    - name: toolhive-arr
+      key: SONARR_API_KEY
+      targetEnvName: SONARR_API_KEY
+    - name: toolhive-arr
+      key: RADARR_API_KEY
+      targetEnvName: RADARR_API_KEY
+    - name: toolhive-arr
+      key: PROWLARR_API_KEY
+      targetEnvName: PROWLARR_API_KEY
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          image: docker.io/node:20-alpine
+          command:
+            - npx
+          args:
+            - -y
+            - mcp-arr-server@1.5.4
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  groupRef: mcp-tools
