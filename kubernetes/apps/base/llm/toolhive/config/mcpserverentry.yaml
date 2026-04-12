@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/toolhive.stacklok.dev/mcpserverentry_v1alpha1.json
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/toolhive.stacklok.dev/mcpserverentry_v1alpha1.json
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServerEntry
 metadata:
@@ -8,16 +8,13 @@ spec:
   remoteURL: https://hass.jory.dev/api/mcp
   transport: streamable-http
   groupRef: mcp-tools
+  externalAuthConfigRef:
+    name: home-assistant-auth
   headerForward:
     addPlaintextHeaders:
       Accept: application/json
-    addHeadersFromSecret:
-      - headerName: Authorization
-        valueSecretRef:
-          name: toolhive-home-assistant
-          key: bearer-token
 ---
-# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/toolhive.stacklok.dev/mcpserverentry_v1alpha1.json
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/toolhive.stacklok.dev/mcpserverentry_v1alpha1.json
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServerEntry
 metadata:
@@ -27,7 +24,7 @@ spec:
   transport: sse
   groupRef: mcp-tools
 ---
-# yaml-language-server: $schema=https://k8s-schemas.bjw-s.dev/toolhive.stacklok.dev/mcpserverentry_v1alpha1.json
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/toolhive.stacklok.dev/mcpserverentry_v1alpha1.json
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServerEntry
 metadata:
