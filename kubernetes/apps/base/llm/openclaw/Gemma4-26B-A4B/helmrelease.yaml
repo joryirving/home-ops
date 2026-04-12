@@ -40,16 +40,16 @@ spec:
                   echo "Gemma-4-26B-A4B-Q5_K_XL already downloaded, skipping"
                 fi
 
-                # Download E4B draft model for speculative decoding
-                if [ ! -s /models/gemma4-26b/gemma-4-E4B-it-UD-Q4_K_XL.gguf ]; then
+                # Download E2B draft model for speculative decoding
+                if [ ! -s /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   hf download \
-                    unsloth/gemma-4-E4B-it-GGUF \
-                    gemma-4-E4B-it-UD-Q4_K_XL.gguf \
+                    unsloth/gemma-4-E2B-it-GGUF \
+                    gemma-4-E2B-it-UD-Q4_K_XL.gguf \
                     --local-dir /models/gemma4-26b
-                  echo "Gemma-4-E4B-Q4_K_XL draft model download complete"
+                  echo "Gemma-4-E2B-Q4_K_XL draft model download complete"
                 else
-                  echo "Gemma-4-E4B-Q4_K_XL draft model already downloaded, skipping"
+                  echo "Gemma-4-E2B-Q4_K_XL draft model already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -87,7 +87,7 @@ spec:
               - --flash-attn
               - "on"
               - --parallel
-              - "1"
+              - "2"
               - --cont-batching
               - -sps
               - "0.90"
@@ -116,9 +116,9 @@ spec:
               - "16"
               - --no-mmap
               - --jinja
-              # Speculative decoding - Gemma 4 E4B draft model
+              # Speculative decoding - Gemma 4 E2B draft model
               - --model-draft
-              - /models/gemma4-26b/gemma-4-E4B-it-UD-Q4_K_XL.gguf
+              - /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf
               - --n-gpu-layers-draft
               - "99"
               - --draft-max
