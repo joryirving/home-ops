@@ -3,7 +3,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: toolhive-crds
+  name: &name toolhive-crds
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/crds
@@ -18,7 +18,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: toolhive
+  name: &name toolhive
 spec:
   dependsOn:
     - name: toolhive-crds
@@ -35,11 +35,10 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: toolhive-config
+  name: &name toolhive-config
 spec:
   components:
     - ../../../../../components/dragonfly
-    - ../../../../../components/volsync
   dependsOn:
     - name: toolhive
   healthCheckExprs:
@@ -49,11 +48,62 @@ spec:
       current: status.phase == 'ready'
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/config
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name github-mcp
+spec:
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/github-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name ha-mcp
+spec:
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/ha-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name memory-mcp
+spec:
+  components:
+    - ../../../../../components/volsync
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/memory-mcp
   postBuild:
     substitute:
-      APP: toolhive
-      CLAIM: toolhive-memory
-      VOLSYNC_CAPACITY: 1Gi
+      name: *name
   prune: true
   sourceRef:
     kind: GitRepository
