@@ -26,19 +26,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen9b/Qwen3.5-9B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen9b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/memory/gemma-4-E4B-it-UD-Q4_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen9b
-                  rm -rf /models/qwen9b/.cache/huggingface/download/Qwen3.5-9B-UD-Q8_K_XL.gguf.lock
+                  mkdir -p /models/memory
+                  rm -rf /models/memory/.cache/huggingface/download/gemma-4-E4B-it-UD-Q4_K_XL.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-9B-GGUF \
-                    Qwen3.5-9B-UD-Q8_K_XL.gguf \
-                    mmproj-F16.gguf \
-                    --local-dir /models/qwen9b
+                    unsloth/gemma-4-E4B-it-GGUF \
+                    gemma-4-E4B-it-UD-Q4_K_XL.gguf \
+                    --local-dir /models/memory
 
-                  echo "Qwen3.5-9B download complete"
+                  echo "Gemma-4-E4B-it-UD-Q4_K_XL download complete"
                 else
-                  echo "Qwen3.5-9B already downloaded, skipping"
+                  echo "Gemma-4-E4B-it-UD-Q4_K_XL already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -55,7 +54,7 @@ spec:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: vulkan-radv
+              tag: rocm7-nightlies@sha256:784a906b5fa11c673fab88c2f96ff315107e7c175a8cbc82ec0ee09fd9c3b2f3
             securityContext:
               privileged: true
             command:
@@ -66,13 +65,11 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen9b
+              - memory
               - --model
-              - /models/qwen9b/Qwen3.5-9B-UD-Q8_K_XL.gguf
-              - --mmproj
-              - /models/qwen9b/mmproj-F16.gguf
+              - /models/memory/gemma-4-E4B-it-UD-Q4_K_XL.gguf
               - --ctx-size
-              - "20000"
+              - "8192"
               - --n-gpu-layers
               - "99"
               - --fit
@@ -80,7 +77,7 @@ spec:
               - --flash-attn
               - "on"
               - --parallel
-              - "5"
+              - "6"
               - --cont-batching
               - -sps
               - "0.90"
@@ -88,24 +85,20 @@ spec:
               - --cache-prompt
               - --kv-unified
               - --ctx-checkpoints
-              - "4"
-              - --checkpoint-every-n-tokens
-              - "16384"
+              - "0"
               - --metrics
-              - --image-min-tokens
-              - "1024"
               - --temp
-              - "0.6"
+              - "1.0"
               - --top-p
               - "0.95"
               - --top-k
-              - "20"
+              - "64"
               - --min-p
               - "0"
-              - --presence-penalty
+              - --reasoning
+              - "off"
+              - --reasoning-budget
               - "0"
-              - --repeat-penalty
-              - "1.0"
               - --batch-size
               - "4096"
               - --ubatch-size
@@ -115,7 +108,6 @@ spec:
               - --threads-batch
               - "16"
               - --no-mmap
-              - --jinja
             resources:
               requests:
                 cpu: 500m
