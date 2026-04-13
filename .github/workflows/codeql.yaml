@@ -1,42 +1,42 @@
 ---
-  # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-  name: "CodeQL check"
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: "CodeQL check"
 
-  on:
-    workflow_dispatch:
-    push:
-      branches:
-        - main
-    pull_request:
-      branches:
-        - main
-    schedule:
-      - cron: '14 7 * * *'
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '14 7 * * *'
 
-  jobs:
-    analyze:
-      name: Analyze (${{ matrix.language }})
-      runs-on: ubuntu-latest
-      permissions:
-        security-events: write
-        packages: read
-      strategy:
-        fail-fast: false
-        matrix:
-          include:
-            - language: actions
-              build-mode: none
-      steps:
-        - name: Checkout
-          uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-        - name: Initialize CodeQL
-          uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
-          with:
-            languages: ${{ matrix.language }}
-            build-mode: ${{ matrix.build-mode }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
 
-        - name: Perform CodeQL Analysis
-          uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
-          with:
-            category: "/language:${{matrix.language}}"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          category: "/language:${{matrix.language}}"

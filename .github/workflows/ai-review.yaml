@@ -7,8 +7,8 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
 
 concurrency:
-  group: renovate-llm-review
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
