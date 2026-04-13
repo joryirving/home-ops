@@ -37,7 +37,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Current tokens predicted per second",
+      "description": "Current generation throughput in tokens per second",
       "fill": 0,
       "gridPos": {
         "h": 4,
@@ -67,12 +67,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:tokens_per_second{pod=~\"$pod\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "llamacpp:predicted_tokens_seconds{service=~\"$service\"}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
-      "title": "Tokens / Second",
+      "title": "Generation Throughput",
       "type": "stat"
     },
     {
@@ -80,7 +80,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total tokens predicted so far",
+      "description": "Current prompt ingestion throughput in tokens per second",
       "fill": 0,
       "gridPos": {
         "h": 4,
@@ -110,12 +110,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:tokens_predicted_total{pod=~\"$pod\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "llamacpp:prompt_tokens_seconds{service=~\"$service\"}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
-      "title": "Total Tokens Predicted",
+      "title": "Prompt Throughput",
       "type": "stat"
     },
     {
@@ -123,7 +123,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total prompt tokens processed",
+      "description": "Total generated tokens processed",
       "fill": 0,
       "gridPos": {
         "h": 4,
@@ -153,12 +153,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:prompt_tokens_total{pod=~\"$pod\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "llamacpp:tokens_predicted_total{service=~\"$service\"}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
-      "title": "Total Prompt Tokens",
+      "title": "Total Tokens Predicted",
       "type": "stat"
     },
     {
@@ -166,7 +166,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Cache hit vs miss ratio (higher is better)",
+      "description": "Total prompt tokens processed",
       "fill": 0,
       "gridPos": {
         "h": 4,
@@ -196,12 +196,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:cache_hits_total{pod=~\"$pod\"} / (llamacpp:cache_hits_total{pod=~\"$pod\"} + llamacpp:cache_misses_total{pod=~\"$pod\"})",
-          "legendFormat": "{{pod}}",
+          "expr": "llamacpp:prompt_tokens_total{service=~\"$service\"}",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
-      "title": "Cache Hit Ratio",
+      "title": "Total Prompt Tokens",
       "type": "stat"
     },
     {
@@ -222,7 +222,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Tokens predicted per second over time",
+      "description": "Current prompt and generation throughput over time",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -254,12 +254,21 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:tokens_per_second{pod=~\"$pod\"}",
-          "legendFormat": "{{pod}}",
+          "expr": "llamacpp:predicted_tokens_seconds{service=~\"$service\"}",
+          "legendFormat": "generation {{service}}",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "llamacpp:prompt_tokens_seconds{service=~\"$service\"}",
+          "legendFormat": "prompt {{service}}",
+          "refId": "B"
         }
       ],
-      "title": "Tokens / Second",
+      "title": "Throughput Over Time",
       "type": "timeseries"
     },
     {
@@ -267,7 +276,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Prompt vs predicted tokens rate",
+      "description": "5 minute rate of prompt and generated tokens",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -299,8 +308,8 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(llamacpp:tokens_predicted_total{pod=~\"$pod\"}[5m])",
-          "legendFormat": "predicted {{pod}}",
+          "expr": "rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m])",
+          "legendFormat": "generated {{service}}",
           "refId": "A"
         },
         {
@@ -308,12 +317,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(llamacpp:prompt_tokens_total{pod=~\"$pod\"}[5m])",
-          "legendFormat": "prompt {{pod}}",
+          "expr": "rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m])",
+          "legendFormat": "prompt {{service}}",
           "refId": "B"
         }
       ],
-      "title": "Token Rate (5m)",
+      "title": "Token Volume Rate (5m)",
       "type": "timeseries"
     },
     {
@@ -326,7 +335,7 @@
       },
       "id": 9,
       "panels": [],
-      "title": "Requests & Slots",
+      "title": "Requests & Decode",
       "type": "row"
     },
     {
@@ -334,7 +343,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total requests by state",
+      "description": "Requests currently processing or deferred",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -366,12 +375,21 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:requests_total{pod=~\"$pod\"}",
-          "legendFormat": "{{state}} {{pod}}",
+          "expr": "llamacpp:requests_processing{service=~\"$service\"}",
+          "legendFormat": "processing {{service}}",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "llamacpp:requests_deferred{service=~\"$service\"}",
+          "legendFormat": "deferred {{service}}",
+          "refId": "B"
         }
       ],
-      "title": "Requests by State",
+      "title": "Requests In Flight",
       "type": "timeseries"
     },
     {
@@ -379,7 +397,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Active context slots",
+      "description": "Decoder activity and average busy slots per decode",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -411,8 +429,8 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:n_current_tokens{pod=~\"$pod\"}",
-          "legendFormat": "current tokens {{pod}}",
+          "expr": "rate(llamacpp:n_decode_total{service=~\"$service\"}[5m])",
+          "legendFormat": "decode/s {{service}}",
           "refId": "A"
         },
         {
@@ -420,12 +438,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:n_past_tokens{pod=~\"$pod\"}",
-          "legendFormat": "past tokens {{pod}}",
+          "expr": "llamacpp:n_busy_slots_per_decode{service=~\"$service\"}",
+          "legendFormat": "busy slots/decode {{service}}",
           "refId": "B"
         }
       ],
-      "title": "Context Slots",
+      "title": "Decode Activity",
       "type": "timeseries"
     },
     {
@@ -438,7 +456,7 @@
       },
       "id": 12,
       "panels": [],
-      "title": "Cache & Memory",
+      "title": "Efficiency & Capacity",
       "type": "row"
     },
     {
@@ -446,7 +464,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Cache hits and misses over time",
+      "description": "Lower is better, derived from cumulative token processing time",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -457,9 +475,9 @@
       },
       "id": 13,
       "legend": {
-        "avg": false,
+        "avg": true,
         "current": true,
-        "max": false,
+        "max": true,
         "min": false,
         "show": true,
         "total": false,
@@ -478,8 +496,8 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(llamacpp:cache_hits_total{pod=~\"$pod\"}[5m])",
-          "legendFormat": "hits {{pod}}",
+          "expr": "rate(llamacpp:tokens_predicted_seconds_total{service=~\"$service\"}[5m]) / clamp_min(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]), 0.001)",
+          "legendFormat": "generation {{service}}",
           "refId": "A"
         },
         {
@@ -487,12 +505,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(llamacpp:cache_misses_total{pod=~\"$pod\"}[5m])",
-          "legendFormat": "misses {{pod}}",
+          "expr": "rate(llamacpp:prompt_seconds_total{service=~\"$service\"}[5m]) / clamp_min(rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m]), 0.001)",
+          "legendFormat": "prompt {{service}}",
           "refId": "B"
         }
       ],
-      "title": "Cache Hits/Misses Rate (5m)",
+      "title": "Seconds per Token (5m)",
       "type": "timeseries"
     },
     {
@@ -500,7 +518,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "KV cache memory usage",
+      "description": "Largest observed token batch size",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -532,8 +550,263 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:kv_cache_memory_used_bytes{pod=~\"$pod\"}",
-          "legendFormat": "used {{pod}}",
+          "expr": "llamacpp:n_tokens_max{service=~\"$service\"}",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Largest Observed Token Batch",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 15,
+      "panels": [],
+      "title": "Host Memory (UMA)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Real host RAM used, excluding free, cache, buffers, and reclaimable memory. Useful for UMA systems where GPU memory shows up as node memory pressure.",
+      "fill": 0,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 33
+      },
+      "id": 16,
+      "options": {
+        "colorMode": "Value",
+        "graphMode": "Area",
+        "justifyMode": "Auto",
+        "orientation": "Auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "Auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host RAM Used",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Percentage of real host RAM in use on the selected node.",
+      "fill": 0,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 33
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "Value",
+        "graphMode": "Area",
+        "justifyMode": "Auto",
+        "orientation": "Auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "Auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "100 * ((node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}) / clamp_min((node_memory_MemTotal_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}), 1)",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host RAM Used %",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Total host memory on the selected node.",
+      "fill": 0,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 33
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "Value",
+        "graphMode": "Area",
+        "justifyMode": "Auto",
+        "orientation": "Auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "Auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "node_memory_MemTotal_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host RAM Total",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Cached, buffered, and reclaimable host memory.",
+      "fill": 0,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 33
+      },
+      "id": 19,
+      "options": {
+        "colorMode": "Value",
+        "graphMode": "Area",
+        "justifyMode": "Auto",
+        "orientation": "Auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "Auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Host RAM Cache/Reclaimable",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Real used memory from node-exporter, plus cache/reclaimable and free memory for the selected node.",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "id": 20,
+      "legend": {
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "legendFormat": "used {{nodename}}",
           "refId": "A"
         },
         {
@@ -541,13 +814,28 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:kv_cache_memory_total_bytes{pod=~\"$pod\"}",
-          "legendFormat": "total {{pod}}",
+          "expr": "(node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "legendFormat": "cache/reclaimable {{nodename}}",
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "node_memory_MemFree_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "legendFormat": "free {{nodename}}",
+          "refId": "C"
         }
       ],
-      "title": "KV Cache Memory",
-      "type": "timeseries"
+      "title": "Host Memory Breakdown",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      }
     }
   ],
   "refresh": "10s",
@@ -588,15 +876,43 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(llamacpp:tokens_per_second, pod)",
+        "definition": "label_values(llamacpp:prompt_tokens_total, service)",
         "hide": 0,
         "includeAll": true,
-        "label": "Pod",
+        "label": "Service",
         "multi": true,
-        "name": "pod",
+        "name": "service",
         "options": [],
         "query": {
-          "query": "label_values(llamacpp:tokens_per_second, pod)",
+          "query": "label_values(llamacpp:prompt_tokens_total, service)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "skirk",
+          "value": "skirk"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(node_uname_info{job=\"node-exporter\"}, nodename)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Node",
+        "multi": false,
+        "name": "node",
+        "options": [],
+        "query": {
+          "query": "label_values(node_uname_info{job=\"node-exporter\"}, nodename)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
@@ -615,5 +931,5 @@
   "timezone": "browser",
   "title": "LLM / llama-server",
   "uid": "llamserver",
-  "version": 1
+  "version": 3
 }
