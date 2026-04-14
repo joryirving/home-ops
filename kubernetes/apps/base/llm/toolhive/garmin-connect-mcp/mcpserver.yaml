@@ -1,0 +1,46 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: garmin-connect
+spec:
+  image: docker.io/node:24-alpine
+  transport: stdio
+  proxyMode: streamable-http
+  proxyPort: 8080
+  env:
+    - name: HOME
+      value: /tmp
+    - name: NPM_CONFIG_CACHE
+      value: /tmp/.npm
+  secrets:
+    - name: toolhive-garmin-username
+      key: GARMIN_EMAIL
+      targetEnvName: GARMIN_EMAIL
+    - name: toolhive-garmin-password
+      key: GARMIN_PASSWORD
+      targetEnvName: GARMIN_PASSWORD
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          image: docker.io/node:24-alpine
+          command:
+            - npx
+          args:
+            - -y
+            - "@nicolasvegam/garmin-connect-mcp@1.1.1"
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  groupRef: mcp-tools

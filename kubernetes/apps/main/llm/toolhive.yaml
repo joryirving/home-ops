@@ -62,6 +62,23 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: &name garmin-connect-mcp
+spec:
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/garmin-connect-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: &name github-mcp
 spec:
   dependsOn:
