@@ -34,23 +34,24 @@ spec:
                   hf download \
                     unsloth/gemma-4-26B-A4B-it-GGUF \
                     gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf \
+                    mmproj-F16.gguf \
                     --local-dir /models/gemma4-26b
                   echo "Gemma-4-26B-A4B-Q5_K_XL download complete"
                 else
                   echo "Gemma-4-26B-A4B-Q5_K_XL already downloaded, skipping"
                 fi
 
-                # Download E2B draft model for speculative decoding
-                if [ ! -s /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf ]; then
-                  pip install --no-cache-dir huggingface_hub
-                  hf download \
-                    unsloth/gemma-4-E2B-it-GGUF \
-                    gemma-4-E2B-it-UD-Q4_K_XL.gguf \
-                    --local-dir /models/gemma4-26b
-                  echo "Gemma-4-E2B-Q4_K_XL draft model download complete"
-                else
-                  echo "Gemma-4-E2B-Q4_K_XL draft model already downloaded, skipping"
-                fi
+                # # Download E2B draft model for speculative decoding
+                # if [ ! -s /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf ]; then
+                #   pip install --no-cache-dir huggingface_hub
+                #   hf download \
+                #     unsloth/gemma-4-E2B-it-GGUF \
+                #     gemma-4-E2B-it-UD-Q4_K_XL.gguf \
+                #     --local-dir /models/gemma4-26b
+                #   echo "Gemma-4-E2B-Q4_K_XL draft model download complete"
+                # else
+                #   echo "Gemma-4-E2B-Q4_K_XL draft model already downloaded, skipping"
+                # fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
@@ -80,6 +81,8 @@ spec:
               - self-hosted
               - --model
               - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf
+              - --mmproj
+              - /models/gemma4-26b/mmproj-F16.gguf
               - --ctx-size
               - "262144"
               - --n-gpu-layers
@@ -87,7 +90,7 @@ spec:
               - --flash-attn
               - "on"
               - --parallel
-              - "1"
+              - "2"
               - --cont-batching
               - -sps
               - "0.90"
@@ -98,6 +101,10 @@ spec:
               - "4"
               - --checkpoint-every-n-tokens
               - "16384"
+              - --image-min-tokens
+              - "1120"
+              - --image-max-tokens
+              - "1120"
               - --metrics
               - --temp
               - "1.0"
@@ -117,14 +124,14 @@ spec:
               - "16"
               - --no-mmap
               # Speculative decoding - Gemma 4 E2B draft model
-              - --model-draft
-              - /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf
-              - --n-gpu-layers-draft
-              - "99"
-              - --draft-max
-              - "8"
-              - --draft-min
-              - "1"
+              # - --model-draft
+              # - /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf
+              # - --n-gpu-layers-draft
+              # - "99"
+              # - --draft-max
+              # - "8"
+              # - --draft-min
+              # - "1"
             resources:
               requests:
                 cpu: 1
