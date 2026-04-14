@@ -1,0 +1,55 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &name windowstead-runner-${CLUSTER}
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: gha-runner-scale-set
+  dependsOn: []
+  interval: 15m
+  values:
+    githubConfigUrl: https://github.com/joryirving/windowstead
+    githubConfigSecret: home-ops-runner-secret
+    runnerScaleSetName: windowstead-${CLUSTER}
+    scaleSetLabels:
+      - windowstead
+      - linux
+      - x64
+    minRunners: 0
+    maxRunners: 2
+    containerMode:
+      type: kubernetes
+      kubernetesModeWorkVolumeClaim:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-hostpath
+        resources:
+          requests:
+            storage: 50Gi
+    controllerServiceAccount:
+      name: actions-runner-controller
+      namespace: actions-runner-system
+    template:
+      spec:
+        containers:
+          - name: runner
+            image: ghcr.io/joryirving/actions-runner:2.333.1@sha256:6ff67813438d14e443284b7ec13c41afa25d0dbba0926f6f13c9eafe0bb1ce41
+            command: ["/home/runner/run.sh"]
+            env:
+              - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+                value: "false"
+              - name: NODE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.hostIP
+            volumeMounts:
+              - mountPath: /var/run/secrets/talos.dev
+                name: talos
+                readOnly: true
+        serviceAccountName: home-ops-runner-${CLUSTER}
+        volumes:
+          - name: talos
+            secret:
+              secretName: home-ops-runner-${CLUSTER}
