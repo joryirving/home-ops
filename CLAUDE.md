@@ -29,17 +29,17 @@ home-ops/
 
 ## Key Technologies
 
-| Category | Tool | Purpose |
-|----------|------|---------|
-| GitOps | Flux | Deploys configs from Git to k8s |
-| CI | Renovate + GitHub Actions | Dependency updates, automation |
-| Networking | cilium (eBPF) | CNI, BGP, service mesh |
-| Ingress | Envoy Gateway | L7 proxy, ingress controller |
-| DNS | external-dns | Syncs ingress to Cloudflare/UniFi |
-| Secrets | external-secrets + 1Password | Secret management |
-| Storage | Rook/Ceph + volsync | Distributed storage + backups |
-| Images | spegel | Local OCI mirror |
-| IaC | tofu-controller | Terraform on k8s |
+| Category   | Tool                         | Purpose                           |
+|------------|------------------------------|-----------------------------------|
+| GitOps     | Flux                         | Deploys configs from Git to k8s   |
+| CI         | Renovate + GitHub Actions    | Dependency updates, automation    |
+| Networking | cilium (eBPF)                | CNI, BGP, service mesh            |
+| Ingress    | Envoy Gateway                | L7 proxy, ingress controller      |
+| DNS        | external-dns                 | Syncs ingress to Cloudflare/UniFi |
+| Secrets    | external-secrets + 1Password | Secret management                 |
+| Storage    | Rook/Ceph + volsync          | Distributed storage + backups     |
+| Images     | spegel                       | Local OCI mirror                  |
+| IaC        | tofu-controller              | Terraform on k8s                  |
 
 ## GitOps Flow
 
@@ -86,7 +86,7 @@ When reviewing Renovate PRs, enforce these criteria:
 - All applications MUST use `HelmRelease` via Flux, not raw manifests
 - Must include `spec.chart.spec.version` for pinned chart versions outside of `app-template`
 - Must include `spec.interval` for reconciliation frequency
-- Resource limits (CPU/memory) MUST be specified for production workloads
+- Resource limits (CPU/memory) SHOULD be specified for production workloads, but this is not a hard requirement
 - `valuesFrom` should reference ConfigMaps/Secrets, not inline values
 
 ### Secret Management Rules
@@ -105,7 +105,7 @@ When reviewing Renovate PRs, enforce these criteria:
 
 ### Cluster-Specific Policies
 - **main cluster** (production): Strict validation - all standards must be met
-- **utility cluster** (low-power services): Lenient on resource limits, same security standards
+- **utility cluster** (low-power services, production): Strict validation - all standards must be met
 - **test cluster** (testing): Can accept bleeding-edge versions, still enforce secrets policy
 
 ### Breaking Change Detection
