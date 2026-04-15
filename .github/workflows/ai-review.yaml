@@ -27,9 +27,6 @@ jobs:
     timeout-minutes: 35
 
     env:
-      REPO: ${{ github.repository }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-vision.llm:8080/v1' }}
       AI_MODEL: ${{ vars.AI_MODEL || 'self-hosted' }}
       AI_PRIMARY_RETRIES: ${{ vars.AI_PRIMARY_RETRIES || '8' }}
@@ -73,16 +70,10 @@ jobs:
           app-id: ${{ env.BOT_APP_ID }}
           private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
 
-      - name: Prefer bot token for GitHub API/reviews
-        if: steps.version-check.outputs.skip_review != 'true'
-        run: |
-          set -euo pipefail
-          echo "GH_TOKEN=${{ steps.app-token.outputs.token }}" >> "$GITHUB_ENV"
-
       - name: Analyze PR with reusable AI reviewer
         if: steps.version-check.outputs.skip_review != 'true'
         id: analyze
-        uses: ./.github/actions/ai-pr-reviewer
+        uses: joryirving/pr-reviewer-action@v1.0.0
         with:
           github_token: ${{ steps.app-token.outputs.token }}
           ai_base_url: ${{ env.AI_BASE_URL }}
@@ -91,30 +82,5 @@ jobs:
           ai_primary_retry_delay_sec: ${{ env.AI_PRIMARY_RETRY_DELAY_SEC }}
           allowed_source_hosts: ${{ env.ALLOWED_SOURCE_HOSTS }}
           standards_file: CLAUDE.md
-
-      - name: Upsert automated review comment
-        if: steps.version-check.outputs.skip_review != 'true'
-        env:
-          REVIEW_MARKDOWN: ${{ steps.analyze.outputs.review_markdown }}
-        run: |
-          set -euo pipefail
-          REVIEW_MARKER='<!-- renovate-review-bot -->'
-
-          VERDICT='${{ steps.analyze.outputs.verdict }}'
-          if [ "$VERDICT" = "request_changes" ]; then
-            VERDICT_PREFIX="⚠️ **Automated recommendation: REQUEST CHANGES**"
-          else
-            VERDICT_PREFIX="✅ **Automated recommendation: APPROVE**"
-          fi
-
-          {
-            echo "$REVIEW_MARKER"
-            echo "<!-- renovate-review-sha:${HEAD_SHA} -->"
-            echo "$VERDICT_PREFIX"
-            echo
-            echo "_Analysis engine: ${{ steps.analyze.outputs.analysis_engine }}_"
-            echo
-            printf '%s\n' "$REVIEW_MARKDOWN"
-          } > review-comment.md
-
-          gh pr comment "$PR_NUMBER" --repo "$REPO" --edit-last --create-if-none --body-file review-comment.md
+          publish_review_comment: 'true'
+          comment_marker: <!-- renovate-review-bot -->
