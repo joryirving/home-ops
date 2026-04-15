@@ -6,15 +6,33 @@ metadata:
   name: &app seerr
 spec:
   components:
-    - ../../../../components/postgres
-    - ../../../../components/volsync
+    - ../../../../../components/postgres
+    - ../../../../../components/volsync
   healthCheckExprs:
     - apiVersion: postgres-operator.crunchydata.com/v1beta1
       kind: PostgresCluster
       failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 1h
-  path: ./kubernetes/apps/base/media/seerr
+  path: ./kubernetes/apps/base/media/seerr/app
+  postBuild:
+    substitute:
+      APP: *app
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app seerr-mcp
+spec:
+  interval: 1h
+  path: ./kubernetes/apps/base/media/seerr/mcp
   postBuild:
     substitute:
       APP: *app
