@@ -1,0 +1,86 @@
+---
+name: Renovate PR Review (AI Deep)
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review-renovate-pr:
+    name: Deep Renovate Review
+    if: >-
+      ${{
+        !github.event.pull_request.draft &&
+        (github.event.pull_request.user.login == 'smurf-bot[bot]' ||
+         github.event.pull_request.user.login == 'itsmiso-ai')
+      }}
+    runs-on: home-ops-runner-main
+    timeout-minutes: 35
+
+    env:
+      AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-vision.llm:8080/v1' }}
+      AI_MODEL: ${{ vars.AI_MODEL || 'self-hosted' }}
+      AI_PRIMARY_RETRIES: ${{ vars.AI_PRIMARY_RETRIES || '8' }}
+      AI_PRIMARY_RETRY_DELAY_SEC: ${{ vars.AI_PRIMARY_RETRY_DELAY_SEC || '15' }}
+      ALLOWED_SOURCE_HOSTS: ${{ vars.RENOVATE_REVIEW_ALLOWED_SOURCE_HOSTS || 'github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Decide whether to skip review
+        id: version-check
+        run: |
+          set -euo pipefail
+          echo "skip_review=false" >> "$GITHUB_OUTPUT"
+
+      - name: Configure 1password
+        if: steps.version-check.outputs.skip_review != 'true'
+        uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
+        with:
+          connect-host: ${{ secrets.dashboardsCONNECT_HOST || secrets.OP_CONNECT_HOST }}
+          connect-token: ${{ secrets.dashboardsCONNECT_TOKEN || secrets.OP_CONNECT_TOKEN }}
+
+      - name: Get Secrets
+        if: steps.version-check.outputs.skip_review != 'true'
+        uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
+        with:
+          export-env: true
+        env:
+          BOT_APP_ID: op://Kubernetes/openclaw/MISO_BOT_ID
+          BOT_APP_PRIVATE_KEY: op://Kubernetes/openclaw/MISO_BOT_PRIVATE_KEY
+
+      - name: Generate bot token (miso-assistant)
+        if: steps.version-check.outputs.skip_review != 'true'
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          app-id: ${{ env.BOT_APP_ID }}
+          private-key: ${{ env.BOT_APP_PRIVATE_KEY }}
+
+      - name: Analyze PR with reusable AI reviewer
+        if: steps.version-check.outputs.skip_review != 'true'
+        id: analyze
+        uses: joryirving/pr-reviewer-action@3c04f7c8af2a775a1a6d89ae9ff6a7c5158901d8 # v1.0.1
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}
+          ai_base_url: ${{ env.AI_BASE_URL }}
+          ai_model: ${{ env.AI_MODEL }}
+          ai_primary_retries: ${{ env.AI_PRIMARY_RETRIES }}
+          ai_primary_retry_delay_sec: ${{ env.AI_PRIMARY_RETRY_DELAY_SEC }}
+          allowed_source_hosts: ${{ env.ALLOWED_SOURCE_HOSTS }}
+          standards_file: CLAUDE.md
+          publish_review_comment: 'true'
+          comment_marker: <!-- renovate-review-bot -->

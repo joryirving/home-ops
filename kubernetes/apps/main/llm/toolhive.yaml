@@ -1,0 +1,132 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name toolhive-crds
+spec:
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/crds
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name toolhive
+spec:
+  dependsOn:
+    - name: toolhive-crds
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/app
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name toolhive-config
+spec:
+  components:
+    - ../../../../../components/dragonfly
+  dependsOn:
+    - name: toolhive
+  healthCheckExprs:
+    - apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      failed: status.phase != 'ready'
+      current: status.phase == 'ready'
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/config
+  postBuild:
+    substitute:
+      APP: *name
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name garmin-connect-mcp
+spec:
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/garmin-connect-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name github-mcp
+spec:
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/github-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name ha-mcp
+spec:
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/ha-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name memory-mcp
+spec:
+  components:
+    - ../../../../../components/volsync
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/memory-mcp
+  postBuild:
+    substitute:
+      APP: *name
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false

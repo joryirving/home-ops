@@ -28,7 +28,7 @@ spec:
 
                 if [ ! -s /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen35b
+                  mkdir -p /models/qwen3-coder-next
                   rm -rf /models/qwen3-coder-next/.cache/huggingface/download/Qwen3-Coder-Next-UD-Q4_K_XL.gguf.lock
                   hf download \
                     unsloth/Qwen3-Coder-Next-GGUF \
@@ -69,7 +69,7 @@ spec:
               - --model
               - /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf
               - --ctx-size
-              - "262144"
+              - "150000"
               - --n-gpu-layers
               - "99"
               - --fit
@@ -167,3 +167,8 @@ spec:
         hostPath: /dev/dri
         globalMounts:
           - path: /dev/dri
+      dev-kfd:
+        type: hostPath
+        hostPath: /dev/kfd
+        globalMounts:
+          - path: /dev/kfd

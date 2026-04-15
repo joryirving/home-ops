@@ -10,7 +10,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: 5.0.0-prototype1
+    tag: 5.0.0
   url: oci://ghcr.io/zoriya/helm-charts/kyoo
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -79,8 +79,6 @@ spec:
       persistence:
         existingClaim: *app
       kyoo_api:
-        image:
-          tag: edge@sha256:554c24f9252a97f2b166779c1cd282486af1ca0ca4c4e755de75f4a53fe2610a
         resources:
           requests:
             cpu: 10m
@@ -90,8 +88,6 @@ spec:
             memory: 8Gi
     auth:
       kyoo_auth:
-        image:
-          tag: edge@sha256:12231b8773c092f4c82130682cedbdb06db19e3a585667ce12ce05e6a03f6b36
         resources:
           requests:
             cpu: 20m
@@ -101,8 +97,6 @@ spec:
             memory: 500Mi
     front:
       kyoo_front:
-        image:
-          tag: edge@sha256:c6ed1cea71f7b7765dcffa1bd46656e6b1d7041302ff9ebc976c7fa18bdf5130
         resources:
           requests:
             cpu: 20m
@@ -112,8 +106,6 @@ spec:
             memory: 500Mi
     scanner:
       kyoo_scanner:
-        image:
-          tag: edge@sha256:515c7187a7deecd7091ba3325c5bbca3c759d695f302747a1bceb18b22b3c4fc
         resources:
           requests:
             cpu: 5m
@@ -128,8 +120,6 @@ spec:
         - name: gpu
           resourceClaimTemplateName: kyoo-gpu
       kyoo_transcoder:
-        image:
-          tag: edge@sha256:539ae1f57cb20bd09d6c8aa72cc1713eb4495aaf37ecf2b813c398fc0fc8f949
         resources:
           claims:
             - name: gpu
@@ -139,6 +129,10 @@ spec:
           limits:
             cpu: 1
             memory: 8Gi
+    postgres:
+      enabled: false
+    ingress:
+      enabled: false
     traefikproxy:
       enabled: false
     extraObjects:

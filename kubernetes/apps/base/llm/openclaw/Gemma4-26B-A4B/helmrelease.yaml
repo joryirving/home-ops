@@ -26,19 +26,32 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf ]; then
+                # Download main model if missing
+                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
                   mkdir -p /models/gemma4-26b
-                  rm -rf /models/gemma4-26b/.cache/huggingface/download/gemma-4-26B-A4B-UD-Q6_K_XL.gguf.lock
+                  rm -rf /models/gemma4-26b/.cache/huggingface/download/gemma-4-26B-A4B-UD-Q5_K_XL.gguf.lock
                   hf download \
                     unsloth/gemma-4-26B-A4B-it-GGUF \
-                    gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf \
+                    gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf \
+                    mmproj-F16.gguf \
                     --local-dir /models/gemma4-26b
-
-                  echo "Gemma-4-26B-A4B Q6_K_XL download complete"
+                  echo "Gemma-4-26B-A4B-Q5_K_XL download complete"
                 else
-                  echo "Gemma-4-26B-A4B Q6_K_XL already downloaded, skipping"
+                  echo "Gemma-4-26B-A4B-Q5_K_XL already downloaded, skipping"
                 fi
+
+                # # Download E2B draft model for speculative decoding
+                # if [ ! -s /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf ]; then
+                #   pip install --no-cache-dir huggingface_hub
+                #   hf download \
+                #     unsloth/gemma-4-E2B-it-GGUF \
+                #     gemma-4-E2B-it-UD-Q4_K_XL.gguf \
+                #     --local-dir /models/gemma4-26b
+                #   echo "Gemma-4-E2B-Q4_K_XL draft model download complete"
+                # else
+                #   echo "Gemma-4-E2B-Q4_K_XL draft model already downloaded, skipping"
+                # fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
@@ -54,7 +67,7 @@ spec:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: vulkan-radv@sha256:cb0b482e0a8b17997ae025709fb31ab35fc2654e31e7f7d5c16508fe6396147e
+              tag: rocm7-nightlies@sha256:90d519f8ee4fcb25110e795f9cdfcda3f7ca88d606e7f98ed1273ccae712f2ef
             securityContext:
               privileged: true
             command:
@@ -67,15 +80,17 @@ spec:
               - --alias
               - self-hosted
               - --model
-              - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q6_K_XL.gguf
+              - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf
+              - --mmproj
+              - /models/gemma4-26b/mmproj-F16.gguf
               - --ctx-size
-              - "1048576"
+              - "262144"
               - --n-gpu-layers
               - "99"
               - --flash-attn
               - "on"
               - --parallel
-              - "4"
+              - "2"
               - --cont-batching
               - -sps
               - "0.90"
@@ -86,6 +101,11 @@ spec:
               - "4"
               - --checkpoint-every-n-tokens
               - "16384"
+              - --image-min-tokens
+              - "1120"
+              - --image-max-tokens
+              - "1120"
+              - --metrics
               - --temp
               - "1.0"
               - --top-p
@@ -103,7 +123,15 @@ spec:
               - --threads-batch
               - "16"
               - --no-mmap
-              - --jinja
+              # Speculative decoding - Gemma 4 E2B draft model
+              # - --model-draft
+              # - /models/gemma4-26b/gemma-4-E2B-it-UD-Q4_K_XL.gguf
+              # - --n-gpu-layers-draft
+              # - "99"
+              # - --draft-max
+              # - "8"
+              # - --draft-min
+              # - "1"
             resources:
               requests:
                 cpu: 1
@@ -167,3 +195,8 @@ spec:
         hostPath: /dev/dri
         globalMounts:
           - path: /dev/dri
+      dev-kfd:
+        type: hostPath
+        hostPath: /dev/kfd
+        globalMounts:
+          - path: /dev/kfd
