@@ -6,15 +6,15 @@ metadata:
   name: &app seerr
 spec:
   components:
-    - ../../../../../components/postgres
-    - ../../../../../components/volsync
+    - ../../../../components/postgres
+    - ../../../../components/volsync
   healthCheckExprs:
     - apiVersion: postgres-operator.crunchydata.com/v1beta1
       kind: PostgresCluster
       failed: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'False')
       current: status.conditions.filter(e, e.type == 'ProxyAvailable').all(e, e.status == 'True')
   interval: 1h
-  path: ./kubernetes/apps/base/media/seerr/app
+  path: ./kubernetes/apps/base/media/seerr
   postBuild:
     substitute:
       APP: *app
