@@ -26,19 +26,19 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen35b/Qwen3.5-35B-A3B-UD-Q5_K_XL.gguf ] || [ ! -s /models/qwen35b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf ] || [ ! -s /models/qwen3.6-35b-a3b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen35b
-                  rm -rf /models/qwen35b/.cache/huggingface/download/Qwen3.5-35B-A3B-UD-Q5_K_XL.gguf.lock
+                  mkdir -p /models/qwen3.6-35b-a3b
+                  rm -rf /models/qwen3.6-35b-a3b/.cache/huggingface/download/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-35B-A3B-GGUF \
-                    Qwen3.5-35B-A3B-UD-Q5_K_XL.gguf \
+                    unsloth/Qwen3.6-35B-A3B-GGUF \
+                    Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/qwen35b
+                    --local-dir /models/qwen3.6-35b-a3b
 
-                  echo "Qwen3.5-35B-A3B download complete"
+                  echo "Qwen3.6-35B-A3B download complete"
                 else
-                  echo "Qwen3.5-35B-A3B already downloaded, skipping"
+                  echo "Qwen3.6-35B-A3B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -68,17 +68,17 @@ spec:
               - --alias
               - self-hosted
               - --model
-              - /models/qwen35b/Qwen3.5-35B-A3B-UD-Q5_K_XL.gguf
+              - /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
               - --mmproj
-              - /models/qwen35b/mmproj-F16.gguf
+              - /models/qwen3.6-35b-a3b/mmproj-F16.gguf
               - --ctx-size
-              - "150000"
+              - "262144"
               - --n-gpu-layers
               - "99"
               - --flash-attn
               - "on"
               - --parallel
-              - "5"
+              - "1"
               - --cont-batching
               - -sps
               - "0.90"
