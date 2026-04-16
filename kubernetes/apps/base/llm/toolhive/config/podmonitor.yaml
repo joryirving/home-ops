@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/podmonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: mcp-gateway-internal
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: virtualmcpserver
+      app.kubernetes.io/instance: mcp-gateway-internal
+  namespaceSelector:
+    matchNames:
+      - llm
+  podMetricsEndpoints:
+    - port: 8080
+      path: /metrics
+      interval: 15s
