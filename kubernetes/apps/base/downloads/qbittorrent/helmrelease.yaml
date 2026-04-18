@@ -8,9 +8,23 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |-
+          [{
+            "name": "multus-vpn",
+            "namespace": "network",
+            "ips": ["10.69.90.10/24"]
+          }]
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       qbittorrent:
         annotations:
@@ -19,7 +33,8 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/qbittorrent
-              tag: 5.1.4@sha256:e256225b886c5bb88cba1e3c5f934255f19ecf2d1a27e1517306b51f91b15759
+              tag: 
+                5.1.4@sha256:e256225b886c5bb88cba1e3c5f934255f19ecf2d1a27e1517306b51f91b15759
             env:
               QBT_WEBUI_PORT: &port 80
               QBT_TORRENTING_PORT: &torrentPort 59936
@@ -45,34 +60,29 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 25m
                 memory: 1Gi
               limits:
                 memory: 8Gi
-    defaultPodOptions:
-      annotations:
-        k8s.v1.cni.cncf.io/networks: |-
-          [{
-            "name": "multus-vpn",
-            "namespace": "network",
-            "ips": ["10.69.90.10/24"]
-          }]
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        # forceRename: "{{ .Release.Name }}"
-        # primary: true
-        ports:
-          http:
-            port: *port
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+      media:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/akademiya/data
+        globalMounts:
+        - path: /media/Downloads
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          qbittorrent:
+            app:
+            - path: /tmp
+              subPath: tmp
       # bittorrent:
       #   type: LoadBalancer
       #   annotations:
@@ -86,25 +96,16 @@ spec:
       app:
         hostnames: ["qb.jory.dev"]
         parentRefs:
-          - name: envoy-internal
-            namespace: network
+        - name: envoy-internal
+          namespace: network
         rules:
-          - backendRefs:
-              - identifier: app
-                port: *port
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-      media:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/akademiya/data
-        globalMounts:
-          - path: /media/Downloads
-      tmpfs:
-        type: emptyDir
-        advancedMounts:
-          qbittorrent:
-            app:
-              - path: /tmp
-                subPath: tmp
+        - backendRefs:
+          - identifier: app
+            port: *port
+    service:
+      app:
+        # forceRename: "{{ .Release.Name }}"
+        # primary: true
+        ports:
+          http:
+            port: *port

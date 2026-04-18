@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/generators.external-secrets.io/githubaccesstoken_v1alpha1.json
 apiVersion: generators.external-secrets.io/v1alpha1
 kind: GithubAccessToken
@@ -29,11 +28,11 @@ spec:
         GITHUB_COM_USER: smurf-bot
         RENOVATE_TOKEN: "{{ .token }}"
   dataFrom:
-    - sourceRef:
-        generatorRef:
-          apiVersion: generators.external-secrets.io/v1alpha1
-          kind: GithubAccessToken
-          name: smurf-bot-auth-token
+  - sourceRef:
+      generatorRef:
+        apiVersion: generators.external-secrets.io/v1alpha1
+        kind: GithubAccessToken
+        name: smurf-bot-auth-token
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/renovate-operator.mogenius.com/renovatejob_v1alpha1.json
 apiVersion: renovate-operator.mogenius.com/v1alpha1
@@ -44,35 +43,35 @@ metadata:
 spec:
   discoveryFilters: ["joryirving/*"]
   extraEnv:
-    - name: LOG_LEVEL
-      value: debug
-    - name: RENOVATE_ALLOWED_COMMANDS
-      value: |-
-        ["pnpm run bundle"]
-    - name: RENOVATE_PLATFORM_COMMIT
-      value: "true"
-    - name: RENOVATE_PLATFORM_COMMIT
-      value: "true"
-    - name: DOCKERHUB_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: docker-hub-token
-          key: DOCKERHUB_USERNAME
-    - name: DOCKERHUB_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: docker-hub-token
-          key: DOCKERHUB_TOKEN
-    - name: RENOVATE_HOST_RULES
-      value: >-
-        [
-          {
-            "hostType": "docker",
-            "matchHost": "docker.io",
-            "username": "$(DOCKERHUB_USERNAME)",
-            "password": "$(DOCKERHUB_TOKEN)"
-          }
-        ]
+  - name: LOG_LEVEL
+    value: debug
+  - name: RENOVATE_ALLOWED_COMMANDS
+    value: |-
+      ["pnpm run bundle"]
+  - name: RENOVATE_PLATFORM_COMMIT
+    value: "true"
+  - name: RENOVATE_PLATFORM_COMMIT
+    value: "true"
+  - name: DOCKERHUB_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: docker-hub-token
+        key: DOCKERHUB_USERNAME
+  - name: DOCKERHUB_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: docker-hub-token
+        key: DOCKERHUB_TOKEN
+  - name: RENOVATE_HOST_RULES
+    value: >-
+      [
+        {
+          "hostType": "docker",
+          "matchHost": "docker.io",
+          "username": "$(DOCKERHUB_USERNAME)",
+          "password": "$(DOCKERHUB_TOKEN)"
+        }
+      ]
   image: ghcr.io/renovatebot/renovate:43.4.3
   parallelism: 5
   provider:
@@ -118,11 +117,11 @@ spec:
         GITHUB_COM_USER: Miso-assistant
         RENOVATE_TOKEN: "{{ .token }}"
   dataFrom:
-    - sourceRef:
-        generatorRef:
-          apiVersion: generators.external-secrets.io/v1alpha1
-          kind: GithubAccessToken
-          name: miso-bot-auth-token
+  - sourceRef:
+      generatorRef:
+        apiVersion: generators.external-secrets.io/v1alpha1
+        kind: GithubAccessToken
+        name: miso-bot-auth-token
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/renovate-operator.mogenius.com/renovatejob_v1alpha1.json
 apiVersion: renovate-operator.mogenius.com/v1alpha1
@@ -133,35 +132,35 @@ metadata:
 spec:
   discoveryFilters: ["misospace/*"]
   extraEnv:
-    - name: LOG_LEVEL
-      value: debug
-    - name: RENOVATE_ALLOWED_COMMANDS
-      value: |-
-        ["pnpm run bundle"]
-    - name: RENOVATE_PLATFORM_COMMIT
-      value: "true"
-    - name: RENOVATE_PLATFORM_COMMIT
-      value: "true"
-    - name: DOCKERHUB_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: docker-hub-token
-          key: DOCKERHUB_USERNAME
-    - name: DOCKERHUB_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: docker-hub-token
-          key: DOCKERHUB_TOKEN
-    - name: RENOVATE_HOST_RULES
-      value: >-
-        [
-          {
-            "hostType": "docker",
-            "matchHost": "docker.io",
-            "username": "$(DOCKERHUB_USERNAME)",
-            "password": "$(DOCKERHUB_TOKEN)"
-          }
-        ]
+  - name: LOG_LEVEL
+    value: debug
+  - name: RENOVATE_ALLOWED_COMMANDS
+    value: |-
+      ["pnpm run bundle"]
+  - name: RENOVATE_PLATFORM_COMMIT
+    value: "true"
+  - name: RENOVATE_PLATFORM_COMMIT
+    value: "true"
+  - name: DOCKERHUB_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: docker-hub-token
+        key: DOCKERHUB_USERNAME
+  - name: DOCKERHUB_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: docker-hub-token
+        key: DOCKERHUB_TOKEN
+  - name: RENOVATE_HOST_RULES
+    value: >-
+      [
+        {
+          "hostType": "docker",
+          "matchHost": "docker.io",
+          "username": "$(DOCKERHUB_USERNAME)",
+          "password": "$(DOCKERHUB_TOKEN)"
+        }
+      ]
   image: ghcr.io/renovatebot/renovate:43.4.3
   parallelism: 5
   provider:

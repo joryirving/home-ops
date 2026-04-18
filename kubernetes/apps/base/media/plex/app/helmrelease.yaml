@@ -8,9 +8,19 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      resourceClaims:
+      - name: gpu
+        resourceClaimTemplateName: plex-gpu
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       plex:
         annotations:
@@ -19,7 +29,8 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/plex
-              tag: 1.43.1.10611@sha256:3617d3f26f6edc52288a05d0a38d40e1d6b2f80609dcde3cc67979725773abf4
+              tag: 
+                1.43.1.10611@sha256:3617d3f26f6edc52288a05d0a38d40e1d6b2f80609dcde3cc67979725773abf4
             env:
               TZ: America/Edmonton
               PLEX_ADVERTISE_URL: "https://{{ .Release.Name }}.jory.dev:443,http://10.69.10.35:32400,http://plex.media.svc.cluster.local:32400"
@@ -45,24 +56,53 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               claims:
-                - name: gpu
+              - name: gpu
               requests:
                 cpu: 100m
               limits:
                 memory: 16G
-    defaultPodOptions:
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: plex-gpu
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+      media:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/akademiya/data
+        globalMounts:
+        - path: /data
+          subPath: media
+          readOnly: true
+      tmp:
+        type: emptyDir
+    route:
+      app:
+        annotations:
+          gatus.home-operations.com/endpoint: |-
+            conditions: ["[STATUS] == 401"]
+        hostnames:
+        - "{{ .Release.Name }}.jory.dev"
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+        rules:
+            # Ref: https://forums.plex.tv/t/external-srt-subtitles-are-not-working-w-reverse-proxy/886540
+        - backendRefs:
+          - identifier: app
+            port: *port
+          filters:
+          - type: RequestHeaderModifier
+            requestHeaderModifier:
+              remove: ["Range"]
+          matches:
+          - path:
+              type: PathPrefix
+              value: /library/streams
+        - backendRefs:
+          - identifier: app
+            port: *port
     service:
       app:
         type: LoadBalancer
@@ -72,42 +112,3 @@ spec:
         ports:
           http:
             port: *port
-    route:
-      app:
-        annotations:
-          gatus.home-operations.com/endpoint: |-
-            conditions: ["[STATUS] == 401"]
-        hostnames:
-          - "{{ .Release.Name }}.jory.dev"
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-        rules:
-          - # Ref: https://forums.plex.tv/t/external-srt-subtitles-are-not-working-w-reverse-proxy/886540
-            backendRefs:
-              - identifier: app
-                port: *port
-            filters:
-              - type: RequestHeaderModifier
-                requestHeaderModifier:
-                  remove: ["Range"]
-            matches:
-              - path:
-                  type: PathPrefix
-                  value: /library/streams
-          - backendRefs:
-              - identifier: app
-                port: *port
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-      media:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/akademiya/data
-        globalMounts:
-          - path: /data
-            subPath: media
-            readOnly: true
-      tmp:
-        type: emptyDir

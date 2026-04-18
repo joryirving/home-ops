@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       open-webui:
@@ -19,12 +19,13 @@ spec:
           app:
             image:
               repository: ghcr.io/open-webui/open-webui
-              tag: v0.8.12@sha256:8113fa5510020ef05a44afc0c42d33eabeeb2524a996e3e3fb8c437c00f0d792
+              tag: 
+                v0.8.12@sha256:8113fa5510020ef05a44afc0c42d33eabeeb2524a996e3e3fb8c437c00f0d792
             env:
               # Image Generation
-              ENABLE_OPENAI_API: False
-              ENABLE_OLLAMA_API: True
-              ENABLE_IMAGE_GENERATION: True
+              ENABLE_OPENAI_API: false
+              ENABLE_OLLAMA_API: true
+              ENABLE_IMAGE_GENERATION: true
               IMAGE_GENERATION_ENGINE: comfyui
               IMAGE_GENERATION_MODEL: dreamshaper_8
               IMAGE_SIZE: 400x400
@@ -45,27 +46,27 @@ spec:
                     name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: pgbouncer-uri
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 500m
               limits:
                 memory: 2Gi
-    service:
-      app:
-        ports:
-          http:
-            port: 8080
-    route:
-      app:
-        hostnames: ["chat.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
     persistence:
       config:
         enabled: true
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-          - path: /app/backend/data
+        - path: /app/backend/data
+    route:
+      app:
+        hostnames: ["chat.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 8080

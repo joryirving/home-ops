@@ -8,10 +8,13 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn:
-    - name: mosquitto
   interval: 15m
+  dependsOn:
+  - name: mosquitto
   values:
+    defaultPodOptions:
+      nodeSelector:
+        kubernetes.io/hostname: celestia
     controllers:
       rtlamr2mqtt:
         annotations:
@@ -20,7 +23,8 @@ spec:
           app:
             image:
               repository: docker.io/allangood/rtlamr2mqtt
-              tag: 2025.6.6@sha256:9458419acca5f95d438b3a04f10291d19c37244e16c0286ee2033eb4465ad0a0
+              tag: 
+                2025.6.6@sha256:9458419acca5f95d438b3a04f10291d19c37244e16c0286ee2033eb4465ad0a0
             securityContext:
               privileged: true
             resources:
@@ -28,14 +32,11 @@ spec:
                 cpu: 10m
               limits:
                 memory: 256Mi
-    defaultPodOptions:
-      nodeSelector:
-        kubernetes.io/hostname: celestia
     persistence:
       config-file:
         type: secret
         name: "{{ .Release.Name }}"
         globalMounts:
-          - path: /etc/rtlamr2mqtt.yaml
-            subPath: rtlamr2mqtt.yaml
-            readOnly: true
+        - path: /etc/rtlamr2mqtt.yaml
+          subPath: rtlamr2mqtt.yaml
+          readOnly: true

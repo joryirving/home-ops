@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       kanban:
@@ -17,33 +17,34 @@ spec:
           app:
             image:
               repository: ghcr.io/kanboard/kanboard
-              tag: v1.2.52@sha256:8cd46677f1f3b97bb45e8bcf30512ab92f30a9578cee51b406d2dd297a223859
+              tag: 
+                v1.2.52@sha256:8cd46677f1f3b97bb45e8bcf30512ab92f30a9578cee51b406d2dd297a223859
             env:
               TZ: America/Edmonton
               PLUGIN_INSTALLER: "true"
             envFrom:
-              - secretRef:
-                  name: kanban
+            - secretRef:
+                name: kanban
             resources:
               requests:
                 cpu: 10m
                 memory: 64Mi
               limits:
                 memory: 256Mi
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /var/www/app/
+        - path: /etc/nginx/ssl/
+    route:
+      app:
+        hostnames: ["kanban.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
     service:
       app:
         ports:
           http:
             port: 80
-    route:
-      app:
-        hostnames: ["kanban.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-    persistence:
-      data:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /var/www/app/
-          - path: /etc/nginx/ssl/

@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       maintainerr:
         annotations:
@@ -19,7 +26,8 @@ spec:
           app:
             image:
               repository: ghcr.io/maintainerr/maintainerr
-              tag: 3.7.0@sha256:bfc9d16c3f752e17432e5a66df5bbeb4c115698f9dd496ee03fd0aa9ef3dca52
+              tag: 
+                3.7.0@sha256:bfc9d16c3f752e17432e5a66df5bbeb4c115698f9dd496ee03fd0aa9ef3dca52
             env:
               TZ: America/Edmonton
             probes:
@@ -38,26 +46,19 @@ spec:
                 memory: 128Mi
               limits:
                 memory: 512Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /opt/data
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
     service:
       app:
         ports:
           http:
             port: 6246
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-    persistence:
-      data:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /opt/data

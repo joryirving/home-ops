@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       extended-memory:
@@ -19,12 +19,12 @@ spec:
               repository: python
               tag: "3.14-alpine"
             command:
-              - sh
-              - -c
-              - pip install flask && python3 /app/server.py
+            - sh
+            - -c
+            - pip install flask && python3 /app/server.py
             ports:
-              - containerPort: 3000
-                name: http
+            - containerPort: 3000
+              name: http
             resources:
               requests:
                 cpu: 50m
@@ -35,26 +35,26 @@ spec:
               allowPrivilegeEscalation: false
               capabilities:
                 drop:
-                  - ALL
+                - ALL
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /app/data
+      configmap:
+        type: configMap
+        name: extended-memory-py-config
+        globalMounts:
+        - path: /app/server.py
+          subPath: server.py
+    route:
+      app:
+        hostnames: ["miso-memory.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
     service:
       app:
         ports:
           http:
             port: 3000
-    route:
-      app:
-        hostnames: ["miso-memory.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /app/data
-      configmap:
-        type: configMap
-        name: extended-memory-py-config
-        globalMounts:
-          - path: /app/server.py
-            subPath: server.py

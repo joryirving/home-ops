@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       it-tools:
@@ -19,7 +19,8 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/it-tools
-              tag: 2026.1.4@sha256:1701d5907048366e35c46b5cf8b15353c250969a9f5e559af673b0faa8fcdb93
+              tag: 
+                2026.1.4@sha256:1701d5907048366e35c46b5cf8b15353c250969a9f5e559af673b0faa8fcdb93
             env:
               TZ: America/Edmonton
             resources:
@@ -31,29 +32,29 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
         pod:
           securityContext:
             runAsUser: 1000
             runAsGroup: 100
             fsGroup: 100
             fsGroupChangePolicy: "OnRootMismatch"
-    service:
-      app:
-        ports:
-          http:
-            port: 8080
-    route:
-      app:
-        hostnames: ["tools.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
     persistence:
       tmpfs:
         type: emptyDir
         advancedMounts:
           it-tools:
             app:
-              - path: /tmp
-                subPath: tmp
+            - path: /tmp
+              subPath: tmp
+    route:
+      app:
+        hostnames: ["tools.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 8080

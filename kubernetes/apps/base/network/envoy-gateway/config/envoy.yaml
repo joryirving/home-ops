@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/gateway.envoyproxy.io/envoyproxy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -47,7 +46,8 @@ kind: Gateway
 metadata:
   name: envoy-external
   annotations:
-    external-dns.alpha.kubernetes.io/target: &hostname ${EXTERNAL_DOMAIN}.jory.dev
+    external-dns.alpha.kubernetes.io/target: &hostname 
+      ${EXTERNAL_DOMAIN}.jory.dev
     gatus.home-operations.com/endpoint: |
       client:
         dns-resolver: tcp://1.1.1.1:53
@@ -59,22 +59,22 @@ spec:
       external-dns.alpha.kubernetes.io/hostname: *hostname
       lbipam.cilium.io/ips: ${SVC_GATEWAY_EXTERNAL}
   listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: Same
-    - name: https
-      protocol: HTTPS
-      port: 443
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        certificateRefs:
-          - kind: Secret
-            name: jory-dev-tls
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: https
+    protocol: HTTPS
+    port: 443
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: jory-dev-tls
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/gateway.networking.k8s.io/gateway_v1.json
 apiVersion: gateway.networking.k8s.io/v1
@@ -82,7 +82,8 @@ kind: Gateway
 metadata:
   name: envoy-internal
   annotations:
-    external-dns.alpha.kubernetes.io/target: &hostname ${INTERNAL_DOMAIN}.jory.dev
+    external-dns.alpha.kubernetes.io/target: &hostname 
+      ${INTERNAL_DOMAIN}.jory.dev
     gatus.home-operations.com/endpoint: |
       group: ${CLUSTER}-internal
       guarded: true
@@ -96,22 +97,22 @@ spec:
       external-dns.alpha.kubernetes.io/hostname: *hostname
       lbipam.cilium.io/ips: ${SVC_GATEWAY_INTERNAL}
   listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: Same
-    - name: https
-      protocol: HTTPS
-      port: 443
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        certificateRefs:
-          - kind: Secret
-            name: jory-dev-tls
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: https
+    protocol: HTTPS
+    port: 443
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      certificateRefs:
+      - kind: Secret
+        name: jory-dev-tls
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
@@ -120,12 +121,12 @@ metadata:
   name: envoy
 spec:
   targetSelectors:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
+  - group: gateway.networking.k8s.io
+    kind: Gateway
   compression:
-    - type: Brotli
-    - type: Gzip
-    - type: Zstd
+  - type: Brotli
+  - type: Gzip
+  - type: Zstd
   tcpKeepalive: {}
   timeout:
     http:
@@ -140,19 +141,19 @@ spec:
   clientIPDetection:
     xForwardedFor:
       trustedCIDRs:
-        - 10.42.0.0/16
+      - 10.42.0.0/16
   http2:
     onInvalidMessage: TerminateStream
   http3: {}
   targetSelectors:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
+  - group: gateway.networking.k8s.io
+    kind: Gateway
   tcpKeepalive: {}
   tls:
     minVersion: "1.2"
     alpnProtocols:
-      - h2
-      - http/1.1
+    - h2
+    - http/1.1
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/gateway.networking.k8s.io/httproute_v1.json
 apiVersion: gateway.networking.k8s.io/v1
@@ -163,15 +164,15 @@ metadata:
     external-dns.alpha.kubernetes.io/controller: none
 spec:
   parentRefs:
-    - name: envoy-external
-      namespace: network
-      sectionName: http
-    - name: envoy-internal
-      namespace: network
-      sectionName: http
+  - name: envoy-external
+    namespace: network
+    sectionName: http
+  - name: envoy-internal
+    namespace: network
+    sectionName: http
   rules:
-    - filters:
-        - type: RequestRedirect
-          requestRedirect:
-            scheme: https
-            statusCode: 301
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301

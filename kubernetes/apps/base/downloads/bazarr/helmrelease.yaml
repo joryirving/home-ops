@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -7,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       bazarr:
         annotations:
@@ -18,7 +26,8 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/bazarr
-              tag: 1.5.6@sha256:4ed58b7e2630c168342a53dd25b5ad85492196192a6ee9c65f5ae0b99e6c4888
+              tag: 
+                1.5.6@sha256:4ed58b7e2630c168342a53dd25b5ad85492196192a6ee9c65f5ae0b99e6c4888
             env:
               BAZARR__PORT: &port 80
               TZ: America/Edmonton
@@ -38,30 +47,12 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 1Gi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -70,6 +61,17 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-          - path: /media
+        - path: /media
       tmp:
         type: emptyDir
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: *port

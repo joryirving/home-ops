@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -6,8 +5,8 @@ metadata:
   name: &app agregarr
 spec:
   components:
-    - ../../../../../components/nfs-scaler
-    - ../../../../../components/volsync
+  - ../../../../../components/nfs-scaler
+  - ../../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/agregarr
   postBuild:
@@ -27,9 +26,9 @@ metadata:
   name: &app plex
 spec:
   components:
-    - ../../../../../components/gpu
-    - ../../../../../components/nfs-scaler
-    - ../../../../../components/volsync
+  - ../../../../../components/gpu
+  - ../../../../../components/nfs-scaler
+  - ../../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/app
   postBuild:
@@ -79,7 +78,7 @@ metadata:
   name: plex-auto-languages
 spec:
   dependsOn:
-    - name: plex
+  - name: plex
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-auto-languages
   prune: true
@@ -96,7 +95,7 @@ metadata:
   name: &app imagemaid
 spec:
   dependsOn:
-    - name: plex
+  - name: plex
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/imagemaid
   postBuild:
@@ -116,9 +115,9 @@ metadata:
   name: &app plex-trakt-sync
 spec:
   components:
-    - ../../../../../components/volsync
+  - ../../../../../components/volsync
   dependsOn:
-    - name: plex
+  - name: plex
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-trakt-sync
   postBuild:

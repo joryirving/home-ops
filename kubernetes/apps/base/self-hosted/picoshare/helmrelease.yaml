@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       picoshare:
         annotations:
@@ -25,8 +32,8 @@ spec:
               PORT: &port 4001
               PS_BEHIND_PROXY: "true"
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
@@ -38,25 +45,18 @@ spec:
                 memory: 64Mi
               limits:
                 memory: 512Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+
+    route:
+      app:
+        hostnames: ["share.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
     service:
       app:
         ports:
           http:
             port: *port
-    route:
-      app:
-        hostnames: ["share.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-    persistence:
-      data:
-        existingClaim: "{{ .Release.Name }}"
-

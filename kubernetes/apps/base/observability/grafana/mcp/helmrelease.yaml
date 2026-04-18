@@ -8,9 +8,14 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
     controllers:
       mcp-grafana:
         annotations:
@@ -22,21 +27,21 @@ spec:
               tag: latest
               pullPolicy: Always
             args:
-              - "run"
-              - "--rm"
-              - "-i"
-              - "-e"
-              - "GRAFANA_URL"
-              - "-e"
-              - "GRAFANA_AUTH"
-              - "mcp/grafana"
-              - "-t"
-              - "sse"
+            - "run"
+            - "--rm"
+            - "-i"
+            - "-e"
+            - "GRAFANA_URL"
+            - "-e"
+            - "GRAFANA_AUTH"
+            - "mcp/grafana"
+            - "-t"
+            - "sse"
             env:
               GRAFANA_URL: "http://grafana-service.observability:3000"
             envFrom:
-              - secretRef:
-                  name: mcp-grafana
+            - secretRef:
+                name: mcp-grafana
             probes:
               liveness:
                 enabled: false
@@ -54,20 +59,15 @@ spec:
               allowPrivilegeEscalation: false
               capabilities:
                 drop:
-                  - ALL
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: false
-        runAsUser: 0
-        runAsGroup: 0
+                - ALL
+    route:
+      app:
+        hostnames: ["grafana-mcp.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
     service:
       app:
         ports:
           http:
             port: 8000
-    route:
-      app:
-        hostnames: ["grafana-mcp.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network

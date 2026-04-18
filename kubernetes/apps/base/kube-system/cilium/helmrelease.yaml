@@ -22,20 +22,20 @@ spec:
   chartRef:
     kind: OCIRepository
     name: cilium
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     autoDirectNodeRoutes: true
     bandwidthManager:
       enabled: true
       bbr: true
+    bgpControlPlane:
+      enabled: true
     bpf:
       datapathMode: netkit
       masquerade: true
       preallocateMaps: true
     bpfClockProbe: true
-    bgpControlPlane:
-      enabled: true
     cgroup:
       automount:
         enabled: false
@@ -91,23 +91,23 @@ spec:
     securityContext:
       capabilities:
         ciliumAgent:
-          - CHOWN
-          - KILL
-          - NET_ADMIN
-          - NET_RAW
-          - IPC_LOCK
-          - SYS_ADMIN
-          - SYS_RESOURCE
-          - PERFMON
-          - BPF
-          - DAC_OVERRIDE
-          - FOWNER
-          - SETGID
-          - SETUID
+        - CHOWN
+        - KILL
+        - NET_ADMIN
+        - NET_RAW
+        - IPC_LOCK
+        - SYS_ADMIN
+        - SYS_RESOURCE
+        - PERFMON
+        - BPF
+        - DAC_OVERRIDE
+        - FOWNER
+        - SETGID
+        - SETUID
         cleanCiliumState:
-          - NET_ADMIN
-          - SYS_ADMIN
-          - SYS_RESOURCE
+        - NET_ADMIN
+        - SYS_ADMIN
+        - SYS_RESOURCE
     socketLB:
       enabled: true
       hostNamespaceOnly: true

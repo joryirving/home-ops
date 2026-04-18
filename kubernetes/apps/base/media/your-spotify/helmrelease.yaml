@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       server:
@@ -19,7 +19,8 @@ spec:
           app:
             image:
               repository: ghcr.io/yooooomi/your_spotify_server
-              tag: 1.19.0@sha256:a45776f2c1c24ebcd957f18de4432263907d6f0031c9b25fab3e95f25d15da0d
+              tag: 
+                1.19.0@sha256:a45776f2c1c24ebcd957f18de4432263907d6f0031c9b25fab3e95f25d15da0d
             env:
               TIMEZONE: America/Edmonton
               # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
@@ -28,8 +29,8 @@ spec:
               MONGO_ENDPOINT: "mongodb://{{ .Release.Name }}-mongodb:27017/your_spotify" #mongo sucks
               PORT: &port 80
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             probes: &probes
               liveness:
                 enabled: true
@@ -40,7 +41,7 @@ spec:
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
@@ -50,7 +51,8 @@ spec:
           app:
             image:
               repository: ghcr.io/yooooomi/your_spotify_client ##TODO migrate to ghcr once it pushes
-              tag: 1.19.0@sha256:935717b748f56536bd1f4e3bd2c83b71efbcdfb419fbda0345e7a17099a8d30e
+              tag: 
+                1.19.0@sha256:935717b748f56536bd1f4e3bd2c83b71efbcdfb419fbda0345e7a17099a8d30e
             env:
               API_ENDPOINT: *api_endpoint
             probes: *probes
@@ -65,6 +67,40 @@ spec:
               repository: docker.io/library/mongo
               tag: 6.0.4-focal
             probes: *probes
+    persistence:
+      configs:
+        existingClaim: "{{ .Release.Name }}"
+        advancedMounts:
+          mongodb:
+            app:
+            - path: /data/db
+    route:
+      app:
+        hostnames: ["spotty.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+        rules:
+        - matches:
+          - path:
+              type: PathPrefix
+              value: "/api"
+          filters:
+          - type: URLRewrite
+            urlRewrite:
+              path:
+                type: ReplacePrefixMatch
+                replacePrefixMatch: "/"
+          backendRefs:
+          - identifier: server
+            port: *port
+        - matches:
+          - path:
+              type: PathPrefix
+              value: "/"
+          backendRefs:
+          - identifier: web
+            port: &webport 3000
     service:
       server:
         controller: server
@@ -76,43 +112,9 @@ spec:
         controller: web
         ports:
           http:
-            port: &webport 3000
+            port: *webport
       mongodb:
         controller: mongodb
         ports:
           http:
             port: 27017
-    route:
-      app:
-        hostnames: ["spotty.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-        rules:
-          - matches:
-              - path:
-                  type: PathPrefix
-                  value: "/api"
-            filters:
-              - type: URLRewrite
-                urlRewrite:
-                  path:
-                    type: ReplacePrefixMatch
-                    replacePrefixMatch: "/"
-            backendRefs:
-              - identifier: server
-                port: *port
-          - matches:
-              - path:
-                  type: PathPrefix
-                  value: "/"
-            backendRefs:
-              - identifier: web
-                port: *webport
-    persistence:
-      configs:
-        existingClaim: "{{ .Release.Name }}"
-        advancedMounts:
-          mongodb:
-            app:
-              - path: /data/db

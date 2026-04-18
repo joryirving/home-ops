@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       ollama:
@@ -19,7 +19,8 @@ spec:
           app:
             image:
               repository: ollama/ollama
-              tag: 0.21.0@sha256:d3d553bdfbcc7f55dd5ddf42c4cbe3a927aa9bb1802710d35e94656ca5aea02b
+              tag: 
+                0.21.0@sha256:d3d553bdfbcc7f55dd5ddf42c4cbe3a927aa9bb1802710d35e94656ca5aea02b
             securityContext:
               privileged: true
             env:
@@ -38,7 +39,16 @@ spec:
           exporter:
             image:
               repository: lucabecker42/ollama-exporter
-              tag: 1.0.1@sha256:4d1d96fae76dbefd6b763d576a12fb9799913ae9a585990a464eacab2b600f55
+              tag: 
+                1.0.1@sha256:4d1d96fae76dbefd6b763d576a12fb9799913ae9a585990a464eacab2b600f55
+    persistence:
+      ollama:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /root/.ollama/models
+          subPath: models
+        - path: /root/.ollama
+          subPath: config
     service:
       app:
         ports:
@@ -52,11 +62,3 @@ spec:
     #     parentRefs:
     #       - name: envoy-internal
     #         namespace: network
-    persistence:
-      ollama:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /root/.ollama/models
-            subPath: models
-          - path: /root/.ollama
-            subPath: config

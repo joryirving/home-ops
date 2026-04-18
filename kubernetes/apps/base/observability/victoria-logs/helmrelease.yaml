@@ -24,6 +24,8 @@ spec:
     name: victoria-logs
   interval: 1h
   values:
+    dashboards:
+      enabled: true
     fullnameOverride: victoria-logs
     server:
       persistentVolume:
@@ -32,24 +34,22 @@ spec:
       route:
         enabled: true
         hostnames:
-          - victoria-logs.jory.dev
+        - victoria-logs.jory.dev
         parentRefs:
-          - name: envoy-internal
-            namespace: network
+        - name: envoy-internal
+          namespace: network
         extraRules:
-          - filters:
-              - type: RequestRedirect
-                requestRedirect:
-                  path:
-                    type: ReplaceFullPath
-                    replaceFullPath: /select/vmui/
-                  statusCode: 302
-            matches:
-              - path:
-                  type: Exact
-                  value: /
+        - filters:
+          - type: RequestRedirect
+            requestRedirect:
+              path:
+                type: ReplaceFullPath
+                replaceFullPath: /select/vmui/
+              statusCode: 302
+          matches:
+          - path:
+              type: Exact
+              value: /
       serviceMonitor:
         enabled: true
       retentionPeriod: 14d
-    dashboards:
-      enabled: true

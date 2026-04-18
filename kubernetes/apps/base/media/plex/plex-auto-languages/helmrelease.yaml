@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       plex-auto-languages:
@@ -19,13 +19,14 @@ spec:
           app:
             image:
               repository: ghcr.io/journeydocker/plex-auto-languages
-              tag: 1.5.1@sha256:99b419215f10a824a40ff15ab4b499b249101f12252a72150f563a42ed0b5464
+              tag: 
+                1.5.1@sha256:99b419215f10a824a40ff15ab4b499b249101f12252a72150f563a42ed0b5464
             env:
               TZ: America/Edmonton
               PLEX_URL: "http://plex.media.svc.cluster.local:32400"
             envFrom:
-              - secretRef:
-                  name: plex-secret
+            - secretRef:
+                name: plex-secret
             resources:
               requests:
                 cpu: 75m

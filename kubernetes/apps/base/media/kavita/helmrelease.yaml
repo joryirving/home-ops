@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       kavita:
@@ -19,7 +19,8 @@ spec:
           app:
             image:
               repository: ghcr.io/kareadita/kavita
-              tag: 0.8.9@sha256:1f2acae7466d022f037ea09f7989eb7c487f916b881174c7a6de33dbfa8acb39
+              tag: 
+                0.8.9@sha256:1f2acae7466d022f037ea09f7989eb7c487f916b881174c7a6de33dbfa8acb39
             env:
               TZ: America/Edmonton
             resources:
@@ -28,26 +29,26 @@ spec:
                 memory: 300Mi
               limits:
                 memory: 1Gi
-    service:
-      app:
-        ports:
-          http:
-            port: 5000
-    route:
-      app:
-        hostnames: ["comics.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-          - path: /kavita/config
+        - path: /kavita/config
       media:
         type: nfs
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-          - path: /data
-            subPath: media
+        - path: /data
+          subPath: media
+    route:
+      app:
+        hostnames: ["comics.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 5000

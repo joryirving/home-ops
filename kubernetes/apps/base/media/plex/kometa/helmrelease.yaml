@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       kometa:
         type: cronjob
@@ -26,20 +33,21 @@ spec:
           app:
             image:
               repository: kometateam/kometa
-              tag: v2.3.1@sha256:683c04827ef3fecf1cc5cb178f75f91f968aef6c6d89d34bc9c70966fd1d7259
+              tag: 
+                v2.3.1@sha256:683c04827ef3fecf1cc5cb178f75f91f968aef6c6d89d34bc9c70966fd1d7259
             command:
-              - /bin/sh
-              - -c
+            - /bin/sh
+            - -c
             args:
-              - |
-                python3 kometa.py --run --read-only-config --run-libraries "Anime";
-                python3 kometa.py --run --read-only-config --run-libraries "Movies";
-                python3 kometa.py --run --read-only-config --run-libraries "TV Shows";
+            - |
+              python3 kometa.py --run --read-only-config --run-libraries "Anime";
+              python3 kometa.py --run --read-only-config --run-libraries "Movies";
+              python3 kometa.py --run --read-only-config --run-libraries "TV Shows";
             env:
               TZ: *timeZone
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 10m
@@ -49,14 +57,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+              capabilities: {drop: ["ALL"]}
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -64,13 +65,13 @@ spec:
         type: configMap
         name: "{{ .Release.Name }}-configmap"
         globalMounts:
-          - path: /config/config.yml
-            subPath: config.yml
-            readOnly: true
+        - path: /config/config.yml
+          subPath: config.yml
+          readOnly: true
       tmpfs:
         type: emptyDir
         advancedMounts:
           kometa:
             app:
-              - path: /config/logs
-                subPath: logs
+            - path: /config/logs
+              subPath: logs
