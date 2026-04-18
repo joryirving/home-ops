@@ -22,11 +22,20 @@ spec:
   chartRef:
     kind: OCIRepository
     name: openebs
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    preUpgradeHook:
+    alloy:
       enabled: false
+    engines:
+      local:
+        lvm:
+          enabled: false
+        zfs:
+          enabled: false
+      replicated:
+        mayastor:
+          enabled: false
     localpv-provisioner:
       analytics:
         enabled: false
@@ -44,7 +53,9 @@ spec:
           registry: quay.io/
     loki:
       enabled: false
-    alloy:
+    lvm-localpv:
+      enabled: false
+    mayastor:
       enabled: false
     minio:
       enabled: false
@@ -53,18 +64,7 @@ spec:
         volumeSnapshots:
           enabled: false
           keep: false
+    preUpgradeHook:
+      enabled: false
     zfs-localpv:
       enabled: false
-    lvm-localpv:
-      enabled: false
-    mayastor:
-      enabled: false
-    engines:
-      local:
-        lvm:
-          enabled: false
-        zfs:
-          enabled: false
-      replicated:
-        mayastor:
-          enabled: false

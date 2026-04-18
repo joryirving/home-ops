@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       tautulli:
         annotations:
@@ -19,14 +26,15 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/tautulli
-              tag: 2.17.0@sha256:f6c3e7287f73767a8df8337361a4cad38eaa7b94b545b470e5b276b6c558673b
+              tag: 
+                2.17.0@sha256:f6c3e7287f73767a8df8337361a4cad38eaa7b94b545b470e5b276b6c558673b
             env:
               TZ: America/Edmonton
               TAUTULLI_HTTP_BASE_URL: "https://{{ .Release.Name }}.jory.dev"
               TAUTULLI_HTTP_PORT: &port 80
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -43,32 +51,25 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 1Gi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
       tmp:
         type: emptyDir
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: *port

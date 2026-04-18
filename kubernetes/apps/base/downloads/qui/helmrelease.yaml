@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       qui:
         annotations:
@@ -19,14 +26,15 @@ spec:
           app:
             image:
               repository: ghcr.io/autobrr/qui
-              tag: v1.16.1@sha256:07b6ea9572e52e8b5f70f8fb15a7c688d8d754a7616242d3ad0b21dbd5c05836
+              tag: 
+                v1.16.1@sha256:07b6ea9572e52e8b5f70f8fb15a7c688d8d754a7616242d3ad0b21dbd5c05836
             env:
               QUI__HOST: 0.0.0.0
               QUI__PORT: &port 80
               TZ: America/Edmonton
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -48,25 +56,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+              capabilities: {drop: ["ALL"]}
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -75,4 +65,15 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-          - path: /media/Downloads
+        - path: /media/Downloads
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: *port

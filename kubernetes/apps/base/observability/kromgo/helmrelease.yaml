@@ -8,9 +8,14 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
     controllers:
       kromgo:
         annotations:
@@ -19,9 +24,11 @@ spec:
           app:
             image:
               repository: ghcr.io/kashalls/kromgo
-              tag: v0.9.1@sha256:1624b1a10009978243d7d54e83269cbf9e3a4ec7f14c2548bdd11e63db5c4ad7
+              tag: 
+                v0.9.1@sha256:1624b1a10009978243d7d54e83269cbf9e3a4ec7f14c2548bdd11e63db5c4ad7
             env:
-              PROMETHEUS_URL: http://prometheus-operated.observability.svc.cluster.local:9090
+              PROMETHEUS_URL: 
+                http://prometheus-operated.observability.svc.cluster.local:9090
               SERVER_PORT: &port 80
               HEALTH_PORT: &healthPort 8080
             probes:
@@ -46,11 +53,24 @@ spec:
                 cpu: 10m
               limits:
                 memory: 64Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
+    persistence:
+      config-file:
+        type: configMap
+        name: "{{ .Release.Name }}-configmap"
+        globalMounts:
+        - path: /kromgo/config.yaml
+          subPath: config.yaml
+          readOnly: true
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+        rules:
+        - backendRefs:
+          - identifier: app
+            port: *port
     service:
       app:
         ports:
@@ -58,21 +78,3 @@ spec:
             port: *port
           health:
             port: *healthPort
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-        rules:
-          - backendRefs:
-              - identifier: app
-                port: *port
-    persistence:
-      config-file:
-        type: configMap
-        name: "{{ .Release.Name }}-configmap"
-        globalMounts:
-          - path: /kromgo/config.yaml
-            subPath: config.yaml
-            readOnly: true

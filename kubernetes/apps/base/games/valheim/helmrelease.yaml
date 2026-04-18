@@ -8,9 +8,14 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
     controllers:
       valheim:
         annotations:
@@ -19,7 +24,8 @@ spec:
           app:
             image:
               repository: ghcr.io/mbround18/valheim
-              tag: 3.6.0@sha256:abb98466d453f128b96e41d9730cd52f2938013cae7980ce6d3dccc14168d228
+              tag: 
+                3.6.0@sha256:abb98466d453f128b96e41d9730cd52f2938013cae7980ce6d3dccc14168d228
             probes:
               liveness:
                 enabled: false
@@ -33,25 +39,32 @@ spec:
               TZ: America/Edmonton
               Type: BepInEx # Installs BepInEx mod loader for down the road
               PORT: &port 2456
-              MODIFIERS: deathpenalty=casual,portals=casual 
+              MODIFIERS: deathpenalty=casual,portals=casual
               # AUTO_UPDATE: 1
               # AUTO_UPDATE_SCHEDULE: 0 4 * * *
               # AUTO_UPDATE_PAUSE_WITH_PLAYERS: 1
               PUBLIC: 0
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 10m
                 memory: 1Gi
               limits:
                 memory: 10Gi
-    defaultPodOptions:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /home/steam/.config/unity3d/IronGate/Valheim/
+        - path: /home/steam/valheim/
+      tmp:
+        type: emptyDir
+        globalMounts:
+        - path: /home/steam/backups/
+        - path: /home/steam/.steam/
+        - path: /home/steam/.local/
     service:
       app:
         type: LoadBalancer
@@ -72,15 +85,3 @@ spec:
             enabled: true
             port: 2458
             protocol: UDP
-    persistence:
-      data:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /home/steam/.config/unity3d/IronGate/Valheim/
-          - path: /home/steam/valheim/
-      tmp:
-        type: emptyDir
-        globalMounts:
-          - path: /home/steam/backups/
-          - path: /home/steam/.steam/
-          - path: /home/steam/.local/

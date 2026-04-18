@@ -22,18 +22,21 @@ spec:
   chartRef:
     kind: OCIRepository
     name: mc-router
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    extraArgs:
+    - --in-kube-cluster
     image:
       repository: ghcr.io/itzg/mc-router
-      tag: 1.42.0@sha256:14a9eedcce5955ade0ef0e4c954b45ecdbff55aac1564e484d59d0836b05c5d1
+      tag: 
+        1.42.0@sha256:14a9eedcce5955ade0ef0e4c954b45ecdbff55aac1564e484d59d0836b05c5d1
       pullPolicy: IfNotPresent
-    extraArgs:
-      - --in-kube-cluster
     services:
       minecraft:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.40
-          external-dns.alpha.kubernetes.io/hostname: mc.jory.dev, takocraft.jory.dev, create.jory.dev, vibecraft.jory.dev, jellycraft.jory.dev, cobbleverse.jory.dev
+          external-dns.alpha.kubernetes.io/hostname: mc.jory.dev, 
+            takocraft.jory.dev, create.jory.dev, vibecraft.jory.dev, 
+            jellycraft.jory.dev, cobbleverse.jory.dev

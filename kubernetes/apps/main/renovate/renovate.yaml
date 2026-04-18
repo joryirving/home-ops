@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -6,10 +5,10 @@ metadata:
   name: &app renovate-operator
 spec:
   healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: renovate-operator
-      namespace: renovate
+  - apiVersion: helm.toolkit.fluxcd.io/v2
+    kind: HelmRelease
+    name: renovate-operator
+    namespace: renovate
   interval: 1h
   path: ./kubernetes/apps/base/renovate/renovate-operator
   prune: true
@@ -25,7 +24,7 @@ metadata:
   name: &app renovate-operator-jobs
 spec:
   dependsOn:
-    - name: renovate-operator
+  - name: renovate-operator
   interval: 1h
   path: ./kubernetes/apps/base/renovate/renovate-jobs
   prune: true

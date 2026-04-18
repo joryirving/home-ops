@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       seerr:
         annotations:
@@ -19,7 +26,8 @@ spec:
           app:
             image:
               repository: ghcr.io/seerr-team/seerr
-              tag: v3.2.0@sha256:c4cbd5121236ac2f70a843a0b920b68a27976be57917555f1c45b08a1e6b2aad
+              tag: 
+                v3.2.0@sha256:c4cbd5121236ac2f70a843a0b920b68a27976be57917555f1c45b08a1e6b2aad
             env:
               DB_TYPE: "postgres"
               DB_HOST: "{{ .Release.Name }}-pgbouncer.media.svc"
@@ -35,36 +43,29 @@ spec:
               PORT: &port 80
               TZ: America/Edmonton
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 10m
                 memory: 350Mi
               limits:
                 memory: 600Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /app/config
+      tmp:
+        type: emptyDir
+    route:
+      app:
+        hostnames: ["requests.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
     service:
       app:
         ports:
           http:
             port: *port
-    route:
-      app:
-        hostnames: ["requests.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /app/config
-      tmp:
-        type: emptyDir

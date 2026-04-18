@@ -10,13 +10,24 @@ spec:
     name: app-template
   interval: 1h
   values:
+    defaultPodOptions:
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      priorityClassName: system-node-critical
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: llm-workload
+        operator: Exists
+        effect: NoSchedule
     controllers:
       amd-device-plugin:
         containers:
           app:
             image:
               repository: docker.io/rocm/k8s-device-plugin
-              tag: 1.31.0.9@sha256:26212c665aab415019cfca7a7f1a5c495a306c1e1e03c88f67dfcfda8e81b6e5
+              tag: 
+                1.31.0.9@sha256:26212c665aab415019cfca7a7f1a5c495a306c1e1e03c88f67dfcfda8e81b6e5
             resources:
               requests:
                 cpu: 10m
@@ -25,28 +36,18 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-    defaultPodOptions:
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      priorityClassName: system-node-critical
-      tolerations:
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+              capabilities: {drop: ["ALL"]}
     persistence:
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
         globalMounts:
-          - readOnly: true
+        - readOnly: true
       sys:
         type: hostPath
         hostPath: /sys
         globalMounts:
-          - readOnly: true
+        - readOnly: true
       var-lib-kubelet-device-plugins:
         type: hostPath
         hostPath: /var/lib/kubelet/device-plugins

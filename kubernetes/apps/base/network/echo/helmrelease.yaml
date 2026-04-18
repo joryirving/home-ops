@@ -8,9 +8,22 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: "{{ .Release.Name }}"
     controllers:
       echo:
         strategy: RollingUpdate
@@ -40,7 +53,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
               seccompProfile:
                 type: RuntimeDefault
             resources:
@@ -48,19 +61,12 @@ spec:
                 cpu: 10m
               limits:
                 memory: 64Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: "{{ .Release.Name }}"
+    route:
+      app:
+        hostnames: ["${SUBDOMAIN}.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
     service:
       app:
         ports:
@@ -70,14 +76,8 @@ spec:
       app:
         serviceName: "{{ .Release.Name }}"
         endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
-    route:
-      app:
-        hostnames: ["${SUBDOMAIN}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
+        - port: http
+          scheme: http
+          path: /metrics
+          interval: 1m
+          scrapeTimeout: 10s

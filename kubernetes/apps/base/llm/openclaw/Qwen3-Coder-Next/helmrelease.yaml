@@ -8,9 +8,17 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      hostIPC: true
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+      - key: llm-workload
+        operator: Exists
+        effect: NoSchedule
     controllers:
       llama-coder:
         annotations:
@@ -21,29 +29,29 @@ spec:
               repository: python
               tag: 3.14-slim
             command:
-              - /bin/sh
-              - -ec
-              - |
-                set -euo pipefail
+            - /bin/sh
+            - -ec
+            - |
+              set -euo pipefail
 
-                if [ ! -s /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf ]; then
-                  pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen3-coder-next
-                  rm -rf /models/qwen3-coder-next/.cache/huggingface/download/Qwen3-Coder-Next-UD-Q4_K_XL.gguf.lock
-                  hf download \
-                    unsloth/Qwen3-Coder-Next-GGUF \
-                    Qwen3-Coder-Next-UD-Q4_K_XL.gguf \
-                    --local-dir /models/qwen3-coder-next
+              if [ ! -s /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf ]; then
+                pip install --no-cache-dir huggingface_hub
+                mkdir -p /models/qwen3-coder-next
+                rm -rf /models/qwen3-coder-next/.cache/huggingface/download/Qwen3-Coder-Next-UD-Q4_K_XL.gguf.lock
+                hf download \
+                  unsloth/Qwen3-Coder-Next-GGUF \
+                  Qwen3-Coder-Next-UD-Q4_K_XL.gguf \
+                  --local-dir /models/qwen3-coder-next
 
-                  echo "Qwen3-Coder-Next GGUF download complete"
-                else
-                  echo "Qwen3-Coder-Next GGUF already downloaded, skipping"
-                fi
+                echo "Qwen3-Coder-Next GGUF download complete"
+              else
+                echo "Qwen3-Coder-Next GGUF already downloaded, skipping"
+              fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
-              - secretRef:
-                  name: huggingface
+            - secretRef:
+                name: huggingface
             resources:
               requests:
                 cpu: 250m
@@ -58,52 +66,52 @@ spec:
             securityContext:
               privileged: true
             command:
-              - llama-server
+            - llama-server
             args:
-              - --host
-              - 0.0.0.0
-              - --port
-              - "8080"
-              - --alias
-              - self-hosted
-              - --model
-              - /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf
-              - --ctx-size
-              - "150000"
-              - --n-gpu-layers
-              - "99"
-              - --fit
-              - "off"
-              - --flash-attn
-              - "on"
-              - --parallel
-              - "2"
-              - --cont-batching
-              - -sps
-              - "0.90"
-              - --no-context-shift
-              - --cache-prompt
-              - --cache-reuse
-              - "256"
-              - --kv-unified
-              - --temp
-              - "0.2"
-              - --top-p
-              - "0.95"
-              - --top-k
-              - "20"
-              - --min-p
-              - "0"
-              - --cache-type-k
-              - q8_0
-              - --cache-type-v
-              - q8_0
-              - --batch-size
-              - "2048"
-              - --ubatch-size
-              - "2048"
-              - --mmap
-              - --jinja
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8080"
+            - --alias
+            - self-hosted
+            - --model
+            - /models/qwen3-coder-next/Qwen3-Coder-Next-UD-Q4_K_XL.gguf
+            - --ctx-size
+            - "150000"
+            - --n-gpu-layers
+            - "99"
+            - --fit
+            - "off"
+            - --flash-attn
+            - "on"
+            - --parallel
+            - "2"
+            - --cont-batching
+            - -sps
+            - "0.90"
+            - --no-context-shift
+            - --cache-prompt
+            - --cache-reuse
+            - "256"
+            - --kv-unified
+            - --temp
+            - "0.2"
+            - --top-p
+            - "0.95"
+            - --top-k
+            - "20"
+            - --min-p
+            - "0"
+            - --cache-type-k
+            - q8_0
+            - --cache-type-v
+            - q8_0
+            - --batch-size
+            - "2048"
+            - --ubatch-size
+            - "2048"
+            - --mmap
+            - --jinja
             resources:
               requests:
                 cpu: 1
@@ -140,14 +148,21 @@ spec:
                     port: 8080
                   failureThreshold: 360
                   periodSeconds: 10
-    defaultPodOptions:
-      hostIPC: true
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+    persistence:
+      models:
+        existingClaim: llm-models
+        globalMounts:
+        - path: /models
+      dev-dri:
+        type: hostPath
+        hostPath: /dev/dri
+        globalMounts:
+        - path: /dev/dri
+      dev-kfd:
+        type: hostPath
+        hostPath: /dev/kfd
+        globalMounts:
+        - path: /dev/kfd
     service:
       app:
         type: LoadBalancer
@@ -157,18 +172,3 @@ spec:
         ports:
           http:
             port: 8080
-    persistence:
-      models:
-        existingClaim: llm-models
-        globalMounts:
-          - path: /models
-      dev-dri:
-        type: hostPath
-        hostPath: /dev/dri
-        globalMounts:
-          - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd

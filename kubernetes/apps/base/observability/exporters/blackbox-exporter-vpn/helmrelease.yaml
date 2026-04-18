@@ -8,19 +8,9 @@ spec:
   chartRef:
     kind: OCIRepository
     name: blackbox-exporter
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    fullnameOverride: *app
-    strategy:
-      type: Recreate
-    podAnnotations:
-      k8s.v1.cni.cncf.io/networks: |-
-        [{
-          "name": "multus-vpn",
-          "namespace": "network",
-          "ips": ["10.69.90.13/24"]
-        }]
     config:
       modules:
         http_2xx:
@@ -40,45 +30,55 @@ spec:
           timeout: 5s
           tcp:
             preferred_ip_protocol: ip4
+    fullnameOverride: *app
+    podAnnotations:
+      k8s.v1.cni.cncf.io/networks: |-
+        [{
+          "name": "multus-vpn",
+          "namespace": "network",
+          "ips": ["10.69.90.13/24"]
+        }]
+    prometheusRule:
+      enabled: true
+      rules:
+      - alert: VPNBlackboxProbeFailed
+        expr: |-
+          probe_success == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: |-
+            The host {{ $labels.target }} is currently unreachable
+      - alert: VPNICMPProbeDown
+        expr: |-
+          probe_success{job="vpn-icmp-external"} == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: |-
+            ICMP probe to {{ $labels.target }} via the VPN has been failing for more than 15 minutes
+      - alert: VPNHTTPProbeDown
+        expr: probe_success{job="vpn-http-external"} == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: |-
+            HTTP probe to {{ $labels.target }} via the VPN has been failing for more than 15 minutes
     serviceMonitor:
       enabled: true
       selfMonitor:
         enabled: true
-    prometheusRule:
-      enabled: true
-      rules:
-        - alert: VPNBlackboxProbeFailed
-          expr: |-
-            probe_success == 0
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            summary: |-
-              The host {{ $labels.target }} is currently unreachable
-        - alert: VPNICMPProbeDown
-          expr: |-
-            probe_success{job="vpn-icmp-external"} == 0
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            summary: |-
-              ICMP probe to {{ $labels.target }} via the VPN has been failing for more than 15 minutes
-        - alert: VPNHTTPProbeDown
-          expr: probe_success{job="vpn-http-external"} == 0
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            summary: |-
-              HTTP probe to {{ $labels.target }} via the VPN has been failing for more than 15 minutes
+    strategy:
+      type: Recreate
   postRenderers:
-    - kustomize:
-        patches:
-          - target:
-              kind: Deployment
-              name: blackbox-exporter-vpn
-            patch: |-
-              - op: remove
-                path: /spec/strategy/rollingUpdate
+  - kustomize:
+      patches:
+      - target:
+          kind: Deployment
+          name: blackbox-exporter-vpn
+        patch: |-
+          - op: remove
+            path: /spec/strategy/rollingUpdate

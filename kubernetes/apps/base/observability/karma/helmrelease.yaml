@@ -8,10 +8,23 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn:
-    - name: kube-prometheus-stack
   interval: 15m
+  dependsOn:
+  - name: kube-prometheus-stack
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: "{{ .Release.Name }}"
     controllers:
       karma:
         replicas: 2
@@ -31,19 +44,27 @@ spec:
                 memory: 100Mi
               limits:
                 memory: 500Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: "{{ .Release.Name }}"
+    persistence:
+      config-file:
+        type: configMap
+        name: karma-configmap
+        globalMounts:
+        - path: *config
+          subPath: config.yaml
+          readOnly: true
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          karma:
+            app:
+            - path: /config
+              subPath: config
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
     service:
       app:
         ports:
@@ -53,29 +74,8 @@ spec:
       app:
         serviceName: "{{ .Release.Name }}"
         endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-    persistence:
-      config-file:
-        type: configMap
-        name: karma-configmap
-        globalMounts:
-          - path: *config
-            subPath: config.yaml
-            readOnly: true
-      tmpfs:
-        type: emptyDir
-        advancedMounts:
-          karma:
-            app:
-              - path: /config
-                subPath: config
+        - port: http
+          scheme: http
+          path: /metrics
+          interval: 1m
+          scrapeTimeout: 10s

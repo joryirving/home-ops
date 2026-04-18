@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       thelounge:
         annotations:
@@ -19,13 +26,14 @@ spec:
           app:
             image:
               repository: ghcr.io/thelounge/thelounge
-              tag: 4.4.3@sha256:c2aa0916203b298ffaf3a36c4eb60ef73c1006448d430e218d37840472e84e50
+              tag: 
+                4.4.3@sha256:c2aa0916203b298ffaf3a36c4eb60ef73c1006448d430e218d37840472e84e50
             env:
               THELOUNGE_HOME: /config
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             probes:
               liveness:
                 enabled: true
@@ -36,24 +44,17 @@ spec:
                 cpu: 10m
               limits:
                 memory: 512Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+    route:
+      app:
+        hostnames: ["tl.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
     service:
       app:
         ports:
           http:
             port: 9000
-    route:
-      app:
-        hostnames: ["tl.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"

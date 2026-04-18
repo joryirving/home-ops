@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       network-ups-tools:
@@ -18,7 +18,8 @@ spec:
           app:
             image:
               repository: ghcr.io/jr0dd/network-ups-tools
-              tag: v2.8.3@sha256:9f8e14d155c6ef05940cee6f8861e259e951eb11750aeddd02539d986dac1ca0
+              tag: 
+                v2.8.3@sha256:9f8e14d155c6ef05940cee6f8861e259e951eb11750aeddd02539d986dac1ca0
             env:
               TZ: America/Edmonton
             securityContext:
@@ -31,6 +32,13 @@ spec:
         pod:
           annotations:
             configmap.reloader.stakater.com/reload: &config "{{ .Release.Name }}-config"
+    persistence:
+      config:
+        type: configMap
+        name: *config
+        defaultMode: 0400
+        globalMounts:
+        - path: /etc/nut
     service:
       app:
         type: LoadBalancer
@@ -42,10 +50,3 @@ spec:
           http:
             port: 3493
             protocol: TCP
-    persistence:
-      config:
-        type: configMap
-        name: *config
-        defaultMode: 0400
-        globalMounts:
-          - path: /etc/nut

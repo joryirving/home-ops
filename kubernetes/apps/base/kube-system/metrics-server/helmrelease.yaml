@@ -22,17 +22,17 @@ spec:
   chartRef:
     kind: OCIRepository
     name: metrics-server
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    replicas: ${REPLICAS:=1}
     args:
-      - --kubelet-insecure-tls
-      - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
-      - --kubelet-use-node-status-port
-      - --metric-resolution=10s
-      - --kubelet-request-timeout=2s
+    - --kubelet-insecure-tls
+    - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+    - --kubelet-use-node-status-port
+    - --metric-resolution=10s
+    - --kubelet-request-timeout=2s
     metrics:
       enabled: true
+    replicas: ${REPLICAS:=1}
     serviceMonitor:
       enabled: true

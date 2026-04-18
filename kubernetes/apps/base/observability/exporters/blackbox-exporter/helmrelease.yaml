@@ -22,10 +22,9 @@ spec:
   chartRef:
     kind: OCIRepository
     name: blackbox-exporter
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    fullnameOverride: *app
     config:
       modules:
         http_2xx:
@@ -45,19 +44,20 @@ spec:
           timeout: 5s
           tcp:
             preferred_ip_protocol: ip4
+    fullnameOverride: *app
+    prometheusRule:
+      enabled: true
+      rules:
+      - alert: BlackboxProbeFailed
+        expr: |-
+          probe_success == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: |-
+            The host {{ $labels.target }} is currently unreachable
     serviceMonitor:
       enabled: true
       selfMonitor:
         enabled: true
-    prometheusRule:
-      enabled: true
-      rules:
-        - alert: BlackboxProbeFailed
-          expr: |-
-            probe_success == 0
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            summary: |-
-              The host {{ $labels.target }} is currently unreachable
