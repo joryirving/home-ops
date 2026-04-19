@@ -26,8 +26,8 @@ spec:
           install-tools:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 
-                2026.4.12@sha256:c312f4a43cb7df588c14bdd6a726920d47138eb7fe4e2cf140a50a71d11b70bc
+              tag:
+                2026.4.15@sha256:9d5f1dfbd5deedc37706c78f745b958ffbe9b4f20840cfb4d49c617a50326902
             command:
             - /bin/sh
             - -c
@@ -97,7 +97,7 @@ spec:
           daemon:
             image:
               repository: docker
-              tag: 
+              tag:
                 29.4.0-dind@sha256:a6dd5322747a95cd8e3207bd8d415a8fd20ec34e9c00f06dc019cbd912013489
             restartPolicy: Always
             env:
@@ -137,8 +137,8 @@ spec:
           app:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 
-                2026.4.12@sha256:c312f4a43cb7df588c14bdd6a726920d47138eb7fe4e2cf140a50a71d11b70bc
+              tag:
+                2026.4.15@sha256:9d5f1dfbd5deedc37706c78f745b958ffbe9b4f20840cfb4d49c617a50326902
             command:
             - /bin/sh
             - -c
@@ -157,7 +157,7 @@ spec:
               HOMEBREW_PREFIX: /home/node/.local/homebrew
               HOMEBREW_REPOSITORY: /home/node/.local/homebrew
               OPENCLAW_GATEWAY_PORT: &port 18789
-              PATH: 
+              PATH:
                 /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               PIP_BREAK_SYSTEM_PACKAGES: "1"
               TERM: xterm-256color
@@ -188,8 +188,8 @@ spec:
             - --disable-dev-shm-usage
               # Stealth flags to reduce bot detection
             - --disable-blink-features=AutomationControlled
-            - --user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) 
-              AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 
+            - --user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+              AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0
               Safari/537.36
               # Allow WebSocket connections from any origin
             - --remote-allow-origins=*
@@ -205,7 +205,7 @@ spec:
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
-              tag: 
+              tag:
                 4.116.0@sha256:4671fcaba60044478bc8238ad630cd53e19294de29012e6e2069411273f02415
             env:
               TZ: America/Edmonton
@@ -245,7 +245,7 @@ spec:
         name: "{{ .Release.Name }}-config"
         defaultMode: 0400
         globalMounts:
-        - path: /home/node/.openclaw/openclaw.json
+        - path: /home/node/.openclaw/openclaw-main.json
           subPath: openclaw.json
       next-cache:
         type: emptyDir
