@@ -1,0 +1,29 @@
+---
+apiVersion: aigateway.envoyproxy.io/v1alpha1
+kind: AIGatewayRoute
+metadata:
+  name: llm
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: network
+      sectionName: llm
+  rules:
+    - name: self-hosted
+      match:
+        model: self-hosted
+      backendRefs:
+        - name: llama-server
+          modelNameOverride: self-hosted
+    - name: memory
+      match:
+        model: memory
+      backendRefs:
+        - name: llama-memory
+          modelNameOverride: memory
+    - name: vision
+      match:
+        model: vision
+      backendRefs:
+        - name: llama-vision
+          modelNameOverride: vision
