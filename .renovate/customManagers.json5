@@ -33,6 +33,16 @@
         "# renovate: datasource=docker depName=(?<depName>\\S+)\\nimage:\\s*(?<currentValue>.+)"
       ],
       datasourceTemplate: "docker"
-    }
+    },
+    {
+      customType: "regex",
+      description: "MCP Server npm packages",
+      managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
+      matchStrings: [
+        "npx\\s+-y\\s+(?<depName>@?[^@\\s]+)(?:@(?<currentValue>\\S+))?"
+      ],
+      datasourceTemplate: "npm",
+      versioningTemplate: "loose"
+    },
   ],
 }
