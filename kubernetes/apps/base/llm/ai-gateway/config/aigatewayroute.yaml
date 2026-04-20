@@ -9,21 +9,24 @@ spec:
       namespace: network
       sectionName: llm
   rules:
-    - name: self-hosted
-      match:
-        model: self-hosted
+    - matches:
+        - headers:
+            - name: x-ai-eg-model
+              value: self-hosted
       backendRefs:
         - name: llama-server
           modelNameOverride: self-hosted
-    - name: memory
-      match:
-        model: memory
+    - matches:
+        - headers:
+            - name: x-ai-eg-model
+              value: memory
       backendRefs:
         - name: llama-memory
           modelNameOverride: memory
-    - name: vision
-      match:
-        model: vision
+    - matches:
+        - headers:
+            - name: x-ai-eg-model
+              value: vision
       backendRefs:
         - name: llama-vision
           modelNameOverride: vision
