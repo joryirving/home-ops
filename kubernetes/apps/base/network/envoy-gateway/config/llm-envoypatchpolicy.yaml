@@ -1,0 +1,38 @@
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyPatchPolicy
+metadata:
+  name: llm-request-body-buffer
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: envoy-internal
+  type: JSONPatch
+  jsonPatches:
+    - type: type.googleapis.com/envoy.config.listener.v3.Listener
+      name: network/envoy-internal/https
+      operation:
+        op: add
+        path: /per_connection_buffer_limit_bytes
+        value: 134217728
+    - type: type.googleapis.com/envoy.config.listener.v3.Listener
+      name: network/envoy-internal/https-quic
+      operation:
+        op: add
+        path: /per_connection_buffer_limit_bytes
+        value: 134217728
+    - type: type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+      name: network/envoy-internal/llm
+      operation:
+        op: add
+        jsonPath: ..virtual_hosts[*]
+        path: request_body_buffer_limit
+        value: 134217728
+    - type: type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+      name: network/envoy-internal/llm
+      operation:
+        op: add
+        jsonPath: ..virtual_hosts[*].routes[*]
+        path: request_body_buffer_limit
+        value: 134217728

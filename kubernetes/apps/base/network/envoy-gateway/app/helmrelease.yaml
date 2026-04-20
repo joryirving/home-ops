@@ -31,5 +31,28 @@ spec:
           kubernetes:
             deploy:
               type: GatewayNamespace
+        extensionApis:
+          enableBackend: true
+          enableEnvoyPatchPolicy: true
+        extensionManager:
+          hooks:
+            xdsTranslator:
+              pre:
+                - Translation
+              post:
+                - Translation
+              translation:
+                listener:
+                  includeAll: true
+                route:
+                  includeAll: true
+                cluster:
+                  includeAll: true
+                secret:
+                  includeAll: true
+          service:
+            fqdn:
+              hostname: ai-gateway-controller.llm.svc.cluster.local
+              port: 1063
     global:
       imageRegistry: mirror.gcr.io
