@@ -45,12 +45,12 @@ spec:
           compression_mode: aggressive
           compression_algorithm: zstd
           imageFormat: "2"
-          imageFeatures: 
+          imageFeatures:
             layering,fast-diff,object-map,deep-flatten,exclusive-lock
           csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
           csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace
             }}"
-          csi.storage.k8s.io/controller-expand-secret-name: 
+          csi.storage.k8s.io/controller-expand-secret-name:
             rook-csi-rbd-provisioner
           csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace
             }}"
@@ -80,7 +80,7 @@ spec:
         enabled: true
         urlPrefix: /
         ssl: false
-        prometheusEndpoint: 
+        prometheusEndpoint:
           http://prometheus-operated.observability.svc.cluster.local:9090
       mgr:
         modules:
@@ -147,11 +147,11 @@ spec:
         allowVolumeExpansion: true
         volumeBindingMode: Immediate
         parameters:
-          csi.storage.k8s.io/provisioner-secret-name: 
+          csi.storage.k8s.io/provisioner-secret-name:
             rook-csi-cephfs-provisioner
           csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace
             }}"
-          csi.storage.k8s.io/controller-expand-secret-name: 
+          csi.storage.k8s.io/controller-expand-secret-name:
             rook-csi-cephfs-provisioner
           csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace
             }}"
@@ -204,6 +204,9 @@ spec:
     monitoring:
       enabled: true
       createPrometheusRules: true
+      prometheusRuleOverrides:
+        CephNodeInconsistentMTU:
+          disabled: true
     route:
       dashboard:
         host:
