@@ -8,9 +8,15 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+
     controllers:
       actual:
         annotations:
@@ -28,23 +34,17 @@ spec:
                 memory: 80M
               limits:
                 memory: 256M
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
     service:
       app:
         ports:
           http:
             port: 5006
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-    persistence:
-      data:
-        existingClaim: "{{ .Release.Name }}"

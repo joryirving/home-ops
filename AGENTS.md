@@ -63,6 +63,11 @@ Flux recursively searches `kubernetes/${cluster}/apps/` for `kustomization.yaml`
 - **Update app**: Merge renovate PR or manually edit and push
 - **Troubleshoot**: Check `flux get all -n <namespace>`, `kubectl get events --sort-by=.lastTimestamp`
 - **Scripts**: `hack/` contains operational scripts (cert-extract.sh, delete-stuck-ns.sh, etc.)
+- **Validate locally**: Run `flux-local` before pushing GitOps changes:
+  ```bash
+  /Users/joryirving/.local/share/mise/installs/pipx-flux-local/8.1.0/bin/flux-local test --enable-helm --path ./kubernetes/clusters/main
+  ```
+- **Gateway policy namespace rule**: `ClientTrafficPolicy` and `EnvoyPatchPolicy` that target a `Gateway` must live in the same namespace as that `Gateway`. For `envoy-internal`, put those resources in `kubernetes/apps/base/network/envoy-gateway/config/` with namespace `network`.
 
 ## Documentation
 

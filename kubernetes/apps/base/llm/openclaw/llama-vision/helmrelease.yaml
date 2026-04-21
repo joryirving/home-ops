@@ -8,9 +8,18 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      hostIPC: true
+      nodeSelector:
+        kubernetes.io/hostname: skirk
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+      - key: llm-workload
+        operator: Exists
+        effect: NoSchedule
     controllers:
       llama-vision:
         annotations:
@@ -21,32 +30,32 @@ spec:
               repository: python
               tag: 3.14-slim
             command:
-              - /bin/sh
-              - -ec
-              - |
-                set -euo pipefail
+            - /bin/sh
+            - -ec
+            - |
+              set -euo pipefail
 
-                if [ ! -s /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen-vision/mmproj-F16.gguf ]; then
-                  pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen-vision
-                  rm -rf /models/qwen-vision/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
-                  hf download \
-                    mradermacher/Qwen3.5-9B-heretic-GGUF \
-                    Qwen3.5-9B-heretic.Q4_K_M.gguf \
-                    --local-dir /models/qwen-vision
-                  hf download \
-                    unsloth/Qwen3.5-9B-GGUF \
-                    mmproj-F16.gguf \
-                    --local-dir /models/qwen-vision
-                  echo "Qwen3.5-9B download complete"
-                else
-                  echo "Qwen3.5-9B already downloaded, skipping"
-                fi
+              if [ ! -s /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen-vision/mmproj-F16.gguf ]; then
+                pip install --no-cache-dir huggingface_hub
+                mkdir -p /models/qwen-vision
+                rm -rf /models/qwen-vision/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
+                hf download \
+                  mradermacher/Qwen3.5-9B-heretic-GGUF \
+                  Qwen3.5-9B-heretic.Q4_K_M.gguf \
+                  --local-dir /models/qwen-vision
+                hf download \
+                  unsloth/Qwen3.5-9B-GGUF \
+                  mmproj-F16.gguf \
+                  --local-dir /models/qwen-vision
+                echo "Qwen3.5-9B download complete"
+              else
+                echo "Qwen3.5-9B already downloaded, skipping"
+              fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
-              - secretRef:
-                  name: huggingface
+            - secretRef:
+                name: huggingface
             resources:
               requests:
                 cpu: 250m
@@ -61,67 +70,65 @@ spec:
             securityContext:
               privileged: true
             command:
-              - llama-server
+            - llama-server
             args:
-              - --host
-              - 0.0.0.0
-              - --port
-              - "8080"
-              - --alias
-              - qwen-vision
-              - --model
-              - /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf
-              - --mmproj
-              - /models/qwen-vision/mmproj-F16.gguf
-              - --ctx-size
-              - "131072"
-              - --n-gpu-layers
-              - "99"
-              - --fit
-              - "off"
-              - --flash-attn
-              - "on"
-              - --parallel
-              - "4"
-              - --cont-batching
-              - -sps
-              - "0.90"
-              - --no-context-shift
-              - --cache-prompt
-              - --kv-unified
-              - --cache-type-k
-              - q8_0
-              - --cache-type-v
-              - q8_0
-              - --ctx-checkpoints
-              - "4"
-              - --checkpoint-every-n-tokens
-              - "16384"
-              - --metrics
-              - --image-min-tokens
-              - "1024"
-              - --temp
-              - "0.6"
-              - --top-p
-              - "0.95"
-              - --top-k
-              - "20"
-              - --min-p
-              - "0"
-              - --presence-penalty
-              - "0"
-              - --repeat-penalty
-              - "1.0"
-              - --batch-size
-              - "4096"
-              - --ubatch-size
-              - "2048"
-              - --threads
-              - "12"
-              - --threads-batch
-              - "16"
-              - --no-mmap
-              - --jinja
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8080"
+            - --alias
+            - qwen-vision
+            - --model
+            - /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf
+            - --mmproj
+            - /models/qwen-vision/mmproj-F16.gguf
+            - --ctx-size
+            - "131072"
+            - --n-gpu-layers
+            - "99"
+            - --fit
+            - "off"
+            - --flash-attn
+            - "on"
+            - --parallel
+            - "4"
+            - --cont-batching
+            - -sps
+            - "0.90"
+            - --no-context-shift
+            - --cache-prompt
+            - --kv-unified
+            - --ctx-checkpoints
+            - "4"
+            - --checkpoint-every-n-tokens
+            - "16384"
+            - --metrics
+            - --image-min-tokens
+            - "1024"
+            - --temp
+            - "0.6"
+            - --top-p
+            - "0.95"
+            - --top-k
+            - "20"
+            - --min-p
+            - "0"
+            - --presence-penalty
+            - "0"
+            - --repeat-penalty
+            - "1.0"
+            - --chat-template-kwargs
+            - '{"enable_thinking":false}'
+            - --batch-size
+            - "4096"
+            - --ubatch-size
+            - "2048"
+            - --threads
+            - "12"
+            - --threads-batch
+            - "16"
+            - --no-mmap
+            - --jinja
             resources:
               requests:
                 cpu: 500m
@@ -158,15 +165,16 @@ spec:
                     port: 8080
                   failureThreshold: 360
                   periodSeconds: 10
-    defaultPodOptions:
-      hostIPC: true
-      nodeSelector:
-        kubernetes.io/hostname: skirk
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+    persistence:
+      models:
+        existingClaim: llm-models
+        globalMounts:
+        - path: /models
+      dev-dri:
+        type: hostPath
+        hostPath: /dev/dri
+        globalMounts:
+        - path: /dev/dri
     service:
       app:
         type: LoadBalancer
@@ -176,13 +184,3 @@ spec:
         ports:
           http:
             port: 8080
-    persistence:
-      models:
-        existingClaim: llm-models
-        globalMounts:
-          - path: /models
-      dev-dri:
-        type: hostPath
-        hostPath: /dev/dri
-        globalMounts:
-          - path: /dev/dri

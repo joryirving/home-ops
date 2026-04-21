@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/refs/heads/master/v1.34.0/mutatingadmissionpolicybinding-admissionregistration-v1beta1.json
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingAdmissionPolicyBinding
@@ -15,41 +14,40 @@ metadata:
 spec:
   matchConstraints:
     resourceRules:
-      - apiGroups:
-          - batch
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - jobs
+    - apiGroups:
+      - batch
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - jobs
   matchConditions:
-    - name: has-volsync-job-name-prefix
-      expression: >-
-        object.metadata.name.startsWith("volsync-src-")
-    - name: has-volsync-created-by-labels
-      expression: >-
-        object.metadata.?labels["app.kubernetes.io/created-by"].orValue("") == "volsync"
+  - name: has-volsync-job-name-prefix
+    expression: >-
+      object.metadata.name.startsWith("volsync-src-")
+  - name: has-volsync-created-by-labels
+    expression: >-
+      object.metadata.?labels["app.kubernetes.io/created-by"].orValue("") == "volsync"
   failurePolicy: Fail
   reinvocationPolicy: IfNeeded
   mutations:
-    - patchType: JSONPatch
-      jsonPatch:
-        expression: >-
-          [
-            JSONPatch{
-              op: "add", path: "/spec/template/spec/initContainers",
-              value: []
-            },
-            JSONPatch{
-              op: "add", path: "/spec/template/spec/initContainers/-",
-              value: Object.spec.template.spec.initContainers{
-                name: "jitter",
-                image: "ghcr.io/joryirving/busybox:1.37.0@sha256:32c0e3ba390f2cf92e7e43fc0978f79c41d63aa6c7ca9e9394edf92ce9839824",
-                imagePullPolicy: "IfNotPresent",
-                command: ["sh", "-c", "sleep $(shuf -i 0-30 -n 1)"]
-              }
+  - patchType: JSONPatch
+    jsonPatch:
+      expression: >-
+        [
+          JSONPatch{
+            op: "add", path: "/spec/template/spec/initContainers",
+            value: []
+          },
+          JSONPatch{
+            op: "add", path: "/spec/template/spec/initContainers/-",
+            value: Object.spec.template.spec.initContainers{
+              name: "jitter",
+              image: "ghcr.io/joryirving/busybox:1.37.0@sha256:32c0e3ba390f2cf92e7e43fc0978f79c41d63aa6c7ca9e9394edf92ce9839824",
+              imagePullPolicy: "IfNotPresent",
+              command: ["sh", "-c", "sleep $(shuf -i 0-30 -n 1)"]
             }
-          ]
----
+          }
+        ]

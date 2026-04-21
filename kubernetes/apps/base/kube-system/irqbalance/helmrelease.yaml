@@ -8,9 +8,12 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      hostIPC: true
+      hostPID: true
     controllers:
       irqbalance:
         type: daemonset
@@ -18,7 +21,8 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/irqbalance
-              tag: 1.9.4@sha256:38dd1475b74e57d92a28e9b21f64e7f634c9fe06924eaf1f13bf9c8cb7aa6e14
+              tag: 
+                1.9.4@sha256:38dd1475b74e57d92a28e9b21f64e7f634c9fe06924eaf1f13bf9c8cb7aa6e14
             env:
               IRQBALANCE_BANNED_CPULIST: 12-19 # 12-19 are E-cores
             resources:
@@ -28,11 +32,8 @@ spec:
                 memory: 32Mi
             securityContext:
               privileged: true
-    defaultPodOptions:
-      hostIPC: true
-      hostPID: true
     persistence:
       run:
         type: emptyDir
         globalMounts:
-          - path: /run/irqbalance
+        - path: /run/irqbalance

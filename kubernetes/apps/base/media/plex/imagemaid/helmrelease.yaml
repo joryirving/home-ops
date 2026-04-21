@@ -8,9 +8,25 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: ["plex"]
+            topologyKey: kubernetes.io/hostname
     controllers:
       imagemaid:
         type: cronjob
@@ -29,13 +45,14 @@ spec:
               tag: v1.1.1
             env:
               PLEX_URL: http://plex.media.svc.cluster.local:32400
-              PLEX_PATH: /data/plex_config/Library/Application Support/Plex Media Server
+              PLEX_PATH: /data/plex_config/Library/Application Support/Plex 
+                Media Server
               MODE: remove
               PHOTO_TRANSCODER: true
               TZ: America/Edmonton
             envFrom:
-              - secretRef:
-                  name: plex-secret
+            - secretRef:
+                name: plex-secret
             probes:
               liveness:
                 enabled: false
@@ -49,32 +66,16 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app.kubernetes.io/name
-                    operator: In
-                    values: ["plex"]
-              topologyKey: kubernetes.io/hostname
+              capabilities: {drop: ["ALL"]}
     persistence:
       plex-config:
         existingClaim: plex
         globalMounts:
-          - path: /data/plex_config
+        - path: /data/plex_config
       tmpfs:
         type: emptyDir
         advancedMounts:
           imagemaid:
             app:
-              - path: /config
-                subPath: config
+            - path: /config
+              subPath: config

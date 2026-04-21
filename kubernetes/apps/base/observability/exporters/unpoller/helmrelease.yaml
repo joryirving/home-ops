@@ -8,9 +8,14 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
     controllers:
       unpoller:
         annotations:
@@ -19,15 +24,16 @@ spec:
           app:
             image:
               repository: ghcr.io/unpoller/unpoller
-              tag: v2.39.0@sha256:1cf63ad43121acc6995da1bd636063de9023b4bfc16599a4297951a6fb6b7fd2
+              tag: 
+                v2.39.0@sha256:1cf63ad43121acc6995da1bd636063de9023b4bfc16599a4297951a6fb6b7fd2
             env:
               TZ: America/Edmonton
               UP_UNIFI_DEFAULT_URL: https://192.168.1.1
               UP_PROMETHEUS_HTTP_LISTEN: 0.0.0.0:80
               UP_INFLUXDB_DISABLE: true
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             probes:
               liveness: &probes
                 enabled: true
@@ -44,28 +50,23 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 128Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
     service:
       app:
         ports:
           http:
-           port: *port
+            port: *port
     serviceMonitor:
       app:
         serviceName: "{{ .Release.Name }}"
         endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 2m # Unifi API only polls at 2m intervals
-            scrapeTimeout: 10s
+        - port: http
+          scheme: http
+          path: /metrics
+          interval: 2m   # Unifi API only polls at 2m intervals
+          scrapeTimeout: 10s

@@ -8,9 +8,15 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       manyfold:
         annotations:
@@ -21,18 +27,19 @@ spec:
               repository: docker.io/library/alpine
               tag: "3.23"
             command:
-              - /bin/sh
-              - -c
+            - /bin/sh
+            - -c
             args:
-              - |
-                chmod o-rwx /tmp
+            - |
+              chmod o-rwx /tmp
             securityContext:
               runAsUser: 0
         containers:
           app:
             image:
               repository: ghcr.io/bjw-s-labs/manyfold
-              tag: 0.136.0@sha256:321fe84f696c3f25e52334fd33ee3af540df3a14ebd7977ef66cee2eccaf4eb3
+              tag: 
+                0.136.0@sha256:321fe84f696c3f25e52334fd33ee3af540df3a14ebd7977ef66cee2eccaf4eb3
             env:
               DATABASE_URL: sqlite3:/data/database/manyfold.sqlite3
               MULTIUSER: false
@@ -66,43 +73,37 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-    defaultPodOptions:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+              capabilities: {drop: ["ALL"]}
     persistence:
       data:
         existingClaim: "{{ .Release.Name }}"
         advancedMounts:
           manyfold:
             app:
-              - path: /data/database
-                subPath: database
-              - path: /data/libraries/main
-                subPath: libraries/main
+            - path: /data/database
+              subPath: database
+            - path: /data/libraries/main
+              subPath: libraries/main
       tmpfs:
         type: emptyDir
         advancedMounts:
           manyfold:
             app: &tmpdirs
-              - path: /tmp
-                subPath: host-tmp
-              - path: /app/tmp
-                subPath: app-tmp
-              - path: /app/log
-                subPath: app-log
+            - path: /tmp
+              subPath: host-tmp
+            - path: /app/tmp
+              subPath: app-tmp
+            - path: /app/log
+              subPath: app-log
             chown-tmpdirs: *tmpdirs
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: *port

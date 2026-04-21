@@ -24,22 +24,22 @@ spec:
     name: volsync
   interval: 15m
   dependsOn:
-    - name: snapshot-controller
+  - name: snapshot-controller
   values:
     image: &image
       repository: ghcr.io/perfectra1n/volsync
       tag: v0.17.11
     kopia: *image
-    rclone: *image
-    restic: *image
-    rsync: *image
-    rsync-tls: *image
-    syncthing: *image
     manageCRDs: true
-    replicaCount: ${REPLICAS:=1}
     metrics:
       disableAuth: true
     podSecurityContext:
       runAsNonRoot: true
       runAsUser: 1000
       runAsGroup: 100
+    rclone: *image
+    replicaCount: ${REPLICAS:=1}
+    restic: *image
+    rsync: *image
+    rsync-tls: *image
+    syncthing: *image

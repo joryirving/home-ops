@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      shareProcessNamespace: true
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       openclaw:
         annotations:
@@ -19,77 +26,79 @@ spec:
           install-tools:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 2026.4.12@sha256:c312f4a43cb7df588c14bdd6a726920d47138eb7fe4e2cf140a50a71d11b70bc
+              tag:
+                2026.4.15@sha256:9d5f1dfbd5deedc37706c78f745b958ffbe9b4f20840cfb4d49c617a50326902
             command:
-              - /bin/sh
-              - -c
-              - |
-                set -e
-                mkdir -p /home/node/.local/bin /home/node/.local/go
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              mkdir -p /home/node/.local/bin /home/node/.local/go
 
-                echo "Starting tool installation..."
+              echo "Starting tool installation..."
 
-                # Install gh CLI if not present on PVC
-                if [ ! -f /home/node/.local/bin/gh ]; then
-                  echo "Installing gh CLI..."
-                  cd /tmp
-                  curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.gz
-                  tar xzf gh.tar.gz
-                  cp gh_2.61.0_linux_amd64/bin/gh /home/node/.local/bin/
-                  rm -rf gh.tar.gz gh_2.61.0_linux_amd64
-                fi
+              # Install gh CLI if not present on PVC
+              if [ ! -f /home/node/.local/bin/gh ]; then
+                echo "Installing gh CLI..."
+                cd /tmp
+                curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.gz
+                tar xzf gh.tar.gz
+                cp gh_2.61.0_linux_amd64/bin/gh /home/node/.local/bin/
+                rm -rf gh.tar.gz gh_2.61.0_linux_amd64
+              fi
 
-                if [ ! -f /home/node/.local/bin/openclaw ]; then
-                # Set up openclawbot CLI symlink
-                  echo "Installing creating symlink..."
-                  ln -s /app/openclaw.mjs /home/node/.local/bin/openclaw
-                fi
+              if [ ! -f /home/node/.local/bin/openclaw ]; then
+              # Set up openclawbot CLI symlink
+                echo "Installing creating symlink..."
+                ln -s /app/openclaw.mjs /home/node/.local/bin/openclaw
+              fi
 
-                # Install Go if not present on PVC
-                if [ ! -f /home/node/.local/go/bin/go ]; then
-                  echo "Installing Go..."
-                  cd /tmp
-                  curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.gz
-                  tar xzf go.tar.gz
-                  mv go /home/node/.local/
-                  rm -rf go.tar.gz
-                fi
+              # Install Go if not present on PVC
+              if [ ! -f /home/node/.local/go/bin/go ]; then
+                echo "Installing Go..."
+                cd /tmp
+                curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.gz
+                tar xzf go.tar.gz
+                mv go /home/node/.local/
+                rm -rf go.tar.gz
+              fi
 
-                # Install Homebrew if not present on PVC
-                if [ ! -f /home/node/.local/homebrew/bin/brew ]; then
-                  echo "Installing Homebrew..."
-                  export HOMEBREW_PREFIX=/home/node/.local/homebrew
-                  export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
-                  export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
-                  mkdir -p $HOMEBREW_PREFIX
-                  cd /tmp
-                  git clone --depth 1 https://github.com/Homebrew/brew $HOMEBREW_PREFIX
-                fi
+              # Install Homebrew if not present on PVC
+              if [ ! -f /home/node/.local/homebrew/bin/brew ]; then
+                echo "Installing Homebrew..."
+                export HOMEBREW_PREFIX=/home/node/.local/homebrew
+                export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
+                export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
+                mkdir -p $HOMEBREW_PREFIX
+                cd /tmp
+                git clone --depth 1 https://github.com/Homebrew/brew $HOMEBREW_PREFIX
+              fi
 
-                # Check if pip is available (either standalone or via python3 -m pip)
-                set +e # Don't fail on pip errors
-                if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || python3 -m pip --version >/dev/null 2>&1; then
-                  echo "pip is available"
-                else
-                  echo "Installing pip..."
-                  cd /tmp
-                  curl -fsSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-                  python3 get-pip.py --user --no-warn-script-location --break-system-packages || \
-                  python3 get-pip.py --user --no-warn-script-location || \
-                  echo "pip install skipped (use python3 -m pip instead)"
-                  rm -f get-pip.py
-                fi
-                set -e # Re-enable error checking
+              # Check if pip is available (either standalone or via python3 -m pip)
+              set +e # Don't fail on pip errors
+              if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || python3 -m pip --version >/dev/null 2>&1; then
+                echo "pip is available"
+              else
+                echo "Installing pip..."
+                cd /tmp
+                curl -fsSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+                python3 get-pip.py --user --no-warn-script-location --break-system-packages || \
+                python3 get-pip.py --user --no-warn-script-location || \
+                echo "pip install skipped (use python3 -m pip instead)"
+                rm -f get-pip.py
+              fi
+              set -e # Re-enable error checking
 
-                echo "Tool installation complete"
+              echo "Tool installation complete"
 
-                # Ensure config directory exists
-                mkdir -p /home/node/.openclaw
-                echo "Init container completed successfully"
+              # Ensure config directory exists
+              mkdir -p /home/node/.openclaw
+              echo "Init container completed successfully"
           daemon:
             image:
               repository: docker
-              tag: 29.4.0-dind@sha256:f80c26212befc1c1988b529495532c6b9180d9b1dab1611f4a1efbe9da8ec821
+              tag:
+                29.4.0-dind@sha256:a6dd5322747a95cd8e3207bd8d415a8fd20ec34e9c00f06dc019cbd912013489
             restartPolicy: Always
             env:
               DOCKER_TLS_CERTDIR: /certs
@@ -128,13 +137,14 @@ spec:
           app:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 2026.4.12@sha256:c312f4a43cb7df588c14bdd6a726920d47138eb7fe4e2cf140a50a71d11b70bc
+              tag:
+                2026.4.15@sha256:9d5f1dfbd5deedc37706c78f745b958ffbe9b4f20840cfb4d49c617a50326902
             command:
-              - /bin/sh
-              - -c
-              - |
-                # Start gateway
-                exec node dist/index.js gateway --bind lan
+            - /bin/sh
+            - -c
+            - |
+              # Start gateway
+              exec node dist/index.js gateway --bind lan
             env:
               OPENCLAW_LOG_LEVEL: debug
               BROWSER_WS_ENDPOINT: "ws://localhost:9222"
@@ -147,15 +157,16 @@ spec:
               HOMEBREW_PREFIX: /home/node/.local/homebrew
               HOMEBREW_REPOSITORY: /home/node/.local/homebrew
               OPENCLAW_GATEWAY_PORT: &port 18789
-              PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              PATH:
+                /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               PIP_BREAK_SYSTEM_PACKAGES: "1"
               TERM: xterm-256color
               TZ: &tz America/Edmonton
             envFrom:
-              - secretRef:
-                  name: openclaw
-              - secretRef:
-                  name: openclaw-actual
+            - secretRef:
+                name: openclaw
+            - secretRef:
+                name: openclaw-actual
             resources:
               requests:
                 cpu: 1
@@ -168,18 +179,20 @@ spec:
               repository: zenika/alpine-chrome
               tag: with-node
             command:
-              - chromium-browser
-              - --headless=new
-              - --disable-gpu
-              - --remote-debugging-address=0.0.0.0
-              - --remote-debugging-port=9222
-              - --no-sandbox
-              - --disable-dev-shm-usage
+            - chromium-browser
+            - --headless=new
+            - --disable-gpu
+            - --remote-debugging-address=0.0.0.0
+            - --remote-debugging-port=9222
+            - --no-sandbox
+            - --disable-dev-shm-usage
               # Stealth flags to reduce bot detection
-              - --disable-blink-features=AutomationControlled
-              - --user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+            - --disable-blink-features=AutomationControlled
+            - --user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+              AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0
+              Safari/537.36
               # Allow WebSocket connections from any origin
-              - --remote-allow-origins=*
+            - --remote-allow-origins=*
             env:
               TZ: *tz
             resources:
@@ -192,33 +205,182 @@ spec:
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
-              tag: 4.115.0@sha256:cbd5e05849367e521f774b760602cb9e0a8da1f159eaf89600490eec34129fe5
+              tag:
+                4.116.0@sha256:4671fcaba60044478bc8238ad630cd53e19294de29012e6e2069411273f02415
             env:
               TZ: America/Edmonton
-            args:
-              [
-                "--auth",
-                "none",
-                "--user-data-dir",
-                "/home/node/.vscode",
-                "--extensions-dir",
-                "/home/node/.vscode",
-                "--port",
-                "12321",
-                "/config",
-              ]
+            args: ["--auth", "none", "--user-data-dir", "/home/node/.vscode", "--extensions-dir",
+              "/home/node/.vscode", "--port", "12321", "/config"]
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 1Gi
-    defaultPodOptions:
-      shareProcessNamespace: true
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: *homepath
+      data:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/delta/miso
+        globalMounts:
+        - path: /data
+      downloads:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/akademiya/data
+        globalMounts:
+        - path: /downloads
+          subPath: metube
+      images:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/daena/comfyui/output
+        globalMounts:
+        - path: /home/node/.openclaw/workspace/images
+      openclaw-config:
+        type: secret
+        name: "{{ .Release.Name }}-config"
+        defaultMode: 0400
+        globalMounts:
+        - path: /home/node/.openclaw/openclaw-main.json
+          subPath: openclaw.json
+      next-cache:
+        type: emptyDir
+        globalMounts:
+        - path: /app/.next/cache
+      tmp:
+        type: emptyDir
+      certs:
+        type: emptyDir
+    rbac:
+      roles:
+        openclaw-read-all:
+          type: ClusterRole
+          rules:
+            # Broad read-only access across cluster resources. Secrets intentionally excluded.
+          - apiGroups: [""]
+            resources: ["pods", "pods/log", "nodes", "services", "namespaces", "configmaps",
+              "persistentvolumes", "persistentvolumeclaims", "endpoints", "resourcequotas",
+              "limitranges", "serviceaccounts", "events"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["apps"]
+            resources: ["deployments", "daemonsets", "statefulsets", "replicasets",
+              "controllerrevisions"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["batch"]
+            resources: ["jobs", "cronjobs"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["networking.k8s.io"]
+            resources: ["ingresses", "ingressclasses", "networkpolicies"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["storage.k8s.io"]
+            resources: ["storageclasses", "csinodes", "csidrivers", "volumeattachments"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["autoscaling"]
+            resources: ["horizontalpodautoscalers"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["policy"]
+            resources: ["poddisruptionbudgets"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["coordination.k8s.io"]
+            resources: ["leases"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["rbac.authorization.k8s.io"]
+            resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["apiextensions.k8s.io"]
+            resources: ["customresourcedefinitions"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["apiregistration.k8s.io"]
+            resources: ["apiservices"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["metrics.k8s.io"]
+            resources: ["nodes", "pods"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["helm.toolkit.fluxcd.io"]
+            resources: ["helmreleases"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+            resources: ["kustomizations"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["source.toolkit.fluxcd.io"]
+            resources: ["gitrepositories", "helmrepositories", "ocirepositories",
+              "buckets", "helmcharts"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["external-secrets.io"]
+            resources: ["externalsecrets", "secretstores", "clustersecretstores"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["monitoring.coreos.com"]
+            resources: ["prometheuses", "alertmanagers", "servicemonitors", "podmonitors",
+              "prometheusrules", "thanosrulers", "probes"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["snapshot.storage.k8s.io"]
+            resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
+            verbs: ["get", "list", "watch"]
+        # Cluster-wide pod delete — restart any pod in any namespace
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRole
+          rules:
+          - apiGroups: [""]
+            resources: ["pods"]
+            verbs: ["delete"]
+        # Namespace-scoped exec + deploy patch — llm namespace only
+        openclaw-exec-deploy-llm:
+          type: Role
+          rules:
+          - apiGroups: [""]
+            resources: ["pods/exec"]
+            verbs: ["create"]
+          - apiGroups: ["apps"]
+            resources: ["deployments"]
+            verbs: ["patch", "update"]
+      bindings:
+        openclaw-read-all:
+          type: ClusterRoleBinding
+          roleRef:
+            identifier: openclaw-read-all
+          subjects:
+          - identifier: openclaw
+            serviceAccount: openclaw
+        # Cluster-wide binding for pod delete
+        openclaw-pod-delete-cluster-wide:
+          type: ClusterRoleBinding
+          roleRef:
+            identifier: openclaw-pod-delete-cluster-wide
+          subjects:
+          - identifier: openclaw
+            serviceAccount: openclaw
+        # Namespace-scoped binding for exec+deploy — llm namespace only
+        openclaw-exec-deploy-llm:
+          type: RoleBinding
+          roleRef:
+            identifier: openclaw-exec-deploy-llm
+          subjects:
+          - identifier: openclaw
+            serviceAccount: openclaw
+            namespace: llm
+    route:
+      app:
+        hostnames: ["miso.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+        rules:
+        - backendRefs:
+          - name: "{{ .Release.Name }}"
+            port: *port
+      codeserver:
+        hostnames: ["miso-code.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+        rules:
+        - backendRefs:
+          - name: "{{ .Release.Name }}"
+            port: &codeserverPort 12321
     service:
       app:
         type: LoadBalancer
@@ -229,166 +391,6 @@ spec:
           http:
             port: *port
           codeserver:
-            port: &codeserverPort 12321
-    route:
-      app:
-        hostnames: ["miso.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *port
-      codeserver:
-        hostnames: ["miso-code.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *codeserverPort
-    rbac:
-      roles:
-        openclaw-read-all:
-          type: ClusterRole
-          rules:
-            # Broad read-only access across cluster resources. Secrets intentionally excluded.
-            - apiGroups: [""]
-              resources: ["pods", "pods/log", "nodes", "services", "namespaces", "configmaps", "persistentvolumes", "persistentvolumeclaims", "endpoints", "resourcequotas", "limitranges", "serviceaccounts", "events"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["apps"]
-              resources: ["deployments", "daemonsets", "statefulsets", "replicasets", "controllerrevisions"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["batch"]
-              resources: ["jobs", "cronjobs"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["networking.k8s.io"]
-              resources: ["ingresses", "ingressclasses", "networkpolicies"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["storage.k8s.io"]
-              resources: ["storageclasses", "csinodes", "csidrivers", "volumeattachments"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["autoscaling"]
-              resources: ["horizontalpodautoscalers"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["policy"]
-              resources: ["poddisruptionbudgets"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["coordination.k8s.io"]
-              resources: ["leases"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["rbac.authorization.k8s.io"]
-              resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["apiextensions.k8s.io"]
-              resources: ["customresourcedefinitions"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["apiregistration.k8s.io"]
-              resources: ["apiservices"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["metrics.k8s.io"]
-              resources: ["nodes", "pods"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["helm.toolkit.fluxcd.io"]
-              resources: ["helmreleases"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["kustomize.toolkit.fluxcd.io"]
-              resources: ["kustomizations"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["source.toolkit.fluxcd.io"]
-              resources: ["gitrepositories", "helmrepositories", "ocirepositories", "buckets", "helmcharts"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["external-secrets.io"]
-              resources: ["externalsecrets", "secretstores", "clustersecretstores"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["monitoring.coreos.com"]
-              resources: ["prometheuses", "alertmanagers", "servicemonitors", "podmonitors", "prometheusrules", "thanosrulers", "probes"]
-              verbs: ["get", "list", "watch"]
-            - apiGroups: ["snapshot.storage.k8s.io"]
-              resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
-              verbs: ["get", "list", "watch"]
-        # Cluster-wide pod delete — restart any pod in any namespace
-        openclaw-pod-delete-cluster-wide:
-          type: ClusterRole
-          rules:
-            - apiGroups: [""]
-              resources: ["pods"]
-              verbs: ["delete"]
-        # Namespace-scoped exec + deploy patch — llm namespace only
-        openclaw-exec-deploy-llm:
-          type: Role
-          rules:
-            - apiGroups: [""]
-              resources: ["pods/exec"]
-              verbs: ["create"]
-            - apiGroups: ["apps"]
-              resources: ["deployments"]
-              verbs: ["patch", "update"]
-      bindings:
-        openclaw-read-all:
-          type: ClusterRoleBinding
-          roleRef:
-            identifier: openclaw-read-all
-          subjects:
-            - identifier: openclaw
-              serviceAccount: openclaw
-        # Cluster-wide binding for pod delete
-        openclaw-pod-delete-cluster-wide:
-          type: ClusterRoleBinding
-          roleRef:
-            identifier: openclaw-pod-delete-cluster-wide
-          subjects:
-            - identifier: openclaw
-              serviceAccount: openclaw
-        # Namespace-scoped binding for exec+deploy — llm namespace only
-        openclaw-exec-deploy-llm:
-          type: RoleBinding
-          roleRef:
-            identifier: openclaw-exec-deploy-llm
-          subjects:
-            - identifier: openclaw
-              serviceAccount: openclaw
-              namespace: llm
+            port: *codeserverPort
     serviceAccount:
       openclaw: {}
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: *homepath
-      data:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/delta/miso
-        globalMounts:
-          - path: /data
-      downloads:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/akademiya/data
-        globalMounts:
-          - path: /downloads
-            subPath: metube
-      images:
-        type: nfs
-        server: voyager.internal
-        path: /mnt/daena/comfyui/output
-        globalMounts:
-          - path: /home/node/.openclaw/workspace/images
-      openclaw-config:
-        type: secret
-        name: "{{ .Release.Name }}-config"
-        defaultMode: 0400
-        globalMounts:
-          - path: /home/node/.openclaw/openclaw.json
-            subPath: openclaw.json
-      next-cache:
-        type: emptyDir
-        globalMounts:
-          - path: /app/.next/cache
-      tmp:
-        type: emptyDir
-      certs:
-        type: emptyDir

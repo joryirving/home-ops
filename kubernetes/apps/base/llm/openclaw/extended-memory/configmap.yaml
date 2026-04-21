@@ -1,4 +1,4 @@
----
+# yaml-language-server: $schema=https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#configmap-v1-core
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,10 +8,10 @@ data:
     from flask import Flask, jsonify, request
     import sqlite3
     import os
-    
+
     app = Flask(__name__)
     DB_PATH = '/app/data/memory.db'
-    
+
     def init_db():
         os.makedirs('/app/data', exist_ok=True)
         conn = sqlite3.connect(DB_PATH)
@@ -21,9 +21,9 @@ data:
         c.execute('CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY, item_id INTEGER, text TEXT, author TEXT DEFAULT "human", seen_by_agent INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
         conn.commit()
         conn.close()
-    
+
     init_db()
-    
+
     HTML_PAGE = """<!DOCTYPE html>
     <html>
     <head><title>Extended Memory</title>
@@ -140,11 +140,11 @@ data:
     </script>
     </body>
     </html>"""
-    
+
     @app.route('/')
     def index():
         return HTML_PAGE
-    
+
     @app.route('/api/lists', methods=['GET'])
     def get_lists():
         conn = sqlite3.connect(DB_PATH)
@@ -152,7 +152,7 @@ data:
         rows = conn.execute('SELECT * FROM lists').fetchall()
         conn.close()
         return jsonify({"lists": [dict(r) for r in rows]})
-    
+
     @app.route('/api/lists', methods=['POST'])
     def create_list():
         data = request.json
@@ -163,7 +163,7 @@ data:
         new_id = c.lastrowid
         conn.close()
         return jsonify({"id": new_id})
-    
+
     @app.route('/api/lists/<int:list_id>/items', methods=['GET'])
     def get_items(list_id):
         conn = sqlite3.connect(DB_PATH)
@@ -171,7 +171,7 @@ data:
         rows = conn.execute('SELECT * FROM items WHERE list_id = ?', (list_id,)).fetchall()
         conn.close()
         return jsonify({"items": [dict(r) for r in rows]})
-    
+
     @app.route('/api/lists/<int:list_id>/items', methods=['POST'])
     def create_item(list_id):
         data = request.json
@@ -183,7 +183,7 @@ data:
         new_id = c.lastrowid
         conn.close()
         return jsonify({"id": new_id})
-    
+
     @app.route('/api/items/<int:item_id>/comments', methods=['GET'])
     def get_comments(item_id):
         conn = sqlite3.connect(DB_PATH)
@@ -191,7 +191,7 @@ data:
         rows = conn.execute('SELECT * FROM comments WHERE item_id = ?', (item_id,)).fetchall()
         conn.close()
         return jsonify({"comments": [dict(r) for r in rows]})
-    
+
     @app.route('/api/items/<int:item_id>/comments', methods=['POST'])
     def add_comment(item_id):
         data = request.json
@@ -202,7 +202,7 @@ data:
         new_id = c.lastrowid
         conn.close()
         return jsonify({"id": new_id})
-    
+
     @app.route('/api/unseen', methods=['GET'])
     def get_unseen():
         conn = sqlite3.connect(DB_PATH)
@@ -210,7 +210,7 @@ data:
         rows = conn.execute('SELECT c.*, i.title as item_title FROM comments c JOIN items i ON c.item_id = i.id WHERE c.seen_by_agent = 0 AND c.author = "human"').fetchall()
         conn.close()
         return jsonify({"comments": [dict(r) for r in rows]})
-    
+
     @app.route('/api/comments/<int:comment_id>/seen', methods=['PUT'])
     def mark_seen(comment_id):
         conn = sqlite3.connect(DB_PATH)
@@ -218,7 +218,7 @@ data:
         conn.commit()
         conn.close()
         return jsonify({"updated": True})
-    
+
     # Item CRUD endpoints
     @app.route('/api/items', methods=['GET'])
     def get_all_items():
@@ -231,7 +231,7 @@ data:
             rows = conn.execute('SELECT * FROM items').fetchall()
         conn.close()
         return jsonify({"items": [dict(r) for r in rows]})
-    
+
     @app.route('/api/items/<int:item_id>', methods=['GET'])
     def get_item(item_id):
         conn = sqlite3.connect(DB_PATH)
@@ -241,7 +241,7 @@ data:
         if row:
             return jsonify(dict(row))
         return jsonify({"error": "Item not found"}), 404
-    
+
     @app.route('/api/items/<int:item_id>', methods=['PUT'])
     def update_item(item_id):
         data = request.json
@@ -252,7 +252,7 @@ data:
         conn.commit()
         conn.close()
         return jsonify({"updated": True})
-    
+
     @app.route('/api/items/<int:item_id>', methods=['DELETE'])
     def delete_item(item_id):
         conn = sqlite3.connect(DB_PATH)
@@ -260,7 +260,6 @@ data:
         conn.commit()
         conn.close()
         return jsonify({"deleted": True})
-    
+
     if __name__ == '__main__':
         app.run(host='0.0.0.0', port=3000)
-    

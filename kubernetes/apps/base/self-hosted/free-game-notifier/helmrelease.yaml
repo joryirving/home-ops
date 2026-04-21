@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       free-game-notifier:
@@ -17,17 +17,18 @@ spec:
         cronjob:
           schedule: "0 16 * * THU"
           successfulJobsHistory: 0
-        containers: &container
+        containers:
           app:
             image:
               repository: ghcr.io/joryirving/free-game-notifier
-              tag: 1.6.0@sha256:9a60bfa46e3eaf674dda422d91259ebe6e9ec10c9c642ecc62ea05ff85ff0d1f
+              tag: 
+                1.6.0@sha256:9a60bfa46e3eaf674dda422d91259ebe6e9ec10c9c642ecc62ea05ff85ff0d1f
             env:
               TZ: America/Edmonton
               SEND_UPCOMING: false
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 5m

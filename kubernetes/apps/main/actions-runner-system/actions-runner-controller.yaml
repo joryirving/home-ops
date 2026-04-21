@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -6,7 +5,8 @@ metadata:
   name: actions-runner-controller
 spec:
   interval: 1h
-  path: ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/app
+  path: 
+    ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/app
   prune: true
   sourceRef:
     kind: GitRepository
@@ -21,11 +21,12 @@ metadata:
   name: actions-runner-controller-runners
 spec:
   dependsOn:
-    - name: actions-runner-controller
-    - name: openebs
-      namespace: storage
+  - name: actions-runner-controller
+  - name: openebs
+    namespace: storage
   interval: 1h
-  path: ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/runners
+  path: 
+    ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/runners
   postBuild:
     substitute:
       CLUSTER: ${CLUSTER}

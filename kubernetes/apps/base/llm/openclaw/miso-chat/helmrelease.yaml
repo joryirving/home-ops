@@ -8,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       miso-chat:
@@ -19,7 +19,8 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/miso-chat
-              tag: 0.4.10@sha256:ee48f00a5b84426ddf29c72befaa7a9ca160f3e757a8a8aea669e7d5a93f56b0
+              tag: 
+                0.4.10@sha256:ee48f00a5b84426ddf29c72befaa7a9ca160f3e757a8a8aea669e7d5a93f56b0
             env:
               REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
               GATEWAY_DEVICE_IDENTITY_PATH: &path /secrets/device.json
@@ -27,35 +28,35 @@ spec:
               SESSION_COOKIE_SAMESITE: "none"
               SESSION_COOKIE_SECURE: "true"
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 10m
                 memory: 128Mi
               limits:
                 memory: 512Mi
-    service:
-      app:
-        ports:
-          http:
-            port: 3000
+    persistence:
+      miso-chat-device:
+        type: secret
+        name: "{{ .Release.Name }}-device"
+        globalMounts:
+        - path: *path
+          subPath: device.json
     route:
       app:
         hostnames: ["miso-chat.jory.dev"]
         parentRefs:
-          - name: envoy-external
-            namespace: network
+        - name: envoy-external
+          namespace: network
         # rules:
         #   - backendRefs: [{}]
         #     sessionPersistence:
         #       sessionName: *app
         #       type: Cookie
         #       absoluteTimeout: 35m
-    persistence:
-      miso-chat-device:
-        type: secret
-        name: "{{ .Release.Name }}-device"
-        globalMounts:
-          - path: *path
-            subPath: device.json
+    service:
+      app:
+        ports:
+          http:
+            port: 3000

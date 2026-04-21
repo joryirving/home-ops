@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       deduparr:
         annotations:
@@ -19,15 +26,16 @@ spec:
           app:
             image:
               repository: quay.io/kernald/deduparr
-              tag: 1.2.0@sha256:6e579f684a147dcd2dcd4468c50ffb0848e23b8306f1355037a2419931fe4b7f
+              tag: 
+                1.2.0@sha256:6e579f684a147dcd2dcd4468c50ffb0848e23b8306f1355037a2419931fe4b7f
             env:
               TZ: America/Edmonton
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             args:
-              - --config
-              - /config/config.yaml
+            - --config
+            - /config/config.yaml
             probes:
               liveness:
                 enabled: true
@@ -59,13 +67,13 @@ spec:
                 cpu: 10m
               limits:
                 memory: 128Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      config-file:
+        type: configMap
+        name: "{{ .Release.Name }}-configmap"
+        globalMounts:
+        - path: /config/config.yaml
+          subPath: config.yaml
     service:
       app:
         ports:
@@ -74,11 +82,4 @@ spec:
     serviceMonitor:
       app:
         endpoints:
-          - port: http
-    persistence:
-      config-file:
-        type: configMap
-        name: "{{ .Release.Name }}-configmap"
-        globalMounts:
-          - path: /config/config.yaml
-            subPath: config.yaml
+        - port: http

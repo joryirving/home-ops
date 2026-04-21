@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -7,8 +8,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     controllers:
       palworld:
@@ -18,7 +19,8 @@ spec:
           app:
             image:
               repository: ghcr.io/jammsen/docker-palworld-dedicated-server
-              tag: master@sha256:0a28d725730754268edba9b7290309af30ee336b88ab81aeaafae93dca116abb
+              tag: 
+                master@sha256:0a28d725730754268edba9b7290309af30ee336b88ab81aeaafae93dca116abb
             env:
               ## Container Settings
               TZ: America/Edmonton
@@ -44,8 +46,8 @@ spec:
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &disabled
                 enabled: false
@@ -67,8 +69,8 @@ spec:
               RCON_PORT: *rcon-port
               SAVE_DIRECTORY: /palworld
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+            - secretRef:
+                name: "{{ .Release.Name }}-secret"
             resources:
               limits:
                 memory: 256Mi
@@ -76,7 +78,34 @@ spec:
                 cpu: 5m
             securityContext:
               allowPrivilegeEscalation: false
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /palworld
+      cache:
+        existingClaim: "{{ .Release.Name }}-cache"
+        globalMounts:
+        - path: /palworld/Pal/Binaries
+          subPath: binaries
+        - path: /palworld/Pal/Content
+          subPath: content
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          palworld:
+            app:
+            - path: /tmp
+              subPath: tmp
+    route:
+      app:
+        annotations:
+          external-dns.alpha.kubernetes.io/target: ipv4.jory.dev
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
         # pod:
         #   securityContext:
         #     runAsUser: 1000
@@ -100,35 +129,8 @@ spec:
       app:
         serviceName: "{{ .Release.Name }}"
         endpoints:
-          - port: http
-            scheme: http
-            path: /metrics
-            interval: 1m
-            scrapeTimeout: 10s
-    route:
-      app:
-        annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.jory.dev
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /palworld
-      cache:
-        existingClaim: "{{ .Release.Name }}-cache"
-        globalMounts:
-          - path: /palworld/Pal/Binaries
-            subPath: binaries
-          - path: /palworld/Pal/Content
-            subPath: content
-      tmpfs:
-        type: emptyDir
-        advancedMounts:
-          palworld:
-            app:
-              - path: /tmp
-                subPath: tmp
+        - port: http
+          scheme: http
+          path: /metrics
+          interval: 1m
+          scrapeTimeout: 10s

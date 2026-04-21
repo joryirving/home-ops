@@ -22,32 +22,33 @@ spec:
   chartRef:
     kind: OCIRepository
     name: headlamp
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    podAnnotations:
-      reloader.stakater.com/auto: "true"
-    fullnameOverride: headlamp
-    initContainers:
-      - image: ghcr.io/headlamp-k8s/headlamp-plugin-flux:v0.6.0@sha256:055377b9011dcc73235e8969c488ecd92af5cb70aa5d5df0f66c1cea667fdccb
-        command:
-          - /bin/sh
-          - -c
-          - mkdir -p /build/plugins && cp -r /plugins/* /build/plugins/
-        name: headlamp-plugins
-        volumeMounts:
-          - mountPath: /build/plugins
-            name: headlamp-plugins
+    clusterRoleBinding:
+      create: false
     config:
       pluginsDir: /build/plugins
+    fullnameOverride: headlamp
+    initContainers:
+    - image: 
+        ghcr.io/headlamp-k8s/headlamp-plugin-flux:v0.6.0@sha256:055377b9011dcc73235e8969c488ecd92af5cb70aa5d5df0f66c1cea667fdccb
+      command:
+      - /bin/sh
+      - -c
+      - mkdir -p /build/plugins && cp -r /plugins/* /build/plugins/
+      name: headlamp-plugins
+      volumeMounts:
+      - mountPath: /build/plugins
+        name: headlamp-plugins
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
     serviceAccount:
       create: false
       name: headlamp-admin
-    clusterRoleBinding:
-      create: false
     volumeMounts:
-      - mountPath: /build/plugins
-        name: headlamp-plugins
+    - mountPath: /build/plugins
+      name: headlamp-plugins
     volumes:
-      - name: headlamp-plugins
-        emptyDir: {}
+    - name: headlamp-plugins
+      emptyDir: {}

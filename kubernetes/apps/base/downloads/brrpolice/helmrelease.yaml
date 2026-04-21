@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -7,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       brrpolice:
         annotations:
@@ -18,11 +26,13 @@ spec:
           app:
             image:
               repository: ghcr.io/zariel/brrpolice
-              tag: v0.13.0@sha256:5be94b0835579314ab1d337c5fcd9dae9896db6da97edfd4fe89e1d41a88e32c
+              tag: 
+                v0.13.0@sha256:5be94b0835579314ab1d337c5fcd9dae9896db6da97edfd4fe89e1d41a88e32c
             env:
               BRRPOLICE_HTTP__PORT: &port 80
               BRRPOLICE_LOGGING__LEVEL: info
-              BRRPOLICE_QBITTORRENT__BASE_URL: http://qbittorrent.downloads.svc.cluster.local
+              BRRPOLICE_QBITTORRENT__BASE_URL: 
+                http://qbittorrent.downloads.svc.cluster.local
               TZ: America/Edmonton
             probes:
               liveness:
@@ -51,13 +61,9 @@ spec:
                 cpu: 10m
               limits:
                 memory: 128Mi
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
     service:
       app:
         ports:
@@ -66,7 +72,4 @@ spec:
     serviceMonitor:
       app:
         endpoints:
-          - port: http
-    persistence:
-      data:
-        existingClaim: "{{ .Release.Name }}"
+        - port: http

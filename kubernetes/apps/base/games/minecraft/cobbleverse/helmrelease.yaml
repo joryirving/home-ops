@@ -22,29 +22,9 @@ spec:
   chartRef:
     kind: OCIRepository
     name: minecraft-cobbleverse
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    fullnameOverride: *app
-    image:
-      repository: ghcr.io/itzg/minecraft-server
-      tag: 2026.4.1-java21@sha256:4e425ce4f3a0cbf8b2c33d798ac1e7b59e8637b7a64272de7c810025aa11913a
-    resources:
-      requests:
-        cpu: 2
-        memory: 4Gi
-      limits:
-        cpu: 12
-        memory: 12Gi
-    securityContext:
-      runAsUser: 1000
-      fsGroup: 100
-    livenessProbe:
-      initialDelaySeconds: 30
-    readinessProbe:
-      initialDelaySeconds: 30
-    startupProbe:
-        enabled: true
     extraEnv:
       TZ: America/Edmonton
       MODPACK_PLATFORM: "MODRINTH"
@@ -52,15 +32,16 @@ spec:
       MODRINTH_VERSION: "1.7.30"
       MODRINTH_EXCLUDE_FILES: "mods/modmenu-*.jar,mods/RoughlyEnoughItems-*.jar,mods/sound-physics-remastered-*-fabric-*.jar,mods/moreculling-fabric-*.jar,mods/infinite-music-*.jar,mods/MusicNotification-*.jar,mods/Ping-Wheel-*.jar,mods/particle-rain-*.jar,mods/paginatedadvancements-*.jar,mods/notenoughcrashes-*.jar,mods/respackopts-*.jar,mods/defaultoptions-*.jar"
       MODRINTH_DOWNLOAD_DEPENDENCIES: "optional"
-    persistence:
-      dataDir:
-        enabled: true
-        existingClaim: *app
-    serviceAnnotations:
-      mc-router.itzg.me/externalServerName: cobbleverse.jory.dev
+    fullnameOverride: *app
+    image:
+      repository: ghcr.io/itzg/minecraft-server
+      tag: 
+        2026.4.2-java21@sha256:55d2d31aed9848756c0051dea0b001a36ea0fa2afdce892f1aab0655a6dff87b
+    livenessProbe:
+      initialDelaySeconds: 30
     minecraftServer:
       eula: true
-      # renovate: datasource=custom.minecraft-release
+      # renovate: pinVersion=1.21.1
       version: 1.21.1
       # type: FABRIC
       overrideServerProperties: true
@@ -78,6 +59,26 @@ spec:
       viewDistance: 12
       rcon:
         enabled: true
+    persistence:
+      dataDir:
+        enabled: true
+        existingClaim: *app
+    readinessProbe:
+      initialDelaySeconds: 30
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 12
+        memory: 12Gi
+    securityContext:
+      runAsUser: 1000
+      fsGroup: 100
+    serviceAnnotations:
+      mc-router.itzg.me/externalServerName: cobbleverse.jory.dev
+    startupProbe:
+      enabled: true
   valuesFrom:
   - kind: Secret
     name: *app

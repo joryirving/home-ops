@@ -8,10 +8,9 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    fullnameOverride: *app
     controllers:
       nut-exporter:
         annotations:
@@ -25,7 +24,7 @@ spec:
               TZ: America/Edmonton
             args:
               # the first time I set this, the first and last entries were ignored, so I have doubled them.
-              - --nut.vars_enable="battery.charge,battery.charge,battery.runtime,battery.voltage,battery.voltage.nominal,input.voltage,input.voltage.nominal,output.voltage,output.voltage.nominal,ups.realpower,ups.load,ups.status,ups.status"
+            - --nut.vars_enable="battery.charge,battery.charge,battery.runtime,battery.voltage,battery.voltage.nominal,input.voltage,input.voltage.nominal,output.voltage,output.voltage.nominal,ups.realpower,ups.load,ups.status,ups.status"
             probes:
               liveness:
                 enabled: true
@@ -37,6 +36,7 @@ spec:
               limits:
                 cpu: 100m
                 memory: 200Mi
+    fullnameOverride: *app
     service:
       app:
         ports:

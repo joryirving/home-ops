@@ -8,9 +8,19 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      resourceClaims:
+      - name: gpu
+        resourceClaimTemplateName: pinchflat-gpu
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       pinchflat:
         annotations:
@@ -19,7 +29,8 @@ spec:
           app:
             image:
               repository: ghcr.io/kieraneglin/pinchflat
-              tag: v2025.6.6@sha256:bda3091e59af351e5e928930c680a6ebe2cde728949e36c11000b9827ee2ed51
+              tag: 
+                v2025.6.6@sha256:bda3091e59af351e5e928930c680a6ebe2cde728949e36c11000b9827ee2ed51
             env:
               TZ: America/Edmonton
               TZ_DATA_DIR: /tmp/elixir_tz_data
@@ -40,42 +51,21 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               claims:
-                - name: gpu
+              - name: gpu
               requests:
                 cpu: 10m
               limits:
                 memory: 8Gi
-    defaultPodOptions:
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: pinchflat-gpu
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
       yt-dlp:
         type: emptyDir
         globalMounts:
-          - path: /etc/yt-dlp
+        - path: /etc/yt-dlp
       media:
         type: nfs
         server: voyager.internal
@@ -83,7 +73,18 @@ spec:
         advancedMounts:
           pinchflat:
             app:
-              - path: /downloads
-                subPath: pinchflat
+            - path: /downloads
+              subPath: pinchflat
       tmp:
         type: emptyDir
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: *port

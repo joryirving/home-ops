@@ -22,8 +22,8 @@ spec:
   chartRef:
     kind: OCIRepository
     name: authentik
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
     global:
       podAnnotations:
@@ -31,24 +31,24 @@ spec:
       deploymentStrategy:
         type: RollingUpdate
       env:
-        - name: AUTHENTIK_POSTGRESQL__NAME
-          value: *app
-        - name: AUTHENTIK_POSTGRESQL__HOST
-          value: authentik-pgbouncer.security.svc #Authentik requires transaction for pgBouncer
-        - name: AUTHENTIK_POSTGRESQL__USER
-          value: *app
-        - name: AUTHENTIK_POSTGRESQL__PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: authentik-pguser-authentik
-              key: password
-        - name: AUTHENTIK_POSTGRESQL__USE_PGBOUNCER
-          value: "true"
-        - name: AUTHENTIK_POSTGRESQL__SSLMODE
-          value: require
+      - name: AUTHENTIK_POSTGRESQL__NAME
+        value: *app
+      - name: AUTHENTIK_POSTGRESQL__HOST
+        value: authentik-pgbouncer.security.svc   #Authentik requires transaction for pgBouncer
+      - name: AUTHENTIK_POSTGRESQL__USER
+        value: *app
+      - name: AUTHENTIK_POSTGRESQL__PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: authentik-pguser-authentik
+            key: password
+      - name: AUTHENTIK_POSTGRESQL__USE_PGBOUNCER
+        value: "true"
+      - name: AUTHENTIK_POSTGRESQL__SSLMODE
+        value: require
       envFrom:
-        - secretRef:
-            name: authentik-secret
+      - secretRef:
+          name: authentik-secret
     server:
       autoscaling:
         enabled: true
@@ -67,8 +67,8 @@ spec:
           enabled: true
           hostnames: ["${SUBDOMAIN}.jory.dev"]
           parentRefs:
-            - name: envoy-external
-              namespace: network
+          - name: envoy-external
+            namespace: network
     worker:
       autoscaling:
         enabled: true

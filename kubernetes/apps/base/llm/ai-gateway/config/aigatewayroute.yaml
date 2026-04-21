@@ -1,0 +1,39 @@
+---
+apiVersion: aigateway.envoyproxy.io/v1alpha1
+kind: AIGatewayRoute
+metadata:
+  name: llm
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: network
+      sectionName: llm
+  rules:
+    - matches:
+        - headers:
+            - name: x-ai-eg-model
+              value: self-hosted
+      backendRefs:
+        - name: llama-server
+      timeouts:
+        request: 600s
+    - matches:
+        - headers:
+            - name: x-ai-eg-model
+              value: memory
+      backendRefs:
+        - name: llama-memory
+      timeouts:
+        request: 600s
+    - matches:
+        - headers:
+            - name: x-ai-eg-model
+              value: vision
+        - headers:
+            - name: x-ai-eg-model
+              value: qwen-vision
+      backendRefs:
+        - name: llama-vision
+          modelNameOverride: qwen-vision
+      timeouts:
+        request: 600s

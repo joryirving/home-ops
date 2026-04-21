@@ -1,9 +1,32 @@
----
-# yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: flux-system
+patches:
+- patch: |-
+    apiVersion: helm.toolkit.fluxcd.io/v2
+    kind: HelmRelease
+    metadata:
+      name: not-used
+    spec:
+      install:
+        crds: CreateReplace
+      rollback:
+        cleanupOnFail: true
+        recreate: true
+      timeout: 10m
+      upgrade:
+        cleanupOnFail: true
+        crds: CreateReplace
+        strategy:
+          name: RemediateOnFailure
+        remediation:
+          remediateLastFailure: true
+          retries: 2
+  target:
+    group: helm.toolkit.fluxcd.io
+    kind: HelmRelease
 resources:
-  - ./grafanadashboard.yaml
-  - ./helmrelease.yaml
-  - ./httproute.yaml
-  - ./podmonitor.yaml
+- ./grafanadashboard.yaml
+- ./helmrelease.yaml
+- ./httproute.yaml
+- ./podmonitor.yaml

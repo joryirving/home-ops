@@ -8,9 +8,20 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      resourceClaims:
+      - name: gpu
+        resourceClaimTemplateName: ersatztv-gpu
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       ersatztv:
         annotations:
@@ -19,13 +30,14 @@ spec:
           app:
             image:
               repository: ghcr.io/ersatztv/ersatztv
-              tag: v26.3.0@sha256:7c402e5f348184359e0951b44d55fb6db3df671fa77fc91dcbd609034d28778b
+              tag: 
+                v26.3.0@sha256:7c402e5f348184359e0951b44d55fb6db3df671fa77fc91dcbd609034d28778b
             env:
               TZ: America/Edmonton
               XDG_DATA_HOME: /config ## https://features.ersatztv.org/posts/4/allow-docker-to-run-as-non-root-user
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
@@ -36,36 +48,14 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               claims:
-                - name: gpu
+              - name: gpu
               requests:
                 cpu: 10m
               limits:
                 memory: 4G
-    defaultPodOptions:
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: ersatztv-gpu
-      automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: 8409
-    route:
-      app:
-        hostnames: ["tv.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -74,17 +64,28 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-          - path: /data
-            subPath: media
-            readOnly: true
+        - path: /data
+          subPath: media
+          readOnly: true
       tmpfs:
         type: emptyDir
         advancedMounts:
           ersatztv:
             app:
-              - path: /cache
-                subPath: cache
-              - path: /tmp
-                subPath: tmp
-              - path: /transcode
-                subPath: transcode
+            - path: /cache
+              subPath: cache
+            - path: /tmp
+              subPath: tmp
+            - path: /transcode
+              subPath: transcode
+    route:
+      app:
+        hostnames: ["tv.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 8409

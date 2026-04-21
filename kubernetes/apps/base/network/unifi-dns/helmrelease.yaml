@@ -22,25 +22,30 @@ spec:
   chartRef:
     kind: OCIRepository
     name: unifi-dns
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    domainFilters: ["jory.dev"]
     fullnameOverride: *app
     logLevel: info
+    podAnnotations:
+      secret.reloader.stakater.com/reload: *app
+    policy: sync
     provider:
       name: webhook
       webhook:
         image:
           repository: ghcr.io/kashalls/external-dns-unifi-webhook
-          tag: v0.8.2@sha256:7f0ddbbc83a36a2a9d762e25eef9cafcb3adf0493068a27d72ae71087eafe6f0
+          tag: 
+            v0.8.2@sha256:7f0ddbbc83a36a2a9d762e25eef9cafcb3adf0493068a27d72ae71087eafe6f0
         env:
-          - name: UNIFI_HOST
-            value: https://192.168.1.1
-          - name: UNIFI_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: *app
-                key: EXTERNAL_DNS_UNIFI_API_KEY
+        - name: UNIFI_HOST
+          value: https://192.168.1.1
+        - name: UNIFI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: *app
+              key: EXTERNAL_DNS_UNIFI_API_KEY
         livenessProbe:
           httpGet:
             path: /healthz
@@ -53,13 +58,9 @@ spec:
             port: http-webhook
           initialDelaySeconds: 10
           timeoutSeconds: 5
-    triggerLoopOnEvent: true
-    policy: sync
-    sources: ["gateway-httproute", "service"]
-    txtOwnerId: ${CLUSTER}
-    txtPrefix: k8s.${CLUSTER}.
-    domainFilters: ["jory.dev"]
     serviceMonitor:
       enabled: true
-    podAnnotations:
-      secret.reloader.stakater.com/reload: *app
+    sources: ["gateway-httproute", "service"]
+    triggerLoopOnEvent: true
+    txtOwnerId: ${CLUSTER}
+    txtPrefix: k8s.${CLUSTER}.

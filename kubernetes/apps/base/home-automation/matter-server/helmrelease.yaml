@@ -8,32 +8,9 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
-    controllers:
-      matter-server:
-        annotations:
-          reloader.stakater.com/auto: "true"
-        containers:
-          app:
-            image:
-              repository: ghcr.io/home-assistant-libs/python-matter-server
-              tag: 8.1.0@sha256:170aa093ce91c76cde4cc390918307590f0f5558fcec93f913af3cb019e6562a
-            env:
-              TZ: America/Edmonton
-              MATTER_SERVER__INSTANCE_NAME: "{{ .Release.Name }}"
-              MATTER_SERVER__PORT: &port 5580
-              MATTER_SERVER__APPLICATION_URL: &host "{{ .Release.Name }}.jory.dev"
-              MATTER_SERVER__LOG_LEVEL: info
-            args:
-              - --storage-path=/data
-              - --primary-interface=net1
-              - --log-level=debug
-              - --log-level-sdk=info
-            resources:
-              limits:
-                memory: 100Mi
     defaultPodOptions:
       annotations:
         k8s.v1.cni.cncf.io/networks: |
@@ -50,23 +27,47 @@ spec:
         fsGroup: 0
         fsGroupChangePolicy: OnRootMismatch
         supplementalGroups: [34]
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-    route:
-      app:
-        hostnames: [*host]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *port
+    controllers:
+      matter-server:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/home-assistant-libs/python-matter-server
+              tag: 
+                8.1.0@sha256:170aa093ce91c76cde4cc390918307590f0f5558fcec93f913af3cb019e6562a
+            env:
+              TZ: America/Edmonton
+              MATTER_SERVER__INSTANCE_NAME: "{{ .Release.Name }}"
+              MATTER_SERVER__PORT: &port 5580
+              MATTER_SERVER__APPLICATION_URL: &host "{{ .Release.Name }}.jory.dev"
+              MATTER_SERVER__LOG_LEVEL: info
+            args:
+            - --storage-path=/data
+            - --primary-interface=net1
+            - --log-level=debug
+            - --log-level-sdk=info
+            resources:
+              limits:
+                memory: 100Mi
     persistence:
       data:
         existingClaim: "{{ .Release.Name }}"
       tmp:
         type: emptyDir
+    route:
+      app:
+        hostnames: [*host]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+        rules:
+        - backendRefs:
+          - name: "{{ .Release.Name }}"
+            port: *port
+    service:
+      app:
+        ports:
+          http:
+            port: *port

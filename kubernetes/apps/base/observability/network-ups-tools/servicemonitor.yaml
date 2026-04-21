@@ -1,4 +1,3 @@
-
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/servicemonitor_v1.json
 apiVersion: monitoring.coreos.com/v1
@@ -12,31 +11,31 @@ metadata:
   name: nut-exporter-server
 spec:
   endpoints:
-    - interval: 30s
-      metricRelabelings:
-        - action: replace
-          replacement: server
-          sourceLabels:
-            - instance
-          targetLabel: instance
-        - action: replace
-          replacement: server
-          sourceLabels:
-            - server
-          targetLabel: server
-        - action: labeldrop
-          regex: (pod)
-      params:
-        server:
-          - venti.internal
-      path: /ups_metrics
-      port: metrics
-      scheme: http
-      scrapeTimeout: 30s
+  - interval: 30s
+    metricRelabelings:
+    - action: replace
+      replacement: server
+      sourceLabels:
+      - instance
+      targetLabel: instance
+    - action: replace
+      replacement: server
+      sourceLabels:
+      - server
+      targetLabel: server
+    - action: labeldrop
+      regex: (pod)
+    params:
+      server:
+      - venti.internal
+    path: /ups_metrics
+    port: metrics
+    scheme: http
+    scrapeTimeout: 30s
   jobLabel: nut-exporter
   namespaceSelector:
     matchNames:
-      - observability
+    - observability
   selector:
     matchLabels:
       app.kubernetes.io/instance: nut-exporter

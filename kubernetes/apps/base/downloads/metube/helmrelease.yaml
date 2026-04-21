@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       metube:
         annotations:
@@ -20,32 +27,16 @@ spec:
             image:
               repository: ghcr.io/alexta69/metube
               # tag: "2024-08-07"
-              tag: 2026.04.13@sha256:8a363a67e998cf0c3acd120224b59ee2d529a9a5347438eb4e3a177ce143a5bd
+              tag: 
+                2026.04.18@sha256:fa3535e8e529eda86939e56370bbaad1a64dd900f3da596983963f9b2d297251
             env:
               DOWNLOAD_DIR: "/downloads"
               # DOWNLOAD_MODE: concurrent # defaults to limited
               DOWNLOAD_MODE: limited
               MAX_CONCURRENT_DOWNLOADS: 5 #only used with limited, default to 3
               STATE_DIR: "/config"
-              YTDL_OPTIONS: '{"http_headers":{"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"},"cookiefile":"/config/cookies.txt"}'
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: 8081
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+              YTDL_OPTIONS: '{"http_headers":{"User-Agent": "Mozilla/5.0 (Windows
+                NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"},"cookiefile":"/config/cookies.txt"}'
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -54,5 +45,16 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-          - path: /downloads
-            subPath: metube
+        - path: /downloads
+          subPath: metube
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 8081

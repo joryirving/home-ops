@@ -8,9 +8,15 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       plex-trakt-sync:
         type: cronjob
@@ -28,7 +34,7 @@ spec:
               repository: ghcr.io/taxel/plextraktsync
               tag: 0.35.4
             args:
-              - sync
+            - sync
             env:
               PLEX_BASEURL: http://plex.media.svc.cluster.local:32400
               PLEX_LOCALURL: http://plex.media.svc.cluster.local:32400
@@ -52,12 +58,6 @@ spec:
                 memory: 128M
               limits:
                 memory: 512M
-    defaultPodOptions:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
     persistence:
       config:
         enabled: true
@@ -65,11 +65,11 @@ spec:
         advancedMounts:
           plex-trakt-sync:
             app:
-              - path: /app/config
+            - path: /app/config
       config-yaml:
         type: configMap
         name: "{{ .Release.Name }}"
         globalMounts:
-          - path: /app/config/config.yml
-            subPath: config.yml
-            readOnly: true
+        - path: /app/config/config.yml
+          subPath: config.yml
+          readOnly: true

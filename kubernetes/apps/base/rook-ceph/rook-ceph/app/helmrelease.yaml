@@ -19,20 +19,19 @@ kind: HelmRelease
 metadata:
   name: rook-ceph
 spec:
-  interval: 15m
-  timeout: 15m
   chartRef:
     kind: OCIRepository
     name: rook-ceph
+  interval: 15m
   dependsOn: []
   values:
     csi:
       cephFSKernelMountOptions: ms_mode=prefer-crc
       enableLiveness: true
       pluginTolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+      - key: llm-workload
+        operator: Exists
+        effect: NoSchedule
       serviceMonitor:
         enabled: true
     enableDiscoveryDaemon: true
@@ -45,3 +44,4 @@ spec:
         memory: 128Mi # unchangable
         cpu: 100m # unchangable
       limits: {}
+  timeout: 15m

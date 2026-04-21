@@ -8,9 +8,16 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       agregarr:
         annotations:
@@ -19,7 +26,8 @@ spec:
           app:
             image:
               repository: ghcr.io/agregarr/agregarr
-              tag: v2.4.2@sha256:5f1390bc43fefbbfb67f38a7a8dd65b4086c1f187a37c8df5c6020a498e5d1b5
+              tag: 
+                v2.4.2@sha256:5f1390bc43fefbbfb67f38a7a8dd65b4086c1f187a37c8df5c6020a498e5d1b5
             env:
               TZ: America/Edmonton
             resources:
@@ -30,34 +38,27 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    service:
-      app:
-        ports:
-          http:
-            port: 7171
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
+              capabilities: {drop: ["ALL"]}
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-          - path: /app/config
+        - path: /app/config
       tmpfs:
         type: emptyDir
         advancedMounts:
           agregarr:
             app:
-              - path: /tmp
-                subPath: tmp
+            - path: /tmp
+              subPath: tmp
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 7171

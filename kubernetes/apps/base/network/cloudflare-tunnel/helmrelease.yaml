@@ -8,9 +8,27 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+    configMaps:
+      config:
+        data:
+          config.yaml: |-
+            ingress:
+              - hostname: "*.jory.dev"
+                originRequest:
+                  http2Origin: true
+                  keepAliveTimeout: 3600s
+                  originServerName: ${EXTERNAL_DOMAIN}.jory.dev
+                  tcpKeepAlive: 7200s
+                service: https://envoy-external.{{ .Release.Namespace }}.svc.cluster.local:443
+              - service: http_status:404
     controllers:
       cloudflare-tunnel:
         replicas: ${REPLICAS:=1}
@@ -21,13 +39,14 @@ spec:
           app:
             image:
               repository: mirror.gcr.io/cloudflare/cloudflared
-              tag: 2026.3.0@sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0
+              tag: 
+                2026.3.0@sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0
             env:
               NO_AUTOUPDATE: true
               TUNNEL_METRICS: 0.0.0.0:8080
             envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
+            - secretRef:
+                name: "{{ .Release.Name }}"
             args: ["tunnel", "run"]
             probes:
               liveness: &probes
@@ -45,17 +64,19 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
+              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 256M
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
+    persistence:
+      config-file:
+        type: configMap
+        identifier: config
+        globalMounts:
+        - path: /etc/cloudflared/config.yaml
+          subPath: config.yaml
     service:
       app:
         ports:
@@ -64,24 +85,4 @@ spec:
     serviceMonitor:
       app:
         endpoints:
-          - port: http
-    configMaps:
-      config:
-        data:
-          config.yaml: |-
-            ingress:
-              - hostname: "*.jory.dev"
-                originRequest:
-                  http2Origin: true
-                  keepAliveTimeout: 3600s
-                  originServerName: ${EXTERNAL_DOMAIN}.jory.dev
-                  tcpKeepAlive: 7200s
-                service: https://envoy-external.{{ .Release.Namespace }}.svc.cluster.local:443
-              - service: http_status:404
-    persistence:
-      config-file:
-        type: configMap
-        identifier: config
-        globalMounts:
-          - path: /etc/cloudflared/config.yaml
-            subPath: config.yaml
+        - port: http

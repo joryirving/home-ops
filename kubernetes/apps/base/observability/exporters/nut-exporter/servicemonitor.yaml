@@ -1,4 +1,3 @@
-
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/servicemonitor_v1.json
 apiVersion: monitoring.coreos.com/v1
@@ -14,31 +13,31 @@ spec:
   jobLabel: nut-exporter
   namespaceSelector:
     matchNames:
-      - observability
+    - observability
   selector:
     matchLabels:
       app.kubernetes.io/instance: nut-exporter
       app.kubernetes.io/name: nut-exporter
   endpoints:
-    - interval: 30s
-      path: /ups_metrics
-      port: metrics
-      scheme: http
-      scrapeTimeout: 30s
-      params:
-        server: ["sayu.internal"]
-        ups: ["network_ups"]
-      metricRelabelings:
-        - action: replace
-          replacement: network_ups
-          sourceLabels: [instance]
-          targetLabel: instance
-        - action: replace
-          replacement: sayu.internal
-          sourceLabels: [server]
-          targetLabel: server
-        - action: labeldrop
-          regex: pod
+  - interval: 30s
+    path: /ups_metrics
+    port: metrics
+    scheme: http
+    scrapeTimeout: 30s
+    params:
+      server: ["sayu.internal"]
+      ups: ["network_ups"]
+    metricRelabelings:
+    - action: replace
+      replacement: network_ups
+      sourceLabels: [instance]
+      targetLabel: instance
+    - action: replace
+      replacement: sayu.internal
+      sourceLabels: [server]
+      targetLabel: server
+    - action: labeldrop
+      regex: pod
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/servicemonitor_v1.json
 apiVersion: monitoring.coreos.com/v1
@@ -54,47 +53,47 @@ spec:
   jobLabel: nut-exporter
   namespaceSelector:
     matchNames:
-      - observability
+    - observability
   selector:
     matchLabels:
       app.kubernetes.io/instance: nut-exporter
       app.kubernetes.io/name: nut-exporter
   endpoints:
-    - interval: 30s
-      path: /ups_metrics
-      port: metrics
-      scheme: http
-      scrapeTimeout: 30s
-      params:
-        server: ["venti.internal"]
-        ups: ["server_ups"]
-      metricRelabelings:
-        - action: replace
-          replacement: server_ups
-          sourceLabels: [instance]
-          targetLabel: instance
-        - action: replace
-          replacement: venti.internal
-          sourceLabels: [server]
-          targetLabel: server
-        - action: labeldrop
-          regex: pod
-    - interval: 30s
-      path: /ups_metrics
-      port: metrics
-      scheme: http
-      scrapeTimeout: 30s
-      params:
-        server: ["venti.internal"]
-        ups: ["ecoflow_ups"]
-      metricRelabelings:
-        - action: replace
-          replacement: ecoflow_ups
-          sourceLabels: [instance]
-          targetLabel: instance
-        - action: replace
-          replacement: venti.internal
-          sourceLabels: [server]
-          targetLabel: server
-        - action: labeldrop
-          regex: pod
+  - interval: 30s
+    path: /ups_metrics
+    port: metrics
+    scheme: http
+    scrapeTimeout: 30s
+    params:
+      server: ["venti.internal"]
+      ups: ["server_ups"]
+    metricRelabelings:
+    - action: replace
+      replacement: server_ups
+      sourceLabels: [instance]
+      targetLabel: instance
+    - action: replace
+      replacement: venti.internal
+      sourceLabels: [server]
+      targetLabel: server
+    - action: labeldrop
+      regex: pod
+  - interval: 30s
+    path: /ups_metrics
+    port: metrics
+    scheme: http
+    scrapeTimeout: 30s
+    params:
+      server: ["venti.internal"]
+      ups: ["ecoflow_ups"]
+    metricRelabelings:
+    - action: replace
+      replacement: ecoflow_ups
+      sourceLabels: [instance]
+      targetLabel: instance
+    - action: replace
+      replacement: venti.internal
+      sourceLabels: [server]
+      targetLabel: server
+    - action: labeldrop
+      regex: pod

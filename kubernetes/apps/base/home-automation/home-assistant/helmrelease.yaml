@@ -8,9 +8,24 @@ spec:
   chartRef:
     kind: OCIRepository
     name: app-template
-  dependsOn: []
   interval: 15m
+  dependsOn: []
   values:
+    defaultPodOptions:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "multus-iot",
+            "namespace": "network",
+            "ips": ["192.168.10.121/24"]
+          }]
+      hostUsers: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
     controllers:
       home-assistant:
         annotations:
@@ -19,7 +34,8 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/home-assistant
-              tag: 2026.4.2@sha256:a8d9b0f9535725141db04ce1780b292d176bf5fdc7f701d97b681a90f8dcbca9
+              tag: 
+                2026.4.3@sha256:44145ddff6a4cdc171b25833e37676c53708a09a5e5fad917b6ee6bf435158d5
             env:
               TZ: America/Edmonton
               HASS_HTTP_TRUSTED_PROXY_1: 10.69.1.0/24
@@ -39,41 +55,47 @@ spec:
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
-              tag: 4.115.0@sha256:cbd5e05849367e521f774b760602cb9e0a8da1f159eaf89600490eec34129fe5
+              tag: 
+                4.116.0@sha256:4671fcaba60044478bc8238ad630cd53e19294de29012e6e2069411273f02415
             env:
               TZ: America/Edmonton
-            args:
-              [
-                "--auth",
-                "none",
-                "--user-data-dir",
-                "/config/.vscode",
-                "--extensions-dir",
-                "/config/.vscode",
-                "--port",
-                "12321",
-                "/config",
-              ]
+            args: ["--auth", "none", "--user-data-dir", "/config/.vscode", "--extensions-dir",
+              "/config/.vscode", "--port", "12321", "/config"]
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 1Gi
-    defaultPodOptions:
-      annotations:
-        k8s.v1.cni.cncf.io/networks: |
-          [{
-            "name": "multus-iot",
-            "namespace": "network",
-            "ips": ["192.168.10.121/24"]
-          }]
-      hostUsers: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+        - path: /config
+      config-cache:
+        existingClaim: "{{ .Release.Name }}-cache"
+        globalMounts:
+        - path: /config/.venv
+      tmp:
+        type: emptyDir
+    route:
+      app:
+        hostnames: ["hass.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+        rules:
+        - backendRefs:
+          - name: "{{ .Release.Name }}"
+            port: &port 8123
+      codeserver:
+        hostnames: ["hass-code.jory.dev"]
+        parentRefs:
+        - name: envoy-internal
+          namespace: network
+        rules:
+        - backendRefs:
+          - name: "{{ .Release.Name }}"
+            port: &codeserverPort 12321
     service:
       app:
         type: LoadBalancer
@@ -81,36 +103,6 @@ spec:
           lbipam.cilium.io/ips: 10.69.10.133
         ports:
           http:
-            port: &port 8123
+            port: *port
           codeserver:
-            port: &codeserverPort 12321
-    route:
-      app:
-        hostnames: ["hass.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *port
-      codeserver:
-        hostnames: ["hass-code.jory.dev"]
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-        rules:
-          - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *codeserverPort
-    persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /config
-      config-cache:
-        existingClaim: "{{ .Release.Name }}-cache"
-        globalMounts:
-          - path: /config/.venv
-      tmp:
-        type: emptyDir
+            port: *codeserverPort

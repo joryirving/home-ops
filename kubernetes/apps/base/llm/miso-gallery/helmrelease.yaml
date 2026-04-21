@@ -11,6 +11,12 @@ spec:
     name: app-template
   interval: 15m
   values:
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: "OnRootMismatch"
     controllers:
       miso-gallery:
         annotations:
@@ -19,12 +25,13 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/miso-gallery
-              tag: 0.1.14@sha256:ad132c0f0c3f6f9397d37f530f5a22ee49bfcb0e42a945cc434ede0661f27191
+              tag: 
+                0.1.14@sha256:ad132c0f0c3f6f9397d37f530f5a22ee49bfcb0e42a945cc434ede0661f27191
             env:
               IMAGE_BASE_URL: https://miso-gallery.jory.dev
             envFrom:
-              - secretRef:
-                  name: miso-gallery
+            - secretRef:
+                name: miso-gallery
             securityContext:
               allowPrivilegeEscalation: false
               capabilities: {drop: ["ALL"]}
@@ -35,25 +42,19 @@ spec:
               limits:
                 cpu: 500m
                 memory: 512Mi
-    defaultPodOptions:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: "OnRootMismatch"
-    service:
-      app:
-        ports:
-          http:
-            port: 5000
-    route:
-      app:
-        hostnames: ["miso-gallery.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
     persistence:
       data:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/comfyui/output
+    route:
+      app:
+        hostnames: ["miso-gallery.jory.dev"]
+        parentRefs:
+        - name: envoy-external
+          namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 5000
