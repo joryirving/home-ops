@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hoymiles-mqtt
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn:
+    - name: mosquitto
+  values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      hoymiles-mqtt:
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/hoymiles-mqtt
+              tag: 0.11.0@sha256:c9a51ee1074732881d50f0a88ed83ac87a6c19de6bd1e3a6e94b44e65d1eecc7
+            env:
+              TZ: America/Edmonton
+              DTU_HOST: solar.internal
+              LOG_TO_CONSOLE: true
+              MQTT_BROKER: mosquitto
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
