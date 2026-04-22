@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hoymiles-exporter-rules
+spec:
+  groups:
+    - name: hoymiles-exporter.rules
+      rules:
+        - alert: HoymilesExporterAbsent
+          annotations:
+            description: Hoymiles exporter has disappeared from Prometheus target discovery.
+            summary: Hoymiles exporter is down.
+          expr: |-
+            absent(up{job=~".*hoymiles-exporter.*"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+        - alert: HoymilesDtuDown
+          annotations:
+            description: DTU endpoint is unreachable for 5 minutes.
+            summary: Hoymiles DTU is down.
+          expr: |-
+            max_over_time(hoymiles_dtu_up{job=~".*hoymiles-exporter.*"}[5m]) == 0
+          for: 5m
+          labels:
+            severity: critical
+        - alert: HoymilesDtuDataStale
+          annotations:
+            description: DTU data is stale (older than 3 minutes) for 10 minutes.
+            summary: Hoymiles DTU data is stale.
+          expr: |-
+            max_over_time(hoymiles_dtu_data_age_seconds{job=~".*hoymiles-exporter.*"}[5m]) > 180
+          for: 10m
+          labels:
+            severity: warning
