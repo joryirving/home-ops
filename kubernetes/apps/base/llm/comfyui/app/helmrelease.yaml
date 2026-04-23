@@ -1,0 +1,80 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: comfyui
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      comfyui:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: yanwk/comfyui-boot
+              tag: rocm7@sha256:dd435f0b8b5abc49c64e37557e04ff25662d853fc6baa25ca2d8f2e6e6503726
+            securityContext:
+              privileged: true
+            env:
+              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+              HSA_ENABLE_SDMA: "0"
+              HIP_VISIBLE_DEVICES: "0"
+              ROCR_VISIBLE_DEVICES: "0"
+              PYTORCH_HIP_ALLOC_CONF: "max_split_size_mb:256,garbage_collection_threshold:0.6"
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --lowvram --reserve-vram 118"
+            resources:
+              requests:
+                cpu: 1
+                memory: 8Gi
+              limits:
+                memory: 16Gi
+    defaultPodOptions:
+      hostIPC: true
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+    service:
+      app:
+        ports:
+          http:
+            port: 8188
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      comfyui:
+        existingClaim: "comfyui"
+        globalMounts:
+          - path: /root/ComfyUI/
+      data:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/daena/comfyui/
+        globalMounts:
+          - path: /root/ComfyUI/output
+            subPath: output
+          - path: /root/ComfyUI/input
+            subPath: input
+      dev-dri:
+        type: hostPath
+        hostPath: /dev/dri
+        globalMounts:
+          - path: /dev/dri
+      dev-kfd:
+        type: hostPath
+        hostPath: /dev/kfd
+        globalMounts:
+          - path: /dev/kfd
