@@ -61,12 +61,12 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name garmin-connect-mcp
+  name: &name arr-mcp
 spec:
   dependsOn:
   - name: toolhive
   interval: 1h
-  path: ./kubernetes/apps/base/llm/toolhive/garmin-connect-mcp
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/arr-mcp
   prune: true
   sourceRef:
     kind: GitRepository
@@ -78,12 +78,29 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name arr-mcp
+  name: &name comfyui-mcp
 spec:
   dependsOn:
   - name: toolhive
   interval: 1h
-  path: ./kubernetes/apps/base/llm/toolhive/arr-mcp
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/comfyui-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name garmin-connect-mcp
+spec:
+  dependsOn:
+  - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/garmin-connect-mcp
   prune: true
   sourceRef:
     kind: GitRepository
@@ -100,7 +117,24 @@ spec:
   dependsOn:
   - name: toolhive
   interval: 1h
-  path: ./kubernetes/apps/base/llm/toolhive/github-mcp
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/github-mcp
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &name grafana-mcp
+spec:
+  dependsOn:
+  - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/grafana-mcp
   prune: true
   sourceRef:
     kind: GitRepository
@@ -117,7 +151,7 @@ spec:
   dependsOn:
   - name: toolhive
   interval: 1h
-  path: ./kubernetes/apps/base/llm/toolhive/ha-mcp
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/ha-mcp
   prune: true
   sourceRef:
     kind: GitRepository
@@ -132,11 +166,11 @@ metadata:
   name: &name memory-mcp
 spec:
   components:
-  - ../../../../../components/volsync
+  - ../../../../../../components/volsync
   dependsOn:
   - name: toolhive
   interval: 1h
-  path: ./kubernetes/apps/base/llm/toolhive/memory-mcp
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/memory-mcp
   postBuild:
     substitute:
       APP: *name
@@ -154,7 +188,7 @@ metadata:
   name: &app seerr-mcp
 spec:
   interval: 1h
-  path: ./kubernetes/apps/base/llm/toolhive/seerr-mcp
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/seerr-mcp
   postBuild:
     substitute:
       APP: *app
