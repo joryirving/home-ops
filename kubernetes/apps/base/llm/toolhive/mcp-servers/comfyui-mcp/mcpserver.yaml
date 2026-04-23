@@ -5,41 +5,19 @@ kind: MCPServer
 metadata:
   name: &name comfyui-mcp
 spec:
-  image: docker.io/node:24-alpine
+  image: docker.io/siniidrozd/mcp-comfy-ui-builder:2.4.1@sha256:a271889df9d5eb85240763c5dcfe1c490dfff6e2d3b2cf0851b3e6d81285fdc4
   transport: stdio
   proxyMode: streamable-http
   groupRef:
     name: mcp-tools
   env:
-    - name: HOME
-      value: /tmp
-    - name: NPM_CONFIG_CACHE
-      value: /tmp/.npm
     - name: COMFYUI_HOST
-      value: comfyui.llm
+      value: http://comfyui.llm:8188
     - name: COMFYUI_PATH
       value: /root/ComfyUI
-    - name: COMFYUI_PORT
-      value: "8188"
   resources:
     requests:
       cpu: 50m
       memory: 128Mi
     limits:
       memory: 256Mi
-  podTemplateSpec:
-    spec:
-      containers:
-        - name: mcp
-          image: docker.io/node:24-alpine
-          command:
-            - npx
-          args:
-            - -y
-            - comfyui-mcp@0.3.2
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
-      volumes:
-        - name: tmp
-          emptyDir: {}
