@@ -65,6 +65,12 @@ metadata:
 spec:
   dependsOn:
   - name: toolhive
+  - name:radarr
+    namespace: downloads
+  - name: sonarr
+    namespace: downloads
+  - name: prowlarr
+    namespace: downloads
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/arr-mcp
   prune: true
@@ -82,6 +88,7 @@ metadata:
 spec:
   dependsOn:
   - name: toolhive
+  - name: comfyui
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/comfyui-mcp
   prune: true
@@ -133,6 +140,8 @@ metadata:
 spec:
   dependsOn:
   - name: toolhive
+  - name: grafana
+    namespace: observability
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/grafana-mcp
   prune: true
@@ -187,6 +196,10 @@ kind: Kustomization
 metadata:
   name: &app seerr-mcp
 spec:
+  dependsOn:
+  - name: toolhive
+  - name: seerr
+    namespace: media
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/seerr-mcp
   postBuild:
