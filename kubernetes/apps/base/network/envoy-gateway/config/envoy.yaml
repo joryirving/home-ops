@@ -46,7 +46,7 @@ kind: Gateway
 metadata:
   name: envoy-external
   annotations:
-    external-dns.alpha.kubernetes.io/target: &hostname 
+    external-dns.alpha.kubernetes.io/target: &hostname
       ${EXTERNAL_DOMAIN}.jory.dev
     gatus.home-operations.com/endpoint: |
       client:
@@ -90,7 +90,6 @@ metadata:
       ui:
         hide-hostname: true
         hide-url: true
-    aigateway.envoyproxy.io/gateway-config: llm
 spec:
   gatewayClassName: envoy
   infrastructure:
@@ -107,17 +106,6 @@ spec:
   - name: https
     protocol: HTTPS
     port: 443
-    allowedRoutes:
-      namespaces:
-        from: All
-    tls:
-      certificateRefs:
-      - kind: Secret
-        name: jory-dev-tls
-  - name: llm
-    protocol: HTTPS
-    port: 443
-    hostname: llm.jory.dev
     allowedRoutes:
       namespaces:
         from: All
