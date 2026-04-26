@@ -52,7 +52,7 @@ jobs:
       - name: Analyze PR with reusable AI reviewer
         if: steps.version-check.outputs.skip_review != 'true'
         id: analyze
-        uses: misospace/pr-reviewer-action@1503ba4f8d92002f8c469b08277309378f898046 # v1.0.7
+        uses: misospace/pr-reviewer-action@fec83308864a3af1185a717c1b70c5cb04b09340 # v1.0.8
         with:
           github_token: ${{ steps.app-token.outputs.token }}
           ai_base_url: ${{ env.AI_BASE_URL }}
@@ -61,6 +61,10 @@ jobs:
           ai_primary_retry_delay_sec: ${{ env.AI_PRIMARY_RETRY_DELAY_SEC }}
           allowed_source_hosts: ${{ env.ALLOWED_SOURCE_HOSTS }}
           context_limit_mode: low
+          tool_mode: plan_execute_once
+          tool_max_requests: '4'
+          tool_max_response_bytes: '12000'
+          tool_enable_for_forks: 'false'
           standards_file: AGENTS.md
           publish_review_comment: 'true'
           comment_marker: <!-- renovate-review-bot -->
