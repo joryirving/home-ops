@@ -21,13 +21,6 @@ jobs:
     runs-on: home-ops-runner-main
     timeout-minutes: 35
 
-    env:
-      AI_BASE_URL: ${{ vars.AI_BASE_URL || 'http://llama-vision.llm:8080/v1' }}
-      AI_MODEL: ${{ vars.AI_MODEL || 'vision' }}
-      AI_PRIMARY_RETRIES: ${{ vars.AI_PRIMARY_RETRIES || '8' }}
-      AI_PRIMARY_RETRY_DELAY_SEC: ${{ vars.AI_PRIMARY_RETRY_DELAY_SEC || '15' }}
-      ALLOWED_SOURCE_HOSTS: ${{ vars.RENOVATE_REVIEW_ALLOWED_SOURCE_HOSTS || 'github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net' }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -52,19 +45,27 @@ jobs:
       - name: Analyze PR with reusable AI reviewer
         if: steps.version-check.outputs.skip_review != 'true'
         id: analyze
-        uses: misospace/pr-reviewer-action@fec83308864a3af1185a717c1b70c5cb04b09340 # v1.0.8
+        uses: misospace/pr-reviewer-action@75da928ffcffa84ba56320e19ea370a20436bf18 # v1.0.10
         with:
           github_token: ${{ steps.app-token.outputs.token }}
-          ai_base_url: ${{ env.AI_BASE_URL }}
-          ai_model: ${{ env.AI_MODEL }}
-          ai_primary_retries: ${{ env.AI_PRIMARY_RETRIES }}
-          ai_primary_retry_delay_sec: ${{ env.AI_PRIMARY_RETRY_DELAY_SEC }}
-          allowed_source_hosts: ${{ env.ALLOWED_SOURCE_HOSTS }}
-          context_limit_mode: low
+          ai_primary_retries: '8'
+          ai_primary_retry_delay_sec: '15'
+          ai_base_url: 'https://api.minimax.io/v1'
+          ai_model: 'MiniMax-M2.7'
+          ai_api_key: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
+          allowed_source_hosts: 'github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net,talos.dev,www.talos.dev'
+          context_limit_mode: normal
           tool_mode: plan_execute_once
           tool_max_requests: '4'
+          tool_planning_timeout_sec: '45'
+          tool_planning_max_context_bytes: '15000'
+          tool_planning_max_tokens: '300'
           tool_max_response_bytes: '12000'
+          tool_allowed_gh_api_repos: 'siderolabs/kubelet,siderolabs/talos'
+          tool_request_timeout_sec: '15'
+          tool_failure_enforcement: 'true'
+          tool_min_successful_requests: '1'
           tool_enable_for_forks: 'false'
-          standards_file: AGENTS.md
+          standards_file_candidates: 'AGENTS.md,.agents/*'
           publish_review_comment: 'true'
           comment_marker: <!-- renovate-review-bot -->
