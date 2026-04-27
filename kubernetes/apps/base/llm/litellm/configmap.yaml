@@ -1,0 +1,27 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-configmap
+data:
+  config.yaml: |
+    model_list:
+      # These aliases keep the client-facing names stable while LiteLLM
+      # forwards the upstream model IDs that each llama.cpp server expects.
+      - model_name: llama-memory
+        litellm_params:
+          model: openai/memory
+          api_base: http://llama-memory.llm:8080/v1
+          api_key: llama-memory
+
+      - model_name: llama-server
+        litellm_params:
+          model: openai/self-hosted
+          api_base: http://llama-server.llm:8080/v1
+          api_key: llama-server
+
+      - model_name: llama-vision
+        litellm_params:
+          model: openai/vision
+          api_base: http://llama-vision.llm:8080/v1
+          api_key: llama-vision
