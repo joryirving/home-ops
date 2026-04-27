@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+data:
+  config.yaml: |
+    model:
+      provider: custom:minimax
+      default: MiniMax-M2.7
+      context_length: 1000000
+      prompt_cache: true
+    custom_providers:
+      - name: minimax
+        base_url: https://api.minimax.io/anthropic
+        key_env: MINIMAX_API_KEY
+        api_mode: anthropic_messages
+        model: MiniMax-M2.7
+        models:
+          MiniMax-M2.7:
+            context_length: 1000000
+      - name: moonshot
+        base_url: https://api.moonshot.ai/v1
+        key_env: MOONSHOT_API_KEY
+        api_mode: chat_completions
+        model: kimi-k2.5
+        models:
+          kimi-k2.5:
+            context_length: 128000
+      - name: kubernetes
+        base_url: http://llama-server.llm:8080/v1
+        api_key: llama-server
+        api_mode: chat_completions
+        model: self-hosted
+        models:
+          self-hosted:
+            context_length: 262144
+            prompt_cache: true
+    fallback_model:
+      provider: custom:kubernetes
+      model: self-hosted
+    fallback_providers: []
+    toolsets:
+      - hermes-cli
+    terminal:
+      backend: local
+      cwd: /opt/data/workspace
+      timeout: 180
+      persistent_shell: true
+    browser:
+      allow_private_urls: true
+      cdp_url: http://localhost:9222
+    agent:
+      max_turns: 90
+      gateway_timeout: 1800
+      restart_drain_timeout: 60
+      api_max_retries: 3
+      reasoning_effort: medium
+    streaming:
+      enabled: false
+    platform_toolsets:
+      cli:
+        - hermes-cli
+      telegram:
+        - hermes-telegram
+    mcp_servers:
+      toolhive:
+        url: http://vmcp-mcp-gateway-internal.llm:4483/mcp
