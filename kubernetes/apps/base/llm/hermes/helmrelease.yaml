@@ -29,7 +29,10 @@ spec:
               tag: v2026.4.23@sha256:d4ee57f254aabbe10e41c49533bbf3eb98e6b026463c42843a07588e45ddd338
             args: ["dashboard", "--host", "0.0.0.0"]
             env:
-              HOME: /opt/data
+              HERMES_GID: "10000"
+              HERMES_HOME: /opt/data
+              HERMES_UID: "10000"
+              HOME: /opt/data/home
               TZ: America/Edmonton
             envFrom:
               - secretRef:
@@ -43,7 +46,9 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
-              capabilities: { drop: ["ALL"] }
+              capabilities:
+                add: ["CHOWN"]
+                drop: ["ALL"]
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
@@ -93,10 +98,3 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /opt/data
-      bootstrap-config:
-        type: configMap
-        name: hermes-config
-        globalMounts:
-          - path: /opt/data/config-cm.yaml
-            subPath: config.yaml
-            readOnly: true
