@@ -13,15 +13,34 @@ spec:
   values:
     defaultPodOptions:
       securityContext:
-        runAsUser: 0
-        runAsGroup: 0
-        fsGroup: 0
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: { type: RuntimeDefault }
     controllers:
       hermes:
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          init:
+            image: busybox:1.37
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                set -euo pipefail
+                touch /data/config.yaml
+                chown 1000:100 /data/config.yaml
+                chmod 0640 /data/config.yaml
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+            volumeMounts:
+              - name: config
+                mountPath: /data
         containers:
           app:
             image:
@@ -29,9 +48,7 @@ spec:
               tag: v2026.4.23@sha256:d4ee57f254aabbe10e41c49533bbf3eb98e6b026463c42843a07588e45ddd338
             args: ["dashboard", "--host", "0.0.0.0"]
             env:
-              HERMES_GID: "1000"
               HERMES_HOME: /opt/data
-              HERMES_UID: "1000"
               HOME: /opt/data
               TZ: America/Edmonton
             envFrom:
