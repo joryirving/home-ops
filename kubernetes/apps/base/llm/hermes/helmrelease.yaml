@@ -24,23 +24,20 @@ spec:
           reloader.stakater.com/auto: "true"
         initContainers:
           init:
-            image: busybox:1.37
-            command: ["/bin/sh", "-c"]
+            image: docker.io/library/alpine:3.23
+            command:
+              - /bin/sh
+              - -c
             args:
               - |
                 set -euo pipefail
-                touch /data/config.yaml
-                chown 1000:100 /data/config.yaml
-                chmod 0640 /data/config.yaml
+                rm -f /mnt/data/config.yaml
+                install -o 1000 -g 100 -m 0640 /dev/null /mnt/data/config.yaml
             securityContext:
+              allowPrivilegeEscalation: true
+              privileged: true
               runAsUser: 0
               runAsGroup: 0
-              allowPrivilegeEscalation: false
-              capabilities:
-                drop: ["ALL"]
-            volumeMounts:
-              - name: config
-                mountPath: /data
         containers:
           app:
             image:
