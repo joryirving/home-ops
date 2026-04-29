@@ -23,77 +23,6 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
-          install-tools:
-            image:
-              repository: ghcr.io/openclaw/openclaw
-              tag:
-                2026.4.26@sha256:04e27383656941e59fba80a5a9c28b709f240ea980bd2cb375e4a7786d5a7a20
-            command:
-            - /bin/sh
-            - -c
-            - |
-              set -e
-              mkdir -p /home/node/.local/bin /home/node/.local/go
-
-              echo "Starting tool installation..."
-
-              # Install gh CLI if not present on PVC
-              if [ ! -f /home/node/.local/bin/gh ]; then
-                echo "Installing gh CLI..."
-                cd /tmp
-                curl -fsSL https://github.com/cli/cli/releases/download/v2.61.0/gh_2.61.0_linux_amd64.tar.gz -o gh.tar.gz
-                tar xzf gh.tar.gz
-                cp gh_2.61.0_linux_amd64/bin/gh /home/node/.local/bin/
-                rm -rf gh.tar.gz gh_2.61.0_linux_amd64
-              fi
-
-              if [ ! -f /home/node/.local/bin/openclaw ]; then
-              # Set up openclawbot CLI symlink
-                echo "Installing creating symlink..."
-                ln -s /app/openclaw.mjs /home/node/.local/bin/openclaw
-              fi
-
-              # Install Go if not present on PVC
-              if [ ! -f /home/node/.local/go/bin/go ]; then
-                echo "Installing Go..."
-                cd /tmp
-                curl -fsSL https://go.dev/dl/go1.23.5.linux-amd64.tar.gz -o go.tar.gz
-                tar xzf go.tar.gz
-                mv go /home/node/.local/
-                rm -rf go.tar.gz
-              fi
-
-              # Install Homebrew if not present on PVC
-              if [ ! -f /home/node/.local/homebrew/bin/brew ]; then
-                echo "Installing Homebrew..."
-                export HOMEBREW_PREFIX=/home/node/.local/homebrew
-                export HOMEBREW_CELLAR=/home/node/.local/homebrew/Cellar
-                export HOMEBREW_REPOSITORY=/home/node/.local/homebrew
-                mkdir -p $HOMEBREW_PREFIX
-                cd /tmp
-                git clone --depth 1 https://github.com/Homebrew/brew $HOMEBREW_PREFIX
-              fi
-
-              # Check if pip is available (either standalone or via python3 -m pip)
-              set +e # Don't fail on pip errors
-              if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || python3 -m pip --version >/dev/null 2>&1; then
-                echo "pip is available"
-              else
-                echo "Installing pip..."
-                cd /tmp
-                curl -fsSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-                python3 get-pip.py --user --no-warn-script-location --break-system-packages || \
-                python3 get-pip.py --user --no-warn-script-location || \
-                echo "pip install skipped (use python3 -m pip instead)"
-                rm -f get-pip.py
-              fi
-              set -e # Re-enable error checking
-
-              echo "Tool installation complete"
-
-              # Ensure config directory exists
-              mkdir -p /home/node/.openclaw
-              echo "Init container completed successfully"
           daemon:
             image:
               repository: docker
@@ -167,6 +96,8 @@ spec:
                 name: openclaw
             - secretRef:
                 name: openclaw-actual
+            - secretRef:
+                name: openclaw-miso-gallery
             resources:
               requests:
                 cpu: 1
@@ -174,34 +105,6 @@ spec:
               limits:
                 cpu: 10
                 memory: 16Gi
-          chrome:
-            image:
-              repository: zenika/alpine-chrome
-              tag: with-node
-            command:
-            - chromium-browser
-            - --headless=new
-            - --disable-gpu
-            - --remote-debugging-address=0.0.0.0
-            - --remote-debugging-port=9222
-            - --no-sandbox
-            - --disable-dev-shm-usage
-              # Stealth flags to reduce bot detection
-            - --disable-blink-features=AutomationControlled
-            - --user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)
-              AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0
-              Safari/537.36
-              # Allow WebSocket connections from any origin
-            - --remote-allow-origins=*
-            env:
-              TZ: *tz
-            resources:
-              requests:
-                cpu: 100m
-                memory: 256Mi
-              limits:
-                cpu: 1000m
-                memory: 1Gi
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
