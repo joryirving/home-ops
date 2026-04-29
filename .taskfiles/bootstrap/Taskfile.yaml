@@ -10,7 +10,7 @@ tasks:
     requires:
       vars: [CLUSTER]
     preconditions:
-      - op whoami
+      - op account get
       - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
       - test -d {{.BOOTSTRAP_DIR}}/templates
       - which kubectl op
@@ -48,7 +48,7 @@ tasks:
       CLUSTER_APPS: '{{.CLUSTER_APPS}}'
       CLUSTER_DIR: '{{.CLUSTER_DIR}}'
     preconditions:
-      - op whoami
+      - op account get
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
@@ -70,7 +70,7 @@ tasks:
       CLUSTER: '{{.CLUSTER}}'
       CLUSTER_APPS: '{{.CLUSTER_APPS}}'
     preconditions:
-      - op whoami
+      - op account get
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - test -d {{.BOOTSTRAP_DIR}}/helmfile.d

@@ -11,7 +11,7 @@ tasks:
   op:
     desc: Validate login to OnePassword
     cmds:
-      - op whoami --format=json
+      - op account get
 
   push:
     desc: Push all kubeconfig to OnePassword
@@ -20,7 +20,7 @@ tasks:
       - task: push-clusters
       - task: push-combined
     preconditions:
-      - op whoami --format=json
+      - op account get
 
   push-clusters:
     desc: Push kubeconfig/talosconfig for all clusters
@@ -31,7 +31,7 @@ tasks:
           op item edit kubernetes TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]')[text]="$(cat {{.ROOT_DIR}}/talos/$cluster/talosconfig)"  &>/dev/null
         done
     preconditions:
-      - op whoami --format=json
+      - op account get
 
   push-combined:
     desc: Push kubeconfig/talosconfig for all clusters
@@ -41,7 +41,7 @@ tasks:
       - op item edit kubernetes KUBECONFIG_BASE64[text]="$(cat ~/.kube/config | base64 -w 0)"  &>/dev/null
       - op item edit kubernetes TALCONFIG[text]="$(cat ~/.talos/config)"  &>/dev/null
     preconditions:
-      - op whoami --format=json
+      - op account get
 
   pull:
     desc: Pull Kubeconfig from OnePassword
@@ -57,4 +57,4 @@ tasks:
       - op item get kubernetes --fields label=TALCONFIG | tr -d '"' > ~/.talos/config
 
     preconditions:
-      - op whoami --format=json
+      - op account get
