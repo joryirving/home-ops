@@ -49,11 +49,9 @@ spec:
             app:
               - path: /app/cache
       ui:
-        type: emptyDir
-        advancedMounts:
-          litellm:
-            app:
-              - path: /app/chatgpt_tokens
+        existingClaim: litellm
+        globalMounts:
+          - path: /app/chatgpt_tokens
     route:
       app:
         hostnames: ["litellm.jory.dev"]

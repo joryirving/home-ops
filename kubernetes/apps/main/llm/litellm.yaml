@@ -5,12 +5,18 @@ kind: Kustomization
 metadata:
   name: litellm
 spec:
+  components:
+  - ../../../../../components/volsync
   dependsOn:
     - name: llama-memory
     - name: llama-server
     - name: llama-vision
   interval: 1h
   path: ./kubernetes/apps/base/llm/litellm
+  postBuild:
+    substitute:
+      APP: litellm
+      VOLSYNC_CAPACITY: 1Gi
   prune: true
   sourceRef:
     kind: GitRepository
