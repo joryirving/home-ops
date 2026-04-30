@@ -13,9 +13,9 @@ spec:
   values:
     defaultPodOptions:
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
+        runAsUser: 10000
+        runAsGroup: 10000
+        fsGroup: 10000
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: { type: RuntimeDefault }
     controllers:
@@ -28,18 +28,12 @@ spec:
               repository: docker.io/library/alpine
               tag: "3.23"
             command:
-              - /bin/sh
+              - sh
               - -c
-            args:
               - |
                 set -euo pipefail
-                rm -f /mnt/data/config.yaml
-                install -o 1000 -g 100 -m 0640 /dev/null /mnt/data/config.yaml
-            securityContext:
-              allowPrivilegeEscalation: true
-              privileged: true
-              runAsUser: 0
-              runAsGroup: 0
+                cp /tmp/config.yaml /opt/data/config.yaml
+                chown 10000:10000 /opt/data/config.yaml
         containers:
           app:
             image:
@@ -114,3 +108,10 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /opt/data
+      configmap:
+        type: configMap
+        name: "{{ .Release.Name }}"
+        defaultMode: 0755
+        globalMounts:
+          - path: /tmp/config.yaml
+            subPath: config.yaml
