@@ -97,12 +97,12 @@ spec:
         ports:
           http:
             port: *port
+          codeserver:
+            port: &codeserverPort 12321
       dashboard:
         ports:
           http:
             port: *dashboard_port
-          codeserver:
-            port: &codeserverPort 12321
     route:
       app:
         hostnames: ["hermes.jory.dev"]
@@ -111,8 +111,8 @@ spec:
             namespace: network
         rules:
           - backendRefs:
-              - name: "{{ .Release.Name }}"
-                port: *port
+              - name: "{{ .Release.Name }}-dashboard"
+                port: *dashboard_port
       codeserver:
         hostnames: ["hermes-code.jory.dev"]
         parentRefs:
@@ -120,7 +120,7 @@ spec:
             namespace: network
         rules:
           - backendRefs:
-              - name: "{{ .Release.Name }}"
+              - name: "{{ .Release.Name }}-app"
                 port: *codeserverPort
     persistence:
       config:
