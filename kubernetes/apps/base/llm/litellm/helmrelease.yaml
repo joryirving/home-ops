@@ -24,6 +24,7 @@ spec:
               - --config=/app/config.yaml
             env:
               LITELLM_LOG: INFO
+              CHATGPT_TOKEN_DIR: /app/chatgpt_tokens
             envFrom:
               - secretRef:
                   name: litellm
@@ -41,6 +42,16 @@ spec:
           - path: /app/config.yaml
             subPath: config.yaml
             readOnly: true
+      cache:
+        type: emptyDir
+        advancedMounts:
+          litellm:
+            app:
+              - path: /app/cache
+      ui:
+        existingClaim: litellm
+        globalMounts:
+          - path: /app/chatgpt_tokens
     route:
       app:
         hostnames: ["litellm.jory.dev"]
