@@ -64,7 +64,7 @@ spec:
     targetLabel: job
     replacement: garage
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/scrapeconfig_v1alpha1.json
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/v1alpha1
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
 metadata:
@@ -78,3 +78,18 @@ spec:
   - action: replace
     targetLabel: job
     replacement: onepassword-connect
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/monitoring.coreos.com/scrapeconfig_v1alpha1.json
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: litellm
+spec:
+  staticConfigs:
+  - targets:
+    - litellm.llm:4000
+  metricsPath: /metrics
+  relabelings:
+  - action: replace
+    targetLabel: job
+    replacement: litellm
