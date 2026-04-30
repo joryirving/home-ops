@@ -36,10 +36,10 @@ spec:
                 chown 10000:10000 /opt/data/config.yaml
         containers:
           app:
-            image:
+            image: &image
               repository: nousresearch/hermes-agent
               tag: v2026.4.23@sha256:d4ee57f254aabbe10e41c49533bbf3eb98e6b026463c42843a07588e45ddd338
-            args: ["dashboard", "--host", "0.0.0.0"]
+            args: ["gateway", "run",]
             env:
               HERMES_HOME: /opt/data
               HOME: /opt/data
@@ -49,16 +49,35 @@ spec:
                   name: hermes
             resources:
               requests:
-                cpu: 100m
-                memory: 512Mi
+                cpu: 500m
               limits:
-                memory: 4Gi
+                memory: 2Gi
+            ports:
+              - containerPort: &port 8642
+                name: http
+                protocol: TCP
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
               capabilities:
                 add: ["CHOWN"]
                 drop: ["ALL"]
+          dashboard:
+            image: *image
+            env:
+              TZ: America/Toronto
+              GATEWAY_HEALTH_URL: http://localhost:8642
+            args:
+              ["dashboard"]
+            resources:
+              requests:
+                cpu: 500m
+              limits:
+                memory: 1Gi
+            ports:
+              - containerPort: &dashboard_port 9119
+                name: http
+                protocol: TCP
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
@@ -75,13 +94,13 @@ spec:
                 memory: 1Gi
     service:
       app:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.43
-        externalTrafficPolicy: Cluster
         ports:
           http:
-            port: &port 9119
+            port: *port
+      dashboard:
+        ports:
+          http:
+            port: *dashboard_port
           codeserver:
             port: &codeserverPort 12321
     route:
@@ -110,7 +129,7 @@ spec:
           - path: /opt/data
       configmap:
         type: configMap
-        name: "{{ .Release.Name }}"
+        name: "{{ .Release.Name }}-config"
         defaultMode: 0755
         globalMounts:
           - path: /tmp/config.yaml
