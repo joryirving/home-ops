@@ -68,7 +68,10 @@ spec:
               TZ: America/Toronto
               GATEWAY_HEALTH_URL: http://localhost:8642
             args:
-              ["dashboard"]
+              - dashboard
+              - --host
+              - "0.0.0.0"
+              - --insecure
             resources:
               requests:
                 cpu: 500m
@@ -87,6 +90,10 @@ spec:
               TZ: America/Edmonton
             args: ["--auth", "none", "--user-data-dir", "/home/node/.vscode", "--extensions-dir",
               "/home/node/.vscode", "--port", "12321", "/config"]
+            ports:
+              - containerPort: &codeserverPort 12321
+                name: codeserver
+                protocol: TCP
             resources:
               requests:
                 cpu: 10m
@@ -94,12 +101,14 @@ spec:
                 memory: 1Gi
     service:
       app:
+        controller: hermes
         ports:
           http:
             port: *port
           codeserver:
-            port: &codeserverPort 12321
+            port: *codeserverPort
       dashboard:
+        controller: hermes
         ports:
           http:
             port: *dashboard_port
@@ -111,8 +120,8 @@ spec:
             namespace: network
         rules:
           - backendRefs:
-              - name: "{{ .Release.Name }}-dashboard"
-                port: *dashboard_port
+              - identifier: dashboard
+                port: http
       codeserver:
         hostnames: ["hermes-code.jory.dev"]
         parentRefs:
@@ -120,8 +129,8 @@ spec:
             namespace: network
         rules:
           - backendRefs:
-              - name: "{{ .Release.Name }}-app"
-                port: *codeserverPort
+              - identifier: app
+                port: codeserver
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
