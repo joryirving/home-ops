@@ -6,17 +6,79 @@ metadata:
   name: litellm
 spec:
   components:
-  - ../../../../components/volsync
+  - ../../../../../components/volsync
   dependsOn:
     - name: llama-memory
     - name: llama-server
     - name: llama-vision
   interval: 1h
-  path: ./kubernetes/apps/base/llm/litellm
+  path: ./kubernetes/apps/base/llm/litellm/app
   postBuild:
     substitute:
       APP: litellm
       VOLSYNC_CAPACITY: 1Gi
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app llama-memory
+spec:
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/litellm/Gemma4-E4B
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app llama-vision
+spec:
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/litellm/Qwen3.5-9B
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app llama-server
+spec:
+  interval: 1h
+  # path: ./kubernetes/apps/base/llm/litellm/Gemma4-26B-A4B
+  # path: ./kubernetes/apps/base/llm/litellm/Gemma4-31B
+  # path: ./kubernetes/apps/base/llm/litellm/Qwen3-Coder-Next
+  # path: ./kubernetes/apps/base/llm/litellm/Qwen3.5-122B-A10B
+  # path: ./kubernetes/apps/base/llm/litellm/Qwen3.6-27B
+  path: ./kubernetes/apps/base/llm/litellm/Qwen3.6-35B-A3B
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
   prune: true
   sourceRef:
     kind: GitRepository
