@@ -5,17 +5,21 @@ metadata:
   name: hermes-config
 data:
   config.yaml: |
-    model: minimax/MiniMax-M2.7
+    model:
+      default: selfhosted
+      provider: custom
+      base_url: http://llama-server.llm:8080/v1
+      api_key: ""
     providers:
+      litellm:
+        base_url: http://litellm.llm:4000/v1
+        api_key: $${LITELLM_API_KEY}
       minimax:
         api_key: $${MINIMAX_API_KEY}
         base_url: https://api.minimax.chat/v1
       moonshot:
         api_key: $${MOONSHOT_API_KEY}
         base_url: https://api.moonshot.ai/v1
-      litellm:
-        base_url: http://litellm.llm:4000/v1
-        api_key: $${LITELLM_API_KEY}
     toolsets:
       - hermes-cli
     terminal:
