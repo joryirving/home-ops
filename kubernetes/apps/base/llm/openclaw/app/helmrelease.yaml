@@ -23,6 +23,18 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
+          init:
+            image:
+              repository: docker.io/library/alpine
+              tag: "3.23"
+            command:
+              - sh
+              - -c
+              - |
+                set -euo pipefail
+                cp /tmp/openclaw.json /home/node/.openclaw/openclaw.json
+                chown 1000:100 /home/node/.openclaw/openclaw.json
+                chmod 400 /home/node/.openclaw/openclaw.json
           daemon:
             image:
               repository: docker
@@ -119,6 +131,8 @@ spec:
               limits:
                 memory: 1Gi
     persistence:
+      openclaw-home:
+        type: emptyDir
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
@@ -142,21 +156,13 @@ spec:
         path: /mnt/daena/comfyui/output
         globalMounts:
         - path: /home/node/.openclaw/workspace/images
-      openclaw-config:
+      configsecret:
         type: secret
         name: "{{ .Release.Name }}-config"
-        defaultMode: 0400
+        defaultMode: 0755
         globalMounts:
-        - path: /home/node/.openclaw/openclaw.json
+        - path: /tmp/openclaw.json
           subPath: openclaw.json
-      next-cache:
-        type: emptyDir
-        globalMounts:
-        - path: /app/.next/cache
-      tmp:
-        type: emptyDir
-      certs:
-        type: emptyDir
     rbac:
       roles:
         openclaw-read-all:

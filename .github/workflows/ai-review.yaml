@@ -1,5 +1,5 @@
 ---
-name: Renovate PR Review (AI Deep)
+name: AI PR Review
 
 on:
   pull_request:
@@ -15,8 +15,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  review-renovate-pr:
-    name: Deep Renovate Review
+  review-pr:
+    name: AI PR Review
     if: ${{ !github.event.pull_request.draft }}
     runs-on: home-ops-runner-main
     timeout-minutes: 35
@@ -34,7 +34,7 @@ jobs:
           set -euo pipefail
           echo "skip_review=false" >> "$GITHUB_OUTPUT"
 
-      - name: Generate bot token (miso-assistant)
+      - name: Generate bot token
         if: steps.version-check.outputs.skip_review != 'true'
         id: app-token
         uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
@@ -61,7 +61,7 @@ jobs:
           tool_planning_max_context_bytes: '15000'
           tool_planning_max_tokens: '300'
           tool_max_response_bytes: '12000'
-          tool_allowed_gh_api_repos: 'siderolabs/kubelet,siderolabs/talos'
+          tool_allowed_gh_api_repos: '*'
           tool_request_timeout_sec: '15'
           tool_failure_enforcement: 'true'
           tool_min_successful_requests: '1'
