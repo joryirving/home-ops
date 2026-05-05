@@ -24,6 +24,15 @@ spec:
     name: workadventure
   interval: 15m
   dependsOn: []
+  valuesFrom:
+    - kind: Secret
+      name: workadventure
+      valuesKey: MAP_STORAGE_API_TOKEN
+      targetPath: commonSecretEnv.MAP_STORAGE_API_TOKEN
+    - kind: Secret
+      name: workadventure
+      valuesKey: AUTHENTICATION_PASSWORD
+      targetPath: mapstorage.secretEnv.AUTHENTICATION_PASSWORD
   values:
     domainName: gather.jory.dev
     singleDomain: true
@@ -32,11 +41,6 @@ spec:
     commonEnv:
       WA_PROTO: https
       WA_HOST: gather.jory.dev
-    commonSecretEnv:
-      MAP_STORAGE_API_TOKEN: &mapStorageToken workadventure-mapstorage-secret-token
-    mapstorage:
-      secretEnv:
-        AUTHENTICATION_PASSWORD: *mapStorageToken
     play:
       env:
         DISABLE_ANONYMOUS: "true"
