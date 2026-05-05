@@ -1,0 +1,275 @@
+{
+  "id": null,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "panels": [],
+      "title": "Throughput vs GPU pressure",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Current llama.cpp prompt/prefill and token-generation throughput. Compare drops here with GPU memory busy, clocks, power, and host memory pressure below.",
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 1},
+      "id": 2,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m])", "legendFormat": "PP {{service}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m])", "legendFormat": "TG {{service}}", "refId": "B"}
+      ],
+      "title": "llama.cpp throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "GPU engine busy from rocm-smi-exporter, with memory pressure falling back to GTT allocation percentage when mem_busy_percent is not exposed by the kernel.",
+      "fieldConfig": {"defaults": {"max": 100, "min": 0, "unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 1},
+      "id": 3,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_gpu_busy_percent{card=~\"$gpu\"}", "legendFormat": "gpu busy {{card}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))", "legendFormat": "memory pressure {{card}}", "refId": "B"}
+      ],
+      "title": "ROCm GPU and memory busy",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 8},
+      "id": 4,
+      "panels": [],
+      "title": "Fast bottleneck read",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Last observed GPU busy percent.",
+      "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 60}, {"color": "red", "value": 90}]}, "unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 9},
+      "id": 5,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "max(rocm_smi_gpu_busy_percent{card=~\"$gpu\"})", "legendFormat": "GPU busy", "refId": "A"}],
+      "title": "GPU busy",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Last observed memory pressure. Uses rocm_smi_memory_busy_percent when present, otherwise falls back to GTT allocation percentage because Strix Halo does not currently expose mem_busy_percent here.",
+      "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 60}, {"color": "red", "value": 90}]}, "unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 9},
+      "id": 6,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "max(rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1)))", "legendFormat": "memory pressure", "refId": "A"}],
+      "title": "Memory pressure",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "GPU-visible memory allocation pressure from ROCm exporter.",
+      "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 75}, {"color": "red", "value": 90}]}, "unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 9},
+      "id": 7,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "100 * sum(rocm_smi_vram_used_bytes{card=~\"$gpu\"}) / clamp_min(sum(rocm_smi_vram_total_bytes{card=~\"$gpu\"}), 1)", "legendFormat": "VRAM used", "refId": "A"}],
+      "title": "VRAM used",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Host memory usage on the selected node, excluding cache/reclaimable memory.",
+      "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 75}, {"color": "red", "value": 90}]}, "unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 9},
+      "id": 8,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "100 * ((node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}) / clamp_min(node_memory_MemTotal_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}, 1)", "legendFormat": "{{nodename}}", "refId": "A"}],
+      "title": "Host RAM used",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Current generation throughput across selected llama.cpp services.",
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 9},
+      "id": 9,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "sum(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]))", "legendFormat": "TG tok/s", "refId": "A"}],
+      "title": "TG tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Inflight and queued llama.cpp work. Rising deferred requests with flat GPU busy often indicates scheduler or context pressure rather than raw GPU saturation.",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 9},
+      "id": 10,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "sum(llamacpp:requests_processing{service=~\"$service\"}) + sum(llamacpp:requests_deferred{service=~\"$service\"})", "legendFormat": "requests", "refId": "A"}],
+      "title": "Active + queued",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 13},
+      "id": 11,
+      "panels": [],
+      "title": "ROCm device telemetry",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "GPU and memory clocks from hwmon. Clock drops while busy remains high can indicate power/thermal limits or firmware policy changes.",
+      "fieldConfig": {"defaults": {"unit": "hertz"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 14},
+      "id": 12,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_clock_hertz{card=~\"$gpu\"}", "legendFormat": "{{sensor}} {{card}}", "refId": "A"}],
+      "title": "ROCm clocks",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Power and temperature from hwmon. Sustained high temperature or power with falling clocks is a throttling signal.",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": [{"matcher": {"id": "byName", "options": "power"}, "properties": [{"id": "unit", "value": "watt"}]}, {"matcher": {"id": "byName", "options": "temperature"}, "properties": [{"id": "unit", "value": "celsius"}]}]},
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 14},
+      "id": 13,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_power_watts{card=~\"$gpu\"}", "legendFormat": "power {{type}} {{card}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_temperature_celsius{card=~\"$gpu\"}", "legendFormat": "temp {{sensor}} {{card}}", "refId": "B"}
+      ],
+      "title": "Power and temperature",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "VRAM and GTT allocation pressure from AMDGPU sysfs. On Strix Halo, GTT pressure is often relevant because GPU memory is carved from system memory.",
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 21},
+      "id": 14,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_vram_used_bytes{card=~\"$gpu\"}", "legendFormat": "vram used {{card}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_gtt_used_bytes{card=~\"$gpu\"}", "legendFormat": "gtt used {{card}}", "refId": "B"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_visible_vram_used_bytes{card=~\"$gpu\"}", "legendFormat": "visible vram used {{card}}", "refId": "C"}
+      ],
+      "title": "ROCm memory allocations",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "GPU busy and memory pressure. Memory pressure uses mem_busy_percent when present, otherwise GTT allocation percentage as a Strix Halo UMA pressure proxy.",
+      "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 21},
+      "id": 15,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_gpu_busy_percent{card=~\"$gpu\"}", "legendFormat": "gpu busy {{card}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))", "legendFormat": "memory pressure {{card}}", "refId": "B"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "(rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))) - rocm_smi_gpu_busy_percent{card=~\"$gpu\"}", "legendFormat": "memory pressure minus gpu {{card}}", "refId": "C"}
+      ],
+      "title": "Busy split and memory pressure delta",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 28},
+      "id": 16,
+      "panels": [],
+      "title": "Host node pressure",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "CPU busy and iowait on the selected node from node-exporter.",
+      "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 29},
+      "id": 17,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "100 * (1 - avg by (instance, nodename) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}))", "legendFormat": "cpu busy {{nodename}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "100 * avg by (instance, nodename) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"iowait\"}[5m]) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"})", "legendFormat": "iowait {{nodename}}", "refId": "B"}
+      ],
+      "title": "Host CPU busy / iowait",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Used, cache/reclaimable, and free host memory for the selected node.",
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 29},
+      "id": 18,
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}", "legendFormat": "used {{nodename}}", "refId": "A"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "(node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}", "legendFormat": "cache/reclaimable {{nodename}}", "refId": "B"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "node_memory_MemFree_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}", "legendFormat": "free {{nodename}}", "refId": "C"}
+      ],
+      "title": "Host memory breakdown",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["llm", "rocm", "strix-halo", "node-exporter"],
+  "templating": {
+    "list": [
+      {
+        "current": {"text": "Prometheus", "value": "prometheus"},
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "datasource",
+        "query": "prometheus",
+        "type": "datasource"
+      },
+      {
+        "allValue": ".*",
+        "current": {"selected": true, "text": "All", "value": "$__all"},
+        "datasource": {"type": "prometheus", "uid": "${datasource}"},
+        "definition": "label_values(llamacpp:prompt_tokens_total, service)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "service",
+        "query": {"query": "label_values(llamacpp:prompt_tokens_total, service)", "refId": "StandardVariableQuery"},
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {"selected": true, "text": "All", "value": "$__all"},
+        "datasource": {"type": "prometheus", "uid": "${datasource}"},
+        "definition": "label_values(rocm_smi_gpu_info, card)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "gpu",
+        "query": {"query": "label_values(rocm_smi_gpu_info, card)", "refId": "StandardVariableQuery"},
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {"type": "prometheus", "uid": "${datasource}"},
+        "definition": "label_values(node_uname_info{job=\"node-exporter\"}, nodename)",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "node",
+        "query": {"query": "label_values(node_uname_info{job=\"node-exporter\"}, nodename)", "refId": "StandardVariableQuery"},
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser",
+  "title": "LLM / ROCm Node",
+  "uid": "llm-rocm-node",
+  "version": 1
+}
