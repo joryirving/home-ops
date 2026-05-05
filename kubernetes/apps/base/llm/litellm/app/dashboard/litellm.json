@@ -17,7 +17,7 @@
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Total tokens across all models",
+      "description": "Total requests processed",
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
       "id": 2,
@@ -32,17 +32,17 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum(litellm_total_tokens)",
-          "legendFormat": "Total Tokens",
+          "expr": "sum(litellm_proxy_total_requests_metric_total)",
+          "legendFormat": "Total Requests",
           "refId": "A"
         }
       ],
-      "title": "Total Tokens",
+      "title": "Total Requests",
       "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Total requests processed",
+      "description": "Total tokens (input + output) processed",
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
       "id": 3,
@@ -57,18 +57,18 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum(litellm_requests_total)",
-          "legendFormat": "Total Requests",
+          "expr": "sum(litellm_total_tokens_metric_total)",
+          "legendFormat": "Total Tokens",
           "refId": "A"
         }
       ],
-      "title": "Total Requests",
+      "title": "Total Tokens",
       "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Total spend across all models",
-      "fieldConfig": {"defaults": {"currency": "USD", "unit": "currencyUSD"}, "overrides": []},
+      "description": "Requests currently in-flight",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
       "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
       "id": 4,
       "options": {
@@ -82,18 +82,18 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum(litellm_spend)",
-          "legendFormat": "Total Spend",
+          "expr": "sum(litellm_in_flight_requests)",
+          "legendFormat": "In-Flight",
           "refId": "A"
         }
       ],
-      "title": "Total Spend",
+      "title": "In-Flight Requests",
       "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Total errors",
-      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "description": "Average total request latency (last 5m)",
+      "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []},
       "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
       "id": 5,
       "options": {
@@ -101,18 +101,18 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "reduceOptions": {"calcs": ["mean"], "fields": "", "values": false},
         "textMode": "auto"
       },
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum(litellm_errors_total)",
-          "legendFormat": "Errors",
+          "expr": "sum(rate(litellm_request_total_latency_metric_sum[5m])) / sum(rate(litellm_request_total_latency_metric_count[5m]))",
+          "legendFormat": "Avg Latency",
           "refId": "A"
         }
       ],
-      "title": "Total Errors",
+      "title": "Avg Request Latency",
       "type": "stat"
     },
     {
@@ -125,7 +125,7 @@
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Tokens per model",
+      "description": "Requests per model",
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
       "gridPos": {"h": 6, "w": 12, "x": 0, "y": 6},
       "id": 7,
@@ -137,30 +137,8 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum by (model_name) (litellm_total_tokens)",
-          "legendFormat": "{{model_name}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Total Tokens by Model",
-      "type": "bargauge"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Requests per model",
-      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
-      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 6},
-      "id": 8,
-      "options": {
-        "displayLabels": ["name"],
-        "layout": "horizontal",
-        "showLegend": true
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum by (model_name) (litellm_requests_total)",
-          "legendFormat": "{{model_name}}",
+          "expr": "sum by (model) (litellm_proxy_total_requests_metric_total)",
+          "legendFormat": "{{model}}",
           "refId": "A"
         }
       ],
@@ -169,25 +147,55 @@
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Token throughput over time",
-      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "description": "Request rate over time by model",
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 6},
+      "id": 8,
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum by (model) (rate(litellm_proxy_total_requests_metric_total[5m]))",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Rate by Model (5m)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Latency percentiles over time by model",
+      "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []},
       "gridPos": {"h": 6, "w": 12, "x": 0, "y": 12},
       "id": 9,
       "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum by (model_name) (rate(litellm_total_tokens[5m]))",
-          "legendFormat": "{{model_name}}",
+          "expr": "histogram_quantile(0.99, sum by (model, le) (rate(litellm_request_total_latency_metric_bucket[5m])))",
+          "legendFormat": "{{model}} p99",
           "refId": "A"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.95, sum by (model, le) (rate(litellm_request_total_latency_metric_bucket[5m])))",
+          "legendFormat": "{{model}} p95",
+          "refId": "B"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.50, sum by (model, le) (rate(litellm_request_total_latency_metric_bucket[5m])))",
+          "legendFormat": "{{model}} p50",
+          "refId": "C"
         }
       ],
-      "title": "Token Rate (5m avg) by Model",
+      "title": "Request Latency Percentiles by Model",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Latency p99 over time",
+      "description": "LLM API latency (time to get response from model) percentiles",
       "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []},
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 12},
       "id": 10,
@@ -195,12 +203,18 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "histogram_quantile(0.99, sum by (model_name, le) (rate(litellm_latency[5m])))",
-          "legendFormat": "{{model_name}} p99",
+          "expr": "histogram_quantile(0.99, sum by (model, le) (rate(litellm_llm_api_latency_metric_bucket[5m])))",
+          "legendFormat": "{{model}} p99",
           "refId": "A"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "histogram_quantile(0.95, sum by (model, le) (rate(litellm_llm_api_latency_metric_bucket[5m])))",
+          "legendFormat": "{{model}} p95",
+          "refId": "B"
         }
       ],
-      "title": "Latency p99 by Model",
+      "title": "LLM API Latency by Model",
       "type": "timeseries"
     },
     {
@@ -208,88 +222,192 @@
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18},
       "id": 11,
       "panels": [],
-      "title": "Spend & Request Tokens",
+      "title": "Token Usage by Model",
       "type": "row"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Request tokens by model",
+      "description": "Total tokens (input + output) per model",
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
-      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 19},
+      "gridPos": {"h": 5, "w": 12, "x": 0, "y": 19},
       "id": 12,
       "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum by (model_name) (litellm_request_tokens)",
-          "legendFormat": "{{model_name}}",
+          "expr": "sum by (requested_model) (litellm_total_tokens_metric_total)",
+          "legendFormat": "{{requested_model}}",
           "refId": "A"
         }
       ],
-      "title": "Request Tokens by Model",
-      "type": "piechart"
+      "title": "Total Tokens by Model",
+      "type": "bargauge"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Response tokens by model",
+      "description": "Token rate over time by model",
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
-      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 19},
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 19},
       "id": 13,
-      "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum by (model_name) (litellm_response_tokens)",
-          "legendFormat": "{{model_name}}",
+          "expr": "sum by (requested_model) (rate(litellm_total_tokens_metric_total[5m]))",
+          "legendFormat": "{{requested_model}}",
           "refId": "A"
         }
       ],
-      "title": "Response Tokens by Model",
-      "type": "piechart"
+      "title": "Token Rate by Model (5m)",
+      "type": "timeseries"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Spend by model",
-      "fieldConfig": {"defaults": {"currency": "USD", "unit": "currencyUSD"}, "overrides": []},
-      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 19},
+      "description": "Input vs output tokens per model",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 12, "x": 0, "y": 24},
       "id": 14,
       "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum by (model_name) (litellm_spend)",
-          "legendFormat": "{{model_name}}",
+          "expr": "sum by (model) (litellm_input_tokens_metric_total)",
+          "legendFormat": "{{model}} input",
+          "refId": "A"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum by (model) (litellm_output_tokens_metric_total)",
+          "legendFormat": "{{model}} output",
+          "refId": "B"
+        }
+      ],
+      "title": "Input vs Output Tokens by Model",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Total spend per model (local models = $0)",
+      "fieldConfig": {"defaults": {"currency": "USD", "unit": "currencyUSD"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 24},
+      "id": 15,
+      "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum by (model) (litellm_spend_metric_total)",
+          "legendFormat": "{{model}}",
           "refId": "A"
         }
       ],
       "title": "Spend by Model",
-      "type": "piechart"
+      "type": "bargauge"
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 24},
-      "id": 15,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 29},
+      "id": 16,
       "panels": [],
-      "title": "Errors",
+      "title": "Request Status",
       "type": "row"
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Error rate over time",
+      "description": "Request status codes over time",
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
-      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 25},
-      "id": 16,
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 30},
+      "id": 17,
       "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sum by (model_name) (rate(litellm_errors_total[5m]))",
-          "legendFormat": "{{model_name}}",
+          "expr": "sum by (status_code) (rate(litellm_proxy_total_requests_metric_total[5m]))",
+          "legendFormat": "{{status_code}}",
           "refId": "A"
         }
       ],
-      "title": "Error Rate by Model",
+      "title": "Request Status Codes",
       "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Requests by route",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 36},
+      "id": 18,
+      "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum by (route) (litellm_proxy_total_requests_metric_total)",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Requests by Route",
+      "type": "piechart"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Requests by model (requested)",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 36},
+      "id": 19,
+      "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "sum by (requested_model) (litellm_proxy_total_requests_metric_total)",
+          "legendFormat": "{{requested_model}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Requests by Model",
+      "type": "piechart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 42},
+      "id": 20,
+      "panels": [],
+      "title": "Client Info",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Requests by user agent",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 43},
+      "id": 21,
+      "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "topk(10, sum by (user_agent) (litellm_proxy_total_requests_metric_total))",
+          "legendFormat": "{{user_agent}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top 10 User Agents",
+      "type": "piechart"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "description": "Requests by client IP",
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 43},
+      "id": 22,
+      "options": {"displayLabels": ["name"], "layout": "horizontal", "showLegend": true},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "topk(10, sum by (client_ip) (litellm_proxy_total_requests_metric_total))",
+          "legendFormat": "{{client_ip}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top 10 Client IPs",
+      "type": "piechart"
     }
   ],
   "templating": {
