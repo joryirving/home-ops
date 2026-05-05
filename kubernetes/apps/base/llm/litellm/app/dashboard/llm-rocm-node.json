@@ -25,14 +25,14 @@
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "GPU engine busy and memory busy from rocm-smi-exporter. High memory busy with lower GPU busy usually points at memory bandwidth or memory movement limits.",
+      "description": "GPU engine busy from rocm-smi-exporter, with memory pressure falling back to GTT allocation percentage when mem_busy_percent is not exposed by the kernel.",
       "fieldConfig": {"defaults": {"max": 100, "min": 0, "unit": "percent"}, "overrides": []},
       "gridPos": {"h": 7, "w": 12, "x": 12, "y": 1},
       "id": 3,
       "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
       "targets": [
         {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_gpu_busy_percent{card=~\"$gpu\"}", "legendFormat": "gpu busy {{card}}", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"}", "legendFormat": "memory busy {{card}}", "refId": "B"}
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))", "legendFormat": "memory pressure {{card}}", "refId": "B"}
       ],
       "title": "ROCm GPU and memory busy",
       "type": "timeseries"
@@ -58,13 +58,13 @@
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "Last observed memory busy percent. This is the closest cheap proxy for Strix Halo GPU memory bandwidth pressure exposed by AMDGPU sysfs.",
+      "description": "Last observed memory pressure. Uses rocm_smi_memory_busy_percent when present, otherwise falls back to GTT allocation percentage because Strix Halo does not currently expose mem_busy_percent here.",
       "fieldConfig": {"defaults": {"max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 60}, {"color": "red", "value": 90}]}, "unit": "percent"}, "overrides": []},
       "gridPos": {"h": 4, "w": 4, "x": 4, "y": 9},
       "id": 6,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "max(rocm_smi_memory_busy_percent{card=~\"$gpu\"})", "legendFormat": "memory busy", "refId": "A"}],
-      "title": "Memory busy",
+      "targets": [{"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "max(rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1)))", "legendFormat": "memory pressure", "refId": "A"}],
+      "title": "Memory pressure",
       "type": "stat"
     },
     {
@@ -161,15 +161,15 @@
     },
     {
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
-      "description": "GPU and memory busy with utilization ratio. If memory busy dominates GPU busy, workload is probably bandwidth or memory-movement limited.",
+      "description": "GPU busy and memory pressure. Memory pressure uses mem_busy_percent when present, otherwise GTT allocation percentage as a Strix Halo UMA pressure proxy.",
       "fieldConfig": {"defaults": {"unit": "percent"}, "overrides": []},
       "gridPos": {"h": 7, "w": 12, "x": 12, "y": 21},
       "id": 15,
       "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
       "targets": [
         {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_gpu_busy_percent{card=~\"$gpu\"}", "legendFormat": "gpu busy {{card}}", "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"}", "legendFormat": "memory busy {{card}}", "refId": "B"},
-        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"} - rocm_smi_gpu_busy_percent{card=~\"$gpu\"}", "legendFormat": "memory minus gpu {{card}}", "refId": "C"}
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))", "legendFormat": "memory pressure {{card}}", "refId": "B"},
+        {"datasource": {"type": "prometheus", "uid": "${datasource}"}, "expr": "(rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))) - rocm_smi_gpu_busy_percent{card=~\"$gpu\"}", "legendFormat": "memory pressure minus gpu {{card}}", "refId": "C"}
       ],
       "title": "Busy split and memory pressure delta",
       "type": "timeseries"
