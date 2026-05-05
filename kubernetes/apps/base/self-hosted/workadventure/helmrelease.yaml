@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: workadventure
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: workadventure
+  interval: 15m
+  dependsOn: []
+  values:
+    domainName: gather.jory.dev
+    singleDomain: true
+    ingress:
+      enabled: false
+    commonEnv:
+      WA_PROTO: https
+      WA_HOST: gather.jory.dev
+    commonSecretEnv:
+      MAP_STORAGE_API_TOKEN: &mapStorageToken workadventure-mapstorage-secret-token
+    mapstorage:
+      secretEnv:
+        AUTHENTICATION_PASSWORD: *mapStorageToken
