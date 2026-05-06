@@ -44,6 +44,36 @@ spec:
                 memory: 8Gi
               limits:
                 memory: 16Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /readyz
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  failureThreshold: 3
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /readyz
+                    port: 8080
+                  failureThreshold: 60
+                  periodSeconds: 10
     persistence:
       model-config:
         type: configMap
@@ -113,6 +143,36 @@ spec:
                 memory: 8Gi
               limits:
                 memory: 16Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /readyz
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  failureThreshold: 3
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /readyz
+                    port: 8080
+                  failureThreshold: 60
+                  periodSeconds: 10
     persistence:
       model-config:
         type: configMap
@@ -182,6 +242,36 @@ spec:
                 memory: 8Gi
               limits:
                 memory: 16Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /readyz
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  failureThreshold: 3
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /readyz
+                    port: 8080
+                  failureThreshold: 60
+                  periodSeconds: 10
     persistence:
       model-config:
         type: configMap
