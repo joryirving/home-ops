@@ -1,0 +1,97 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/v1/configmap.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: localai-model-llava-llama3
+data:
+  llava_llama3.yaml: |
+    name: llava_llama3
+    backend: llama-cpp
+    parameters:
+      model: llava-llama-3-8b-v1_1.Q4_K_M.gguf
+      mmproj: llava-llama-3-8b-v1_1-mmproj-f16.gguf
+    context_size: 4096
+    threads: 6
+    mmap: false
+    gpu_layers: 999
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/batch/v1/job.json
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: localai-model-sync-llava-llama3
+spec:
+  ttlSecondsAfterFinished: 86400
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: sync
+          image: curlimages/curl:8.20.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+
+              model_file="llava-llama-3-8b-v1_1.Q4_K_M.gguf"
+              model_url="https://huggingface.co/MoMonir/llava-llama-3-8b-v1_1-GGUF/resolve/main/llava-llama-3-8b-v1_1.Q4_K_M.gguf"
+              model_sha256="fb34b5aaae5dbce0513a4fd93ec2f98a07400121ecb026216cbf79e87cfd0739"
+
+              mmproj_file="llava-llama-3-8b-v1_1-mmproj-f16.gguf"
+              mmproj_url="https://huggingface.co/MoMonir/llava-llama-3-8b-v1_1-GGUF/resolve/main/llava-llama-3-8b-v1_1-mmproj-f16.gguf"
+              mmproj_sha256="eb569aba7d65cf3da1d0369610eb6869f4a53ee369992a804d5810a80e9fa035"
+
+              config_file="llava_llama3.yaml"
+
+              download_if_needed() {
+                file="$1"
+                url="$2"
+                expected_sha="$3"
+                target="/models/${file}"
+                tmp="${target}.part"
+
+                if [ -f "${target}" ]; then
+                  existing="$(sha256sum "${target}" | cut -d ' ' -f 1)"
+                  if [ "${existing}" = "${expected_sha}" ]; then
+                    return 0
+                  fi
+                fi
+
+                if [ -n "${HF_TOKEN:-}" ]; then
+                  curl -fL --retry 3 --retry-all-errors -H "Authorization: Bearer ${HF_TOKEN}" -o "${tmp}" "${url}"
+                else
+                  curl -fL --retry 3 --retry-all-errors -o "${tmp}" "${url}"
+                fi
+
+                actual="$(sha256sum "${tmp}" | cut -d ' ' -f 1)"
+                [ "${actual}" = "${expected_sha}" ]
+
+                mv "${tmp}" "${target}"
+              }
+
+              download_if_needed "${model_file}" "${model_url}" "${model_sha256}"
+              download_if_needed "${mmproj_file}" "${mmproj_url}" "${mmproj_sha256}"
+              cp "/config/${config_file}" "/models/${config_file}"
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: localai-secret
+                  key: HF_TOKEN
+                  optional: true
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: config
+          configMap:
+            name: localai-model-llava-llama3
+        - name: models
+          persistentVolumeClaim:
+            claimName: localai
