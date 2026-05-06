@@ -5,7 +5,7 @@ This directory manages LocalAI model definitions and artifact sync jobs with Flu
 ## Structure
 
 - `<model>.yaml`: one file per model containing both the model ConfigMap and sync Job.
-- `externalsecret.yaml`: creates `localai-secret` with `HF_TOKEN` from the existing `openclaw` 1Password item and `OPENAI_API_KEY` from the `localai` item.
+- `externalsecret.yaml`: creates `huggingface` with `HF_TOKEN` from the existing `openclaw` 1Password item.
 
 ## Managed Models
 
@@ -15,7 +15,7 @@ This directory manages LocalAI model definitions and artifact sync jobs with Flu
 ## How To Add A Model
 
 1. Add a new `<model>.yaml` file containing a model ConfigMap and sync Job.
-2. Configure the sync Job to download artifacts into `/models` on the `localai` PVC.
+2. Configure the sync Job to download artifacts into `/models` on the `localai-models` PVC.
 3. Copy the model config file from `/config` to `/models` after download.
 4. Add the new file to `kustomization.yaml`.
 
