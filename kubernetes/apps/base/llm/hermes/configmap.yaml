@@ -6,12 +6,21 @@ metadata:
 data:
   config.yaml: |
     model:
-      default: llama-server
-      provider: litellm
+      default: self-hosted
+      provider: custom:kubernetes
       base_url: http://litellm.llm:4000/v1
       api_key: $${LITELLM_API_KEY}
+    fallback_providers:
+      - provider: custom:kubernetes
+        model: vision
+      - provider: custom:kubernetes
+        model: minimax/MiniMax-M2.7
+      - provider: custom:kubernetes
+        model: chatgpt/gpt-5.5
+      - provider: custom:kubernetes
+        model: moonshot/kimi-k2.6
     providers:
-      litellm:
+      kubernetes:
         base_url: http://litellm.llm:4000/v1
         api_key: $${LITELLM_API_KEY}
       minimax:
@@ -56,6 +65,6 @@ data:
     auxiliary:
       vision:
         provider: openai
-        model: openai/vision
+        model: vision
         base_url: http://litellm.llm:4000/v1
         api_key: $${LITELLM_API_KEY}
