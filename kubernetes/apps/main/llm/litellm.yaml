@@ -6,13 +6,20 @@ metadata:
   name: litellm
 spec:
   components:
+  - ../../../../../components/dragonfly
   - ../../../../../components/volsync
+  healthCheckExprs:
+  - apiVersion: dragonflydb.io/v1alpha1
+    kind: Dragonfly
+    failed: status.phase != 'ready'
+    current: status.phase == 'ready'
   interval: 1h
   path: ./kubernetes/apps/base/llm/litellm/app
   postBuild:
     substitute:
       APP: litellm
       VOLSYNC_CAPACITY: 1Gi
+      VOLSYNC_ACCESSMODES: ReadWriteMany
   prune: true
   sourceRef:
     kind: GitRepository

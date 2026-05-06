@@ -15,6 +15,8 @@ spec:
       litellm:
         annotations:
           reloader.stakater.com/auto: "true"
+        replicas: 2
+        strategy: RollingUpdate
         containers:
           app:
             image:
@@ -24,6 +26,9 @@ spec:
               - --config=/app/config.yaml
             env:
               LITELLM_LOG: INFO
+              LITELLM_MODE: PRODUCTION
+              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
+              REDIS_PORT: "6379"
               CHATGPT_TOKEN_DIR: /app/chatgpt_tokens
             envFrom:
               - secretRef:
