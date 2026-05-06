@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-vision
+  name: llama-intel
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,16 +12,12 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-intel-gpu
       hostIPC: true
-      nodeSelector:
-        kubernetes.io/hostname: skirk
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-      - key: llm-workload
-        operator: Exists
-        effect: NoSchedule
     controllers:
-      llama-vision:
+      llama-intel:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -35,21 +31,18 @@ spec:
             - |
               set -euo pipefail
 
-              if [ ! -s /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen-vision/mmproj-F16.gguf ]; then
+              if [ ! -s /models/gemma-4-E4B/gemma-4-E4B-it-UD-Q4_K_XL.gguf ]; then
                 pip install --no-cache-dir huggingface_hub
-                mkdir -p /models/qwen-vision
-                rm -rf /models/qwen-vision/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
+                mkdir -p /models/gemma-4-E4B
+                rm -rf /models/gemma-4-E4B/.cache/huggingface/download/gemma-4-E4B-it-UD-Q4_K_XL.gguf.lock
                 hf download \
-                  mradermacher/Qwen3.5-9B-heretic-GGUF \
-                  Qwen3.5-9B-heretic.Q4_K_M.gguf \
-                  --local-dir /models/qwen-vision
-                hf download \
-                  unsloth/Qwen3.5-9B-GGUF \
-                  mmproj-F16.gguf \
-                  --local-dir /models/qwen-vision
-                echo "Qwen3.5-9B download complete"
+                  unsloth/gemma-4-E4B-it-GGUF \
+                  gemma-4-E4B-it-UD-Q4_K_XL.gguf \
+                  --local-dir /models/gemma-4-E4B
+
+                echo "Gemma-4-E4B-it-UD-Q4_K_XL download complete"
               else
-                echo "Qwen3.5-9B already downloaded, skipping"
+                echo "Gemma-4-E4B-it-UD-Q4_K_XL already downloaded, skipping"
               fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -65,23 +58,19 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-7.2.2
+              repository: ghcr.io/ggml-org/llama.cpp
+              tag: server-intel
             securityContext:
               privileged: true
-            command:
-            - llama-server
             args:
             - --host
             - 0.0.0.0
             - --port
             - "8080"
             - --alias
-            - vision
+            - llama-intel
             - --model
-            - /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf
-            - --mmproj
-            - /models/qwen-vision/mmproj-F16.gguf
+            - /models/gemma-4-E4B/gemma-4-E4B-it-UD-Q4_K_XL.gguf
             - --ctx-size
             - "131072"
             - --n-gpu-layers
@@ -91,7 +80,7 @@ spec:
             - --flash-attn
             - "on"
             - --parallel
-            - "3"
+            - "2"
             - --cont-batching
             - -sps
             - "0.90"
@@ -99,41 +88,28 @@ spec:
             - --cache-prompt
             - --kv-unified
             - --ctx-checkpoints
-            - "4"
-            - --checkpoint-every-n-tokens
-            - "16384"
+            - "0"
             - --metrics
-            - --image-min-tokens
-            - "1024"
             - --temp
-            - "0.6"
+            - "0.1"
             - --top-p
-            - "0.95"
+            - "0.90"
             - --top-k
-            - "20"
+            - "32"
             - --min-p
             - "0"
-            - --presence-penalty
+            - --reasoning
+            - "off"
+            - --reasoning-budget
             - "0"
-            - --repeat-penalty
-            - "1.0"
-            - --chat-template-kwargs
-            - '{"enable_thinking":false}'
-            - --batch-size
-            - "4096"
-            - --ubatch-size
-            - "2048"
-            # - --cache-type-k
-            # - tbq4_0
-            # - --cache-type-v
-            # - tbq4_0
-            - --threads
-            - "12"
-            - --threads-batch
-            - "16"
-            - --no-mmap
-            - --jinja
+            - --mmap
+            env:
+              ZES_ENABLE_SYSMAN: "1"
+              ONEAPI_DEVICE_SELECTOR: level_zero:gpu
+              UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS: "1"
             resources:
+              claims:
+                - name: gpu
               requests:
                 cpu: 500m
                 memory: 12Gi
@@ -171,7 +147,7 @@ spec:
                   periodSeconds: 10
     persistence:
       models:
-        existingClaim: llm-models
+        existingClaim: llama-intel
         globalMounts:
         - path: /models
       dev-dri:
@@ -179,17 +155,8 @@ spec:
         hostPath: /dev/dri
         globalMounts:
         - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-        - path: /dev/kfd
     service:
       app:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.23
-        externalTrafficPolicy: Cluster
         ports:
           http:
             port: 8080
