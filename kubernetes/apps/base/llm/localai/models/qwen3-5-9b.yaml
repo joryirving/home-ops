@@ -9,8 +9,8 @@ data:
     name: qwen3_5_9b
     backend: llama-cpp
     parameters:
-      model: qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf
-    mmproj: qwen-vision/mmproj-F16.gguf
+      model: /models-data/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf
+    mmproj: /models-data/qwen-vision/mmproj-F16.gguf
     context_size: 131072
     threads: 12
     mmap: false
@@ -22,7 +22,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: localai-model-sync-qwen3-5-9b-v2
+  name: localai-model-sync-qwen3-5-9b
 spec:
   ttlSecondsAfterFinished: 86400
   backoffLimit: 2
@@ -39,10 +39,9 @@ spec:
             - |
               set -euo pipefail
 
-              target_dir=/models/qwen-vision
+              target_dir=/models-data/qwen-vision
               model_file="$target_dir/Qwen3.5-9B-heretic.Q4_K_M.gguf"
               mmproj_file="$target_dir/mmproj-F16.gguf"
-              config_file=qwen3_5_9b.yaml
 
               if [ ! -s "$model_file" ] || [ ! -s "$mmproj_file" ]; then
                 pip install --no-cache-dir huggingface_hub
@@ -58,7 +57,6 @@ spec:
                   --local-dir "$target_dir"
               fi
 
-              cp "/config/$config_file" "/models/$config_file"
           env:
             - name: HF_HUB_ENABLE_HF_TRANSFER
               value: "1"
@@ -66,14 +64,9 @@ spec:
             - secretRef:
                 name: huggingface
           volumeMounts:
-            - name: config
-              mountPath: /config
             - name: models
-              mountPath: /models
+              mountPath: /models-data
       volumes:
-        - name: config
-          configMap:
-            name: localai-model-qwen3-5-9b
         - name: models
           persistentVolumeClaim:
             claimName: localai-models

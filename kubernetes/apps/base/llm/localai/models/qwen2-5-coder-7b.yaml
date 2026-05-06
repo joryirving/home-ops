@@ -9,7 +9,7 @@ data:
     name: qwen2_5_coder_7b
     backend: llama-cpp
     parameters:
-      model: qwen2-5-coder-7b/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
+      model: /models-data/qwen2-5-coder-7b/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
     context_size: 32768
     threads: 12
     mmap: false
@@ -19,7 +19,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: localai-model-sync-qwen2-5-coder-7b-v1
+  name: localai-model-sync-qwen2-5-coder-7b
 spec:
   ttlSecondsAfterFinished: 86400
   backoffLimit: 2
@@ -36,9 +36,8 @@ spec:
             - |
               set -euo pipefail
 
-              target_dir=/models/qwen2-5-coder-7b
+              target_dir=/models-data/qwen2-5-coder-7b
               model_file="$target_dir/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf"
-              config_file=qwen2_5_coder_7b.yaml
 
               if [ ! -s "$model_file" ]; then
                 pip install --no-cache-dir huggingface_hub
@@ -50,7 +49,6 @@ spec:
                   --local-dir "$target_dir"
               fi
 
-              cp "/config/$config_file" "/models/$config_file"
           env:
             - name: HF_HUB_ENABLE_HF_TRANSFER
               value: "1"
@@ -58,14 +56,9 @@ spec:
             - secretRef:
                 name: huggingface
           volumeMounts:
-            - name: config
-              mountPath: /config
             - name: models
-              mountPath: /models
+              mountPath: /models-data
       volumes:
-        - name: config
-          configMap:
-            name: localai-model-qwen2-5-coder-7b
         - name: models
           persistentVolumeClaim:
             claimName: localai-models
