@@ -10,11 +10,24 @@ data:
     backend: llama-cpp
     parameters:
       model: gemma4-e4b/gemma-4-E4B-it-UD-Q4_K_XL.gguf
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 64
+      min_p: 0
+      presence_penalty: 0
+      repeat_penalty: 1.0
     mmproj: gemma4-e4b/mmproj-F16.gguf
     context_size: 131072
     threads: 12
     mmap: false
     gpu_layers: 999
+    prompt_cache_path: cache/gemma4_e4b
+    prompt_cache_all: true
+    options:
+      - parallel:3
+      - cont_batching:true
+      - kv_unified:true
+      - ctx_checkpoints:4
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/batch/v1/job.json
 apiVersion: batch/v1

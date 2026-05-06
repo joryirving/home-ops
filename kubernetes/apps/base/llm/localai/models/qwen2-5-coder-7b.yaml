@@ -10,10 +10,23 @@ data:
     backend: llama-cpp
     parameters:
       model: qwen2-5-coder-7b/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
+      temperature: 0.7
+      top_p: 0.8
+      top_k: 20
+      min_p: 0
+      presence_penalty: 0
+      repeat_penalty: 1.1
     context_size: 32768
     threads: 12
     mmap: false
     gpu_layers: 999
+    prompt_cache_path: cache/qwen2_5_coder_7b
+    prompt_cache_all: true
+    options:
+      - parallel:3
+      - cont_batching:true
+      - kv_unified:true
+      - ctx_checkpoints:4
 ---
 # yaml-language-server: $schema=https://kube-schemas.pages.dev/batch/v1/job.json
 apiVersion: batch/v1

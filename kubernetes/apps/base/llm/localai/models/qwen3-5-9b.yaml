@@ -10,11 +10,24 @@ data:
     backend: llama-cpp
     parameters:
       model: qwen3-5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf
+      temperature: 0.6
+      top_p: 0.95
+      top_k: 20
+      min_p: 0
+      presence_penalty: 0
+      repeat_penalty: 1.0
     mmproj: qwen3-5-9b/mmproj-F16.gguf
     context_size: 131072
     threads: 12
     mmap: false
     gpu_layers: 999
+    prompt_cache_path: cache/qwen3_5_9b
+    prompt_cache_all: true
+    options:
+      - parallel:3
+      - cont_batching:true
+      - kv_unified:true
+      - ctx_checkpoints:4
     template:
       chat_message: chatml
 ---
