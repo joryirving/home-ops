@@ -13,6 +13,7 @@ locals {
     "Paperless",
     "Portainer",
     "RomM",
+    "WorkAdventure",
   ]
 
   default_property_mappings = data.authentik_property_mapping_provider_scope.oauth2.ids
@@ -143,6 +144,15 @@ locals {
       redirect_uri      = "https://romm.${var.CLUSTER_DOMAIN}/api/oauth/openid"
       launch_url        = "https://romm.${var.CLUSTER_DOMAIN}"
       property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.email_verified.id])
+    },
+    WorkAdventure = {
+      client_id         = module.onepassword_application["WorkAdventure"].fields["WORKADVENTURE_OIDC_CLIENT_ID"]
+      client_secret     = module.onepassword_application["WorkAdventure"].fields["WORKADVENTURE_OIDC_CLIENT_SECRET"]
+      group             = "home"
+      icon_url          = "https://raw.githubusercontent.com/workadventure/workadventure/master/static/favicon.png"
+      redirect_uri      = "https://gather.${var.CLUSTER_DOMAIN}/@/oidc/callback"
+      launch_url        = "https://gather.${var.CLUSTER_DOMAIN}"
+      property_mappings = local.default_property_mappings
     },
   }
 }

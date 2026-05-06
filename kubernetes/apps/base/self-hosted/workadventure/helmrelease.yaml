@@ -1,0 +1,337 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: workadventure
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      play:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/thecodingmachine/workadventure-play
+              tag: v1.30.6
+            env:
+              WA_PROTO: https
+              WA_HOST: gather.jory.dev
+              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
+              ENABLE_MAP_EDITOR: "true"
+              JITSI_URL: https://meet.jit.si
+              MAX_PER_GROUP: "1000"
+              ENABLE_CHAT: "true"
+              ENABLE_CHAT_UPLOAD: "true"
+              ENABLE_TUTORIAL: "true"
+              UPLOAD_MAX_FILESIZE: "10485760"
+              API_URL: "{{ .Release.Name }}-back:50051"
+              ICON_URL: /icon
+              UPLOADER_URL: https://gather.jory.dev/uploader
+              PUSHER_URL: /
+              FRONT_URL: https://gather.jory.dev
+              PUBLIC_MAP_STORAGE_URL: https://gather.jory.dev/map-storage
+              INTERNAL_MAP_STORAGE_URL: "http://{{ .Release.Name }}-mapstorage:3000"
+              ENABLE_OPENAPI_ENDPOINT: "true"
+              ROOM_API_PORT: "50051"
+              MAP_STORAGE_PATH_PREFIX: /map-storage
+              ALLOWED_CORS_ORIGIN: https://gather.jory.dev
+              DISABLE_ANONYMOUS: "true"
+              OPENID_CLIENT_REDIRECT_URL: https://gather.jory.dev/@/oidc/callback
+              OPENID_CLIENT_REDIRECT_LOGOUT_URL: https://gather.jory.dev
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
+            probes:
+              liveness: &httpPing3000
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: 3000
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+              readiness: *httpPing3000
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+      back:
+        type: statefulset
+        annotations:
+          reloader.stakater.com/auto: "true"
+        statefulset:
+          podManagementPolicy: Parallel
+        containers:
+          app:
+            image:
+              repository: docker.io/thecodingmachine/workadventure-back
+              tag: v1.30.6
+            env:
+              WA_PROTO: https
+              WA_HOST: gather.jory.dev
+              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
+              ENABLE_MAP_EDITOR: "true"
+              JITSI_URL: https://meet.jit.si
+              MAX_PER_GROUP: "1000"
+              ENABLE_CHAT: "true"
+              ENABLE_CHAT_UPLOAD: "true"
+              ENABLE_TUTORIAL: "true"
+              UPLOAD_MAX_FILESIZE: "10485760"
+              PLAY_URL: https://gather.jory.dev
+              MAP_STORAGE_URL: "{{ .Release.Name }}-mapstorage:50053"
+              INTERNAL_MAP_STORAGE_URL: "http://{{ .Release.Name }}-mapstorage:3000"
+              PUBLIC_MAP_STORAGE_URL: https://gather.jory.dev/map-storage
+              STORE_VARIABLES_FOR_LOCAL_MAPS: "true"
+              PLAYER_VARIABLES_MAX_TTL: "-1"
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+      mapstorage:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          init:
+            image:
+              repository: docker.io/library/alpine
+              tag: "3.21"
+            command: ["/bin/sh", "-c", "chown -R 1000:1000 /maps"]
+            securityContext:
+              runAsUser: 0
+        containers:
+          app:
+            image:
+              repository: docker.io/thecodingmachine/workadventure-map-storage
+              tag: v1.30.6
+            env:
+              WA_PROTO: https
+              WA_HOST: gather.jory.dev
+              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
+              ENABLE_MAP_EDITOR: "true"
+              JITSI_URL: https://meet.jit.si
+              MAX_PER_GROUP: "1000"
+              ENABLE_CHAT: "true"
+              ENABLE_CHAT_UPLOAD: "true"
+              ENABLE_TUTORIAL: "true"
+              UPLOAD_MAX_FILESIZE: "10485760"
+              API_URL: "{{ .Release.Name }}-back:50051"
+              PATH_PREFIX: /map-storage
+              ENTITY_COLLECTION_URLS: "https://gather.jory.dev/collections/FurnitureCollection.json,https://gather.jory.dev/collections/OfficeCollection.json"
+              PUSHER_URL: /
+              ENABLE_BASIC_AUTHENTICATION: "true"
+              AUTHENTICATION_USER: admin
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
+            probes:
+              liveness: &mapstoragePing
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: 3000
+                  initialDelaySeconds: 15
+                  periodSeconds: 10
+              readiness: *mapstoragePing
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+      uploader:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/thecodingmachine/workadventure-uploader
+              tag: v1.30.6
+            env:
+              WA_PROTO: https
+              WA_HOST: gather.jory.dev
+              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
+              ENABLE_MAP_EDITOR: "true"
+              JITSI_URL: https://meet.jit.si
+              MAX_PER_GROUP: "1000"
+              ENABLE_CHAT: "true"
+              ENABLE_CHAT_UPLOAD: "true"
+              ENABLE_TUTORIAL: "true"
+              UPLOAD_MAX_FILESIZE: "10485760"
+              UPLOADER_URL: https://gather.jory.dev/uploader
+              REDIS_PORT: "6379"
+              REDIS_DB_NUMBER: "1"
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
+            resources:
+              requests:
+                cpu: 20m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+      icon:
+        containers:
+          app:
+            image:
+              repository: docker.io/matthiasluedtke/iconserver
+              tag: v3.21.0
+            probes:
+              liveness: &iconProbe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 8080
+                  periodSeconds: 30
+              readiness: *iconProbe
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+    persistence:
+      mapstorage-maps:
+        type: emptyDir
+        advancedMounts:
+          mapstorage:
+            init:
+              - path: /maps
+            app:
+              - path: /maps
+    route:
+      main:
+        hostnames: ["gather.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
+            sectionName: https
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /ws
+            backendRefs:
+              - identifier: play
+                port: ws
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /api
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /
+            backendRefs:
+              - identifier: back
+                port: http
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /uploader
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /
+            backendRefs:
+              - identifier: uploader
+                port: http
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /icon
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /
+            backendRefs:
+              - identifier: icon
+                port: http
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /map-storage
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /
+            backendRefs:
+              - identifier: mapstorage
+                port: http
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /room-api
+            backendRefs:
+              - identifier: play
+                port: grpc
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+            backendRefs:
+              - identifier: play
+                port: http
+    service:
+      play:
+        controller: play
+        ports:
+          http:
+            port: 3000
+          ws:
+            port: 3001
+          grpc:
+            port: 50051
+      back:
+        controller: back
+        ports:
+          http:
+            port: 8080
+          grpc:
+            port: 50051
+      mapstorage:
+        controller: mapstorage
+        ports:
+          http:
+            port: 3000
+          grpc:
+            port: 50053
+      uploader:
+        controller: uploader
+        ports:
+          http:
+            port: 8080
+      icon:
+        controller: icon
+        ports:
+          http:
+            port: 8080
