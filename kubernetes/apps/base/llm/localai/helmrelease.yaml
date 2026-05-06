@@ -17,6 +17,7 @@ spec:
           resourceClaimTemplateName: localai-gpu
     controllers:
       localai:
+        replicas: 3
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
@@ -32,8 +33,7 @@ spec:
                 [{"name":"localai","url":"https://raw.githubusercontent.com/mudler/LocalAI/master/backend/index.yaml"}]
               LOCALAI_EXTERNAL_BACKENDS: llama-cpp
               LOCALAI_MAX_ACTIVE_BACKENDS: "3"
-              LOCALAI_WATCHDOG_IDLE: "true"
-              LOCALAI_WATCHDOG_IDLE_TIMEOUT: 15m
+              LOCALAI_WATCHDOG_IDLE: "false"
               MODELS_PATH: &modelPath /models
               THREADS: "6"
               ZES_ENABLE_SYSMAN: "1"

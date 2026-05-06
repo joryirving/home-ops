@@ -11,6 +11,7 @@ This directory manages LocalAI model definitions and artifact sync jobs with Flu
 
 - `qwen3_5_9b`: downloads `Qwen3.5-9B-heretic.Q4_K_M.gguf` and `mmproj-F16.gguf` into `/models/qwen-vision`.
 - `gemma4_e4b`: downloads `gemma-4-E4B-it-UD-Q4_K_XL.gguf` into `/models/memory`.
+- `qwen2_5_coder_7b`: downloads `Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf` into `/models/qwen2-5-coder-7b`.
 
 ## How To Add A Model
 
