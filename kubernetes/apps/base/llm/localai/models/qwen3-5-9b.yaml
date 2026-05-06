@@ -22,7 +22,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: localai-model-sync-qwen3-5-9b
+  name: localai-model-sync-qwen3-5-9b-v2
 spec:
   ttlSecondsAfterFinished: 86400
   backoffLimit: 2
@@ -40,25 +40,25 @@ spec:
               set -euo pipefail
 
               target_dir=/models/qwen-vision
-              model_file="${target_dir}/Qwen3.5-9B-heretic.Q4_K_M.gguf"
-              mmproj_file="${target_dir}/mmproj-F16.gguf"
+              model_file="$target_dir/Qwen3.5-9B-heretic.Q4_K_M.gguf"
+              mmproj_file="$target_dir/mmproj-F16.gguf"
               config_file=qwen3_5_9b.yaml
 
-              if [ ! -s "${model_file}" ] || [ ! -s "${mmproj_file}" ]; then
+              if [ ! -s "$model_file" ] || [ ! -s "$mmproj_file" ]; then
                 pip install --no-cache-dir huggingface_hub
-                mkdir -p "${target_dir}"
-                rm -rf "${target_dir}/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock"
+                mkdir -p "$target_dir"
+                rm -rf "$target_dir/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock"
                 hf download \
                   mradermacher/Qwen3.5-9B-heretic-GGUF \
                   Qwen3.5-9B-heretic.Q4_K_M.gguf \
-                  --local-dir "${target_dir}"
+                  --local-dir "$target_dir"
                 hf download \
                   unsloth/Qwen3.5-9B-GGUF \
                   mmproj-F16.gguf \
-                  --local-dir "${target_dir}"
+                  --local-dir "$target_dir"
               fi
 
-              cp "/config/${config_file}" "/models/${config_file}"
+              cp "/config/$config_file" "/models/$config_file"
           env:
             - name: HF_HUB_ENABLE_HF_TRANSFER
               value: "1"
