@@ -9,8 +9,8 @@ data:
     name: gemma4_e4b
     backend: llama-cpp
     parameters:
-      model: memory/gemma-4-E4B-it-UD-Q4_K_XL.gguf
-    mmproj: memory/mmproj-F16.gguf
+      model: /models-data/memory/gemma-4-E4B-it-UD-Q4_K_XL.gguf
+    mmproj: /models-data/memory/mmproj-F16.gguf
     context_size: 131072
     threads: 12
     mmap: false
@@ -20,7 +20,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: localai-model-sync-gemma4-e4b-v2
+  name: localai-model-sync-gemma4-e4b-v3
 spec:
   ttlSecondsAfterFinished: 86400
   backoffLimit: 2
@@ -37,10 +37,9 @@ spec:
             - |
               set -euo pipefail
 
-              target_dir=/models/memory
+              target_dir=/models-data/memory
               model_file="$target_dir/gemma-4-E4B-it-UD-Q4_K_XL.gguf"
               mmproj_file="$target_dir/mmproj-F16.gguf"
-              config_file=gemma4_e4b.yaml
 
               if [ ! -s "$model_file" ] || [ ! -s "$mmproj_file" ]; then
                 pip install --no-cache-dir huggingface_hub
@@ -56,7 +55,6 @@ spec:
                   --local-dir "$target_dir"
               fi
 
-              cp "/config/$config_file" "/models/$config_file"
           env:
             - name: HF_HUB_ENABLE_HF_TRANSFER
               value: "1"
@@ -64,14 +62,9 @@ spec:
             - secretRef:
                 name: huggingface
           volumeMounts:
-            - name: config
-              mountPath: /config
             - name: models
-              mountPath: /models
+              mountPath: /models-data
       volumes:
-        - name: config
-          configMap:
-            name: localai-model-gemma4-e4b
         - name: models
           persistentVolumeClaim:
             claimName: localai-models
