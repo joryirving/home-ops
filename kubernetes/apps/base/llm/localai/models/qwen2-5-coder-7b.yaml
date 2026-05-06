@@ -9,7 +9,7 @@ data:
     name: qwen2_5_coder_7b
     backend: llama-cpp
     parameters:
-      model: /models/qwen2-5-coder-7b/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
+      model: qwen2-5-coder-7b/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
     context_size: 32768
     threads: 12
     mmap: false
@@ -36,7 +36,7 @@ spec:
             - |
               set -euo pipefail
 
-              target_dir=/models-data/qwen2-5-coder-7b
+              target_dir=/models/qwen2-5-coder-7b
               model_file="$target_dir/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf"
 
               if [ ! -s "$model_file" ]; then
@@ -57,7 +57,7 @@ spec:
                 name: huggingface
           volumeMounts:
             - name: models
-              mountPath: /models-data
+              mountPath: /models
       volumes:
         - name: models
           persistentVolumeClaim:

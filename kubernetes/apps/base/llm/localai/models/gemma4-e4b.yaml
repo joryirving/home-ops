@@ -9,8 +9,8 @@ data:
     name: gemma4_e4b
     backend: llama-cpp
     parameters:
-      model: /models/memory/gemma-4-E4B-it-UD-Q4_K_XL.gguf
-    mmproj: /models/memory/mmproj-F16.gguf
+      model: gemma4-e4b/gemma-4-E4B-it-UD-Q4_K_XL.gguf
+    mmproj: gemma4-e4b/mmproj-F16.gguf
     context_size: 131072
     threads: 12
     mmap: false
@@ -37,7 +37,7 @@ spec:
             - |
               set -euo pipefail
 
-              target_dir=/models-data/memory
+              target_dir=/models/gemma4-e4b
               model_file="$target_dir/gemma-4-E4B-it-UD-Q4_K_XL.gguf"
               mmproj_file="$target_dir/mmproj-F16.gguf"
 
@@ -63,7 +63,7 @@ spec:
                 name: huggingface
           volumeMounts:
             - name: models
-              mountPath: /models-data
+              mountPath: /models
       volumes:
         - name: models
           persistentVolumeClaim:

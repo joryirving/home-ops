@@ -9,8 +9,8 @@ data:
     name: qwen3_5_9b
     backend: llama-cpp
     parameters:
-      model: /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf
-    mmproj: /models/qwen-vision/mmproj-F16.gguf
+      model: qwen3-5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf
+    mmproj: qwen3-5-9b/mmproj-F16.gguf
     context_size: 131072
     threads: 12
     mmap: false
@@ -39,7 +39,7 @@ spec:
             - |
               set -euo pipefail
 
-              target_dir=/models-data/qwen-vision
+              target_dir=/models/qwen3-5-9b
               model_file="$target_dir/Qwen3.5-9B-heretic.Q4_K_M.gguf"
               mmproj_file="$target_dir/mmproj-F16.gguf"
 
@@ -65,7 +65,7 @@ spec:
                 name: huggingface
           volumeMounts:
             - name: models
-              mountPath: /models-data
+              mountPath: /models
       volumes:
         - name: models
           persistentVolumeClaim:
