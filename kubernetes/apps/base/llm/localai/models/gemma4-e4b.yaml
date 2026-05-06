@@ -10,6 +10,7 @@ data:
     backend: llama-cpp
     parameters:
       model: memory/gemma-4-E4B-it-UD-Q4_K_XL.gguf
+    mmproj: memory/mmproj-F16.gguf
     context_size: 131072
     threads: 12
     mmap: false
@@ -38,15 +39,20 @@ spec:
 
               target_dir=/models/memory
               model_file="${target_dir}/gemma-4-E4B-it-UD-Q4_K_XL.gguf"
+              mmproj_file="${target_dir}/mmproj-F16.gguf"
               config_file=gemma4_e4b.yaml
 
-              if [ ! -s "${model_file}" ]; then
+              if [ ! -s "${model_file}" ] || [ ! -s "${mmproj_file}" ]; then
                 pip install --no-cache-dir huggingface_hub
                 mkdir -p "${target_dir}"
                 rm -rf "${target_dir}/.cache/huggingface/download/gemma-4-E4B-it-UD-Q4_K_XL.gguf.lock"
                 hf download \
                   unsloth/gemma-4-E4B-it-GGUF \
                   gemma-4-E4B-it-UD-Q4_K_XL.gguf \
+                  --local-dir "${target_dir}"
+                hf download \
+                  unsloth/gemma-4-E4B-it-GGUF \
+                  mmproj-F16.gguf \
                   --local-dir "${target_dir}"
               fi
 
