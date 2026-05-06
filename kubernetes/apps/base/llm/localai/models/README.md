@@ -9,14 +9,14 @@ This directory manages LocalAI model definitions and artifact sync jobs with Flu
 
 ## Managed Models
 
-- `qwen3_5_9b`: downloads `Qwen3.5-9B-heretic.Q4_K_M.gguf` and `mmproj-F16.gguf` into `/models-data/qwen-vision`.
-- `gemma4_e4b`: downloads `gemma-4-E4B-it-UD-Q4_K_XL.gguf` into `/models-data/memory`.
-- `qwen2_5_coder_7b`: downloads `Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf` into `/models-data/qwen2-5-coder-7b`.
+- `qwen3_5_9b`: downloads `Qwen3.5-9B-heretic.Q4_K_M.gguf` and `mmproj-F16.gguf` into `/models/qwen-vision`.
+- `gemma4_e4b`: downloads `gemma-4-E4B-it-UD-Q4_K_XL.gguf` into `/models/memory`.
+- `qwen2_5_coder_7b`: downloads `Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf` into `/models/qwen2-5-coder-7b`.
 
 ## How To Add A Model
 
 1. Add a new `<model>.yaml` file containing a model ConfigMap and sync Job.
-2. Configure the sync Job to download artifacts into `/models-data` on the `localai-models` PVC.
+2. Configure the sync Job to download artifacts into `/models` on the `localai-models` PVC.
 3. Mount the model ConfigMap into the matching LocalAI HelmRelease at `/models`.
 4. Add the new file to `kustomization.yaml`.
 
