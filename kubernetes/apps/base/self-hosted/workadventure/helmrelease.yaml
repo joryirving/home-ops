@@ -51,6 +51,13 @@ spec:
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
+            ports:
+              - name: http
+                containerPort: 3000
+              - name: ws
+                containerPort: 3001
+              - name: grpc
+                containerPort: 50051
             probes:
               liveness: &httpPing3000
                 enabled: true
@@ -58,7 +65,7 @@ spec:
                 spec:
                   httpGet:
                     path: /ping
-                    port: 3000
+                    port: http
                   initialDelaySeconds: 10
                   periodSeconds: 10
               readiness: *httpPing3000
@@ -99,6 +106,11 @@ spec:
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
+            ports:
+              - name: http
+                containerPort: 8080
+              - name: grpc
+                containerPort: 50051
             resources:
               requests:
                 cpu: 50m
@@ -141,6 +153,11 @@ spec:
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
+            ports:
+              - name: http
+                containerPort: 3000
+              - name: grpc
+                containerPort: 50053
             probes:
               liveness: &mapstoragePing
                 enabled: true
@@ -148,7 +165,7 @@ spec:
                 spec:
                   httpGet:
                     path: /ping
-                    port: 3000
+                    port: http
                   initialDelaySeconds: 15
                   periodSeconds: 10
               readiness: *mapstoragePing
@@ -183,6 +200,9 @@ spec:
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
+            ports:
+              - name: http
+                containerPort: 8080
             resources:
               requests:
                 cpu: 20m
@@ -195,6 +215,9 @@ spec:
             image:
               repository: docker.io/matthiasluedtke/iconserver
               tag: v3.22.0
+            ports:
+              - name: http
+                containerPort: 8080
             probes:
               liveness: &iconProbe
                 enabled: true
@@ -202,7 +225,7 @@ spec:
                 spec:
                   httpGet:
                     path: /
-                    port: 8080
+                    port: http
                   periodSeconds: 30
               readiness: *iconProbe
             resources:
