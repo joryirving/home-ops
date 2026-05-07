@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: kubectl
+spec:
+  image: docker.io/rohitghumare64/kubectl-mcp-server:1.24.0@sha256:c7ab5720955661babaf8b3b14cf6917039078bae6a36995f1f86852a8d184b51
+  transport: streamable-http
+  proxyMode: streamable-http
+  proxyPort: 8080
+  mcpPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  serviceAccount: kubectl-mcp-readonly
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          args:
+            - --transport
+            - streamable-http
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+            - --read-only
+          env:
+            - name: MCP_K8S_PROVIDER
+              value: in-cluster
+            - name: PYTHONUNBUFFERED
+              value: "1"
+  groupRef:
+    name: mcp-tools
