@@ -4,141 +4,114 @@ kind: ServiceAccount
 metadata:
   name: kubectl-mcp-readonly
 ---
-# Read-only cluster inspection for kubectl MCP. Secrets intentionally excluded
-# (parity with former openclaw-read-all + common kubectl describe targets).
+# Broad read-only access for kubectl MCP. Kubernetes Secrets (core v1) are excluded.
+#
+# - aggregationRule: same selector as built-in "view" — expands with operators that ship
+#   rbac.authorization.k8s.io/aggregate-to-view ClusterRoles (CRDs, etc.).
+# - Non-core apiGroups: resources "*" is safe for Secret *objects* (they only exist in group "").
+# - Core group "": explicit resource list — secrets omitted; exec/proxy-style subresources omitted.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kubectl-mcp-readonly
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        rbac.authorization.k8s.io/aggregate-to-view: "true"
 rules:
-  - apiGroups: [""]
+  - nonResourceURLs:
+      - /api
+      - /api/*
+      - /apis
+      - /apis/*
+      - /healthz
+      - /livez
+      - /openapi
+      - /openapi/*
+      - /readyz
+      - /version
+      - /version/
+    verbs:
+      - get
+  # Core v1 — everything except secrets (and without exec/proxy attach paths).
+  - apiGroups:
+      - ""
     resources:
+      - bindings
+      - componentstatuses
       - configmaps
       - endpoints
       - events
       - limitranges
       - namespaces
+      - namespaces/status
       - nodes
       - nodes/status
       - persistentvolumeclaims
+      - persistentvolumeclaims/status
       - persistentvolumes
+      - persistentvolumes/status
       - pods
       - pods/log
       - pods/status
+      - podtemplates
       - replicationcontrollers
+      - replicationcontrollers/scale
+      - replicationcontrollers/status
       - resourcequotas
+      - resourcequotas/status
       - serviceaccounts
       - services
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["apps"]
+      - services/status
+    verbs:
+      - get
+      - list
+      - watch
+  # All non-core API groups: full resource read (Secret objects are not in these groups).
+  # CRDs whose operators ship aggregate-to-view ClusterRoles are covered by aggregationRule above.
+  - apiGroups:
+      - acme.cert-manager.io
+      - admissionregistration.k8s.io
+      - apiextensions.k8s.io
+      - apiregistration.k8s.io
+      - apps
+      - autoscaling
+      - batch
+      - cert-manager.io
+      - certificates.k8s.io
+      - cilium.io
+      - coordination.k8s.io
+      - discovery.k8s.io
+      - dragonflydb.io
+      - events.k8s.io
+      - extensions
+      - external-secrets.io
+      - flowcontrol.apiserver.k8s.io
+      - gateway.envoyproxy.io
+      - gateway.networking.k8s.io
+      - grafana.integreatly.org
+      - helm.toolkit.fluxcd.io
+      - image.toolkit.fluxcd.io
+      - kustomize.toolkit.fluxcd.io
+      - metrics.k8s.io
+      - monitoring.coreos.com
+      - networking.k8s.io
+      - node.k8s.io
+      - notification.toolkit.fluxcd.io
+      - policy
+      - rbac.authorization.k8s.io
+      - resource.k8s.io
+      - scheduling.k8s.io
+      - snapshot.storage.k8s.io
+      - source.toolkit.fluxcd.io
+      - storage.k8s.io
+      - toolhive.stacklok.dev
     resources:
-      - controllerrevisions
-      - daemonsets
-      - deployments
-      - replicasets
-      - statefulsets
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["batch"]
-    resources:
-      - cronjobs
-      - jobs
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["networking.k8s.io"]
-    resources:
-      - ingressclasses
-      - ingresses
-      - networkpolicies
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["storage.k8s.io"]
-    resources:
-      - csidrivers
-      - csinodes
-      - storageclasses
-      - volumeattachments
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["autoscaling"]
-    resources:
-      - horizontalpodautoscalers
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["policy"]
-    resources:
-      - poddisruptionbudgets
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["rbac.authorization.k8s.io"]
-    resources:
-      - clusterrolebindings
-      - clusterroles
-      - rolebindings
-      - roles
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["apiextensions.k8s.io"]
-    resources:
-      - customresourcedefinitions
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["apiregistration.k8s.io"]
-    resources:
-      - apiservices
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["admissionregistration.k8s.io"]
-    resources:
-      - mutatingwebhookconfigurations
-      - validatingwebhookconfigurations
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["certificates.k8s.io"]
-    resources:
-      - certificatesigningrequests
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["coordination.k8s.io"]
-    resources:
-      - leases
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["discovery.k8s.io"]
-    resources:
-      - endpointslices
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["metrics.k8s.io"]
-    resources:
-      - nodes
-      - pods
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["helm.toolkit.fluxcd.io"]
-    resources:
-      - helmreleases
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
-    resources:
-      - kustomizations
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["source.toolkit.fluxcd.io"]
-    resources:
-      - buckets
-      - gitrepositories
-      - helmcharts
-      - helmrepositories
-      - ocirepositories
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["external-secrets.io"]
-    resources:
-      - clustersecretstores
-      - externalsecrets
-      - secretstores
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["monitoring.coreos.com"]
-    resources:
-      - alertmanagers
-      - podmonitors
-      - probes
-      - prometheuses
-      - prometheusrules
-      - servicemonitors
-      - thanosrulers
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["snapshot.storage.k8s.io"]
-    resources:
-      - volumesnapshotclasses
-      - volumesnapshotcontents
-      - volumesnapshots
-    verbs: ["get", "list", "watch"]
+      - "*"
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
