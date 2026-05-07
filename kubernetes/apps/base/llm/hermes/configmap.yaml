@@ -7,27 +7,25 @@ data:
   config.yaml: |
     model:
       default: self-hosted
-      provider: litellm
+      provider: custom:kubernetes
       base_url: http://litellm.llm:4000/v1
       api_key: $${LITELLM_API_KEY}
     fallback_providers:
-      - provider: minimax
+      - provider: custom:kubernetes
         model: minimax/MiniMax-M2.7
-      - provider: openai
+      - provider: custom:kubernetes
         model: chatgpt/gpt-5.5
-      - provider: openai
+      - provider: custom:kubernetes
         model: vision
-      - provider: moonshot
+      - provider: custom:kubernetes
         model: moonshot/kimi-k2.6
     providers:
+      kubernetes:
+        base_url: http://litellm.llm:4000/v1
+        api_key: $${LITELLM_API_KEY}
       minimax:
         api_key: $${MINIMAX_API_KEY}
         base_url: https://api.minimax.chat/v1
-      litellm:
-        base_url: http://litellm.llm:4000/v1
-        api_key: $${LITELLM_API_KEY}
-      openai:
-        api_key: $${OPENAI_API_KEY}
       moonshot:
         api_key: $${MOONSHOT_API_KEY}
         base_url: https://api.moonshot.ai/v1
@@ -66,7 +64,7 @@ data:
         url: http://vmcp-mcp-gateway-internal.llm:4483/mcp
     auxiliary:
       vision:
-        provider: openai
+        provider: custom:kubernetes
         model: vision
         base_url: http://litellm.llm:4000/v1
         api_key: $${LITELLM_API_KEY}
