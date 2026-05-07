@@ -68,44 +68,67 @@ rules:
       - list
       - watch
   # All non-core API groups: full resource read (Secret objects are not in these groups).
-  # CRDs whose operators ship aggregate-to-view ClusterRoles are covered by aggregationRule above.
+  # Includes built-in API groups plus every CRD group reported from the cluster (minus "").
+  # CRDs whose operators ship aggregate-to-view ClusterRoles are also covered by aggregationRule above.
   - apiGroups:
       - acme.cert-manager.io
+      - actions.github.com
       - admissionregistration.k8s.io
+      - aigateway.envoyproxy.io
       - apiextensions.k8s.io
       - apiregistration.k8s.io
       - apps
       - autoscaling
       - batch
+      - ceph.rook.io
       - cert-manager.io
       - certificates.k8s.io
       - cilium.io
       - coordination.k8s.io
+      - csi.ceph.io
+      - deviceplugin.intel.com
       - discovery.k8s.io
       - dragonflydb.io
       - events.k8s.io
       - extensions
       - external-secrets.io
+      - externaldns.k8s.io
       - flowcontrol.apiserver.k8s.io
+      - fluxcd.controlplane.io
+      - fpga.intel.com
       - gateway.envoyproxy.io
       - gateway.networking.k8s.io
+      - gateway.networking.x-k8s.io
+      - generators.external-secrets.io
       - grafana.integreatly.org
+      - groupsnapshot.storage.k8s.io
       - helm.toolkit.fluxcd.io
       - image.toolkit.fluxcd.io
+      - k8s.cni.cncf.io
+      - keda.sh
       - kustomize.toolkit.fluxcd.io
       - metrics.k8s.io
       - monitoring.coreos.com
+      - monitoring.giantswarm.io
       - networking.k8s.io
       - node.k8s.io
       - notification.toolkit.fluxcd.io
+      - objectbucket.io
+      - observability.giantswarm.io
       - policy
+      - postgres-operator.crunchydata.com
       - rbac.authorization.k8s.io
+      - renovate-operator.mogenius.com
       - resource.k8s.io
       - scheduling.k8s.io
       - snapshot.storage.k8s.io
       - source.toolkit.fluxcd.io
       - storage.k8s.io
+      - talos.dev
       - toolhive.stacklok.dev
+      - tuppr.home-operations.com
+      - upgrade.cattle.io
+      - volsync.backube
     resources:
       - "*"
     verbs:
