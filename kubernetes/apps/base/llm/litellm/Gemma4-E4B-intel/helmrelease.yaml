@@ -31,13 +31,14 @@ spec:
             - |
               set -euo pipefail
 
-              if [ ! -s /models/gemma-4-E4B/gemma-4-E4B-it-UD-Q4_K_XL.gguf ]; then
+              if [ ! -s /models/gemma-4-E4B/gemma-4-E4B-it-UD-Q4_K_XL.gguf ] || [ ! -s /models/gemma-4-E4B/mmproj-F16.gguf ]; then
                 pip install --no-cache-dir huggingface_hub
                 mkdir -p /models/gemma-4-E4B
                 rm -rf /models/gemma-4-E4B/.cache/huggingface/download/gemma-4-E4B-it-UD-Q4_K_XL.gguf.lock
                 hf download \
                   unsloth/gemma-4-E4B-it-GGUF \
                   gemma-4-E4B-it-UD-Q4_K_XL.gguf \
+                  mmproj-F16.gguf \
                   --local-dir /models/gemma-4-E4B
 
                 echo "Gemma-4-E4B-it-UD-Q4_K_XL download complete"
@@ -71,6 +72,8 @@ spec:
             - llama-intel
             - --model
             - /models/gemma-4-E4B/gemma-4-E4B-it-UD-Q4_K_XL.gguf
+            - --mmproj
+            - /models/gemma-4-E4B/mmproj-F16.gguf
             - --ctx-size
             - "131072"
             - --n-gpu-layers
@@ -86,7 +89,13 @@ spec:
             - --cache-prompt
             - --kv-unified
             - --ctx-checkpoints
-            - "0"
+            - "4"
+            - --checkpoint-every-n-tokens
+            - "16384"
+            - --image-min-tokens
+            - "1120"
+            - --image-max-tokens
+            - "1120"
             - --metrics
             - --temp
             - "0.1"
