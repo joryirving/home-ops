@@ -31,19 +31,21 @@ spec:
             - |
               set -euo pipefail
 
-              if [ ! -s /models/gemma-4-E4B/gemma-4-E4B-it-UD-Q4_K_XL.gguf ] || [ ! -s /models/gemma-4-E4B/mmproj-F16.gguf ]; then
+              if [ ! -s /models/qwen3-5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen3-5-9b/mmproj-F16.gguf ]; then
                 pip install --no-cache-dir huggingface_hub
-                mkdir -p /models/gemma-4-E4B
-                rm -rf /models/gemma-4-E4B/.cache/huggingface/download/gemma-4-E4B-it-UD-Q4_K_XL.gguf.lock
+                mkdir -p /models/qwen3-5-9b
+                rm -rf /models/qwen3-5-9b/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
                 hf download \
-                  unsloth/gemma-4-E4B-it-GGUF \
-                  gemma-4-E4B-it-UD-Q4_K_XL.gguf \
+                  mradermacher/Qwen3.5-9B-heretic-GGUF \
+                  Qwen3.5-9B-heretic.Q4_K_M.gguf \
+                  --local-dir /models/qwen3-5-9b
+                hf download \
+                  unsloth/Qwen3.5-9B-GGUF \
                   mmproj-F16.gguf \
-                  --local-dir /models/gemma-4-E4B
-
-                echo "Gemma-4-E4B-it-UD-Q4_K_XL download complete"
+                  --local-dir /models/qwen3-5-9b
+                echo "Qwen3.5-9B download complete"
               else
-                echo "Gemma-4-E4B-it-UD-Q4_K_XL already downloaded, skipping"
+                echo "Qwen3.5-9B already downloaded, skipping"
               fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -71,9 +73,9 @@ spec:
             - --alias
             - llama-intel
             - --model
-            - /models/gemma-4-E4B/gemma-4-E4B-it-UD-Q4_K_XL.gguf
+            - /models/qwen3-5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf
             - --mmproj
-            - /models/gemma-4-E4B/mmproj-F16.gguf
+            - /models/qwen3-5-9b/mmproj-F16.gguf
             - --ctx-size
             - "131072"
             - --n-gpu-layers
