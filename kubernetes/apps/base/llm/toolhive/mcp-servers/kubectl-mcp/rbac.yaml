@@ -1,0 +1,150 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubectl-mcp-readonly
+---
+# Broad read-only access for kubectl MCP. Kubernetes Secrets (core v1) are excluded.
+#
+# - aggregationRule: same selector as built-in "view" — expands with operators that ship
+#   rbac.authorization.k8s.io/aggregate-to-view ClusterRoles (CRDs, etc.).
+# - Non-core apiGroups: resources "*" is safe for Secret *objects* (they only exist in group "").
+# - Core group "": explicit resource list — secrets omitted; exec/proxy-style subresources omitted.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubectl-mcp-readonly
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - nonResourceURLs:
+      - /api
+      - /api/*
+      - /apis
+      - /apis/*
+      - /healthz
+      - /livez
+      - /openapi
+      - /openapi/*
+      - /readyz
+      - /version
+      - /version/
+    verbs:
+      - get
+  # Core v1 — everything except secrets (and without exec/proxy attach paths).
+  - apiGroups:
+      - ""
+    resources:
+      - bindings
+      - componentstatuses
+      - configmaps
+      - endpoints
+      - events
+      - limitranges
+      - namespaces
+      - namespaces/status
+      - nodes
+      - nodes/status
+      - persistentvolumeclaims
+      - persistentvolumeclaims/status
+      - persistentvolumes
+      - persistentvolumes/status
+      - pods
+      - pods/log
+      - pods/status
+      - podtemplates
+      - replicationcontrollers
+      - replicationcontrollers/scale
+      - replicationcontrollers/status
+      - resourcequotas
+      - resourcequotas/status
+      - serviceaccounts
+      - services
+      - services/status
+    verbs:
+      - get
+      - list
+      - watch
+  # All non-core API groups: full resource read (Secret objects are not in these groups).
+  # Includes built-in API groups plus every CRD group reported from the cluster (minus "").
+  # CRDs whose operators ship aggregate-to-view ClusterRoles are also covered by aggregationRule above.
+  - apiGroups:
+      - acme.cert-manager.io
+      - actions.github.com
+      - admissionregistration.k8s.io
+      - aigateway.envoyproxy.io
+      - apiextensions.k8s.io
+      - apiregistration.k8s.io
+      - apps
+      - autoscaling
+      - batch
+      - ceph.rook.io
+      - cert-manager.io
+      - certificates.k8s.io
+      - cilium.io
+      - coordination.k8s.io
+      - csi.ceph.io
+      - deviceplugin.intel.com
+      - discovery.k8s.io
+      - dragonflydb.io
+      - events.k8s.io
+      - extensions
+      - external-secrets.io
+      - externaldns.k8s.io
+      - flowcontrol.apiserver.k8s.io
+      - fluxcd.controlplane.io
+      - fpga.intel.com
+      - gateway.envoyproxy.io
+      - gateway.networking.k8s.io
+      - gateway.networking.x-k8s.io
+      - generators.external-secrets.io
+      - grafana.integreatly.org
+      - groupsnapshot.storage.k8s.io
+      - helm.toolkit.fluxcd.io
+      - image.toolkit.fluxcd.io
+      - k8s.cni.cncf.io
+      - keda.sh
+      - kustomize.toolkit.fluxcd.io
+      - metrics.k8s.io
+      - monitoring.coreos.com
+      - monitoring.giantswarm.io
+      - networking.k8s.io
+      - node.k8s.io
+      - notification.toolkit.fluxcd.io
+      - objectbucket.io
+      - observability.giantswarm.io
+      - policy
+      - postgres-operator.crunchydata.com
+      - rbac.authorization.k8s.io
+      - renovate-operator.mogenius.com
+      - resource.k8s.io
+      - scheduling.k8s.io
+      - snapshot.storage.k8s.io
+      - source.toolkit.fluxcd.io
+      - storage.k8s.io
+      - talos.dev
+      - toolhive.stacklok.dev
+      - tuppr.home-operations.com
+      - upgrade.cattle.io
+      - volsync.backube
+    resources:
+      - "*"
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubectl-mcp-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubectl-mcp-readonly
+subjects:
+  - kind: ServiceAccount
+    name: kubectl-mcp-readonly
+    namespace: llm

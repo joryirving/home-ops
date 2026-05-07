@@ -106,10 +106,6 @@ spec:
             envFrom:
             - secretRef:
                 name: openclaw
-            - secretRef:
-                name: openclaw-actual
-            - secretRef:
-                name: openclaw-miso-gallery
             resources:
               requests:
                 cpu: 1
@@ -157,8 +153,8 @@ spec:
         path: /mnt/daena/comfyui/output
         globalMounts:
         - path: /home/node/.openclaw/workspace/images
-      configsecret:
-        type: secret
+      configmap:
+        type: configMap
         name: "{{ .Release.Name }}-config"
         defaultMode: 0755
         globalMounts:
@@ -166,69 +162,6 @@ spec:
           subPath: openclaw.json
     rbac:
       roles:
-        openclaw-read-all:
-          type: ClusterRole
-          rules:
-            # Broad read-only access across cluster resources. Secrets intentionally excluded.
-          - apiGroups: [""]
-            resources: ["pods", "pods/log", "nodes", "services", "namespaces", "configmaps",
-              "persistentvolumes", "persistentvolumeclaims", "endpoints", "resourcequotas",
-              "limitranges", "serviceaccounts", "events"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["apps"]
-            resources: ["deployments", "daemonsets", "statefulsets", "replicasets",
-              "controllerrevisions"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["batch"]
-            resources: ["jobs", "cronjobs"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["networking.k8s.io"]
-            resources: ["ingresses", "ingressclasses", "networkpolicies"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["storage.k8s.io"]
-            resources: ["storageclasses", "csinodes", "csidrivers", "volumeattachments"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["autoscaling"]
-            resources: ["horizontalpodautoscalers"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["policy"]
-            resources: ["poddisruptionbudgets"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["coordination.k8s.io"]
-            resources: ["leases"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["rbac.authorization.k8s.io"]
-            resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["apiextensions.k8s.io"]
-            resources: ["customresourcedefinitions"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["apiregistration.k8s.io"]
-            resources: ["apiservices"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["metrics.k8s.io"]
-            resources: ["nodes", "pods"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["helm.toolkit.fluxcd.io"]
-            resources: ["helmreleases"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["kustomize.toolkit.fluxcd.io"]
-            resources: ["kustomizations"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["source.toolkit.fluxcd.io"]
-            resources: ["gitrepositories", "helmrepositories", "ocirepositories",
-              "buckets", "helmcharts"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["external-secrets.io"]
-            resources: ["externalsecrets", "secretstores", "clustersecretstores"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["monitoring.coreos.com"]
-            resources: ["prometheuses", "alertmanagers", "servicemonitors", "podmonitors",
-              "prometheusrules", "thanosrulers", "probes"]
-            verbs: ["get", "list", "watch"]
-          - apiGroups: ["snapshot.storage.k8s.io"]
-            resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
-            verbs: ["get", "list", "watch"]
         # Cluster-wide pod delete — restart any pod in any namespace
         openclaw-pod-delete-cluster-wide:
           type: ClusterRole
@@ -247,13 +180,6 @@ spec:
             resources: ["deployments"]
             verbs: ["patch", "update"]
       bindings:
-        openclaw-read-all:
-          type: ClusterRoleBinding
-          roleRef:
-            identifier: openclaw-read-all
-          subjects:
-          - identifier: openclaw
-            serviceAccount: openclaw
         # Cluster-wide binding for pod delete
         openclaw-pod-delete-cluster-wide:
           type: ClusterRoleBinding
