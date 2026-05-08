@@ -3,17 +3,10 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app workadventure
+  name: &app coturn
 spec:
-  components:
-    - ../../../../components/dragonfly
-  healthCheckExprs:
-    - apiVersion: dragonflydb.io/v1alpha1
-      kind: Dragonfly
-      failed: status.phase != 'ready'
-      current: status.phase == 'ready'
   interval: 1h
-  path: ./kubernetes/apps/base/self-hosted/workadventure
+  path: ./kubernetes/apps/base/workadventure/coturn
   postBuild:
     substitute:
       APP: *app
