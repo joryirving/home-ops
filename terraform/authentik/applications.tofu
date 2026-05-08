@@ -2,7 +2,6 @@ locals {
   oauth_apps = [
     "autobrr",
     "Arcane",
-    "Dashclaw",
     "ErsatzTV",
     "Grafana",
     "Headlamp",
@@ -44,15 +43,6 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/arcane.png"
       redirect_uri      = "https://arcane.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://arcane.${var.CLUSTER_DOMAIN}"
-      property_mappings = local.default_property_mappings
-    },
-    Dashclaw = {
-      client_id         = module.onepassword_application["Dashclaw"].fields["DASHCLAW_CLIENT_ID"]
-      client_secret     = module.onepassword_application["Dashclaw"].fields["DASHCLAW_CLIENT_SECRET"]
-      group             = "ai"
-      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/openclaw.png"
-      redirect_uri      = "https://dashclaw.${var.CLUSTER_DOMAIN}/api/auth/callback/oidc"
-      launch_url        = "https://dashclaw.${var.CLUSTER_DOMAIN}/login"
       property_mappings = local.default_property_mappings
     },
     ErsatzTV = {
