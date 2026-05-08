@@ -67,24 +67,20 @@ spec:
       config:
         type: secret
         name: synapse
-        advancedMounts:
-          synapse:
-            app:
-              - path: /data/homeserver.yaml
-                subPath: homeserver.yaml
-                readOnly: true
-              - path: /data/log.config
-                subPath: log.config
-                readOnly: true
-              - path: /data/signing/signing.key
-                subPath: signing.key
-                readOnly: true
+        globalMounts:
+          - path: /data/homeserver.yaml
+            subPath: homeserver.yaml
+            readOnly: true
+          - path: /data/log.config
+            subPath: log.config
+            readOnly: true
+          - path: /data/signing.key
+            subPath: signing.key
+            readOnly: true
       data:
         existingClaim: synapse
-        advancedMounts:
-          synapse:
-            app:
-              - path: /data
+        globalMounts:
+          - path: /data
     route:
       app:
         hostnames: ["matrix.jory.dev"]
