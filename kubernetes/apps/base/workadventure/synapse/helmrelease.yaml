@@ -28,14 +28,11 @@ spec:
               tag: v1.152.1@sha256:ea13612748d2c3cd7d37314e4d2bb3833831e7fe9c1cc2ba2a05a0e51ab78297
             env:
               SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
-              MATRIX_DB_PASSWORD:
+              PGPASSWORD:
                 valueFrom:
                   secretKeyRef:
                     name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
                     key: password
-            envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}"
             ports:
               - name: http
                 containerPort: 8008
@@ -68,8 +65,8 @@ spec:
                 memory: 1Gi
     persistence:
       config:
-        type: configMap
-        name: synapse-config
+        type: secret
+        name: synapse
         advancedMounts:
           synapse:
             app:
@@ -79,12 +76,6 @@ spec:
               - path: /data/log.config
                 subPath: log.config
                 readOnly: true
-      signing-key:
-        type: secret
-        name: synapse
-        advancedMounts:
-          synapse:
-            app:
               - path: /data/signing/signing.key
                 subPath: signing.key
                 readOnly: true
