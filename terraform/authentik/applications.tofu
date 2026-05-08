@@ -149,10 +149,21 @@ locals {
       client_id         = module.onepassword_application["WorkAdventure"].fields["WORKADVENTURE_OIDC_CLIENT_ID"]
       client_secret     = module.onepassword_application["WorkAdventure"].fields["WORKADVENTURE_OIDC_CLIENT_SECRET"]
       group             = "home"
-      icon_url          = "https://raw.githubusercontent.com/workadventure/workadventure/master/static/favicon.png"
+      icon_url          = "https://raw.githubusercontent.com/workadventure/workadventure/refs/heads/master/play/public/static/images/favicons/icon-512x512.png"
       redirect_uri      = "https://gather.${var.CLUSTER_DOMAIN}/@/oidc/callback"
       launch_url        = "https://gather.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
+      # Strict OAuth redirect matching; allow common variants WorkAdventure / browsers may send.
+      additional_redirect_uris = [
+        {
+          matching_mode = "strict",
+          url           = "https://gather.${var.CLUSTER_DOMAIN}/@/oidc/callback/"
+        },
+        {
+          matching_mode = "strict",
+          url           = "https://gather.${var.CLUSTER_DOMAIN}/%40/oidc/callback"
+        },
+      ]
     },
   }
 }
@@ -168,12 +179,15 @@ resource "authentik_provider_oauth2" "oauth2" {
   property_mappings     = each.value.property_mappings
   access_token_validity = "hours=4"
   signing_key           = data.authentik_certificate_key_pair.generated.id
-  allowed_redirect_uris = [
-    {
-      matching_mode = "strict",
-      url           = each.value.redirect_uri,
-    }
-  ]
+  allowed_redirect_uris = concat(
+    [
+      {
+        matching_mode = "strict",
+        url           = each.value.redirect_uri,
+      },
+    ],
+    try(each.value.additional_redirect_uris, [])
+  )
 }
 
 resource "authentik_application" "application" {
