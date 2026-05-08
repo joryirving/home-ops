@@ -105,7 +105,7 @@ data:
             heartbeat: { every: "60m", model: "litellm/self-hosted", activeHours: { start: "06:00", end: "23:00" }, },
             workspace: "/home/node/.openclaw/workspace-saffron",
             agentDir: "/home/node/.openclaw/agents/saffron/agent",
-            tools: { allow: ["exec", "read", "write", "web_fetch", "browser", "sessions_spawn", "memory_search", "memory_get", "mcp"] },
+            tools: { allow: ["exec", "read", "write", "web_fetch", "browser", "sessions_spawn", "memory_search", "memory_get", "toolhive__find_tool","toolhive__call_tool"] },
             model: {
               primary: "litellm/minimax/MiniMax-M2.7",
               fallbacks: [
@@ -115,7 +115,7 @@ data:
             },
             identity: {
               name: "Saffron",
-              avatar: "avatars/sage_avatar.png",
+              avatar: "avatars/saffron_avatar.png",
             }
           },
         ],
@@ -254,20 +254,6 @@ data:
               consumerKey: "$${COMPOSIO_API_KEY}",
             },
           },
-          "openclaw-mcp-bridge": {
-            enabled: true,
-            config: {
-              mode: "router",
-              toolPrefix: true,
-              servers: {
-                toolhive: {
-                  transport: "streamable-http",
-                  url: "http://vmcp-mcp-gateway-internal.llm:4483/mcp",
-                  description: "Optimized MCP tools via ToolHive (arr, garmin-connect, github, kubectl, memory-mcp, seerr-mcp)"
-                },
-              }
-            },
-          },
           searxng: {
             enabled: true,
             config: {
@@ -344,5 +330,13 @@ data:
       messages: {
         ackReactionScope: "group-mentions",
         responsePrefix: "[{model}]"
+      },
+      mcp: {
+        servers: {
+          toolhive: {
+            url: "http://vmcp-mcp-gateway-internal.llm:4483/mcp",
+            transport: "streamable-http"
+          }
+        }
       },
     }
