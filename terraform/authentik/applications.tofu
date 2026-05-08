@@ -138,7 +138,7 @@ locals {
     WorkAdventure = {
       client_id         = module.onepassword_application["WorkAdventure"].fields["WORKADVENTURE_OIDC_CLIENT_ID"]
       client_secret     = module.onepassword_application["WorkAdventure"].fields["WORKADVENTURE_OIDC_CLIENT_SECRET"]
-      group             = "home"
+      group             = "workadventure"
       icon_url          = "https://raw.githubusercontent.com/workadventure/workadventure/refs/heads/master/play/public/static/images/favicons/icon-512x512.png"
       redirect_uri      = "https://gather.${var.CLUSTER_DOMAIN}/openid-callback"
       launch_url        = "https://gather.${var.CLUSTER_DOMAIN}"

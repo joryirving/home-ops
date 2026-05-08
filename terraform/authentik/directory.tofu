@@ -9,6 +9,7 @@ locals {
     media          = { name = "Media" }
     monitoring     = { name = "Monitoring" }
     users          = { name = "Users" }
+    workadventure  = { name = "WorkAdventure" }
   }
 }
 
