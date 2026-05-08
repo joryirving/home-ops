@@ -1,0 +1,113 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: synapse
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        runAsUser: 991
+        runAsGroup: 991
+        fsGroup: 991
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      synapse:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/element-hq/synapse
+              tag: v1.152.1@sha256:ea13612748d2c3cd7d37314e4d2bb3833831e7fe9c1cc2ba2a05a0e51ab78297
+            env:
+              SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
+              MATRIX_DB_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
+                    key: password
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
+            ports:
+              - name: http
+                containerPort: 8008
+            probes:
+              liveness: &probe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: http
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 10
+              readiness: *probe
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: http
+                  failureThreshold: 30
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 50m
+                memory: 384Mi
+              limits:
+                memory: 1Gi
+    persistence:
+      config:
+        type: configMap
+        name: synapse-config
+        advancedMounts:
+          synapse:
+            app:
+              - path: /data/homeserver.yaml
+                subPath: homeserver.yaml
+                readOnly: true
+              - path: /data/log.config
+                subPath: log.config
+                readOnly: true
+      signing-key:
+        type: secret
+        name: synapse
+        advancedMounts:
+          synapse:
+            app:
+              - path: /data/signing/signing.key
+                subPath: signing.key
+                readOnly: true
+      data:
+        existingClaim: synapse
+        advancedMounts:
+          synapse:
+            app:
+              - path: /data
+    route:
+      app:
+        hostnames: ["matrix.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: http
+    service:
+      app:
+        controller: synapse
+        ports:
+          http:
+            port: 8008
