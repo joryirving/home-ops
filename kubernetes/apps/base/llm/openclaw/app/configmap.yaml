@@ -10,11 +10,8 @@ data:
     {
       agents: {
         defaults: {
-          llm: {
-            idleTimeoutSeconds: 300,
-          },
           model: {
-            primary: "minimax/MiniMax-M2.7",
+            primary: "litellm/minimax/MiniMax-M2.7",
             fallbacks: [
               "openai/gpt-5.4-mini",
               "litellm/self-hosted",
@@ -31,13 +28,13 @@ data:
             primary: "comfy/workflow",
           },
           models: {
-            "moonshot/kimi-k2.5": { alias: "moonshot" },
-            "minimax/MiniMax-M2.7": { alias: "minimax" },
+            "litellm/moonshot/kimi-k2.5": { alias: "moonshot" },
+            "litellm/minimax/MiniMax-M2.7": { alias: "minimax" },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "openai/gpt-5.5": { alias: "gpt" },
             "openai/gpt-5.4-mini": { alias: "gpt-mini" },
             "openai/gpt-5.4-nano": { alias: "gpt-lite" },
-            "openai-codex/gpt-5.3-codex": { alias: "gpt-coder" },
+            "litellm/chatgpt/gpt-5.3-codex": { alias: "gpt-coder" },
             "litellm/vision": { alias: "vision" },
           },
           memorySearch: {
@@ -56,7 +53,7 @@ data:
           maxConcurrent: 4,
           subagents: {
             model: {
-              primary: "minimax/MiniMax-M2.7",
+              primary: "litellm/minimax/MiniMax-M2.7",
             },
             archiveAfterMinutes: 120,
             maxConcurrent: 3,
@@ -76,7 +73,7 @@ data:
             id: "main",
             default: true,
             name: "Miso",
-            heartbeat: { every: "60m", model: "minimax/MiniMax-M2.7", activeHours: { start: "06:00", end: "23:00" }, },
+            heartbeat: { every: "60m", model: "litellm/minimax/MiniMax-M2.7", activeHours: { start: "06:00", end: "23:00" }, },
             workspace: "/home/node/.openclaw/workspace",
             agentDir: "/home/node/.openclaw/agents/main/agent",
             identity: {
@@ -90,9 +87,8 @@ data:
             workspace: "/home/node/.openclaw/workspace-matcha",
             agentDir: "/home/node/.openclaw/agents/matcha/agent",
             tools: { allow: ["exec", "message", "read", "web_fetch", "image", "memory_search", "memory_get"] },
-    
             model: {
-              primary: "minimax/MiniMax-M2.7",
+              primary: "litellm/minimax/MiniMax-M2.7",
               fallbacks: [
                 "litellm/self-hosted",
                 "openai/gpt-5.4-mini",
@@ -110,11 +106,10 @@ data:
             workspace: "/home/node/.openclaw/workspace-saffron",
             agentDir: "/home/node/.openclaw/agents/saffron/agent",
             tools: { allow: ["exec", "read", "write", "web_fetch", "browser", "sessions_spawn", "memory_search", "memory_get", "mcp"] },
-    
             model: {
-              primary: "litellm/self-hosted",
+              primary: "litellm/minimax/MiniMax-M2.7",
               fallbacks: [
-                "minimax/MiniMax-M2.7",
+                "litellm/self-hosted",
                 "openai/gpt-5.5",
               ]
             },
@@ -141,27 +136,16 @@ data:
       },
       models: {
         providers: {
-          moonshot: {
-            baseUrl: "https://api.moonshot.ai/v1",
-            apiKey: "$${MOONSHOT_API_KEY}",
-            api: "openai-completions",
-            models: [
-              { id: "kimi-k2.5", name: "Kimi K2.5", reasoning: false, input: ["text"], cost: { input: 0.6, output: 3, cacheRead: 0.1, cacheWrite: 0.6 }, contextWindow: 128000, maxTokens: 8192 },
-            ]
-          },
-          minimax: {
-            baseUrl: "https://api.minimax.io/anthropic",
-            apiKey: "$${MINIMAX_API_KEY}",
-            api: "anthropic-messages",
-            models: [
-              { id: "MiniMax-M2.7", name: "MiniMax M2.7", reasoning: false, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
-            ],
-          },
           "litellm": {
             baseUrl: "http://litellm.llm:4000/v1",
             apiKey: "$${LITELLM_API_KEY}",
             api: "openai-completions",
+            timeoutSeconds: 300,
             models: [
+              { id: "minimax/MiniMax-M2.7", name: "MiniMax M2.7 via LiteLLM", reasoning: false, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
+              { id: "moonshot/kimi-k2.5", name: "Kimi K2.5 via LiteLLM", reasoning: false, input: ["text"], cost: { input: 0.6, output: 3, cacheRead: 0.1, cacheWrite: 0.6 }, contextWindow: 128000, maxTokens: 8192 },
+              { id: "moonshot/kimi-k2.6", name: "Kimi K2.6 via LiteLLM", reasoning: false, input: ["text"], cost: { input: 0.95, output: 4, cacheRead: 0.16, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 262144 },
+              { id: "chatgpt/gpt-5.3-codex", name: "GPT 5.3 Codex via LiteLLM", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 8192 },
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q5_K_XL (ROCm)", reasoning: false, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 8192 },
               { id: "vision", name: "Qwen3.5-9B-heretic Q4_K_M (ROCm)", reasoning: false, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 8192 },
               { id: "llama-intel", name: "Qwen3.5-9B-heretic Q4_K_M (XPU)", reasoning: false, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 8192 },
@@ -243,7 +227,6 @@ data:
               },
             },
           },
-    
           "openclaw-better-gateway": {
             enabled: true,
             config: {
@@ -321,19 +304,12 @@ data:
               },
             },
           },
-          minimax: {
-            enabled: true,
-          },
           openai: {
-            enabled: true,
-          },
-          moonshot: {
             enabled: true,
           },
           browser: {
             enabled: true,
           },
-    
           "memory-core": {
             enabled: true,
           },
