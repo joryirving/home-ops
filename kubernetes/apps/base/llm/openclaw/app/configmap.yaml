@@ -38,10 +38,10 @@ data:
             "litellm/vision": { alias: "vision" },
           },
           memorySearch: {
-            provider: "local",
-            local: { modelPath: "hf:ggml-org/embeddinggemma-300M-GGUF/embeddinggemma-300M-Q8_0.gguf" },
-            sync: { watch: true },
-            query: { hybrid: { enabled: true, vectorWeight: 0.7, textWeight: 0.3 }
+            provider: "ollama",
+            model: "nomic-embed-text",
+            remote: {
+              baseUrl: "http://ollama.llm:11434/v1"
             }
           },
           contextPruning: { mode: "off" },
@@ -60,7 +60,7 @@ data:
             directPolicy: "allow",
             lightContext: true,
             isolatedSession: true,
-            includeReasoning: true,
+            includeReasoning: false,
           },
           thinkingDefault: "high",
           timeoutSeconds: 600
@@ -238,11 +238,13 @@ data:
           "lossless-claw": {
             enabled: true,
             config: {
-              freshTailCount: 64,
               contextThreshold: 0.75,
-              incrementalMaxDepth: -1,
-              summaryModel: "litellm/vision",
               expansionModel: "litellm/vision",
+              freshTailCount: 64,
+              ignoreSessionPatterns: ["heartbeat/*", "*/heartbeat"],
+              incrementalMaxDepth: -1,
+              pruneHeartbeatOk: true,
+              summaryModel: "litellm/vision",
             },
           },
           "composio": {
