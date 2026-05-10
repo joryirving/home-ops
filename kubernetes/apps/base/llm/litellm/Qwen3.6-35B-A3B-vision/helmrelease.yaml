@@ -33,23 +33,25 @@ spec:
             - /bin/sh
             - -ec
             - |
-              set -euo pipefail
+              set -eu
 
-              if [ ! -s /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen-vision/mmproj-F16.gguf ]; then
-                pip install --no-cache-dir huggingface_hub
-                mkdir -p /models/qwen-vision
-                rm -rf /models/qwen-vision/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
+              MODEL_DIR=/models/qwen3.6-35b-a3b-heretic
+              MODEL_FILE="$MODEL_DIR/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf"
+              MMPROJ_FILE="$MODEL_DIR/mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf"
+
+              if [ ! -s "$MODEL_FILE" ] || [ ! -s "$MMPROJ_FILE" ]; then
+                pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                mkdir -p "$MODEL_DIR"
+
                 hf download \
-                  mradermacher/Qwen3.5-9B-heretic-GGUF \
-                  Qwen3.5-9B-heretic.Q4_K_M.gguf \
-                  --local-dir /models/qwen-vision
-                hf download \
-                  unsloth/Qwen3.5-9B-GGUF \
-                  mmproj-F16.gguf \
-                  --local-dir /models/qwen-vision
-                echo "Qwen3.5-9B download complete"
+                  Youssofal/Qwen3.6-35B-A3B-Abliterated-Heretic-GGUF \
+                  Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf \
+                  mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf \
+                  --local-dir "$MODEL_DIR"
+
+                echo "Qwen3.6-35B-A3B-Abliterated-Heretic download complete"
               else
-                echo "Qwen3.5-9B already downloaded, skipping"
+                echo "Qwen3.6-35B-A3B-Abliterated-Heretic already downloaded, skipping"
               fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -79,32 +81,29 @@ spec:
             - --alias
             - vision
             - --model
-            - /models/qwen-vision/Qwen3.5-9B-heretic.Q4_K_M.gguf
+            - /models/qwen3.6-35b-a3b-heretic/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf
             - --mmproj
-            - /models/qwen-vision/mmproj-F16.gguf
+            - /models/qwen3.6-35b-a3b-heretic/mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf
             - --ctx-size
             - "131072"
             - --n-gpu-layers
             - "99"
-            - --fit
-            - "off"
             - --flash-attn
             - "on"
             - --parallel
-            - "3"
+            - "2"
             - --cont-batching
             - -sps
             - "0.90"
-            - --no-context-shift
             - --cache-prompt
             - --kv-unified
             - --ctx-checkpoints
-            - "4"
+            - "8"
             - --checkpoint-every-n-tokens
-            - "16384"
-            - --metrics
+            - "32768"
             - --image-min-tokens
             - "1024"
+            - --metrics
             - --temp
             - "0.6"
             - --top-p
@@ -114,31 +113,29 @@ spec:
             - --min-p
             - "0"
             - --presence-penalty
-            - "0"
+            - "0.5"
             - --repeat-penalty
-            - "1.0"
-            - --chat-template-kwargs
-            - '{"enable_thinking":false}'
+            - "1.03"
+            - --reasoning-budget
+            - "8192"
+            - --reasoning-budget-message
+            - "Stop reasoning and produce the implementation, tool call, or final answer."
             - --batch-size
             - "4096"
             - --ubatch-size
             - "2048"
-            # - --cache-type-k
-            # - tbq4_0
-            # - --cache-type-v
-            # - tbq4_0
             - --threads
             - "12"
             - --threads-batch
             - "16"
             - --no-mmap
             - --jinja
+            - --chat-template-kwargs
+            - '{"preserve_thinking":true}'
             resources:
               requests:
                 cpu: 500m
                 memory: 12Gi
-              limits:
-                memory: 24Gi
             probes:
               liveness:
                 enabled: true
