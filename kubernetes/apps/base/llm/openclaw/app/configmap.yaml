@@ -44,11 +44,8 @@ data:
             query: { hybrid: { enabled: true, vectorWeight: 0.7, textWeight: 0.3 }
             }
           },
-          contextPruning: { mode: "cache-ttl", ttl: "24h", keepLastAssistants: 4, softTrimRatio: 0.3, hardClearRatio: 0.5, minPrunableToolChars: 6000, softTrim: { maxChars: 4000, headChars: 1500, tailChars: 1500 }, hardClear: { enabled: true, placeholder: "[Old tool result content cleared]" }, },
-          compaction: {
-            mode: "default",
-            reserveTokensFloor: 24000,
-            memoryFlush: { enabled: true, softThresholdTokens: 12000, prompt: "Extract key decisions, state changes, lessons, blockers to memory/YYYY-MM-DD.md. Format: ## [HH:MM] Topic. Skip routine work. NO_FLUSH if nothing important.", systemPrompt: "Compacting session context. Extract only what's worth remembering. No fluff." },
+          contextPruning: { mode: "off" },
+          compaction: { mode: "default", reserveTokensFloor: 30000, memoryFlush: { enabled: true, softThresholdTokens: 80000, prompt: "Extract key decisions, state changes, lessons, blockers to memory/YYYY-MM-DD.md. Format: ## [HH:MM] Topic. Skip routine work. NO_FLUSH if nothing important.", systemPrompt: "Compacting session context. Extract only what's worth remembering. No fluff." },
           },
           maxConcurrent: 4,
           subagents: {
@@ -57,7 +54,7 @@ data:
             },
             archiveAfterMinutes: 120,
             maxConcurrent: 3,
-            thinking: "adaptive",
+            thinking: "high",
           },
           heartbeat: {
             directPolicy: "allow",
@@ -65,7 +62,7 @@ data:
             isolatedSession: true,
             includeReasoning: true,
           },
-          thinkingDefault: "adaptive",
+          thinkingDefault: "high",
           timeoutSeconds: 600
         },
         list: [
