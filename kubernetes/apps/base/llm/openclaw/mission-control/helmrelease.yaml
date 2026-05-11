@@ -1,0 +1,78 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mission-control
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn: []
+  values:
+    controllers:
+      mission-control:
+        replicas: 1
+        strategy: RollingUpdate
+        containers:
+          app:
+            image:
+              repository: ghcr.io/misospace/mission-control
+              tag: 0.1.1@sha256:5c44600964ed20a045e2623ba1e2e5d07eaa2ee8675a46b84b9bc414139e3605
+            env:
+              GITHUB_REPOSITORIES: |
+                misospace/mission-control
+                misospace/miso-chat
+                misospace/miso-gallery
+                misospace/windowstead
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .Release.Name }}-pguser-{{ .Release.Name }}"
+                    key: pgbouncer-uri
+            envFrom:
+              - secretRef:
+                  name: mission-control
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 3000
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: 3000
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  failureThreshold: 3
+    service:
+      app:
+        ports:
+          http:
+            port: 3000
+    route:
+      app:
+        hostnames: ["mission-control.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: mission-control
+                port: 3000
