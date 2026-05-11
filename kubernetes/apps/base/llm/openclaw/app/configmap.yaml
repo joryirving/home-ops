@@ -12,7 +12,7 @@ data:
         defaults: {
           contextInjection: "always",
           bootstrapMaxChars: 50000,
-          bootstrapTotalMaxChars: 300000,
+          bootstrapTotalMaxChars: 100000,
           thinkingDefault: "high",
           timeoutSeconds: 600,
           model: {
@@ -21,6 +21,7 @@ data:
               "openai-codex/gpt-5.4-mini",
               "litellm/self-hosted",
               "litellm/vision",
+              "litellm/moonshot/kimi-k2.6",
             ]
           },
           imageModel: {
@@ -34,14 +35,15 @@ data:
             primary: "comfy/workflow",
           },
           models: {
-            "litellm/moonshot/kimi-k2.5": { alias: "moonshot" },
-            "litellm/minimax/MiniMax-M2.7": { alias: "minimax" },
+            "litellm/moonshot/kimi-k2.5": { alias: "moonshot", params: { cache_prompt: true } },
+            "litellm/moonshot/kimi-k2.6": { alias: "moonshot-2.6", params: { cache_prompt: true } },
+            "litellm/minimax/MiniMax-M2.7": { alias: "minimax", params: { cache_prompt: true } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "openai-codex/gpt-5.5": { alias: "gpt" },
             "openai-codex/gpt-5.4-mini": { alias: "gpt-mini" },
             "openai-codex/gpt-5.4-nano": { alias: "gpt-lite" },
-            "litellm/chatgpt/gpt-5.3-codex": { alias: "gpt-coder" },
-            "litellm/vision": { alias: "vision" },
+            "litellm/chatgpt/gpt-5.3-codex": { alias: "gpt-coder", params: { cache_prompt: true } },
+            "litellm/vision": { alias: "vision", params: { cache_prompt: true } },
           },
           memorySearch: {
             provider: "ollama",
@@ -93,6 +95,7 @@ data:
               fallbacks: [
                 "litellm/self-hosted",
                 "openai-codex/gpt-5.4-mini",
+                "litellm/vision",
               ]
             },
             identity: {
@@ -112,6 +115,8 @@ data:
               fallbacks: [
                 "litellm/self-hosted",
                 "openai-codex/gpt-5.5",
+                "litellm/vision",
+                "litellm/moonshot/kimi-k2.6",
               ]
             },
             identity: {
@@ -141,15 +146,15 @@ data:
             baseUrl: "http://litellm.llm:4000/v1",
             apiKey: "$${LITELLM_API_KEY}",
             api: "openai-completions",
-            timeoutSeconds: 300,
+            timeoutSeconds: 600,
             models: [
-              { id: "minimax/MiniMax-M2.7", name: "MiniMax M2.7 via LiteLLM", reasoning: false, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
-              { id: "moonshot/kimi-k2.5", name: "Kimi K2.5 via LiteLLM", reasoning: false, input: ["text"], cost: { input: 0.6, output: 3, cacheRead: 0.1, cacheWrite: 0.6 }, contextWindow: 128000, maxTokens: 8192 },
-              { id: "moonshot/kimi-k2.6", name: "Kimi K2.6 via LiteLLM", reasoning: false, input: ["text"], cost: { input: 0.95, output: 4, cacheRead: 0.16, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 262144 },
-              { id: "chatgpt/gpt-5.3-codex", name: "GPT 5.3 Codex via LiteLLM", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 8192 },
-              { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q5_K_XL (ROCm)", reasoning: false, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 8192 },
-              { id: "vision", name: "Qwen3.5-9B-heretic Q4_K_M (ROCm)", reasoning: false, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 8192 },
-              { id: "llama-intel", name: "Qwen3.5-9B-heretic Q4_K_M (XPU)", reasoning: false, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 8192 },
+              { id: "minimax/MiniMax-M2.7", name: "MiniMax M2.7 via LiteLLM", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 204800, maxTokens: 32768, },
+              { id: "moonshot/kimi-k2.5", name: "Kimi K2.5 via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0.6, output: 3, cacheRead: 0.1, cacheWrite: 0.6 }, contextWindow: 128000, maxTokens: 8192 },
+              { id: "moonshot/kimi-k2.6", name: "Kimi K2.6 via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0.95, output: 4, cacheRead: 0.16, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 262144 },
+              { id: "chatgpt/gpt-5.3-codex", name: "GPT 5.3 Codex via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 8192 },
+              { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q5_K_XL (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 8192 },
+              { id: "vision", name: "Qwen3.6-35B-A3B-Heretic Q4_K_M (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 8192 },
+              { id: "llama-intel", name: "Qwen3.6-35B-A3B-Heretic Q4_K_M (XPU)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 8192 },
             ]
           }
         }
@@ -242,11 +247,11 @@ data:
           "lossless-claw": {
             enabled: true,
             config: {
-              contextThreshold: 0.75,
+              contextThreshold: 0.60,
               expansionModel: "litellm/vision",
               freshTailCount: 64,
               ignoreSessionPatterns: ["heartbeat/*", "*/heartbeat"],
-              incrementalMaxDepth: -1,
+              incrementalMaxDepth: 3,
               pruneHeartbeatOk: true,
               summaryModel: "litellm/vision",
             },

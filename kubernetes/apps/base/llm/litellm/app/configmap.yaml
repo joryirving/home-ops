@@ -9,40 +9,82 @@ data:
       # These aliases keep the client-facing names stable while LiteLLM
       # forwards the upstream model IDs that each llama.cpp server expects.
       - model_name: self-hosted
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 8192
+          supports_function_calling: true
+          supports_vision: true
         litellm_params:
           model: openai/self-hosted
           api_base: http://llama-server.llm:8080/v1
           api_key: llama-server
+          drop_params: true
 
       - model_name: vision
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 8192
+          supports_function_calling: true
+          supports_vision: true
         litellm_params:
           model: openai/vision
           api_base: http://llama-vision.llm:8080/v1
           api_key: llama-vision
+          drop_params: true
 
       - model_name: llama-intel
+        model_info:
+          mode: chat
+          max_input_tokens: 131072
+          max_output_tokens: 8192
+          supports_function_calling: true
+          supports_vision: true
         litellm_params:
           model: openai/llama-intel
           api_base: http://llama-intel.llm:8080/v1
           api_key: llama-intel
+          drop_params: true
 
       - model_name: minimax/MiniMax-M2.7
+        model_info:
+          mode: chat
+          max_input_tokens: 204800
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
         litellm_params:
           model: minimax/MiniMax-M2.7
           api_base: https://api.minimax.io/v1
           api_key: os.environ/MINIMAX_API_KEY
+          drop_params: true
 
       - model_name: moonshot/kimi-k2.5
+        model_info:
+          mode: chat
+          max_input_tokens: 128000
+          max_output_tokens: 8192
+          supports_function_calling: true
+          supports_prompt_caching: true
         litellm_params:
           model: moonshot/kimi-k2.5
           api_base: https://api.moonshot.ai/v1
           api_key: os.environ/MOONSHOT_API_KEY
+          drop_params: true
 
       - model_name: moonshot/kimi-k2.6
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 262144
+          supports_function_calling: true
+          supports_prompt_caching: true
         litellm_params:
           model: moonshot/kimi-k2.6
           api_base: https://api.moonshot.ai/v1
           api_key: os.environ/MOONSHOT_API_KEY
+          drop_params: true
 
       - model_name: chatgpt/gpt-5.5
         model_info:
@@ -67,19 +109,23 @@ data:
       health_check_endpoint: /v1/health
 
     router_settings:
-      routing_strategy: simple-shuffle
       redis_host: os.environ/REDIS_HOST
       redis_port: os.environ/REDIS_PORT
 
     litellm_settings:
       success_callback: ["prometheus"]
+      failure_callback: ["prometheus"]
       prometheus_adapter: true
       cache: true
       cache_params:
         type: redis
         host: os.environ/REDIS_HOST
         port: os.environ/REDIS_PORT
-      drop_params: true
+        ttl: 30
+      drop_params: false
+      request_timeout: 600
+      num_retries: 2
+      retry_after: 5
       set_verbose: false
 
     environment:

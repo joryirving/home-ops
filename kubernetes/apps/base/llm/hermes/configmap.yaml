@@ -23,12 +23,6 @@ data:
       kubernetes:
         base_url: http://litellm.llm:4000/v1
         api_key: $${LITELLM_API_KEY}
-      minimax:
-        api_key: $${MINIMAX_API_KEY}
-        base_url: https://api.minimax.chat/v1
-      moonshot:
-        api_key: $${MOONSHOT_API_KEY}
-        base_url: https://api.moonshot.ai/v1
     toolsets:
       - hermes-cli
     terminal:
@@ -38,10 +32,11 @@ data:
       persistent_shell: true
     memory:
       auto_migrate: true
-      auto_summarize:
-        threshold: 50
     compression:
       enabled: true
+      threshold: 0.50
+      target_ratio: 0.20
+      protect_last_n: 20
     agent:
       max_turns: 90
       gateway_timeout: 1800
@@ -68,3 +63,27 @@ data:
         model: vision
         base_url: http://litellm.llm:4000/v1
         api_key: $${LITELLM_API_KEY}
+      compression:
+        provider: openai
+        model: vision
+        base_url: http://litellm.llm:4000/v1
+        api_key: $${LITELLM_API_KEY}
+        timeout: 180
+      web_extract:
+        provider: openai
+        model: vision
+        base_url: http://litellm.llm:4000/v1
+        api_key: $${LITELLM_API_KEY}
+        timeout: 120
+      approval:
+        provider: openai
+        model: vision
+        base_url: http://litellm.llm:4000/v1
+        api_key: $${LITELLM_API_KEY}
+        timeout: 60
+      session_search:
+        provider: openai
+        model: vision
+        base_url: http://litellm.llm:4000/v1
+        api_key: $${LITELLM_API_KEY}
+        timeout: 120
