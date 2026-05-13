@@ -44,18 +44,18 @@ jobs:
           ref: ${{ matrix.branch == 'default' && github.event.repository.default_branch || '' }}
 
       - name: Gather Images
-        run: >-
-          bash .github/scripts/retry.sh
-          docker run --rm
-          --volume "$GITHUB_WORKSPACE:/github/workspace"
-          --workdir /github/workspace
-          ghcr.io/allenporter/flux-local:v8.1.0
-            get cluster
-            --all-namespaces
-            --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }}
-            --enable-images
-            --only-images
-            --output json
+        run: |
+          bash .github/scripts/retry.sh \
+            docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            --workdir /github/workspace \
+            ghcr.io/allenporter/flux-local:v8.1.0 \
+            get cluster \
+            --all-namespaces \
+            --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }} \
+            --enable-images \
+            --only-images \
+            --output json \
             --output-file images.json
 
       - name: Extract Images and Summarize

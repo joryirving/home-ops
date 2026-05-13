@@ -10,11 +10,13 @@ if [[ "$#" -eq 0 ]]; then
 fi
 
 for attempt in $(seq 1 "$attempts"); do
-  if "$@"; then
+  status=0
+  "$@" || status="$?"
+
+  if [[ "$status" -eq 0 ]]; then
     exit 0
   fi
 
-  status="$?"
   if [[ "$attempt" -eq "$attempts" ]]; then
     exit "$status"
   fi
