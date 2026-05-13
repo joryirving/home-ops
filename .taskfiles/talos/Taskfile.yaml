@@ -27,7 +27,11 @@ tasks:
           f="{{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{.MACHINE_TYPE}}.yaml"
           test -f "$f" && echo "$f" || echo ""
       INSECURE:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig &> /dev/null || echo true
+        sh: |-
+          if talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig &> /dev/null; then
+            exit 0
+          fi
+          talosctl --nodes {{.NODE}} version --insecure &> /dev/null && echo true
     env:
       MACHINE_TYPE: '{{.MACHINE_TYPE}}'
     requires:
@@ -55,6 +59,61 @@ tasks:
     preconditions:
       - talosctl config info --talosconfig {{.TALOS_DIR}}/talosconfig
       - test -f {{.TALOS_DIR}}/talosconfig
+
+  rotate-talosconfig:
+    desc: Regenerate and validate the local talosconfig from 1Password secrets [CLUSTER=main] [APPLY=false]
+    cmd: |-
+      tmp_dir="$(mktemp -d)"
+      trap 'rm -rf "$tmp_dir"' EXIT
+
+      node="{{.NODE}}"
+      endpoint="{{.ENDPOINT}}"
+      if [ -z "$node" ]; then
+        node="$(talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.nodes[0] // .endpoints[0]')"
+      fi
+      if [ -z "$endpoint" ]; then
+        endpoint="$(talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output json | jq --raw-output '.endpoints[0] // .nodes[0]')"
+      fi
+      if [ -z "$node" ] || [ "$node" = "null" ] || [ -z "$endpoint" ] || [ "$endpoint" = "null" ]; then
+        echo "Unable to determine node/endpoint; pass NODE=<node> ENDPOINT=<endpoint>" >&2
+        exit 1
+      fi
+
+      env MACHINE_TYPE=controlplane minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 \
+        | op inject > "$tmp_dir/controlplane.yaml"
+      talosctl gen secrets \
+        --from-controlplane-config "$tmp_dir/controlplane.yaml" \
+        --output-file "$tmp_dir/secrets.yaml" \
+        --force
+      talosctl gen config {{.CLUSTER}} {{.K8S_ENDPOINT}} \
+        --with-secrets "$tmp_dir/secrets.yaml" \
+        --output-types talosconfig \
+        --output "$tmp_dir/talosconfig" \
+        --force
+      talosctl --talosconfig "$tmp_dir/talosconfig" config endpoint "$endpoint"
+      talosctl --talosconfig "$tmp_dir/talosconfig" config node "$node"
+      talosctl --talosconfig "$tmp_dir/talosconfig" --nodes "$node" get machinetypes
+
+      if [ "{{.APPLY}}" = "true" ]; then
+        backup="{{.TALOS_DIR}}/talosconfig.$(date +%Y%m%d%H%M%S).bak"
+        cp {{.TALOS_DIR}}/talosconfig "$backup"
+        cp "$tmp_dir/talosconfig" {{.TALOS_DIR}}/talosconfig
+        echo "Rotated {{.TALOS_DIR}}/talosconfig; backup: $backup"
+      else
+        echo "Validated regenerated talosconfig for {{.CLUSTER}} against $node. Re-run with APPLY=true to replace {{.TALOS_DIR}}/talosconfig."
+      fi
+    vars:
+      APPLY: '{{.APPLY | default "false"}}'
+      ENDPOINT: '{{.ENDPOINT | default ""}}'
+      K8S_ENDPOINT: '{{.K8S_ENDPOINT | default (printf "https://k8s.%s.internal:6443" .CLUSTER)}}'
+      NODE: '{{.NODE | default ""}}'
+    requires:
+      vars: [CLUSTER]
+    preconditions:
+      - op account get
+      - test -f {{.TALOS_DIR}}/machineconfig.yaml.j2
+      - test -f {{.TALOS_DIR}}/talosconfig
+      - which jq minijinja-cli op talosctl
 
   upgrade-node:
     desc: Upgrade Talos on a single node [CLUSTER=main] [NODE=required]
