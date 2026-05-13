@@ -41,9 +41,12 @@ jobs:
           persist-credentials: false
 
       - name: Run flux-local test
-        uses: docker://ghcr.io/allenporter/flux-local:v8.1.0
-        with:
-          args: >-
+        run: >-
+          bash .github/scripts/retry.sh
+          docker run --rm
+          --volume "$GITHUB_WORKSPACE:/github/workspace"
+          --workdir /github/workspace
+          ghcr.io/allenporter/flux-local:v8.1.0
             test
             --all-namespaces
             --enable-helm
@@ -77,9 +80,12 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
 
       - name: Run flux-local diff
-        uses: docker://ghcr.io/allenporter/flux-local:v8.1.0
-        with:
-          args: >-
+        run: >-
+          bash pull/.github/scripts/retry.sh
+          docker run --rm
+          --volume "$GITHUB_WORKSPACE:/github/workspace"
+          --workdir /github/workspace
+          ghcr.io/allenporter/flux-local:v8.1.0
             diff ${{ matrix.resource }}
             --unified 6
             --path /github/workspace/pull/kubernetes/clusters/${{ matrix.cluster }}
