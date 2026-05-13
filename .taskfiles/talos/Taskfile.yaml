@@ -32,8 +32,11 @@ tasks:
             exit 0
           fi
           talosctl --nodes {{.NODE}} version --insecure &> /dev/null && echo true
+      SCHEMATIC:
+        sh: task --silent talos:generate-schematic CLUSTER={{.CLUSTER}} NODE={{.NODE}}
     env:
       MACHINE_TYPE: '{{.MACHINE_TYPE}}'
+      SCHEMATIC: '{{.SCHEMATIC}}'
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
@@ -79,7 +82,7 @@ tasks:
         exit 1
       fi
 
-      env MACHINE_TYPE=controlplane minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 \
+      env MACHINE_TYPE=controlplane SCHEMATIC="" minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 \
         | op inject > "$tmp_dir/controlplane.yaml"
       talosctl gen secrets \
         --from-controlplane-config "$tmp_dir/controlplane.yaml" \
