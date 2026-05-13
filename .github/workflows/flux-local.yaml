@@ -41,13 +41,16 @@ jobs:
           persist-credentials: false
 
       - name: Run flux-local test
-        uses: docker://ghcr.io/allenporter/flux-local:v8.1.0
-        with:
-          args: >-
-            test
-            --all-namespaces
-            --enable-helm
-            --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }}
+        run: |
+          bash .github/scripts/retry.sh \
+            docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            --workdir /github/workspace \
+            ghcr.io/allenporter/flux-local:v8.1.0 \
+            test \
+            --all-namespaces \
+            --enable-helm \
+            --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }} \
             --verbose
 
   diff:
@@ -77,17 +80,20 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
 
       - name: Run flux-local diff
-        uses: docker://ghcr.io/allenporter/flux-local:v8.1.0
-        with:
-          args: >-
-            diff ${{ matrix.resource }}
-            --unified 6
-            --path /github/workspace/pull/kubernetes/clusters/${{ matrix.cluster }}
-            --path-orig /github/workspace/default/kubernetes/clusters/${{ matrix.cluster }}
-            --strip-attrs "helm.sh/chart,checksum/config,app.kubernetes.io/version,chart"
-            --limit-bytes 10000
-            --all-namespaces
-            --sources "flux-system"
+        run: |
+          bash pull/.github/scripts/retry.sh \
+            docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            --workdir /github/workspace \
+            ghcr.io/allenporter/flux-local:v8.1.0 \
+            diff ${{ matrix.resource }} \
+            --unified 6 \
+            --path /github/workspace/pull/kubernetes/clusters/${{ matrix.cluster }} \
+            --path-orig /github/workspace/default/kubernetes/clusters/${{ matrix.cluster }} \
+            --strip-attrs "helm.sh/chart,checksum/config,app.kubernetes.io/version,chart" \
+            --limit-bytes 10000 \
+            --all-namespaces \
+            --sources "flux-system" \
             --output-file diff.patch
 
       - name: Generate Diff

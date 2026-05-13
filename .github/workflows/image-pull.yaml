@@ -44,15 +44,18 @@ jobs:
           ref: ${{ matrix.branch == 'default' && github.event.repository.default_branch || '' }}
 
       - name: Gather Images
-        uses: docker://ghcr.io/allenporter/flux-local:v8.1.0
-        with:
-          args: >-
-            get cluster
-            --all-namespaces
-            --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }}
-            --enable-images
-            --only-images
-            --output json
+        run: |
+          bash .github/scripts/retry.sh \
+            docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            --workdir /github/workspace \
+            ghcr.io/allenporter/flux-local:v8.1.0 \
+            get cluster \
+            --all-namespaces \
+            --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }} \
+            --enable-images \
+            --only-images \
+            --output json \
             --output-file images.json
 
       - name: Extract Images and Summarize
@@ -149,14 +152,37 @@ jobs:
           fi
 
       - name: Install talosctl
-        run: curl -fsSL https://talos.dev/install | sh
+        run: |
+          for attempt in 1 2 3; do
+            if curl -fsSL https://talos.dev/install | sh; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 3 ]]; then
+              exit 1
+            fi
+
+            echo "talosctl install failed; retrying in 20s (${attempt}/3)..." >&2
+            sleep 20
+          done
 
       - name: Pull Images
         run: |
           images=$(jq -r '.[]' images.json)
           for image in $images; do
             echo "Pulling $image"
-            talosctl --nodes $NODE image pull "$image"
+            for attempt in 1 2 3; do
+              if talosctl --nodes $NODE image pull "$image"; then
+                break
+              fi
+
+              if [[ "$attempt" -eq 3 ]]; then
+                exit 1
+              fi
+
+              echo "Image pull failed for $image; retrying in 20s (${attempt}/3)..." >&2
+              sleep 20
+            done
           done
 
   success:

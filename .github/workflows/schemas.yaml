@@ -65,7 +65,7 @@ jobs:
         run: uv pip install pyyaml
 
       - name: Run crd-extractor
-        run: curl -fsSL https://raw.githubusercontent.com/datreeio/CRDs-catalog/43e4407642d4c37683c88711f37caa6c9c20ca40/Utilities/crd-extractor.sh | bash
+        run: bash .github/scripts/retry.sh bash -o pipefail -c 'curl -fsSL https://raw.githubusercontent.com/datreeio/CRDs-catalog/43e4407642d4c37683c88711f37caa6c9c20ca40/Utilities/crd-extractor.sh | bash'
 
       - name: Publish Schemas
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0

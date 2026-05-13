@@ -96,7 +96,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: |
-          tofu init \
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" tofu init \
             -backend-config="access_key=$AWS_ACCESS_KEY_ID" \
             -backend-config="secret_key=$AWS_SECRET_ACCESS_KEY"
 
@@ -107,7 +107,7 @@ jobs:
 
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
-        run: tofu plan -lock=false -var "OP_CONNECT_TOKEN=${{ secrets.OP_CONNECT_TOKEN }}" -var "OP_CONNECT_HOST=${{ secrets.OP_CONNECT_HOST }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" bash -o pipefail -c 'tofu plan -lock=false -var "OP_CONNECT_TOKEN=${{ secrets.OP_CONNECT_TOKEN }}" -var "OP_CONNECT_HOST=${{ secrets.OP_CONNECT_HOST }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"'
 
       - name: Post PR comment
         continue-on-error: true
