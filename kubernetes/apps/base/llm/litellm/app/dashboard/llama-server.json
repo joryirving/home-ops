@@ -963,7 +963,7 @@
             "type": "victoriametrics-logs-datasource",
             "uid": "${logs_datasource}"
           },
-          "expr": "k_namespace_name:llm AND app:~\"llama-(server|vision)\" AND _msg:\"cache state:\" | extract \"cache state: <prompts:int> prompts, <size_mib:float> MiB\" | stats by(_time:$__interval, k_pod_name) max(size_mib) as cache_mib",
+          "expr": "k_namespace_name:llm AND app:~\"llama-(server|vision)\" AND _msg:\"cache state:\" | extract \"cache state: <prompts> prompts, <size_mib> MiB\" | stats by(_time:$__interval, k_pod_name) max(size_mib) as cache_mib",
           "queryType": "stats",
           "legendFormat": "{{k_pod_name}}",
           "refId": "A"
@@ -1008,7 +1008,7 @@
             "type": "victoriametrics-logs-datasource",
             "uid": "${logs_datasource}"
           },
-          "expr": "k_namespace_name:llm AND app:~\"llama-(server|vision)\" AND _msg:\"cache state:\" | extract \"cache state: <prompts:int> prompts\" | stats by(_time:$__interval, k_pod_name) max(prompts) as count",
+          "expr": "k_namespace_name:llm AND app:~\"llama-(server|vision)\" AND _msg:\"cache state:\" | extract \"cache state: <prompts> prompts\" | stats by(_time:$__interval, k_pod_name) max(prompts) as count",
           "queryType": "stats",
           "legendFormat": "{{k_pod_name}}",
           "refId": "A"
