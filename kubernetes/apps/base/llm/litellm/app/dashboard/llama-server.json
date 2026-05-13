@@ -913,6 +913,154 @@
       ],
       "title": "Host memory breakdown",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "id": 18,
+      "panels": [],
+      "title": "Prompt cache (from logs)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${logs_datasource}"
+      },
+      "description": "Realized prompt-cache size per pod, parsed from 'srv update: - cache state: N prompts, X MiB' log lines. Compare against the --cache-ram ceiling configured on each server.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "mbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 52
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${logs_datasource}"
+          },
+          "expr": "k_namespace_name:llm AND app:~\"llama-(server|vision)\" AND _msg:\"cache state:\" | extract \"cache state: <prompts:int> prompts, <size_mib:float> MiB\" | stats by(_time:$__interval, k_pod_name) max(size_mib) as cache_mib",
+          "queryType": "stats",
+          "legendFormat": "{{k_pod_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Prompt cache size",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${logs_datasource}"
+      },
+      "description": "Number of cached prompts held per pod. Rising count + flat size = many small prompts; flat count + rising size = a few large prompts (e.g. opencode 200k).",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 52
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${logs_datasource}"
+          },
+          "expr": "k_namespace_name:llm AND app:~\"llama-(server|vision)\" AND _msg:\"cache state:\" | extract \"cache state: <prompts:int> prompts\" | stats by(_time:$__interval, k_pod_name) max(prompts) as count",
+          "queryType": "stats",
+          "legendFormat": "{{k_pod_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Cached prompt count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${logs_datasource}"
+      },
+      "description": "Cache eviction events per minute. Spikes indicate --cache-ram is saturated and prompts are being dropped — a candidate to bump the ceiling or shrink checkpoint footprints.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${logs_datasource}"
+          },
+          "expr": "k_namespace_name:llm AND app:~\"llama-(server|vision)\" AND _msg:\"cache size limit reached\" | stats by(_time:$__interval, k_pod_name) count() as evictions",
+          "queryType": "stats",
+          "legendFormat": "{{k_pod_name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Cache evictions / interval",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
@@ -936,6 +1084,18 @@
         "multi": false,
         "name": "datasource",
         "query": "prometheus",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "victorialogs",
+          "value": "victorialogs"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "logs_datasource",
+        "query": "victoriametrics-logs-datasource",
         "type": "datasource"
       },
       {
@@ -987,5 +1147,5 @@
   },
   "title": "LLM / llama-server",
   "uid": "llamserver",
-  "version": 10
+  "version": 11
 }
