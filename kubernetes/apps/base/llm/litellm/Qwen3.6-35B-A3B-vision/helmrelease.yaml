@@ -14,7 +14,6 @@ spec:
     defaultPodOptions:
       hostIPC: true
       nodeSelector:
-        kubernetes.io/hostname: skirk
         topology.kubernetes.io/gpus: amd
       tolerations:
       - key: llm-workload
@@ -96,15 +95,17 @@ spec:
             - -sps
             - "0.90"
             - --cache-prompt
+            - --cache-ram
+            - "20480"
             - --kv-unified
             - --cache-type-k
             - q8_0
             - --cache-type-v
             - q8_0
             - --ctx-checkpoints
-            - "16"
+            - "8"
             - --checkpoint-every-n-tokens
-            - "16384"
+            - "32768"
             - --image-min-tokens
             - "1024"
             - --metrics
@@ -125,13 +126,13 @@ spec:
             - --reasoning-budget-message
             - "Stop reasoning and produce the implementation, tool call, or final answer."
             - --batch-size
-            - "4096"
+            - "8192"
             - --ubatch-size
-            - "2048"
+            - "4096"
             - --threads
-            - "12"
-            - --threads-batch
             - "16"
+            - --threads-batch
+            - "24"
             - --no-mmap
             - --jinja
             - --chat-template-kwargs
@@ -139,7 +140,7 @@ spec:
             resources:
               requests:
                 cpu: 500m
-                memory: 12Gi
+                memory: 20Gi
             probes:
               liveness:
                 enabled: true
