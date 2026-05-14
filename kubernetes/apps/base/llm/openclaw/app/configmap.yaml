@@ -271,32 +271,26 @@ data:
             },
             config: {
               contextThreshold: 0.75,
-              freshTailCount: 64,
-              leafChunkTokens: 20000,
-              newSessionRetainDepth: 2,
-
-              incrementalMaxDepth: 1,
-
-              summaryModel: "litellm/intel",
+              delegationTimeoutMs: 300000,
               expansionModel: "litellm/vision",
-
+              freshTailCount: 64,
+              freshTailMaxTokens: 24000,
               ignoreSessionPatterns: [
                 "agent:*:cron:**",
                 "agent:*:heartbeat:**",
-                "heartbeat:**"
+                "heartbeat:**",
+                "**:heartbeat:**"
               ],
-
-              statelessSessionPatterns: [
-                "agent:*:subagent:**"
-              ],
-              skipStatelessSessions: true,
-
-              pruneHeartbeatOk: true,
-              transcriptGcEnabled: false,
+              incrementalMaxDepth: 1,
+              leafChunkTokens: 20000,
+              newSessionRetainDepth: 2,
               proactiveThresholdCompactionMode: "deferred",
-
-              delegationTimeoutMs: 300000,
-              summaryTimeoutMs: 60000,
+              pruneHeartbeatOk: true,
+              skipStatelessSessions: true,
+              statelessSessionPatterns: [ "agent:*:subagent:**" ],
+              summaryModel: "litellm/intel",
+              summaryTimeoutMs: 300000,
+              transcriptGcEnabled: false,
             },
           },
           "composio": {
