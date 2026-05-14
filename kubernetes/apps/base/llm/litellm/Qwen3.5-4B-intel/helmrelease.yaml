@@ -16,6 +16,15 @@ spec:
         - name: gpu
           resourceClaimTemplateName: llama-intel-gpu
       hostIPC: true
+      labels:
+        igpu-workload: "true"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              igpu-workload: "true"
     controllers:
       llama-intel:
         annotations:
