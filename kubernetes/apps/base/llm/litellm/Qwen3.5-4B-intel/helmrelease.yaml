@@ -26,32 +26,34 @@ spec:
               repository: python
               tag: 3.14-slim
             command:
-            - /bin/sh
-            - -ec
-            - |
-              set -euo pipefail
+              - /bin/sh
+              - -ec
+              - |
+                set -euo pipefail
+                MODEL_DIR="/models/qwen3-5-4b"
+                MODEL_FILE="Qwen3.5-4B-Q4_K_M.gguf"
 
-              if [ ! -s /models/qwen3-5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen3-5-9b/mmproj-F16.gguf ]; then
-                pip install --no-cache-dir huggingface_hub
-                mkdir -p /models/qwen3-5-9b
-                rm -rf /models/qwen3-5-9b/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
-                hf download \
-                  mradermacher/Qwen3.5-9B-heretic-GGUF \
-                  Qwen3.5-9B-heretic.Q4_K_M.gguf \
-                  --local-dir /models/qwen3-5-9b
-                hf download \
-                  unsloth/Qwen3.5-9B-GGUF \
-                  mmproj-F16.gguf \
-                  --local-dir /models/qwen3-5-9b
-                echo "Qwen3.5-9B download complete"
-              else
-                echo "Qwen3.5-9B already downloaded, skipping"
-              fi
+                if [ ! -s "${MODEL_DIR}/${MODEL_FILE}" ]; then
+                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+
+                  mkdir -p "${MODEL_DIR}"
+
+                  rm -rf "${MODEL_DIR}/.cache/huggingface/download/${MODEL_FILE}.lock"
+
+                  hf download \
+                    unsloth/Qwen3.5-4B-GGUF \
+                    "${MODEL_FILE}" \
+                    --local-dir "${MODEL_DIR}"
+
+                  echo "Qwen3.5-4B download complete"
+                else
+                  echo "Qwen3.5-4B already downloaded, skipping"
+                fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
-            - secretRef:
-                name: huggingface
+              - secretRef:
+                  name: huggingface
             resources:
               requests:
                 cpu: 250m
@@ -66,58 +68,52 @@ spec:
             securityContext:
               privileged: true
             args:
-            - --host
-            - 0.0.0.0
-            - --port
-            - "8080"
-            - --alias
-            - llama-intel
-            - --model
-            - /models/qwen3-5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf
-            - --mmproj
-            - /models/qwen3-5-9b/mmproj-F16.gguf
-            - --ctx-size
-            - "131072"
-            - --n-gpu-layers
-            - "99"
-            - --fit
-            - "off"
-            - --flash-attn
-            - "on"
-            - --cont-batching
-            - -sps
-            - "0.90"
-            - --no-context-shift
-            - --cache-prompt
-            - --kv-unified
-            - --ctx-checkpoints
-            - "4"
-            - --checkpoint-every-n-tokens
-            - "16384"
-            - --image-min-tokens
-            - "64"
-            - --image-max-tokens
-            - "256"
-            - --metrics
-            - --temp
-            - "0.1"
-            - --top-p
-            - "0.90"
-            - --top-k
-            - "32"
-            - --min-p
-            - "0"
-            - --threads
-            - "6"
-            - --batch-size
-            - "1024"
-            - --ubatch-size
-            - "512"
-            - --reasoning
-            - "off"
-            - --reasoning-budget
-            - "0"
-            - --mmap
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8080"
+              - --alias
+              - intel
+              - --model
+              - /models/qwen3-5-4b/Qwen3.5-4B-Q4_K_M.gguf
+              - --ctx-size
+              - "131072"
+              - --n-gpu-layers
+              - "99"
+              - --fit
+              - "off"
+              - --flash-attn
+              - "on"
+              - --cont-batching
+              - -sps
+              - "0.90"
+              - --no-context-shift
+              - --cache-prompt
+              - --kv-unified
+              - --ctx-checkpoints
+              - "4"
+              - --checkpoint-every-n-tokens
+              - "16384"
+              - --metrics
+              - --temp
+              - "0.1"
+              - --top-p
+              - "0.80"
+              - --top-k
+              - "32"
+              - --min-p
+              - "0"
+              - --threads
+              - "6"
+              - --batch-size
+              - "1024"
+              - --ubatch-size
+              - "512"
+              - --reasoning
+              - "off"
+              - --reasoning-budget
+              - "0"
+              - --mmap
             env:
               ZES_ENABLE_SYSMAN: "1"
               ONEAPI_DEVICE_SELECTOR: level_zero:gpu
@@ -127,9 +123,9 @@ spec:
                 - name: gpu
               requests:
                 cpu: 500m
-                memory: 12Gi
+                memory: 8Gi
               limits:
-                memory: 24Gi
+                memory: 16Gi
             probes:
               liveness:
                 enabled: true
@@ -164,12 +160,12 @@ spec:
       models:
         existingClaim: llama-intel
         globalMounts:
-        - path: /models
+          - path: /models
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
         globalMounts:
-        - path: /dev/dri
+          - path: /dev/dri
     service:
       app:
         ports:
