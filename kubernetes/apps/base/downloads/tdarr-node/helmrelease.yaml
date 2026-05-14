@@ -25,9 +25,18 @@ spec:
       securityContext:
         fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
+      labels:
+        igpu-workload: "true"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              igpu-workload: "true"
     controllers:
       tdarr-node:
-        type: daemonset
+        replicas: 1
         containers:
           app:
             image:
