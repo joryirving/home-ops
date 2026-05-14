@@ -30,20 +30,15 @@ spec:
               - -ec
               - |
                 set -euo pipefail
-                MODEL_DIR="/models/qwen3-5-4b"
-                MODEL_FILE="Qwen3.5-4B-Q4_K_M.gguf"
 
-                if [ ! -s "${MODEL_DIR}/${MODEL_FILE}" ]; then
-                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-
-                  mkdir -p "${MODEL_DIR}"
-
-                  rm -rf "${MODEL_DIR}/.cache/huggingface/download/${MODEL_FILE}.lock"
-
+                if [ ! -s /models/qwen3-5-4b/Qwen3.5-4B-Q4_K_M.gguf ]; then
+                  pip install --no-cache-dir huggingface_hub
+                  mkdir -p /models/qwen3-5-4b
+                  rm -rf /models/qwen3-5-4b/.cache/huggingface/download/Qwen3.5-4B-Q4_K_M.gguf.lock
                   hf download \
                     unsloth/Qwen3.5-4B-GGUF \
-                    "${MODEL_FILE}" \
-                    --local-dir "${MODEL_DIR}"
+                    Qwen3.5-4B-Q4_K_M.gguf \
+                    --local-dir /models/qwen3-5-4b
 
                   echo "Qwen3.5-4B download complete"
                 else
@@ -84,6 +79,8 @@ spec:
               - "off"
               - --flash-attn
               - "on"
+              - --parallel
+              - "s"
               - --cont-batching
               - -sps
               - "0.90"
@@ -105,6 +102,8 @@ spec:
               - "0"
               - --threads
               - "6"
+              - --threads-batch
+              - "12"
               - --batch-size
               - "1024"
               - --ubatch-size
