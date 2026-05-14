@@ -44,6 +44,7 @@ data:
             "openai-codex/gpt-5.4-nano": { alias: "gpt-lite" },
             "litellm/chatgpt/gpt-5.3-codex": { alias: "gpt-coder", params: { cache_prompt: true } },
             "litellm/vision": { alias: "vision", params: { cache_prompt: true } },
+            "litellm/intel": { alias: "intel", params: { cache_prompt: true } },
           },
           memorySearch: {
             provider: "ollama",
@@ -154,7 +155,7 @@ data:
               { id: "chatgpt/gpt-5.3-codex", name: "GPT 5.3 Codex via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 8192 },
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q5_K_XL (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 8192 },
               { id: "vision", name: "Qwen3.6-35B-A3B-Heretic Q4_K_M (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 8192 },
-              { id: "llama-intel", name: "Qwen3.6-35B-A3B-Heretic Q4_K_M (XPU)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 8192 },
+              { id: "intel", name: "Qwen3.5-4B Q4_K_M (Intel iGPU)", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 8192 },
             ]
           },
           "litellm-anthropic": {
@@ -255,14 +256,41 @@ data:
           },
           "lossless-claw": {
             enabled: true,
+            llm: {
+              allowModelOverride: true,
+              allowedModels: [
+                "litellm/intel"
+              ],
+            },
+            subagent: {
+              allowModelOverride: true,
+              allowedModels: [
+                "litellm/intel",
+                "litellm/vision"
+              ],
+            },
             config: {
-              contextThreshold: 0.60,
+              contextThreshold: 0.75,
+              delegationTimeoutMs: 300000,
               expansionModel: "litellm/vision",
               freshTailCount: 64,
-              ignoreSessionPatterns: ["heartbeat/*", "*/heartbeat"],
-              incrementalMaxDepth: 3,
+              freshTailMaxTokens: 24000,
+              ignoreSessionPatterns: [
+                "agent:*:cron:**",
+                "agent:*:heartbeat:**",
+                "heartbeat:**",
+                "**:heartbeat:**"
+              ],
+              incrementalMaxDepth: 1,
+              leafChunkTokens: 20000,
+              newSessionRetainDepth: 2,
+              proactiveThresholdCompactionMode: "deferred",
               pruneHeartbeatOk: true,
-              summaryModel: "litellm/vision",
+              skipStatelessSessions: true,
+              statelessSessionPatterns: [ "agent:*:subagent:**" ],
+              summaryModel: "litellm/intel",
+              summaryTimeoutMs: 300000,
+              transcriptGcEnabled: false,
             },
           },
           "composio": {
