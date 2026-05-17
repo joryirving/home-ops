@@ -63,7 +63,8 @@ spec:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-7.2.2
+              tag: rocm-7.2.3
+              pullPolicy: Always
             securityContext:
               privileged: true
             command:
@@ -77,17 +78,23 @@ spec:
             - self-hosted
             - --model
             - /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
-            - --mmproj
-            - /models/qwen3.6-35b-a3b/mmproj-F16.gguf
+            # Disabled for MTP
+            # - --mmproj
+            # - /models/qwen3.6-35b-a3b/mmproj-F16.gguf
             - --ctx-size
             - "262144"
             - --n-gpu-layers
             - "99"
             - --flash-attn
             - "on"
-            - --parallel
-            - "3"
+            # Disabled for MTP
+            # - --parallel
+            # - "3"
             - --cont-batching
+            - --spec-type
+            - draft-mtp
+            - --spec-draft-n-max
+            - "3"
             - -sps
             - "0.90"
             - --cache-prompt
@@ -100,8 +107,9 @@ spec:
             - "8"
             - --checkpoint-every-n-tokens
             - "32768"
-            - --image-min-tokens
-            - "1024"
+            # Disabled for MTP
+            # - --image-min-tokens
+            # - "1024"
             - --metrics
             - --temp
             - "0.6"
