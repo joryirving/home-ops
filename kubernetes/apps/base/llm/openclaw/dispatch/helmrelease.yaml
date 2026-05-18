@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: mission-control
+  name: dispatch
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,16 +12,15 @@ spec:
   dependsOn: []
   values:
     controllers:
-      mission-control:
+      dispatch:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
               repository: ghcr.io/misospace/mission-control
-              tag: 0.2.0@sha256:7931200da31ffc78dbf1e8123bbcd671da89e4cbbc5c61a5ba8d3fc30932b1e6
+              tag: 0.2.1@sha256:544a0220a1d502ba9576b5d25596b722bb2347570cdf25a1588fd5e2448617c9
             env:
-              GITHUB_REPOSITORIES: "misospace/mission-control,misospace/miso-chat,misospace/miso-gallery,misospace/windowstead"
               DATABASE_URL:
                 valueFrom:
                   secretKeyRef:
@@ -29,7 +28,7 @@ spec:
                     key: pgbouncer-uri
             envFrom:
               - secretRef:
-                  name: mission-control
+                  name: dispatch
             resources:
               requests:
                 cpu: 50m
@@ -64,11 +63,11 @@ spec:
             port: 3000
     route:
       app:
-        hostnames: ["mission-control.jory.dev"]
+        hostnames: ["dispatch.jory.dev"]
         parentRefs:
           - name: envoy-internal
             namespace: network
         rules:
           - backendRefs:
-              - name: mission-control
+              - name: dispatch
                 port: 3000
