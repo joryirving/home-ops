@@ -1,0 +1,54 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ${APP}
+spec:
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4
+  primaryUpdateStrategy: unsupervised
+  enableSuperuserAccess: true
+  minSyncReplicas: 1
+  maxSyncReplicas: 1
+  storage:
+    storageClass: local-hostpath
+    size: 5Gi
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/gpus
+                operator: DoesNotExist
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: required
+  postgresql:
+    parameters:
+      max_connections: "500"
+      max_wal_size: "5GB"
+      synchronous_commit: "on"
+  bootstrap:
+    recovery:
+      source: &archive ${APP}-backup-archive
+  externalClusters:
+    - name: *archive
+      barmanObjectStore: &barman
+        destinationPath: s3://postgresql/${APP}
+        endpointURL: https://s3.jory.dev
+        s3Credentials:
+          accessKeyId:
+            name: ${APP}-postgres
+            key: AWS_ACCESS_KEY_ID
+          secretAccessKey:
+            name: ${APP}-postgres
+            key: AWS_SECRET_ACCESS_KEY
+        wal:
+          compression: bzip2
+        data:
+          compression: bzip2
+  backup:
+    barmanObjectStore: *barman
+    retentionPolicy: 7d
+  monitoring:
+    enablePodMonitor: true

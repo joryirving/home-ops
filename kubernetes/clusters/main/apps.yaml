@@ -174,3 +174,29 @@ spec:
       target:
         kind: Kustomization
         labelSelector: "components.postgres/cpgo=init"
+    - # Bootstrap CNPG cluster (initdb instead of recovery from Barman)
+      # $${...} escape preserves the variable through outer (cluster-apps) substitution
+      # so the inner (app) Kustomization's postBuild can resolve APP/USERNAME.
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
+            - target:
+                group: postgresql.cnpg.io
+                version: v1
+                kind: Cluster
+              patch: |-
+                - op: replace
+                  path: /spec/bootstrap
+                  value:
+                    initdb:
+                      database: $${APP}
+                      owner: $${USERNAME:=$${APP}}
+                - op: remove
+                  path: /spec/externalClusters
+      target:
+        kind: Kustomization
+        labelSelector: "components.postgres/cnpg=init"

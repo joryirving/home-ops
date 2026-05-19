@@ -1,0 +1,11 @@
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/postgresql.cnpg.io/scheduledbackup_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: ${APP}-weekly
+spec:
+  schedule: "0 30 1 * * 0"
+  backupOwnerReference: self
+  cluster:
+    name: ${APP}
