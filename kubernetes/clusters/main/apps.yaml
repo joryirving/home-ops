@@ -174,9 +174,13 @@ spec:
       target:
         kind: Kustomization
         labelSelector: "components.postgres/cpgo=init"
-    - # Bootstrap CNPG cluster (initdb instead of recovery from Barman)
+    - # Net-new CNPG cluster: plain initdb (no CPGO import, no Barman recovery).
+      # Use the `components.postgres/cnpg=init` label on an app's Flux Kustomization
+      # to mark it as a brand-new cluster with no existing data anywhere. The
+      # component default is bootstrap.initdb.import from CPGO during the migration
+      # window; this label opts out of that for net-new apps.
       # $${...} escape preserves the variable through outer (cluster-apps) substitution
-      # so the inner (app) Kustomization's postBuild can resolve APP/USERNAME.
+      # so the inner (app) Kustomization's postBuild can resolve APP/POSTGRES_USERNAME.
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
         kind: Kustomization
@@ -193,8 +197,8 @@ spec:
                   path: /spec/bootstrap
                   value:
                     initdb:
-                      database: $${APP}
-                      owner: $${USERNAME:=$${APP}}
+                      database: $${POSTGRES_USERNAME:=$${APP}}
+                      owner: $${POSTGRES_USERNAME:=$${APP}}
                 - op: remove
                   path: /spec/externalClusters
       target:

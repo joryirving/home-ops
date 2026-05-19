@@ -4,17 +4,25 @@ CloudNativePG-backed Postgres component. Migration target for the existing `comp
 
 ## Substitution variables
 
-| Variable    | Default                  | Notes                                                                 |
-|-------------|--------------------------|-----------------------------------------------------------------------|
-| `APP`       | _(required)_             | Name of the consuming app — used for cluster, secret, backup paths.   |
-| `USERNAME`  | `${APP}`                 | App-level role (only honored on initial `initdb` bootstrap).          |
-| `DATABASES` | `["${APP}"]`             | Reserved for future use (single-DB initdb today).                     |
+| Variable            | Default                | Notes                                                              |
+|---------------------|------------------------|--------------------------------------------------------------------|
+| `APP`               | _(required)_           | Name of the consuming app — used for cluster, secret, backup paths.|
+| `POSTGRES_USERNAME` | `${APP}`               | App-level role / database name created on initial bootstrap.       |
+| `CNPG_IMPORT_TYPE`  | `microservice`         | `microservice` (single DB) or `monolith` (full pg_dump).           |
 
 ## Bootstrap behavior
 
-Default: the cluster bootstraps via `recovery` from the Barman archive at `s3://postgresql/${APP}` (Garage). This means a torn-down cluster will rebuild itself from the last backup.
+**Default (CPGO → CNPG migration window):** `bootstrap.initdb.import` from the live CPGO source.
 
-For a brand-new app (no backup yet exists), add the `components.postgres/cnpg: init` label to the consuming Flux Kustomization. A patch in `clusters/main/apps.yaml` swaps `bootstrap.recovery` for `bootstrap.initdb` so the cluster comes up empty. Remove the label once the app is live and the first backup has completed.
+The component declares a `${APP}-cpgo` `externalCluster` pointing at the in-cluster CPGO primary service (`${APP}-primary`) using the CPGO-generated `${APP}-pguser-postgres` secret. CNPG runs `pg_dump | pg_restore` natively as part of the new cluster's `initdb` phase. CPGO stays serving the app the whole time; cutover happens later when the app's `DATABASE_URL` is flipped.
+
+`pgDumpExtraOptions` skip the `pg_stat_statements` and `pgaudit` extensions and the `pgbouncer` schema, which the dump role can't recreate on the CNPG side.
+
+**Net-new clusters (no CPGO source):** add the `components.postgres/cnpg: init` label to the consuming Flux Kustomization. A patch in `clusters/main/apps.yaml` strips the `.import` block and the `externalClusters` list, leaving a plain `bootstrap.initdb` that brings the cluster up empty.
+
+**Backups** flow to Barman at `s3://postgresql/${APP}/${APP}/` (serverName pinned to `${APP}` so write and read sides agree on the same prefix) with `retentionPolicy: 7d`.
+
+**Future rebuilds:** once all apps are migrated off CPGO, a follow-up PR swaps the default from `bootstrap.initdb.import` to `bootstrap.recovery` from Barman. The `cnpg.io/skipEmptyWalArchiveCheck: enabled` annotation is set so same-path same-serverName rebuilds work.
 
 ## Connecting from an app
 

@@ -36,30 +36,48 @@ spec:
       max_wal_size: "5GB"
       synchronous_commit: "on"
   bootstrap:
-    recovery:
-      source: &archive ${APP}-backup-archive
+    initdb:
+      database: ${POSTGRES_USERNAME:=${APP}}
+      owner: ${POSTGRES_USERNAME:=${APP}}
+      import:
+        type: ${CNPG_IMPORT_TYPE:=microservice}
+        databases:
+          - ${POSTGRES_USERNAME:=${APP}}
+        source:
+          externalCluster: &source ${APP}-cpgo
+        pgDumpExtraOptions:
+          - --exclude-extension=pg_stat_statements
+          - --exclude-extension=pgaudit
+          - --exclude-schema=pgbouncer
   externalClusters:
-    - name: *archive
-      barmanObjectStore: &barman
-        destinationPath: s3://postgresql/${APP}
-        serverName: ${APP}
-        endpointURL: https://s3.jory.dev
-        s3Credentials:
-          accessKeyId:
-            name: ${APP}-postgres
-            key: AWS_ACCESS_KEY_ID
-          secretAccessKey:
-            name: ${APP}-postgres
-            key: AWS_SECRET_ACCESS_KEY
-          region:
-            name: ${APP}-postgres
-            key: AWS_REGION
-        wal:
-          compression: bzip2
-        data:
-          compression: bzip2
+    - name: *source
+      connectionParameters:
+        host: ${APP}-primary
+        user: postgres
+        dbname: postgres
+        sslmode: prefer
+      password:
+        name: ${APP}-pguser-postgres
+        key: password
   backup:
-    barmanObjectStore: *barman
+    barmanObjectStore:
+      destinationPath: s3://postgresql/${APP}
+      serverName: ${APP}
+      endpointURL: https://s3.jory.dev
+      s3Credentials:
+        accessKeyId:
+          name: ${APP}-postgres
+          key: AWS_ACCESS_KEY_ID
+        secretAccessKey:
+          name: ${APP}-postgres
+          key: AWS_SECRET_ACCESS_KEY
+        region:
+          name: ${APP}-postgres
+          key: AWS_REGION
+      wal:
+        compression: bzip2
+      data:
+        compression: bzip2
     retentionPolicy: 7d
   monitoring:
     enablePodMonitor: true
