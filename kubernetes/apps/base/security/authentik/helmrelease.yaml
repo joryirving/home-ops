@@ -34,13 +34,13 @@ spec:
       - name: AUTHENTIK_POSTGRESQL__NAME
         value: *app
       - name: AUTHENTIK_POSTGRESQL__HOST
-        value: authentik-pgbouncer.security.svc   #Authentik requires transaction for pgBouncer
+        value: authentik-rw.security.svc
       - name: AUTHENTIK_POSTGRESQL__USER
         value: *app
       - name: AUTHENTIK_POSTGRESQL__PASSWORD
         valueFrom:
           secretKeyRef:
-            name: authentik-pguser-authentik
+            name: authentik-app
             key: password
       - name: AUTHENTIK_POSTGRESQL__USE_PGBOUNCER
         value: "true"
