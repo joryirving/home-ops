@@ -1,29 +1,46 @@
-# crunchy-postgres
+# postgres
 
-## Postgres Clusters
+CloudNativePG-backed Postgres component. Default Postgres for all apps in this repo (replaces the previous CrunchyData PGO setup that was retired due to the Snowflake acquisition).
 
-### Disabling successfulJobsHistoryLimit
+## Substitution variables
 
-```sh
-kubectl get cronjob --all-namespaces -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name" --no-headers | \
-grep -E 'repo[0-9]+-(diff|full|incr)$' | \
-xargs -n2 sh -c 'kubectl patch cronjob $1 -n $0 --type=merge -p "{\"spec\": {\"successfulJobsHistoryLimit\": 0}}"' 
-```
+| Variable            | Default        | Notes                                                                |
+|---------------------|----------------|----------------------------------------------------------------------|
+| `APP`               | _(required)_   | Name of the consuming app — used for cluster, secret, backup paths.  |
+| `POSTGRES_USERNAME` | `${APP}`       | App-level role / database name created on initial bootstrap.         |
 
-### Boostraping new cluster
+## Bootstrap behavior
 
-Add this to the `kustomization.yaml` to boostrap a new Postgres cluster that has no existing backups:
+**Default: `bootstrap.recovery` from Barman** at `s3://postgresql/${APP}/${APP}/`. A torn-down cluster (delete the `Cluster` CR + PVCs) rebuilds itself from the latest base backup + replays WAL. Same-path same-`serverName` rebuilds work because of the `cnpg.io/skipEmptyWalArchiveCheck: enabled` annotation — the recovered cluster inherits the source's `system_identifier` and writes new WAL on a new timeline (no name collisions).
+
+**Net-new clusters (no backup yet exists):** add the `components.postgres/cnpg: init` label to the consuming Flux Kustomization. A patch in `clusters/main/apps.yaml` strips the `.recovery` block and the `externalClusters` list, leaving a plain `bootstrap.initdb` that brings the cluster up empty with `${POSTGRES_USERNAME:=${APP}}` as both the database name and the owner role. Remove the label once the cluster is live and the first scheduled backup has completed.
+
+## Backups
+
+Weekly full backups via the `ScheduledBackup` resource (Sunday 01:30, see `scheduledbackup.yaml`). Continuous WAL archiving to the same `s3://postgresql/${APP}/${APP}/` prefix. `retentionPolicy: 7d`.
+
+## Connecting from an app
+
+CNPG generates a `${APP}-app` Secret with these keys: `uri`, `jdbc-uri`, `username`, `password`, `host`, `port`, `dbname`, `pgpass`.
+
+Standard app-template pattern:
 
 ```yaml
-  labels:
-    components.postgres/cpgo: init
+DATABASE_URL:
+  valueFrom:
+    secretKeyRef:
+      name: "{{ .Release.Name }}-app"
+      key: uri
 ```
 
-Set account to owner
-Exec into the master pod for the postgres cluster:
-```
-psql
-ALTER DATABASE <app> OWNER TO <app>;
-```
+The `uri` points at the cluster's read-write primary service `${APP}-rw`. There is no `Pooler` / PgBouncer in this component — apps connect directly. If transaction-mode pooling is ever needed (e.g. authentik at scale), add a `Pooler` CRD per cluster as a follow-up.
 
-Based on this [patch](https://github.com/joryirving/home-ops/blob/2f86fd78a27e4ece10b75dcf40d5d7215b8beb2b/kubernetes/clusters/main/apps.yaml#L158-L178), it will remove the datasource and start a blank cluster. You can remove this and it'll "restore" from the backup.
+## Health check expression
+
+```yaml
+healthCheckExprs:
+  - apiVersion: postgresql.cnpg.io/v1
+    kind: Cluster
+    failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
+    current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
+```

@@ -1,138 +1,65 @@
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/postgres-operator.crunchydata.com/postgrescluster_v1.json
-apiVersion: postgres-operator.crunchydata.com/v1
-kind: PostgresCluster
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
 metadata:
   name: ${APP}
+  annotations:
+    # Required for same-path/same-serverName rebuilds via bootstrap.recovery.
+    # The default check blocks recovery when the destination archive is non-empty,
+    # which is exactly the case when the rebuilt cluster reuses the same Barman
+    # path. Safe here because the recovered cluster inherits the source's
+    # system_identifier and writes new WAL on a new timeline (no name collisions).
+    cnpg.io/skipEmptyWalArchiveCheck: enabled
 spec:
-  postgresVersion: 17
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4
+  primaryUpdateStrategy: unsupervised
+  enableSuperuserAccess: true
+  minSyncReplicas: 1
+  maxSyncReplicas: 1
+  storage:
+    storageClass: local-hostpath
+    size: 5Gi
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/gpus
+                operator: DoesNotExist
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: required
+  postgresql:
+    parameters:
+      max_connections: "500"
+      max_wal_size: "5GB"
+      synchronous_commit: "on"
+  bootstrap:
+    recovery:
+      source: &archive ${APP}-backup-archive
+  externalClusters:
+    - name: *archive
+      barmanObjectStore: &barman
+        destinationPath: s3://postgresql/${APP}
+        serverName: ${APP}
+        endpointURL: https://s3.jory.dev
+        s3Credentials:
+          accessKeyId:
+            name: ${APP}-postgres
+            key: AWS_ACCESS_KEY_ID
+          secretAccessKey:
+            name: ${APP}-postgres
+            key: AWS_SECRET_ACCESS_KEY
+          region:
+            name: ${APP}-postgres
+            key: AWS_REGION
+        wal:
+          compression: bzip2
+        data:
+          compression: bzip2
+  backup:
+    barmanObjectStore: *barman
+    retentionPolicy: 7d
   monitoring:
-    pgmonitor:
-      exporter:
-        resources:
-          requests:
-            cpu: 10m
-            memory: 64M
-          limits:
-            memory: 768M
-  patroni: # turn on sync writes to at least 1 other replica
-    dynamicConfiguration:
-      synchronous_mode: true
-      postgresql:
-        max_wal_size: 5GB
-        synchronous_commit: "on"
-        parameters:
-          max_connections: 500
-  instances:
-    - name: postgres
-      metadata:
-        labels:
-          app.kubernetes.io/name: ${APP}-crunchy-postgres
-      replicas: 3
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: topology.kubernetes.io/gpus
-                    operator: DoesNotExist
-      dataVolumeClaimSpec:
-        storageClassName: local-hostpath
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 5Gi
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: "kubernetes.io/hostname"
-          whenUnsatisfiable: "DoNotSchedule"
-          nodeTaintsPolicy: Honor
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: ${APP}-crunchy-postgres
-  users:
-    # Superuser
-    - name: "postgres"
-      databases: ["postgres"]
-      options: "SUPERUSER"
-      password:
-        type: AlphaNumeric
-    # Applications
-    - name: "${USERNAME:=${APP}}"
-      databases: ${DATABASES:=["${APP}"]}
-      password:
-        type: AlphaNumeric
-  backups:
-    pgbackrest:
-      configuration: &backupConfig
-        - secret:
-            name: "${APP}-crunchy-postgres"
-      global: &backupFlag
-        # Global
-        compress-type: "bz2"
-        compress-level: "9"
-        # Garage
-        repo1-block: "y"
-        repo1-bundle: "y"
-        repo1-path: /${APP}
-        repo1-retention-full: "7"
-        repo1-retention-full-type: "time"
-        repo1-s3-uri-style: path
-        # R2
-        # repo2-block: "y"
-        # repo2-bundle: "y"
-        # repo2-path: /${APP}
-        # repo2-retention-full: "7" # days
-        # repo2-retention-full-type: time
-        # repo2-s3-uri-style: path
-      jobs:
-        ttlSecondsAfterFinished: 60
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: topology.kubernetes.io/gpus
-                      operator: DoesNotExist
-      manual:
-        repoName: repo1
-        options:
-          - --type=full
-      metadata:
-        labels:
-          app.kubernetes.io/name: ${APP}-crunchy-postgres-backup
-      repos:
-        - name: repo1
-          s3: &garage
-            bucket: postgresql
-            endpoint: s3.jory.dev
-            region: ca-west-1
-          schedules:
-            full: "30 1 * * 0" # Sunday at 01:30
-            differential: "30 1 * * 1-6" # Mon-Sat at 01:30
-            incremental: "30 3-23 * * *" # Every hour except 01:30-2:30
-        # - name: repo2
-        #   s3:
-        #     bucket: crunchy-pgo
-        #     endpoint: ${R2_ENDPOINT}
-        #     region: us-east-1 #https://developers.cloudflare.com/r2/api/s3/api/#bucket-region
-        #   schedules:
-        #     full: "30 2 * * 0" # Sunday at 02:30
-        #     incremental: "30 2 * * 1-6/2" # Mon-Sat at 02:30, every 2nd day
-  dataSource:
-    pgbackrest:
-      stanza: db
-      configuration: *backupConfig
-      global: *backupFlag
-      repo:
-        name: repo1
-        s3: *garage
-  proxy:
-    pgBouncer:
-      port: 5432
-      config:
-        global:
-          pool_mode: ${POOL_MODE:=session}
-          client_tls_sslmode: ${SSLMODE:=prefer}
-          default_pool_size: "100"
-          max_client_conn: "500"
+    enablePodMonitor: true
