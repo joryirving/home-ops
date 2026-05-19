@@ -153,32 +153,11 @@ spec:
       target:
         kind: Kustomization
         name: external-secrets
-    - # Bootstrap PSQL cluster
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
-          patches:
-            - patch: |-
-                apiVersion: postgres-operator.crunchydata.com/v1beta1
-                kind: PostgresCluster
-                metadata:
-                  name: not-used
-                spec:
-                  dataSource:
-                    $patch: delete
-              target:
-                kind: PostgresCluster
-      target:
-        kind: Kustomization
-        labelSelector: "components.postgres/cpgo=init"
-    - # Net-new CNPG cluster: plain initdb (no CPGO import, no Barman recovery).
+    - # Net-new CNPG cluster: plain initdb (no Barman recovery).
       # Use the `components.postgres/cnpg=init` label on an app's Flux Kustomization
-      # to mark it as a brand-new cluster with no existing data anywhere. The
-      # component default is bootstrap.initdb.import from CPGO during the migration
-      # window; this label opts out of that for net-new apps.
+      # to mark it as a brand-new cluster with no existing data. The component
+      # default is bootstrap.recovery from Barman; this label opts out for net-new
+      # apps that have no backup yet to recover from.
       # $${...} escape preserves the variable through outer (cluster-apps) substitution
       # so the inner (app) Kustomization's postBuild can resolve APP/POSTGRES_USERNAME.
       patch: |-
