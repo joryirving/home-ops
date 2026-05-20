@@ -18,8 +18,8 @@ data:
           model: {
             primary: "litellm-anthropic/anthropic/MiniMax-M2.7",
             fallbacks: [
-              "openai-codex/gpt-5.4-mini",
               "litellm/self-hosted",
+              "openai-codex/gpt-5.4-mini",
               "litellm/kimi-k2.6",
             ]
           },
@@ -44,10 +44,11 @@ data:
             "litellm/intel": { alias: "intel", params: { cache_prompt: true } },
           },
           memorySearch: {
-            provider: "ollama",
-            model: "nomic-embed-text",
+            provider: "openai",
+            model: "nomic-embed-text-v1.5",
             remote: {
-              baseUrl: "http://ollama.llm:11434/v1"
+              baseUrl: "http://litellm.llm:4000/v1",
+              apiKey: "$${LITELLM_API_KEY}"
             }
           },
           contextPruning: { mode: "off" },
