@@ -40,18 +40,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen3-5-4b/Qwen3.5-4B-Q4_K_M.gguf ]; then
+                if [ ! -s /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/qwen3-5-4b
-                  rm -rf /models/qwen3-5-4b/.cache/huggingface/download/Qwen3.5-4B-Q4_K_M.gguf.lock
+                  mkdir -p /models/gemma4-E4B
+                  rm -rf /models/gemma4-E4B/.cache/huggingface/download/gemma-4-E4B-it-Q4_K_M.gguf.lock
                   hf download \
-                    unsloth/Qwen3.5-4B-GGUF \
-                    Qwen3.5-4B-Q4_K_M.gguf \
-                    --local-dir /models/qwen3-5-4b
+                    unsloth/gemma-4-E4B-it-GGUF \
+                    gemma-4-E4B-it-Q4_K_M.gguf \
+                    --local-dir /models/gemma4-E4B
 
-                  echo "Qwen3.5-4B download complete"
+                  echo "Gemma4-E44B download complete"
                 else
-                  echo "Qwen3.5-4B already downloaded, skipping"
+                  echo "Gemma4-E44B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -79,7 +79,7 @@ spec:
               - --alias
               - intel
               - --model
-              - /models/qwen3-5-4b/Qwen3.5-4B-Q4_K_M.gguf
+              - /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf
               - --ctx-size
               - "131072"
               - --n-gpu-layers
@@ -96,19 +96,13 @@ spec:
               - --no-context-shift
               - --cache-prompt
               - --kv-unified
-              - --ctx-checkpoints
-              - "4"
-              - --checkpoint-every-n-tokens
-              - "16384"
               - --metrics
               - --temp
-              - "0.1"
+              - "1.0"
               - --top-p
-              - "0.80"
+              - "0.95"
               - --top-k
-              - "32"
-              - --min-p
-              - "0"
+              - "64"
               - --threads
               - "6"
               - --threads-batch
@@ -117,10 +111,6 @@ spec:
               - "1024"
               - --ubatch-size
               - "512"
-              - --reasoning
-              - "off"
-              - --reasoning-budget
-              - "0"
               - --mmap
             env:
               ZES_ENABLE_SYSMAN: "1"
