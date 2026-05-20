@@ -19,15 +19,14 @@ spec:
           app:
             image:
               repository: ollama/ollama
-              tag: 
-                0.24.0@sha256:a6149234667efc71d37766d61c1a16f24c33e4cd7a0bf4125c44a7e47e2419c4
+              tag: 0.24.0@sha256:a6149234667efc71d37766d61c1a16f24c33e4cd7a0bf4125c44a7e47e2419c4
             securityContext:
               privileged: true
             env:
               OLLAMA_NUM_PARALLEL: 1
               OLLAMA_CONTEXT_LENGTH: 32768
               OLLAMA_KV_CACHE_TYPE: q8_0
-              OLLAMA_FLASH_ATTENTION: 0
+              OLLAMA_FLASH_ATTENTION: 1
               OLLAMA_KEEP_ALIVE: 30m
             resources:
               requests:
@@ -36,11 +35,6 @@ spec:
               limits:
                 cpu: 12
                 memory: 16Gi
-          exporter:
-            image:
-              repository: lucabecker42/ollama-exporter
-              tag: 
-                1.0.1@sha256:4d1d96fae76dbefd6b763d576a12fb9799913ae9a585990a464eacab2b600f55
     persistence:
       ollama:
         existingClaim: "{{ .Release.Name }}"
