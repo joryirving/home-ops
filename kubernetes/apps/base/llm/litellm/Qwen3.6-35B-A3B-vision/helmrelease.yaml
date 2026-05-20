@@ -16,9 +16,9 @@ spec:
       nodeSelector:
         topology.kubernetes.io/gpus: amd
       tolerations:
-      - key: llm-workload
-        operator: Exists
-        effect: NoSchedule
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
     controllers:
       llama-vision:
         annotations:
@@ -29,34 +29,34 @@ spec:
               repository: python
               tag: 3.14-slim
             command:
-            - /bin/sh
-            - -ec
-            - |
-              set -eu
+              - /bin/sh
+              - -ec
+              - |
+                set -eu
 
-              MODEL_DIR=/models/qwen3.6-35b-a3b-heretic
-              MODEL_FILE="$MODEL_DIR/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf"
-              MMPROJ_FILE="$MODEL_DIR/mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf"
+                MODEL_DIR=/models/qwen3.6-35b-a3b-heretic
+                MODEL_FILE="$MODEL_DIR/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf"
+                MMPROJ_FILE="$MODEL_DIR/mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf"
 
-              if [ ! -s "$MODEL_FILE" ] || [ ! -s "$MMPROJ_FILE" ]; then
-                pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                mkdir -p "$MODEL_DIR"
+                if [ ! -s "$MODEL_FILE" ] || [ ! -s "$MMPROJ_FILE" ]; then
+                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                  mkdir -p "$MODEL_DIR"
 
-                hf download \
-                  Youssofal/Qwen3.6-35B-A3B-Abliterated-Heretic-GGUF \
-                  Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf \
-                  mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf \
-                  --local-dir "$MODEL_DIR"
+                  hf download \
+                    Youssofal/Qwen3.6-35B-A3B-Abliterated-Heretic-GGUF \
+                    Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf \
+                    mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf \
+                    --local-dir "$MODEL_DIR"
 
-                echo "Qwen3.6-35B-A3B-Abliterated-Heretic download complete"
-              else
-                echo "Qwen3.6-35B-A3B-Abliterated-Heretic already downloaded, skipping"
-              fi
+                  echo "Qwen3.6-35B-A3B-Abliterated-Heretic download complete"
+                else
+                  echo "Qwen3.6-35B-A3B-Abliterated-Heretic already downloaded, skipping"
+                fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
-            - secretRef:
-                name: huggingface
+              - secretRef:
+                  name: huggingface
             resources:
               requests:
                 cpu: 250m
@@ -71,70 +71,70 @@ spec:
             securityContext:
               privileged: true
             command:
-            - llama-server
+              - llama-server
             args:
-            - --host
-            - 0.0.0.0
-            - --port
-            - "8080"
-            - --alias
-            - vision
-            - --model
-            - /models/qwen3.6-35b-a3b-heretic/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf
-            - --mmproj
-            - /models/qwen3.6-35b-a3b-heretic/mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf
-            - --ctx-size
-            - "131072"
-            - --n-gpu-layers
-            - "99"
-            - --flash-attn
-            - "on"
-            - --parallel
-            - "2"
-            - --cont-batching
-            - -sps
-            - "0.90"
-            - --cache-prompt
-            - --kv-unified
-            - --cache-type-k
-            - q8_0
-            - --cache-type-v
-            - q8_0
-            - --ctx-checkpoints
-            - "8"
-            - --checkpoint-every-n-tokens
-            - "32768"
-            - --image-min-tokens
-            - "1024"
-            - --metrics
-            - --temp
-            - "0.6"
-            - --top-p
-            - "0.95"
-            - --top-k
-            - "20"
-            - --min-p
-            - "0"
-            - --presence-penalty
-            - "0.5"
-            - --repeat-penalty
-            - "1.03"
-            - --reasoning-budget
-            - "8192"
-            - --reasoning-budget-message
-            - "Stop reasoning and produce the implementation, tool call, or final answer."
-            - --batch-size
-            - "4096"
-            - --ubatch-size
-            - "2048"
-            - --threads
-            - "16"
-            - --threads-batch
-            - "24"
-            - --no-mmap
-            - --jinja
-            - --chat-template-kwargs
-            - '{"preserve_thinking":true}'
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8080"
+              - --alias
+              - vision
+              - --model
+              - /models/qwen3.6-35b-a3b-heretic/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M/Qwen3.6-35B-A3B-Abliterated-Heretic-Q4_K_M.gguf
+              - --mmproj
+              - /models/qwen3.6-35b-a3b-heretic/mmproj-Qwen3.6-35B-A3B-Abliterated-Heretic.gguf
+              - --ctx-size
+              - "131072"
+              - --n-gpu-layers
+              - "99"
+              - --flash-attn
+              - "on"
+              - --parallel
+              - "2"
+              - --cont-batching
+              - -sps
+              - "0.90"
+              - --cache-prompt
+              - --kv-unified
+              - --cache-type-k
+              - q8_0
+              - --cache-type-v
+              - q8_0
+              - --ctx-checkpoints
+              - "8"
+              - --checkpoint-every-n-tokens
+              - "32768"
+              - --image-min-tokens
+              - "1024"
+              - --metrics
+              - --temp
+              - "0.6"
+              - --top-p
+              - "0.95"
+              - --top-k
+              - "20"
+              - --min-p
+              - "0"
+              - --presence-penalty
+              - "0.5"
+              - --repeat-penalty
+              - "1.03"
+              - --reasoning-budget
+              - "8192"
+              - --reasoning-budget-message
+              - "Stop reasoning and produce the implementation, tool call, or final answer."
+              - --batch-size
+              - "4096"
+              - --ubatch-size
+              - "2048"
+              - --threads
+              - "16"
+              - --threads-batch
+              - "24"
+              - --no-mmap
+              - --jinja
+              - --chat-template-kwargs
+              - '{"preserve_thinking":true}'
             resources:
               requests:
                 cpu: 500m
@@ -173,17 +173,17 @@ spec:
       models:
         existingClaim: llm-models
         globalMounts:
-        - path: /models
+          - path: /models
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
         globalMounts:
-        - path: /dev/dri
+          - path: /dev/dri
       dev-kfd:
         type: hostPath
         hostPath: /dev/kfd
         globalMounts:
-        - path: /dev/kfd
+          - path: /dev/kfd
     service:
       app:
         type: LoadBalancer

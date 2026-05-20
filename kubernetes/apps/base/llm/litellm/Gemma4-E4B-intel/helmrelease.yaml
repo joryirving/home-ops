@@ -40,18 +40,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf ]; then
+                if [ ! -s /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf.gguf ] || [ ! -s /models/gemma4-E4B/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir huggingface_hub
-                  mkdir -p /models/gemma4-E4B
-                  rm -rf /models/gemma4-E4B/.cache/huggingface/download/gemma-4-E4B-it-Q4_K_M.gguf.lock
+                  mkdir -p /models/gemma4-26b
+                  rm -rf /models/gemma4-E4B/.cache/huggingface/download/gemma-4-26B-A4B-UD-Q5_K_XL.gguf.lock
                   hf download \
                     unsloth/gemma-4-E4B-it-GGUF \
-                    gemma-4-E4B-it-Q4_K_M.gguf \
+                    gemma-4-E4B-it-Q4_K_M.gguf.gguf \
+                    mmproj-F16.gguf \
                     --local-dir /models/gemma4-E4B
-
-                  echo "Gemma4-E44B download complete"
+                  echo "Gemma-4-E4B download complete"
                 else
-                  echo "Gemma4-E44B already downloaded, skipping"
+                  echo "Gemma-4-E4B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -80,6 +80,8 @@ spec:
               - intel
               - --model
               - /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf
+              - --mmproj
+              - /models/gemma4-E4B/mmproj-F16.gguf
               - --ctx-size
               - "131072"
               - --n-gpu-layers
@@ -96,6 +98,10 @@ spec:
               - --no-context-shift
               - --cache-prompt
               - --kv-unified
+              - --image-min-tokens
+              - "560"
+              - --image-max-tokens
+              - "560"
               - --metrics
               - --temp
               - "1.0"
