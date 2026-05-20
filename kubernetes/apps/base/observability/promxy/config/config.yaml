@@ -1,0 +1,23 @@
+promxy:
+  server_groups:
+    # Main cluster Prometheus — the primary data source.
+    # Queries succeed even if this group is the only one available.
+    - static_configs:
+        - targets:
+            - prometheus-operated.observability.svc.cluster.local:9090
+      labels:
+        cluster: main
+      scheme: http
+
+    # Utility cluster Prometheus — queried for cross-cluster dashboards.
+    # ignore_error: true ensures that if the utility cluster is unreachable,
+    # Promxy still returns results from the main cluster instead of failing
+    # the entire query. This is essential for best-effort cross-cluster
+    # Prometheus access without requiring both clusters to be online.
+    - static_configs:
+        - targets:
+            - prometheus-utility.jory.dev
+      labels:
+        cluster: utility
+      scheme: https
+      ignore_error: true
