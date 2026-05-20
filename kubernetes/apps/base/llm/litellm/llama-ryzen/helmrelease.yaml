@@ -28,18 +28,21 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf ] || [ ! -s /models/gemma4-E4B/mmproj-F16.gguf ]; then
+                if [ ! -s /models/qwen3.5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen3.5-9b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/gemma4-E4B
-                  rm -rf /models/gemma4-E4B/.cache/huggingface/download/gemma-4-E4B-it-Q4_K_M.gguflock
+                  mkdir -p /models/qwen3.5-9b
+                  rm -rf /models/qwen3.5-9b/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
                   hf download \
-                    unsloth/gemma-4-E4B-it-GGUF \
-                    gemma-4-E4B-it-Q4_K_M.gguf \
+                    mradermacher/Qwen3.5-9B-heretic-GGUF \
+                    Qwen3.5-9B-heretic.Q4_K_M.gguf \
+                    --local-dir /models/qwen3.5-9b
+                  hf download \
+                    unsloth/Qwen3.5-9B-GGUF \
                     mmproj-F16.gguf \
-                    --local-dir /models/gemma4-E4B
-                  echo "Gemma-4-E4B download complete"
+                    --local-dir /models/qwen3.5-9b
+                  echo "Qwen3.5-9B download complete"
                 else
-                  echo "Gemma-4-E4B already downloaded, skipping"
+                  echo "Qwen3.5-9B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -67,11 +70,11 @@ spec:
               - --alias
               - ryzen
               - --model
-              - /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf
+              - /models/qwen3.5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf
               - --mmproj
-              - /models/gemma4-E4B/mmproj-F16.gguf
+              - /models/qwen3.5-9b/mmproj-F16.gguf
               - --ctx-size
-              - "32768"
+              - "131072"
               - --n-gpu-layers
               - "99"
               - --fit
@@ -87,24 +90,32 @@ spec:
               - --cache-prompt
               - --kv-unified
               - --image-min-tokens
-              - "280"
-              - --image-max-tokens
-              - "280"
+              - "1024"
               - --metrics
               - --temp
-              - "1.0"
+              - "0.6"
               - --top-p
               - "0.95"
               - --top-k
-              - "64"
+              - "20"
+              - --min-p
+              - "0"
+              - --presence-penalty
+              - "0.5"
+              - --repeat-penalty
+              - "1.03"
+              - --reasoning-budget
+              - "8192"
+              - --reasoning-budget-message
+              - "Stop reasoning and produce the implementation, tool call, or final answer."
               - --threads
               - "6"
               - --threads-batch
               - "12"
               - --batch-size
-              - "1024"
+              - "2048"
               - --ubatch-size
-              - "512"
+              - "1024"
               - --mmap
               - --device
               - Vulkan0
