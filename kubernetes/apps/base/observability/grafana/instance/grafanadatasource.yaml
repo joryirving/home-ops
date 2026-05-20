@@ -62,3 +62,18 @@ spec:
     jsonData:
       implementation: prometheus
     url: https://alertmanager-utility.jory.dev
+---
+# yaml-language-server: $schema=https://kube-schemas.pages.dev/grafana.integreatly.org/grafanadatasource_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: &name promxy
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  datasource:
+    type: prometheus
+    name: *name
+    access: proxy
+    url: http://promxy.observability.svc.cluster.local:8082
