@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-server
+  name: llama-ryzen
 spec:
   chartRef:
     kind: OCIRepository
@@ -13,14 +13,8 @@ spec:
   values:
     defaultPodOptions:
       hostIPC: true
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
     controllers:
-      llama-server:
+      llama-ryzen:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -34,19 +28,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen3.6-35b-a3b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf ] || [ ! -s /models/gemma4-E4B/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/qwen3.6-35b-a3b
-                  rm -rf /models/qwen3.6-35b-a3b/.cache/huggingface/download/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf.lock
+                  mkdir -p /models/gemma4-E4B
+                  rm -rf /models/gemma4-E4B/.cache/huggingface/download/gemma-4-E4B-it-Q4_K_M.gguflock
                   hf download \
-                    unsloth/Qwen3.6-35B-A3B-MTP-GGUF \
-                    Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf \
+                    unsloth/gemma-4-E4B-it-GGUF \
+                    gemma-4-E4B-it-Q4_K_M.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/qwen3.6-35b-a3b
-
-                  echo "Qwen3.6-35B-A3B download complete"
+                    --local-dir /models/gemma4-E4B
+                  echo "Gemma-4-E4B download complete"
                 else
-                  echo "Qwen3.6-35B-A3B already downloaded, skipping"
+                  echo "Gemma-4-E4B already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -62,82 +55,69 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-7.2.3
-              pullPolicy: Always
+              repository: ghcr.io/ggml-org/llama.cpp
+              tag: server-vulkan
             securityContext:
               privileged: true
-            command:
-              - llama-server
             args:
               - --host
               - 0.0.0.0
               - --port
               - "8080"
               - --alias
-              - self-hosted
+              - ryzen
               - --model
-              - /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf
+              - /models/gemma4-E4B/gemma-4-E4B-it-Q4_K_M.gguf
               - --mmproj
-              - /models/qwen3.6-35b-a3b/mmproj-F16.gguf
+              - /models/gemma4-E4B/mmproj-F16.gguf
               - --ctx-size
-              - "262144"
+              - "32768"
               - --n-gpu-layers
               - "99"
+              - --fit
+              - "off"
               - --flash-attn
               - "on"
               - --parallel
               - "2"
               - --cont-batching
-              - --spec-type
-              - draft-mtp
-              - --spec-draft-n-max
-              - "4"
               - -sps
               - "0.90"
+              - --no-context-shift
               - --cache-prompt
-              - --cache-ram
-              - "20480"
               - --kv-unified
-              - --ctx-checkpoints
-              - "32"
-              - --checkpoint-every-n-tokens
-              - "8192"
               - --image-min-tokens
-              - "1024"
+              - "280"
+              - --image-max-tokens
+              - "280"
               - --metrics
               - --temp
-              - "0.6"
+              - "1.0"
               - --top-p
               - "0.95"
               - --top-k
-              - "20"
-              - --min-p
-              - "0"
-              - --presence-penalty
-              - "0.5"
-              - --repeat-penalty
-              - "1.03"
-              - --reasoning-budget
-              - "8192"
-              - --reasoning-budget-message
-              - "Stop reasoning and produce the implementation, tool call, or final answer."
-              - --batch-size
-              - "8192"
-              - --ubatch-size
-              - "4096"
+              - "64"
               - --threads
-              - "16"
+              - "6"
               - --threads-batch
-              - "24"
-              - --no-mmap
-              - --jinja
-              - --chat-template-kwargs
-              - '{"preserve_thinking":true}'
+              - "12"
+              - --batch-size
+              - "1024"
+              - --ubatch-size
+              - "512"
+              - --mmap
+              - --device
+              - Vulkan0
+            env:
+              ZES_ENABLE_SYSMAN: "1"
+              GGML_VK_VISIBLE_DEVICES: "0"
+              UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS: "1"
             resources:
               requests:
                 cpu: 500m
-                memory: 20Gi
+                memory: 8Gi
+              limits:
+                memory: 16Gi
             probes:
               liveness:
                 enabled: true
@@ -170,7 +150,7 @@ spec:
                   periodSeconds: 10
     persistence:
       models:
-        existingClaim: llm-models
+        existingClaim: llama-ryzen
         globalMounts:
           - path: /models
       dev-dri:
@@ -178,17 +158,8 @@ spec:
         hostPath: /dev/dri
         globalMounts:
           - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd
     service:
       app:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.20
-        externalTrafficPolicy: Cluster
         ports:
           http:
             port: 8080
