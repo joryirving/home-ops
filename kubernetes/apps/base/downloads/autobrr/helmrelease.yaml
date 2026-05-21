@@ -27,7 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/autobrr/autobrr
-              tag: 
+              tag:
                 v1.79.0@sha256:5b8c29a86598907496af01ec75ef21f9c0e4e28ce9d6ae6496ef91c71543ec20
             env:
               AUTOBRR__HOST: 0.0.0.0
@@ -81,8 +81,12 @@ spec:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
     service:
       app:
         ports:

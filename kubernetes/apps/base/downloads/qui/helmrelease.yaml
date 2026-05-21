@@ -26,11 +26,14 @@ spec:
           app:
             image:
               repository: ghcr.io/autobrr/qui
-              tag: 
+              tag:
                 v1.18.0@sha256:2e768c8509831afd1f606d27d9aa8e5f3fc722fac4ea88acfdc4fa3b0e9b13ae
             env:
               QUI__HOST: 0.0.0.0
               QUI__PORT: &port 80
+              QUI__METRICS_ENABLED: true
+              QUI__METRICS_HOST: 0.0.0.0
+              QUI__METRICS_PORT: &metricsPort 8080
               TZ: America/Edmonton
             envFrom:
             - secretRef:
@@ -70,10 +73,20 @@ spec:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
     service:
       app:
         ports:
           http:
             port: *port
+          metrics:
+            port: *metricsPort
+      serviceMonitor:
+        app:
+          endpoints:
+            - port: metrics
