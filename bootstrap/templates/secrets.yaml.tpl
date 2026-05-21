@@ -24,8 +24,8 @@ kind: Secret
 metadata:
   name: onepassword-connect-credentials-secret
   namespace: external-secrets
-stringData:
-  1password-credentials.json: ref+op://kubernetes/1password-{{ ENV.CLUSTER }}/OP_SESSION_JSON
+data:
+  1password-credentials.json: op://kubernetes/1password-{{ ENV.CLUSTER }}/OP_SESSION_JSON
 ---
 apiVersion: v1
 kind: Secret
@@ -33,7 +33,7 @@ metadata:
   name: onepassword-connect-vault-secret
   namespace: external-secrets
 stringData:
-  OP_CONNECT_TOKEN: ref+op://kubernetes/1password-{{ ENV.CLUSTER }}/OP_CONNECT_TOKEN
+  OP_CONNECT_TOKEN: op://kubernetes/1password-{{ ENV.CLUSTER }}/OP_CONNECT_TOKEN
 ---
 apiVersion: v1
 kind: Secret
@@ -41,7 +41,7 @@ metadata:
   name: sops-age
   namespace: flux-system
 stringData:
-  age.agekey: ref+op://kubernetes/sops/SOPS_PRIVATE_KEY
+  age.agekey: op://kubernetes/sops/SOPS_PRIVATE_KEY
 ---
 apiVersion: v1
 kind: Secret
@@ -61,5 +61,5 @@ metadata:
     controller.cert-manager.io/fao: "true"
 type: kubernetes.io/tls
 data:
-  tls.crt: ref+op://kubernetes/jory-dev-tls/tls.crt
-  tls.key: ref+op://kubernetes/jory-dev-tls/tls.key
+  tls.crt: op://kubernetes/jory-dev-tls/tls.crt
+  tls.key: op://kubernetes/jory-dev-tls/tls.key
