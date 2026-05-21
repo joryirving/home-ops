@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
@@ -13,7 +13,7 @@ spec:
     tag: 85.2.0
   url: oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack
 ---
-# yaml-language-server: $schema=https://kube-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -34,8 +34,8 @@ spec:
             annotations:
               summary: There are {{ $value }} containers pulling from Dockerhub.
                 This may lead to rate limiting.
-            expr: count(time() - 
-              container_last_seen{image=~"(docker.io).*",container!=""} < 30) > 
+            expr: count(time() -
+              container_last_seen{image=~"(docker.io).*",container!=""} < 30) >
               100
             labels:
               severity: critical
@@ -45,12 +45,12 @@ spec:
           rules:
           - alert: OomKilled
             annotations:
-              summary: Container {{ $labels.container }} in pod {{ 
-                $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ 
+              summary: Container {{ $labels.container }} in pod {{
+                $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{
                 $value }} times in the last 10 minutes.
-            expr: (kube_pod_container_status_restarts_total - 
-              kube_pod_container_status_restarts_total offset 10m >= 1) and 
-              ignoring (reason) 
+            expr: (kube_pod_container_status_restarts_total -
+              kube_pod_container_status_restarts_total offset 10m >= 1) and
+              ignoring (reason)
               min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m])
               == 1
             labels:
@@ -61,7 +61,7 @@ spec:
           rules:
           - alert: ZfsUnexpectedPoolState
             annotations:
-              summary: ZFS pool {{$labels.zpool}} on {{$labels.instance}} is in 
+              summary: ZFS pool {{$labels.zpool}} on {{$labels.instance}} is in
                 a unexpected state {{$labels.state}}
             expr: node_zfs_zpool_state{state!="online"} > 0
             labels:
