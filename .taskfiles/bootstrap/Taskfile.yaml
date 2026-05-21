@@ -36,7 +36,7 @@ tasks:
       - kubectl config set-cluster {{.CLUSTER}} --server https://{{.RANDOM_CONTROLLER}}:6443
       - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
       - until kubectl --context {{.CLUSTER}} get nodes --no-headers 2>/dev/null | grep -q .; do sleep 5; done
-      - op inject --in-file {{.BOOTSTRAP_DIR}}/templates/secrets.yaml.tpl | kubectl --context {{.CLUSTER}} apply --server-side --filename -
+      - minijinja-cli {{.BOOTSTRAP_DIR}}/templates/secrets.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
       - task: helmfile
     requires:
       vars: [CLUSTER]
@@ -53,7 +53,7 @@ tasks:
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
       - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
       - test -d {{.BOOTSTRAP_DIR}}/templates
-      - which helmfile jq kubectl op talosctl
+      - which helmfile jq kubectl minijinja-cli op talosctl
 
   helmfile:
     internal: true
