@@ -31,6 +31,14 @@ spec:
           name: not-used
         spec:
           deletionPolicy: WaitForTermination
+          postBuild:
+            substitute:
+              CLUSTER: ${CLUSTER}
+              SECRET_DOMAIN: ${SECRET_DOMAIN}
+              STORAGE_HR: ${STORAGE_HR}
+              STORAGE_NS: ${STORAGE_NS}
+              VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
+              VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
           patches:
             - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
