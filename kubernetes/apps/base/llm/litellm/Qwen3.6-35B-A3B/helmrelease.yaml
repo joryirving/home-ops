@@ -63,7 +63,7 @@ spec:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-7.2.3
+              tag: rocm-7.2.3@sha256:487a36bb4345b9529cde8d687143ed12b04c49741d98b6479337996ddd432cdd
               pullPolicy: Always
             securityContext:
               privileged: true
@@ -97,7 +97,7 @@ spec:
               - "0.90"
               - --cache-prompt
               - --cache-ram
-              - "20480"
+              - "16384"
               - --kv-unified
               - --ctx-checkpoints
               - "32"
@@ -119,7 +119,7 @@ spec:
               - --repeat-penalty
               - "1.03"
               - --reasoning-budget
-              - "8192"
+              - "16384"
               - --reasoning-budget-message
               - "Stop reasoning and produce the implementation, tool call, or final answer."
               - --batch-size
@@ -142,6 +142,8 @@ spec:
               requests:
                 cpu: 500m
                 memory: 20Gi
+              limits:
+                memory: 40Gi
             probes:
               liveness:
                 enabled: true

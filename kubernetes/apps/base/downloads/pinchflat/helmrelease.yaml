@@ -12,9 +12,6 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
-      resourceClaims:
-      - name: gpu
-        resourceClaimTemplateName: pinchflat-gpu
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -29,7 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/kieraneglin/pinchflat
-              tag: 
+              tag:
                 v2025.6.6@sha256:bda3091e59af351e5e928930c680a6ebe2cde728949e36c11000b9827ee2ed51
             env:
               TZ: America/Edmonton
@@ -53,8 +50,6 @@ spec:
               readOnlyRootFilesystem: true
               capabilities: {drop: ["ALL"]}
             resources:
-              claims:
-              - name: gpu
               requests:
                 cpu: 10m
               limits:
