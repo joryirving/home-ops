@@ -6,22 +6,26 @@ metadata:
 data:
   config.yaml: |
     model:
-      default: openai/MiniMax-M2.7
-      provider: custom:kubernetes
+      default: anthropic/MiniMax-M2.7
+      provider: custom:litellm-anthropic
       base_url: http://litellm.llm:4000/v1
       api_key: $${LITELLM_API_KEY}
     fallback_providers:
-      - provider: custom:kubernetes
+      - provider: custom:litellm
         model: self-hosted
-      - provider: custom:kubernetes
+      - provider: custom:litellm
         model: chatgpt/gpt-5.5
-      - provider: custom:kubernetes
+      - provider: custom:litellm
         model: vision
-      - provider: custom:kubernetes
+      - provider: custom:litellm
         model: kimi-k2.6
     providers:
-      kubernetes:
+      litellm:
         base_url: http://litellm.llm:4000/v1
+        api_key: $${LITELLM_API_KEY}
+      litellm-anthropic:
+        base_url: http://litellm.llm:4000/v1
+        provider: anthropic
         api_key: $${LITELLM_API_KEY}
     toolsets:
       - hermes-cli
