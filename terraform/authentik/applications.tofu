@@ -6,6 +6,7 @@ locals {
     "Grafana",
     "Headlamp",
     "Kyoo",
+    "Matrix",
     "Miso-Chat",
     "Miso-Gallery",
     "Open-WebUI",
@@ -70,6 +71,15 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/headlamp-k8s/headlamp/refs/heads/main/frontend/src/resources/icon-dark.svg"
       redirect_uri      = "https://headlamp.${var.CLUSTER_DOMAIN}/oidc-callback"
       launch_url        = "https://headlamp.${var.CLUSTER_DOMAIN}/"
+      property_mappings = local.default_property_mappings
+    },
+    Matrix = {
+      client_id         = module.onepassword_application["Matrix"].fields["MATRIX_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Matrix"].fields["MATRIX_CLIENT_SECRET"]
+      group             = "workadventure"
+      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/matrix.png"
+      redirect_uri      = "https://matrix.${var.CLUSTER_DOMAIN}/_synapse/client/oidc/callback"
+      launch_url        = "https://matrix.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     Kyoo = {
