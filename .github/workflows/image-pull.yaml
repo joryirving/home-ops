@@ -26,98 +26,55 @@ jobs:
         with:
           patterns: kubernetes/**/*
 
-  extract:
+  diff:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
-    name: Image Pull - Extract Images
+    name: Image Pull - Diff Images
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        branch: ["default", "pull"]
         cluster: ["main", "utility"]
       fail-fast: false
     steps:
-      - name: Checkout
+      - name: Checkout Pull Request Branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-          ref: ${{ matrix.branch == 'default' && github.event.repository.default_branch || '' }}
+          path: pull
 
-      - name: Gather Images
+      - name: Checkout Default Branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.repository.default_branch }}
+          path: default
+
+      - name: Setup Mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          tool_versions: |
+            github:home-operations/flate latest
+
+      - name: Diff Images
+        env:
+          CLUSTER: ${{ matrix.cluster }}
         run: |
-          bash .github/scripts/retry.sh \
-            docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/github/workspace" \
-            --workdir /github/workspace \
-            ghcr.io/allenporter/flux-local:v8.1.0 \
-            get cluster \
-            --all-namespaces \
-            --path /github/workspace/kubernetes/clusters/${{ matrix.cluster }} \
-            --enable-images \
-            --only-images \
+          flate diff images \
             --output json \
-            --output-file images.json
+            --output-file images.json \
+            --path ./pull/kubernetes/clusters/"$CLUSTER" \
+            --path-orig ./default/kubernetes/clusters/"$CLUSTER"
 
-      - name: Extract Images and Summarize
+      - name: Summarize
+        env:
+          CLUSTER: ${{ matrix.cluster }}
         run: |
-          mkdir -p output
-          jq --compact-output '.' images.json > output/images.json
-
-          echo "## Branch: \`${{ matrix.branch }}\` — Cluster: \`${{ matrix.cluster }}\` Images" >> $GITHUB_STEP_SUMMARY
+          echo "## New images for cluster \`$CLUSTER\`" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
           jq '.' images.json >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload Image JSON
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: images-${{ matrix.cluster }}-${{ matrix.branch }}
-          path: output/images.json
-
-  diff:
-    name: Image Pull - Diff Images
-    needs: extract
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        cluster: ["main", "utility"]
-      fail-fast: false
-    outputs:
-      images: ${{ steps.diff.outputs.images }}
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          path: artifacts
-
-      - name: Diff Images
-        id: diff
-        run: |
-          default_file="artifacts/images-${{ matrix.cluster }}-default/images.json"
-          pull_file="artifacts/images-${{ matrix.cluster }}-pull/images.json"
-
-          if [[ ! -f "$default_file" || ! -f "$pull_file" ]]; then
-            echo "images=[]" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          images=$(jq --compact-output --null-input \
-            --argjson f1 "$(cat "$default_file")" \
-            --argjson f2 "$(cat "$pull_file")" \
-            '$f2 - $f1')
-
-          echo "images=$images" >> $GITHUB_OUTPUT
-
-          echo '## New images to Pull' >> $GITHUB_STEP_SUMMARY
-          echo '```json' >> $GITHUB_STEP_SUMMARY
-          echo $images | jq >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Save Image List
-        run: |
-          echo '${{ steps.diff.outputs.images }}' > images.json
-        # Upload image list for pull step
-      - name: Upload Diff
+      - name: Upload Image List
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: diff-${{ matrix.cluster }}
@@ -138,30 +95,15 @@ jobs:
           name: diff-${{ matrix.cluster }}
           path: .
 
-      - name: Read Images from JSON
-        id: read-images
-        run: |
-          mapfile -t images < <(jq -r '.[]' images.json)
-          echo "images_count=${#images[@]}" >> $GITHUB_OUTPUT
-          for i in "${!images[@]}"; do
-            echo "image_$i=${images[$i]}" >> $GITHUB_OUTPUT
-          done
-          if [[ -z "$images" ]]; then
-            echo "No images to pull for cluster ${{ matrix.cluster }}"
-            exit 0
-          fi
-
       - name: Install talosctl
         run: |
           for attempt in 1 2 3; do
             if curl -fsSL https://talos.dev/install | sh; then
               exit 0
             fi
-
             if [[ "$attempt" -eq 3 ]]; then
               exit 1
             fi
-
             echo "talosctl install failed; retrying in 20s (${attempt}/3)..." >&2
             sleep 20
           done
@@ -169,17 +111,19 @@ jobs:
       - name: Pull Images
         run: |
           images=$(jq -r '.[]' images.json)
+          if [[ -z "$images" ]]; then
+            echo "No images to pull for cluster ${{ matrix.cluster }}"
+            exit 0
+          fi
           for image in $images; do
             echo "Pulling $image"
             for attempt in 1 2 3; do
               if talosctl --nodes $NODE image pull "$image"; then
                 break
               fi
-
               if [[ "$attempt" -eq 3 ]]; then
                 exit 1
               fi
-
               echo "Image pull failed for $image; retrying in 20s (${attempt}/3)..." >&2
               sleep 20
             done
