@@ -6,11 +6,6 @@ metadata:
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/games/minecraft/mc-router
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -23,18 +18,13 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   components:
-  - ../../../../../components/volsync
+    - ../../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/games/minecraft/cobbleverse
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 50Gi
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -47,18 +37,13 @@ spec:
     labels:
       app.kubernetes.io/name: *app
   components:
-  - ../../../../../components/volsync
+    - ../../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/games/minecraft/jellycraft
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 15Gi
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 # ---
 # # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json

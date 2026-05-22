@@ -6,11 +6,6 @@ metadata:
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/network/certificates/import
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: true
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -21,11 +16,6 @@ metadata:
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/network/certificates/certificate
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: true
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -35,12 +25,7 @@ metadata:
   name: certificates-export
 spec:
   dependsOn:
-  - name: certificate
+    - name: certificate
   interval: 1h
   path: ./kubernetes/apps/base/network/certificates/export
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: true

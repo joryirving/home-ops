@@ -5,18 +5,13 @@ metadata:
   name: &app agregarr
 spec:
   components:
-  - ../../../../../components/volsync
-  - ../../../../../components/zeroscaler
+    - ../../../../../components/volsync
+    - ../../../../../components/zeroscaler
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/agregarr
   postBuild:
     substitute:
       APP: *app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -26,9 +21,9 @@ metadata:
   name: &app plex
 spec:
   components:
-  - ../../../../../components/gpu
-  - ../../../../../components/volsync
-  - ../../../../../components/zeroscaler
+    - ../../../../../components/gpu
+    - ../../../../../components/volsync
+    - ../../../../../components/zeroscaler
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/app
   postBuild:
@@ -36,11 +31,6 @@ spec:
       APP: *app
       CLUSTER: ${CLUSTER}
       VOLSYNC_CAPACITY: 50Gi
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 # ---
 # # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -78,14 +68,9 @@ metadata:
   name: plex-auto-languages
 spec:
   dependsOn:
-  - name: plex
+    - name: plex
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-auto-languages
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -95,17 +80,12 @@ metadata:
   name: &app imagemaid
 spec:
   dependsOn:
-  - name: plex
+    - name: plex
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/imagemaid
   postBuild:
     substitute:
       APP: *app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -115,18 +95,13 @@ metadata:
   name: &app plex-trakt-sync
 spec:
   components:
-  - ../../../../../components/volsync
+    - ../../../../../components/volsync
   dependsOn:
-  - name: plex
+    - name: plex
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/plex-trakt-sync
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 500Mi
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false

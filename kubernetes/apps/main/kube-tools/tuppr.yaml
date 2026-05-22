@@ -9,11 +9,6 @@ spec:
   postBuild:
     substitute:
       REPLICAS: "2"
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: true
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -23,12 +18,7 @@ metadata:
   name: tuppr-upgrades
 spec:
   dependsOn:
-  - name: tuppr
+    - name: tuppr
   interval: 1h
   path: ./kubernetes/apps/${CLUSTER}/kube-tools/upgrades
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false

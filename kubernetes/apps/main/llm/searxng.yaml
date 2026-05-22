@@ -5,22 +5,17 @@ metadata:
   name: &app searxng
 spec:
   components:
-  - ../../../../../components/dragonfly
+    - ../../../../../components/dragonfly
   healthCheckExprs:
-  - apiVersion: dragonflydb.io/v1alpha1
-    kind: Dragonfly
-    failed: status.phase != 'ready'
-    current: status.phase == 'ready'
+    - apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      failed: status.phase != 'ready'
+      current: status.phase == 'ready'
   interval: 1h
   path: ./kubernetes/apps/base/llm/searxng/app
   postBuild:
     substitute:
       APP: *app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -34,9 +29,4 @@ spec:
   postBuild:
     substitute:
       APP: *app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
