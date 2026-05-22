@@ -6,16 +6,11 @@ metadata:
   name: &app valheim
 spec:
   components:
-  - ../../../../components/volsync
+    - ../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/games/valheim
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 10Gi
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false

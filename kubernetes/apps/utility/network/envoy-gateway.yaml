@@ -6,11 +6,6 @@ metadata:
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/network/envoy-gateway/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -20,7 +15,7 @@ metadata:
   name: envoy-config
 spec:
   dependsOn:
-  - name: envoy-gateway
+    - name: envoy-gateway
   interval: 1h
   path: ./kubernetes/apps/base/network/envoy-gateway/config
   postBuild:
@@ -30,9 +25,4 @@ spec:
       INTERNAL_DOMAIN: ${CLUSTER}-internal
       SVC_GATEWAY_EXTERNAL: 10.69.10.132
       SVC_GATEWAY_INTERNAL: 10.69.10.131
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false

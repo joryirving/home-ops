@@ -6,23 +6,18 @@ metadata:
   name: &app romm
 spec:
   components:
-  - ../../../../components/dragonfly
-  - ../../../../components/postgres
-  - ../../../../components/volsync
+    - ../../../../components/dragonfly
+    - ../../../../components/postgres
+    - ../../../../components/volsync
   healthCheckExprs:
-  - apiVersion: postgresql.cnpg.io/v1
-    kind: Cluster
-    failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
-    current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 1h
   path: ./kubernetes/apps/base/games/romm
   postBuild:
     substitute:
       APP: *app
       VOLSYNC_CAPACITY: 25Gi
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false

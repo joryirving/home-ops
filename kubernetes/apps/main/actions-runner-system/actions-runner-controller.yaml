@@ -5,13 +5,7 @@ metadata:
   name: actions-runner-controller
 spec:
   interval: 1h
-  path:
-    ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
+  path: ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/app
   wait: true
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -21,19 +15,13 @@ metadata:
   name: actions-runner-controller-runners
 spec:
   dependsOn:
-  - name: actions-runner-controller
-  - name: openebs
-    namespace: storage
+    - name: actions-runner-controller
+    - name: openebs
+      namespace: storage
   interval: 1h
-  path:
-    ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/runners
+  path: ./kubernetes/apps/base/actions-runner-system/actions-runner-controller/runners
   postBuild:
     substitute:
       CLUSTER: ${CLUSTER}
       maxRunners: "6" # 2 per node
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false

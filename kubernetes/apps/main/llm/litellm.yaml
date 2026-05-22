@@ -22,11 +22,6 @@ spec:
       VOLSYNC_ACCESSMODES: ReadWriteMany
       VOLSYNC_STORAGECLASS: ceph-filesystem
       VOLSYNC_SNAPSHOTCLASS: csi-ceph-filesystem
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 # ---
 # # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -55,18 +50,13 @@ metadata:
   name: &app llama-intel
 spec:
   components:
-  - ../../../../../components/gpu
+    - ../../../../../components/gpu
   interval: 1h
   path: ./kubernetes/apps/base/llm/litellm/llama-intel
   postBuild:
     substitute:
       APP: *app
       CLUSTER: ${CLUSTER}
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -76,18 +66,13 @@ metadata:
   name: &app llama-embed
 spec:
   components:
-  - ../../../../../components/gpu
+    - ../../../../../components/gpu
   interval: 1h
   path: ./kubernetes/apps/base/llm/litellm/llama-embed
   postBuild:
     substitute:
       APP: *app
       CLUSTER: ${CLUSTER}
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
 # ---
 # # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -123,9 +108,4 @@ spec:
     substitute:
       APP: *app
       CLUSTER: ${CLUSTER}
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
   wait: false
