@@ -80,6 +80,7 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/matrix.png"
       redirect_uri      = "https://matrix.${var.CLUSTER_DOMAIN}/_synapse/client/oidc/callback"
       launch_url        = "https://matrix.${var.CLUSTER_DOMAIN}"
+      grant_types       = ["authorization_code"]
       property_mappings = local.default_property_mappings
     },
     Kyoo = {
@@ -177,6 +178,7 @@ resource "authentik_provider_oauth2" "oauth2" {
     ],
     try(each.value.additional_redirect_uris, [])
   )
+  grant_types = try(each.value.grant_types, [])
 }
 
 resource "authentik_application" "application" {
