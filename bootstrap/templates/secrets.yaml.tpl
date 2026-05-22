@@ -38,14 +38,6 @@ stringData:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: sops-age
-  namespace: flux-system
-stringData:
-  age.agekey: op://kubernetes/sops/SOPS_PRIVATE_KEY
----
-apiVersion: v1
-kind: Secret
-metadata:
   name: jory-dev-tls
   namespace: kube-system
   annotations:
