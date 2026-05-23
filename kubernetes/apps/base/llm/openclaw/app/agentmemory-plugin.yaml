@@ -21,7 +21,9 @@ data:
           "token_budget": { "type": "number" },
           "min_confidence": { "type": "number" },
           "fallback_on_error": { "type": "boolean" },
-          "timeout_ms": { "type": "number" }
+          "timeout_ms": { "type": "number" },
+          "default_agent": { "type": "string" },
+          "project_prefix": { "type": "string" }
         }
       }
     }
@@ -51,6 +53,8 @@ data:
         min_confidence: { type: "number" },
         fallback_on_error: { type: "boolean" },
         timeout_ms: { type: "number" },
+        default_agent: { type: "string" },
+        project_prefix: { type: "string" },
       },
     };
 
@@ -99,6 +103,72 @@ data:
           return `- $${title} ($${type})$${narrative ? `: $${narrative}` : ""}`;
         })
         .join("\n");
+    }
+
+    function nonEmptyString(value) {
+      return typeof value === "string" && value.trim() ? value.trim() : "";
+    }
+
+    function firstString(...values) {
+      for (const value of values) {
+        const str = nonEmptyString(value);
+        if (str) return str;
+      }
+      return "";
+    }
+
+    function sanitizeSegment(value) {
+      return nonEmptyString(value)
+        .replace(/[^a-zA-Z0-9_.:-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80);
+    }
+
+    function parseAgentIdFromSessionKey(value) {
+      const str = nonEmptyString(value);
+      if (!str) return "";
+      const match = str.match(/(?:^|[:/])agent[:/]([^:/]+)/);
+      return match ? sanitizeSegment(match[1]) : "";
+    }
+
+    function deriveAgentId(event, cfg) {
+      const direct = firstString(
+        event?.agentId,
+        event?.agent_id,
+        event?.agent?.id,
+        event?.agent?.name,
+        event?.session?.agentId,
+        event?.session?.agent_id,
+      );
+      if (direct) return sanitizeSegment(direct);
+
+      const parsed = firstString(
+        parseAgentIdFromSessionKey(event?.sessionKey),
+        parseAgentIdFromSessionKey(event?.sessionId),
+        parseAgentIdFromSessionKey(event?.runId),
+      );
+      if (parsed) return parsed;
+
+      return sanitizeSegment(cfg.default_agent || "main");
+    }
+
+    function deriveScope(event, cfg) {
+      const agentId = deriveAgentId(event, cfg);
+      const projectPrefix = sanitizeSegment(cfg.project_prefix || "openclaw");
+      const project = `$${projectPrefix}:$${agentId}`;
+      const rawSessionId = firstString(
+        event?.sessionId,
+        event?.sessionKey,
+        event?.runId,
+        event?.id,
+        `session-$${Date.now()}`,
+      );
+      return {
+        agentId,
+        project,
+        cwd: firstString(event?.cwd, event?.workspace, event?.workspacePath, event?.agent?.workspace, project),
+        sessionId: `$${project}:$${rawSessionId}`,
+      };
     }
 
     function normalizedHostname(hostname) {
@@ -182,8 +252,22 @@ data:
           min_confidence: api.pluginConfig?.min_confidence || 0.5,
           fallback_on_error: api.pluginConfig?.fallback_on_error !== false,
           timeout_ms: api.pluginConfig?.timeout_ms || DEFAULT_TIMEOUT_MS,
+          default_agent: api.pluginConfig?.default_agent || "main",
+          project_prefix: api.pluginConfig?.project_prefix || "openclaw",
         };
         const client = createClient(cfg, api);
+        const registeredSessions = new Set();
+
+        async function ensureSession(scope, title) {
+          if (registeredSessions.has(scope.sessionId)) return;
+          await client.postJson("/agentmemory/session/start", {
+            sessionId: scope.sessionId,
+            project: scope.project,
+            cwd: scope.cwd,
+            title,
+          });
+          registeredSessions.add(scope.sessionId);
+        }
 
         if (typeof api.registerMemoryCapability === "function") {
           api.registerMemoryCapability({
@@ -199,14 +283,23 @@ data:
           if (!cfg.enabled) return;
           const prompt = typeof event?.prompt === "string" ? event.prompt.trim() : "";
           if (!prompt) return;
-          const result = await client.postJson("/agentmemory/smart-search", {
+          const scope = deriveScope(event, cfg);
+          await ensureSession(scope, prompt.slice(0, 200));
+          const result = await client.postJson("/agentmemory/search", {
+            format: "full",
+            project: scope.project,
             query: prompt,
             limit: 5,
+            token_budget: cfg.token_budget,
           });
-          const block = formatResults(result?.results || []);
+          const memories = (result?.results || []).filter((item) => {
+            const confidence = item?.observation?.confidence;
+            return typeof confidence !== "number" || confidence >= cfg.min_confidence;
+          });
+          const block = formatResults(memories);
           if (!block) return;
           return {
-            prependContext: `Relevant long-term memory from agentmemory:\n$${block}`,
+            prependContext: `Relevant long-term memory from agentmemory for $${scope.agentId}:\n$${block}`,
           };
         });
 
@@ -215,13 +308,17 @@ data:
           const userText = latestUserText(event.messages);
           const assistantText = lastAssistantText(event.messages);
           if (!userText || !assistantText) return;
-          const sessionId = event.sessionId || event.sessionKey || event.runId || `openclaw-$${Date.now()}`;
+          const scope = deriveScope(event, cfg);
+          await ensureSession(scope, userText.slice(0, 200));
           await client.postJson("/agentmemory/observe", {
             hookType: "post_tool_use",
-            sessionId,
+            sessionId: scope.sessionId,
+            project: scope.project,
+            cwd: scope.cwd,
             timestamp: new Date().toISOString(),
             data: {
               tool_name: "conversation",
+              agent_id: scope.agentId,
               tool_input: userText.slice(0, 1000),
               tool_output: assistantText.slice(0, 4000),
             },
