@@ -1,0 +1,122 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: agentmemory
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      agentmemory:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        replicas: 1
+        strategy: Recreate
+        type: deployment
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/agentmemory
+              tag: 0.9.21@sha256:2c92f9188ea333ddb79e5e66a237c3868aee236a412c179e43869c1eaaa29393
+            command:
+              - /usr/bin/catatonit
+              - --
+              - /bin/sh
+              - -c
+              - |
+                PREFS_HOME="${HOME:-/home/node}"
+                mkdir -p "$PREFS_HOME/.agentmemory"
+                if [ ! -s "$PREFS_HOME/.agentmemory/preferences.json" ]; then
+                  printf '%s\n' '{"schemaVersion":1,"lastAgent":null,"lastAgents":[],"lastProvider":null,"skipSplash":true,"skipNpxHint":true,"skipGlobalInstall":true,"skipConsoleInstall":true,"firstRunAt":"1970-01-01T00:00:00.000Z"}' > "$PREFS_HOME/.agentmemory/preferences.json"
+                fi
+                exec /entrypoint.sh
+            env:
+              AGENTMEMORY_DROP_STALE_INDEX: "true"
+              AGENTMEMORY_TOOLS: all
+              EMBEDDING_PROVIDER: openai
+              GRAPH_EXTRACTION_ENABLED: "true"
+              III_REST_PORT: "3111"
+              OPENAI_BASE_URL: http://litellm.llm:4000/v1
+              OPENAI_EMBEDDING_DIMENSIONS: "384"
+              OPENAI_EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
+              TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: agentmemory
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  failureThreshold: 3
+                  httpGet:
+                    path: /agentmemory/livez
+                    port: 3111
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  failureThreshold: 3
+                  httpGet:
+                    path: /agentmemory/livez
+                    port: 3111
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  failureThreshold: 60
+                  httpGet:
+                    path: /agentmemory/livez
+                    port: 3111
+                  periodSeconds: 5
+                  timeoutSeconds: 5
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 2Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+    persistence:
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /home/node
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /data
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
+    service:
+      app:
+        controller: agentmemory
+        ports:
+          api:
+            port: 3111
+          viewer:
+            port: 3113

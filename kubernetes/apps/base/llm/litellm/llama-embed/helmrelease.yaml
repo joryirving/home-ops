@@ -40,17 +40,17 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/nomic-embed-text-v1.5/nomic-embed-text-v1.5.Q8_0.gguf ]; then
+                if [ ! -s /models/all-MiniLM-L6-v2/all-MiniLM-L6-v2-Q8_0.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/nomic-embed-text-v1.5
-                  rm -rf /models/nomic-embed-text-v1.5/.cache/huggingface/download/nomic-embed-text-v1.5.Q8_0.ggufflock
+                  mkdir -p /models/all-MiniLM-L6-v2
+                  rm -rf /models/all-MiniLM-L6-v2/.cache/huggingface/download/all-MiniLM-L6-v2-Q8_0.ggufflock
                   hf download \
-                    nomic-ai/nomic-embed-text-v1.5-GGUF \
-                    nomic-embed-text-v1.5.Q8_0.gguf \
-                    --local-dir /models/nomic-embed-text-v1.5
-                  echo "nomic-embed-text-v1.5 download complete"
+                    second-state/All-MiniLM-L6-v2-Embedding-GGUF \
+                    all-MiniLM-L6-v2-Q8_0.gguf \
+                    --local-dir /models/all-MiniLM-L6-v2
+                  echo "all-MiniLM-L6-v2 download complete"
                 else
-                  echo "nomic-embed-text-v1.5 already downloaded, skipping"
+                  echo "all-MiniLM-L6-v2 already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -76,9 +76,9 @@ spec:
               - --port
               - "8080"
               - --alias
-              - nomic-embed-text-v1.5
+              - sentence-transformers/all-MiniLM-L6-v2
               - --model
-              - /models/nomic-embed-text-v1.5/nomic-embed-text-v1.5.Q8_0.gguf
+              - /models/all-MiniLM-L6-v2/all-MiniLM-L6-v2-Q8_0.gguf
               - --embeddings
               - --pooling
               - mean
