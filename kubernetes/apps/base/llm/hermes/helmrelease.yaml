@@ -41,6 +41,8 @@ spec:
               tag: v2026.5.16@sha256:b6e41c155d6bfce5ad83c5d0fec670086db8a43250e4511c9474134be5482d33
             args: ["gateway", "run",]
             env:
+              AGENTMEMORY_PROJECT: hermes
+              AGENTMEMORY_URL: http://agentmemory.llm:3111
               HERMES_HOME: /opt/data
               HOME: /opt/data
               TZ: America/Edmonton
@@ -143,6 +145,12 @@ spec:
         globalMounts:
           - path: /tmp/config.yaml
             subPath: config.yaml
+      agentmemory-plugin:
+        type: configMap
+        name: hermes-agentmemory-plugin
+        defaultMode: 0755
+        globalMounts:
+          - path: /opt/data/plugins/agentmemory
       gallery:
         type: nfs
         server: voyager.internal
