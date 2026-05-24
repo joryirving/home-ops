@@ -101,6 +101,13 @@ spec:
                 drop:
                   - ALL
     persistence:
+      config-file:
+        type: configMap
+        name: agentmemory-config
+        globalMounts:
+          - path: /app/config.yaml
+            subPath: config.yaml
+            readOnly: true
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
