@@ -60,8 +60,8 @@ spec:
               # SERVER_IP: 0.0.0.0 # Only used if port is set. Sets the address that the server will bind to.
               # SERVER_PORT: &port "27015" # What port to bind to. If not set, then the server will use the Steam relay network. If set the clients will connect to the server directly and the port needs to be open.
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &disabled
                 enabled: false
@@ -76,8 +76,8 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: *datapath
+          - path: *datapath
       files:
         existingClaim: "{{ .Release.Name }}-server-files"
         globalMounts:
-        - path: /home/steam/core-keeper-dedicated
+          - path: /home/steam/core-keeper-dedicated
