@@ -64,9 +64,11 @@ data:
             thinking: "high",
           },
           heartbeat: {
+            every: "60m",
+            model: "litellm-anthropic/MiniMax-M2.7",
             directPolicy: "allow",
             lightContext: true,
-            isolatedSession: true,
+            isolatedSession: false,
             includeReasoning: false,
           },
         },
@@ -75,7 +77,6 @@ data:
             id: "main",
             default: true,
             name: "Miso",
-            heartbeat: { every: "60m", model: "litellm-anthropic/MiniMax-M2.7", activeHours: { start: "06:00", end: "23:00" }, },
             workspace: "/home/node/.openclaw/workspace",
             agentDir: "/home/node/.openclaw/agents/main/agent",
             identity: {
@@ -104,7 +105,6 @@ data:
           {
             id: "saffron",
             name: "Saffron",
-            heartbeat: { every: "60m", model: "litellm/self-hosted", activeHours: { start: "06:00", end: "23:00" }, },
             workspace: "/home/node/.openclaw/workspace-saffron",
             agentDir: "/home/node/.openclaw/agents/saffron/agent",
             tools: { allow: ["exec", "read", "write", "web_fetch", "browser", "sessions_spawn", "memory_search", "memory_get", "toolhive__find_tool","toolhive__call_tool"] },
