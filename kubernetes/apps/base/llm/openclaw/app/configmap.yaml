@@ -251,21 +251,11 @@ data:
           },
           "lossless-claw": {
             enabled: true,
-            llm: {
-              allowModelOverride: true,
-              allowedModels: [
-                "litellm/intel",
-              ],
-            },
-            subagent: {
-              allowModelOverride: true,
-              allowedModels: [
-                "litellm/self-hosted",
-              ],
-            },
+            llm: { allowModelOverride: true, allowedModels: [ "litellm/self-hosted", ], },
+            subagent: { allowModelOverride: true, allowedModels: [ "litellm/self-hosted", ], },
             config: {
               contextThreshold: 0.75,
-              delegationTimeoutMs: 300000,
+              delegationTimeoutMs: 1000000,
               expansionModel: "litellm/self-hosted",
               freshTailCount: 64,
               freshTailMaxTokens: 24000,
@@ -276,14 +266,14 @@ data:
                 "**:heartbeat:**"
               ],
               incrementalMaxDepth: 1,
-              leafChunkTokens: 20000,
+              leafChunkTokens: 8192,
               newSessionRetainDepth: 2,
               proactiveThresholdCompactionMode: "deferred",
               pruneHeartbeatOk: true,
               skipStatelessSessions: true,
               statelessSessionPatterns: [ "agent:*:subagent:**" ],
-              summaryModel: "litellm/intel",
-              summaryTimeoutMs: 300000,
+              summaryModel: "litellm/self-hosted",
+              summaryTimeoutMs: 1000000,
               transcriptGcEnabled: false,
             },
           },
