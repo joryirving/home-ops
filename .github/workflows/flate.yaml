@@ -106,12 +106,9 @@ jobs:
           CLUSTER: ${{ matrix.cluster }}
         run: |
           flate diff "$RESOURCE" \
-            --limit-bytes 10000 \
-            --output-file diff.patch \
             --path ./pull/kubernetes/clusters/"$CLUSTER" \
             --path-orig ./default/kubernetes/clusters/"$CLUSTER" \
-            --strip-attrs "helm.sh/chart,checksum/config,app.kubernetes.io/version,chart" \
-            --unified 6
+            > diff.patch
 
       - name: Generate Diff
         id: diff
