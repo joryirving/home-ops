@@ -2,6 +2,7 @@ locals {
   oauth_apps = [
     "autobrr",
     "Arcane",
+    "Dispatch",
     "ErsatzTV",
     "Grafana",
     "Headlamp",
@@ -44,6 +45,15 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/arcane.png"
       redirect_uri      = "https://arcane.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://arcane.${var.CLUSTER_DOMAIN}"
+      property_mappings = local.default_property_mappings
+    },
+    Dispatch = {
+      client_id         = module.onepassword_application["Dispatch"].fields["DISPATCH_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Dispatch"].fields["DISPATCH_CLIENT_SECRET"]
+      group             = "ai"
+      icon_url          = "https://avatars.githubusercontent.com/u/263493777?v=4"
+      redirect_uri      = "https://dispatch.${var.CLUSTER_DOMAIN}/api/auth/callback/oidc"
+      launch_url        = "https://dispatch.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     ErsatzTV = {
