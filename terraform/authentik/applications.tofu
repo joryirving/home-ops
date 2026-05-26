@@ -48,8 +48,8 @@ locals {
       property_mappings = local.default_property_mappings
     },
     Dispatch = {
-      client_id         = module.onepassword_application["Dispatch"].fields["DISPATCH_OIDC_CLIENT_ID"]
-      client_secret     = module.onepassword_application["Dispatch"].fields["DISPATCH_OIDC_CLIENT_SECRET"]
+      client_id         = module.onepassword_application["Dispatch"].fields["DISPATCH_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Dispatch"].fields["DISPATCH_CLIENT_SECRET"]
       group             = "ai"
       icon_url          = "https://avatars.githubusercontent.com/u/263493777?v=4"
       redirect_uri      = "https://dispatch.${var.CLUSTER_DOMAIN}/api/auth/callback/oidc"
