@@ -47,14 +47,21 @@ tasks:
     desc: Pull Kubeconfig from OnePassword
     cmds:
       - mkdir -p ~/.kube ~/.talos
-      - |
-        for cluster in {{.CLUSTERS | join " "}}; do
-          mkdir -p {{.ROOT_DIR}}/talos/$cluster
-          op item get kubernetes --fields label=KUBECONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]') | tr -d '"' > {{.ROOT_DIR}}/kubernetes/clusters/$cluster/kubeconfig
-          op item get kubernetes --fields label=TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]') | tr -d '"' > {{.ROOT_DIR}}/talos/$cluster/talosconfig
-        done
+      - task: pull-clusters
       - op item get kubernetes --fields label=KUBECONFIG | tr -d '"' > ~/.kube/config
       - op item get kubernetes --fields label=TALCONFIG | tr -d '"' > ~/.talos/config
 
+    preconditions:
+      - op account get
+
+  pull-clusters:
+    desc: Pull per-cluster kubeconfig/talosconfig from OnePassword without writing combined local configs
+    cmds:
+      - |
+        for cluster in {{.CLUSTERS | join " "}}; do
+          mkdir -p {{.ROOT_DIR}}/kubernetes/clusters/$cluster {{.ROOT_DIR}}/talos/$cluster
+          op item get kubernetes --fields label=KUBECONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]') | tr -d '"' > {{.ROOT_DIR}}/kubernetes/clusters/$cluster/kubeconfig
+          op item get kubernetes --fields label=TALOSCONFIG_$(echo "$cluster" | tr '[:lower:]' '[:upper:]') | tr -d '"' > {{.ROOT_DIR}}/talos/$cluster/talosconfig
+        done
     preconditions:
       - op account get
