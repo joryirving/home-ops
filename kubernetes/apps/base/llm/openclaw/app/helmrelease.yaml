@@ -51,8 +51,7 @@ spec:
           daemon:
             image:
               repository: docker
-              tag:
-                29.5.2-dind@sha256:6b9cd914eb9c6b342c040a49a27a5eb3804453bae6ecc90f7ff96133595a95e8
+              tag: 29.5.2-dind@sha256:6b9cd914eb9c6b342c040a49a27a5eb3804453bae6ecc90f7ff96133595a95e8
             restartPolicy: Always
             env:
               DOCKER_TLS_CERTDIR: /certs
@@ -93,11 +92,11 @@ spec:
               repository: ghcr.io/openclaw/openclaw
               tag: 2026.5.20@sha256:a2a5cff3b2540236fc6cdc5222327841c6ff19056beb9e34f889aec0cd29b719
             command:
-            - /bin/sh
-            - -c
-            - |
-              # Start gateway
-              exec node dist/index.js gateway --bind lan
+              - /bin/sh
+              - -c
+              - |
+                # Start gateway
+                exec node dist/index.js gateway --bind lan
             env:
               OPENCLAW_LOG_LEVEL: debug
               BROWSER_WS_ENDPOINT: "ws://localhost:9222"
@@ -110,14 +109,13 @@ spec:
               HOMEBREW_PREFIX: /home/node/.local/homebrew
               HOMEBREW_REPOSITORY: /home/node/.local/homebrew
               OPENCLAW_GATEWAY_PORT: &port 18789
-              PATH:
-                /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              PATH: /home/node/.local/bin:/home/node/.local/go/bin:/home/node/.local/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               PIP_BREAK_SYSTEM_PACKAGES: "1"
               TERM: xterm-256color
               TZ: &tz America/Edmonton
             envFrom:
-            - secretRef:
-                name: openclaw
+              - secretRef:
+                  name: openclaw
             resources:
               requests:
                 cpu: 1
@@ -128,12 +126,21 @@ spec:
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
-              tag:
-                4.121.0@sha256:ea5f42d99998e2ba44297eca9b8a38a101e718ef54caaa41d649f6c6f1c8c71e
+              tag: 4.121.0@sha256:ea5f42d99998e2ba44297eca9b8a38a101e718ef54caaa41d649f6c6f1c8c71e
             env:
               TZ: America/Edmonton
-            args: ["--auth", "none", "--user-data-dir", "/home/node/.vscode", "--extensions-dir",
-              "/home/node/.vscode", "--port", "12321", "/config"]
+            args:
+              [
+                "--auth",
+                "none",
+                "--user-data-dir",
+                "/home/node/.vscode",
+                "--extensions-dir",
+                "/home/node/.vscode",
+                "--port",
+                "12321",
+                "/config",
+              ]
             resources:
               requests:
                 cpu: 10m
@@ -145,63 +152,63 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: *homepath
+          - path: *homepath
       data:
         type: nfs
         server: voyager.internal
         path: /mnt/delta/miso
         globalMounts:
-        - path: /data
+          - path: /data
       downloads:
         type: nfs
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /downloads
-          subPath: metube
+          - path: /downloads
+            subPath: metube
       images:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/comfyui/output
         globalMounts:
-        - path: /home/node/.openclaw/workspace/images
+          - path: /home/node/.openclaw/workspace/images
       configmap:
         type: configMap
         name: "{{ .Release.Name }}-config"
         defaultMode: 0755
         globalMounts:
-        - path: /tmp/openclaw.json
-          subPath: openclaw.json
+          - path: /tmp/openclaw.json
+            subPath: openclaw.json
       agentmemory-plugin:
         type: configMap
         name: openclaw-agentmemory-plugin
         defaultMode: 0755
         globalMounts:
-        - path: /tmp/agentmemory-plugin/openclaw.plugin.json
-          subPath: openclaw.plugin.json
-        - path: /tmp/agentmemory-plugin/package.json
-          subPath: package.json
-        - path: /tmp/agentmemory-plugin/plugin.mjs
-          subPath: plugin.mjs
+          - path: /tmp/agentmemory-plugin/openclaw.plugin.json
+            subPath: openclaw.plugin.json
+          - path: /tmp/agentmemory-plugin/package.json
+            subPath: package.json
+          - path: /tmp/agentmemory-plugin/plugin.mjs
+            subPath: plugin.mjs
     rbac:
       roles:
         # Cluster-wide pod delete — restart any pod in any namespace
         openclaw-pod-delete-cluster-wide:
           type: ClusterRole
           rules:
-          - apiGroups: [""]
-            resources: ["pods"]
-            verbs: ["delete"]
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["delete"]
         # Namespace-scoped exec + deploy patch — llm namespace only
         openclaw-exec-deploy-llm:
           type: Role
           rules:
-          - apiGroups: [""]
-            resources: ["pods/exec"]
-            verbs: ["create"]
-          - apiGroups: ["apps"]
-            resources: ["deployments"]
-            verbs: ["patch", "update"]
+            - apiGroups: [""]
+              resources: ["pods/exec"]
+              verbs: ["create"]
+            - apiGroups: ["apps"]
+              resources: ["deployments"]
+              verbs: ["patch", "update"]
       bindings:
         # Cluster-wide binding for pod delete
         openclaw-pod-delete-cluster-wide:
@@ -209,36 +216,36 @@ spec:
           roleRef:
             identifier: openclaw-pod-delete-cluster-wide
           subjects:
-          - identifier: openclaw
-            serviceAccount: openclaw
+            - identifier: openclaw
+              serviceAccount: openclaw
         # Namespace-scoped binding for exec+deploy — llm namespace only
         openclaw-exec-deploy-llm:
           type: RoleBinding
           roleRef:
             identifier: openclaw-exec-deploy-llm
           subjects:
-          - identifier: openclaw
-            serviceAccount: openclaw
-            namespace: llm
+            - identifier: openclaw
+              serviceAccount: openclaw
+              namespace: llm
     route:
       app:
         hostnames: ["miso.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
         rules:
-        - backendRefs:
-          - name: "{{ .Release.Name }}"
-            port: *port
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *port
       codeserver:
         hostnames: ["miso-code.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
         rules:
-        - backendRefs:
-          - name: "{{ .Release.Name }}"
-            port: &codeserverPort 12321
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: &codeserverPort 12321
     service:
       app:
         type: LoadBalancer

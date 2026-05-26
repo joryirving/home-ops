@@ -19,14 +19,14 @@ data:
             primary: "litellm-anthropic/MiniMax-M2.7",
             fallbacks: [
               "litellm/self-hosted",
-              "openai-codex/gpt-5.4-mini",
+              "openai/gpt-5.4-mini",
               "litellm/kimi-k2.6",
             ]
           },
           imageModel: {
             primary: "litellm/self-hosted",
             fallbacks: [
-              "openai-codex/gpt-5.4-mini",
+              "openai/gpt-5.4-mini",
             ]
           },
           imageGenerationModel: {
@@ -37,9 +37,9 @@ data:
             "litellm/kimi-k2.6": { alias: "moonshot-2.6", params: { cache_prompt: true } },
             "litellm-anthropic/MiniMax-M2.7": { alias: "minimax", params: { cache_prompt: true } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
-            "openai-codex/gpt-5.5": { alias: "gpt" },
-            "openai-codex/gpt-5.4-mini": { alias: "gpt-mini" },
-            "openai-codex/gpt-5.4-nano": { alias: "gpt-lite" },
+            "openai/gpt-5.5": { alias: "gpt" },
+            "openai/gpt-5.4-mini": { alias: "gpt-mini" },
+            "openai/gpt-5.4-nano": { alias: "gpt-lite" },
             "litellm/chatgpt/gpt-5.3-codex": { alias: "gpt-coder", params: { cache_prompt: true } },
             "litellm/intel": { alias: "intel", params: { cache_prompt: true } },
           },
@@ -94,7 +94,7 @@ data:
               primary: "litellm-anthropic/MiniMax-M2.7",
               fallbacks: [
                 "litellm/self-hosted",
-                "openai-codex/gpt-5.4-mini",
+                "openai/gpt-5.4-mini",
               ]
             },
             identity: {
@@ -107,12 +107,12 @@ data:
             name: "Saffron",
             workspace: "/home/node/.openclaw/workspace-saffron",
             agentDir: "/home/node/.openclaw/agents/saffron/agent",
-            tools: { allow: ["exec", "read", "write", "web_fetch", "browser", "sessions_spawn", "memory_search", "memory_get", "toolhive__find_tool","toolhive__call_tool"] },
+            tools: { allow: ["exec", "read", "write", "message", "web_fetch", "browser", "sessions_spawn", "memory_search", "memory_get", "toolhive__find_tool","toolhive__call_tool"] },
             model: {
               primary: "litellm-anthropic/MiniMax-M2.7",
               fallbacks: [
                 "litellm/self-hosted",
-                "openai-codex/gpt-5.5",
+                "openai/gpt-5.5",
                 "litellm/kimi-k2.6",
               ]
             },
@@ -356,14 +356,13 @@ data:
           mode: "enforce",
           pruneAfter: "7d",
           maxEntries: 1000,
-          rotateBytes: "100mb",
           resetArchiveRetention: "7d",
         },
       },
       gateway: {
         auth: { mode: "token", token: "$${OPENCLAW_GATEWAY_TOKEN}" },
         tools: { allow: ["sessions_send"] },
-        controlUi: { allowedOrigins: ["https://miso.jory.dev", "https://miso-chat.jory.dev", "https://mission-control.jory.dev"],},
+        controlUi: { allowedOrigins: ["https://miso.jory.dev", "https://miso-chat.jory.dev"],},
         mode: "local",
         port: 18789,
         trustedProxies: ["10.42.0.0/16", "192.168.0.0/16"]
@@ -377,7 +376,141 @@ data:
           toolhive: {
             url: "http://vmcp-mcp-gateway-internal.llm:4483/mcp",
             transport: "streamable-http"
-          }
-        }
+          },
+          composio: {
+            url: "https://connect.composio.dev/mcp",
+            transport: "streamable-http",
+            headers: {
+              "x-consumer-api-key": "$${COMPOSIO_API_KEY}"
+            },
+          },
+        },
+      },
+      skills: {
+        entries: {
+          "1password": {
+            enabled: false
+          },
+          "apple-notes": {
+            enabled: false
+          },
+          "apple-reminders": {
+            enabled: false
+          },
+          "bear-notes": {
+            enabled: false
+          },
+          blogwatcher: {
+            enabled: false
+          },
+          blucli: {
+            enabled: false
+          },
+          camsnap: {
+            enabled: false
+          },
+          clawhub: {
+            enabled: false
+          },
+          "coding-agent": {
+            enabled: false
+          },
+          discord: {
+            enabled: false
+          },
+          eightctl: {
+            enabled: false
+          },
+          gemini: {
+            enabled: false
+          },
+          gifgrep: {
+            enabled: false
+          },
+          gog: {
+            enabled: false
+          },
+          goplaces: {
+            enabled: false
+          },
+          himalaya: {
+            enabled: false
+          },
+          imsg: {
+            enabled: false
+          },
+          mcporter: {
+            enabled: false
+          },
+          "model-usage": {
+            enabled: false
+          },
+          "nano-pdf": {
+            enabled: false
+          },
+          obsidian: {
+            enabled: false
+          },
+          "openai-whisper": {
+            enabled: false
+          },
+          "openai-whisper-api": {
+            enabled: false
+          },
+          openhue: {
+            enabled: false
+          },
+          oracle: {
+            enabled: false
+          },
+          ordercli: {
+            enabled: false
+          },
+          peekaboo: {
+            enabled: false
+          },
+          sag: {
+            enabled: false
+          },
+          "sherpa-onnx-tts": {
+            enabled: false
+          },
+          slack: {
+            enabled: false
+          },
+          songsee: {
+            enabled: false
+          },
+          sonoscli: {
+            enabled: false
+          },
+          "spotify-player": {
+            enabled: false
+          },
+          summarize: {
+            enabled: false
+          },
+          "things-mac": {
+            enabled: false
+          },
+          tmux: {
+            enabled: false
+          },
+          trello: {
+            enabled: false
+          },
+          "video-frames": {
+            enabled: false
+          },
+          "voice-call": {
+            enabled: false
+          },
+          wacli: {
+            enabled: false
+          },
+          xurl: {
+            enabled: false
+          },
+        },
       },
     }
