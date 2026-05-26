@@ -188,7 +188,7 @@ resource "authentik_provider_oauth2" "oauth2" {
     ],
     try(each.value.additional_redirect_uris, [])
   )
-  grant_types = try(each.value.grant_types, [])
+  # grant_types = try(each.value.grant_types, [])
 }
 
 resource "authentik_application" "application" {
