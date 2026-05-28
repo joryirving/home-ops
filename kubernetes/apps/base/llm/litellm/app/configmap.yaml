@@ -41,27 +41,89 @@ data:
       - model_name: intel
         model_info:
           mode: chat
-          max_input_tokens: 131072
-          max_output_tokens: 8192
+          max_input_tokens: 8192
+          max_output_tokens: 2048
           supports_function_calling: false
           supports_vision: false
         litellm_params:
           model: openai/intel
           api_base: http://llama-intel.llm:8080/v1
           api_key: llama-intel
+          max_parallel_requests: 1
           drop_params: true
 
       - model_name: ryzen
         model_info:
           mode: chat
-          max_input_tokens: 131072
-          max_output_tokens: 8192
+          max_input_tokens: 8192
+          max_output_tokens: 2048
           supports_function_calling: true
           supports_vision: true
         litellm_params:
           model: openai/ryzen
           api_base: http://10.69.10.120:8080/v1
           api_key: llama-ryzen
+          max_parallel_requests: 1
+          drop_params: true
+
+      - model_name: local-small
+        model_info:
+          mode: chat
+          max_input_tokens: 8192
+          max_output_tokens: 2048
+          supports_function_calling: false
+          supports_vision: false
+        litellm_params:
+          model: openai/intel
+          api_base: http://llama-intel.llm:8080/v1
+          api_key: llama-intel
+          max_parallel_requests: 1
+          weight: 2
+          drop_params: true
+
+      - model_name: local-small
+        model_info:
+          mode: chat
+          max_input_tokens: 8192
+          max_output_tokens: 2048
+          supports_function_calling: true
+          supports_vision: true
+        litellm_params:
+          model: openai/ryzen
+          api_base: http://10.69.10.120:8080/v1
+          api_key: llama-ryzen
+          max_parallel_requests: 1
+          weight: 1
+          drop_params: true
+
+      - model_name: local-first
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_vision: true
+        litellm_params:
+          model: openai/self-hosted
+          api_base: http://llama-server.llm:8080/v1
+          api_key: llama-server
+          max_parallel_requests: 2
+          weight: 100
+          drop_params: true
+
+      - model_name: local-first
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_vision: true
+        litellm_params:
+          model: openai/unsloth/qwen3.6-35b-a3b
+          api_base: http://mac.internal:1234/v1
+          api_key: lm-studio
+          max_parallel_requests: 4
+          weight: 1
           drop_params: true
 
       - model_name: sentence-transformers/all-MiniLM-L6-v2
@@ -125,6 +187,84 @@ data:
           api_key: os.environ/MOONSHOT_API_KEY
           drop_params: true
 
+      - model_name: opencode-go-glm-5.1
+        model_info:
+          mode: chat
+          max_input_tokens: 203000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.1
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          drop_params: true
+
+      - model_name: opencode-go-deepseek-v4-flash
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/deepseek-v4-flash
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          drop_params: true
+
+      - model_name: opencode-go-deepseek-v4-pro
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/deepseek-v4-pro
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          drop_params: true
+
+      - model_name: opencode-go-kimi-k2.6
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/kimi-k2.6
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          drop_params: true
+
+      - model_name: cheap-coder
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/deepseek-v4-flash
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          drop_params: true
+
+      - model_name: reasoning-coder
+        model_info:
+          mode: chat
+          max_input_tokens: 203000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.1
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          drop_params: true
+
       - model_name: chatgpt/gpt-5.5
         model_info:
           mode: responses
@@ -151,6 +291,13 @@ data:
       redis_host: os.environ/REDIS_HOST
       redis_port: os.environ/REDIS_PORT
       cooldown_time: 30
+      enable_pre_call_checks: true
+      fallbacks:
+        - local-first: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M2.7"]
+        - cheap-coder: ["opencode-go-glm-5.1", "MiniMax-M2.7"]
+      context_window_fallbacks:
+        - local-first: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M2.7"]
+        - cheap-coder: ["opencode-go-glm-5.1", "MiniMax-M2.7"]
 
     litellm_settings:
       success_callback: ["prometheus"]
@@ -171,5 +318,6 @@ data:
     environment:
       - MINIMAX_API_KEY
       - MOONSHOT_API_KEY
+      - OPENCODE_API_KEY
       - REDIS_HOST
       - REDIS_PORT
