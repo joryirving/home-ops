@@ -136,4 +136,6 @@ Before approving, verify:
 4. No breaking changes identified in release notes
 5. Security advisories don't apply to this version
 
+For Helm chart and container image upgrades, you **must** use tool requests (e.g., `gh_api`) to fetch release notes, changelogs, and upstream metadata from the source repository. Do not rely on the PR description alone — verify against the actual upstream release.
+
 _Flux automatically reconciles changes once the PR is merged._
