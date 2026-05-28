@@ -96,36 +96,6 @@ data:
           weight: 1
           drop_params: true
 
-      - model_name: local-first
-        model_info:
-          mode: chat
-          max_input_tokens: 262144
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_vision: true
-        litellm_params:
-          model: openai/self-hosted
-          api_base: http://llama-server.llm:8080/v1
-          api_key: llama-server
-          max_parallel_requests: 2
-          weight: 100
-          drop_params: true
-
-      - model_name: local-first
-        model_info:
-          mode: chat
-          max_input_tokens: 262144
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_vision: true
-        litellm_params:
-          model: openai/unsloth/qwen3.6-35b-a3b
-          api_base: http://mac.internal:1234/v1
-          api_key: lm-studio
-          max_parallel_requests: 4
-          weight: 1
-          drop_params: true
-
       - model_name: sentence-transformers/all-MiniLM-L6-v2
         model_info:
           mode: embedding
@@ -293,10 +263,12 @@ data:
       cooldown_time: 30
       enable_pre_call_checks: true
       fallbacks:
-        - local-first: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M2.7"]
+        - local-small: ["self-hosted"]
+        - self-hosted: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M2.7"]
         - cheap-coder: ["opencode-go-glm-5.1", "MiniMax-M2.7"]
       context_window_fallbacks:
-        - local-first: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M2.7"]
+        - local-small: ["self-hosted"]
+        - self-hosted: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M2.7"]
         - cheap-coder: ["opencode-go-glm-5.1", "MiniMax-M2.7"]
 
     litellm_settings:
