@@ -13,7 +13,6 @@ spec:
   values:
     defaultPodOptions:
       automountServiceAccountToken: true
-      shareProcessNamespace: true
       securityContext:
         runAsUser: 1000
         runAsGroup: 100
@@ -48,44 +47,6 @@ spec:
                 chmod 400 /home/node/.openclaw/openclaw.json
                 chmod 500 /home/node/.openclaw/extensions/agentmemory
                 chmod 400 /home/node/.openclaw/extensions/agentmemory/*
-          daemon:
-            image:
-              repository: docker
-              tag: 29.5.2-dind@sha256:6b9cd914eb9c6b342c040a49a27a5eb3804453bae6ecc90f7ff96133595a95e8
-            restartPolicy: Always
-            env:
-              DOCKER_TLS_CERTDIR: /certs
-            securityContext:
-              privileged: true
-              runAsUser: 0
-              runAsGroup: 0
-              allowPrivilegeEscalation: true
-            probes:
-              startup:
-                enabled: true
-                custom: true
-                spec: &dockerProbe
-                  exec:
-                    command: ["docker", "info"]
-                  periodSeconds: 2
-                  timeoutSeconds: 3
-                  failureThreshold: 60
-              readiness:
-                enabled: true
-                custom: true
-                spec:
-                  <<: *dockerProbe
-                  periodSeconds: 5
-                  timeoutSeconds: 3
-                  failureThreshold: 3
-              liveness:
-                enabled: true
-                custom: true
-                spec:
-                  <<: *dockerProbe
-                  periodSeconds: 20
-                  timeoutSeconds: 3
-                  failureThreshold: 3
         containers:
           app:
             image:
@@ -100,9 +61,6 @@ spec:
             env:
               OPENCLAW_LOG_LEVEL: debug
               BROWSER_WS_ENDPOINT: "ws://localhost:9222"
-              DOCKER_HOST: "tcp://localhost:2376"
-              DOCKER_CERT_PATH: /certs/client
-              DOCKER_TLS_VERIFY: "1"
               GOPATH: /home/node/go
               HOME: &homepath /home/node
               HOMEBREW_CELLAR: /home/node/.local/homebrew/Cellar

@@ -13,8 +13,6 @@ spec:
   values:
     defaultPodOptions:
       securityContext:
-        runAsUser: 10000
-        runAsGroup: 10000
         fsGroup: 10000
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: { type: RuntimeDefault }
@@ -58,12 +56,6 @@ spec:
               - containerPort: &port 8642
                 name: http
                 protocol: TCP
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: false
-              capabilities:
-                add: ["CHOWN"]
-                drop: ["ALL"]
           dashboard:
             image: *image
             env:
