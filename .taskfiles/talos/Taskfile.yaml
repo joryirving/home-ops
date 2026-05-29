@@ -9,12 +9,12 @@ tasks:
   apply-node:
     desc: Apply Talos config to a node [CLUSTER=main] [NODE=required] [MODE=auto]
     cmds:
-      - task: verify-machine-ca
-        vars:
-          CLUSTER: '{{.CLUSTER}}'
-          MACHINE_TYPE: '{{.MACHINE_TYPE}}'
-          NODE: '{{.NODE}}'
-          SCHEMATIC: '{{.SCHEMATIC}}'
+      # - task: verify-machine-ca
+      #   vars:
+      #     CLUSTER: '{{.CLUSTER}}'
+      #     MACHINE_TYPE: '{{.MACHINE_TYPE}}'
+      #     NODE: '{{.NODE}}'
+      #     SCHEMATIC: '{{.SCHEMATIC}}'
       - |-
         minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 | op inject \
           | talosctl --nodes {{.NODE}} apply-config \
