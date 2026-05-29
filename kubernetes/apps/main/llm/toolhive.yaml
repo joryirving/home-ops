@@ -2,7 +2,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name toolhive-crds
+  name: toolhive-crds
 spec:
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/crds
@@ -17,7 +17,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name toolhive
+  name: toolhive
 spec:
   dependsOn:
     - name: toolhive-crds
@@ -61,7 +61,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name arr-mcp
+  name: arr-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -84,7 +84,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name comfyui-mcp
+  name: comfyui-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -102,7 +102,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name garmin-connect-mcp
+  name: garmin-connect-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -119,7 +119,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name github-mcp
+  name: github-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -136,7 +136,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name grafana-mcp
+  name: grafana-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -155,7 +155,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name ha-mcp
+  name: ha-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -194,7 +194,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &name kubectl-mcp
+  name: kubectl-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -211,7 +211,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app seerr-mcp
+  name: seerr-mcp
 spec:
   dependsOn:
     - name: toolhive
@@ -219,6 +219,23 @@ spec:
       namespace: media
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/seerr-mcp
+  wait: false
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app talos-mcp
+spec:
+  dependsOn:
+    - name: toolhive
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/talos-mcp
   postBuild:
     substitute:
       APP: *app
