@@ -26,54 +26,44 @@ spec:
           app:
             image:
               repository: quay.io/kernald/deduparr
-              tag: 
+              tag:
                 1.2.0@sha256:6e579f684a147dcd2dcd4468c50ffb0848e23b8306f1355037a2419931fe4b7f
             env:
+              DEDUPARR_LOG_LEVEL: info
+              DEDUPARR_RADARR_MAIN_ENABLED: true
+              DEDUPARR_RADARR_MAIN_URL: http://radarr.downloads
+              DEDUPARR_REMOVE_FROM_CLIENT: false
+              DEDUPARR_SCHEDULE: service
+              DEDUPARR_SERVICE__INTERVAL: 2m
+              DEDUPARR_SERVICE__PORT: &port 80
+              DEDUPARR_SONARR_MAIN_ENABLED: true
+              DEDUPARR_SONARR_MAIN_URL: http://sonarr.downloads
               TZ: America/Edmonton
             envFrom:
             - secretRef:
                 name: "{{ .Release.Name }}-secret"
-            args:
-            - --config
-            - /config/config.yaml
             probes:
-              liveness:
-                enabled: true
-                spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
-              readiness:
+              liveness: &probes
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
                     path: /health/ready
-                    port: &port 9090
+                    port: *port
+                  initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 5
-                  failureThreshold: 5
-              startup:
-                enabled: true
-                spec:
-                  failureThreshold: 30
-                  periodSeconds: 10
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+                  failureThreshold: 3
+              readiness: *probes
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 128Mi
-    persistence:
-      config-file:
-        type: configMap
-        name: "{{ .Release.Name }}-configmap"
-        globalMounts:
-        - path: /config/config.yaml
-          subPath: config.yaml
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
     service:
       app:
         ports:
