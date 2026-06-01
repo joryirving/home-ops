@@ -16,7 +16,7 @@ data:
           thinkingDefault: "high",
           timeoutSeconds: 600,
           model: {
-            primary: "litellm-anthropic/MiniMax-M2.7",
+            primary: "litellm-anthropic/MiniMax-M3",
             fallbacks: [
               "litellm/self-hosted",
               "openai/gpt-5.4-mini",
@@ -24,8 +24,9 @@ data:
             ]
           },
           imageModel: {
-            primary: "litellm/self-hosted",
+            primary: "litellm/MiniMax-M3",
             fallbacks: [
+              "litellm/self-hosted",
               "openai/gpt-5.4-mini",
             ]
           },
@@ -35,7 +36,7 @@ data:
           models: {
             "litellm/kimi-k2.5": { alias: "moonshot", params: { cache_prompt: true } },
             "litellm/kimi-k2.6": { alias: "moonshot-2.6", params: { cache_prompt: true } },
-            "litellm-anthropic/MiniMax-M2.7": { alias: "minimax", params: { cache_prompt: true } },
+            "litellm-anthropic/MiniMax-M3": { alias: "minimax", params: { cache_prompt: true } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "litellm/local-small": { alias: "local-small", params: { cache_prompt: true } },
             "litellm/cheap-coder": { alias: "cheap-coder", params: { cache_prompt: true } },
@@ -60,7 +61,7 @@ data:
           maxConcurrent: 4,
           subagents: {
             model: {
-              primary: "litellm-anthropic/MiniMax-M2.7",
+              primary: "litellm-anthropic/MiniMax-M3",
             },
             archiveAfterMinutes: 120,
             maxConcurrent: 3,
@@ -68,7 +69,7 @@ data:
           },
           heartbeat: {
             every: "60m",
-            model: "litellm-anthropic/MiniMax-M2.7",
+            model: "litellm-anthropic/MiniMax-M3",
             directPolicy: "allow",
             lightContext: true,
             isolatedSession: false,
@@ -94,7 +95,7 @@ data:
             agentDir: "/home/node/.openclaw/agents/matcha/agent",
             tools: { allow: ["exec", "message", "read", "web_fetch", "image", "memory_search", "memory_get"] },
             model: {
-              primary: "litellm-anthropic/MiniMax-M2.7",
+              primary: "litellm-anthropic/MiniMax-M3",
               fallbacks: [
                 "litellm/self-hosted",
                 "openai/gpt-5.4-mini",
@@ -114,7 +115,7 @@ data:
             model: {
               primary: "litellm/cheap-coder",
               fallbacks: [
-                "litellm-anthropic/MiniMax-M2.7",
+                "litellm-anthropic/MiniMax-M3",
                 "litellm/self-hosted",
                 "litellm/kimi-k2.6",
               ]
@@ -147,10 +148,11 @@ data:
             api: "openai-completions",
             timeoutSeconds: 600,
             models: [
-              { id: "openai/MiniMax-M2.7", name: "MiniMax M2.7 (OpenAI) via LiteLLM", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 204800, maxTokens: 32768, },
+              { id: "openai/MiniMax-M3", name: "MiniMax M3 (OpenAI) via LiteLLM", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
               { id: "kimi-k2.5", name: "Kimi K2.5 via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0.6, output: 3, cacheRead: 0.1, cacheWrite: 0.6 }, contextWindow: 128000, maxTokens: 8192 },
               { id: "kimi-k2.6", name: "Kimi K2.6 via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0.95, output: 4, cacheRead: 0.16, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 262144 },
               { id: "chatgpt/gpt-5.3-codex", name: "GPT 5.3 Codex via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 8192 },
+              { id: "openai/MiniMax-M3", name: "MiniMax M3 via LiteLLM (vision)", reasoning: true, input: ["text","image"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768 },
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q8_K_XL (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "local-small", name: "Short local endpoints via LiteLLM", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 8192, maxTokens: 2048 },
               { id: "cheap-coder", name: "OpenCode Go DeepSeek V4 Flash via LiteLLM", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
@@ -163,7 +165,7 @@ data:
             api: "anthropic-messages",
             timeoutSeconds: 600,
             models: [
-              { id: "MiniMax-M2.7", name: "MiniMax M2.7 via LiteLLM", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 204800, maxTokens: 32768, },
+              { id: "MiniMax-M3", name: "MiniMax M3 via LiteLLM", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
             ],
           },
         }
@@ -255,12 +257,12 @@ data:
           },
           "lossless-claw": {
             enabled: true,
-            llm: { allowModelOverride: true, allowedModels: [ "litellm-anthropic/MiniMax-M2.7", ], },
-            subagent: { allowModelOverride: true, allowedModels: [ "litellm-anthropic/MiniMax-M2.7", ], },
+            llm: { allowModelOverride: true, allowedModels: [ "litellm-anthropic/MiniMax-M3" ], },
+            subagent: { allowModelOverride: true, allowedModels: [ "litellm-anthropic/MiniMax-M3" ], },
             config: {
               contextThreshold: 0.75,
               delegationTimeoutMs: 1000000,
-              expansionModel: "litellm-anthropic/MiniMax-M2.7",
+              expansionModel: "litellm-anthropic/MiniMax-M3",
               freshTailCount: 64,
               freshTailMaxTokens: 24000,
               ignoreSessionPatterns: [
@@ -276,7 +278,7 @@ data:
               pruneHeartbeatOk: true,
               skipStatelessSessions: true,
               statelessSessionPatterns: [ "agent:*:subagent:**" ],
-              summaryModel: "litellm-anthropic/MiniMax-M2.7",
+              summaryModel: "litellm-anthropic/MiniMax-M3",
               summaryTimeoutMs: 1000000,
               transcriptGcEnabled: false,
             },
