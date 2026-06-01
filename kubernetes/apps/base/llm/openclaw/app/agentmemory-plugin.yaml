@@ -130,8 +130,10 @@ data:
       return match ? sanitizeSegment(match[1]) : "";
     }
 
-    function deriveAgentId(event, cfg) {
+    function deriveAgentId(event, ctx, cfg) {
       const direct = firstString(
+        ctx?.agentId,
+        ctx?.agent_id,
         event?.agentId,
         event?.agent_id,
         event?.agent?.id,
@@ -142,6 +144,9 @@ data:
       if (direct) return sanitizeSegment(direct);
 
       const parsed = firstString(
+        parseAgentIdFromSessionKey(ctx?.sessionKey),
+        parseAgentIdFromSessionKey(ctx?.sessionId),
+        parseAgentIdFromSessionKey(ctx?.runId),
         parseAgentIdFromSessionKey(event?.sessionKey),
         parseAgentIdFromSessionKey(event?.sessionId),
         parseAgentIdFromSessionKey(event?.runId),
@@ -151,11 +156,14 @@ data:
       return sanitizeSegment(cfg.default_agent || "main");
     }
 
-    function deriveScope(event, cfg) {
-      const agentId = deriveAgentId(event, cfg);
+    function deriveScope(event, ctx, cfg) {
+      const agentId = deriveAgentId(event, ctx, cfg);
       const projectPrefix = sanitizeSegment(cfg.project_prefix || "openclaw");
       const project = `$${projectPrefix}:$${agentId}`;
       const rawSessionId = firstString(
+        ctx?.sessionId,
+        ctx?.sessionKey,
+        ctx?.runId,
         event?.sessionId,
         event?.sessionKey,
         event?.runId,
@@ -165,7 +173,7 @@ data:
       return {
         agentId,
         project,
-        cwd: firstString(event?.cwd, event?.workspace, event?.workspacePath, event?.agent?.workspace, project),
+        cwd: firstString(ctx?.workspaceDir, event?.cwd, event?.workspace, event?.workspacePath, event?.agent?.workspace, project),
         sessionId: `$${project}:$${rawSessionId}`,
       };
     }
@@ -278,11 +286,11 @@ data:
           });
         }
 
-        api.on("before_agent_start", async (event) => {
+        api.on("before_agent_start", async (event, ctx) => {
           if (!cfg.enabled) return;
           const prompt = typeof event?.prompt === "string" ? event.prompt.trim() : "";
           if (!prompt) return;
-          const scope = deriveScope(event, cfg);
+          const scope = deriveScope(event, ctx, cfg);
           await ensureSession(scope, prompt.slice(0, 200));
           const result = await client.postJson("/agentmemory/search", {
             format: "full",
@@ -302,12 +310,12 @@ data:
           };
         });
 
-        api.on("agent_end", async (event) => {
+        api.on("agent_end", async (event, ctx) => {
           if (!cfg.enabled || !event?.success || !Array.isArray(event.messages)) return;
           const userText = latestUserText(event.messages);
           const assistantText = lastAssistantText(event.messages);
           if (!userText || !assistantText) return;
-          const scope = deriveScope(event, cfg);
+          const scope = deriveScope(event, ctx, cfg);
           await ensureSession(scope, userText.slice(0, 200));
           await client.postJson("/agentmemory/observe", {
             hookType: "post_tool_use",
