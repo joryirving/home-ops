@@ -105,21 +105,7 @@ data:
           api_key: llama-embed
           drop_params: true
 
-- model_name: openai/MiniMax-M3
-        model_info:
-          mode: chat
-          max_input_tokens: 1000000
-          max_output_tokens: 131072
-          supports_function_calling: true
-          supports_prompt_caching: true
-          supports_vision: true
-        litellm_params:
-          model: openai/MiniMax-M3
-          api_base: https://api.minimax.io/v1
-          api_key: os.environ/MINIMAX_API_KEY
-          drop_params: true
-
-- model_name: MiniMax-M3
+      - model_name: MiniMax
         model_info:
           mode: messages
           max_input_tokens: 1000000
@@ -131,19 +117,6 @@ data:
           model: minimax/MiniMax-M3
           api_base: https://api.minimax.io/anthropic/v1/messages
           api_key: os.environ/MINIMAX_API_KEY
-          drop_params: true
-
-      - model_name: kimi-k2.5
-        model_info:
-          mode: chat
-          max_input_tokens: 128000
-          max_output_tokens: 8192
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: moonshot/kimi-k2.5
-          api_base: https://api.moonshot.ai/v1
-          api_key: os.environ/MOONSHOT_API_KEY
           drop_params: true
 
       - model_name: kimi-k2.6
@@ -270,12 +243,12 @@ data:
       enable_pre_call_checks: true
       fallbacks:
         - local-small: ["self-hosted"]
-        - self-hosted: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M3"]
-        - cheap-coder: ["opencode-go-glm-5.1", "MiniMax-M3"]
+        - self-hosted: ["cheap-coder"]
+        - cheap-coder: ["opencode-go-glm-5.1", "MiniMax"]
       context_window_fallbacks:
         - local-small: ["self-hosted"]
-        - self-hosted: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax-M3"]
-        - cheap-coder: ["opencode-go-glm-5.1", "MiniMax-M3"]
+        - self-hosted: ["cheap-coder", "opencode-go-glm-5.1", "MiniMax"]
+        - cheap-coder: ["opencode-go-glm-5.1", "MiniMax"]
 
     litellm_settings:
       success_callback: ["prometheus"]
