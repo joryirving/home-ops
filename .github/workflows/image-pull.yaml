@@ -26,44 +26,44 @@ jobs:
         with:
           patterns: kubernetes/**/*
 
-  diff:
+  extract:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
-    name: Image Pull - Diff Images
+    name: Image Pull - Extract Images
     runs-on: ubuntu-latest
     strategy:
       matrix:
         cluster: ["main", "utility"]
       fail-fast: false
+    outputs:
+      images-${{ matrix.cluster }}: ${{ steps.extract.outputs.images }}
     steps:
-      - name: Checkout Pull Request Branch
+      - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          fetch-depth: 0
           persist-credentials: false
-          path: pull
-
-      - name: Checkout Default Branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-          ref: ${{ github.event.repository.default_branch }}
-          path: default
 
       - name: Setup Mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
+          cache: false
           tool_versions: |
-            github:home-operations/flate 0.1.20
+            github:home-operations/flate latest
 
-      - name: Diff Images
+      - name: Extract Images
+        id: extract
         env:
           CLUSTER: ${{ matrix.cluster }}
         run: |
-          flate diff images \
+          base="$(git merge-base HEAD origin/${{ github.event.repository.default_branch }})"
+          images=$(flate diff images \
             --output json \
-            --path ./pull/kubernetes/clusters/"$CLUSTER" \
-            --path-orig ./default/kubernetes/clusters/"$CLUSTER" \
-            > images.json
+            --path ./kubernetes/clusters/"$CLUSTER" \
+            --path-orig <(git show "$base":./kubernetes/clusters/"$CLUSTER" 2>/dev/null || echo "") 2>/dev/null)
+          echo "images<<EOF" >> $GITHUB_OUTPUT
+          echo "$images" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Summarize
         env:
@@ -71,54 +71,36 @@ jobs:
         run: |
           echo "## New images for cluster \`$CLUSTER\`" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
-          jq '.' images.json >> $GITHUB_STEP_SUMMARY
+          jq '.' <<< '${{ steps.extract.outputs.images }}' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload Image List
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: diff-${{ matrix.cluster }}
-          path: images.json
-
   pull:
-    needs: diff
+    if: ${{ needs.extract.outputs[format('images-{0}', matrix.cluster)] != '[]' }}
+    needs: extract
     name: Image Pull - Pull Images
-    runs-on: ${{ format('home-ops-runner-{0}', matrix.cluster) }}
+    runs-on: ${{ format('{0}-runner-{1}', github.event.repository.name, matrix.cluster) }}
+    
     strategy:
       matrix:
         cluster: ["main", "utility"]
+      max-parallel: 4
       fail-fast: false
     steps:
-      - name: Download Diff
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Setup Mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          name: diff-${{ matrix.cluster }}
-          path: .
-
-      - name: Install talosctl
-        run: |
-          for attempt in 1 2 3; do
-            if curl -fsSL https://talos.dev/install | sh; then
-              exit 0
-            fi
-            if [[ "$attempt" -eq 3 ]]; then
-              exit 1
-            fi
-            echo "talosctl install failed; retrying in 20s (${attempt}/3)..." >&2
-            sleep 20
-          done
+          cache: false
+          tool_versions: |
+            talosctl latest
 
       - name: Pull Images
+        env:
+          IMAGES: ${{ needs.extract.outputs[format('images-{0}', matrix.cluster)] }}
         run: |
-          images=$(jq -r '.[]' images.json)
-          if [[ -z "$images" ]]; then
-            echo "No images to pull for cluster ${{ matrix.cluster }}"
-            exit 0
-          fi
-          for image in $images; do
+          for image in $(echo "$IMAGES" | jq -r '.[]'); do
             echo "Pulling $image"
             for attempt in 1 2 3; do
-              if talosctl --nodes $NODE image pull "$image"; then
+              if talosctl --nodes "$NODE" image pull "$image"; then
                 break
               fi
               if [[ "$attempt" -eq 3 ]]; then
