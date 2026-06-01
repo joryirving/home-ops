@@ -50,25 +50,34 @@ jobs:
           tool_versions: |
             github:home-operations/flate latest
 
+      - name: Create baseline worktree
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          base="$(git merge-base HEAD "origin/$DEFAULT_BRANCH")"
+          git worktree add --detach ../baseline "$base"
+
       - name: Run flate test
         env:
           CLUSTER: ${{ matrix.cluster }}
           KIND: ${{ matrix.kind }}
         run: |
-          base="$(git merge-base HEAD origin/${{ github.event.repository.default_branch }})"
+          orig="../baseline/kubernetes/clusters/$CLUSTER"
+          [ -d "$orig" ] || orig="$(mktemp -d)"
           flate test "$KIND" \
             --path ./kubernetes/clusters/"$CLUSTER" \
-            --path-orig <(git show "$base":./kubernetes/clusters/"$CLUSTER" 2>/dev/null || echo "")
+            --path-orig "$orig"
 
       - name: Run flate diff
         env:
           CLUSTER: ${{ matrix.cluster }}
           KIND: ${{ matrix.kind }}
         run: |
-          base="$(git merge-base HEAD origin/${{ github.event.repository.default_branch }})"
+          orig="../baseline/kubernetes/clusters/$CLUSTER"
+          [ -d "$orig" ] || orig="$(mktemp -d)"
           flate diff "$KIND" \
             --path ./kubernetes/clusters/"$CLUSTER" \
-            --path-orig <(git show "$base":./kubernetes/clusters/"$CLUSTER" 2>/dev/null || echo "") \
+            --path-orig "$orig" \
             > "$CLUSTER-$KIND.diff"
           [ -s "$CLUSTER-$KIND.diff" ] || rm "$CLUSTER-$KIND.diff"
 
