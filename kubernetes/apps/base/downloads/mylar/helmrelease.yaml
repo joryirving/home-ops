@@ -18,7 +18,7 @@ spec:
         runAsGroup: 100
         fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
-        seccompProfile: {type: RuntimeDefault}
+        seccompProfile: { type: RuntimeDefault }
     controllers:
       mylar:
         annotations:
@@ -27,8 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/mylar3
-              tag: 
-                0.8.3@sha256:e3474d38544e7b6b94d1d868b74155d0fb5abbb98ef21f365ef8d4ca1d129fbb
+              tag: 0.8.3@sha256:e3474d38544e7b6b94d1d868b74155d0fb5abbb98ef21f365ef8d4ca1d129fbb
             env:
               TZ: America/Edmonton
             resources:
@@ -45,13 +44,13 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /media
+          - path: /media
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

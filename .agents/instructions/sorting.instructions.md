@@ -9,37 +9,38 @@ Whenever asked to sort these files, follow these instructions:
 ## Override rules for Kubernetes related file types
 
 - Whenever they are present on the same level of a YAML structure, these fields should be sorted as follows:
-  - `apiVersion`
-  - `kind`
-  - `metadata`
-  - `spec`
+    - `apiVersion`
+    - `kind`
+    - `metadata`
+    - `spec`
 
 - The items within the `metadata` section should be sorted as follows:
-  - `name`
-  - `namespace`
-  - `annotations`
-  - `labels`
+    - `name`
+    - `namespace`
+    - `annotations`
+    - `labels`
 
 ## HelmRelease rules for app-template
 
 This section gives instructions specifically for HelmReleases that are based on the `app-template` chart. In this repository, that is typically identified by `spec.chartRef.name: app-template`.
 
 ### Sorting rules
+
 Whenever asked to sort these files, follow these instructions:
 
 - Whenever there is an `enabled` field, it should be the first field within its section, unless a more specific rule below dictates otherwise.
 
 - The items within the `spec` section should be sorted as follows:
-  - `chartRef`
-  - `interval`
-  - `dependsOn`
-  - `install`
-  - `upgrade`
-  - `values`
+    - `chartRef`
+    - `interval`
+    - `dependsOn`
+    - `install`
+    - `upgrade`
+    - `values`
 
 - Items within the `spec.values` section should be sorted as follows:
-  - `defaultPodOptions` (if present)
-  - All sibling keys at the `spec.values` level should be sorted alphabetically (e.g., `controllers`, `persistence`, `route`, `service`)
+    - `defaultPodOptions` (if present)
+    - All sibling keys at the `spec.values` level should be sorted alphabetically (e.g., `controllers`, `persistence`, `route`, `service`)
 
 Note: Sibling keys within `persistence.*`, `service.*`, `route.*`, `configMaps.*`, etc. are NOT required to be sorted - only the keys within each individual item. For example, if `persistence` has `config`, `data`, and `tmpfs` as children, they can be in any order. Only the keys within `persistence.config`, `persistence.data`, etc. should be sorted.
 
@@ -48,6 +49,7 @@ Note: Sibling keys within `persistence.*`, `service.*`, `route.*`, `configMaps.*
 ### General pattern for section keys
 
 Unless a more specific rule applies, keys within any section should be ordered as:
+
 - `annotations` (if present)
 - `labels` (if present)
 - All other keys should be sorted alphabetically
@@ -55,40 +57,41 @@ Unless a more specific rule applies, keys within any section should be ordered a
 ### Detailed sorting rules for nested sections
 
 - Items within the `spec.values.controllers.*` sections should be sorted as follows:
-  - `type` (if present, always first)
-  - `annotations` (if present)
-  - `labels` (if present)
-  - Controller-specific fields such as `cronjob` or `statefulset` (if present)
-  - `pod`
-  - Any other fields should be sorted alphabetically, except the following fields which should come last (and in this order):
-  - `initContainers` (if present)
-  - `containers` (if present)
+    - `type` (if present, always first)
+    - `annotations` (if present)
+    - `labels` (if present)
+    - Controller-specific fields such as `cronjob` or `statefulset` (if present)
+    - `pod`
+    - Any other fields should be sorted alphabetically, except the following fields which should come last (and in this order):
+    - `initContainers` (if present)
+    - `containers` (if present)
 
 - Items within `spec.values.controllers.*.containers.*` sections should be sorted as follows:
-  - `image`
-  - Any other fields should be added next in alphabetical order.
+    - `image`
+    - Any other fields should be added next in alphabetical order.
 
 - Items within `spec.values.controllers.*.containers.resources` and `spec.values.controllers.*.initContainers.resources` sections should be sorted as follows:
-  - `requests`
-  - `limits`
+    - `requests`
+    - `limits`
 
 - Items within `spec.values.service.*` sections should be sorted as follows:
-  - `type` (if present)
-  - `annotations` (if present)
-  - `labels` (if present)
-  - Any other fields should be added next in alphabetical order.
+    - `type` (if present)
+    - `annotations` (if present)
+    - `labels` (if present)
+    - Any other fields should be added next in alphabetical order.
 
 - Items within `persistence.*` sections should be sorted as follows:
-  - `type` (if present)
-  - `annotations` (if present)
-  - `labels` (if present)
-  - Any other fields should be sorted alphabetically, except the following fields which should come last (and in this order):
-  - `globalMounts` (if present)
-  - `advancedMounts` (if present)
+    - `type` (if present)
+    - `annotations` (if present)
+    - `labels` (if present)
+    - Any other fields should be sorted alphabetically, except the following fields which should come last (and in this order):
+    - `globalMounts` (if present)
+    - `advancedMounts` (if present)
 
 ### Quick reference
 
 **Before sorting, verify the chart is app-template based:**
+
 1. Check for `spec.chartRef.name: app-template`.
 2. If not app-template, do not apply these sorting rules
 
@@ -97,10 +100,11 @@ Unless a more specific rule applies, keys within any section should be ordered a
 ```
 At spec.values level?
   → Yes: defaultPodOptions first (if present), then alphabetical
-  
+
 Within controllers.*.containers.* or .initContainers.*?
   → Yes: image first, then alphabetical
-  
+
 Within persistence.*, service.*, etc. siblings?
   → No: Do not sort siblings (e.g., persistence.config vs persistence.data order doesn't matter)
   → Yes: Sort keys within each item (type → annotations → labels → alphabetical)
+```

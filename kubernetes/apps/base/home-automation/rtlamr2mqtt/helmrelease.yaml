@@ -10,7 +10,7 @@ spec:
     name: app-template
   interval: 15m
   dependsOn:
-  - name: mosquitto
+    - name: mosquitto
   values:
     defaultPodOptions:
       nodeSelector:
@@ -23,8 +23,7 @@ spec:
           app:
             image:
               repository: docker.io/allangood/rtlamr2mqtt
-              tag: 
-                2026.5.9@sha256:0c2f49d3106f3c5b0e6cb3c1d79ae5af547519a694b026b2b8f6565fbb0ee8eb
+              tag: 2026.5.9@sha256:0c2f49d3106f3c5b0e6cb3c1d79ae5af547519a694b026b2b8f6565fbb0ee8eb
             securityContext:
               privileged: true
             resources:
@@ -37,6 +36,6 @@ spec:
         type: secret
         name: "{{ .Release.Name }}"
         globalMounts:
-        - path: /etc/rtlamr2mqtt.yaml
-          subPath: rtlamr2mqtt.yaml
-          readOnly: true
+          - path: /etc/rtlamr2mqtt.yaml
+            subPath: rtlamr2mqtt.yaml
+            readOnly: true

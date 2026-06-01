@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/yooooomi/your_spotify_server
-              tag: 
-                1.20.0@sha256:624ea009f2ef9d877989bee9c7913ac66840449f566517871696c31a8ea13ddf
+              tag: 1.20.0@sha256:624ea009f2ef9d877989bee9c7913ac66840449f566517871696c31a8ea13ddf
             env:
               TIMEZONE: America/Edmonton
               # Caveat if it includes Spotify in name: https://github.com/Yooooomi/your_spotify/pull/254
@@ -29,8 +28,8 @@ spec:
               MONGO_ENDPOINT: "mongodb://{{ .Release.Name }}-mongodb:27017/your_spotify" #mongo sucks
               PORT: &port 80
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             probes: &probes
               liveness:
                 enabled: true
@@ -41,7 +40,7 @@ spec:
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
@@ -51,8 +50,7 @@ spec:
           app:
             image:
               repository: ghcr.io/yooooomi/your_spotify_client ##TODO migrate to ghcr once it pushes
-              tag: 
-                1.20.0@sha256:e4da90a0634c7862f9f4e893026ee8cd91380234fa2125b88b26c6fb9da3d47e
+              tag: 1.20.0@sha256:e4da90a0634c7862f9f4e893026ee8cd91380234fa2125b88b26c6fb9da3d47e
             env:
               API_ENDPOINT: *api_endpoint
             probes: *probes
@@ -73,34 +71,34 @@ spec:
         advancedMounts:
           mongodb:
             app:
-            - path: /data/db
+              - path: /data/db
     route:
       app:
         hostnames: ["spotty.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
         rules:
-        - matches:
-          - path:
-              type: PathPrefix
-              value: "/api"
-          filters:
-          - type: URLRewrite
-            urlRewrite:
-              path:
-                type: ReplacePrefixMatch
-                replacePrefixMatch: "/"
-          backendRefs:
-          - identifier: server
-            port: *port
-        - matches:
-          - path:
-              type: PathPrefix
-              value: "/"
-          backendRefs:
-          - identifier: web
-            port: &webport 3000
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: "/api"
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: "/"
+            backendRefs:
+              - identifier: server
+                port: *port
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: "/"
+            backendRefs:
+              - identifier: web
+                port: &webport 3000
     service:
       server:
         controller: server

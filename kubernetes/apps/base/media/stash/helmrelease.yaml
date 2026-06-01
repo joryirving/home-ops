@@ -13,8 +13,8 @@ spec:
   values:
     defaultPodOptions:
       resourceClaims:
-      - name: gpu
-        resourceClaimTemplateName: stash-gpu
+        - name: gpu
+          resourceClaimTemplateName: stash-gpu
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -29,8 +29,7 @@ spec:
           app:
             image:
               repository: stashapp/stash
-              tag: 
-                v0.31.1@sha256:df744af5a0c976e2ec671052ecc1f8a9aa757fa12b8f9930b59910b7295f0da6
+              tag: v0.31.1@sha256:df744af5a0c976e2ec671052ecc1f8a9aa757fa12b8f9930b59910b7295f0da6
             env:
               STASH_STASH: /media/
               STASH_BLOBS_PATH: /blobs
@@ -58,10 +57,10 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               claims:
-              - name: gpu
+                - name: gpu
               requests:
                 cpu: 20m
                 memory: 512Mi
@@ -71,14 +70,14 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /config
-          subPath: config
-        - path: /blobs
-          subPath: blobs
-        - path: /generated
-          subPath: generated
-        - path: /metadata
-          subPath: metadata
+          - path: /config
+            subPath: config
+          - path: /blobs
+            subPath: blobs
+          - path: /generated
+            subPath: generated
+          - path: /metadata
+            subPath: metadata
       media:
         type: nfs
         server: voyager.internal
@@ -88,18 +87,18 @@ spec:
         advancedMounts:
           stash:
             app:
-            - path: /cache
-              subPath: cache
-            - path: /root/.stash/logs
-              subPath: logs
-            - path: /tmp
-              subPath: tmp
+              - path: /cache
+                subPath: cache
+              - path: /root/.stash/logs
+                subPath: logs
+              - path: /tmp
+                subPath: tmp
     route:
       app:
         hostnames: ["stash.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

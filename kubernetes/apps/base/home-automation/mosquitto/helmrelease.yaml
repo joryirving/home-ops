@@ -44,7 +44,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
@@ -52,9 +52,9 @@ spec:
                 memory: 100Mi
         statefulset:
           volumeClaimTemplates:
-          - name: config
-            accessMode: ReadWriteOnce
-            size: 5Gi
+            - name: config
+              accessMode: ReadWriteOnce
+              size: 5Gi
     persistence:
       config-file:
         type: configMap
@@ -62,8 +62,8 @@ spec:
         advancedMounts:
           mosquitto:
             app:
-            - path: /mosquitto/config/mosquitto.conf
-              subPath: mosquitto.conf
+              - path: /mosquitto/config/mosquitto.conf
+                subPath: mosquitto.conf
     service:
       app:
         type: LoadBalancer

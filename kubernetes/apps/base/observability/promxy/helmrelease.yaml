@@ -10,7 +10,7 @@ spec:
     name: app-template
   interval: 15m
   dependsOn:
-  - name: kube-prometheus-stack
+    - name: kube-prometheus-stack
   values:
     defaultPodOptions:
       securityContext:
@@ -27,7 +27,7 @@ spec:
               repository: ghcr.io/joryirving/promxy
               tag: v0.0.93@sha256:9fe586d910f43a00de6044a56e1cc9878aaeb420adb59076f8e6731e2508da3f
             args:
-            - --config=/etc/promxy/config.yaml
+              - --config=/etc/promxy/config.yaml
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -44,9 +44,9 @@ spec:
         type: configMap
         name: "{{ .Release.Name }}-configmap"
         globalMounts:
-        - path: /etc/promxy/config.yaml
-          subPath: config.yaml
-          readOnly: true
+          - path: /etc/promxy/config.yaml
+            subPath: config.yaml
+            readOnly: true
     service:
       app:
         ports:

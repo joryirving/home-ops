@@ -34,7 +34,7 @@ spec:
               repository: ghcr.io/taxel/plextraktsync
               tag: 0.35.6
             args:
-            - sync
+              - sync
             env:
               PLEX_BASEURL: http://plex.media.svc.cluster.local:32400
               PLEX_LOCALURL: http://plex.media.svc.cluster.local:32400
@@ -65,11 +65,11 @@ spec:
         advancedMounts:
           plex-trakt-sync:
             app:
-            - path: /app/config
+              - path: /app/config
       config-yaml:
         type: configMap
         name: "{{ .Release.Name }}"
         globalMounts:
-        - path: /app/config/config.yml
-          subPath: config.yml
-          readOnly: true
+          - path: /app/config/config.yml
+            subPath: config.yml
+            readOnly: true

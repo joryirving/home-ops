@@ -15,19 +15,18 @@ spec:
         topology.kubernetes.io/gpus: amd
       priorityClassName: system-node-critical
       tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: llm-workload
-        operator: Exists
-        effect: NoSchedule
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
     controllers:
       amd-device-plugin:
         containers:
           app:
             image:
               repository: docker.io/rocm/k8s-device-plugin
-              tag:
-                1.31.0.10@sha256:0555caf9ccc1cf407b353d1aade87d4598059f87a784085aafe3ece19405b612
+              tag: 1.31.0.10@sha256:0555caf9ccc1cf407b353d1aade87d4598059f87a784085aafe3ece19405b612
             resources:
               requests:
                 cpu: 10m
@@ -36,18 +35,18 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
     persistence:
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
         globalMounts:
-        - readOnly: true
+          - readOnly: true
       sys:
         type: hostPath
         hostPath: /sys
         globalMounts:
-        - readOnly: true
+          - readOnly: true
       var-lib-kubelet-device-plugins:
         type: hostPath
         hostPath: /var/lib/kubelet/device-plugins

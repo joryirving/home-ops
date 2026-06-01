@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/misospace/miso-chat
-              tag:
-                0.4.12@sha256:625f29dd9b3d3c364ad0587af4943b13107c3d5910a11d832d64d361691286b9
+              tag: 0.4.12@sha256:625f29dd9b3d3c364ad0587af4943b13107c3d5910a11d832d64d361691286b9
             env:
               REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
               GATEWAY_DEVICE_IDENTITY_PATH: &path /secrets/device.json
@@ -28,8 +27,8 @@ spec:
               SESSION_COOKIE_SAMESITE: "none"
               SESSION_COOKIE_SECURE: "true"
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 10m
@@ -41,14 +40,14 @@ spec:
         type: secret
         name: "{{ .Release.Name }}-device"
         globalMounts:
-        - path: *path
-          subPath: device.json
+          - path: *path
+            subPath: device.json
     route:
       app:
         hostnames: ["miso-chat.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
         # rules:
         #   - backendRefs: [{}]
         #     sessionPersistence:

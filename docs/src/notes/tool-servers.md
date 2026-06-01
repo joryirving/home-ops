@@ -20,10 +20,12 @@ That keeps the Open WebUI-facing proxy private to the LLM cluster while still al
 This PR adds a deployable **tool-server bundle** in `main` using [`mcpo`](https://github.com/open-webui/mcpo) to expose existing MCP endpoints as OpenAPI-compatible HTTP services for Open WebUI.
 
 ### Included upstreams
+
 - Home Assistant MCP via `https://hass.jory.dev/api/mcp`
 - Grafana MCP via `http://mcp-grafana.observability:8000/sse`
 
 ### Shape
+
 - namespace: `llm`
 - cluster: `main`
 - exposure: `ClusterIP` only
@@ -44,9 +46,11 @@ No public route is created in this first pass.
 ## Recommended next wave
 
 ### 1. Ops / status server
+
 **Value:** Highest
 
 Expose read-only endpoints for:
+
 - pod / deployment status
 - recent failing workloads
 - storage pressure summaries
@@ -56,6 +60,7 @@ Expose read-only endpoints for:
 **Why first:** Highest practical value with the lowest blast radius. It answers "what is broken?" without handing raw shell access to the model.
 
 **Deployment shape:**
+
 - namespace: `llm`
 - exposure: `ClusterIP` only
 - auth: API key or forward-auth if a route is later added
@@ -63,9 +68,11 @@ Expose read-only endpoints for:
 ---
 
 ### 2. Read-only Postgres/query server
+
 **Value:** High
 
 Expose:
+
 - approved read-only queries
 - job / queue inspection
 - migration state
@@ -74,6 +81,7 @@ Expose:
 **Why:** Great debugging leverage, but should stay read-only and schema-scoped.
 
 **Deployment shape:**
+
 - namespace: `llm`
 - exposure: `ClusterIP` only
 - auth: API key
@@ -82,9 +90,11 @@ Expose:
 ---
 
 ### 3. GitHub helper server
+
 **Value:** Medium-high
 
 Expose:
+
 - PR / issue status
 - CI run status
 - labels / reviewers / mergeability
@@ -92,6 +102,7 @@ Expose:
 **Why:** Useful for workflow-heavy chat sessions, but lower priority than internal ops visibility.
 
 **Deployment shape:**
+
 - namespace: `llm`
 - exposure: `ClusterIP` only
 - secrets: GitHub token or GitHub App credentials via `ExternalSecret`
@@ -125,6 +136,7 @@ And wire the app into:
 - optionally later into `utility` / `test` if it makes sense there
 
 Use:
+
 - `HelmRelease` with `app-template`
 - `ExternalSecret` for credentials
 - `ClusterIP` service by default
@@ -133,16 +145,19 @@ Use:
 ## Suggested rollout order
 
 ### Phase 1
+
 1. Home Assistant + Grafana bundle
 2. ops-status server
 
 ### Phase 2
+
 3. read-only Postgres/query server
 4. GitHub helper server
 
 ## Deployment guardrails
 
 Before merging a real tool server manifest, require:
+
 - internal-only reachability unless sharing is intentional
 - auth on every non-public endpoint when practical
 - explicit read-only mode where possible
@@ -154,12 +169,14 @@ Before merging a real tool server manifest, require:
 ## Proposed next implementation
 
 The next actual deployment after this bundle should be an **ops-status server** because it is:
+
 - the most broadly useful to Open WebUI
 - safer than shell access
 - easy to keep read-only
 - easy to expose over a narrow OpenAPI surface
 
 A minimal first API should answer:
+
 - `GET /healthz`
 - `GET /services`
 - `GET /services/{name}`

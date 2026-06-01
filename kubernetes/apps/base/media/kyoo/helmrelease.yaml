@@ -55,95 +55,95 @@ spec:
         pinKey: TVDB_PIN
         existingSecret: *secret
     extraObjects:
-    - apiVersion: gateway.networking.k8s.io/v1
-      kind: HTTPRoute
-      metadata:
-        name: kyoo
-      spec:
-        hostnames: ["kyoo.jory.dev"]
-        parentRefs:
-        - name: envoy-external
-          namespace: network
-        rules:
-        - name: api
-          matches:
-          - path:
-              type: PathPrefix
-              value: /api
-          - path:
-              type: PathPrefix
-              value: /swagger
-          backendRefs:
-          - name: kyoo-api
-            namespace: media
-            port: 3567
-        - name: auth
-          matches:
-          - path:
-              type: PathPrefix
-              value: /auth
-          - path:
-              type: PathPrefix
-              value: /.well-known
-          backendRefs:
-          - name: kyoo-auth
-            namespace: media
-            port: 4568
-        - name: transcoder
-          matches:
-          - path:
-              type: PathPrefix
-              value: /video
-          backendRefs:
-          - name: kyoo-transcoder
-            namespace: media
-            port: 7666
-        - name: scanner
-          matches:
-          - path:
-              type: PathPrefix
-              value: /scanner
-          backendRefs:
-          - name: kyoo-scanner
-            namespace: media
-            port: 4389
-        - name: front
-          backendRefs:
-          - name: kyoo-front
-            namespace: media
-            port: 8901
-    - apiVersion: gateway.envoyproxy.io/v1alpha1
-      kind: SecurityPolicy
-      metadata:
-        name: kyoo-auth
-      spec:
-        targetRefs:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
+      - apiVersion: gateway.networking.k8s.io/v1
+        kind: HTTPRoute
+        metadata:
           name: kyoo
-          sectionName: api
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: kyoo
-          sectionName: transcoder
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: kyoo
-          sectionName: scanner
-        extAuth:
-          headersToExtAuth:
-          - Authorization
-          - X-Api-Key
-          - cookie
-          recomputeRoute: true
-          http:
-            backendRefs:
-            - name: kyoo-auth
-              namespace: media
-              port: 4568
-            path: /auth/jwt
-            headersToBackend:
-            - Authorization
+        spec:
+          hostnames: ["kyoo.jory.dev"]
+          parentRefs:
+            - name: envoy-external
+              namespace: network
+          rules:
+            - name: api
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /api
+                - path:
+                    type: PathPrefix
+                    value: /swagger
+              backendRefs:
+                - name: kyoo-api
+                  namespace: media
+                  port: 3567
+            - name: auth
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /auth
+                - path:
+                    type: PathPrefix
+                    value: /.well-known
+              backendRefs:
+                - name: kyoo-auth
+                  namespace: media
+                  port: 4568
+            - name: transcoder
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /video
+              backendRefs:
+                - name: kyoo-transcoder
+                  namespace: media
+                  port: 7666
+            - name: scanner
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /scanner
+              backendRefs:
+                - name: kyoo-scanner
+                  namespace: media
+                  port: 4389
+            - name: front
+              backendRefs:
+                - name: kyoo-front
+                  namespace: media
+                  port: 8901
+      - apiVersion: gateway.envoyproxy.io/v1alpha1
+        kind: SecurityPolicy
+        metadata:
+          name: kyoo-auth
+        spec:
+          targetRefs:
+            - group: gateway.networking.k8s.io
+              kind: HTTPRoute
+              name: kyoo
+              sectionName: api
+            - group: gateway.networking.k8s.io
+              kind: HTTPRoute
+              name: kyoo
+              sectionName: transcoder
+            - group: gateway.networking.k8s.io
+              kind: HTTPRoute
+              name: kyoo
+              sectionName: scanner
+          extAuth:
+            headersToExtAuth:
+              - Authorization
+              - X-Api-Key
+              - cookie
+            recomputeRoute: true
+            http:
+              backendRefs:
+                - name: kyoo-auth
+                  namespace: media
+                  port: 4568
+              path: /auth/jwt
+              headersToBackend:
+                - Authorization
     front:
       kyoo_front:
         resources:
@@ -155,8 +155,8 @@ spec:
             memory: 500Mi
     global:
       # image:
-        # tag: "edge"
-        # imagePullPolicy: Always
+      # tag: "edge"
+      # imagePullPolicy: Always
       podAnnotations:
         reloader.stakater.com/auto: "true"
       postgres:
@@ -181,22 +181,22 @@ spec:
             existingSecret: *secret
             apikeyKey: KYOO_API_KEY
       oidc_providers:
-      - name: Authentik
-        existingSecret: *secret
-        clientIdKey: OIDC_AUTHENTIK_CLIENTID
-        clientSecretKey: OIDC_AUTHENTIK_SECRET
-        logo: https://sso.jory.dev/static/dist/assets/icons/icon.png
-        authorizationAddress: https://sso.jory.dev/application/o/authorize/
-        tokenAddress: https://sso.jory.dev/application/o/token/
-        profileAddress: https://sso.jory.dev/application/o/userinfo/
-        scope: "openid email profile"
-        authMethod: ClientSecretBasic
+        - name: Authentik
+          existingSecret: *secret
+          clientIdKey: OIDC_AUTHENTIK_CLIENTID
+          clientSecretKey: OIDC_AUTHENTIK_SECRET
+          logo: https://sso.jory.dev/static/dist/assets/icons/icon.png
+          authorizationAddress: https://sso.jory.dev/application/o/authorize/
+          tokenAddress: https://sso.jory.dev/application/o/token/
+          profileAddress: https://sso.jory.dev/application/o/userinfo/
+          scope: "openid email profile"
+          authMethod: ClientSecretBasic
     media:
       volumes:
-      - name: media
-        nfs:
-          server: voyager.internal
-          path: /mnt/akademiya/data/media
+        - name: media
+          nfs:
+            server: voyager.internal
+            path: /mnt/akademiya/data/media
     postgres:
       enabled: false
     scanner:
@@ -214,14 +214,14 @@ spec:
       # persistence:
       #   existingClaim: *app
       resourceClaims:
-      - name: gpu
-        resourceClaimTemplateName: kyoo-gpu
+        - name: gpu
+          resourceClaimTemplateName: kyoo-gpu
       podLabels:
         igpu-workload: "true"
       kyoo_transcoder:
         resources:
           claims:
-          - name: gpu
+            - name: gpu
           requests:
             cpu: 100m
             memory: 500Mi

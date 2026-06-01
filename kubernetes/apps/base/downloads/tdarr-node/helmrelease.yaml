@@ -13,15 +13,15 @@ spec:
   values:
     defaultPodOptions:
       resourceClaims:
-      - name: gpu
-        resourceClaimTemplateName: tdarr-node-gpu
+        - name: gpu
+          resourceClaimTemplateName: tdarr-node-gpu
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: topology.kubernetes.io/gpus
-                operator: DoesNotExist
+              - matchExpressions:
+                  - key: topology.kubernetes.io/gpus
+                    operator: DoesNotExist
       securityContext:
         fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
@@ -41,8 +41,7 @@ spec:
           app:
             image:
               repository: ghcr.io/haveagitgat/tdarr_node
-              tag: 
-                2.77.01@sha256:2440abe728c5d56fbf311943d2ff15b3e8ed1a62531d709db9c5cdc391967926
+              tag: 2.77.01@sha256:2440abe728c5d56fbf311943d2ff15b3e8ed1a62531d709db9c5cdc391967926
             env:
               TZ: America/Edmonton
               serverIP: voyager.internal
@@ -54,7 +53,7 @@ spec:
                     fieldPath: spec.nodeName
             resources:
               claims:
-              - name: gpu
+                - name: gpu
               requests:
                 cpu: 100m
               limits:
@@ -65,7 +64,7 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data/metube
         globalMounts:
-        - path: /mnt/media
+          - path: /mnt/media
     service:
       app:
         enabled: false

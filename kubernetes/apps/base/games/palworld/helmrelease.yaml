@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/jammsen/docker-palworld-dedicated-server
-              tag: 
-                master@sha256:a881b5b6e18a8f901b09a1dd9a9866e00a86e9dd834385323e311d5fcde6bd36
+              tag: master@sha256:a881b5b6e18a8f901b09a1dd9a9866e00a86e9dd834385323e311d5fcde6bd36
             env:
               ## Container Settings
               TZ: America/Edmonton
@@ -46,8 +45,8 @@ spec:
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &disabled
                 enabled: false
@@ -69,8 +68,8 @@ spec:
               RCON_PORT: *rcon-port
               SAVE_DIRECTORY: /palworld
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             resources:
               limits:
                 memory: 256Mi
@@ -78,34 +77,34 @@ spec:
                 cpu: 5m
             securityContext:
               allowPrivilegeEscalation: false
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /palworld
+          - path: /palworld
       cache:
         existingClaim: "{{ .Release.Name }}-cache"
         globalMounts:
-        - path: /palworld/Pal/Binaries
-          subPath: binaries
-        - path: /palworld/Pal/Content
-          subPath: content
+          - path: /palworld/Pal/Binaries
+            subPath: binaries
+          - path: /palworld/Pal/Content
+            subPath: content
       tmpfs:
         type: emptyDir
         advancedMounts:
           palworld:
             app:
-            - path: /tmp
-              subPath: tmp
+              - path: /tmp
+                subPath: tmp
     route:
       app:
         annotations:
           external-dns.alpha.kubernetes.io/target: ipv4.jory.dev
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
         # pod:
         #   securityContext:
         #     runAsUser: 1000
@@ -129,8 +128,8 @@ spec:
       app:
         serviceName: "{{ .Release.Name }}"
         endpoints:
-        - port: http
-          scheme: http
-          path: /metrics
-          interval: 1m
-          scrapeTimeout: 10s
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 10s

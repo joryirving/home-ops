@@ -24,8 +24,7 @@ spec:
           app:
             image:
               repository: ghcr.io/mbround18/valheim
-              tag: 
-                3.6.0@sha256:abb98466d453f128b96e41d9730cd52f2938013cae7980ce6d3dccc14168d228
+              tag: 3.6.0@sha256:abb98466d453f128b96e41d9730cd52f2938013cae7980ce6d3dccc14168d228
             probes:
               liveness:
                 enabled: false
@@ -45,8 +44,8 @@ spec:
               # AUTO_UPDATE_PAUSE_WITH_PLAYERS: 1
               PUBLIC: 0
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 10m
@@ -57,14 +56,14 @@ spec:
       data:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /home/steam/.config/unity3d/IronGate/Valheim/
-        - path: /home/steam/valheim/
+          - path: /home/steam/.config/unity3d/IronGate/Valheim/
+          - path: /home/steam/valheim/
       tmp:
         type: emptyDir
         globalMounts:
-        - path: /home/steam/backups/
-        - path: /home/steam/.steam/
-        - path: /home/steam/.local/
+          - path: /home/steam/backups/
+          - path: /home/steam/.steam/
+          - path: /home/steam/.local/
     service:
       app:
         type: LoadBalancer

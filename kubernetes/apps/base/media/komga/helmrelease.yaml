@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/gotson/komga
-              tag: 
-                1.24.4@sha256:dae630271561b642d47c9723803ec77900d1f0a803fbe6a42da69db5b21ebaeb
+              tag: 1.24.4@sha256:dae630271561b642d47c9723803ec77900d1f0a803fbe6a42da69db5b21ebaeb
             env:
               TZ: America/Edmonton
               SERVER_PORT: &port 80
@@ -38,14 +37,14 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /data
-          subPath: media
+          - path: /data
+            subPath: media
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:

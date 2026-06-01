@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/it-tools
-              tag: 
-                2026.1.4@sha256:1701d5907048366e35c46b5cf8b15353c250969a9f5e559af673b0faa8fcdb93
+              tag: 2026.1.4@sha256:1701d5907048366e35c46b5cf8b15353c250969a9f5e559af673b0faa8fcdb93
             env:
               TZ: America/Edmonton
             resources:
@@ -32,7 +31,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
         pod:
           securityContext:
             runAsUser: 1000
@@ -45,14 +44,14 @@ spec:
         advancedMounts:
           it-tools:
             app:
-            - path: /tmp
-              subPath: tmp
+              - path: /tmp
+                subPath: tmp
     route:
       app:
         hostnames: ["tools.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:

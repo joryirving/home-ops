@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: mrcas/kapowarr
-              tag: 
-                v1.3.1@sha256:d455797e4f2c5b1a8ccc5ce05c427f1af2179451bb1af195ca3fa8c3e928623b
+              tag: v1.3.1@sha256:d455797e4f2c5b1a8ccc5ce05c427f1af2179451bb1af195ca3fa8c3e928623b
             env:
               TZ: America/Edmonton
             # securityContext:
@@ -40,19 +39,19 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /app/db
+          - path: /app/db
       media:
         type: nfs
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /media
+          - path: /media
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

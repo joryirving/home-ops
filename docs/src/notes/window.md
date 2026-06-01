@@ -31,6 +31,7 @@ sudo apt autoclean
 ```
 
 ### ⬇️ 3. Clone the OpenSurv Repository
+
 ```bash
 git clone https://github.com/OpenSurv/OpenSurv.git
 cd OpenSurv
@@ -39,6 +40,7 @@ cd OpenSurv
 ### ⚙️ 4. Install OpenSurv
 
 Run the installer:
+
 ```bash
 sudo ./install.sh
 ```
@@ -53,6 +55,7 @@ This will:
 ### 📝 5. Configure OpenSurv (Single Camera)
 
 Edit the main monitor configuration:
+
 ```bash
 sudo nano /home/opensurv/etc/monitor1.yml
 ```
@@ -69,14 +72,17 @@ essentials:
 This will show the single camera full-screen.
 
 Check the service status:
+
 ```bash
 systemctl restart lightdm.service
 ```
 
 ###🔁 6. Reboot to Confirm
+
 ```bash
 sudo reboot
 ```
+
 OpenSurv should auto-start and display the RTSP stream from your camera.
 
 🎉 Done!
@@ -84,6 +90,7 @@ OpenSurv should auto-start and display the RTSP stream from your camera.
 Your Raspberry Pi is now configured as a dedicated OpenSurv RTSP viewer that automatically starts on boot.
 
 ## How to update OpenSurv to new version <a name="how-to-update"></a>
+
 - `cd OpenSurv; git pull`
 - OPTIONAL: checkout a specific branch, for example `git checkout v1_latest`, if you want to override the default version
 - Run `sudo ./install.sh` (The installer will ask if you want to preserve your current config file)
@@ -96,12 +103,12 @@ Your Raspberry Pi is now configured as a dedicated OpenSurv RTSP viewer that aut
 - If you are connected via keyboard/keypad, you can stop OpenSurv by pressing and holding q (or backspace or keypad "/") (this can take some seconds).
 
 - To manage the screen without rebooting, use systemctl:
-  - `sudo systemctl stop lightdm.service` to stop the screen.
-  - `sudo systemctl start lightdm.service` to start the screen.
-  - `tail -F /home/opensurv/logs/main.log` to see last logs.
+    - `sudo systemctl stop lightdm.service` to stop the screen.
+    - `sudo systemctl start lightdm.service` to start the screen.
+    - `tail -F /home/opensurv/logs/main.log` to see last logs.
 
 - If you want to stream RTSP over TCP, please add `freeform_advanced_mpv_options: "--rtsp-transport=tcp"` to the stream configured in the config files in /etc/opensurv.
   See in /etc/opensurv for examples.
-  If you have a "smearing" effect, this option may resolve it. 
+  If you have a "smearing" effect, this option may resolve it.
 
 - Significantly reduce latency on a stream by adding `freeform_advanced_mpv_options:"--profile=low-latency --untimed"` to the stream configured in the config files in /etc/opensurv.

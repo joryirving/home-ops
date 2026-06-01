@@ -26,8 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/seerr-team/seerr
-              tag: 
-                v3.2.0@sha256:c4cbd5121236ac2f70a843a0b920b68a27976be57917555f1c45b08a1e6b2aad
+              tag: v3.2.0@sha256:c4cbd5121236ac2f70a843a0b920b68a27976be57917555f1c45b08a1e6b2aad
             env:
               DB_TYPE: "postgres"
               DB_HOST: "{{ .Release.Name }}-rw.media.svc"
@@ -43,8 +42,8 @@ spec:
               PORT: &port 80
               TZ: America/Edmonton
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 10m
@@ -55,15 +54,15 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /app/config
+          - path: /app/config
       tmp:
         type: emptyDir
     route:
       app:
         hostnames: ["requests.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:

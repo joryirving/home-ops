@@ -69,7 +69,7 @@ Optionally create:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ./helmrelease.yaml
+    - ./helmrelease.yaml
 ```
 
 Add `./externalsecret.yaml` only if secrets are needed. Add other resource files only when required.
@@ -82,47 +82,47 @@ Add `./externalsecret.yaml` only if secrets are needed. Add other resource files
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: <app>
+    name: <app>
 spec:
-  chartRef:
-    kind: OCIRepository
-    name: app-template
-  dependsOn: []
-  interval: 15m
-  values:
-    controllers:
-      <app>:
-        containers:
-          app:
-            image:
-              repository: <image-repository>
-              tag: <image-tag-or-digest>
-            probes:
-              liveness:
-                enabled: true
-              readiness:
-                enabled: true
-            resources:
-              requests:
-                cpu: 10m
+    chartRef:
+        kind: OCIRepository
+        name: app-template
+    dependsOn: []
+    interval: 15m
+    values:
+        controllers:
+            <app>:
+                containers:
+                    app:
+                        image:
+                            repository: <image-repository>
+                            tag: <image-tag-or-digest>
+                        probes:
+                            liveness:
+                                enabled: true
+                            readiness:
+                                enabled: true
+                        resources:
+                            requests:
+                                cpu: 10m
+                        securityContext:
+                            allowPrivilegeEscalation: false
+                            capabilities:
+                                drop:
+                                    - ALL
+                            readOnlyRootFilesystem: true
+        defaultPodOptions:
             securityContext:
-              allowPrivilegeEscalation: false
-              capabilities:
-                drop:
-                  - ALL
-              readOnlyRootFilesystem: true
-    defaultPodOptions:
-      securityContext:
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-        runAsGroup: 1000
-        runAsNonRoot: true
-        runAsUser: 1000
-    service:
-      app:
-        ports:
-          http:
-            port: <port>
+                fsGroup: 1000
+                fsGroupChangePolicy: OnRootMismatch
+                runAsGroup: 1000
+                runAsNonRoot: true
+                runAsUser: 1000
+        service:
+            app:
+                ports:
+                    http:
+                        port: <port>
 ```
 
 Adjust the template to match local patterns in the same namespace. Add `route`, `persistence`, `env`, `envFrom`, or extra manifests only when needed.
@@ -135,17 +135,17 @@ Adjust the template to match local patterns in the same namespace. Add `route`, 
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: <app>
-spec:
-  refreshInterval: 5m
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: onepassword
-  target:
     name: <app>
-  dataFrom:
-    - extract:
-        key: <app>
+spec:
+    refreshInterval: 5m
+    secretStoreRef:
+        kind: ClusterSecretStore
+        name: onepassword
+    target:
+        name: <app>
+    dataFrom:
+        - extract:
+              key: <app>
 ```
 
 If the app needs templated secret data, mirror patterns from similar existing apps instead of forcing a generic template.
@@ -164,20 +164,20 @@ Template:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app <app>
+    name: &app <app>
 spec:
-  interval: 1h
-  path: ./kubernetes/apps/base/<namespace>/<app>
-  postBuild:
-    substitute:
-      APP: *app
-      CLUSTER: ${CLUSTER}
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false
+    interval: 1h
+    path: ./kubernetes/apps/base/<namespace>/<app>
+    postBuild:
+        substitute:
+            APP: *app
+            CLUSTER: ${CLUSTER}
+    prune: true
+    sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+    wait: false
 ```
 
 Only include `components` or `dependsOn` when the app needs them. Follow nearby overlay manifests in the same namespace for exact patterns.
@@ -192,7 +192,7 @@ Add:
 
 ```yaml
 resources:
-  - ./<app>.yaml
+    - ./<app>.yaml
 ```
 
 Keep the resource list alphabetized.

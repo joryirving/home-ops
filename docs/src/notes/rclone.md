@@ -1,36 +1,41 @@
 # Rclone to R2
 
 ## Install and setup rclone
+
 Install rclone on your NAS
 
 Run the rclone config for the endpoint
+
 ```sh
 rclone config
 ```
 
-1) Select n for a new remote.
+1. Select n for a new remote.
 
-2) Enter a name (e.g., cloudflare-r2).
+2. Enter a name (e.g., cloudflare-r2).
 
-3) Choose s3 as the storage type.
+3. Choose s3 as the storage type.
 
-4) Set S3 provider to Cloudflare (option 6).
+4. Set S3 provider to Cloudflare (option 6).
 
-5) Enter the Cloudflare R2 Access Key and Secret Key (found in your Cloudflare dashboard under "R2 API Tokens"). Note that you want to scope this to read/write on a specific bucket(s).
+5. Enter the Cloudflare R2 Access Key and Secret Key (found in your Cloudflare dashboard under "R2 API Tokens"). Note that you want to scope this to read/write on a specific bucket(s).
 
-6) Set endpoint to your Cloudflare R2 bucket’s region:
+6. Set endpoint to your Cloudflare R2 bucket’s region:
+
 ```sh
 https://<account-id>.r2.cloudflarestorage.com
 ```
 
-7) Leave region blank.
+7. Leave region blank.
 
-8) Use default options for remaining settings.
+8. Use default options for remaining settings.
 
-9) Test the connection by running:
+9. Test the connection by running:
+
 ```sh
 rclone ls cloudflare-r2:<bucketname>
 ```
+
 ## Create script
 
 Create the script and save it somewhere notable (or for unRaid, use User Scripts plugin)

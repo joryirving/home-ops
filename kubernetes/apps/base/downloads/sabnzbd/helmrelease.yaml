@@ -28,14 +28,14 @@ spec:
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values: ["qbittorrent"]
-              topologyKey: kubernetes.io/hostname
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values: ["qbittorrent"]
+                topologyKey: kubernetes.io/hostname
     controllers:
       sabnzbd:
         annotations:
@@ -44,8 +44,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/sabnzbd
-              tag: 
-                5.0.3@sha256:4884bd4aac602355975a8628fc77eea1ec59734f813b31bc991388d2a902b738
+              tag: 5.0.3@sha256:4884bd4aac602355975a8628fc77eea1ec59734f813b31bc991388d2a902b738
             env:
               TZ: America/Edmonton
               CROSS_SEED_HOST: cross-seed.downloads.svc.cluster.local
@@ -58,8 +57,8 @@ spec:
                 "{{ .Release.Name }}.downloads.svc.cluster.local",
                 sab.jory.dev
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -87,21 +86,21 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /media/Downloads
+          - path: /media/Downloads
       scripts:
         type: configMap
         name: "{{ .Release.Name }}-scripts"
         defaultMode: 0775
         globalMounts:
-        - readOnly: true
+          - readOnly: true
       tmp:
         type: emptyDir
     route:
       app:
         hostnames: ["sab.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

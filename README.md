@@ -2,7 +2,6 @@
 
 <img src="https://avatars.githubusercontent.com/u/46251616?v=4" align="center" width="144px" height="144px"/>
 
-
 ### <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f680/512.gif" alt="🚀" width="16" height="16"> My Home Operations Repository <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f6a7/512.gif" alt="🚧" width="16" height="16">
 
 _... managed with Flux, Renovate, and GitHub Actions_ <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f916/512.gif" alt="🤖" width="16" height="16">
@@ -37,6 +36,7 @@ _... managed with Flux, Renovate, and GitHub Actions_ <img src="https://fonts.gs
 [![Memory-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fcluster_memory_usage&style=flat-square&label=Memory)](https://github.com/kashalls/kromgo)&nbsp;&nbsp;
 [![Power-Usage](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fcluster_power_usage&style=flat-square&label=Power)](https://github.com/kashalls/kromgo)&nbsp;&nbsp;
 [![Alerts](https://img.shields.io/endpoint?url=https%3A%2F%2Fkromgo.jory.dev%2Fcluster_alert_count&style=flat-square&label=Alerts)](https://github.com/kashalls/kromgo)
+
 </div>
 
 ---
@@ -104,7 +104,7 @@ While most of my infrastructure and workloads are self-hosted I do rely upon the
 The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), [ntfy](https://ntfy.sh/), and [Gatus](https://gatus.io/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
 
 | Service                                     | Use                                                               | Cost           |
-|---------------------------------------------|-------------------------------------------------------------------|----------------|
+| ------------------------------------------- | ----------------------------------------------------------------- | -------------- |
 | [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$80/yr$       |
 | [Cloudflare](https://www.cloudflare.com/)   | Domain, DNS, WAF and R2 bucket (S3 Compatible endpoint)           | ~$40/yr        |
 | [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free           |
@@ -123,12 +123,12 @@ In my cluster there are two instances of [ExternalDNS](https://github.com/kubern
 
 ### Main Kubernetes Cluster
 
-| Name  | Device | CPU       | OS Disk    | Local Disk | Rook Disk  | RAM   | OS    | Purpose           |
-|-------|--------|-----------|------------|------------|------------|-------|-------|-------------------|
-| Ayaka | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Eula  | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Ganyu | MS-01  | i9-13900H | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD | 2TB NVMe | - | 128GB | Talos | k8s worker (LLM) |
+| Name  | Device                  | CPU               | OS Disk    | Local Disk | Rook Disk  | RAM   | OS    | Purpose           |
+| ----- | ----------------------- | ----------------- | ---------- | ---------- | ---------- | ----- | ----- | ----------------- |
+| Ayaka | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Eula  | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Ganyu | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD  | 2TB NVMe   | -          | 128GB | Talos | k8s worker (LLM)  |
 
 Control Plane OS Disk: m.2 Samsung PM9A3 960GB
 Control Plane Local Disk: m.2 WD SN770 1TB
@@ -140,7 +140,7 @@ Total RAM: 512GB
 ### Utility Kubernetes Cluster
 
 | Name     | Device     | CPU           | OS Disk   | Local Disk | RAM  | OS    | Purpose           |
-|----------|------------|---------------|-----------|------------|------|-------|-------------------|
+| -------- | ---------- | ------------- | --------- | ---------- | ---- | ----- | ----------------- |
 | Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe   | 64GB | Talos | k8s control-plane |
 
 OS Disk: 2.5" Samsung 870 EVO SSD
@@ -151,9 +151,9 @@ Total RAM: 64GB
 
 ### Test Kubernetes Cluster
 
-| Name     | Device         | CPU           | OS Disk   | Local Disk   | RAM  | OS    | Purpose           |
-|----------|----------------|---------------|-----------|--------------|------|-------|-------------------|
-| Citlali  | Beelink Mini-S | Celeron N5095 | 480GB SSD | 1TB M.2 SATA | 32GB | Talos | k8s control-plane |
+| Name    | Device         | CPU           | OS Disk   | Local Disk   | RAM  | OS    | Purpose           |
+| ------- | -------------- | ------------- | --------- | ------------ | ---- | ----- | ----------------- |
+| Citlali | Beelink Mini-S | Celeron N5095 | 480GB SSD | 1TB M.2 SATA | 32GB | Talos | k8s control-plane |
 
 OS Disk: 2.5" Kingston SA400 SSD
 Local Disk: m.2 Timetec SATA SSD
@@ -163,21 +163,21 @@ Total RAM: 32GB
 
 ### Supporting Hardware
 
-| Name    | Device            | CPU        | OS Disk    | Data Disk      | RAM   | OS           | Purpose           |
-|---------|-------------------|------------|------------|----------------|-------|--------------|-------------------|
-| Voyager | MS-01             | i5-12600H  | 32GB USB   | -              | 96GB  | Unraid       | NAS/NFS/Backup    |
-| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2  | -     | -            | ZFS               |
-| Venti   | Raspberry Pi5     | Cortex A76 | 250GB NVMe | -              | 8GB   | Raspbian     | NUT/SSH (Main)    |
-| Sayu    | Raspberry Pi5     | Cortex A76 | 500GB NVMe | -              | 8GB   | Raspbian     | NUT/SSH (Utility) |
-| PiKVM   | Raspberry Pi4     | Cortex A72 | 64GB mSD   | -              | 4GB   | PiKVM (Arch) | KVM (Main)        |
-| JetKVM  | JetKVM            | RV1106G3   | 8GB EMMC   | -              | 256MB | Linux 5.10   | KVM (Utility)     |
-| PDU     | UniFi USP PDU Pro | -          | -          | -              | -     | -            | PDU               |
-| TESmart | 8 port KVM        | -          | -          | -              | -     | -            | Network KVM       |
+| Name    | Device            | CPU        | OS Disk    | Data Disk     | RAM   | OS           | Purpose           |
+| ------- | ----------------- | ---------- | ---------- | ------------- | ----- | ------------ | ----------------- |
+| Voyager | MS-01             | i5-12600H  | 32GB USB   | -             | 96GB  | Unraid       | NAS/NFS/Backup    |
+| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2 | -     | -            | ZFS               |
+| Venti   | Raspberry Pi5     | Cortex A76 | 250GB NVMe | -             | 8GB   | Raspbian     | NUT/SSH (Main)    |
+| Sayu    | Raspberry Pi5     | Cortex A76 | 500GB NVMe | -             | 8GB   | Raspbian     | NUT/SSH (Utility) |
+| PiKVM   | Raspberry Pi4     | Cortex A72 | 64GB mSD   | -             | 4GB   | PiKVM (Arch) | KVM (Main)        |
+| JetKVM  | JetKVM            | RV1106G3   | 8GB EMMC   | -             | 256MB | Linux 5.10   | KVM (Utility)     |
+| PDU     | UniFi USP PDU Pro | -          | -          | -             | -     | -            | PDU               |
+| TESmart | 8 port KVM        | -          | -          | -             | -     | -            | Network KVM       |
 
 ### Networking/UPS Hardware
 
 | Device                      | Purpose              |
-|-----------------------------|----------------------|
+| --------------------------- | -------------------- |
 | Unifi UDM-SE                | Network - Router     |
 | Back-UPS 600                | Network - UPS        |
 | Unifi USW-Enterprise-24-PoE | Server - 2.5G Switch |

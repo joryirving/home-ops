@@ -24,8 +24,7 @@ spec:
           app:
             image:
               repository: sknnr/enshrouded-dedicated-server
-              tag: 
-                proton-v2.3.2@sha256:c410b742812cc55723cdaa97950f94cdef1b1f8a332bceedce13da9b681c98ee
+              tag: proton-v2.3.2@sha256:c410b742812cc55723cdaa97950f94cdef1b1f8a332bceedce13da9b681c98ee
             env:
               ## Container Settings
               TZ: America/Edmonton
@@ -35,8 +34,8 @@ spec:
               SERVER_SLOTS: 16
               # EXTERNAL_CONFIG: 1 ## Provide custom config
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: false
@@ -53,8 +52,8 @@ spec:
       data:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /home/steam/enshrouded
-          readOnly: false
+          - path: /home/steam/enshrouded
+            readOnly: false
       # config:
       #   type: secret
       #   name: "{{ .Release.Name }}"

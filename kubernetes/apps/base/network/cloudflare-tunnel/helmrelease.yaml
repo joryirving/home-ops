@@ -39,14 +39,13 @@ spec:
           app:
             image:
               repository: mirror.gcr.io/cloudflare/cloudflared
-              tag: 
-                2026.5.2@sha256:12ff5c6992a9863db4da270746af7c244bcaee49353039af8104268a18d6c4f0
+              tag: 2026.5.2@sha256:12ff5c6992a9863db4da270746af7c244bcaee49353039af8104268a18d6c4f0
             env:
               NO_AUTOUPDATE: true
               TUNNEL_METRICS: 0.0.0.0:8080
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             args: ["tunnel", "run"]
             probes:
               liveness: &probes
@@ -64,7 +63,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
@@ -75,8 +74,8 @@ spec:
         type: configMap
         identifier: config
         globalMounts:
-        - path: /etc/cloudflared/config.yaml
-          subPath: config.yaml
+          - path: /etc/cloudflared/config.yaml
+            subPath: config.yaml
     service:
       app:
         ports:
@@ -85,4 +84,4 @@ spec:
     serviceMonitor:
       app:
         endpoints:
-        - port: http
+          - port: http

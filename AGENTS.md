@@ -30,7 +30,7 @@ home-ops/
 ## Key Technologies
 
 | Category   | Tool                         | Purpose                           |
-|------------|------------------------------|-----------------------------------|
+| ---------- | ---------------------------- | --------------------------------- |
 | GitOps     | Flux                         | Deploys configs from Git to k8s   |
 | CI         | Renovate + GitHub Actions    | Dependency updates, automation    |
 | Networking | cilium (eBPF)                | CNI, BGP, service mesh            |
@@ -64,16 +64,18 @@ Flux recursively searches `kubernetes/${cluster}/apps/` for `kustomization.yaml`
 - **Troubleshoot**: Check `flux get all -n <namespace>`, `kubectl get events --sort-by=.lastTimestamp`
 - **Scripts**: `hack/` contains operational scripts (cert-extract.sh, delete-stuck-ns.sh, etc.)
 - **Validate locally**: Run `flate` (auto-installed via `.mise.toml`) before pushing GitOps changes:
-  ```bash
-  # Test Kustomizations + HelmReleases for a cluster
-  flate test ks --path ./kubernetes/clusters/main
 
-  # Diff against a baseline (e.g., main branch)
-  git worktree add --detach /tmp/baseline origin/main
-  flate diff ks --path ./kubernetes/clusters/main --path-orig /tmp/baseline/kubernetes/clusters/main
-  flate diff hr --path ./kubernetes/clusters/main --path-orig /tmp/baseline/kubernetes/clusters/main
-  git worktree remove /tmp/baseline --force
-  ```
+    ```bash
+    # Test Kustomizations + HelmReleases for a cluster
+    flate test ks --path ./kubernetes/clusters/main
+
+    # Diff against a baseline (e.g., main branch)
+    git worktree add --detach /tmp/baseline origin/main
+    flate diff ks --path ./kubernetes/clusters/main --path-orig /tmp/baseline/kubernetes/clusters/main
+    flate diff hr --path ./kubernetes/clusters/main --path-orig /tmp/baseline/kubernetes/clusters/main
+    git worktree remove /tmp/baseline --force
+    ```
+
 - **Gateway policy namespace rule**: `ClientTrafficPolicy` and `EnvoyPatchPolicy` that target a `Gateway` must live in the same namespace as that `Gateway`. For `envoy-internal`, put those resources in `kubernetes/apps/base/network/envoy-gateway/config/` with namespace `network`.
 
 ## Documentation
@@ -86,6 +88,7 @@ Flux recursively searches `kubernetes/${cluster}/apps/` for `kustomization.yaml`
 ## Adding Documentation
 
 When adding architecture or operational docs, consider:
+
 1. Put user-facing docs in `/docs/src/`
 2. Keep component-specific docs with the component
 3. Personal notes go in `/docs/src/notes/`
@@ -95,6 +98,7 @@ When adding architecture or operational docs, consider:
 When reviewing Renovate PRs, enforce these criteria:
 
 ### HelmRelease Requirements
+
 - All applications MUST use `HelmRelease` via Flux, not raw manifests
 - Must include `spec.chart.spec.version` for pinned chart versions outside of `app-template`
 - Must include `spec.interval` for reconciliation frequency
@@ -102,12 +106,14 @@ When reviewing Renovate PRs, enforce these criteria:
 - `valuesFrom` should reference ConfigMaps/Secrets, not inline values
 
 ### Secret Management Rules
+
 - **NEVER** commit plain-text secrets or credentials in Git
 - All secrets MUST use `external-secrets` with 1Password backend
 - SOPS encryption required for any sensitive values in Git
 - If a PR introduces a new secret, verify it's external-secrets backed
 
 ### Image & Digest Policy
+
 - Prefer `@sha256:` digests over version tags for reproducibility
 - For tag-only updates, verify OCI metadata (revision/source/created)
 - If revision changes between digests, ensure it's intentional
@@ -116,12 +122,15 @@ When reviewing Renovate PRs, enforce these criteria:
 - Avoid Docker Hub for critical infrastructure components
 
 ### Cluster-Specific Policies
+
 - **main cluster** (production): Strict validation - all standards must be met
 - **utility cluster** (low-power services, production): Strict validation - all standards must be met
 - **test cluster** (testing): Can accept bleeding-edge versions, still enforce secrets policy
 
 ### Breaking Change Detection
+
 Always `request_changes` if:
+
 - API version changes (e.g., `apiVersion: apps/v1beta1` → `apps/v1`)
 - Deprecated field usage introduced
 - Major version bumps without justification
@@ -129,7 +138,9 @@ Always `request_changes` if:
 - Network policy or security context relaxations
 
 ### Required Evidence for Approval
+
 Before approving, verify:
+
 1. Release notes/changelog mention the upgrade
 2. GitHub compare shows expected changes
 3. Version aligns with what Renovate reported

@@ -34,8 +34,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/home-assistant
-              tag: 
-                2026.5.4@sha256:affa384bad3868c07ea507760baec149aae4074a756fd3352dd9f52cc171d65a
+              tag: 2026.5.4@sha256:affa384bad3868c07ea507760baec149aae4074a756fd3352dd9f52cc171d65a
             env:
               TZ: America/Edmonton
               HASS_HTTP_TRUSTED_PROXY_1: 10.69.1.0/24
@@ -55,12 +54,21 @@ spec:
           codeserver:
             image:
               repository: ghcr.io/coder/code-server
-              tag: 
-                4.122.0@sha256:dbe5b1cf5c1f0edf47da6363fdadb89c456fb14b3d7e2a1545cabe20f5d7402a
+              tag: 4.122.0@sha256:dbe5b1cf5c1f0edf47da6363fdadb89c456fb14b3d7e2a1545cabe20f5d7402a
             env:
               TZ: America/Edmonton
-            args: ["--auth", "none", "--user-data-dir", "/config/.vscode", "--extensions-dir",
-              "/config/.vscode", "--port", "12321", "/config"]
+            args:
+              [
+                "--auth",
+                "none",
+                "--user-data-dir",
+                "/config/.vscode",
+                "--extensions-dir",
+                "/config/.vscode",
+                "--port",
+                "12321",
+                "/config",
+              ]
             resources:
               requests:
                 cpu: 10m
@@ -70,32 +78,32 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /config
+          - path: /config
       config-cache:
         existingClaim: "{{ .Release.Name }}-cache"
         globalMounts:
-        - path: /config/.venv
+          - path: /config/.venv
       tmp:
         type: emptyDir
     route:
       app:
         hostnames: ["hass.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
         rules:
-        - backendRefs:
-          - name: "{{ .Release.Name }}"
-            port: &port 8123
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: &port 8123
       codeserver:
         hostnames: ["hass-code.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
         rules:
-        - backendRefs:
-          - name: "{{ .Release.Name }}"
-            port: &codeserverPort 12321
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: &codeserverPort 12321
     service:
       app:
         type: LoadBalancer

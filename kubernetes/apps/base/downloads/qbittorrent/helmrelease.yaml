@@ -33,8 +33,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/qbittorrent
-              tag: 
-                5.2.1@sha256:9e0adb5407b4bba1881e8b24bcb48524d7f0f6f8c27f3960505e400cf58ee555
+              tag: 5.2.1@sha256:9e0adb5407b4bba1881e8b24bcb48524d7f0f6f8c27f3960505e400cf58ee555
             env:
               QBT_WEBUI_PORT: &port 80
               QBT_TORRENTING_PORT: &torrentPort 59936
@@ -60,7 +59,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 25m
@@ -75,14 +74,14 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /media/Downloads
+          - path: /media/Downloads
       tmpfs:
         type: emptyDir
         advancedMounts:
           qbittorrent:
             app:
-            - path: /tmp
-              subPath: tmp
+              - path: /tmp
+                subPath: tmp
       # bittorrent:
       #   type: LoadBalancer
       #   annotations:
@@ -96,12 +95,12 @@ spec:
       app:
         hostnames: ["qb.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
         rules:
-        - backendRefs:
-          - identifier: app
-            port: *port
+          - backendRefs:
+              - identifier: app
+                port: *port
     service:
       app:
         # forceRename: "{{ .Release.Name }}"

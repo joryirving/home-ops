@@ -17,32 +17,26 @@
     {
       customType: "regex",
       description: "Process OCI dependencies",
-      managerFilePatterns: [
-        "/\\.yaml(?:\\.j2)?$/",
-      ],
-      matchStrings: [
-        "oci://(?<depName>[^:]+):(?<currentValue>\\S+)",
-      ],
+      managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
+      matchStrings: ["oci://(?<depName>[^:]+):(?<currentValue>\\S+)"],
       datasourceTemplate: "docker",
     },
     {
       customType: "regex",
       description: "Talos machineconfig images",
-      managerFilePatterns: ["/talos/.+\\.yaml\\.j2$/"],  // only Talos files
+      managerFilePatterns: ["/talos/.+\\.yaml\\.j2$/"], // only Talos files
       matchStrings: [
-        "# renovate: datasource=docker depName=(?<depName>\\S+)\\nimage:\\s*(?<currentValue>.+)"
+        "# renovate: datasource=docker depName=(?<depName>\\S+)\\nimage:\\s*(?<currentValue>.+)",
       ],
-      datasourceTemplate: "docker"
+      datasourceTemplate: "docker",
     },
     {
       customType: "regex",
       description: "MCP Server npm packages",
       managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
-      matchStrings: [
-        "npx\\s+-y\\s+(?<depName>@?[^@\\s]+)(?:@(?<currentValue>\\S+))?"
-      ],
+      matchStrings: ["npx\\s+-y\\s+(?<depName>@?[^@\\s]+)(?:@(?<currentValue>\\S+))?"],
       datasourceTemplate: "npm",
-      versioningTemplate: "loose"
+      versioningTemplate: "loose",
     },
   ],
 }

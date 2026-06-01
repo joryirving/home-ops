@@ -26,8 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/rommapp/romm
-              tag: 
-                4.8.1@sha256:2b7a1714b287f69b081ad2a63bb8c2fa673666a17b2f21322b580b0cd51cb266
+              tag: 4.8.1@sha256:2b7a1714b287f69b081ad2a63bb8c2fa673666a17b2f21322b580b0cd51cb266
             env:
               DB_HOST:
                 valueFrom:
@@ -74,8 +73,8 @@ spec:
               LAUNCHBOX_API_ENABLED: "true"
               TZ: America/Edmonton
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 10m
@@ -83,51 +82,51 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
     persistence:
       config:
         type: configMap
         name: romm-config
         globalMounts:
-        - path: /romm/config/config.yml
-          subPath: config.yml
-          readOnly: true
+          - path: /romm/config/config.yml
+            subPath: config.yml
+            readOnly: true
       data:
         existingClaim: "{{ .Release.Name }}"
         advancedMounts:
           romm:
             app:
-            - path: /romm/assets
-              subPath: assets
-            - path: /romm/resources
-              subPath: resources
+              - path: /romm/assets
+                subPath: assets
+              - path: /romm/resources
+                subPath: resources
       nginx-conf:
         type: emptyDir
         globalMounts:
-        - path: /etc/nginx/conf.d
+          - path: /etc/nginx/conf.d
       tmpfs:
         type: emptyDir
         advancedMounts:
           romm:
             app:
-            - path: /redis-data
-              subPath: redis-data
-            - path: /romm/config
-              subPath: config
-            - path: /tmp
-              subPath: tmp
+              - path: /redis-data
+                subPath: redis-data
+              - path: /romm/config
+                subPath: config
+              - path: /tmp
+                subPath: tmp
       media:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/games/Library/Emulation/
         globalMounts:
-        - path: /romm/library
+          - path: /romm/library
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         controller: romm

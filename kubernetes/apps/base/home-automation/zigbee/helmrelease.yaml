@@ -10,7 +10,7 @@ spec:
     name: app-template
   interval: 15m
   dependsOn:
-  - name: mosquitto
+    - name: mosquitto
   values:
     defaultPodOptions:
       securityContext:
@@ -27,8 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/koenkk/zigbee2mqtt
-              tag: 
-                2.10.1@sha256:67c26dcf8346aced02fe1380a6afd1b57268bcef10faae3f6057c13d5d3dfa80
+              tag: 2.10.1@sha256:67c26dcf8346aced02fe1380a6afd1b57268bcef10faae3f6057c13d5d3dfa80
             env:
               TZ: America/Edmonton
               ZIGBEE2MQTT_DATA: /config
@@ -43,8 +42,7 @@ spec:
               ZIGBEE2MQTT_CONFIG_FRONTEND_PORT: &port 80
               ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_DISCOVERY_TOPIC: homeassistant
               ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED: true
-              ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_STATUS_TOPIC: 
-                homeassistant/status
+              ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_STATUS_TOPIC: homeassistant/status
               ZIGBEE2MQTT_CONFIG_MQTT_INCLUDE_DEVICE_INFORMATION: true
               ZIGBEE2MQTT_CONFIG_MQTT_KEEPALIVE: 60
               ZIGBEE2MQTT_CONFIG_MQTT_REJECT_UNAUTHORIZED: true
@@ -56,8 +54,8 @@ spec:
               ZIGBEE2MQTT_CONFIG_SERIAL_PORT: tcp://slzb.internal:6638
               ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: ember
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
@@ -76,7 +74,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -84,8 +82,8 @@ spec:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

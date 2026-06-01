@@ -26,17 +26,16 @@ spec:
           app:
             image:
               repository: ghcr.io/manimatter/decluttarr
-              tag: 
-                v2.1.0@sha256:c06d48426b612b845f2406c2d045f266468a6390faf87aea796d497a2935ec95
+              tag: v2.1.0@sha256:c06d48426b612b845f2406c2d045f266468a6390faf87aea796d497a2935ec95
             env:
               TZ: America/Edmonton
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
@@ -46,10 +45,10 @@ spec:
       logs:
         type: emptyDir
         globalMounts:
-        - path: /app/logs
+          - path: /app/logs
       secret-file:
         type: secret
         name: "{{ .Release.Name }}-secret"
         globalMounts:
-        - path: /app/config/config.yaml
-          subPath: config.yaml
+          - path: /app/config/config.yaml
+            subPath: config.yaml

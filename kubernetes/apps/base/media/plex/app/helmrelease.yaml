@@ -13,8 +13,8 @@ spec:
   values:
     defaultPodOptions:
       resourceClaims:
-      - name: gpu
-        resourceClaimTemplateName: plex-gpu
+        - name: gpu
+          resourceClaimTemplateName: plex-gpu
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -38,8 +38,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/plex
-              tag: 
-                1.43.2.10687@sha256:99a76a3d3fa097338e83c7a1692c9f54e676faf26b7d7d4c7d9242a9cc4d7daf
+              tag: 1.43.2.10687@sha256:99a76a3d3fa097338e83c7a1692c9f54e676faf26b7d7d4c7d9242a9cc4d7daf
             env:
               TZ: America/Edmonton
               PLEX_ADVERTISE_URL: "https://{{ .Release.Name }}.jory.dev:443,http://10.69.10.35:32400,http://plex.media.svc.cluster.local:32400"
@@ -65,10 +64,10 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               claims:
-              - name: gpu
+                - name: gpu
               requests:
                 cpu: 100m
               limits:
@@ -81,9 +80,9 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /data
-          subPath: media
-          readOnly: true
+          - path: /data
+            subPath: media
+            readOnly: true
       tmp:
         type: emptyDir
     route:
@@ -92,26 +91,26 @@ spec:
           gatus.home-operations.com/endpoint: |-
             conditions: ["[STATUS] == 401"]
         hostnames:
-        - "{{ .Release.Name }}.jory.dev"
+          - "{{ .Release.Name }}.jory.dev"
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
         rules:
-            # Ref: https://forums.plex.tv/t/external-srt-subtitles-are-not-working-w-reverse-proxy/886540
-        - backendRefs:
-          - identifier: app
-            port: *port
-          filters:
-          - type: RequestHeaderModifier
-            requestHeaderModifier:
-              remove: ["Range"]
-          matches:
-          - path:
-              type: PathPrefix
-              value: /library/streams
-        - backendRefs:
-          - identifier: app
-            port: *port
+          # Ref: https://forums.plex.tv/t/external-srt-subtitles-are-not-working-w-reverse-proxy/886540
+          - backendRefs:
+              - identifier: app
+                port: *port
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  remove: ["Range"]
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /library/streams
+          - backendRefs:
+              - identifier: app
+                port: *port
     service:
       app:
         type: LoadBalancer

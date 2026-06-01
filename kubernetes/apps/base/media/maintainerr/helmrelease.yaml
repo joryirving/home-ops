@@ -26,8 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/maintainerr/maintainerr
-              tag: 
-                3.13.0@sha256:077060b2c206cce97eb0539aadb0e83cb8ed2add2c3dcd62d2ca631943d1d4a7
+              tag: 3.13.0@sha256:077060b2c206cce97eb0539aadb0e83cb8ed2add2c3dcd62d2ca631943d1d4a7
             env:
               TZ: America/Edmonton
             probes:
@@ -50,13 +49,13 @@ spec:
       data:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /opt/data
+          - path: /opt/data
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

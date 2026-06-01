@@ -26,8 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/radarr
-              tag: 
-                6.2.0.10390@sha256:5c10c556d1f4394857ee294e78b772e48535025b61bca2c037b3fd29cc3a8373
+              tag: 6.2.0.10390@sha256:5c10c556d1f4394857ee294e78b772e48535025b61bca2c037b3fd29cc3a8373
             env:
               RADARR__APP__INSTANCENAME: Radarr
               RADARR__APP__THEME: dark
@@ -48,8 +47,8 @@ spec:
               RADARR__UPDATE__BRANCH: develop
               TZ: America/Edmonton
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -66,7 +65,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 100m
@@ -80,15 +79,15 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /media
+          - path: /media
       tmp:
         type: emptyDir
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

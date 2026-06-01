@@ -4,11 +4,11 @@
 
 This repository is a **Home Operations monorepo** managing 3 Kubernetes clusters via GitOps:
 
-| Cluster | Purpose | Hardware |
-|---------|---------|----------|
-| `main` | Production workloads + hyper-converged storage | 3x MS-01 + 1x Bosgame M5 (i9-13900H x3, Ryzen AI Max+ 395 x1, 128GB RAM each) |
-| `utility` | Low-power services | Bosgame P1 (Ryzen 7 5700U) |
-| `test` | Testing changes | Beelink Mini-S (Celeron N5095) |
+| Cluster   | Purpose                                        | Hardware                                                                      |
+| --------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| `main`    | Production workloads + hyper-converged storage | 3x MS-01 + 1x Bosgame M5 (i9-13900H x3, Ryzen AI Max+ 395 x1, 128GB RAM each) |
+| `utility` | Low-power services                             | Bosgame P1 (Ryzen 7 5700U)                                                    |
+| `test`    | Testing changes                                | Beelink Mini-S (Celeron N5095)                                                |
 
 ---
 
@@ -45,7 +45,7 @@ Git Repository
 HelmRepository / GitRepository
     ↓ (kustomize.toolkit.fluxcd.io)
 Kustomization (ks.yaml)
-    ↓ (helm.toolkit.fluxcd.io)  
+    ↓ (helm.toolkit.fluxcd.io)
 HelmRelease
     ↓
 Kubernetes Resources (Deployment, Service, etc.)
@@ -166,11 +166,11 @@ See [tofu.md](../../tofu.md) for usage.
 
 ## Key Files
 
-| Path | Purpose |
-|------|---------|
-| `kubernetes/apps/base/` | Shared app configurations |
-| `kubernetes/clusters/` | Flux cluster-specific configs |
-| `kubernetes/components/` | Reusable k8s components |
-| `talos/` | Talos machine configurations |
-| `bootstrap/` | Bootstrap templates |
-| `hack/` | Operational scripts |
+| Path                     | Purpose                       |
+| ------------------------ | ----------------------------- |
+| `kubernetes/apps/base/`  | Shared app configurations     |
+| `kubernetes/clusters/`   | Flux cluster-specific configs |
+| `kubernetes/components/` | Reusable k8s components       |
+| `talos/`                 | Talos machine configurations  |
+| `bootstrap/`             | Bootstrap templates           |
+| `hack/`                  | Operational scripts           |

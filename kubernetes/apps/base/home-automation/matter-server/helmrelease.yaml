@@ -22,7 +22,7 @@ spec:
       hostUsers: false
       securityContext:
         runAsNonRoot: false # Must be run as root user
-        runAsUser: 0        # Must be run as root user
+        runAsUser: 0 # Must be run as root user
         runAsGroup: 0
         fsGroup: 0
         fsGroupChangePolicy: OnRootMismatch
@@ -35,8 +35,7 @@ spec:
           app:
             image:
               repository: ghcr.io/home-assistant-libs/python-matter-server
-              tag: 
-                8.1.0@sha256:170aa093ce91c76cde4cc390918307590f0f5558fcec93f913af3cb019e6562a
+              tag: 8.1.0@sha256:170aa093ce91c76cde4cc390918307590f0f5558fcec93f913af3cb019e6562a
             env:
               TZ: America/Edmonton
               MATTER_SERVER__INSTANCE_NAME: "{{ .Release.Name }}"
@@ -44,10 +43,10 @@ spec:
               MATTER_SERVER__APPLICATION_URL: &host "{{ .Release.Name }}.jory.dev"
               MATTER_SERVER__LOG_LEVEL: info
             args:
-            - --storage-path=/data
-            - --primary-interface=net1
-            - --log-level=debug
-            - --log-level-sdk=info
+              - --storage-path=/data
+              - --primary-interface=net1
+              - --log-level=debug
+              - --log-level-sdk=info
             resources:
               limits:
                 memory: 100Mi
@@ -60,12 +59,12 @@ spec:
       app:
         hostnames: [*host]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
         rules:
-        - backendRefs:
-          - name: "{{ .Release.Name }}"
-            port: *port
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *port
     service:
       app:
         ports:

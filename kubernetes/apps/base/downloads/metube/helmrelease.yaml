@@ -27,8 +27,7 @@ spec:
             image:
               repository: ghcr.io/alexta69/metube
               # tag: "2024-08-07"
-              tag: 
-                2026.05.30@sha256:c5ed53d2e9f3aff3982a599aac74388d36879722b1a553a9ae0200346a321ec9
+              tag: 2026.05.30@sha256:c5ed53d2e9f3aff3982a599aac74388d36879722b1a553a9ae0200346a321ec9
             env:
               DOWNLOAD_DIR: "/downloads"
               # DOWNLOAD_MODE: concurrent # defaults to limited
@@ -45,14 +44,14 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /downloads
-          subPath: metube
+          - path: /downloads
+            subPath: metube
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

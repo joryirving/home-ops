@@ -18,7 +18,7 @@ spec:
         runAsGroup: 101
         fsGroup: 101
         fsGroupChangePolicy: OnRootMismatch
-        seccompProfile: {type: RuntimeDefault}
+        seccompProfile: { type: RuntimeDefault }
     controllers:
       bentopdf:
         annotations:
@@ -27,14 +27,13 @@ spec:
           app:
             image:
               repository: ghcr.io/alam00000/bentopdf-simple
-              tag: 
-                2.8.5@sha256:268f3e4a1aeed5d7035b58ab1d679da85b7c559ac3d3c08eb2177520c3647e1f
+              tag: 2.8.5@sha256:268f3e4a1aeed5d7035b58ab1d679da85b7c559ac3d3c08eb2177520c3647e1f
             env:
               TZ: America/Edmonton
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
@@ -45,19 +44,19 @@ spec:
       tmpfs:
         type: emptyDir
         globalMounts:
-        - path: /var/cache/nginx
-          subPath: cache
-        - path: /etc/nginx/tmp
-          subPath: etc-tmp
-        - path: /var/lib/nginx/tmp
-          subPath: var-tmp
+          - path: /var/cache/nginx
+            subPath: cache
+          - path: /etc/nginx/tmp
+            subPath: etc-tmp
+          - path: /var/lib/nginx/tmp
+            subPath: var-tmp
     route:
       app:
         hostnames:
-        - "{{ .Release.Name }}.jory.dev"
+          - "{{ .Release.Name }}.jory.dev"
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

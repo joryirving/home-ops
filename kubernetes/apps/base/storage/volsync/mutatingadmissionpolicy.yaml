@@ -14,40 +14,40 @@ metadata:
 spec:
   matchConstraints:
     resourceRules:
-    - apiGroups:
-      - batch
-      apiVersions:
-      - v1
-      operations:
-      - CREATE
-      - UPDATE
-      resources:
-      - jobs
+      - apiGroups:
+          - batch
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - jobs
   matchConditions:
-  - name: has-volsync-job-name-prefix
-    expression: >-
-      object.metadata.name.startsWith("volsync-src-")
-  - name: has-volsync-created-by-labels
-    expression: >-
-      object.metadata.?labels["app.kubernetes.io/created-by"].orValue("") == "volsync"
+    - name: has-volsync-job-name-prefix
+      expression: >-
+        object.metadata.name.startsWith("volsync-src-")
+    - name: has-volsync-created-by-labels
+      expression: >-
+        object.metadata.?labels["app.kubernetes.io/created-by"].orValue("") == "volsync"
   failurePolicy: Fail
   reinvocationPolicy: IfNeeded
   mutations:
-  - patchType: JSONPatch
-    jsonPatch:
-      expression: >-
-        [
-          JSONPatch{
-            op: "add", path: "/spec/template/spec/initContainers",
-            value: []
-          },
-          JSONPatch{
-            op: "add", path: "/spec/template/spec/initContainers/-",
-            value: Object.spec.template.spec.initContainers{
-              name: "jitter",
-              image: "ghcr.io/joryirving/busybox:1.38.0@sha256:02f6309231b935d0a1e0bcb1720436a6913a6bc8395981ca1298c93d6a3aaac0",
-              imagePullPolicy: "IfNotPresent",
-              command: ["sh", "-c", "sleep $(shuf -i 0-30 -n 1)"]
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: >-
+          [
+            JSONPatch{
+              op: "add", path: "/spec/template/spec/initContainers",
+              value: []
+            },
+            JSONPatch{
+              op: "add", path: "/spec/template/spec/initContainers/-",
+              value: Object.spec.template.spec.initContainers{
+                name: "jitter",
+                image: "ghcr.io/joryirving/busybox:1.38.0@sha256:02f6309231b935d0a1e0bcb1720436a6913a6bc8395981ca1298c93d6a3aaac0",
+                imagePullPolicy: "IfNotPresent",
+                command: ["sh", "-c", "sleep $(shuf -i 0-30 -n 1)"]
+              }
             }
-          }
-        ]
+          ]

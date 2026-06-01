@@ -4,13 +4,13 @@ This repository contains OpenTofu configurations for managing infrastructure res
 
 ### File Organization
 
-| File | Purpose |
-|------|---------|
-| `main.tofu` | Provider and resource configuration |
-| `variables.tofu` | Input variable declarations |
-| `outputs.tofu` | Output value declarations |
-| `backend.tofu` | Backend configuration |
-| `*.tofu` | Additional resources (buckets, flows, etc.) |
+| File             | Purpose                                     |
+| ---------------- | ------------------------------------------- |
+| `main.tofu`      | Provider and resource configuration         |
+| `variables.tofu` | Input variable declarations                 |
+| `outputs.tofu`   | Output value declarations                   |
+| `backend.tofu`   | Backend configuration                       |
+| `*.tofu`         | Additional resources (buckets, flows, etc.) |
 
 ### Style Conventions
 

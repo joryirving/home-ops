@@ -42,19 +42,19 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /data/database
+          - path: /data/database
       tmpfs:
         type: emptyDir
         advancedMounts:
           wizarr:
             app:
-            - path: /.cache
+              - path: /.cache
     route:
       app:
         hostnames: ["join.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:

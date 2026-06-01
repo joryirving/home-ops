@@ -18,12 +18,12 @@ spec:
         runAsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
       topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: "{{ .Release.Name }}"
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: "{{ .Release.Name }}"
     controllers:
       echo:
         strategy: RollingUpdate
@@ -53,7 +53,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
               seccompProfile:
                 type: RuntimeDefault
             resources:
@@ -65,8 +65,8 @@ spec:
       app:
         hostnames: ["${SUBDOMAIN}.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:
@@ -76,8 +76,8 @@ spec:
       app:
         serviceName: "{{ .Release.Name }}"
         endpoints:
-        - port: http
-          scheme: http
-          path: /metrics
-          interval: 1m
-          scrapeTimeout: 10s
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 10s

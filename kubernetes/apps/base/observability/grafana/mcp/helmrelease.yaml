@@ -27,21 +27,21 @@ spec:
               tag: latest
               pullPolicy: Always
             args:
-            - "run"
-            - "--rm"
-            - "-i"
-            - "-e"
-            - "GRAFANA_URL"
-            - "-e"
-            - "GRAFANA_AUTH"
-            - "mcp/grafana"
-            - "-t"
-            - "sse"
+              - "run"
+              - "--rm"
+              - "-i"
+              - "-e"
+              - "GRAFANA_URL"
+              - "-e"
+              - "GRAFANA_AUTH"
+              - "mcp/grafana"
+              - "-t"
+              - "sse"
             env:
               GRAFANA_URL: "http://grafana-service.observability:3000"
             envFrom:
-            - secretRef:
-                name: mcp-grafana
+              - secretRef:
+                  name: mcp-grafana
             probes:
               liveness:
                 enabled: false
@@ -59,13 +59,13 @@ spec:
               allowPrivilegeEscalation: false
               capabilities:
                 drop:
-                - ALL
+                  - ALL
     route:
       app:
         hostnames: ["grafana-mcp.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

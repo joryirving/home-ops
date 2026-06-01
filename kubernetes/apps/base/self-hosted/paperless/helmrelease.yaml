@@ -59,8 +59,8 @@ spec:
               # User Permissions
               USERMAP_GID: "65542"
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             resources:
               requests:
                 cpu: 15m
@@ -70,19 +70,19 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /data/local
+          - path: /data/local
       nas:
         type: nfs
         server: voyager.internal
         path: /mnt/akademiya/scans
         globalMounts:
-        - path: /data/nas
+          - path: /data/nas
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

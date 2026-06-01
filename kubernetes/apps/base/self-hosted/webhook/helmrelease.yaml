@@ -28,16 +28,15 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/webhook
-              tag: 
-                2.8.3@sha256:949f6e6b0c294d1903639ef592983a929e55e512bc4e97e08b839db7dbb4aab3
+              tag: 2.8.3@sha256:949f6e6b0c294d1903639ef592983a929e55e512bc4e97e08b839db7dbb4aab3
             args:
-            - "-debug"
+              - "-debug"
             env:
               TZ: America/Edmonton
               WEBHOOK__PORT: &port 8080
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
@@ -53,28 +52,28 @@ spec:
               readOnlyRootFilesystem: true
               capabilities:
                 drop:
-                - ALL
+                  - ALL
     persistence:
       config:
         type: configMap
         name: webhook-configmap
         defaultMode: 0775
         globalMounts:
-        - readOnly: true
+          - readOnly: true
       tmpfs:
         type: emptyDir
         advancedMounts:
           webhook:
             app:
-            - path: /tmp
-              subPath: tmp
+              - path: /tmp
+                subPath: tmp
     route:
       app:
         hostnames:
-        - webhook.jory.dev
+          - webhook.jory.dev
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:

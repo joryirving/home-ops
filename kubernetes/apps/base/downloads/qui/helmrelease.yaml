@@ -26,8 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/autobrr/qui
-              tag:
-                v1.19.0@sha256:baa07db5326f75f8c2246703603cbe2132476c8ad0ab31c976a960cb4c4731f5
+              tag: v1.19.0@sha256:baa07db5326f75f8c2246703603cbe2132476c8ad0ab31c976a960cb4c4731f5
             env:
               QUI__HOST: 0.0.0.0
               QUI__PORT: &port 80
@@ -36,8 +35,8 @@ spec:
               QUI__METRICS_PORT: &metricsPort 8080
               TZ: America/Edmonton
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}-secret"
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
             probes:
               liveness: &probes
                 enabled: true
@@ -59,7 +58,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -68,7 +67,7 @@ spec:
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /media/Downloads
+          - path: /media/Downloads
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]

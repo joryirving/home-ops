@@ -3,7 +3,7 @@
 version: "3"
 
 vars:
-  TALOS_MACHINE_FILE: '{{.TALOS_DIR}}/machineconfig.yaml.j2'
+  TALOS_MACHINE_FILE: "{{.TALOS_DIR}}/machineconfig.yaml.j2"
 
 tasks:
   apply-node:
@@ -42,8 +42,8 @@ tasks:
       SCHEMATIC:
         sh: task --silent talos:generate-schematic CLUSTER={{.CLUSTER}} NODE={{.NODE}}
     env:
-      MACHINE_TYPE: '{{.MACHINE_TYPE}}'
-      SCHEMATIC: '{{.SCHEMATIC}}'
+      MACHINE_TYPE: "{{.MACHINE_TYPE}}"
+      SCHEMATIC: "{{.SCHEMATIC}}"
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
@@ -93,9 +93,9 @@ tasks:
         sh: kubectl get nodes --output=jsonpath='{.items[*].metadata.name}' --context {{.CLUSTER}}
     cmds:
       - for: { var: NODES }
-        task:  apply-node
+        task: apply-node
         vars:
-          NODE: '{{.ITEM}}'
+          NODE: "{{.ITEM}}"
           CLUSTER: "{{.CLUSTER}}"
     requires:
       vars: [CLUSTER]
@@ -193,7 +193,7 @@ tasks:
     prompt: Reset Talos node '{{.NODE}}' ... continue?
     cmd: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig reset --nodes {{.NODE}} --system-labels-to-wipe STATE --system-labels-to-wipe EPHEMERAL --graceful=false --reboot
     requires:
-      vars: [CLUSTER,NODE]
+      vars: [CLUSTER, NODE]
     preconditions:
       - talosctl config info
       # - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig
@@ -239,7 +239,7 @@ tasks:
       - for: { var: NODES }
         task: reboot-node
         vars:
-          NODE: '{{.ITEM}}'
+          NODE: "{{.ITEM}}"
           CLUSTER: "{{.CLUSTER}}"
       - task: :kubernetes:delete-failed-pods
         vars:
@@ -301,7 +301,7 @@ tasks:
     vars:
       MACHINE_TYPE:
         sh: basename "$(find "${TALOS_DIR}" -name "${NODE}.yaml" -exec dirname {} \;)"
-      SCHEMATIC_FILE: '{{.TALOS_DIR}}/{{.MACHINE_TYPE}}/schematic.yaml'
+      SCHEMATIC_FILE: "{{.TALOS_DIR}}/{{.MACHINE_TYPE}}/schematic.yaml"
     requires:
       vars: [CLUSTER, NODE]
     preconditions:

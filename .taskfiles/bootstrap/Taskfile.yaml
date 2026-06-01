@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
-version: '3'
+version: "3"
 
 tasks:
   talos:
@@ -44,9 +44,9 @@ tasks:
       RANDOM_CONTROLLER:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
     env:
-      CLUSTER: '{{.CLUSTER}}'
-      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
-      CLUSTER_DIR: '{{.CLUSTER_DIR}}'
+      CLUSTER: "{{.CLUSTER}}"
+      CLUSTER_APPS: "{{.CLUSTER_APPS}}"
+      CLUSTER_DIR: "{{.CLUSTER_DIR}}"
     preconditions:
       - op account get
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
@@ -59,7 +59,7 @@ tasks:
     internal: true
     cmds:
       - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml template | yq ea -e 'select(.kind == "CustomResourceDefinition")' \
-          | kubectl apply --server-side --field-manager bootstrap --force-conflicts --filename -
+        | kubectl apply --server-side --field-manager bootstrap --force-conflicts --filename -
       - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml sync --hide-notes
     requires:
       vars: [CLUSTER]
@@ -67,8 +67,8 @@ tasks:
       RANDOM_CONTROLLER:
         sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
     env:
-      CLUSTER: '{{.CLUSTER}}'
-      CLUSTER_APPS: '{{.CLUSTER_APPS}}'
+      CLUSTER: "{{.CLUSTER}}"
+      CLUSTER_APPS: "{{.CLUSTER_APPS}}"
     preconditions:
       - op account get
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info

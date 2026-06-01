@@ -6,7 +6,6 @@ metadata:
   name: alertmanager
 spec:
   route:
-
     receiver: discord
     repeatInterval: 12h
     routes:
@@ -62,26 +61,26 @@ spec:
               {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
               {{ end }}
             {{ end }}
-        # - title: >-
-        #     [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}]
-        #     {{ .CommonLabels.alertname }}
-        #   message: |-
-        #     {{- range .Alerts }}
-        #       {{- if ne .Annotations.description "" }}
-        #         {{ .Annotations.description }}
-        #       {{- else if ne .Annotations.summary "" }}
-        #         {{ .Annotations.summary }}
-        #       {{- else if ne .Annotations.message "" }}
-        #         {{ .Annotations.message }}
-        #       {{- else }}
-        #         Alert description not available
-        #       {{- end }}
-        #       {{- if gt (len .Labels.SortedPairs) 0 }}
-        #           {{- range .Labels.SortedPairs }}
-        #             **{{ .Name }}:** {{ .Value }}
-        #           {{- end }}
-        #       {{- end }}
-        #     {{- end }}
+          # - title: >-
+          #     [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}]
+          #     {{ .CommonLabels.alertname }}
+          #   message: |-
+          #     {{- range .Alerts }}
+          #       {{- if ne .Annotations.description "" }}
+          #         {{ .Annotations.description }}
+          #       {{- else if ne .Annotations.summary "" }}
+          #         {{ .Annotations.summary }}
+          #       {{- else if ne .Annotations.message "" }}
+          #         {{ .Annotations.message }}
+          #       {{- else }}
+          #         Alert description not available
+          #       {{- end }}
+          #       {{- if gt (len .Labels.SortedPairs) 0 }}
+          #           {{- range .Labels.SortedPairs }}
+          #             **{{ .Name }}:** {{ .Value }}
+          #           {{- end }}
+          #       {{- end }}
+          #     {{- end }}
           sendResolved: true
           apiURL:
             name: alertmanager-secret

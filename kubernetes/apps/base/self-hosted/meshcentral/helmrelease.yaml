@@ -26,8 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/ylianst/meshcentral
-              tag: 
-                1.2.0@sha256:8c84cb45be6c84dc94de38452a9ac0abd16aae7733dd5de97cf4d7ed77250a4b
+              tag: 1.2.0@sha256:8c84cb45be6c84dc94de38452a9ac0abd16aae7733dd5de97cf4d7ed77250a4b
             env:
               TZ: America/Edmonton
               NODE_ENV: production
@@ -36,7 +35,7 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 100m
@@ -49,25 +48,25 @@ spec:
         advancedMounts:
           meshcentral:
             app:
-            - path: /opt/meshcentral/meshcentral-data/config.json
-              subPath: config.json
+              - path: /opt/meshcentral/meshcentral-data/config.json
+                subPath: config.json
       data:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /root
-          subPath: rootdir
-        - path: /opt/meshcentral/meshcentral-data
-          subPath: data
-        - path: /opt/meshcentral/meshcentral-files
-          subPath: userfiles
-        - path: /opt/meshcentral/meshcentral-backups
-          subPath: backups
+          - path: /root
+            subPath: rootdir
+          - path: /opt/meshcentral/meshcentral-data
+            subPath: data
+          - path: /opt/meshcentral/meshcentral-files
+            subPath: userfiles
+          - path: /opt/meshcentral/meshcentral-backups
+            subPath: backups
     route:
       app:
         hostnames: [*host]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

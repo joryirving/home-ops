@@ -27,19 +27,18 @@ spec:
               repository: docker.io/library/alpine
               tag: "3.23"
             command:
-            - /bin/sh
-            - -c
+              - /bin/sh
+              - -c
             args:
-            - |
-              chmod o-rwx /tmp
+              - |
+                chmod o-rwx /tmp
             securityContext:
               runAsUser: 0
         containers:
           app:
             image:
               repository: ghcr.io/bjw-s-labs/manyfold
-              tag: 
-                0.141.0@sha256:b0c31ebb191d558aa031d3090cd952759bacbaa533ac1879d2604cf89a903572
+              tag: 0.141.0@sha256:b0c31ebb191d558aa031d3090cd952759bacbaa533ac1879d2604cf89a903572
             env:
               DATABASE_URL: sqlite3:/data/database/manyfold.sqlite3
               MULTIUSER: false
@@ -73,35 +72,35 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
+              capabilities: { drop: ["ALL"] }
     persistence:
       data:
         existingClaim: "{{ .Release.Name }}"
         advancedMounts:
           manyfold:
             app:
-            - path: /data/database
-              subPath: database
-            - path: /data/libraries/main
-              subPath: libraries/main
+              - path: /data/database
+                subPath: database
+              - path: /data/libraries/main
+                subPath: libraries/main
       tmpfs:
         type: emptyDir
         advancedMounts:
           manyfold:
             app: &tmpdirs
-            - path: /tmp
-              subPath: host-tmp
-            - path: /app/tmp
-              subPath: app-tmp
-            - path: /app/log
-              subPath: app-log
+              - path: /tmp
+                subPath: host-tmp
+              - path: /app/tmp
+                subPath: app-tmp
+              - path: /app/log
+                subPath: app-log
             chown-tmpdirs: *tmpdirs
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-internal
-          namespace: network
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:

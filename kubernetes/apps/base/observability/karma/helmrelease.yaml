@@ -10,7 +10,7 @@ spec:
     name: app-template
   interval: 15m
   dependsOn:
-  - name: kube-prometheus-stack
+    - name: kube-prometheus-stack
   values:
     defaultPodOptions:
       securityContext:
@@ -19,12 +19,12 @@ spec:
         runAsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
       topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: "{{ .Release.Name }}"
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: "{{ .Release.Name }}"
     controllers:
       karma:
         replicas: 2
@@ -49,22 +49,22 @@ spec:
         type: configMap
         name: karma-configmap
         globalMounts:
-        - path: *config
-          subPath: config.yaml
-          readOnly: true
+          - path: *config
+            subPath: config.yaml
+            readOnly: true
       tmpfs:
         type: emptyDir
         advancedMounts:
           karma:
             app:
-            - path: /config
-              subPath: config
+              - path: /config
+                subPath: config
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:
@@ -74,8 +74,8 @@ spec:
       app:
         serviceName: "{{ .Release.Name }}"
         endpoints:
-        - port: http
-          scheme: http
-          path: /metrics
-          interval: 1m
-          scrapeTimeout: 10s
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 1m
+            scrapeTimeout: 10s

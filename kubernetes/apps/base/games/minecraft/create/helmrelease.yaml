@@ -30,8 +30,7 @@ spec:
     fullnameOverride: *app
     image:
       repository: ghcr.io/itzg/minecraft-server
-      tag:
-        2026.5.4@sha256:f364bae78a0027aee72b01b9b532b1ae0990b3ee8cadbb6a3bc25db77418a25f
+      tag: 2026.5.4@sha256:f364bae78a0027aee72b01b9b532b1ae0990b3ee8cadbb6a3bc25db77418a25f
     livenessProbe:
       initialDelaySeconds: 30
     minecraftServer:
@@ -51,7 +50,7 @@ spec:
       worldSaveName: create
       viewDistance: 12
       modUrls:
-      - "https://cdn.modrinth.com/data/LNytGWDc/versions/5LpL274U/create-1.21.1-6.0.4.jar"
+        - "https://cdn.modrinth.com/data/LNytGWDc/versions/5LpL274U/create-1.21.1-6.0.4.jar"
       # spigetResources:
       # - 36618 #Prom Exporter
       rcon:
@@ -76,7 +75,7 @@ spec:
     startupProbe:
       enabled: true
   valuesFrom:
-  - kind: Secret
-    name: *app
-    valuesKey: RCON_PASSWORD
-    targetPath: minecraftServer.rcon.password
+    - kind: Secret
+      name: *app
+      valuesKey: RCON_PASSWORD
+      targetPath: minecraftServer.rcon.password

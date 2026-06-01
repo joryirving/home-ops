@@ -15,10 +15,11 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: &uid 1000
-        runAsGroup: &gid 100
-            # envFrom:
-            # - secretRef:
-            #     name: "{{ .Release.Name }}-secret"
+        runAsGroup:
+          &gid 100
+          # envFrom:
+          # - secretRef:
+          #     name: "{{ .Release.Name }}-secret"
         fsGroup: *gid
         fsGroupChangePolicy: OnRootMismatch
     controllers:
@@ -29,8 +30,7 @@ spec:
           app:
             image:
               repository: trueosiris/vrising
-              tag: 
-                3.0@sha256:a58cb84e3d69acf2d965ec752ee3a13ce5d10eea1808b536762fbd7048af71c2
+              tag: 3.0@sha256:a58cb84e3d69acf2d965ec752ee3a13ce5d10eea1808b536762fbd7048af71c2
             env:
               ## Container Settings
               TZ: America/Edmonton
@@ -57,11 +57,11 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /mnt/vrising/persistentdata
+          - path: /mnt/vrising/persistentdata
       server:
         existingClaim: vrising-server-files
         globalMounts:
-        - path: /mnt/vrising/server
+          - path: /mnt/vrising/server
     service:
       app:
         type: LoadBalancer

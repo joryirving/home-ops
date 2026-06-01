@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/open-webui/open-webui
-              tag:
-                v0.9.5@sha256:e045bde3b004cc7f8c319412345eb56c87ea6ac57031534a31ca37ad5424beb3
+              tag: v0.9.5@sha256:e045bde3b004cc7f8c319412345eb56c87ea6ac57031534a31ca37ad5424beb3
             env:
               # Image Generation
               ENABLE_OPENAI_API: false
@@ -46,8 +45,8 @@ spec:
                     name: "{{ .Release.Name }}-app"
                     key: uri
             envFrom:
-            - secretRef:
-                name: "{{ .Release.Name }}"
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             resources:
               requests:
                 cpu: 500m
@@ -58,13 +57,13 @@ spec:
         enabled: true
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /app/backend/data
+          - path: /app/backend/data
     route:
       app:
         hostnames: ["chat.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:

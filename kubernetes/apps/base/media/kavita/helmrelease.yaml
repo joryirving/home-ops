@@ -19,8 +19,7 @@ spec:
           app:
             image:
               repository: ghcr.io/kareadita/kavita
-              tag: 
-                0.9.0@sha256:36aab0c578d488f8b10bd33910953b50965aff9ac6adc476ef4692c38c60427e
+              tag: 0.9.0@sha256:36aab0c578d488f8b10bd33910953b50965aff9ac6adc476ef4692c38c60427e
             env:
               TZ: America/Edmonton
             resources:
@@ -33,20 +32,20 @@ spec:
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
-        - path: /kavita/config
+          - path: /kavita/config
       media:
         type: nfs
         server: voyager.internal
         path: /mnt/akademiya/data
         globalMounts:
-        - path: /data
-          subPath: media
+          - path: /data
+            subPath: media
     route:
       app:
         hostnames: ["comics.jory.dev"]
         parentRefs:
-        - name: envoy-external
-          namespace: network
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:
