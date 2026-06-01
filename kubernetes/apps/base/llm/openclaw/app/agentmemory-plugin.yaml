@@ -211,7 +211,7 @@ data:
 
     function createClient(cfg, api) {
       const baseUrl = String(cfg.base_url || DEFAULT_BASE_URL).replace(/\/+$/, "");
-      const timeoutMs = Number(cfg.timeout_ms || DEFAULT_TIMEOUT_MS);
+      const timeoutMs = Number(cfg.timeout_ms ?? DEFAULT_TIMEOUT_MS);
       const fallbackOnError = cfg.fallback_on_error !== false;
       const secret = process.env.AGENTMEMORY_SECRET;
       const guardPlaintextBearerAuth = createPlaintextBearerAuthGuard((message) => api.logger.warn?.(message));
@@ -255,10 +255,10 @@ data:
         const cfg = {
           enabled: api.pluginConfig?.enabled !== false,
           base_url: api.pluginConfig?.base_url || DEFAULT_BASE_URL,
-          token_budget: api.pluginConfig?.token_budget || 2000,
-          min_confidence: api.pluginConfig?.min_confidence || 0.5,
+          token_budget: api.pluginConfig?.token_budget ?? 2000,
+          min_confidence: api.pluginConfig?.min_confidence ?? 0.5,
           fallback_on_error: api.pluginConfig?.fallback_on_error !== false,
-          timeout_ms: api.pluginConfig?.timeout_ms || DEFAULT_TIMEOUT_MS,
+          timeout_ms: api.pluginConfig?.timeout_ms ?? DEFAULT_TIMEOUT_MS,
           default_agent: api.pluginConfig?.default_agent || "main",
           project_prefix: api.pluginConfig?.project_prefix || "openclaw",
         };

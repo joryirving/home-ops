@@ -45,12 +45,13 @@ spec:
                 fi
                 exec /entrypoint.sh
             env:
-              AGENTMEMORY_DROP_STALE_INDEX: "true"
               AGENTMEMORY_TOOLS: all
               EMBEDDING_PROVIDER: openai
               GRAPH_EXTRACTION_ENABLED: "true"
               III_REST_PORT: "3111"
               RUST_LOG: warn
+              VIEWER_ALLOWED_HOSTS: agentmemory.jory.dev
+              VIEWER_ALLOWED_ORIGINS: https://agentmemory.jory.dev
               OPENAI_BASE_URL: http://llama-embed.llm:8080
               OPENAI_EMBEDDING_DIMENSIONS: "384"
               OPENAI_EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
@@ -101,10 +102,6 @@ spec:
                 drop:
                   - ALL
     persistence:
-      config:
-        existingClaim: "{{ .Release.Name }}"
-        globalMounts:
-          - path: /home/node
       data:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
@@ -119,6 +116,8 @@ spec:
         ports:
           api:
             port: 3111
+          stream:
+            port: 3112
           viewer:
             port: 3113
     route:
@@ -127,3 +126,21 @@ spec:
         parentRefs:
           - name: envoy-internal
             namespace: network
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+                headers:
+                  - name: Upgrade
+                    value: websocket
+            backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: 3112
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+            backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: 3113

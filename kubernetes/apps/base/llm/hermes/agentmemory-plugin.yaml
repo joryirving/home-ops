@@ -202,12 +202,12 @@ data:
                 return json.dumps({"results": (result or {}).get("results", [])})
 
             if name == "memory_save":
-                _api(self._base, "observe", self._observation_payload(
+                result = _api(self._base, "observe", self._observation_payload(
                     args["content"],
                     "",
                     args.get("type", "fact"),
                 ))
-                return json.dumps({"success": True})
+                return json.dumps({"success": result is not None})
 
             return json.dumps({"error": f"Unknown tool: {name}"})
 
