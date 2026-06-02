@@ -12,6 +12,13 @@ spec:
     accessModes: ["${VOLSYNC_SNAP_ACCESSMODES:=ReadWriteOnce}"] # Use ReadOnlyMany for CephFS
     compression: zstd-fastest
     copyMethod: "${VOLSYNC_COPYMETHOD:=Snapshot}"
+    moverAffinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: volsync
+            topologyKey: kubernetes.io/hostname
     moverSecurityContext:
       runAsUser: ${VOLSYNC_PUID:=1000}
       runAsGroup: ${VOLSYNC_PGID:=100}
