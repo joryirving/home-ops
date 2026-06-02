@@ -23,8 +23,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/kashalls/kromgo
-              tag: v0.10.0@sha256:965ecc92d68dc1a4a969397855367bbc70da03227a941ea607b73bb7e0b78fd6
+              repository: ghcr.io/home-operations/kromgo
+              tag: 0.13.0@sha256:7b1fac84403175b704e81fbc987ca44da06a31bdaa2fb7e94f5f0c31039b4dac
             env:
               PROMETHEUS_URL: http://prometheus-operated.observability.svc.cluster.local:9090
               SERVER_PORT: &port 80
@@ -56,7 +56,7 @@ spec:
         type: configMap
         name: "{{ .Release.Name }}-configmap"
         globalMounts:
-          - path: /kromgo/config.yaml
+          - path: /config/config.yaml
             subPath: config.yaml
             readOnly: true
     route:
