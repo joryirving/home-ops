@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -17,10 +18,28 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: ceph-csi-drivers
+spec:
+  dependsOn:
+    - name: rook-ceph
+  interval: 1h
+  path: ./kubernetes/apps/base/rook-ceph/ceph-csi-drivers
+  wait: true
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: &app rook-ceph-cluster
 spec:
   dependsOn:
     - name: rook-ceph
+    - name: ceph-csi-drivers
     - name: volsync
       namespace: storage
   healthChecks:
