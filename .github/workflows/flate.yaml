@@ -50,39 +50,18 @@ jobs:
           tool_versions: |
             github:home-operations/flate latest
 
-      - name: Create baseline worktree
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          base="$(git merge-base HEAD "origin/$DEFAULT_BRANCH")"
-          git worktree add --detach ../baseline "$base"
-
-      - name: Run flate test
-        env:
-          CLUSTER: ${{ matrix.cluster }}
-          KIND: ${{ matrix.kind }}
-        run: |
-          orig="../baseline/kubernetes/clusters/$CLUSTER"
-          [ -d "$orig" ] || orig="$(mktemp -d)"
-          flate test "$KIND" \
-            --skip-schema-validation \
-            --allow-missing-secrets \
-            --path ./kubernetes/clusters/"$CLUSTER" \
-            --path-orig "$orig"
-
       - name: Run flate diff
         env:
+          BASE: origin/${{ github.event.repository.default_branch }}
           CLUSTER: ${{ matrix.cluster }}
           KIND: ${{ matrix.kind }}
         run: |
-          orig="../baseline/kubernetes/clusters/$CLUSTER"
-          [ -d "$orig" ] || orig="$(mktemp -d)"
           flate diff "$KIND" \
+            --base "$BASE" \
             --output diff \
             --skip-schema-validation \
             --allow-missing-secrets \
             --path ./kubernetes/clusters/"$CLUSTER" \
-            --path-orig "$orig" \
             > "$CLUSTER-$KIND.diff"
           [ -s "$CLUSTER-$KIND.diff" ] || rm "$CLUSTER-$KIND.diff"
 

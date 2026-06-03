@@ -49,25 +49,17 @@ jobs:
           tool_versions: |
             github:home-operations/flate latest
 
-      - name: Create baseline worktree
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          base="$(git merge-base HEAD "origin/$DEFAULT_BRANCH")"
-          git worktree add --detach ../baseline "$base"
-
       - name: Extract Images
         env:
+          BASE: origin/${{ github.event.repository.default_branch }}
           CLUSTER: ${{ matrix.cluster }}
         run: |
-          orig="../baseline/kubernetes/clusters/$CLUSTER"
-          [ -d "$orig" ] || orig="$(mktemp -d)"
           flate diff images \
+            --base "$BASE" \
             --skip-schema-validation \
             --allow-missing-secrets \
             --output json \
             --path ./kubernetes/clusters/"$CLUSTER" \
-            --path-orig "$orig" \
             > images.json
           [ -s images.json ] || echo '[]' > images.json
 
