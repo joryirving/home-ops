@@ -56,21 +56,15 @@ jobs:
           CLUSTER: ${{ matrix.cluster }}
           KIND: ${{ matrix.kind }}
         run: |
-          flate diff "$KIND" \
-            --base "$BASE" \
-            --output diff \
-            --skip-schema-validation \
-            --allow-missing-secrets \
-            --path ./kubernetes/clusters/"$CLUSTER" \
-            > "$CLUSTER-$KIND.diff"
-          [ -s "$CLUSTER-$KIND.diff" ] || rm "$CLUSTER-$KIND.diff"
+          flate diff --path ./kubernetes/clusters/"$CLUSTER" --output github > "$KIND-$CLUSTER.diff"
+          [ -s "$KIND-$CLUSTER.diff" ] || rm "$KIND-$CLUSTER.diff"
 
-      - if: ${{ hashFiles(format('{0}-{1}.diff', matrix.cluster, matrix.kind)) != '' }}
+      - if: ${{ hashFiles(format('{0}-{1}.diff', matrix.kind, matrix.cluster)) != '' }}
         name: Upload diff
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: flate-diff-${{ matrix.cluster }}-${{ matrix.kind }}
-          path: ${{ matrix.cluster }}-${{ matrix.kind }}.diff
+          name: flate-diff-${{ matrix.kind }}-${{ matrix.cluster }}
+          path: ${{ matrix.kind }}-${{ matrix.cluster }}.diff
           retention-days: 1
 
   comment:
@@ -89,19 +83,19 @@ jobs:
       - name: Download diffs
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: flate-diff-${{ matrix.cluster }}-*
+          pattern: flate-diff-*-${{ matrix.cluster }}
           merge-multiple: true
 
-      - if: ${{ hashFiles(format('{0}-*.diff', matrix.cluster)) != '' }}
+      - if: ${{ hashFiles(format('helmrelease-{0}.diff', matrix.cluster), format('kustomization-{0}.diff', matrix.cluster)) != '' }}
         name: Generate Token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
         with:
-          client-id: ${{ secrets.BOT_APP_ID }}
+          client-id: ${{ secrets.BOT_CLIENT_ID }}
           private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
           permission-pull-requests: write
 
-      - if: ${{ hashFiles(format('{0}-*.diff', matrix.cluster)) != '' }}
+      - if: ${{ hashFiles(format('*-{0}.diff', matrix.cluster)) != '' }}
         name: Add or Update Comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -116,10 +110,10 @@ jobs:
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
 
             const diffs = {};
-            for (const f of fs.readdirSync('.').filter(f => f.startsWith(cluster) && f.endsWith('.diff'))) {
+            for (const f of fs.readdirSync('.').filter(f => f.endsWith(`-${cluster}.diff`))) {
               const content = read(f);
               if (content.trim()) {
-                const kind = f.replace(cluster + '-', '').replace('.diff', '');
+                const kind = f.replace(`-${cluster}.diff`, '');
                 diffs[kind.charAt(0).toUpperCase() + kind.slice(1)] = content;
               }
             }
