@@ -29,12 +29,12 @@ jobs:
   flate:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
-    name: Flate - ${{ matrix.cluster }} - ${{ matrix.kind }}
+    name: Flate - ${{ matrix.cluster }} - ${{ matrix.resource }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         cluster: ["main", "test", "utility"]
-        kind: ["hr", "ks"]
+        resource: ["helmrelease", "kustomization"]
       fail-fast: false
     steps:
       - name: Checkout
@@ -44,17 +44,17 @@ jobs:
           persist-credentials: false
 
       - name: Install Flate
-        uses: home-operations/flate/action@20a1136f27b21974591bb6ad319d31b858e6fa3e # 0.2.3
+        uses: home-operations/flate/action@f22349da589c0c5438113b33e687647c7577962b # 0.2.7
 
       - name: Run Flate
         id: flate
         env:
           FLATE_OUTPUT: github
           FLATE_PATH: ./kubernetes/clusters/${{ matrix.cluster }}
-          KIND: ${{ matrix.kind }}
+          KIND: ${{ matrix.resource }}
         run: |-
           echo 'diff<<EOF' >> $GITHUB_OUTPUT
-          flate diff $KIND >> $GITHUB_OUTPUT
+          flate diff $KIND --allow-missing-secrets --skip-schema-validation >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
       - if: ${{ steps.flate.outputs.diff != '' }}
@@ -71,7 +71,7 @@ jobs:
         uses: mshick/add-pr-comment@8e4927817251f1ff60c001f04568532b38e0b4a0 # v3.11.0
         with:
           repo-token: ${{ steps.app-token.outputs.token }}
-          message-id: ${{ github.event.pull_request.number }}/kubernetes/${{ matrix.kind }}/${{ matrix.cluster }}
+          message-id: ${{ github.event.pull_request.number }}/kubernetes/${{ matrix.resource }}/${{ matrix.cluster }}
           message: |-
             ```diff
             ${{ steps.flate.outputs.diff }}
