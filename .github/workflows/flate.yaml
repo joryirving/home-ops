@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Flate
-        uses: home-operations/flate/action@f22349da589c0c5438113b33e687647c7577962b # 0.2.7
+        uses: home-operations/flate/action@1109b9ff85a55dcc47576d73e3ffc92336ad4513 # 0.2.10
 
       - name: Run Flate
         id: flate
@@ -54,7 +54,7 @@ jobs:
           KIND: ${{ matrix.resource }}
         run: |-
           echo 'diff<<EOF' >> $GITHUB_OUTPUT
-          flate diff $KIND --allow-missing-secrets --skip-schema-validation --skip-kinds ConfigMapList >> $GITHUB_OUTPUT
+          flate diff $KIND --allow-missing-secrets --skip-schema-validation >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
       - if: ${{ steps.flate.outputs.diff != '' }}
