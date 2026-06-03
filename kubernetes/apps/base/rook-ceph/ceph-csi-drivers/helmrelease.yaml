@@ -1,12 +1,17 @@
 ---
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/helmrepository_v1.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+kind: OCIRepository
 metadata:
-  name: ceph-csi-operator
+  name: ceph-csi-drivers
 spec:
-  interval: 5m
-  url: https://ceph.github.io/ceph-csi-operator
+  interval: 15m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 1.0.1
+  url: oci://ghcr.io/home-operations/charts-mirror/ceph-csi-drivers
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -14,16 +19,11 @@ kind: HelmRelease
 metadata:
   name: ceph-csi-drivers
 spec:
-  chart:
-    spec:
-      chart: ceph-csi-drivers
-      version: 1.0.1
-      sourceRef:
-        kind: HelmRepository
-        name: ceph-csi-operator
+  chartRef:
+    kind: OCIRepository
+    name: rook-ceph
   interval: 15m
-  dependsOn:
-    - name: rook-ceph
+  dependsOn: []
   values:
     drivers:
       cephfs:
