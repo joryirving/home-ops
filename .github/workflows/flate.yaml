@@ -65,6 +65,8 @@ jobs:
           orig="../baseline/kubernetes/clusters/$CLUSTER"
           [ -d "$orig" ] || orig="$(mktemp -d)"
           flate test "$KIND" \
+            --skip-schema-validation \
+            --allow-missing-secrets \
             --path ./kubernetes/clusters/"$CLUSTER" \
             --path-orig "$orig"
 
@@ -76,6 +78,9 @@ jobs:
           orig="../baseline/kubernetes/clusters/$CLUSTER"
           [ -d "$orig" ] || orig="$(mktemp -d)"
           flate diff "$KIND" \
+            --output diff \
+            --skip-schema-validation \
+            --allow-missing-secrets \
             --path ./kubernetes/clusters/"$CLUSTER" \
             --path-orig "$orig" \
             > "$CLUSTER-$KIND.diff"

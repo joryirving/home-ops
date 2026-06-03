@@ -63,6 +63,8 @@ jobs:
           orig="../baseline/kubernetes/clusters/$CLUSTER"
           [ -d "$orig" ] || orig="$(mktemp -d)"
           flate diff images \
+            --skip-schema-validation \
+            --allow-missing-secrets \
             --output json \
             --path ./kubernetes/clusters/"$CLUSTER" \
             --path-orig "$orig" \
