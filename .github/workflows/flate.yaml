@@ -54,7 +54,7 @@ jobs:
           KIND: ${{ matrix.resource }}
         run: |-
           echo 'diff<<EOF' >> $GITHUB_OUTPUT
-          flate diff $KIND --allow-missing-secrets --skip-schema-validation >> $GITHUB_OUTPUT
+          flate diff $KIND --allow-missing-secrets --skip-schema-validation --skip-kinds ConfigMapList >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
       - if: ${{ steps.flate.outputs.diff != '' }}
