@@ -136,8 +136,6 @@ kind: Kustomization
 metadata:
   name: &app llama-nvidia
 spec:
-  components:
-    - ../../../../../components/gpu-nvidia
   interval: 1h
   path: ./kubernetes/apps/base/llm/litellm/Qwen3.6-27B
   postBuild:
@@ -150,3 +148,30 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-models
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: local-hostpath
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-models-ms01
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: ceph-filesystem

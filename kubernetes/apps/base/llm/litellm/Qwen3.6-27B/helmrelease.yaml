@@ -13,11 +13,9 @@ spec:
   values:
     defaultPodOptions:
       hostIPC: true
+      runtimeClassName: nvidia
       nodeSelector:
         topology.kubernetes.io/gpus: nvidia
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: llama-nvidia-gpu
     controllers:
       llama-nvidia:
         annotations:
@@ -58,17 +56,12 @@ spec:
                 memory: 4Gi
         containers:
           app:
-            # Pinned to club-3090's validated CUDA build (b9246). The rolling
-            # :server-cuda tag regressed at b9282 (broken lib packaging) — see
-            # noonghunna/club-3090#187. Bump only after validating a newer build.
             image:
               repository: ghcr.io/ggml-org/llama.cpp
               tag: server-cuda-b9246
             securityContext:
               privileged: true
             args:
-              # club-3090 models/qwen3.6-27b/llama-cpp single/unsloth-q4km/mtp.yml
-              # (200K max-safe on a single 24GB card @ -ub 512, no prefill cliffs)
               - --host
               - 0.0.0.0
               - --port
@@ -92,7 +85,7 @@ spec:
               - --cache-type-v
               - q4_0
               - --parallel
-              - "1" # intentional on a single 24GB card — extra slots divide throughput and disable MTP
+              - "1"
               - --spec-type
               - draft-mtp
               - --spec-draft-n-max
@@ -112,16 +105,17 @@ spec:
               - "0"
               - --repeat-penalty
               - "1.0"
-              - --no-mmap # bound host RAM (weights live in VRAM via -ngl 99); avoids page-cache OOM under cgroup limits
+              - --no-mmap
               - --metrics
+            env:
+              NVIDIA_DRIVER_CAPABILITIES: compute,utility
             resources:
-              claims:
-                - name: gpu
               requests:
                 cpu: 500m
                 memory: 4Gi
               limits:
                 memory: 12Gi
+                nvidia.com/gpu: 1
             probes:
               liveness:
                 enabled: true
@@ -154,7 +148,7 @@ spec:
                   periodSeconds: 10
     persistence:
       models:
-        existingClaim: llama-nvidia
+        existingClaim: llm-models-ms01
         globalMounts:
           - path: /models
     service:
