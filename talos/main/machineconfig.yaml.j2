@@ -47,6 +47,10 @@ machine:
       {% if ENV.MACHINE_TYPE == 'controlplane' %}
       - name: thunderbolt
       - name: thunderbolt_net
+      - name: nvidia # NVIDIA dGPU (loads harmlessly on control planes without the card)
+      - name: nvidia_uvm
+      - name: nvidia_drm
+      - name: nvidia_modeset
       {% endif %}
   kubelet:
     defaultRuntimeSeccompProfileEnabled: true

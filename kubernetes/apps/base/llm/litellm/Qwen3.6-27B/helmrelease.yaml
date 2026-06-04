@@ -1,0 +1,164 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: llama-nvidia
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      hostIPC: true
+      nodeSelector:
+        topology.kubernetes.io/gpus: nvidia
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-nvidia-gpu
+    controllers:
+      llama-nvidia:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          model-download:
+            image:
+              repository: python
+              tag: 3.14-slim
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                set -euo pipefail
+
+                if [ ! -s /models/qwen3.6-27b-gguf/unsloth-mtp-q4km/Qwen3.6-27B-Q4_K_M.gguf ]; then
+                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                  mkdir -p /models/qwen3.6-27b-gguf/unsloth-mtp-q4km
+                  rm -rf /models/qwen3.6-27b-gguf/unsloth-mtp-q4km/.cache/huggingface/download/Qwen3.6-27B-Q4_K_M.gguf.lock
+                  hf download \
+                    unsloth/Qwen3.6-27B-MTP-GGUF \
+                    Qwen3.6-27B-Q4_K_M.gguf \
+                    --local-dir /models/qwen3.6-27b-gguf/unsloth-mtp-q4km
+                  echo "Qwen3.6-27B download complete"
+                else
+                  echo "Qwen3.6-27B already downloaded, skipping"
+                fi
+            env:
+              HF_HUB_ENABLE_HF_TRANSFER: "1"
+            envFrom:
+              - secretRef:
+                  name: huggingface
+            resources:
+              requests:
+                cpu: 250m
+                memory: 512Mi
+              limits:
+                memory: 4Gi
+        containers:
+          app:
+            # Pinned to club-3090's validated CUDA build (b9246). The rolling
+            # :server-cuda tag regressed at b9282 (broken lib packaging) — see
+            # noonghunna/club-3090#187. Bump only after validating a newer build.
+            image:
+              repository: ghcr.io/ggml-org/llama.cpp
+              tag: server-cuda-b9246
+            securityContext:
+              privileged: true
+            args:
+              # club-3090 models/qwen3.6-27b/llama-cpp single/unsloth-q4km/mtp.yml
+              # (200K max-safe on a single 24GB card @ -ub 512, no prefill cliffs)
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8080"
+              - --alias
+              - nvidia
+              - --model
+              - /models/qwen3.6-27b-gguf/unsloth-mtp-q4km/Qwen3.6-27B-Q4_K_M.gguf
+              - --ctx-size
+              - "200000"
+              - --batch-size
+              - "4096"
+              - --ubatch-size
+              - "512"
+              - --n-gpu-layers
+              - "99"
+              - --flash-attn
+              - "on"
+              - --cache-type-k
+              - q4_0
+              - --cache-type-v
+              - q4_0
+              - --parallel
+              - "1" # intentional on a single 24GB card — extra slots divide throughput and disable MTP
+              - --spec-type
+              - draft-mtp
+              - --spec-draft-n-max
+              - "2"
+              - --jinja
+              - --reasoning
+              - "off"
+              - --reasoning-format
+              - deepseek
+              - --temp
+              - "0.6"
+              - --top-p
+              - "0.95"
+              - --top-k
+              - "20"
+              - --min-p
+              - "0"
+              - --repeat-penalty
+              - "1.0"
+              - --no-mmap # bound host RAM (weights live in VRAM via -ngl 99); avoids page-cache OOM under cgroup limits
+              - --metrics
+            resources:
+              claims:
+                - name: gpu
+              requests:
+                cpu: 500m
+                memory: 4Gi
+              limits:
+                memory: 12Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                  failureThreshold: 6
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  failureThreshold: 360
+                  periodSeconds: 10
+    persistence:
+      models:
+        existingClaim: llama-nvidia
+        globalMounts:
+          - path: /models
+    service:
+      app:
+        ports:
+          http:
+            port: 8080
