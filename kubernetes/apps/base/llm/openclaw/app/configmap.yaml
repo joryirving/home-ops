@@ -24,9 +24,9 @@ data:
             ]
           },
           imageModel: {
-            primary: "litellm-anthropic/MiniMax",
+            primary: "litellm/self-hosted",
             fallbacks: [
-              "litellm/self-hosted",
+              "litellm-anthropic/MiniMax",
               "openai/gpt-5.4-mini",
             ]
           },
@@ -68,7 +68,7 @@ data:
           },
           heartbeat: {
             every: "60m",
-            model: "litellm-anthropic/MiniMax",
+            model: "litellm/self-hosted",
             directPolicy: "allow",
             lightContext: true,
             isolatedSession: false,
@@ -253,12 +253,12 @@ data:
           },
           "lossless-claw": {
             enabled: true,
-            llm: { allowModelOverride: true, allowedModels: [ "litellm-anthropic/MiniMax" ], },
-            subagent: { allowModelOverride: true, allowedModels: [ "litellm-anthropic/MiniMax" ], },
+            llm: { allowModelOverride: true, allowedModels: [ "litellm/cheap-coder" ], },
+            subagent: { allowModelOverride: true, allowedModels: [ "litellm/cheap-coder" ], },
             config: {
               contextThreshold: 0.75,
               delegationTimeoutMs: 1000000,
-              expansionModel: "litellm-anthropic/MiniMax",
+              expansionModel: "litellm/cheap-coder",
               freshTailCount: 64,
               freshTailMaxTokens: 24000,
               ignoreSessionPatterns: [
@@ -274,7 +274,7 @@ data:
               pruneHeartbeatOk: true,
               skipStatelessSessions: true,
               statelessSessionPatterns: [ "agent:*:subagent:**" ],
-              summaryModel: "litellm-anthropic/MiniMax",
+              summaryModel: "litellm/cheap-coder",
               summaryTimeoutMs: 1000000,
               transcriptGcEnabled: false,
             },
