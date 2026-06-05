@@ -1,0 +1,48 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: konflate
+spec:
+  interval: 15m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 0.1.1
+  url: oci://ghcr.io/home-operations/charts/konflate
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: konflate
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: konflate
+  interval: 15m
+  dependsOn: []
+  values:
+    config:
+      repo: github://joryirving/home-ops
+    httpRoute:
+      enabled: true
+      annotations:
+        gatus.home-operations.com/endpoint: |-
+          conditions: ["[STATUS] == 200"]
+      parentRefs:
+        - name: envoy-external
+          namespace: network
+      hostnames:
+        - "{{ .Release.Name }}.jory.dev"
+    monitoring:
+      serviceMonitor:
+        enabled: true
+    resources:
+      requests:
+        cpu: 50m
+      limits:
+        cpu: 4000m
+        memory: 4Gi
