@@ -105,6 +105,13 @@ When reviewing Renovate PRs, enforce these criteria:
 - Resource limits (CPU/memory) SHOULD be specified for production workloads, but this is not a hard requirement
 - `valuesFrom` should reference ConfigMaps/Secrets, not inline values
 
+### Namespace Convention
+
+- `metadata.namespace` is **never** set inline on `HelmRelease` or `Kustomization` resources — this is intentional, not a violation
+- The namespace is injected at build time by kustomize's `namespace:` directive in the per-app `kustomization.yaml` (e.g., `namespace: llm`)
+- For Flux `Kustomization` resources, `spec.targetNamespace` is propagated automatically via the replacement component at `kubernetes/components/replacements/ks.yaml`
+- Reviewers MUST NOT flag missing `metadata.namespace` on these resources as an issue
+
 ### Secret Management Rules
 
 - **NEVER** commit plain-text secrets or credentials in Git
@@ -114,7 +121,8 @@ When reviewing Renovate PRs, enforce these criteria:
 
 ### Image & Digest Policy
 
-- Prefer `@sha256:` digests over version tags for reproducibility
+- Prefer `@sha256:` digests over version tags for reproducibility (container images only)
+- OCI artifacts (e.g., Helm charts pulled via `OCIRepository`) are exempt: pin by tag/version, since they don't support SHA-tag references the same way container images do
 - For tag-only updates, verify OCI metadata (revision/source/created)
 - If revision changes between digests, ensure it's intentional
 - Reject updates from untrusted registries (must be allowlisted)
