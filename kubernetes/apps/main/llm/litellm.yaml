@@ -52,27 +52,6 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app llama-intel
-spec:
-  components:
-    - ../../../../../components/gpu
-  interval: 1h
-  path: ./kubernetes/apps/base/llm/litellm/llama-intel
-  postBuild:
-    substitute:
-      APP: *app
-      CLUSTER: ${CLUSTER}
-  wait: false
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
   name: &app llama-embed
 spec:
   components:
@@ -129,3 +108,36 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app llama-nvidia
+spec:
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/litellm/Qwen3.6-27B
+  postBuild:
+    substitute:
+      APP: *app
+      CLUSTER: ${CLUSTER}
+  wait: false
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-models
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: local-hostpath
