@@ -28,14 +28,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Decide whether to skip review
-        id: version-check
-        run: |
-          set -euo pipefail
-          echo "skip_review=false" >> "$GITHUB_OUTPUT"
-
       - name: Generate bot token
-        if: steps.version-check.outputs.skip_review != 'true'
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
@@ -43,7 +36,6 @@ jobs:
           private-key: ${{ secrets.SAFFRON_APP_PRIVATE_KEY }}
 
       - name: Analyze PR with reusable AI reviewer
-        if: steps.version-check.outputs.skip_review != 'true'
         id: analyze
         uses: misospace/pr-reviewer-action@f838c5b49d72d11dd33cfee6e29b85a28b5aa8df # v1.0.18
         with:
@@ -68,8 +60,7 @@ jobs:
           tool_max_response_bytes: "12000"
           tool_allowed_gh_api_repos: "*"
           tool_request_timeout_sec: "15"
-          tool_failure_enforcement: "true"
-          tool_min_successful_requests: "0"
           tool_enable_for_forks: "false"
-          standards_file_candidates: "AGENTS.md,.agents/*"
+          system_prompt_file: .agents/instructions/pr-review.instructions.md
+          standards_file_candidates: "AGENTS.md"
           publish_mode: review_comment

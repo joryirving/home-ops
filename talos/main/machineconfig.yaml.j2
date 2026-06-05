@@ -112,8 +112,8 @@ machine:
     sunrpc.tcp_slot_table_entries: "128"       # 10Gb/s | NFS
     sunrpc.tcp_max_slot_table_entries: "128"   # 10Gb/s | NFS
     user.max_user_namespaces: "11255"          # User Namespaces
-    vm.dirty_background_ratio: "5"            # Start writeback earlier
-    vm.dirty_ratio: "20"                      # Cap dirty page buildup
+    vm.dirty_background_bytes: "268435456"     # 256MiB | Byte-based writeback start; protect etcd fdatasync on shared NVMe
+    vm.dirty_bytes: "536870912"                # 512MiB | Cap dirty buildup (ratio 5%/20% on 134GB RAM allowed multi-GB flush storms)
     vm.dirty_expire_centisecs: "3000"         # Expire dirty data after 30s
     vm.dirty_writeback_centisecs: "500"       # Flush dirty pages every 5s
   token: op://Kubernetes/talos-main/MACHINE_TOKEN
