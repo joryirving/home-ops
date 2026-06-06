@@ -18,15 +18,16 @@ data:
           model: {
             primary: "litellm-anthropic/MiniMax",
             fallbacks: [
+              "litellm/cheap-coder",
               "litellm/self-hosted",
               "litellm/nvidia",
-              "openai/gpt-5.4-mini",
               "litellm/kimi-k2.6",
             ]
           },
           imageModel: {
             primary: "litellm/self-hosted",
             fallbacks: [
+              "litellm/nvidia",
               "litellm-anthropic/MiniMax",
               "openai/gpt-5.4-mini",
             ]
@@ -38,6 +39,7 @@ data:
             "litellm/kimi-k2.5": { alias: "moonshot", params: { cache_prompt: true } },
             "litellm/kimi-k2.6": { alias: "moonshot-2.6", params: { cache_prompt: true } },
             "litellm-anthropic/MiniMax": { alias: "minimax", params: { cache_prompt: true } },
+            "litellm-anthropic/MiniMax-M2.7": { alias: "minimax-old", params: { cache_prompt: true } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "litellm/nvidia": { alias: "nvidia", params: { cache_prompt: true } },
             "litellm/local-small": { alias: "local-small", params: { cache_prompt: true } },
@@ -96,10 +98,11 @@ data:
             agentDir: "/home/node/.openclaw/agents/matcha/agent",
             tools: { allow: ["exec", "message", "read", "web_fetch", "image", "memory_search", "memory_get"] },
             model: {
-              primary: "litellm-anthropic/MiniMax",
+              primary: "litellm-anthropic/MiniMax-M2.7",
               fallbacks: [
                 "litellm/self-hosted",
-                "openai/gpt-5.4-mini",
+                "litellm/nvidia",
+                "litellm/cheap-coder",
               ]
             },
             identity: {
@@ -118,6 +121,9 @@ data:
               fallbacks: [
                 "litellm-anthropic/MiniMax",
                 "litellm/self-hosted",
+                "litellm/nvidia",
+                "litellm/reasoning-coder",
+                "openai/gpt-5.5",
                 "litellm/kimi-k2.6",
               ]
             },
@@ -165,6 +171,7 @@ data:
             timeoutSeconds: 600,
             models: [
               { id: "MiniMax", name: "MiniMax M3", reasoning: true, input: ["text","image"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
+              { id: "MiniMax-M2.7", name: "MiniMax M2.7", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 20400, maxTokens: 32768, },
             ],
           },
         }
