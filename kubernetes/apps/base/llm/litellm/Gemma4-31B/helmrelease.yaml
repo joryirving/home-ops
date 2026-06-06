@@ -29,21 +29,27 @@ spec:
               - /bin/sh
               - -ec
               - |
-                set -euo pipefail
+                set -eu
 
-                if [ ! -s /models/qwen3.6-27b/Qwen3.6-27B-UD-Q3_K_XL.gguf ] || [ ! -s /models/qwen3.6-27b/mmproj-F16.gguf ]; then
+                MODEL_DIR=/models/gemma4-31b
+                MODEL_FILE="$MODEL_DIR/gemma-4-31B-it-UD-Q4_K_XL.gguf"
+                MMPROJ_FILE="$MODEL_DIR/mmproj-F16.gguf"
+
+                if [ ! -s "$MODEL_FILE" ] || [ ! -s "$MMPROJ_FILE" ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/qwen3.6-27b
-                  rm -rf /models/qwen3.6-27b/.cache/huggingface/download/Qwen3.6-27B-UD-Q3_K_XL.gguf.lock
+                  mkdir -p "$MODEL_DIR"
+                  rm -rf \
+                    "$MODEL_DIR/.cache/huggingface/download/gemma-4-31B-it-UD-Q4_K_XL.gguf.lock" \
+                    "$MODEL_DIR/.cache/huggingface/download/mmproj-F16.gguf.lock"
                   hf download \
-                    unsloth/Qwen3.6-27B-MTP-GGUF \
-                    Qwen3.6-27B-UD-Q3_K_XL.gguf \
+                    unsloth/gemma-4-31B-it-GGUF \
+                    gemma-4-31B-it-UD-Q4_K_XL.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/qwen3.6-27b
+                    --local-dir "$MODEL_DIR"
 
-                  echo "Qwen3.6-27B download complete"
+                  echo "Gemma-4-31B Q4_K_XL download complete"
                 else
-                  echo "Qwen3.6-27B already downloaded, skipping"
+                  echo "Gemma-4-31B Q4_K_XL already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -71,9 +77,9 @@ spec:
               - --alias
               - nvidia
               - --model
-              - /models/qwen3.6-27b/Qwen3.6-27B-UD-Q3_K_XL.gguf
+              - /models/gemma4-31b/gemma-4-31B-it-UD-Q4_K_XL.gguf
               - --mmproj
-              - /models/qwen3.6-27b/mmproj-F16.gguf
+              - /models/gemma4-31b/mmproj-F16.gguf
               - --ctx-size
               - "131072"
               - --n-gpu-layers
@@ -83,16 +89,6 @@ spec:
               - --parallel
               - "1"
               - --cont-batching
-              - --spec-type
-              - draft-mtp
-              - --spec-draft-p-min
-              - "0.75"
-              - --spec-draft-n-max
-              - "3"
-              - --spec-draft-type-k
-              - "q8_0"
-              - --spec-draft-type-v
-              - "q8_0"
               - -sps
               - "0.90"
               - --cache-prompt
@@ -126,10 +122,6 @@ spec:
               - "6"
               - --threads-batch
               - "12"
-              - --cache-type-k
-              - q8_0
-              - --cache-type-v
-              - q8_0
               - --mmap
               - --jinja
               - --chat-template-kwargs
