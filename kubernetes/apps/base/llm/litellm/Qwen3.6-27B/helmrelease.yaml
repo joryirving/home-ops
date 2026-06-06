@@ -15,7 +15,7 @@ spec:
       hostIPC: true
       runtimeClassName: nvidia
       nodeSelector:
-        topology.kubernetes.io/gpus: nvidia
+        topology.kubernetes.io: egpu
     controllers:
       llama-nvidia:
         annotations:
@@ -31,14 +31,16 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen3.6-27b-gguf/unsloth-mtp-q4km/Qwen3.6-27B-Q4_K_M.gguf ]; then
+                if [ ! -s /models/qwen3.6-27b/Qwen3.6-27B-Q3_K_XL.gguf ] || [ ! -s /models/qwen3.6-27b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/qwen3.6-27b-gguf/unsloth-mtp-q4km
-                  rm -rf /models/qwen3.6-27b-gguf/unsloth-mtp-q4km/.cache/huggingface/download/Qwen3.6-27B-Q4_K_M.gguf.lock
+                  mkdir -p /models/qwen3.6-27b
+                  rm -rf /models/qwen3.6-27b/.cache/huggingface/download/Qwen3.6-27B-Q3_K_XL.gguf.lock
                   hf download \
                     unsloth/Qwen3.6-27B-MTP-GGUF \
-                    Qwen3.6-27B-Q4_K_M.gguf \
-                    --local-dir /models/qwen3.6-27b-gguf/unsloth-mtp-q4km
+                    Qwen3.6-27B-Q3_K_XL.gguf \
+                    mmproj-F16.gguf \
+                    --local-dir /models/qwen3.6-27b
+
                   echo "Qwen3.6-27B download complete"
                 else
                   echo "Qwen3.6-27B already downloaded, skipping"
@@ -69,32 +71,37 @@ spec:
               - --alias
               - nvidia
               - --model
-              - /models/qwen3.6-27b-gguf/unsloth-mtp-q4km/Qwen3.6-27B-Q4_K_M.gguf
+              - /models/qwen3.6-27b/Qwen3.6-27B-Q3_K_XL.gguf
+              - --mmproj
+              - /models/qwen3.6-27b/mmproj-F16.gguf
               - --ctx-size
-              - "200000"
-              - --batch-size
-              - "4096"
-              - --ubatch-size
-              - "512"
+              - "131072"
               - --n-gpu-layers
               - "99"
               - --flash-attn
               - "on"
-              - --cache-type-k
-              - q4_0
-              - --cache-type-v
-              - q4_0
               - --parallel
               - "1"
+              - --cont-batching
               - --spec-type
               - draft-mtp
+              - --spec-draft-p-min
+              - "0.75"
               - --spec-draft-n-max
-              - "2"
-              - --jinja
-              - --reasoning
-              - "off"
-              - --reasoning-format
-              - deepseek
+              - "3"
+              - --spec-draft-type-k
+              - "f16"
+              - --spec-draft-type-v
+              - "f16"
+              - -sps
+              - "0.90"
+              - --cache-prompt
+              - --cache-ram
+              - "16384"
+              - --kv-unified
+              - --image-min-tokens
+              - "1024"
+              - --metrics
               - --temp
               - "0.6"
               - --top-p
@@ -103,18 +110,38 @@ spec:
               - "20"
               - --min-p
               - "0"
+              - --presence-penalty
+              - "0.5"
               - --repeat-penalty
-              - "1.0"
-              - --no-mmap
-              - --metrics
+              - "1.03"
+              - --reasoning-budget
+              - "16384"
+              - --reasoning-budget-message
+              - "Stop reasoning and produce the implementation, tool call, or final answer."
+              - --batch-size
+              - "4096"
+              - --ubatch-size
+              - "1024"
+              - --threads
+              - "6"
+              - --threads-batch
+              - "12"
+              - --cache-type-k
+              - q8_0
+              - --cache-type-v
+              - q8_0
+              - --mmap
+              - --jinja
+              - --chat-template-kwargs
+              - '{"preserve_thinking":true}'
             env:
               NVIDIA_DRIVER_CAPABILITIES: compute,utility
             resources:
               requests:
                 cpu: 500m
-                memory: 4Gi
+                memory: 16Gi
               limits:
-                memory: 12Gi
+                memory: 20Gi
                 nvidia.com/gpu: 1
             probes:
               liveness:
