@@ -34,13 +34,13 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/mellum2-12b-a2.5b/Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf ]; then
+                if [ ! -s /models/mellum2-12b-a2.5b/Mellum2-12B-A2.5B-Instruct-Q6_K.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
                   mkdir -p /models/mellum2-12b-a2.5b
-                  rm -rf /models/mellum2-12b-a2.5b/.cache/huggingface/download/Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf.lock
+                  rm -rf /models/mellum2-12b-a2.5b/.cache/huggingface/download/Mellum2-12B-A2.5B-Instruct-Q6_K.gguf.lock
                   hf download \
-                    JetBrains/Mellum2-12B-A2.5B-Instruct-GGUF-Q4_K_M \
-                    Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf \
+                    JetBrains/Mellum2-12B-A2.5B-Instruct-GGUF-Q6_K \
+                    Mellum2-12B-A2.5B-Instruct-Q6_K.gguf \
                     --local-dir /models/mellum2-12b-a2.5b
                   echo "Mellum2-12B-A2.5B-Instruct-Q4_K_M download complete"
                 else
@@ -75,7 +75,7 @@ spec:
               - --alias
               - review
               - --model
-              - /models/mellum2-12b-a2.5b/Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf
+              - /models/mellum2-12b-a2.5b/Mellum2-12B-A2.5B-Instruct-Q6_K.gguf
               - --ctx-size
               - "131072"
               - --n-gpu-layers
@@ -83,13 +83,11 @@ spec:
               - --flash-attn
               - "on"
               - --parallel
-              - "2"
+              - "1"
               - --cont-batching
               - -sps
               - "0.90"
               - --cache-prompt
-              - --cache-ram
-              - "16384"
               - --kv-unified
               - --metrics
               - --temp
@@ -113,9 +111,9 @@ spec:
               - --threads-batch
               - "12"
               - --cache-type-k
-              - q8_0
+              - f16
               - --cache-type-v
-              - q8_0
+              - f16
               - --no-mmap
             resources:
               requests:
