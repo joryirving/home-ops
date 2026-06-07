@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-server
+  name: llama-review
 spec:
   chartRef:
     kind: OCIRepository
@@ -20,7 +20,7 @@ spec:
           operator: Exists
           effect: NoSchedule
     controllers:
-      llama-server:
+      llama-review:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -34,18 +34,17 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf ] || [ ! -s /models/gemma4-26b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/gemma4-26b-a4b/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf ] || [ ! -s /models/gemma4-26b-a4b/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/gemma4-26b
-                  rm -rf /models/gemma4-26b/.cache/huggingface/download/gemma-4-26B-A4B-UD-Q5_K_XL.gguf.lock
+                  mkdir -p /models/gemma4-26b-a4b
+                  rm -rf /models/gemma4-26b-a4b/.cache/huggingface/download/gemma-4-12b-A4B-UD-Q4_K_XL.gguf.lock
                   hf download \
                     unsloth/gemma-4-26B-A4B-it-GGUF \
-                    gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf \
-                    mmproj-F16.gguf \
-                    --local-dir /models/gemma4-26b
-                  echo "Gemma-4-26B-A4B-Q5_K_XL download complete"
+                    gemma-4-26B-A4B-it-UD-Q4_K_M.gguf \
+                    --local-dir /models/gemma4-26b-a4b
+                  echo "Gemma-4-12b-A4B-Q4_K_XL download complete"
                 else
-                  echo "Gemma-4-26B-A4B-Q5_K_XL already downloaded, skipping"
+                  echo "Gemma-4-12b-A4B-Q4_K_XL already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -74,11 +73,9 @@ spec:
               - --port
               - "8080"
               - --alias
-              - self-hosted
+              - review
               - --model
-              - /models/gemma4-26b/gemma-4-26B-A4B-it-UD-Q5_K_XL.gguf
-              - --mmproj
-              - /models/gemma4-26b/mmproj-F16.gguf
+              - /models/gemma4-26b-a4b/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf
               - --ctx-size
               - "262144"
               - --n-gpu-layers
@@ -86,45 +83,50 @@ spec:
               - --flash-attn
               - "on"
               - --parallel
-              - "3"
+              - "1"
               - --cont-batching
               - -sps
               - "0.90"
-              - --no-context-shift
               - --cache-prompt
-              - --kv-unified
-              - --ctx-checkpoints
-              - "4"
-              - --checkpoint-every-n-tokens
+              - --cache-ram
               - "16384"
-              - --image-min-tokens
-              - "1120"
-              - --image-max-tokens
-              - "1120"
+              - --kv-unified
               - --metrics
               - --temp
-              - "0.4"
+              - "0.2"
               - --top-p
-              - "0.92"
+              - "0.9"
               - --top-k
               - "40"
               - --min-p
+              - "0.05"
+              - --presence-penalty
               - "0"
+              - --repeat-penalty
+              - "1.0"
               - --batch-size
-              - "4096"
+              - "6144"
               - --ubatch-size
               - "2048"
               - --threads
-              - "12"
+              - "6"
               - --threads-batch
-              - "16"
+              - "12"
+              - --cache-type-k
+              - q8_0
+              - --cache-type-v
+              - q8_0
               - --no-mmap
+              - --reasoning
+              - off
+              - --reasoning-budget
+              - "0"
             resources:
               requests:
                 cpu: 1
                 memory: 20Gi
               limits:
-                memory: 80Gi
+                memory: 40Gi
             probes:
               liveness:
                 enabled: true
@@ -174,7 +176,7 @@ spec:
       app:
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: 10.69.10.20
+          lbipam.cilium.io/ips: 10.69.10.21
         externalTrafficPolicy: Cluster
         ports:
           http:
