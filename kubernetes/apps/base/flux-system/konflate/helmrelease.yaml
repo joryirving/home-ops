@@ -27,6 +27,13 @@ spec:
   values:
     config:
       repo: github://joryirving/home-ops
+      clusterPath: ./kubernetes/${CLUSTER}
+    persistence:
+      enabled: true
+      storageClass: ceph-block
+      size: 5Gi
+    secret:
+      existingSecret: konflate-secret
     httpRoute:
       enabled: true
       annotations:
@@ -36,7 +43,7 @@ spec:
         - name: envoy-external
           namespace: network
       hostnames:
-        - "{{ .Release.Name }}.jory.dev"
+        - "${SUBDOMAIN}.jory.dev"
     monitoring:
       serviceMonitor:
         enabled: true
