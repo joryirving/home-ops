@@ -34,17 +34,17 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-26b-a4b/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf ] || [ ! -s /models/gemma4-26b-a4b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/mellum2-12b-a2.5b/Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/gemma4-26b-a4b
-                  rm -rf /models/gemma4-26b-a4b/.cache/huggingface/download/gemma-4-12b-A4B-UD-UD-Q4_K_M.gguf.lock
+                  mkdir -p /models/mellum2-12b-a2.5b
+                  rm -rf /models/mellum2-12b-a2.5b/.cache/huggingface/download/Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf.lock
                   hf download \
-                    unsloth/gemma-4-26B-A4B-it-GGUF \
-                    gemma-4-26B-A4B-it-UD-Q4_K_M.gguf \
-                    --local-dir /models/gemma4-26b-a4b
-                  echo "Gemma-4-12b-A4B-UD-Q4_K_M download complete"
+                    JetBrains/Mellum2-12B-A2.5B-Instruct-GGUF-Q4_K_M \
+                    Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf \
+                    --local-dir /models/mellum2-12b-a2.5b
+                  echo "Mellum2-12B-A2.5B-Instruct-Q4_K_M download complete"
                 else
-                  echo "Gemma-4-12b-A4B-UD-Q4_K_M already downloaded, skipping"
+                  echo "Mellum2-12B-A2.5B-Instruct-Q4_K_M already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -61,7 +61,7 @@ spec:
           app:
             image:
               repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-7.2.4@sha256:1e8698bd016898f34ab3f8fa45d244ab26da48faca0e56e04f41cdbf3d8a8fc6
+              tag: rocm-7.2.4@sha256:6a5c94d13236c4645710762f017d7db40e95bbf55e8faf4150e3125b4206b535
               pullPolicy: Always
             securityContext:
               privileged: true
@@ -75,11 +75,11 @@ spec:
               - --alias
               - review
               - --model
-              - /models/gemma4-26b-a4b/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf
+              - /models/mellum2-12b-a2.5b/Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf
               - --ctx-size
-              - "262144"
+              - "131072"
               - --n-gpu-layers
-              - "99"
+              - all
               - --flash-attn
               - "on"
               - --parallel
@@ -93,11 +93,11 @@ spec:
               - --kv-unified
               - --metrics
               - --temp
-              - "0.2"
+              - "0.6"
               - --top-p
-              - "0.9"
+              - "0.95"
               - --top-k
-              - "40"
+              - "20"
               - --min-p
               - "0.05"
               - --presence-penalty
@@ -117,10 +117,6 @@ spec:
               - --cache-type-v
               - q8_0
               - --no-mmap
-              - --reasoning
-              - off
-              - --reasoning-budget
-              - "0"
             resources:
               requests:
                 cpu: 1
