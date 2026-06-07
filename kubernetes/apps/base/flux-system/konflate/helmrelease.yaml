@@ -33,7 +33,7 @@ spec:
       storageClass: ceph-block
       size: 5Gi
     secret:
-      existingSecret: "{{ .Release.Name }}"
+      existingSecret: konflate
     httpRoute:
       enabled: true
       annotations:
@@ -42,8 +42,7 @@ spec:
       parentRefs:
         - name: envoy-external
           namespace: network
-      hostnames:
-        - "${SUBDOMAIN}.jory.dev"
+      hostnames: ["${SUBDOMAIN}.jory.dev"]
     monitoring:
       serviceMonitor:
         enabled: true
