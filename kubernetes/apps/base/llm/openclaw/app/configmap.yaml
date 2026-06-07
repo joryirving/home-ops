@@ -43,6 +43,7 @@ data:
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "litellm/nvidia": { alias: "nvidia", params: { cache_prompt: true } },
             "litellm/local-small": { alias: "local-small", params: { cache_prompt: true } },
+            "litellm/review": { alias: "review", params: { cache_prompt: true } },
             "litellm/cheap-coder": { alias: "cheap-coder", params: { cache_prompt: true } },
             "litellm/reasoning-coder": { alias: "reasoning-coder", params: { cache_prompt: true } },
             "openai/gpt-5.5": { alias: "gpt" },
@@ -72,7 +73,7 @@ data:
           },
           heartbeat: {
             every: "60m",
-            model: "litellm/nvidia",
+            model: "litellm/review",
             directPolicy: "allow",
             lightContext: true,
             isolatedSession: false,
@@ -160,6 +161,7 @@ data:
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q8_K_XL (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "nvidia", name: "Qwen3.6-27B UD Q3_K_XL (CUDA)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
               { id: "local-small", name: "Short local endpoints", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 8192, maxTokens: 2048 },
+              { id: "review", name: "Mellum2-12B-A2.5B-Instruct Q4_K_M (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
               { id: "cheap-coder", name: "OpenCode Go DeepSeek V4 Flash", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "reasoning-coder", name: "OpenCode Go GLM 5.1", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 203000, maxTokens: 16384 },
             ]
@@ -263,12 +265,12 @@ data:
           },
           "lossless-claw": {
             enabled: true,
-            llm: { allowModelOverride: true, allowedModels: [ "litellm/nvidia" ], },
-            subagent: { allowModelOverride: true, allowedModels: [ "litellm/nvidia" ], },
+            llm: { allowModelOverride: true, allowedModels: [ "litellm/review" ], },
+            subagent: { allowModelOverride: true, allowedModels: [ "litellm/review" ], },
             config: {
               contextThreshold: 0.75,
               delegationTimeoutMs: 1000000,
-              expansionModel: "litellm/nvidia",
+              expansionModel: "litellm/review",
               freshTailCount: 64,
               freshTailMaxTokens: 24000,
               ignoreSessionPatterns: [
@@ -284,7 +286,7 @@ data:
               pruneHeartbeatOk: true,
               skipStatelessSessions: true,
               statelessSessionPatterns: [ "agent:*:subagent:**" ],
-              summaryModel: "litellm/nvidia",
+              summaryModel: "litellm/review",
               summaryTimeoutMs: 1000000,
               transcriptGcEnabled: false,
             },
