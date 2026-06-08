@@ -65,7 +65,7 @@ tasks:
       - test -f {{.TALOS_DIR}}/machineconfig.yaml.j2
       - test -f {{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{.NODE}}.yaml
       - '{{if eq .EGPU_EFFECTIVE "true"}}test -f {{.GPU_PATCH}}{{else}}true{{end}}'
-      - which curl jq minijinja-cli op talosctl
+      - which curl jq minijinja-cli op talosctl yq
 
   verify-machine-ca:
     desc: Verify rendered node config uses the live cluster machine CA [CLUSTER=main] [NODE=required]
@@ -325,7 +325,7 @@ tasks:
       vars: [VERSION, CLUSTER, NODE]
     preconditions:
       - test -f {{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{if eq .EGPU_EFFECTIVE "true"}}eGPU-schematic.yaml{{else}}schematic.yaml{{end}}
-      - which curl task
+      - which curl task yq
 
   generate-schematic:
     desc: Generate a Talos schematic [CLUSTER=main] [NODE=required] [EGPU=inferred]
@@ -350,7 +350,7 @@ tasks:
       vars: [CLUSTER, NODE]
     preconditions:
       - test -f {{.SCHEMATIC_FILE}}
-      - which curl jq
+      - which curl jq yq
 
   down:
     internal: true
