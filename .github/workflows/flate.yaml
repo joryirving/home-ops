@@ -104,18 +104,11 @@ jobs:
             echo "clusters=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure 1Password
-        if: ${{ steps.check.outputs.diff == 'true' }}
-        uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
-        with:
-          connect-host: ${{ secrets.OP_CONNECT_HOST }}
-          connect-token: ${{ secrets.OP_CONNECT_TOKEN }}
-
       - name: Load Secrets
-        if: ${{ steps.check.outputs.diff == 'true' }}
         id: load-secrets
         uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           DUFS_PASSWORD: op://Kubernetes/dufs/FLATE_PASSWORD
 
       - name: Upload diffs to dufs
