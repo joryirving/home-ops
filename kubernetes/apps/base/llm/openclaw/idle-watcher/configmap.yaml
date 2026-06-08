@@ -5,40 +5,28 @@ metadata:
   name: llama-idle-watcher-script
 data:
   watch.sh: |
-    #!/usr/bin/env bash
-    set -euo pipefail
+    #!/bin/sh
+    set -eu
 
     # ---- Config (env overridable) ----
     PROMETHEUS_URL="${PROMETHEUS_URL:-http://prometheus-operated.observability.svc.cluster.local:9090}"
     GATEWAY_URL="${GATEWAY_URL:-http://openclaw.llm:18789}"
-    # TODO: exact admin HTTP RPC endpoint for triggering a cron session by ID is unknown.
-    # The gateway exposes POST /webhooks/github and GET /health, but the admin RPC
-    # path to trigger a cron on-demand is not yet determined. Adjust once confirmed.
-    CRON_TRIGGER_ENDPOINT="${CRON_TRIGGER_ENDPOINT:-/api/admin/cron/trigger}"
+    CRON_TRIGGER_ENDPOINT="${CRON_TRIGGER_ENDPOINT:-/api/v1/admin/rpc}"
     CRON_ID="${CRON_ID:-6b09bed4-cfbe-4c35-bbee-2b66c5ef17aa}"
     POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-300}"
+    COOLDOWN_SECONDS="${COOLDOWN_SECONDS:-21600}"
+    STATE_FILE="${STATE_FILE:-/tmp/llama-idle-watcher-last-trigger}"
 
     # ---- Helpers ----
     log() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*"; }
 
-    urlencode() {
-      local string="$1" encoded="" pos c o
-      for (( pos=0; pos<${#string}; pos++ )); do
-        c="${string:$pos:1}"
-        case "$c" in
-          [-_.~a-zA-Z0-9] ) o="${c}" ;;
-          * )               printf -v o '%%%02x' "'$c"
-        esac
-        encoded+="${o}"
-      done
-      echo "${encoded}"
-    }
-
     query_prometheus() {
       local query="$1"
-      curl -sf --max-time 10 \
-        "${PROMETHEUS_URL}/api/v1/query?query=$(urlencode "${query}")" \
-        | jq -r '.data.result[0].value[1] // 0'
+      curl -sfG --max-time 10 \
+        --data-urlencode "query=${query}" \
+        "${PROMETHEUS_URL}/api/v1/query" \
+        | sed -n 's/.*"value":\[[^]]*,"\([^"]*\)".*/\1/p' \
+        | head -n 1
     }
 
     is_llama_idle() {
@@ -62,14 +50,32 @@ data:
 
     trigger_openclaw_cron() {
       log "llama-nvidia idle — triggering OpenClaw cron ${CRON_ID}"
-      local http_code
-      http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
+      local response http_code body
+      response=$(curl -sS -w "\n%{http_code}" --max-time 15 \
         -X POST \
         "${GATEWAY_URL}${CRON_TRIGGER_ENDPOINT}" \
         -H "Authorization: Bearer ${OPENCLAW_GATEWAY_TOKEN}" \
         -H "Content-Type: application/json" \
-        -d "{\"cronId\":\"${CRON_ID}\"}" 2>&1 || echo "000")
-      log "gateway response: HTTP ${http_code}"
+        -d "{\"method\":\"cron.run\",\"params\":{\"id\":\"${CRON_ID}\",\"mode\":\"force\"}}" 2>&1 || true)
+      http_code=$(printf '%s\n' "${response}" | tail -n 1)
+      body=$(printf '%s\n' "${response}" | sed '$d')
+      log "gateway response: HTTP ${http_code} ${body}"
+      if [ "${http_code}" = "200" ] && printf '%s' "${body}" | grep -q '"ok":true'; then
+        date +%s > "${STATE_FILE}"
+      fi
+    }
+
+    cooldown_active() {
+      [ -f "${STATE_FILE}" ] || return 1
+      local last now elapsed
+      last=$(cat "${STATE_FILE}" 2>/dev/null || echo 0)
+      now=$(date +%s)
+      elapsed=$((now - last))
+      if [ "${elapsed}" -lt "${COOLDOWN_SECONDS}" ]; then
+        log "cooldown active (${elapsed}s/${COOLDOWN_SECONDS}s since last trigger)"
+        return 0
+      fi
+      return 1
     }
 
     # ---- Main loop ----
@@ -78,7 +84,7 @@ data:
     log "prometheus: ${PROMETHEUS_URL}"
 
     while true; do
-      if is_llama_idle; then
+      if ! cooldown_active && is_llama_idle; then
         trigger_openclaw_cron
       fi
       sleep "${POLL_INTERVAL_SECONDS}"

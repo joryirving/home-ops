@@ -26,21 +26,19 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/library/alpine
-              tag: "3.23"
+              repository: docker.io/curlimages/curl
+              tag: "8.17.0"
             command:
               - /bin/sh
               - -c
-              - |
-                apk add --no-cache curl jq bash >/dev/null 2>&1
-                exec bash /config/watch.sh
+              - exec /bin/sh /config/watch.sh
             env:
               PROMETHEUS_URL: "http://prometheus-operated.observability.svc.cluster.local:9090"
               GATEWAY_URL: "http://openclaw.llm:18789"
-              # TODO: exact admin HTTP RPC endpoint — adjust once confirmed
-              CRON_TRIGGER_ENDPOINT: "/api/admin/cron/trigger"
+              CRON_TRIGGER_ENDPOINT: "/api/v1/admin/rpc"
               CRON_ID: "6b09bed4-cfbe-4c35-bbee-2b66c5ef17aa"
               POLL_INTERVAL_SECONDS: "300"
+              COOLDOWN_SECONDS: "21600"
               TZ: America/Edmonton
             envFrom:
               - secretRef:
