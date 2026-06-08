@@ -124,24 +124,34 @@ jobs:
             const clusters = ["main", "test", "utility"];
 
             const auth = "Basic " + Buffer.from(`${process.env.DUFS_USERNAME}:${process.env.DUFS_PASSWORD}`).toString("base64");
+            const headers = { Authorization: auth };
+
+            async function ensureCollection(url) {
+              const res = await fetch(url, { method: "MKCOL", headers });
+              if (![201, 405].includes(res.status)) {
+                throw new Error(`MKCOL ${url} returned HTTP ${res.status}`);
+              }
+            }
 
             for (const cluster of clusters) {
               if (!fs.existsSync(`${cluster}.html`) || fs.statSync(`${cluster}.html`).size === 0) continue;
 
-              const dir = `https://${process.env.DUFS_DOMAIN}/flate/${cluster}/`;
-              const url = `${dir}${pr}.html`;
+              const baseDir = `https://${process.env.DUFS_DOMAIN}/flate/`;
+              const clusterDir = `${baseDir}${cluster}/`;
+              const url = `${clusterDir}${pr}.html`;
               const body = fs.readFileSync(`${cluster}.html`);
               const localHash = crypto.createHash("sha256").update(body).digest("hex");
 
-              const head = await fetch(`${url}?hash`, { headers: { Authorization: auth } });
+              const head = await fetch(`${url}?hash`, { headers });
               const remoteHash = head.ok ? (await head.text()).trim() : "";
               if (remoteHash === localHash) {
                 core.info(`Diff unchanged (sha256 ${localHash}) — skipping upload.`);
                 continue;
               }
 
-              await fetch(dir, { method: "MKCOL", headers: { Authorization: auth } });
-              const res = await fetch(url, { method: "PUT", headers: { Authorization: auth }, body });
+              await ensureCollection(baseDir);
+              await ensureCollection(clusterDir);
+              const res = await fetch(url, { method: "PUT", headers, body });
               if (!res.ok) throw new Error(`PUT ${url} returned HTTP ${res.status}`);
               core.info(`📄 Rendered diff (${cluster}): ${url}`);
             }
