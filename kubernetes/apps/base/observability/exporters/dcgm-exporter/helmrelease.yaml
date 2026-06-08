@@ -1,0 +1,86 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app dcgm-exporter
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      runtimeClassName: nvidia
+      nodeSelector:
+        topology.kubernetes.io: egpu
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+    controllers:
+      dcgm-exporter:
+        type: daemonset
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: nvcr.io/nvidia/k8s/dcgm-exporter
+              tag: 4.5.3-4.8.2-distroless@sha256:e9030b4fca0c8f110032f3b151b030e7e9db56604b407cf79631e1a3218b35e0
+            args:
+              - -f
+              - /etc/dcgm-exporter/default-counters.csv
+            env:
+              DCGM_EXPORTER_KUBERNETES: "true"
+              DCGM_EXPORTER_LISTEN: ":9400"
+              NODE_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 9400
+                  initialDelaySeconds: 45
+                  periodSeconds: 15
+                  timeoutSeconds: 5
+              readiness: *probes
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 1000
+    persistence:
+      exporter-metrics:
+        type: configMap
+        name: dcgm-exporter-metrics
+        globalMounts:
+          - path: /etc/dcgm-exporter/default-counters.csv
+            subPath: default-counters.csv
+            readOnly: true
+      pod-gpu-resources:
+        type: hostPath
+        hostPath: /var/lib/kubelet/pod-resources
+        globalMounts:
+          - path: /var/lib/kubelet/pod-resources
+            readOnly: true
+    service:
+      app:
+        ports:
+          metrics:
+            enabled: true
+            port: *port
