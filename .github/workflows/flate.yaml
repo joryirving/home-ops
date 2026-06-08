@@ -67,6 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       diff: ${{ steps.check.outputs.diff }}
+      clusters: ${{ steps.check.outputs.clusters }}
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -82,19 +83,26 @@ jobs:
       - name: Run flate diff per cluster
         run: |
           for cluster in main test utility; do
-            flate diff all -p ./kubernetes/clusters/$cluster -o html > $cluster.html || true
+            flate diff all -p ./kubernetes/clusters/$cluster -o html > "$cluster.html"
           done
 
       - name: Check if any diffs exist
         id: check
         run: |
+          clusters=()
           for cluster in main test utility; do
-            if [ -s $cluster.html ]; then
-              echo "diff=true" >> "$GITHUB_OUTPUT"
-              exit 0
+            if [ -s "$cluster.html" ]; then
+              clusters+=("$cluster")
             fi
           done
-          echo "diff=false" >> "$GITHUB_OUTPUT"
+
+          if [ "${#clusters[@]}" -gt 0 ]; then
+            echo "diff=true" >> "$GITHUB_OUTPUT"
+            printf 'clusters=%s\n' "$(IFS=,; echo "${clusters[*]}")" >> "$GITHUB_OUTPUT"
+          else
+            echo "diff=false" >> "$GITHUB_OUTPUT"
+            echo "clusters=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Configure 1Password
         if: ${{ steps.check.outputs.diff == 'true' }}
@@ -108,7 +116,7 @@ jobs:
         id: load-secrets
         uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         env:
-          DUFS_PASSWORD: op://Kubernetes/dufs/DUFS_PASSWORD
+          DUFS_PASSWORD: op://Kubernetes/dufs/FLATE_PASSWORD
 
       - name: Upload diffs to dufs
         if: ${{ steps.check.outputs.diff == 'true' }}
@@ -161,6 +169,8 @@ jobs:
 
       - name: Add or Update Comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PREVIEW_CLUSTERS: ${{ needs.flatten-diff.outputs.clusters }}
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
@@ -172,7 +182,7 @@ jobs:
             const commitUrl = `${context.serverUrl}/${owner}/${repo}/commit/${sha}`;
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const diffUrl = `https://${process.env.DUFS_DOMAIN}/flate`;
-            const clusters = ["main", "test", "utility"];
+            const clusters = (process.env.PREVIEW_CLUSTERS || "").split(",").filter(Boolean);
 
             const body = [
               marker,
@@ -204,17 +214,12 @@ jobs:
     name: Flate - Prune
     runs-on: ubuntu-latest
     steps:
-      - name: Configure 1Password
-        uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
-        with:
-          connect-host: ${{ secrets.OP_CONNECT_HOST }}
-          connect-token: ${{ secrets.OP_CONNECT_TOKEN }}
-
       - name: Load Secrets
         id: load-secrets
         uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         env:
-          DUFS_PASSWORD: op://Kubernetes/dufs/DUFS_PASSWORD
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          DUFS_PASSWORD: op://Kubernetes/dufs/FLATE_PASSWORD
 
       - name: Delete diffs for closed PR
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
