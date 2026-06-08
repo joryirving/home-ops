@@ -25,28 +25,59 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/sigoden/dufs
-              tag: v0.46.0
-            command: ["/bin/sh", "-c"]
-            args: ["dufs /data -a flate:${DUFS_PASSWORD}@/:rw -b 0.0.0.0:8000"]
+              repository: mirror.gcr.io/sigoden/dufs
+              tag: v0.46.0@sha256:8dd3b750015734703e64b55641fb7d2254c112e0ff3967074766177dc15dc982
+            args:
+              - /config
+              - --allow-upload
+              - --allow-delete
+              - --allow-hash
+            env:
+              DUFS_PORT: &port 80
+              TZ: America/Edmonton
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
+                spec:
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
               readiness:
                 enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /__dufs__/health
+                    port: *port
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 10
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 10m
-                memory: 64Mi
               limits:
                 memory: 256Mi
     persistence:
       data:
         type: emptyDir
-
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
     service:
       app:
         ports:
