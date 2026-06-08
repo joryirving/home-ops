@@ -12,6 +12,7 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      automountServiceAccountToken: true
       runtimeClassName: nvidia
       nodeSelector:
         topology.kubernetes.io: egpu
@@ -61,9 +62,11 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               capabilities: { drop: ["ALL"] }
-              runAsNonRoot: true
-              runAsUser: 1000
-              runAsGroup: 1000
+              runAsNonRoot: false
+              runAsUser: 0
+              runAsGroup: 0
+    serviceAccount:
+      dcgm-exporter: {}
     persistence:
       exporter-metrics:
         type: configMap

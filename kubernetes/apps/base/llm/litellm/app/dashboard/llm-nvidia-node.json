@@ -273,7 +273,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "topk(1, sum by (pod) (DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\", pod=~\"$pod\"} * 1048576))",
+          "expr": "topk(1, sum by (pod) (DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\", pod=~\"$pod\", pod!~\"dcgm-exporter-.*\"} * 1048576))",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -368,7 +368,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum by (pod) (DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\", pod=~\"$pod\"} * 1048576)",
+          "expr": "sum by (pod) (DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\", pod=~\"$pod\", pod!~\"dcgm-exporter-.*\"} * 1048576)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -544,13 +544,13 @@
         "allValue": ".*",
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\"}, namespace)",
+        "definition": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\", pod!~\"dcgm-exporter-.*\"}, namespace)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "namespace",
         "query": {
-          "query": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\"}, namespace)",
+          "query": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\", pod!~\"dcgm-exporter-.*\"}, namespace)",
           "refId": "StandardVariableQuery"
         },
         "sort": 1,
@@ -560,13 +560,13 @@
         "allValue": ".*",
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\"}, pod)",
+        "definition": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\", pod!~\"dcgm-exporter-.*\"}, pod)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "pod",
         "query": {
-          "query": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\"}, pod)",
+          "query": "label_values(DCGM_FI_DEV_FB_USED{instance=~\"$instance\", namespace=~\"$namespace\", pod!~\"dcgm-exporter-.*\"}, pod)",
           "refId": "StandardVariableQuery"
         },
         "sort": 1,
