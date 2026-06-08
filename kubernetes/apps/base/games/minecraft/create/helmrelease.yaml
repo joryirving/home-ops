@@ -55,6 +55,7 @@ spec:
       # - 36618 #Prom Exporter
       rcon:
         enabled: true
+        existingSecret: *app
     persistence:
       dataDir:
         enabled: true
@@ -74,8 +75,3 @@ spec:
       mc-router.itzg.me/externalServerName: create.jory.dev
     startupProbe:
       enabled: true
-  valuesFrom:
-    - kind: Secret
-      name: *app
-      valuesKey: RCON_PASSWORD
-      targetPath: minecraftServer.rcon.password
