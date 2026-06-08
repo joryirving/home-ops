@@ -48,12 +48,19 @@ spec:
               AGENTMEMORY_DROP_STALE_INDEX: true
               AGENTMEMORY_TOOLS: all
               EMBEDDING_PROVIDER: openai
+              # Chat LLM (consolidation) via litellm's anthropic /v1/messages -> free local model.
+              # OpenAI key stays embeddings-only (OPENAI_API_KEY_FOR_LLM=false) so it doesn't claim the LLM slot.
+              ANTHROPIC_BASE_URL: http://litellm.llm:4000
+              ANTHROPIC_MODEL: review
+              AGENTMEMORY_LLM_TIMEOUT_MS: "120000"
+              CONSOLIDATION_ENABLED: "true"
               GRAPH_EXTRACTION_ENABLED: "true"
               III_REST_PORT: "3111"
               RUST_LOG: warn
               VIEWER_ALLOWED_HOSTS: agentmemory.jory.dev
               VIEWER_ALLOWED_ORIGINS: https://agentmemory.jory.dev
               OPENAI_BASE_URL: http://llama-embed.llm:8080
+              OPENAI_API_KEY_FOR_LLM: "false"
               OPENAI_EMBEDDING_DIMENSIONS: "384"
               OPENAI_EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
               TZ: America/Edmonton
