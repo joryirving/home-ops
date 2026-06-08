@@ -25,6 +25,7 @@ If a pattern is explicitly documented as intentional in `AGENTS.md` (or in the c
 For Renovate digest-only container image updates where the repository and tag are unchanged and the diff only changes `@sha256:` values, keep `review_markdown` compact.
 
 Prefer:
+
 - short recommendation
 - changed files summary
 - non-blocking caveats, if any
