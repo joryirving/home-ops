@@ -10,7 +10,7 @@ data:
       "kind": "memory",
       "name": "agentmemory",
       "description": "Persistent cross-session memory for OpenClaw via agentmemory.",
-      "version": "0.9.4",
+      "version": "0.9.5",
       "configSchema": {
         "type": "object",
         "additionalProperties": false,
@@ -29,7 +29,7 @@ data:
   package.json: |
     {
       "name": "agentmemory",
-      "version": "0.9.4",
+      "version": "0.9.5",
       "type": "module",
       "openclaw": {
         "extensions": [
@@ -178,6 +178,22 @@ data:
       };
     }
 
+    // Skip automation: cron + heartbeat runs are single-shot, store prompt
+    // boilerplate, and never reach the 5-observation consolidation floor. Mirrors
+    // the session patterns lossless-claw already ignores (agent:*:cron:**, **:heartbeat:**).
+    const IGNORED_SESSION_RE = /(?:^|[:/])(?:cron|heartbeat)(?:[:/]|$)/i;
+    const IGNORED_PROMPT_RE = /^\s*\[cron:|HEARTBEAT\.md/i;
+
+    function isAutomationSession(event, ctx, text) {
+      const ids = [
+        ctx?.sessionKey, ctx?.sessionId, ctx?.runId,
+        event?.sessionKey, event?.sessionId, event?.runId, event?.id,
+      ];
+      if (ids.some((value) => typeof value === "string" && IGNORED_SESSION_RE.test(value))) return true;
+      const probe = typeof text === "string" && text ? text : (typeof event?.prompt === "string" ? event.prompt : "");
+      return IGNORED_PROMPT_RE.test(probe);
+    }
+
     function normalizedHostname(hostname) {
       return hostname.replace(/^\[|\]$/g, "").toLowerCase();
     }
@@ -290,6 +306,7 @@ data:
           if (!cfg.enabled) return;
           const prompt = typeof event?.prompt === "string" ? event.prompt.trim() : "";
           if (!prompt) return;
+          if (isAutomationSession(event, ctx, prompt)) return;
           const scope = deriveScope(event, ctx, cfg);
           await ensureSession(scope, prompt.slice(0, 200));
           const result = await client.postJson("/agentmemory/search", {
@@ -315,6 +332,7 @@ data:
           const userText = latestUserText(event.messages);
           const assistantText = lastAssistantText(event.messages);
           if (!userText || !assistantText) return;
+          if (isAutomationSession(event, ctx, userText)) return;
           const scope = deriveScope(event, ctx, cfg);
           await ensureSession(scope, userText.slice(0, 200));
           await client.postJson("/agentmemory/observe", {
@@ -330,6 +348,17 @@ data:
               tool_output: assistantText.slice(0, 4000),
             },
           });
+        });
+
+        api.on("session_end", async (event, ctx) => {
+          if (!cfg.enabled) return;
+          if (isAutomationSession(event, ctx)) return;
+          const scope = deriveScope(event, ctx, cfg);
+          if (!registeredSessions.has(scope.sessionId)) return;
+          registeredSessions.delete(scope.sessionId);
+          // session/end writes the SessionSummary that the consolidation pipeline
+          // consumes; without it, openclaw memory is captured but never consolidated.
+          await client.postJson("/agentmemory/session/end", { sessionId: scope.sessionId });
         });
       },
     };
