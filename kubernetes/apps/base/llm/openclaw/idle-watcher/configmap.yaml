@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llama-idle-watcher-script
+data:
+  watch.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # ---- Config (env overridable) ----
+    PROMETHEUS_URL="${PROMETHEUS_URL:-http://prometheus-operated.observability.svc.cluster.local:9090}"
+    GATEWAY_URL="${GATEWAY_URL:-http://openclaw.llm:18789}"
+    # TODO: exact admin HTTP RPC endpoint for triggering a cron session by ID is unknown.
+    # The gateway exposes POST /webhooks/github and GET /health, but the admin RPC
+    # path to trigger a cron on-demand is not yet determined. Adjust once confirmed.
+    CRON_TRIGGER_ENDPOINT="${CRON_TRIGGER_ENDPOINT:-/api/admin/cron/trigger}"
+    CRON_ID="${CRON_ID:-6b09bed4-cfbe-4c35-bbee-2b66c5ef17aa}"
+    POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-300}"
+
+    # ---- Helpers ----
+    log() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*"; }
+
+    urlencode() {
+      local string="$1" encoded="" pos c o
+      for (( pos=0; pos<${#string}; pos++ )); do
+        c="${string:$pos:1}"
+        case "$c" in
+          [-_.~a-zA-Z0-9] ) o="${c}" ;;
+          * )               printf -v o '%%%02x' "'$c"
+        esac
+        encoded+="${o}"
+      done
+      echo "${encoded}"
+    }
+
+    query_prometheus() {
+      local query="$1"
+      curl -sf --max-time 10 \
+        "${PROMETHEUS_URL}/api/v1/query?query=$(urlencode "${query}")" \
+        | jq -r '.data.result[0].value[1] // 0'
+    }
+
+    is_llama_idle() {
+      local requests_processing requests_deferred
+      local prompt_tokens predicted_tokens is_up
+
+      requests_processing=$(query_prometheus 'max_over_time(llamacpp:requests_processing{job="llama-nvidia"}[10m])')
+      requests_deferred=$(query_prometheus 'max_over_time(llamacpp:requests_deferred{job="llama-nvidia"}[10m])')
+      prompt_tokens=$(query_prometheus 'increase(llamacpp:prompt_tokens_total{job="llama-nvidia"}[10m])')
+      predicted_tokens=$(query_prometheus 'increase(llamacpp:tokens_predicted_total{job="llama-nvidia"}[10m])')
+      is_up=$(query_prometheus 'up{job="llama-nvidia"}')
+
+      log "idle check: processing=${requests_processing} deferred=${requests_deferred} prompt_tokens=${prompt_tokens} predicted_tokens=${predicted_tokens} up=${is_up}"
+
+      [ "${requests_processing}" = "0" ] \
+        && [ "${requests_deferred}" = "0" ] \
+        && [ "${prompt_tokens}" = "0" ] \
+        && [ "${predicted_tokens}" = "0" ] \
+        && [ "${is_up}" = "1" ]
+    }
+
+    trigger_openclaw_cron() {
+      log "llama-nvidia idle — triggering OpenClaw cron ${CRON_ID}"
+      local http_code
+      http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
+        -X POST \
+        "${GATEWAY_URL}${CRON_TRIGGER_ENDPOINT}" \
+        -H "Authorization: Bearer ${OPENCLAW_GATEWAY_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "{\"cronId\":\"${CRON_ID}\"}" 2>&1 || echo "000")
+      log "gateway response: HTTP ${http_code}"
+    }
+
+    # ---- Main loop ----
+    log "llama-idle-watcher started (poll=${POLL_INTERVAL_SECONDS}s)"
+    log "gateway: ${GATEWAY_URL}${CRON_TRIGGER_ENDPOINT}"
+    log "prometheus: ${PROMETHEUS_URL}"
+
+    while true; do
+      if is_llama_idle; then
+        trigger_openclaw_cron
+      fi
+      sleep "${POLL_INTERVAL_SECONDS}"
+    done
