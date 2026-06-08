@@ -106,8 +106,8 @@ data:
 
       # ChatGPT subscription (OAuth device flow, no API key — token cached in CHATGPT_TOKEN_DIR).
       # reasoning_effort is left to the caller (none|low|medium|high|xhigh per request).
-      # The chatgpt/ provider does not allowlist model names; they pass through to the
-      # subscription backend, so mini/nano work as long as the backend serves them.
+      # Only models the Codex/ChatGPT backend serves work here: 5.5, 5.4 and 5.4-mini.
+      # nano and codex-spark are rejected by the backend (API-only SKUs).
       - model_name: chatgpt/gpt-5.5
         model_info:
           mode: responses
@@ -125,18 +125,6 @@ data:
           mode: responses
         litellm_params:
           model: chatgpt/gpt-5.4-mini
-
-      - model_name: chatgpt/gpt-5.4-nano
-        model_info:
-          mode: responses
-        litellm_params:
-          model: chatgpt/gpt-5.4-nano
-
-      - model_name: chatgpt/gpt-5.3-codex-spark
-        model_info:
-          mode: responses
-        litellm_params:
-          model: chatgpt/gpt-5.3-codex-spark
 
       - model_name: MiniMax
         model_info:
