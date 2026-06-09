@@ -33,7 +33,7 @@
           "refId": "B"
         }
       ],
-      "title": "llama.cpp throughput",
+      "title": "llama.cpp throughput (wall-clock avg)",
       "type": "timeseries"
     },
     {
@@ -248,12 +248,12 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]))",
+          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range]))",
           "legendFormat": "TG tok/s",
           "refId": "A"
         }
       ],
-      "title": "TG tok/s",
+      "title": "Peak TG tok/s",
       "type": "stat"
     },
     {
@@ -401,12 +401,12 @@
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "DCGM_FI_DEV_XID_ERRORS{instance=~\"$instance\", gpu=~\"$gpu\"}",
-          "legendFormat": "xid {{gpu}}",
+          "expr": "DCGM_FI_DEV_PCIE_REPLAY_COUNTER{instance=~\"$instance\", gpu=~\"$gpu\"}",
+          "legendFormat": "pcie replays {{gpu}}",
           "refId": "C"
         }
       ],
-      "title": "Clocks and XID errors",
+      "title": "Clocks and PCIe replays",
       "type": "timeseries"
     },
     {
@@ -476,6 +476,58 @@
       ],
       "title": "Host memory breakdown",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "id": 19,
+      "panels": [],
+      "title": "Model speed (per request) & energy",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Peak prefill speed (tok/s) per service over the selected window, from llama.cpp's per-request gauge — real model speed, not diluted by idle time.",
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 37 },
+      "id": 20,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])", "legendFormat": "{{service}}", "refId": "A" } ],
+      "title": "PP speed (peak)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Peak generation speed (tok/s) per service over the selected window — real model speed, not diluted by idle time.",
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 37 },
+      "id": 21,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])", "legendFormat": "{{service}}", "refId": "A" } ],
+      "title": "TG speed (peak)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Configured context window (n_tokens_max) per service. Note: a service that reports 0 has not advertised a max yet.",
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 37 },
+      "id": 22,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "llamacpp:n_tokens_max{service=~\"$service\", service!=\"llama-embed\"}", "legendFormat": "{{service}}", "refId": "A" } ],
+      "title": "Context window",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "GPU energy consumed over the selected range. DCGM counter is in millijoules; converted to kWh.",
+      "fieldConfig": { "defaults": { "unit": "kwatth", "decimals": 3 }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 37 },
+      "id": 23,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum(increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION{instance=~\"$instance\", gpu=~\"$gpu\"}[$__range])) / 3.6e9", "legendFormat": "energy", "refId": "A" } ],
+      "title": "GPU energy (range)",
+      "type": "stat"
     }
   ],
   "refresh": "10s",
@@ -578,5 +630,5 @@
   "timezone": "browser",
   "title": "LLM / NVIDIA Node",
   "uid": "llm-nvidia-node",
-  "version": 1
+  "version": 2
 }
