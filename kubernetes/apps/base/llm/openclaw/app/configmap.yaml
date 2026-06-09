@@ -27,7 +27,6 @@ data:
           imageModel: {
             primary: "litellm/self-hosted",
             fallbacks: [
-              "litellm/nvidia",
               "litellm-anthropic/MiniMax",
               "openai/gpt-5.4-mini",
             ]
@@ -36,26 +35,24 @@ data:
             primary: "comfy/workflow",
           },
           models: {
-            "litellm/kimi-k2.5": { alias: "moonshot", params: { cache_prompt: true } },
             "litellm/kimi-k2.6": { alias: "moonshot-2.6", params: { cache_prompt: true } },
             "litellm-anthropic/MiniMax": { alias: "minimax", params: { cache_prompt: true } },
             "litellm-anthropic/MiniMax-M2.7": { alias: "minimax-old", params: { cache_prompt: true } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "litellm/nvidia": { alias: "nvidia", params: { cache_prompt: true } },
-            "litellm/local-small": { alias: "local-small", params: { cache_prompt: true } },
             "litellm/review": { alias: "review", params: { cache_prompt: true } },
             "litellm/cheap-coder": { alias: "cheap-coder", params: { cache_prompt: true } },
+            "litellm/opencode-go-deepseek-v4-pro": { alias: "dsv4pro", params: { cache_prompt: true } },
             "litellm/reasoning-coder": { alias: "reasoning-coder", params: { cache_prompt: true } },
             "openai/gpt-5.5": { alias: "gpt" },
             "openai/gpt-5.4-mini": { alias: "gpt-mini" },
-            "litellm/intel": { alias: "intel", params: { cache_prompt: true } },
           },
           memorySearch: {
             provider: "openai",
-            model: "nomic-embed-text-v1.5",
+            model: "sentence-transformers/all-MiniLM-L6-v2",
             remote: {
-              baseUrl: "http://litellm.llm:4000/v1",
-              apiKey: "$${LITELLM_API_KEY}"
+              baseUrl: "http://llama-embed.llm:8080/v1",
+              apiKey: "llama-embed"
             }
           },
           contextPruning: { mode: "off" },
@@ -155,13 +152,12 @@ data:
             api: "openai-completions",
             timeoutSeconds: 600,
             models: [
-              { id: "kimi-k2.5", name: "Kimi K2.5", reasoning: true, input: ["text"], cost: { input: 0.6, output: 3, cacheRead: 0.1, cacheWrite: 0.6 }, contextWindow: 128000, maxTokens: 8192 },
-              { id: "kimi-k2.6", name: "Kimi K2.6", reasoning: true, input: ["text"], cost: { input: 0.95, output: 4, cacheRead: 0.16, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 262144 },
+              { id: "kimi-k2.6", name: "Kimi K2.6", reasoning: true, input: ["text"], cost: { input: 0.95, output: 4, cacheRead: 0.16, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q8_K_XL (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
-              { id: "nvidia", name: "Qwen3.6-27B UD Q3_K_XL (CUDA)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
-              { id: "local-small", name: "Short local endpoints", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 8192, maxTokens: 2048 },
-              { id: "review", name: "Mellum2-12B-A2.5B-Instruct Q4_K_M (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
+              { id: "nvidia", name: "Qwen3.5-4B Q4_K_XL (CUDA)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
+              { id: "review", name: "Gemma 4 26B-A4B (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 200000, maxTokens: 16384 },
               { id: "cheap-coder", name: "OpenCode Go DeepSeek V4 Flash", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
+              { id: "opencode-go-deepseek-v4-pro", name: "OpenCode Go DeepSeek V4 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "reasoning-coder", name: "OpenCode Go GLM 5.1", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 203000, maxTokens: 16384 },
             ]
           },
@@ -172,7 +168,7 @@ data:
             timeoutSeconds: 600,
             models: [
               { id: "MiniMax", name: "MiniMax M3", reasoning: true, input: ["text","image"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
-              { id: "MiniMax-M2.7", name: "MiniMax M2.7", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 20400, maxTokens: 32768, },
+              { id: "MiniMax-M2.7", name: "MiniMax M2.7", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 204800, maxTokens: 32768, },
             ],
           },
         }

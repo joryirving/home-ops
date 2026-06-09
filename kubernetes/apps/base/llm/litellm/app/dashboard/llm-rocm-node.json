@@ -33,7 +33,7 @@
           "refId": "B"
         }
       ],
-      "title": "llama.cpp throughput",
+      "title": "llama.cpp throughput (wall-clock avg)",
       "type": "timeseries"
     },
     {
@@ -248,12 +248,12 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]))",
+          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range]))",
           "legendFormat": "TG tok/s",
           "refId": "A"
         }
       ],
-      "title": "TG tok/s",
+      "title": "Peak TG tok/s",
       "type": "stat"
     },
     {
@@ -335,8 +335,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_power_watts{card=~\"$gpu\"}",
-          "legendFormat": "power {{type}} {{card}}",
+          "expr": "rocm_smi_power_watts{card=~\"$gpu\", type=\"average\"}",
+          "legendFormat": "power {{card}}",
           "refId": "A"
         },
         {
@@ -482,6 +482,47 @@
       ],
       "title": "Host memory breakdown",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "id": 19,
+      "panels": [],
+      "title": "Model speed (per request) & context",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Peak prefill speed (tok/s) per service over the selected window, from llama.cpp's per-request gauge — real model speed, not diluted by idle time.",
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 37 },
+      "id": 20,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])", "legendFormat": "{{service}}", "refId": "A" } ],
+      "title": "PP speed (peak)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Peak generation speed (tok/s) per service over the selected window — real model speed, not diluted by idle time.",
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 37 },
+      "id": 21,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])", "legendFormat": "{{service}}", "refId": "A" } ],
+      "title": "TG speed (peak)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Configured context window (n_tokens_max) per service. Note: a service that reports 0 has not advertised a max yet.",
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 37 },
+      "id": 22,
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "llamacpp:n_tokens_max{service=~\"$service\", service!=\"llama-embed\"}", "legendFormat": "{{service}}", "refId": "A" } ],
+      "title": "Context window",
+      "type": "bargauge"
     }
   ],
   "refresh": "10s",
@@ -532,7 +573,7 @@
         "type": "query"
       },
       {
-        "current": {},
+        "current": { "selected": true, "text": "skirk", "value": "skirk" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
         "definition": "label_values(node_uname_info{job=\"node-exporter\"}, nodename)",
         "hide": 0,
@@ -552,5 +593,5 @@
   "timezone": "browser",
   "title": "LLM / ROCm Node",
   "uid": "llm-rocm-node",
-  "version": 1
+  "version": 3
 }
