@@ -48,17 +48,12 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
-      - name: Configure 1password
-        uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
-        with:
-          service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Get Secrets
+      - name: Load Secrets
         uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: op://Kubernetes/1password/OP_SERVICE_ACCOUNT_TOKEN
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           AWS_ACCESS_KEY_ID: op://Kubernetes/garage/TERRAFORM_STATE_KEY_ID
           AWS_SECRET_ACCESS_KEY: op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY
 
