@@ -58,7 +58,7 @@ jobs:
         with:
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          OP_SERVICE_ACCOUNT_TOKEN: op://Kubernetes/1password/OP_SERVICE_ACCOUNT_TOKEN
           AWS_ACCESS_KEY_ID: op://Kubernetes/garage/TERRAFORM_STATE_KEY_ID
           AWS_SECRET_ACCESS_KEY: op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY
 
@@ -107,9 +107,7 @@ jobs:
 
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: tofu plan -lock=false -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: tofu plan -lock=false -input=false -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         continue-on-error: true
