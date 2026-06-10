@@ -102,6 +102,8 @@ jobs:
 
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: tofu plan -lock=false -input=false -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
