@@ -38,4 +38,3 @@ module "onepassword_uptimerobot" {
 provider "uptimerobot" {
   api_key = module.onepassword_uptimerobot.fields["UPTIMEROBOT_API_KEY"]
 }
-

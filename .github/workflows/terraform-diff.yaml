@@ -40,7 +40,7 @@ jobs:
 
   sync:
     name: Terraform Diff
-    runs-on: [home-ops-runner-utility] #Backend is stored on NAS with no external ingress
+    runs-on: ubuntu-latest
     needs: ["changed-terraform"]
     strategy:
       matrix:
@@ -51,14 +51,14 @@ jobs:
       - name: Configure 1password
         uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
-          connect-host: ${{ secrets.OP_CONNECT_HOST }}
-          connect-token: ${{ secrets.OP_CONNECT_TOKEN }}
+          service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Get Secrets
         uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
           export-env: true
         env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           AWS_ACCESS_KEY_ID: op://Kubernetes/garage/TERRAFORM_STATE_KEY_ID
           AWS_SECRET_ACCESS_KEY: op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY
 
@@ -96,7 +96,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: |
-          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" tofu init \
+          tofu init \
             -backend-config="access_key=$AWS_ACCESS_KEY_ID" \
             -backend-config="secret_key=$AWS_SECRET_ACCESS_KEY"
 
@@ -107,7 +107,9 @@ jobs:
 
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" bash -o pipefail -c 'tofu plan -lock=false -var "OP_CONNECT_TOKEN=${{ secrets.OP_CONNECT_TOKEN }}" -var "OP_CONNECT_HOST=${{ secrets.OP_CONNECT_HOST }}" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"'
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: tofu plan -lock=false -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         continue-on-error: true
