@@ -39,4 +39,3 @@ provider "garage" {
   host  = var.GARAGE_URL
   token = module.onepassword_garage.fields["GARAGE_ADMIN_TOKEN"]
 }
-

@@ -19,7 +19,7 @@ permissions:
 jobs:
   main:
     name: Schemas
-    runs-on: home-ops-runner-main
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -27,14 +27,14 @@ jobs:
       - name: Configure 1password
         uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
-          connect-host: ${{ secrets.OP_CONNECT_HOST}}
-          connect-token: ${{ secrets.OP_CONNECT_TOKEN }}
+          service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Get Secrets
         uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
         with:
           export-env: true
         env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           CLOUDFLARE_API_TOKEN: op://Kubernetes/cloudflare/CLOUDFLARE_API_TOKEN_GHA
           CLOUDFLARE_ACCOUNT_ID: op://Kubernetes/cloudflare/CLOUDFLARE_ACCOUNT_TAG
 
@@ -65,7 +65,7 @@ jobs:
         run: uv pip install pyyaml
 
       - name: Run crd-extractor
-        run: bash .github/scripts/retry.sh bash -o pipefail -c 'curl -fsSL https://raw.githubusercontent.com/datreeio/CRDs-catalog/43e4407642d4c37683c88711f37caa6c9c20ca40/Utilities/crd-extractor.sh | bash'
+        run: curl -fsSL https://raw.githubusercontent.com/datreeio/CRDs-catalog/43e4407642d4c37683c88711f37caa6c9c20ca40/Utilities/crd-extractor.sh | bash
 
       - name: Publish Schemas
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
