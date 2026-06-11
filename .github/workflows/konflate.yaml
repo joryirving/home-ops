@@ -1,0 +1,193 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Konflate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  KONFLATE_DOMAIN: jory.dev
+
+jobs:
+  comment:
+    name: Konflate - Comment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Select Clusters
+        id: clusters
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const clusters = ["main", "test", "utility"];
+            const labels = context.payload.pull_request.labels?.map((label) => label.name) ?? [];
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const selected = new Set(
+              labels
+                .map((label) => label.match(/^cluster\/(main|test|utility)$/)?.[1])
+                .filter(Boolean)
+            );
+            let shared = false;
+
+            if (selected.size === 0) {
+              for (const { filename } of files) {
+                const match = filename.match(/^kubernetes\/(?:apps|clusters)\/(main|test|utility)(?:\/|$)/);
+                if (match) {
+                  selected.add(match[1]);
+                  continue;
+                }
+
+                if (
+                  filename.startsWith("kubernetes/apps/base/") ||
+                  filename.startsWith("kubernetes/components/")
+                ) {
+                  shared = true;
+                }
+              }
+            }
+
+            const resolved = selected.size > 0
+              ? clusters.filter((cluster) => selected.has(cluster))
+              : shared ? clusters : [];
+
+            core.info(`Konflate clusters: ${resolved.length > 0 ? resolved.join(", ") : "none"}`);
+            core.setOutput("clusters", resolved.join(" "));
+
+      - name: Fetch rendered summaries
+        id: fetch
+        env:
+          KONFLATE_CLUSTERS: ${{ steps.clusters.outputs.clusters }}
+          KONFLATE_WEBHOOK_SECRET: ${{ secrets.KONFLATE_WEBHOOK_SECRET }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          ready=false
+          statuses=()
+
+          {
+            echo "<!-- konflate -->"
+            echo "## Konflate"
+          } > summary.md
+
+          for cluster in ${KONFLATE_CLUSTERS}; do
+            summary="summary-${cluster}.md"
+            status=""
+            case "${cluster}" in
+              main) host="konflate.${KONFLATE_DOMAIN}" ;;
+              *) host="konflate-${cluster}.${KONFLATE_DOMAIN}" ;;
+            esac
+            refresh_url="https://${host}/api/prs/${PR}/refresh"
+            url="https://${host}/api/prs/${PR}/summary"
+
+            if ! curl -fsS -o /dev/null \
+              -X POST \
+              -H "Authorization: Bearer ${KONFLATE_WEBHOOK_SECRET}" \
+              "${refresh_url}" 2>/dev/null; then
+              echo "::notice::konflate refresh unavailable for ${cluster}; polling existing state."
+            fi
+
+            if status="$(curl -fsS --retry 10 --retry-delay 3 --retry-all-errors \
+                 -H 'Accept: text/markdown' \
+                 -o "${summary}" -w '%header{x-konflate-render-status}' \
+                 "${url}")" \
+               && [ -s "${summary}" ]; then
+              ready=true
+              statuses+=("${cluster}:${status}")
+              {
+                echo
+                echo "### ${cluster}"
+                echo
+                cat "${summary}"
+              } >> summary.md
+            else
+              echo "::notice::konflate summary unavailable or empty for ${cluster}; skipping."
+            fi
+          done
+
+          echo "ready=${ready}" >> "$GITHUB_OUTPUT"
+          {
+            echo "statuses<<EOF"
+            printf '%s\n' "${statuses[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate Token
+        if: ${{ steps.fetch.outputs.ready == 'true' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          permission-pull-requests: write
+
+      - name: Find Comment
+        if: ${{ steps.fetch.outputs.ready == 'true' }}
+        id: find-comment
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: ${{ steps.app-token.outputs.app-slug }}[bot]
+          body-includes: "<!-- konflate"
+
+      - name: Create or Update Comment
+        if: ${{ steps.fetch.outputs.ready == 'true' }}
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          body-path: summary.md
+          edit-mode: replace
+
+      - name: Fail on render issue
+        if: ${{ steps.fetch.outputs.ready == 'true' }}
+        env:
+          STATUSES: ${{ steps.fetch.outputs.statuses }}
+        run: |
+          failed=false
+          while IFS=: read -r cluster status; do
+            case "$status" in
+              ok) echo "konflate render (${cluster}): ok" ;;
+              failures)
+                echo "::error::konflate render (${cluster}): one or more resources failed to render"
+                failed=true
+                ;;
+              error)
+                echo "::error::konflate render (${cluster}): render errored (no diff)"
+                failed=true
+                ;;
+              "") ;;
+              *) echo "::warning::konflate render (${cluster}): unexpected status '${status}'" ;;
+            esac
+          done <<< "$STATUSES"
+          [ "$failed" = "false" ]
+
+  success:
+    if: ${{ !cancelled() }}
+    needs: [comment]
+    name: Konflate - Success
+    runs-on: ubuntu-latest
+    steps:
+      - name: Any jobs failed?
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
+
+      - name: All jobs passed or skipped?
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: echo "All jobs passed or skipped" && echo "$RESULTS"
