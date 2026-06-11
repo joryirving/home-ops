@@ -363,6 +363,9 @@ data:
             config: {
               base_url: "http://memini.llm:8080",
               namespace_per_agent: true,
+              // cron/heartbeat sessions reach the plugin with no agent identity;
+              // skip them instead of polluting a shared fallback namespace
+              skip_without_agent: true,
               fallback_on_error: true,
               timeout_ms: 5000,
             },
