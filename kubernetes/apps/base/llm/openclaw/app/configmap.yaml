@@ -18,10 +18,11 @@ data:
           model: {
             primary: "litellm-anthropic/MiniMax",
             fallbacks: [
-              "litellm/cheap-coder",
+              "litellm/dsv4f",
               "litellm/self-hosted",
               "litellm/nvidia",
-              "litellm/kimi-k2.6",
+              "litellm/go-minimax-m3",
+              "litellm/go-kimi-k2.6",
             ]
           },
           imageModel: {
@@ -41,9 +42,15 @@ data:
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "litellm/nvidia": { alias: "nvidia", params: { cache_prompt: true } },
             "litellm/review": { alias: "review", params: { cache_prompt: true } },
-            "litellm/cheap-coder": { alias: "cheap-coder", params: { cache_prompt: true } },
-            "litellm/opencode-go-deepseek-v4-pro": { alias: "dsv4pro", params: { cache_prompt: true } },
-            "litellm/reasoning-coder": { alias: "reasoning-coder", params: { cache_prompt: true } },
+            "litellm/dsv4f": { alias: "dsv4f", params: { cache_prompt: true } },
+            "litellm/dsv4p": { alias: "dsv4p", params: { cache_prompt: true } },
+            "litellm/glm-5.1": { alias: "glm-5.1", params: { cache_prompt: true } },
+            "litellm/go-kimi-k2.6": { alias: "go-kimi-2.6", params: { cache_prompt: true } },
+            "litellm/go-minimax-m3": { alias: "go-minimax-m3", params: { cache_prompt: true } },
+            "litellm/go-minimax-m2.7": { alias: "go-minimax-m2.7", params: { cache_prompt: true } },
+            "litellm/mimo-v2.5-pro": { alias: "mimo-agent", params: { cache_prompt: true } },
+            "litellm/mimo-v2.5": { alias: "mimo-v2.5", params: { cache_prompt: true } },
+            "litellm/qwen3.7-plus": { alias: "qwen-plus", params: { cache_prompt: true } },
             "openai/gpt-5.5": { alias: "gpt" },
             "openai/gpt-5.4": { alias: "gpt-cheap" },
             "openai/gpt-5.4-mini": { alias: "gpt-mini" },
@@ -65,7 +72,7 @@ data:
           maxConcurrent: 4,
           subagents: {
             model: {
-              primary: "litellm/cheap-coder",
+              primary: "litellm/dsv4f",
             },
             archiveAfterMinutes: 120,
             maxConcurrent: 3,
@@ -87,7 +94,7 @@ data:
             name: "Miso",
             workspace: "/home/node/.openclaw/workspace",
             agentDir: "/home/node/.openclaw/agents/main/agent",
-            thinkingDefault: "medium",
+            thinkingDefault: "low",
             identity: {
               name: "Miso",
               avatar: "avatars/miso_avatar.png",
@@ -99,12 +106,12 @@ data:
             workspace: "/home/node/.openclaw/workspace-matcha",
             agentDir: "/home/node/.openclaw/agents/matcha/agent",
             tools: { allow: ["exec", "message", "read", "web_fetch", "image", "memory_search", "memory_get"] },
+            thinkingDefault: "low",
             model: {
-              primary: "litellm-anthropic/MiniMax-M2.7",
+              primary: "litellm/dsv4f",
               fallbacks: [
                 "litellm/self-hosted",
                 "litellm/nvidia",
-                "litellm/cheap-coder",
               ]
             },
             identity: {
@@ -118,15 +125,17 @@ data:
             workspace: "/home/node/.openclaw/workspace-saffron",
             agentDir: "/home/node/.openclaw/agents/saffron/agent",
             tools: { allow: ["exec", "read", "write", "message", "web_fetch", "browser", "sessions_spawn", "memory_search", "memory_get", "toolhive__find_tool","toolhive__call_tool"] },
+            thinkingDefault: "high",
             model: {
-              primary: "litellm/cheap-coder",
+              primary: "litellm-anthropic/MiniMax",
               fallbacks: [
-                "litellm-anthropic/MiniMax",
+                "litellm/go-minimax-m3",
+                "litellm/dsv4f",
                 "litellm/self-hosted",
                 "litellm/nvidia",
-                "litellm/reasoning-coder",
+                "litellm/glm-5.1",
                 "litellm/chatgpt/gpt-5.5",
-                "litellm/kimi-k2.6",
+                "litellm/go-kimi-k2.6",
               ]
             },
             identity: {
@@ -161,9 +170,15 @@ data:
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q8_K_XL (ROCm)", reasoning: true, input: ["text","image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 200000, maxTokens: 16384 },
               { id: "nvidia", name: "Qwen3.5-4B Q4_K_XL (CUDA)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
               { id: "review", name: "Gemma 4 26B-A4B (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 200000, maxTokens: 16384 },
-              { id: "cheap-coder", name: "OpenCode Go DeepSeek V4 Flash", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
-              { id: "opencode-go-deepseek-v4-pro", name: "OpenCode Go DeepSeek V4 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
-              { id: "reasoning-coder", name: "OpenCode Go GLM 5.1", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 203000, maxTokens: 16384 },
+              { id: "dsv4f", name: "OpenCode Go DeepSeek V4 Flash", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
+              { id: "dsv4p", name: "OpenCode Go DeepSeek V4 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
+              { id: "glm-5.1", name: "OpenCode Go GLM 5.1", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 203000, maxTokens: 16384 },
+              { id: "go-kimi-k2.6", name: "OpenCode Go Kimi K2.6", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
+              { id: "go-minimax-m3", name: "OpenCode Go MiniMax M3", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 32768 },
+              { id: "go-minimax-m2.7", name: "OpenCode Go MiniMax M2.7", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 204800, maxTokens: 16384 },
+              { id: "mimo-v2.5-pro", name: "OpenCode Go MiMo V2.5 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
+              { id: "mimo-v2.5", name: "OpenCode Go MiMo V2.5", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
+              { id: "qwen3.7-plus", name: "OpenCode Go Qwen 3.7 Plus", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "chatgpt/gpt-5.5", name: "ChatGPT GPT-5.5", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 128000 },
               { id: "chatgpt/gpt-5.4", name: "ChatGPT GPT-5.4", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 128000 },
               { id: "chatgpt/gpt-5.4-mini", name: "ChatGPT GPT-5.4 Mini", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 128000 },
