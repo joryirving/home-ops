@@ -4,7 +4,7 @@ name: Konflate
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches: ["main"]
 
 concurrency:
@@ -29,27 +29,34 @@ jobs:
         with:
           script: |
             const clusters = ["main", "test", "utility"];
+            const labels = context.payload.pull_request.labels?.map((label) => label.name) ?? [];
             const files = await github.paginate(github.rest.pulls.listFiles, {
               ...context.repo,
               pull_number: context.payload.pull_request.number,
               per_page: 100,
             });
 
-            const selected = new Set();
+            const selected = new Set(
+              labels
+                .map((label) => label.match(/^cluster\/(main|test|utility)$/)?.[1])
+                .filter(Boolean)
+            );
             let shared = false;
 
-            for (const { filename } of files) {
-              const match = filename.match(/^kubernetes\/(?:apps|clusters)\/(main|test|utility)(?:\/|$)/);
-              if (match) {
-                selected.add(match[1]);
-                continue;
-              }
+            if (selected.size === 0) {
+              for (const { filename } of files) {
+                const match = filename.match(/^kubernetes\/(?:apps|clusters)\/(main|test|utility)(?:\/|$)/);
+                if (match) {
+                  selected.add(match[1]);
+                  continue;
+                }
 
-              if (
-                filename.startsWith("kubernetes/apps/base/") ||
-                filename.startsWith("kubernetes/components/")
-              ) {
-                shared = true;
+                if (
+                  filename.startsWith("kubernetes/apps/base/") ||
+                  filename.startsWith("kubernetes/components/")
+                ) {
+                  shared = true;
+                }
               }
             }
 
@@ -64,6 +71,7 @@ jobs:
         id: fetch
         env:
           KONFLATE_CLUSTERS: ${{ steps.clusters.outputs.clusters }}
+          KONFLATE_WEBHOOK_SECRET: ${{ secrets.KONFLATE_WEBHOOK_SECRET }}
           PR: ${{ github.event.pull_request.number }}
         run: |
           ready=false
@@ -81,7 +89,15 @@ jobs:
               main) host="konflate.${KONFLATE_DOMAIN}" ;;
               *) host="konflate-${cluster}.${KONFLATE_DOMAIN}" ;;
             esac
+            refresh_url="https://${host}/api/prs/${PR}/refresh"
             url="https://${host}/api/prs/${PR}/summary"
+
+            if ! curl -fsS -o /dev/null \
+              -X POST \
+              -H "Authorization: Bearer ${KONFLATE_WEBHOOK_SECRET}" \
+              "${refresh_url}" 2>/dev/null; then
+              echo "::notice::konflate refresh unavailable for ${cluster}; polling existing state."
+            fi
 
             if status="$(curl -fsS --retry 10 --retry-delay 3 --retry-all-errors \
                  -H 'Accept: text/markdown' \
@@ -97,7 +113,7 @@ jobs:
                 cat "${summary}"
               } >> summary.md
             else
-              echo "konflate summary unavailable or empty for ${cluster} - skipping; next push retries."
+              echo "::notice::konflate summary unavailable or empty for ${cluster}; skipping."
             fi
           done
 
