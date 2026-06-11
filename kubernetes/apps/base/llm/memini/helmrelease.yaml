@@ -10,7 +10,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: v0.0.4
+    tag: v0.0.5
   url: oci://registry.erwanleboucher.dev/eleboucher/charts/memini
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -24,39 +24,18 @@ spec:
     name: *app
   interval: 15m
   dependsOn: []
-  # The chart derives all env from structured values and has no rerank settings
-  # yet; inject MEMINI_RERANK_* until upstream adds them to the chart.
-  postRenderers:
-    - kustomize:
-        patches:
-          - target:
-              kind: StatefulSet
-              name: memini
-            patch: |
-              - op: add
-                path: /spec/template/spec/containers/0/env/-
-                value:
-                  name: MEMINI_RERANK
-                  value: http://llama-rerank.llm:8080/v1
-              - op: add
-                path: /spec/template/spec/containers/0/env/-
-                value:
-                  name: MEMINI_RERANK_MODEL
-                  value: qwen3-reranker
   values:
-    # StatefulSet PVC becomes data-memini-0, matching the volsync CLAIM so the
-    # pre-created/restored PVC is adopted instead of provisioned.
     fullnameOverride: memini
     image:
       repository: registry.erwanleboucher.dev/eleboucher/memini
-      tag: 0.0.4
-      digest: sha256:a6ee66ca12e40590a3f2dc1c98559df73df4771663c05cc183ea9e8a83686740
+      tag: 0.0.5
+      digest: sha256:018dddd5bb3a61e6e50058836dd507ca6ba45b60e5e00b76b889f6e2f8cf327e
     backend: sqlite
     sqlite:
       persistence:
         enabled: true
-        size: 10Gi
-        storageClass: ceph-block
+        # volsync-managed claim (restored via ReplicationDestination dataSourceRef)
+        existingClaim: memini
     config:
       defaultNamespace: default
     embeddings:
@@ -70,6 +49,9 @@ spec:
       apiKeySecret:
         name: memini
         key: llm-api-key
+    rerank:
+      mode: http://llama-rerank.llm:8080/v1
+      model: qwen3-reranker
     auth:
       apiKeySecret:
         name: memini
