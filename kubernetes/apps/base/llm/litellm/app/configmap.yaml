@@ -168,7 +168,7 @@ data:
           api_base: https://api.moonshot.ai/v1
           api_key: os.environ/MOONSHOT_API_KEY
 
-      - model_name: opencode-go-glm-5.1
+      - model_name: glm-5.1
         model_info:
           mode: chat
           max_input_tokens: 203000
@@ -180,7 +180,7 @@ data:
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
 
-      - model_name: opencode-go-deepseek-v4-flash
+      - model_name: dsv4f
         model_info:
           mode: chat
           max_input_tokens: 1000000
@@ -192,7 +192,7 @@ data:
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
 
-      - model_name: opencode-go-deepseek-v4-pro
+      - model_name: dsv4p
         model_info:
           mode: chat
           max_input_tokens: 1000000
@@ -204,7 +204,67 @@ data:
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
 
-      - model_name: cheap-coder
+      - model_name: go-kimi-k2.6
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/kimi-k2.6
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+
+      - model_name: go-minimax-m3
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 32768
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/minimax-m3
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+
+      - model_name: go-minimax-m2.7
+        model_info:
+          mode: chat
+          max_input_tokens: 204800
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/minimax-m2.7
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+
+      - model_name: mimo-v2.5-pro
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/mimo-v2.5-pro
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+
+      - model_name: mimo-v2.5
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/mimo-v2.5
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+
+      - model_name: qwen3.7-plus
         model_info:
           mode: chat
           max_input_tokens: 1000000
@@ -212,23 +272,7 @@ data:
           supports_function_calling: true
           supports_prompt_caching: true
         litellm_params:
-          model: openai/deepseek-v4-flash
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
-          extra_body:
-            thinking:
-              type: disabled
-          merge_reasoning_content_in_choices: true
-
-      - model_name: reasoning-coder
-        model_info:
-          mode: chat
-          max_input_tokens: 203000
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/glm-5.1
+          model: openai/qwen3.7-plus
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
 
@@ -241,9 +285,10 @@ data:
       cooldown_time: 30
       enable_pre_call_checks: true
       fallbacks:
-        - review: ["cheap-coder","self-hosted"]
-        - self-hosted: ["cheap-coder"]
-        - cheap-coder: ["opencode-go-glm-5.1"]
+        - review: ["dsv4f","self-hosted"]
+        - self-hosted: ["dsv4f"]
+        - dsv4f: ["go-minimax-m3"]
+        - MiniMax: ["go-minimax-m3"]
 
     litellm_settings:
       success_callback: ["prometheus"]
