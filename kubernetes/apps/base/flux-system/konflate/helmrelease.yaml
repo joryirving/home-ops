@@ -26,13 +26,16 @@ spec:
   dependsOn: []
   values:
     config:
-      repo: github://joryirving/home-ops
       clusterPath: ./kubernetes/clusters/${CLUSTER}
+      prFilterExpr: pr.labels.exists(l, l.name == "cluster/${CLUSTER}")
+      repo: github://joryirving/home-ops
     persistence:
       enabled: true
       size: 5Gi
     secret:
       existingSecret: konflate
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
     httpRoute:
       enabled: true
       annotations:
