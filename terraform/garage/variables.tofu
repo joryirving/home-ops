@@ -1,13 +1,7 @@
-variable "OP_CONNECT_HOST" {
+variable "OP_SERVICE_ACCOUNT_TOKEN" {
   type        = string
-  description = "1Password Connect API URL"
-}
-
-variable "OP_CONNECT_TOKEN" {
-  type        = string
-  description = "1Password Connect API token"
+  description = "1Password Service Account token"
   sensitive   = true
-  default     = null
 }
 
 variable "GARAGE_URL" {

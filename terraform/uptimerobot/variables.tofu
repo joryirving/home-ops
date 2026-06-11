@@ -1,11 +1,5 @@
-variable "OP_CONNECT_HOST" {
+variable "OP_SERVICE_ACCOUNT_TOKEN" {
   type        = string
-  description = "Onepass Connect URL"
-}
-
-variable "OP_CONNECT_TOKEN" {
-  type        = string
-  description = "The path to the service account JSON for OnePassword."
+  description = "1Password Service Account token"
   sensitive   = true
-  default     = null
 }
