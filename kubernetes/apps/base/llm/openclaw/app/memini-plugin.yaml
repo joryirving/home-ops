@@ -1,0 +1,290 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-memini-plugin
+data:
+  # vendored from eleboucher/memini v0.0.5 integrations/openclaw/plugin/
+  openclaw.plugin.json: |
+    {
+      "id": "memini",
+      "kind": "memory",
+      "name": "memini",
+      "description": "Persistent cross-session memory for OpenClaw via memini.",
+      "version": "0.1.0",
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "base_url": { "type": "string" },
+          "namespace": { "type": "string" },
+          "namespace_per_agent": { "type": "boolean" },
+          "namespace_template": { "type": "string" },
+          "fallback_on_error": { "type": "boolean" },
+          "timeout_ms": { "type": "number" }
+        }
+      },
+      "uiHints": {
+        "enabled": { "label": "Enabled" },
+        "base_url": { "label": "Base URL", "help": "memini REST server base URL" },
+        "namespace": {
+          "label": "Namespace",
+          "help": "Tenant the memory is scoped to (X-Memini-Namespace)"
+        },
+        "namespace_per_agent": {
+          "label": "Per-Agent Namespaces",
+          "help": "Scope memory per agent instead of sharing one namespace"
+        },
+        "namespace_template": {
+          "label": "Namespace Template",
+          "help": "Per-agent namespace, e.g. \"{agent}\" or \"openclaw-{agent}\" ({namespace} also substituted)"
+        },
+        "fallback_on_error": { "label": "Fallback On Error" },
+        "timeout_ms": { "label": "Timeout (ms)" }
+      }
+    }
+  package.json: |
+    {
+      "name": "memini-openclaw",
+      "version": "0.1.0",
+      "type": "module",
+      "openclaw": {
+        "extensions": [
+          "./plugin.mjs"
+        ]
+      }
+    }
+  plugin.mjs: |
+    /**
+     * memini memory-slot plugin for OpenClaw.
+     *
+     * Claims plugins.slots.memory via api.registerMemoryCapability, plus:
+     *   - before_agent_start: recall relevant memories, prepend as context
+     *   - agent_end: capture the completed turn into memini
+     *
+     * Talks to memini over REST (/v1/search, /v1/memories), scoped by the
+     * X-Memini-Namespace header. Default endpoint http://localhost:8080.
+     */
+
+    const DEFAULT_BASE_URL = "http://localhost:8080";
+    const DEFAULT_TIMEOUT_MS = 5000;
+    const DEFAULT_NAMESPACE = "openclaw";
+    const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+    const configSchema = {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        enabled: { type: "boolean" },
+        base_url: { type: "string" },
+        namespace: { type: "string" },
+        namespace_per_agent: { type: "boolean" },
+        namespace_template: { type: "string" },
+        fallback_on_error: { type: "boolean" },
+        timeout_ms: { type: "number" },
+      },
+    };
+
+    const DEFAULT_NAMESPACE_TEMPLATE = "{agent}";
+
+    // sanitizeNsSegment keeps a namespace segment header-safe (the server sanitizes
+    // too, but the X-Memini-Namespace value should be clean): alnum, dot, dash,
+    // underscore; collapse the rest to dashes and trim.
+    function sanitizeNsSegment(s) {
+      return String(s).trim().replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+    }
+
+    // agentIdentity pulls a stable per-agent id from an OpenClaw hook event,
+    // tolerating the field names different OpenClaw versions use. Returns "" when
+    // the event doesn't identify an agent.
+    function agentIdentity(event) {
+      if (!event || typeof event !== "object") return "";
+      const candidates = [
+        event.agentId,
+        event.agentName,
+        event.agent?.id,
+        event.agent?.name,
+        event.agent?.slug,
+        event.sessionId,
+        event.session?.id,
+        event.session?.agentId,
+      ];
+      for (const c of candidates) {
+        if (typeof c === "string" && c.trim()) return c.trim();
+      }
+      return "";
+    }
+
+    // effectiveNamespace returns the configured namespace, or a per-agent namespace
+    // when namespace_per_agent is enabled and the event identifies an agent. The
+    // per-agent name comes from namespace_template (default "{agent}"), with
+    // {agent} and {namespace} substituted — e.g. "{agent}" -> "miso",
+    // "openclaw-{agent}" -> "openclaw-miso". Falls back to the base namespace when
+    // no agent id is present, preserving the shared-memory behavior.
+    export function effectiveNamespace(cfg, event) {
+      if (!cfg.namespace_per_agent) return cfg.namespace;
+      const id = sanitizeNsSegment(agentIdentity(event));
+      if (!id) return cfg.namespace;
+      const tmpl = cfg.namespace_template || DEFAULT_NAMESPACE_TEMPLATE;
+      return tmpl.replaceAll("{agent}", id).replaceAll("{namespace}", cfg.namespace);
+    }
+
+    function extractText(content) {
+      if (typeof content === "string") return content;
+      if (!Array.isArray(content)) return "";
+      return content
+        .flatMap((block) => {
+          if (!block || typeof block !== "object") return [];
+          if (block.type === "text" && typeof block.text === "string") return [block.text];
+          return [];
+        })
+        .join("\n")
+        .trim();
+    }
+
+    function lastTextByRole(messages, role) {
+      for (const message of [...messages].reverse()) {
+        if (!message || typeof message !== "object" || message.role !== role) continue;
+        const text = extractText(message.content);
+        if (text) return text;
+      }
+      return "";
+    }
+
+    function formatResults(results) {
+      if (!Array.isArray(results) || results.length === 0) return "";
+      return results
+        .slice(0, 5)
+        .map((result, index) => {
+          const mem = result?.memory ?? {};
+          const text = (mem.summary || mem.content || `Memory $${index + 1}`).trim();
+          const tier = (mem.tier || "memory").trim();
+          return `- ($${tier}) $${text.slice(0, 300)}`;
+        })
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    function normalizedHostname(hostname) {
+      return hostname.replace(/^\[|\]$/g, "").toLowerCase();
+    }
+
+    function usesPlaintextBearerAuth(baseUrl, secret) {
+      if (!secret) return false;
+      try {
+        const parsed = new URL(baseUrl);
+        return parsed.protocol === "http:" && !LOOPBACK_HOSTS.has(normalizedHostname(parsed.hostname));
+      } catch {
+        return false;
+      }
+    }
+
+    function plaintextBearerAuthMessage(baseUrl) {
+      return `memini: MEMINI_API_KEY is configured for plaintext HTTP to $${baseUrl}. Bearer tokens and memory payloads can be observed on the network; use HTTPS or an SSH tunnel.`;
+    }
+
+    export function createPlaintextBearerAuthGuard(warn, env) {
+      let warned = false;
+      return function guardPlaintextBearerAuth(baseUrl, secret) {
+        if (!usesPlaintextBearerAuth(baseUrl, secret)) return;
+        const message = plaintextBearerAuthMessage(baseUrl);
+        if ((env || process.env).MEMINI_REQUIRE_HTTPS === "1") throw new Error(message);
+        if (!warned) {
+          warned = true;
+          warn(message);
+        }
+      };
+    }
+
+    function createClient(cfg, api) {
+      const baseUrl = String(cfg.base_url || DEFAULT_BASE_URL).replace(/\/+$/, "");
+      const namespace = String(cfg.namespace || DEFAULT_NAMESPACE);
+      const timeoutMs = Number(cfg.timeout_ms || DEFAULT_TIMEOUT_MS);
+      const fallbackOnError = cfg.fallback_on_error !== false;
+      const secret = process.env.MEMINI_API_KEY;
+      const guardPlaintextBearerAuth = createPlaintextBearerAuthGuard((m) => api.logger.warn?.(m));
+      if (process.env.MEMINI_REQUIRE_HTTPS === "1") {
+        guardPlaintextBearerAuth(baseUrl, secret);
+      }
+
+      async function postJson(path, payload, ns) {
+        guardPlaintextBearerAuth(baseUrl, secret);
+        const headers = { "Content-Type": "application/json", "X-Memini-Namespace": ns || namespace };
+        if (secret) headers.Authorization = `Bearer $${secret}`;
+        try {
+          const res = await fetch(`$${baseUrl}$${path}`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+          if (!res.ok) {
+            if (fallbackOnError) return null;
+            const body = await res.text().catch(() => "");
+            throw new Error(`memini $${path} failed: $${res.status} $${body}`);
+          }
+          return await res.json();
+        } catch (error) {
+          if (!fallbackOnError) throw error;
+          api.logger.warn?.(`memini: $${String(error)}`);
+          return null;
+        }
+      }
+
+      return { postJson, baseUrl, namespace };
+    }
+
+    const plugin = {
+      id: "memini",
+      name: "memini",
+      description: "Shared cross-session memory via a memini service.",
+      configSchema,
+      register(api) {
+        const cfg = {
+          enabled: api.pluginConfig?.enabled !== false,
+          base_url: api.pluginConfig?.base_url || DEFAULT_BASE_URL,
+          namespace: api.pluginConfig?.namespace || DEFAULT_NAMESPACE,
+          namespace_per_agent: api.pluginConfig?.namespace_per_agent === true,
+          namespace_template: api.pluginConfig?.namespace_template || DEFAULT_NAMESPACE_TEMPLATE,
+          fallback_on_error: api.pluginConfig?.fallback_on_error !== false,
+          timeout_ms: api.pluginConfig?.timeout_ms || DEFAULT_TIMEOUT_MS,
+        };
+        const client = createClient(cfg, api);
+
+        if (typeof api.registerMemoryCapability === "function") {
+          api.registerMemoryCapability({
+            promptBuilder: () => [
+              cfg.namespace_per_agent
+                ? `Long-term memory: memini at $${client.baseUrl}, per-agent namespace from "$${cfg.namespace_template}".`
+                : `Long-term memory: memini at $${client.baseUrl}, namespace "$${client.namespace}".`,
+              "Relevant memories are recalled before each turn and turns are captured after. Treat recalled context as background; prefer current workspace state and user instructions.",
+            ],
+          });
+        }
+
+        api.on("before_agent_start", async (event) => {
+          if (!cfg.enabled) return;
+          const prompt = typeof event?.prompt === "string" ? event.prompt.trim() : "";
+          if (!prompt) return;
+          const result = await client.postJson("/v1/search", { query: prompt, limit: 5 }, effectiveNamespace(cfg, event));
+          const block = formatResults(result?.results || []);
+          if (!block) return;
+          return { prependContext: `Relevant long-term memory from memini:\n$${block}` };
+        });
+
+        api.on("agent_end", async (event) => {
+          if (!cfg.enabled || !event?.success || !Array.isArray(event.messages)) return;
+          const userText = lastTextByRole(event.messages, "user");
+          const assistantText = lastTextByRole(event.messages, "assistant");
+          if (!userText || !assistantText) return;
+          await client.postJson("/v1/memories", {
+            content: `User: $${userText.slice(0, 1000)}\nAssistant: $${assistantText.slice(0, 3000)}`,
+            tier: "episodic",
+            metadata: { source: "openclaw" },
+          }, effectiveNamespace(cfg, event));
+        });
+      },
+    };
+
+    export default plugin;

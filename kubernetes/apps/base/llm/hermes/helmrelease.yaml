@@ -39,8 +39,13 @@ spec:
               tag: v2026.6.5@sha256:9ad3b04ec916ea2c2da22358fd43b024c788d74073210695af88bfc2e63869b4
             args: ["gateway", "run", "--no-supervise"]
             env:
-              AGENTMEMORY_PROJECT: hermes
-              AGENTMEMORY_URL: http://agentmemory.llm:3111
+              MEMINI_URL: http://memini.llm:8080
+              MEMINI_NAMESPACE: sake
+              MEMINI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: memini
+                    key: api-key
               HERMES_HOME: /opt/data
               HOME: /opt/data
               TZ: America/Edmonton
@@ -146,12 +151,12 @@ spec:
         globalMounts:
           - path: /tmp/config.yaml
             subPath: config.yaml
-      agentmemory-plugin:
+      memini-plugin:
         type: configMap
-        name: hermes-agentmemory-plugin
+        name: hermes-memini-plugin
         defaultMode: 0755
         globalMounts:
-          - path: /opt/data/plugins/agentmemory
+          - path: /opt/data/plugins/memini
       gallery:
         type: nfs
         server: voyager.internal

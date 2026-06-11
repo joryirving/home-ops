@@ -47,6 +47,18 @@ spec:
                 chmod 400 /home/node/.openclaw/openclaw.json
                 chmod 500 /home/node/.openclaw/extensions/agentmemory
                 chmod 400 /home/node/.openclaw/extensions/agentmemory/*
+
+                mkdir -p /home/node/.openclaw/extensions/memini
+                chmod u+w /home/node/.openclaw/extensions/memini || true
+                rm -f /home/node/.openclaw/extensions/memini/openclaw.plugin.json
+                rm -f /home/node/.openclaw/extensions/memini/package.json
+                rm -f /home/node/.openclaw/extensions/memini/plugin.mjs
+                cp /tmp/memini-plugin/openclaw.plugin.json /home/node/.openclaw/extensions/memini/openclaw.plugin.json
+                cp /tmp/memini-plugin/package.json /home/node/.openclaw/extensions/memini/package.json
+                cp /tmp/memini-plugin/plugin.mjs /home/node/.openclaw/extensions/memini/plugin.mjs
+                chown -R 1000:100 /home/node/.openclaw/extensions/memini
+                chmod 500 /home/node/.openclaw/extensions/memini
+                chmod 400 /home/node/.openclaw/extensions/memini/*
         containers:
           app:
             image:
@@ -71,6 +83,11 @@ spec:
               PIP_BREAK_SYSTEM_PACKAGES: "1"
               TERM: xterm-256color
               TZ: &tz America/Edmonton
+              MEMINI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: memini
+                    key: api-key
             envFrom:
               - secretRef:
                   name: openclaw
@@ -147,6 +164,17 @@ spec:
           - path: /tmp/agentmemory-plugin/package.json
             subPath: package.json
           - path: /tmp/agentmemory-plugin/plugin.mjs
+            subPath: plugin.mjs
+      memini-plugin:
+        type: configMap
+        name: openclaw-memini-plugin
+        defaultMode: 0755
+        globalMounts:
+          - path: /tmp/memini-plugin/openclaw.plugin.json
+            subPath: openclaw.plugin.json
+          - path: /tmp/memini-plugin/package.json
+            subPath: package.json
+          - path: /tmp/memini-plugin/plugin.mjs
             subPath: plugin.mjs
     rbac:
       roles:
