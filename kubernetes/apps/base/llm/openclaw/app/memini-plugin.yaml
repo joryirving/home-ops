@@ -5,6 +5,7 @@ metadata:
   name: openclaw-memini-plugin
 data:
   # vendored from eleboucher/memini v0.0.5 integrations/openclaw/plugin/
+  # plugin.mjs carries a local skip_without_agent patch (eleboucher/memini PR pending)
   openclaw.plugin.json: |
     {
       "id": "memini",
@@ -81,6 +82,7 @@ data:
         namespace: { type: "string" },
         namespace_per_agent: { type: "boolean" },
         namespace_template: { type: "string" },
+        skip_without_agent: { type: "boolean" },
         fallback_on_error: { type: "boolean" },
         timeout_ms: { type: "number" },
       },
@@ -121,11 +123,15 @@ data:
     // per-agent name comes from namespace_template (default "{agent}"), with
     // {agent} and {namespace} substituted — e.g. "{agent}" -> "miso",
     // "openclaw-{agent}" -> "openclaw-miso". Falls back to the base namespace when
-    // no agent id is present, preserving the shared-memory behavior.
+    // no agent id is present, preserving the shared-memory behavior — unless
+    // skip_without_agent is set, in which case it returns null so the caller skips
+    // the operation entirely (no recall, no write, no fallback namespace). Useful
+    // for gateways where unattributable sessions (cron, heartbeat) should not
+    // pollute memory.
     export function effectiveNamespace(cfg, event) {
       if (!cfg.namespace_per_agent) return cfg.namespace;
       const id = sanitizeNsSegment(agentIdentity(event));
-      if (!id) return cfg.namespace;
+      if (!id) return cfg.skip_without_agent ? null : cfg.namespace;
       const tmpl = cfg.namespace_template || DEFAULT_NAMESPACE_TEMPLATE;
       return tmpl.replaceAll("{agent}", id).replaceAll("{namespace}", cfg.namespace);
     }
@@ -247,6 +253,7 @@ data:
           namespace: api.pluginConfig?.namespace || DEFAULT_NAMESPACE,
           namespace_per_agent: api.pluginConfig?.namespace_per_agent === true,
           namespace_template: api.pluginConfig?.namespace_template || DEFAULT_NAMESPACE_TEMPLATE,
+          skip_without_agent: api.pluginConfig?.skip_without_agent === true,
           fallback_on_error: api.pluginConfig?.fallback_on_error !== false,
           timeout_ms: api.pluginConfig?.timeout_ms || DEFAULT_TIMEOUT_MS,
         };
@@ -267,7 +274,9 @@ data:
           if (!cfg.enabled) return;
           const prompt = typeof event?.prompt === "string" ? event.prompt.trim() : "";
           if (!prompt) return;
-          const result = await client.postJson("/v1/search", { query: prompt, limit: 5 }, effectiveNamespace(cfg, event));
+          const ns = effectiveNamespace(cfg, event);
+          if (ns == null) return;
+          const result = await client.postJson("/v1/search", { query: prompt, limit: 5 }, ns);
           const block = formatResults(result?.results || []);
           if (!block) return;
           return { prependContext: `Relevant long-term memory from memini:\n$${block}` };
@@ -278,11 +287,13 @@ data:
           const userText = lastTextByRole(event.messages, "user");
           const assistantText = lastTextByRole(event.messages, "assistant");
           if (!userText || !assistantText) return;
+          const ns = effectiveNamespace(cfg, event);
+          if (ns == null) return;
           await client.postJson("/v1/memories", {
             content: `User: $${userText.slice(0, 1000)}\nAssistant: $${assistantText.slice(0, 3000)}`,
             tier: "episodic",
             metadata: { source: "openclaw" },
-          }, effectiveNamespace(cfg, event));
+          }, ns);
         });
       },
     };
