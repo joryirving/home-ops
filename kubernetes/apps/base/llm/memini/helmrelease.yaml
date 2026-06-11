@@ -1,0 +1,75 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: memini
+spec:
+  interval: 5m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: v0.0.3
+  url: oci://registry.erwanleboucher.dev/eleboucher/charts/memini
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app memini
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: *app
+  interval: 15m
+  dependsOn: []
+  values:
+    # StatefulSet PVC becomes data-memini-0, matching the volsync CLAIM so the
+    # pre-created/restored PVC is adopted instead of provisioned.
+    fullnameOverride: memini
+    image:
+      repository: registry.erwanleboucher.dev/eleboucher/memini
+      tag: 0.0.3
+      digest: sha256:5d2955e0e1cb53420e3b1e5d8803606423cc5c7573ef72f67077a6b963d3b47d
+    backend: sqlite
+    sqlite:
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: ceph-block
+    config:
+      defaultNamespace: default
+    embeddings:
+      baseURL: http://llama-embed.llm:8080/v1
+      model: sentence-transformers/all-MiniLM-L6-v2
+      # all-MiniLM-L6-v2 is 384-dim; the chart default (1536) silently breaks vector search
+      dims: 384
+    llm:
+      baseURL: http://litellm.llm:4000
+      model: review
+      apiKeySecret:
+        name: memini
+        key: llm-api-key
+    auth:
+      apiKeySecret:
+        name: memini
+        key: api-key
+    httpRoute:
+      enabled: true
+      hostnames: ["memini.jory.dev"]
+      parentRefs:
+        - name: envoy-internal
+          namespace: network
+    metrics:
+      serviceMonitor:
+        enabled: true
+    grafanaDashboards:
+      enabled: true
+      folder: llm
+    resources:
+      requests:
+        cpu: 25m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
