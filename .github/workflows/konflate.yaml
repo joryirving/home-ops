@@ -13,19 +13,57 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   KONFLATE_DOMAIN: jory.dev
-  KONFLATE_CLUSTERS: main test utility
 
 jobs:
   comment:
     name: Konflate - Comment
     runs-on: ubuntu-latest
     steps:
+      - name: Select Clusters
+        id: clusters
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const clusters = ["main", "test", "utility"];
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const selected = new Set();
+            let shared = false;
+
+            for (const { filename } of files) {
+              const match = filename.match(/^kubernetes\/(?:apps|clusters)\/(main|test|utility)(?:\/|$)/);
+              if (match) {
+                selected.add(match[1]);
+                continue;
+              }
+
+              if (
+                filename.startsWith("kubernetes/apps/base/") ||
+                filename.startsWith("kubernetes/components/")
+              ) {
+                shared = true;
+              }
+            }
+
+            const resolved = selected.size > 0
+              ? clusters.filter((cluster) => selected.has(cluster))
+              : shared ? clusters : [];
+
+            core.info(`Konflate clusters: ${resolved.length > 0 ? resolved.join(", ") : "none"}`);
+            core.setOutput("clusters", resolved.join(" "));
+
       - name: Fetch rendered summaries
         id: fetch
         env:
+          KONFLATE_CLUSTERS: ${{ steps.clusters.outputs.clusters }}
           PR: ${{ github.event.pull_request.number }}
         run: |
           ready=false
