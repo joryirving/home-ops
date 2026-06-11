@@ -24,6 +24,25 @@ spec:
     name: *app
   interval: 15m
   dependsOn: []
+  # The chart derives all env from structured values and has no rerank settings
+  # yet; inject MEMINI_RERANK_* until upstream adds them to the chart.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: memini
+            patch: |
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: MEMINI_RERANK
+                  value: http://llama-rerank.llm:8080/v1
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: MEMINI_RERANK_MODEL
+                  value: qwen3-reranker
   values:
     # StatefulSet PVC becomes data-memini-0, matching the volsync CLAIM so the
     # pre-created/restored PVC is adopted instead of provisioned.
