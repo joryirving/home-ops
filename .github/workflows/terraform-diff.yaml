@@ -48,20 +48,6 @@ jobs:
       max-parallel: 4
       fail-fast: false
     steps:
-      - name: Configure 1password
-        uses: 1password/load-secrets-action/configure@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
-        with:
-          service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - name: Get Secrets
-        uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4.0.0
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://Kubernetes/garage/TERRAFORM_STATE_KEY_ID
-          AWS_SECRET_ACCESS_KEY: op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY
-
       - name: Generate Token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
@@ -83,6 +69,17 @@ jobs:
       - name: Install 1Password CLI
         uses: 1password/install-cli-action@8d006a0d0a4fd505af7f7ce589e7f768385ff5e4 # v3.0.0
 
+      - name: Load Secrets
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          ACCESS_KEY=$(op read 'op://Kubernetes/garage/TERRAFORM_STATE_KEY_ID')
+          SECRET_KEY=$(op read 'op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY')
+          echo "::add-mask::$ACCESS_KEY"
+          echo "::add-mask::$SECRET_KEY"
+          echo "AWS_ACCESS_KEY_ID=$ACCESS_KEY" >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=$SECRET_KEY" >> "$GITHUB_ENV"
+
       - name: Tofu fmt
         id: fmt
         working-directory: ${{ matrix.paths }}
@@ -92,9 +89,6 @@ jobs:
       - name: Tofu Init
         id: init
         working-directory: ${{ matrix.paths }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: |
           tofu init \
             -backend-config="access_key=$AWS_ACCESS_KEY_ID" \
@@ -108,8 +102,8 @@ jobs:
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: tofu plan -lock=false -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+          TF_VAR_OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: tofu plan -lock=false -input=false -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         continue-on-error: true

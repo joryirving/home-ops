@@ -2,7 +2,7 @@ terraform {
   required_providers {
     authentik = {
       source  = "goauthentik/authentik"
-      version = "2026.2.0"
+      version = "2026.5.0"
     }
 
     onepassword = {
@@ -14,8 +14,7 @@ terraform {
 
 # 1Password provider for secure credential retrieval
 provider "onepassword" {
-  connect_url   = var.OP_CONNECT_HOST
-  connect_token = var.OP_CONNECT_TOKEN
+  service_account_token = var.OP_SERVICE_ACCOUNT_TOKEN
 }
 
 # Module to retrieve authentik credentials from 1Password

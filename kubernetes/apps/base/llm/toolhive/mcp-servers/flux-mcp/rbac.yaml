@@ -1,0 +1,55 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flux-mcp
+---
+# Reuses the broad read-only ClusterRole from kubectl-mcp (secrets excluded).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flux-mcp-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubectl-mcp-readonly
+subjects:
+  - kind: ServiceAccount
+    name: flux-mcp
+    namespace: llm
+---
+# Write access limited to Flux API groups: enables the MCP
+# reconcile/suspend/resume tools (annotation/spec patches) and
+# apply/delete of Flux objects, but nothing outside Flux CRDs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-mcp-write
+rules:
+  - apiGroups:
+      - fluxcd.controlplane.io
+      - helm.toolkit.fluxcd.io
+      - image.toolkit.fluxcd.io
+      - kustomize.toolkit.fluxcd.io
+      - notification.toolkit.fluxcd.io
+      - source.toolkit.fluxcd.io
+    resources:
+      - "*"
+    verbs:
+      - create
+      - patch
+      - update
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flux-mcp-write
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flux-mcp-write
+subjects:
+  - kind: ServiceAccount
+    name: flux-mcp
+    namespace: llm
