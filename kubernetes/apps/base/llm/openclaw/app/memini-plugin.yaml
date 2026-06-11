@@ -4,8 +4,8 @@ kind: ConfigMap
 metadata:
   name: openclaw-memini-plugin
 data:
-  # vendored from eleboucher/memini v0.0.5 integrations/openclaw/plugin/
-  # plugin.mjs carries a local skip_without_agent patch (eleboucher/memini PR pending)
+  # vendored from eleboucher/memini integrations/openclaw/plugin/
+  # local: skip_without_agent in plugin.mjs (PR #13, in v0.0.7) + manifest configSchema (PR #14, pending)
   openclaw.plugin.json: |
     {
       "id": "memini",
@@ -22,6 +22,7 @@ data:
           "namespace": { "type": "string" },
           "namespace_per_agent": { "type": "boolean" },
           "namespace_template": { "type": "string" },
+          "skip_without_agent": { "type": "boolean" },
           "fallback_on_error": { "type": "boolean" },
           "timeout_ms": { "type": "number" }
         }
@@ -40,6 +41,10 @@ data:
         "namespace_template": {
           "label": "Namespace Template",
           "help": "Per-agent namespace, e.g. \"{agent}\" or \"openclaw-{agent}\" ({namespace} also substituted)"
+        },
+        "skip_without_agent": {
+          "label": "Skip Without Agent",
+          "help": "In per-agent mode, skip recall/write when no agent identity resolves (e.g. cron/heartbeat) instead of using the fallback namespace"
         },
         "fallback_on_error": { "label": "Fallback On Error" },
         "timeout_ms": { "label": "Timeout (ms)" }
