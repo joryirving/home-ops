@@ -1,0 +1,36 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: flux
+spec:
+  image: ghcr.io/controlplaneio-fluxcd/flux-operator-mcp:v0.52.0@sha256:50b6b5f346642591e63e7a70a38e60ed5336163d34966bb63e6fbd709ad8a0dd
+  transport: streamable-http
+  proxyMode: streamable-http
+  proxyPort: 8080
+  mcpPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  serviceAccount: flux-mcp
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          args:
+            - serve
+            - --transport=http
+            - --port=8000
+          env:
+            # In-cluster mode: no KUBECONFIG; uses the pod service account.
+            - name: RUNTIME_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+  groupRef:
+    name: mcp-tools
