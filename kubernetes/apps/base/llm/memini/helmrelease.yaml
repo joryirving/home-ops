@@ -10,7 +10,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: v0.0.5
+    tag: v0.0.7
   url: oci://registry.erwanleboucher.dev/eleboucher/charts/memini
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -26,10 +26,9 @@ spec:
   dependsOn: []
   values:
     fullnameOverride: memini
-    image:
-      repository: registry.erwanleboucher.dev/eleboucher/memini
-      tag: 0.0.5
-      digest: sha256:018dddd5bb3a61e6e50058836dd507ca6ba45b60e5e00b76b889f6e2f8cf327e
+    # image intentionally not set: each released chart pins its own matching
+    # image digest, so the OCIRepository tag above is the single version knob
+    # (one Renovate PR per release instead of separate chart + image bumps)
     backend: sqlite
     sqlite:
       persistence:
