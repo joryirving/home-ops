@@ -66,20 +66,6 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: Install 1Password CLI
-        uses: 1password/install-cli-action@8d006a0d0a4fd505af7f7ce589e7f768385ff5e4 # v3.0.0
-
-      - name: Load Secrets
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: |
-          ACCESS_KEY=$(op read 'op://Kubernetes/garage/TERRAFORM_STATE_KEY_ID')
-          SECRET_KEY=$(op read 'op://Kubernetes/garage/TERRAFORM_STATE_SECRET_KEY')
-          echo "::add-mask::$ACCESS_KEY"
-          echo "::add-mask::$SECRET_KEY"
-          echo "AWS_ACCESS_KEY_ID=$ACCESS_KEY" >> "$GITHUB_ENV"
-          echo "AWS_SECRET_ACCESS_KEY=$SECRET_KEY" >> "$GITHUB_ENV"
-
       - name: Tofu fmt
         id: fmt
         working-directory: ${{ matrix.paths }}
@@ -89,6 +75,9 @@ jobs:
       - name: Tofu Init
         id: init
         working-directory: ${{ matrix.paths }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TERRAFORM_STATE_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TERRAFORM_STATE_SECRET_KEY }}
         run: |
           tofu init \
             -backend-config="access_key=$AWS_ACCESS_KEY_ID" \
