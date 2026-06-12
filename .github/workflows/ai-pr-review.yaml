@@ -24,22 +24,6 @@ jobs:
     timeout-minutes: 35
 
     steps:
-      - name: Resolve PR head for comment trigger
-        id: prctx
-        if: github.event_name == 'issue_comment'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.issue.number }}
-        run: |
-          sha="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
-          echo "head_sha=$sha" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || steps.prctx.outputs.head_sha }}
-
       - name: Generate bot token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -75,6 +59,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           COMMENT_ID: ${{ github.event.comment.id }}
         run: gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}/reactions" -f content=rocket --silent || true
+
+      # Only after authorization do we place the (untrusted) PR head on
+      # this secret-bearing runner: on issue_comment the checkout is gated
+      # on the write/admin authorization above, so an unauthorized comment
+      # never checks out attacker-controllable code (CodeQL js/actions/...).
+      - name: Resolve PR head for comment trigger
+        id: prctx
+        if: github.event_name == 'issue_comment' && steps.cmd.outputs.should_review == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          echo "head_sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: github.event_name != 'issue_comment' || steps.cmd.outputs.should_review == 'true'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || steps.prctx.outputs.head_sha || github.sha }}
 
       - name: Analyze PR with reusable AI reviewer
         if: github.event_name == 'pull_request' || steps.cmd.outputs.should_review == 'true'
