@@ -4,7 +4,9 @@ name: AI PR Review
 on:
   pull_request:
     branches: ["main"]
-    types: [opened, reopened, synchronize, ready_for_review]
+    # `labeled` enables the one-click re-review: add the `ai-review` label to
+    # force a fresh review (only write/triage can label — self-authorizing).
+    types: [opened, reopened, synchronize, ready_for_review, labeled]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -22,11 +24,9 @@ permissions:
 jobs:
   review-pr:
     name: AI PR Review
-    # pull_request is the normal path; workflow_dispatch is the authorized
-    # re-review path relayed from the /ai-review command workflow. issue_comment
-    # is intentionally NOT a trigger here — that event is privileged
-    # (secret-bearing), and a workflow that checks out the PR head must never be
-    # reachable from it (CodeQL actions/untrusted-checkout).
+    # pull_request is the normal path; adding the `ai-review` label is the
+    # normal re-review trigger (handled natively by the action). workflow_dispatch
+    # remains as a manual force-review path.
     if: ${{ (github.event_name == 'pull_request' && !github.event.pull_request.draft) || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
