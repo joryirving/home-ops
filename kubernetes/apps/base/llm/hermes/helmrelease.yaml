@@ -32,11 +32,32 @@ spec:
                 set -euo pipefail
                 cp /tmp/config.yaml /opt/data/config.yaml
                 chown 10000:10000 /opt/data/config.yaml
-        containers:
-          app:
+          # Install the memini memory plugin from upstream once; it persists on
+          # the /opt/data volume, so this only hits the network on first boot.
+          install-memini:
             image: &image
               repository: nousresearch/hermes-agent
               tag: v2026.6.5@sha256:9ad3b04ec916ea2c2da22358fd43b024c788d74073210695af88bfc2e63869b4
+            env:
+              HERMES_HOME: /opt/data
+              HOME: /opt/data
+            securityContext:
+              runAsUser: 10000
+              runAsGroup: 10000
+            command:
+              - sh
+              - -c
+              - |
+                if [ ! -f /opt/data/plugins/memini/.installed ]; then
+                  if hermes plugins install eleboucher/memini --enable --force; then
+                    touch /opt/data/plugins/memini/.installed
+                  else
+                    echo "WARN: hermes memini plugin install failed; continuing"
+                  fi
+                fi
+        containers:
+          app:
+            image: *image
             args: ["gateway", "run", "--no-supervise"]
             env:
               MEMINI_URL: http://memini.llm:8080
@@ -151,12 +172,6 @@ spec:
         globalMounts:
           - path: /tmp/config.yaml
             subPath: config.yaml
-      memini-plugin:
-        type: configMap
-        name: hermes-memini-plugin
-        defaultMode: 0755
-        globalMounts:
-          - path: /opt/data/plugins/memini
       gallery:
         type: nfs
         server: voyager.internal
