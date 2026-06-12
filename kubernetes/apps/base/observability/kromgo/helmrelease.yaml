@@ -1,5 +1,19 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: kromgo
+spec:
+  interval: 15m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 0.14.5
+  url: oci://ghcr.io/home-operations/charts/kromgo
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -7,72 +21,85 @@ metadata:
 spec:
   chartRef:
     kind: OCIRepository
-    name: app-template
+    name: kromgo
   interval: 15m
   dependsOn: []
   values:
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-    controllers:
-      kromgo:
-        annotations:
-          reloader.stakater.com/auto: "true"
-        containers:
-          app:
-            image:
-              repository: ghcr.io/home-operations/kromgo
-              tag: 0.14.5@sha256:d4fc54a386b7b6b6751fb6dae497d7e036b36e97751a10b8f1ddad96b27fae54
-            env:
-              PROMETHEUS_URL: http://prometheus-operated.observability.svc.cluster.local:9090
-              SERVER_PORT: &port 80
-              HEALTH_PORT: &healthPort 8080
-            probes:
-              liveness: &probes
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /readyz
-                    port: *healthPort
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 1
-                  failureThreshold: 3
-              readiness: *probes
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-            resources:
-              requests:
-                cpu: 10m
-              limits:
-                memory: 64Mi
-    persistence:
-      config-file:
-        type: configMap
-        name: "{{ .Release.Name }}-configmap"
-        globalMounts:
-          - path: /config/config.yaml
-            subPath: config.yaml
-            readOnly: true
-    route:
-      app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-        rules:
-          - backendRefs:
-              - identifier: app
-                port: *port
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-          health:
-            port: *healthPort
+    config:
+      prometheus: http://prometheus-operated.{{ .Release.Namespace }}.svc.cluster.local:9090
+      badges:
+        - title: Talos
+          id: talos_version
+          query: label_replace(node_os_info{name="Talos"}, "version_id", "$1", "version_id", "v(.+)")
+          valueExpr: labels["version_id"]
+          icon: si:talos
+
+        - title: Kubernetes
+          id: kubernetes_version
+          query: label_replace(kubernetes_build_info{service="kubernetes"}, "git_version", "$1", "git_version", "v(.+)")
+          valueExpr: labels["git_version"]
+          icon: si:kubernetes
+
+        - title: Flux
+          id: flux_version
+          query: label_replace(flux_instance_info, "revision", "$1", "revision", "v(.+)@sha256:.+")
+          valueExpr: labels["revision"]
+          icon: si:flux
+
+        - title: Nodes
+          id: cluster_node_count
+          query: count(count by (node) (kube_node_status_condition{condition="Ready"}))
+          colorExpr: '"green"'
+
+        - title: Pods
+          id: cluster_pod_count
+          query: sum(kube_pod_status_phase{phase="Running"})
+          valueExpr: humanizeCommas(result)
+          colorExpr: '"green"'
+
+        - title: CPU
+          id: cluster_cpu_usage
+          query: round(avg(instance:node_cpu_utilisation:rate5m{pod!=""}) * 100, 0.1)
+          valueExpr: string(result) + "%"
+          colorExpr: 'colorScale(result, [35.0, 75.0], ["green", "orange", "red"])'
+
+        - title: Memory
+          id: cluster_memory_usage
+          query: round(sum(node_memory_MemTotal_bytes{pod!=""} - node_memory_MemAvailable_bytes{pod!=""}) / sum(node_memory_MemTotal_bytes{pod!=""}) * 100, 0.1)
+          valueExpr: string(result) + "%"
+          colorExpr: 'colorScale(result, [35.0, 75.0], ["green", "orange", "red"])'
+
+        - title: Power
+          id: cluster_power_usage
+          query: round((network_ups_tools_ups_load{instance="server_ups"} * 0.01 * 900) + ignoring(server, instance) (network_ups_tools_ups_load{instance="network_ups"} * 0.01 * 330)) # Server Rack Load % * 900W + Network Load % * 330W
+          valueExpr: humanizeCommas(math.round(result)) + "w"
+          colorExpr: 'colorScale(result, [400.0, 750.0], ["green", "orange", "red"])'
+
+        - title: Age
+          id: cluster_birth_age
+          query: round(time() - min(kube_node_created))
+          valueExpr: humanizeDurationDays(result)
+          colorExpr: 'colorScale(result, [15552000.0, 31104000.0], ["green", "orange", "red"])'
+
+        - title: Uptime
+          id: cluster_uptime_age
+          query: round(avg(node_time_seconds{pod!=""} - node_boot_time_seconds{pod!=""}))
+          valueExpr: humanizeDurationDays(result)
+          colorExpr: 'colorScale(result, [15552000.0, 31104000.0], ["green", "orange", "red"])'
+
+        - title: Alerts
+          id: cluster_alert_count
+          query: alertmanager_alerts{state="active"} - 1 # Ignore Watchdog
+          colorExpr: 'colorScale(result, [1.0], ["green", "red"])'
+    httpRoute:
+      enabled: true
+      parentRefs:
+        - name: envoy-external
+          namespace: network
+      hostnames:
+        - "{{ .Release.Name }}.jory.dev"
+    resources:
+      requests:
+        cpu: 10m
+      limits:
+        memory: 64Mi
