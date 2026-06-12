@@ -4,10 +4,8 @@ kind: ConfigMap
 metadata:
   name: openclaw-memini-plugin
 data:
-  # vendored from eleboucher/memini integrations/openclaw/plugin/ with local patches:
-  #  - skip_without_agent in manifest configSchema (upstream PR #14)
-  #  - agent identity from hook ctx + agent:<id> session-key parsing (upstream PR #15)
-  # drop local copies once both merge and a release ships them.
+  # vendored verbatim from eleboucher/memini v0.2.3 integrations/openclaw/plugin/
+  # (no local patches — ctx identity + skip_without_agent are upstream as of 0.2.x)
   openclaw.plugin.json: |
     {
       "id": "memini",
@@ -38,11 +36,11 @@ data:
         },
         "namespace_per_agent": {
           "label": "Per-Agent Namespaces",
-          "help": "Scope memory per agent instead of sharing one namespace"
+          "help": "Scope memory per agent (default) so agents don't poison each other; set false to share one namespace"
         },
         "namespace_template": {
           "label": "Namespace Template",
-          "help": "Per-agent namespace, e.g. \"{agent}\" or \"openclaw-{agent}\" ({namespace} also substituted)"
+          "help": "Per-agent namespace, e.g. \"{namespace}-{agent}\" (default) or \"{agent}\""
         },
         "skip_without_agent": {
           "label": "Skip Without Agent",
@@ -95,7 +93,28 @@ data:
       },
     };
 
-    const DEFAULT_NAMESPACE_TEMPLATE = "{agent}";
+    // Per-agent isolation is the default: each named agent gets its own namespace
+    // so subagents sharing one OpenClaw install do not poison each other's memory.
+    // The default template prefixes the configured base ("openclaw" -> "openclaw-alice")
+    // so per-agent namespaces are distinct from the shared fallback used for
+    // sessions that carry no agent identity.
+    const DEFAULT_NAMESPACE_TEMPLATE = "{namespace}-{agent}";
+
+    // resolveConfig normalizes raw plugin config into the defaults the plugin runs
+    // with. Exported so the defaults (notably per-agent isolation) are testable.
+    export function resolveConfig(pluginConfig) {
+      const c = pluginConfig || {};
+      return {
+        enabled: c.enabled !== false,
+        base_url: c.base_url || DEFAULT_BASE_URL,
+        namespace: c.namespace || DEFAULT_NAMESPACE,
+        namespace_per_agent: c.namespace_per_agent !== false,
+        namespace_template: c.namespace_template || DEFAULT_NAMESPACE_TEMPLATE,
+        skip_without_agent: c.skip_without_agent === true,
+        fallback_on_error: c.fallback_on_error !== false,
+        timeout_ms: c.timeout_ms || DEFAULT_TIMEOUT_MS,
+      };
+    }
 
     // sanitizeNsSegment keeps a namespace segment header-safe (the server sanitizes
     // too, but the X-Memini-Namespace value should be clean): alnum, dot, dash,
@@ -104,7 +123,7 @@ data:
       return String(s).trim().replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
     }
 
-    // Session keys look like "agent:<id>:..." (e.g. agent:matcha:cron:...);
+    // Session keys look like "agent:<id>:..." (e.g. agent:carol:cron:...);
     // extract the agent segment. Raw session UUIDs are NOT identities — treating
     // them as such fragments memory into per-session namespaces.
     const SESSION_KEY_AGENT = /(?:^|[:/])agent[:/]([^:/]+)/;
@@ -153,8 +172,8 @@ data:
     // effectiveNamespace returns the configured namespace, or a per-agent namespace
     // when namespace_per_agent is enabled and the event identifies an agent. The
     // per-agent name comes from namespace_template (default "{agent}"), with
-    // {agent} and {namespace} substituted — e.g. "{agent}" -> "miso",
-    // "openclaw-{agent}" -> "openclaw-miso". Falls back to the base namespace when
+    // {agent} and {namespace} substituted — e.g. "{agent}" -> "alice",
+    // "openclaw-{agent}" -> "openclaw-alice". Falls back to the base namespace when
     // no agent id is present, preserving the shared-memory behavior — unless
     // skip_without_agent is set, in which case it returns null so the caller skips
     // the operation entirely (no recall, no write, no fallback namespace). Useful
@@ -279,17 +298,21 @@ data:
       description: "Shared cross-session memory via a memini service.",
       configSchema,
       register(api) {
-        const cfg = {
-          enabled: api.pluginConfig?.enabled !== false,
-          base_url: api.pluginConfig?.base_url || DEFAULT_BASE_URL,
-          namespace: api.pluginConfig?.namespace || DEFAULT_NAMESPACE,
-          namespace_per_agent: api.pluginConfig?.namespace_per_agent === true,
-          namespace_template: api.pluginConfig?.namespace_template || DEFAULT_NAMESPACE_TEMPLATE,
-          skip_without_agent: api.pluginConfig?.skip_without_agent === true,
-          fallback_on_error: api.pluginConfig?.fallback_on_error !== false,
-          timeout_ms: api.pluginConfig?.timeout_ms || DEFAULT_TIMEOUT_MS,
-        };
+        const cfg = resolveConfig(api.pluginConfig);
         const client = createClient(cfg, api);
+
+        // Per-agent isolation is the default as of memini 0.0.11 (it was off before).
+        // Warn installs that never set it: their pre-0.0.11 memory lives in the shared
+        // base namespace and will not be recalled under the new per-agent namespaces
+        // until migrated (`memini namespace split --from <base>`), or isolation is
+        // turned off again with namespace_per_agent:false.
+        if (api.pluginConfig?.namespace_per_agent === undefined && cfg.namespace_per_agent) {
+          console.error(
+            `[memini] per-agent namespaces are now on by default (template "$${cfg.namespace_template}"); ` +
+              `existing memory under "$${cfg.namespace}" needs \`memini namespace split --from $${cfg.namespace}\` ` +
+              `to migrate, or set namespace_per_agent:false to keep the shared pool.`,
+          );
+        }
 
         if (typeof api.registerMemoryCapability === "function") {
           api.registerMemoryCapability({
