@@ -32,6 +32,29 @@ spec:
                 set -euo pipefail
                 cp /tmp/config.yaml /opt/data/config.yaml
                 chown 10000:10000 /opt/data/config.yaml
+                # Install the memini memory-provider plugin from the upstream
+                # monorepo (integrations/hermes/plugin/memini), version-guarded:
+                # only fetches when the pinned tag differs from what's on the
+                # persistent volume, so normal restarts stay offline.
+                # `hermes plugins install` can't replace this yet: subdir
+                # installs (NousResearch/hermes-agent#42963) are unreleased and
+                # installs are unpinned HEAD (NousResearch/hermes-agent#20350).
+                # renovate: datasource=github-tags depName=eleboucher/memini
+                MEMINI_PLUGIN_VERSION=v0.2.6
+                PLUGIN_DIR=/opt/data/plugins/memini
+                if [ "$(cat "$PLUGIN_DIR/.version" 2>/dev/null)" != "$MEMINI_PLUGIN_VERSION" ]; then
+                  if wget -qO /tmp/memini.tar.gz "https://github.com/eleboucher/memini/archive/refs/tags/$MEMINI_PLUGIN_VERSION.tar.gz"; then
+                    SRC="memini-${MEMINI_PLUGIN_VERSION#v}/integrations/hermes/plugin/memini"
+                    tar -xzf /tmp/memini.tar.gz -C /tmp "$SRC"
+                    rm -rf "$PLUGIN_DIR"
+                    mkdir -p /opt/data/plugins
+                    mv "/tmp/$SRC" "$PLUGIN_DIR"
+                    printf '%s' "$MEMINI_PLUGIN_VERSION" > "$PLUGIN_DIR/.version"
+                    chown -R 10000:10000 "$PLUGIN_DIR"
+                  else
+                    echo "WARN: memini plugin fetch failed; starting with whatever is present"
+                  fi
+                fi
         containers:
           app:
             image: &image
@@ -151,12 +174,6 @@ spec:
         globalMounts:
           - path: /tmp/config.yaml
             subPath: config.yaml
-      memini-plugin:
-        type: configMap
-        name: hermes-memini-plugin
-        defaultMode: 0755
-        globalMounts:
-          - path: /opt/data/plugins/memini
       gallery:
         type: nfs
         server: voyager.internal
