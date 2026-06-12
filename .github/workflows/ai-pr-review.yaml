@@ -5,9 +5,11 @@ on:
   pull_request:
     branches: ["main"]
     types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.number || github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -17,16 +19,26 @@ permissions:
 jobs:
   review-pr:
     name: AI PR Review
-    if: ${{ !github.event.pull_request.draft }}
+    if: ${{ (github.event_name == 'pull_request' && !github.event.pull_request.draft) || github.event_name == 'workflow_dispatch' || (github.event_name == 'issue_comment' && github.event.issue.pull_request != null && contains(github.event.comment.body, '/ai-review')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
     steps:
+      - name: Resolve PR head for comment trigger
+        id: prctx
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          echo "head_sha=$sha" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || steps.prctx.outputs.head_sha }}
 
       - name: Generate bot token
         id: app-token
@@ -35,11 +47,43 @@ jobs:
           client-id: ${{ secrets.SAFFRON_CLIENT_ID }}
           private-key: ${{ secrets.SAFFRON_APP_PRIVATE_KEY }}
 
+      # The gate script ships with the action; the authorization decision
+      # (commenter must hold write/admin) must run before any review work.
+      - name: Check out re-review command gate
+        if: github.event_name == 'issue_comment'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          repository: misospace/pr-reviewer-action
+          ref: bfe54bcac9959ca258da86482caa0f7b16d681c3 # v1.2.8
+          path: .ai-review-gate
+          persist-credentials: false
+
+      - name: Authorize re-review command
+        id: cmd
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENTER_LOGIN: ${{ github.event.comment.user.login }}
+          IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
+        run: bash .ai-review-gate/scripts/parse_review_command.sh
+
+      - name: Acknowledge authorized re-review
+        if: github.event_name == 'issue_comment' && steps.cmd.outputs.should_review == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}/reactions" -f content=rocket --silent || true
+
       - name: Analyze PR with reusable AI reviewer
+        if: github.event_name == 'pull_request' || steps.cmd.outputs.should_review == 'true'
         id: analyze
-        uses: misospace/pr-reviewer-action@0ee2d97090496aafb1b53a1226f75de4af7177c8 # v1.2.7
+        uses: misospace/pr-reviewer-action@bfe54bcac9959ca258da86482caa0f7b16d681c3 # v1.2.8
         with:
           github_token: ${{ steps.app-token.outputs.token }}
+          pr_number: ${{ github.event.pull_request.number || github.event.issue.number }}
+          force_review: ${{ github.event_name == 'issue_comment' && 'true' || 'false' }}
           ai_primary_retries: "3"
           ai_primary_retry_delay_sec: "15"
           ai_base_url: ${{ vars.LITELLM_URL }}
