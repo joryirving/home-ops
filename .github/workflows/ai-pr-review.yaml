@@ -61,6 +61,10 @@ jobs:
       - name: Analyze PR with reusable AI reviewer
         id: analyze
         uses: misospace/pr-reviewer-action@4126a2701a5e9adcf7c48ac6eb678e2e3a2bb2a0 # v1.2.9
+        env:
+          # konflate's read-only MCP endpoint — the konflate evidence provider
+          # fetches the rendered (post-kustomize/Helm) Flux diff for this PR.
+          KONFLATE_MCP_URL: https://konflate.jory.dev/mcp
         with:
           github_token: ${{ steps.app-token.outputs.token }}
           pr_number: ${{ github.event.pull_request.number || inputs.pr_number }}
@@ -97,6 +101,11 @@ jobs:
           tool_enable_for_forks: "false"
           system_prompt_file: .agents/instructions/pr-review.instructions.md
           standards_file_candidates: "AGENTS.md"
+          # Read-only konflate MCP: injects the rendered Flux YAML diff (the
+          # resources Flux will actually apply) as advisory evidence. Never
+          # gates — the provider exits clean with no findings on any failure
+          # or for PRs konflate isn't tracking.
+          evidence_providers_file: .github/konflate-evidence-providers.json
           on_model_failure: notice
           inline_findings: "true"
           publish_mode: review_comment
