@@ -9,7 +9,7 @@ read-only MCP endpoint (KONFLATE_MCP_URL). Read-only, advisory, never a gate:
 on any failure or an untracked PR it emits an empty findings list and exits 0
 so it can never block a review.
 """
-import json, os, sys, urllib.request
+import json, os, sys, urllib.error, urllib.request
 
 URL = os.environ.get("KONFLATE_MCP_URL", "https://konflate.jory.dev/mcp")
 PR = os.environ.get("PR_NUMBER", "").strip()
@@ -29,16 +29,26 @@ def call(method, params=None, notif=False):
     req = urllib.request.Request(URL, data=json.dumps(body).encode(), method="POST")
     req.add_header("Content-Type", "application/json")
     req.add_header("Accept", "application/json, text/event-stream")
+    # An explicit User-Agent is required: urllib's default ("Python-urllib/x")
+    # trips Cloudflare's Browser Integrity Check (Error 1010, HTTP 403) at the
+    # edge, even when the hostname is WAF-allowlisted. Any real UA passes.
+    req.add_header("User-Agent", "ai-pr-reviewer-konflate/1.0")
     tok = os.environ.get("KONFLATE_MCP_TOKEN", "").strip()
     if tok:
         req.add_header("Authorization", f"Bearer {tok}")
     if SID:
         req.add_header("Mcp-Session-Id", SID)
-    with urllib.request.urlopen(req, timeout=20) as r:
-        sid = r.headers.get("Mcp-Session-Id")
-        if sid:
-            SID = sid
-        raw = r.read().decode()
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            sid = r.headers.get("Mcp-Session-Id")
+            if sid:
+                SID = sid
+            raw = r.read().decode()
+    except urllib.error.HTTPError as e:
+        # Surface the edge/app body (e.g. a Cloudflare error page) so a future
+        # block explains itself instead of a bare "HTTP Error 403".
+        detail = e.read().decode("utf-8", "replace")[:200].replace("\n", " ")
+        raise RuntimeError(f"HTTP {e.code} from {URL}: {detail}") from None
     if notif:
         return None
     for line in raw.splitlines():
