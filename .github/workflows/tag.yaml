@@ -26,7 +26,7 @@ jobs:
         id: determine-next-tag
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          github-token: "${{ steps.app-token.outputs.token }}"
+          github-token: ${{ steps.app-token.outputs.token }}
           result-encoding: string
           script: |
             const { data: tags } = await github.rest.repos.listTags({
@@ -48,10 +48,12 @@ jobs:
 
       - name: Create Tag
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          TAG_NAME: ${{ steps.determine-next-tag.outputs.result }}
         with:
-          github-token: "${{ steps.app-token.outputs.token }}"
-          script: |
-            const tagName = "${{ steps.determine-next-tag.outputs.result }}";
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |-
+            const tagName = process.env.TAG_NAME;
 
             const tag = await github.rest.git.createTag({
               owner: context.repo.owner,
