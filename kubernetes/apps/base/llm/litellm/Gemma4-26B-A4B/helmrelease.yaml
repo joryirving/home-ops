@@ -42,6 +42,7 @@ spec:
                     unsloth/gemma-4-26B-A4B-it-qat-GGUF \
                     gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf \
                     mmproj-F16.gguf \
+                    mtp-gemma-4-26B-A4B-it.gguf \
                     --local-dir /models/gemma4-26b-a4b
                   echo "Gemma-4-26B-A4B-it-qat-UD-Q4_K_XL download complete"
                 else
@@ -77,6 +78,8 @@ spec:
               - review
               - --model
               - /models/gemma4-26b-a4b/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
+              - --model-draft
+              - /models/gemma4-26b-a4b/mtp-gemma-4-26B-A4B-it.gguf
               - --ctx-size
               - "204800"
               - --n-gpu-layers
@@ -86,12 +89,12 @@ spec:
               - --parallel
               - "1"
               - --cont-batching
-              # - --spec-type
-              # - draft-mtp
-              # - --spec-draft-p-min
-              # - "0.75"
-              # - --spec-draft-n-max
-              # - "3"
+              - --spec-type
+              - draft-mtp
+              - --spec-draft-p-min
+              - "0.75"
+              - --spec-draft-n-max
+              - "3"
               - -sps
               - "0.90"
               - --cache-prompt
