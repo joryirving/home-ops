@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-strix
+  name: llama-review
 spec:
   chartRef:
     kind: OCIRepository
@@ -20,7 +20,7 @@ spec:
           operator: Exists
           effect: NoSchedule
     controllers:
-      llama-strix:
+      llama-review:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -34,19 +34,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen3.6-35b-a3b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/glm-4.7-flash/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf ] || [ ! -s /models/glm-4.7-flash/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/qwen3.6-35b-a3b
-                  rm -rf /models/qwen3.6-35b-a3b/.cache/huggingface/download/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf.lock
+                  mkdir -p /models/glm-4.7-flash
+                  rm -rf /models/glm-4.7-flash/.cache/huggingface/download/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf.lock
                   hf download \
-                    unsloth/Qwen3.6-35B-A3B-MTP-GGUF \
-                    Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf \
+                    unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF \
+                    GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/qwen3.6-35b-a3b
-
-                  echo "Qwen3.6-35B-A3B download complete"
+                    --local-dir /models/glm-4.7-flash
+                  echo "GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL download complete"
                 else
-                  echo "Qwen3.6-35B-A3B already downloaded, skipping"
+                  echo "GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -58,7 +57,7 @@ spec:
                 cpu: 250m
                 memory: 512Mi
               limits:
-                memory: 4Gi
+                memory: 10Gi
         containers:
           app:
             image:
@@ -75,75 +74,61 @@ spec:
               - --port
               - "8080"
               - --alias
-              - self-hosted
+              - review
               - --model
-              - /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf
-              - --mmproj
-              - /models/qwen3.6-35b-a3b/mmproj-F16.gguf
+              - /models/glm-4.7-flash/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf
               - --ctx-size
-              - "204800"
+              - "202752"
               - --n-gpu-layers
               - "99"
               - --flash-attn
               - "on"
               - --parallel
-              - "2"
+              - "1"
               - --cont-batching
-              - --spec-type
-              - draft-mtp
-              - --spec-draft-p-min
-              - "0.75"
-              - --spec-draft-n-max
-              - "3"
-              - --spec-draft-type-k
-              - q8_0
-              - --spec-draft-type-v
-              - q8_0
               - -sps
               - "0.90"
               - --cache-prompt
               - --kv-unified
-              - --image-min-tokens
-              - "1024"
               - --metrics
               - --temp
-              - "0.6"
+              - "0.7"
               - --top-p
-              - "0.95"
+              - "1.0"
               - --top-k
-              - "20"
-              - --min-p
               - "0"
+              - --min-p
+              - "0.01"
               - --presence-penalty
-              - "0.5"
+              - "0"
               - --repeat-penalty
-              - "1.03"
-              - --reasoning-budget
-              - "16384"
-              - --reasoning-budget-message
-              - "Stop reasoning and produce the implementation, tool call, or final answer."
+              - "1.0"
               - --batch-size
-              - "6144"
+              - "4096"
               - --ubatch-size
-              - "2048"
+              - "1024"
               - --threads
-              - "16"
+              - "6"
               - --threads-batch
-              - "21"
+              - "11"
               - --cache-type-k
               - q8_0
               - --cache-type-v
               - q8_0
               - --no-mmap
               - --jinja
-              - --chat-template-kwargs
-              - '{"preserve_thinking":true}'
+              - --reasoning
+              - on
+              - --reasoning-budget
+              - "16384"
+              - --reasoning-budget-message
+              - "Reasoning budget exhausted. Stop thinking and produce the best final answer or next tool call now."
             resources:
               requests:
-                cpu: 500m
+                cpu: 1
                 memory: 20Gi
               limits:
-                memory: 60Gi
+                memory: 40Gi
             probes:
               liveness:
                 enabled: true
@@ -193,7 +178,7 @@ spec:
       app:
         type: LoadBalancer
         annotations:
-          lbipam.cilium.io/ips: 10.69.10.20
+          lbipam.cilium.io/ips: 10.69.10.21
         externalTrafficPolicy: Cluster
         ports:
           http:
