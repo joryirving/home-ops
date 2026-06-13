@@ -76,6 +76,11 @@ jobs:
           ai_model: ${{ vars.PRIMARY_MODEL }}
           ai_api_key: ${{ secrets.LITELLM_API_KEY }}
           ai_response_format: json_object
+          # The primary model (Gemma) is a thinking model: the default 4096
+          # token budget is consumed entirely by reasoning, leaving empty
+          # content (finish_reason=length) and a failed JSON parse. Give the
+          # reasoning + JSON verdict room.
+          ai_max_tokens: "16000"
           ai_fallback_base_url: ${{ vars.LITELLM_URL }}
           ai_fallback_api_format: ${{ vars.FALLBACK_FORMAT }}
           ai_fallback_model: ${{ vars.FALLBACK_MODEL }}
