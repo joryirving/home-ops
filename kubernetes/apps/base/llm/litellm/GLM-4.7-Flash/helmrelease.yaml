@@ -34,18 +34,18 @@ spec:
               - |
                 set -euo pipefail
 
-                if [ ! -s /models/gemma4-26b-a4b/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf ] || [ ! -s /models/gemma4-26b-a4b/mmproj-F16.gguf ]; then
+                if [ ! -s /models/glm-4.7-flash/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf ] || [ ! -s /models/glm-4.7-flash/mmproj-F16.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_transfer]"
-                  mkdir -p /models/gemma4-26b-a4b
-                  rm -rf /models/gemma4-26b-a4b/.cache/huggingface/download/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf.lock
+                  mkdir -p /models/glm-4.7-flash
+                  rm -rf /models/glm-4.7-flash/.cache/huggingface/download/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf.lock
                   hf download \
-                    unsloth/gemma-4-26B-A4B-it-qat-GGUF \
-                    gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf \
+                    unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF \
+                    GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf \
                     mmproj-F16.gguf \
-                    --local-dir /models/gemma4-26b-a4b
-                  echo "Gemma-4-26B-A4B-it-qat-UD-Q4_K_XL download complete"
+                    --local-dir /models/glm-4.7-flash
+                  echo "GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL download complete"
                 else
-                  echo "Gemma-4-26B-A4B-it-qat-UD-Q4_K_XL already downloaded, skipping"
+                  echo "GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL already downloaded, skipping"
                 fi
             env:
               HF_HUB_ENABLE_HF_TRANSFER: "1"
@@ -76,9 +76,9 @@ spec:
               - --alias
               - review
               - --model
-              - /models/gemma4-26b-a4b/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
+              - /models/glm-4.7-flash/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf
               - --ctx-size
-              - "204800"
+              - "202752"
               - --n-gpu-layers
               - "99"
               - --flash-attn
@@ -86,23 +86,17 @@ spec:
               - --parallel
               - "1"
               - --cont-batching
-              - --spec-type
-              - draft-mtp
-              - --spec-draft-p-min
-              - "0.75"
-              - --spec-draft-n-max
-              - "3"
               - -sps
               - "0.90"
               - --cache-prompt
               - --kv-unified
               - --metrics
               - --temp
-              - "1.0"
+              - "0.7"
               - --top-p
-              - "0.95"
+              - "1.0"
               - --top-k
-              - "64"
+              - "0"
               - --min-p
               - "0.01"
               - --presence-penalty
@@ -123,12 +117,12 @@ spec:
               - q4_0
               - --no-mmap
               - --jinja
-              - --chat-template-kwargs
-              - '{"enable_thinking":true}'
               - --reasoning
               - on
               - --reasoning-budget
               - "8192"
+              - --reasoning-budget-message
+              - "Reasoning budget exhausted. Stop thinking and produce the best final answer or next tool call now."
             resources:
               requests:
                 cpu: 1
