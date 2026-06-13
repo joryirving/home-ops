@@ -14,7 +14,10 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}
+  # `labeled` events each get their own group: net-new PRs are auto-labeled
+  # (Renovate adds several at creation), and with a shared group +
+  # cancel-in-progress those label runs would cancel the real opened review.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}${{ github.event.action == 'labeled' && format('-label-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 permissions:
