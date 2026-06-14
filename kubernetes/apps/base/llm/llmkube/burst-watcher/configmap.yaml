@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llama-burst-watcher-script
+data:
+  watch.sh: |
+    #!/bin/sh
+    set -eu
+
+    NS="$${TARGET_NS:-llm}"
+    ISVC="$${TARGET_ISVC:-gemma-review}"
+
+    log() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*"; }
+
+    prom() {
+      curl -sfG --max-time 10 \
+        --data-urlencode "query=$1" \
+        "$${PROMETHEUS_URL}/api/v1/query" \
+        | jq -r '.data.result[0].value[1] // "0"'
+    }
+
+    current_replicas() {
+      kubectl -n "$${NS}" get inferenceservice "$${ISVC}" \
+        -o jsonpath='{.spec.replicas}' 2>/dev/null || echo ""
+    }
+
+    scale() {
+      kubectl -n "$${NS}" patch inferenceservice "$${ISVC}" \
+        --type merge -p "{\"spec\":{\"replicas\":$1}}" >/dev/null \
+        && log "scaled $${ISVC} -> replicas=$1"
+    }
+
+    log "burst-watcher started: review_job=$${REVIEW_JOB} target=$${NS}/$${ISVC} poll=$${POLL_INTERVAL_SECONDS}s"
+
+    up_streak=0
+    down_streak=0
+    last_up_epoch=0
+
+    while true; do
+      deferred=$(prom "max_over_time(llamacpp:requests_deferred{job=\"$${REVIEW_JOB}\"}[$${PRESSURE_WINDOW}])")
+      up=$(prom "up{job=\"$${REVIEW_JOB}\"}")
+      replicas=$(current_replicas)
+      deferred_int=$${deferred%%.*}
+      : "$${deferred_int:=0}"
+      log "review deferred=$${deferred} up=$${up} gemma_replicas=$${replicas:-?} up_streak=$${up_streak} down_streak=$${down_streak}"
+
+      if [ "$${up}" = "1" ] && [ "$${deferred_int}" -ge "$${SCALE_UP_DEFERRED}" ]; then
+        up_streak=$((up_streak + 1)); down_streak=0
+      else
+        down_streak=$((down_streak + 1)); up_streak=0
+      fi
+
+      if [ "$${replicas:-0}" = "0" ] && [ "$${up_streak}" -ge "$${SCALE_UP_HOLD}" ]; then
+        scale 1
+        last_up_epoch=$(date +%s)
+      elif [ "$${replicas:-0}" != "0" ] && [ "$${down_streak}" -ge "$${SCALE_DOWN_HOLD}" ]; then
+        held=$(( $(date +%s) - last_up_epoch ))
+        if [ "$${held}" -ge "$${MIN_UP_SECONDS}" ]; then
+          scale 0
+        else
+          log "pressure cleared but min-up not met ($${held}s/$${MIN_UP_SECONDS}s), holding gemma"
+        fi
+      fi
+
+      sleep "$${POLL_INTERVAL_SECONDS}"
+    done
