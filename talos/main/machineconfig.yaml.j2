@@ -75,7 +75,7 @@ machine:
         memory.available: 1m
       evictionPressureTransitionPeriod: 30s
       {% endif %}
-    image: ghcr.io/siderolabs/kubelet:v1.36.1
+    image: ghcr.io/siderolabs/kubelet:v1.36.2
     nodeIP:
       validSubnets: ["10.69.1.0/24"]
   nodeLabels:
@@ -152,11 +152,11 @@ cluster:
     extraArgs:
       enable-aggregator-routing: true
       feature-gates: HPAScaleToZero=true
-    image: registry.k8s.io/kube-apiserver:v1.36.1
+    image: registry.k8s.io/kube-apiserver:v1.36.2
   controllerManager:
     extraArgs:
       bind-address: 0.0.0.0
-    image: registry.k8s.io/kube-controller-manager:v1.36.1
+    image: registry.k8s.io/kube-controller-manager:v1.36.2
   coreDNS:
     disabled: true
   etcd:
@@ -168,7 +168,7 @@ cluster:
       listen-metrics-urls: http://0.0.0.0:2381
   proxy:
     disabled: true
-    image: registry.k8s.io/kube-proxy:v1.36.1
+    image: registry.k8s.io/kube-proxy:v1.36.2
   secretboxEncryptionSecret: op://Kubernetes/talos-main/CLUSTER_SECRETBOXENCRYPTIONSECRET
   scheduler:
     config:
@@ -188,7 +188,7 @@ cluster:
                   - maxSkew: 1
                     topologyKey: kubernetes.io/hostname
                     whenUnsatisfiable: ScheduleAnyway
-    image: registry.k8s.io/kube-scheduler:v1.36.1
+    image: registry.k8s.io/kube-scheduler:v1.36.2
     extraArgs:
       bind-address: 0.0.0.0
   serviceAccount:
