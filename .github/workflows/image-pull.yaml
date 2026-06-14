@@ -45,27 +45,17 @@ jobs:
         with:
           cache: false
           tool_versions: |
-            github:home-operations/flate 0.3.3
+            github:home-operations/flate latest
 
       - name: Extract Images
         id: extract
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          combined='[]'
+          echo 'images<<EOF' >> $GITHUB_OUTPUT
           for cluster in main utility; do
-            images="$(flate diff images \
-              --base "$BASE" \
-              --skip-schema-validation \
-              --allow-missing-secrets \
-              --output json \
-              --path ./kubernetes/clusters/"$cluster")"
-            [ -n "$images" ] || images='[]'
-            combined="$(jq -c --arg c "$cluster" --argjson imgs "$images" \
-              '. + ($imgs | map({cluster: $c, image: .}))' <<<"$combined")"
-          done
-          jq '.' <<<"$combined"
-          echo "images=$combined" >> "$GITHUB_OUTPUT"
+            flate diff images -p ./kubernetes/clusters/"$cluster" -o json \
+              | jq --arg cluster "$cluster" '[.[] | {cluster: $cluster, image: .}]'
+          done | jq -sc 'add' >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
 
   pull:
     if: ${{ needs.extract.outputs.images != '[]' }}
