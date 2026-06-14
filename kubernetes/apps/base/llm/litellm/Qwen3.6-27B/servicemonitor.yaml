@@ -7,12 +7,13 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: llama-nvidia
-      app.kubernetes.io/instance: llama-nvidia
+      # LLMKube labels its Service inference.llmkube.dev/service=<isvc name>;
+      # the Service is still named llama-nvidia, so the default `job` label
+      # stays "llama-nvidia" — which the idle-watcher queries against.
+      inference.llmkube.dev/service: llama-nvidia
   namespaceSelector:
     matchNames:
       - llm
-  targetLabels: ["app.kubernetes.io/name", "app.kubernetes.io/instance"]
   endpoints:
     - port: http
       path: /metrics

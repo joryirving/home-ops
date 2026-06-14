@@ -1,0 +1,17 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: qwen3.6-27b
+spec:
+  # Reuse the weights already staged on Ceph instead of re-downloading 16GB.
+  source: pvc://llm-models-rook/qwen3.6-27b/Qwen3.6-27B-UD-Q4_K_XL.gguf
+  format: gguf
+  quantization: UD-Q4_K_XL
+  hardware:
+    accelerator: gpu
+    gpu:
+      enabled: true
+      vendor: nvidia
+      count: 1
+      layers: 99 # -> --n-gpu-layers 99

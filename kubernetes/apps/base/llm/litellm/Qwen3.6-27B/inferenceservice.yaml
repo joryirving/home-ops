@@ -1,0 +1,118 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: llama-nvidia # name == Service name == prometheus `job` label; keep
+                     # stable so LiteLLM + the idle-watcher need no changes
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: qwen3.6-27b
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:841b199aed2649a748875b043b32fed2e8c2d4d87e1d563556817fb7fa44b72b
+  replicas: 1
+
+  # placement (was defaultPodOptions)
+  runtimeClassName: nvidia
+  nodeSelector:
+    topology.kubernetes.io: egpu
+  securityContext:
+    privileged: true
+  # NOTE: current HR also set `hostIPC: true` — no CRD field for it. Expected
+  # fine on single-GPU/single-process; verify in logs after cutover.
+
+  env:
+    - name: NVIDIA_DRIVER_CAPABILITIES
+      value: compute,utility
+
+  # first-class serving knobs
+  contextSize: 131072
+  flashAttention: true
+  jinja: true
+  parallelSlots: 1
+  batchSize: 4096
+  uBatchSize: 512
+  cacheTypeK: q8_0
+  cacheTypeV: q8_0
+  reasoningBudget: 16384
+  reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
+
+  resources:
+    gpu: 1
+    cpu: "500m"
+    memory: 16Gi # LLMKube takes one value (no request/limit split); was 16Gi req / 60Gi lim
+
+  # everything without a first-class field, passed verbatim
+  extraArgs:
+    - --alias
+    - nvidia # OpenAI model id LiteLLM routes to
+    - --cont-batching
+    # speculative decode (MTP) — passthrough (llama.cpp has no native field)
+    - --spec-type
+    - draft-mtp
+    - --spec-draft-p-min
+    - "0.75"
+    - --spec-draft-n-max
+    - "3"
+    - --spec-draft-type-k
+    - q8_0
+    - --spec-draft-type-v
+    - q8_0
+    - -sps
+    - "0.90"
+    - --cache-prompt
+    - --cache-ram
+    - "16384"
+    - --kv-unified
+    - --metrics # required for the ServiceMonitor /metrics scrape + idle-watcher
+    # samplers
+    - --temp
+    - "0.6"
+    - --top-p
+    - "0.95"
+    - --top-k
+    - "20"
+    - --min-p
+    - "0"
+    - --presence-penalty
+    - "0.5"
+    - --repeat-penalty
+    - "1.03"
+    # threads
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    # FLAG: live HR uses --mmap (preserved). Contradicts the no-mmap-on-Ceph
+    # rule; reconcile separately — not changing serving behavior in this PR.
+    - --mmap
+    - --chat-template-kwargs
+    - '{"preserve_thinking":true}'
+
+  endpoint:
+    port: 8080
+    type: ClusterIP # LiteLLM fronts it (was LoadBalancer w/ cilium LB IP on
+                    # llama-ryzen; this service was already ClusterIP)
+
+  # preserve the generous cold-load budget (Ceph + 131072 ctx + spec-decode)
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
