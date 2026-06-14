@@ -60,7 +60,11 @@ jobs:
 
       - name: Analyze PR with reusable AI reviewer
         id: analyze
-        uses: misospace/pr-reviewer-action@4126a2701a5e9adcf7c48ac6eb678e2e3a2bb2a0 # v1.2.9
+        uses: misospace/pr-reviewer-action@c87ab3fb2f8de58756c47185b0cac18c71210944 # v1.2.11
+        env:
+          # konflate's read-only MCP endpoint — the konflate evidence provider
+          # fetches the rendered (post-kustomize/Helm) Flux diff for this PR.
+          KONFLATE_MCP_URL: https://konflate.jory.dev/mcp
         with:
           github_token: ${{ steps.app-token.outputs.token }}
           pr_number: ${{ github.event.pull_request.number || inputs.pr_number }}
@@ -72,6 +76,11 @@ jobs:
           ai_model: ${{ vars.PRIMARY_MODEL }}
           ai_api_key: ${{ secrets.LITELLM_API_KEY }}
           ai_response_format: json_object
+          # The primary model (Gemma) is a thinking model: the default 4096
+          # token budget is consumed entirely by reasoning, leaving empty
+          # content (finish_reason=length) and a failed JSON parse. Give the
+          # reasoning + JSON verdict room.
+          ai_max_tokens: "16000"
           ai_fallback_base_url: ${{ vars.LITELLM_URL }}
           ai_fallback_api_format: ${{ vars.FALLBACK_FORMAT }}
           ai_fallback_model: ${{ vars.FALLBACK_MODEL }}
@@ -97,6 +106,11 @@ jobs:
           tool_enable_for_forks: "false"
           system_prompt_file: .agents/instructions/pr-review.instructions.md
           standards_file_candidates: "AGENTS.md"
+          # Read-only konflate MCP: injects the rendered Flux YAML diff (the
+          # resources Flux will actually apply) as advisory evidence. Never
+          # gates — the provider exits clean with no findings on any failure
+          # or for PRs konflate isn't tracking.
+          evidence_providers_file: .github/konflate-evidence-providers.json
           on_model_failure: notice
           inline_findings: "true"
           publish_mode: review_comment
