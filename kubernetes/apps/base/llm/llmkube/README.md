@@ -4,12 +4,22 @@ Kubernetes operator ([defilantech/LLMKube](https://github.com/defilantech/LLMKub
 self-hosted llama.cpp inference, running in the `llm` namespace. Replaces the
 hand-rolled app-template HelmReleases for GPU model serving.
 
-A model is two CRs:
+A model is two CRs — a **`Model`** (where the weights come from + hardware
+target) and an **`InferenceService`** (the serving pod: llama.cpp args, GPU,
+probes, endpoint) — one file per model under `models/`:
 
-- **`Model`** — where the weights come from and the hardware target.
-- **`InferenceService`** — the serving pod (llama.cpp args, GPU, probes, endpoint).
+```
+llmkube/
+  helmrepository.yaml   helmrelease.yaml   kustomization.yaml   # the operator
+  models/
+    kustomization.yaml        # lists the active model files + the shared ServiceMonitor
+    servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
+    qwen3.6-27b.yaml          # Model + InferenceService
+    gemma-4-26b-a4b.yaml
+```
 
-See `litellm/Qwen3.6-27B/` for a live example.
+All models reconcile under a single `llmkube-models` Flux Kustomization
+(`apps/main/llm/llmkube.yaml`, `dependsOn: llmkube`).
 
 ## How weights are sourced
 
@@ -27,8 +37,21 @@ The `Model.spec.source` scheme decides what the operator does. Three modes:
 
 ## Adding a new model
 
-Each model is its own directory + a Flux Kustomization entry (mirror
-`litellm/Qwen3.6-27B/` and its block in `apps/main/llm/litellm.yaml`).
+Drop one file in `models/` (a `Model` + `InferenceService`, mirror
+`models/qwen3.6-27b.yaml`) and add it to `models/kustomization.yaml`. No new
+folder, no Flux Kustomization — the operator and the existing `llmkube-models`
+Kustomization pick it up.
+
+## Swapping the nvidia slot
+
+`qwen3.6-27b.yaml` and `gemma-4-26b-a4b.yaml` both define an `InferenceService`
+named `llama-nvidia` (alias `nvidia`) for the single egpu / RTX 3090. They can't
+coexist, so exactly one is listed in `models/kustomization.yaml` — swap by moving
+the comment. LiteLLM routing and the idle-watcher (`job="llama-nvidia"`) are
+unaffected since the Service name is identical either way.
+
+A model that runs *concurrently* (different node) instead of swapping just needs
+a distinct `InferenceService` name; list it alongside the others.
 
 ### Option A — let the operator download it (preferred for new models)
 

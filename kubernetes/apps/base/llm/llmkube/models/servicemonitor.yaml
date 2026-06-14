@@ -3,11 +3,12 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: llama-nvidia
+  name: llmkube-models
 spec:
   selector:
-    matchLabels:
-      inference.llmkube.dev/service: llama-nvidia
+    matchExpressions:
+      - key: inference.llmkube.dev/service
+        operator: Exists
   namespaceSelector:
     matchNames:
       - llm
