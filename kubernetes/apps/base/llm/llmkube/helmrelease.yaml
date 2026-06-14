@@ -25,10 +25,14 @@ spec:
     # rendered as templates via crds.install (chart default), so Flux manages
     # them as normal resources.
     modelCache:
-      # We serve from pre-staged Ceph weights (pvc:// sources), so the operator
-      # download cache is unused — disabled to avoid an idle 100Gi PVC.
-      # Re-enable with a storageClass if any Model uses an http/hf source.
-      enabled: false
+      # Shared persistent download cache for Models with http(s) sources (see
+      # README.md — "Adding a new model"). CephFS RWX so the single per-namespace
+      # cache PVC isn't pinned to one GPU node; thin-provisioned, so it costs
+      # nothing until a model actually downloads. pvc:// sources bypass it.
+      enabled: true
+      storageClass: ceph-filesystem
+      accessMode: ReadWriteMany
+      size: 200Gi
     prometheus:
       # We carry our own ServiceMonitor (litellm/<model>/servicemonitor.yaml) so
       # the prometheus `job` label stays the Service name (idle-watcher depends
