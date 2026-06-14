@@ -25,16 +25,6 @@ spec:
   interval: 15m
   dependsOn: []
   values:
-    # v0.3.0 rewrote the chart on top of the bjw-s common library. The legacy
-    # top-level keys (backend/sqlite/config/embeddings/llm/rerank/httpRoute/
-    # metrics/fsck/resources) are no longer recognised; the chart silently
-    # reverts to its 1536-dim / no-LLM / no-fsck defaults if they are not
-    # moved to the new controllers.main.containers.main.env, persistence.data,
-    # route.internal, serviceMonitor.main, and controllers.fsck locations.
-    fullnameOverride: memini
-    # image intentionally not set: each released chart pins its own matching
-    # image digest, so the OCIRepository tag above is the single version knob
-    # (one Renovate PR per release instead of separate chart + image bumps)
     controllers:
       main:
         containers:
@@ -43,8 +33,7 @@ spec:
               MEMINI_BACKEND: "sqlite"
               MEMINI_DEFAULT_NAMESPACE: "default"
               MEMINI_EMBED_BASE_URL: "http://llama-embed.llm:8080/v1"
-              MEMINI_EMBED_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
-              # all-MiniLM-L6-v2 is 384-dim; the chart default (1536) silently breaks vector search
+              MEMINI_EMBED_MODEL: "sentence-transformers/all-MiniLM-L6-v2" # all-MiniLM-L6-v2 is 384-dim
               MEMINI_EMBED_DIMS: "384"
               MEMINI_LLM_BASE_URL: "http://litellm.llm:4000"
               MEMINI_LLM_MODEL: "review"
@@ -64,11 +53,9 @@ spec:
       fsck:
         enabled: true
         cronjob:
-          # daily integrity sweep; the in-process sweeper already handles decay
           schedule: "0 5 * * *"
     persistence:
       data:
-        # volsync-managed claim (restored via ReplicationDestination dataSourceRef)
         existingClaim: memini
     route:
       internal:
