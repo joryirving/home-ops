@@ -52,7 +52,7 @@ jobs:
       - name: Extract Images
         id: extract
         run: |
-          echo 'images<<EOF' >> $GITHUB_OUTPUT
+          echo 'images_$CLUSTER<<EOF' >> $GITHUB_OUTPUT
           flate diff images -p ./kubernetes/clusters/"$CLUSTER" -o json >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
@@ -76,7 +76,7 @@ jobs:
       - name: Pull Image
         env:
           IMAGE: ${{ matrix.image }}
-        run: talosctl --nodes "$NODE" image pull "$IMAGE"
+        run: talosctl --nodes "$NODE" image pull "$IMAGE_$CLUSTER"
 
   success:
     if: ${{ !cancelled() }}
