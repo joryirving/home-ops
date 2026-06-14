@@ -3,16 +3,15 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: llama-nvidia
+  name: llmkube-models
 spec:
   selector:
-    matchLabels:
-      app.kubernetes.io/name: llama-nvidia
-      app.kubernetes.io/instance: llama-nvidia
+    matchExpressions:
+      - key: inference.llmkube.dev/service
+        operator: Exists
   namespaceSelector:
     matchNames:
       - llm
-  targetLabels: ["app.kubernetes.io/name", "app.kubernetes.io/instance"]
   endpoints:
     - port: http
       path: /metrics
