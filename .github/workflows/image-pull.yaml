@@ -31,10 +31,8 @@ jobs:
     needs: filter
     name: Image Pull - Extract Images
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        cluster: ["main", "utility"]
-      fail-fast: false
+    outputs:
+      images: ${{ steps.extract.outputs.images }}
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -47,22 +45,36 @@ jobs:
         with:
           cache: false
           tool_versions: |
-            github:home-operations/flate latest
+            github:home-operations/flate 0.3.3
 
       - name: Extract Images
         id: extract
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          echo 'images_$CLUSTER<<EOF' >> $GITHUB_OUTPUT
-          flate diff images -p ./kubernetes/clusters/"$CLUSTER" -o json >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          combined='[]'
+          for cluster in main utility; do
+            images="$(flate diff images \
+              --base "$BASE" \
+              --skip-schema-validation \
+              --allow-missing-secrets \
+              --output json \
+              --path ./kubernetes/clusters/"$cluster")"
+            [ -n "$images" ] || images='[]'
+            combined="$(jq -c --arg c "$cluster" --argjson imgs "$images" \
+              '. + ($imgs | map({cluster: $c, image: .}))' <<<"$combined")"
+          done
+          jq '.' <<<"$combined"
+          echo "images=$combined" >> "$GITHUB_OUTPUT"
 
   pull:
+    if: ${{ needs.extract.outputs.images != '[]' }}
     needs: extract
     name: Image Pull - Pull Images
-    runs-on: ${{ format('{0}-runner-{1}', github.event.repository.name, matrix.cluster) }}
+    runs-on: ${{ format('{0}-runner-{1}', github.event.repository.name, matrix.target.cluster) }}
     strategy:
       matrix:
-        cluster: ["main", "utility"]
+        target: ${{ fromJSON(needs.extract.outputs.images) }}
       max-parallel: 4
       fail-fast: false
     steps:
@@ -75,8 +87,8 @@ jobs:
 
       - name: Pull Image
         env:
-          IMAGE: ${{ matrix.image }}
-        run: talosctl --nodes "$NODE" image pull "$IMAGE_$CLUSTER"
+          IMAGE: ${{ matrix.target.image }}
+        run: talosctl --nodes "$NODE" image pull "$IMAGE"
 
   success:
     if: ${{ !cancelled() }}
