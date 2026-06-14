@@ -112,6 +112,8 @@ kind: Kustomization
 metadata:
   name: &app llama-nvidia
 spec:
+  dependsOn:
+    - name: llmkube # Model/InferenceService CRDs must exist first
   interval: 1h
   # path: ./kubernetes/apps/base/llm/litellm/Qwen3.5-4B ## RTX 2070 - 8GB
   path: ./kubernetes/apps/base/llm/litellm/Qwen3.6-27B ## RTX 3090 - 24GB
