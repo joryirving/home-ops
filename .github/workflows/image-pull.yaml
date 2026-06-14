@@ -50,52 +50,22 @@ jobs:
             github:home-operations/flate latest
 
       - name: Extract Images
-        env:
-          BASE: origin/${{ github.event.repository.default_branch }}
-          CLUSTER: ${{ matrix.cluster }}
+        id: extract
         run: |
-          flate diff images \
-            --base "$BASE" \
-            --skip-schema-validation \
-            --allow-missing-secrets \
-            --output json \
-            --path ./kubernetes/clusters/"$CLUSTER" \
-            > images.json
-          [ -s images.json ] || echo '[]' > images.json
-
-      - name: Summarize
-        env:
-          CLUSTER: ${{ matrix.cluster }}
-        run: |
-          echo "## New images for cluster \`$CLUSTER\`" >> $GITHUB_STEP_SUMMARY
-          echo '```json' >> $GITHUB_STEP_SUMMARY
-          jq '.' images.json >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Image List
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: images-${{ matrix.cluster }}
-          path: images.json
-          retention-days: 1
+          echo 'images<<EOF' >> $GITHUB_OUTPUT
+          flate diff images -p ./kubernetes/clusters/"$CLUSTER" -o json >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
 
   pull:
     needs: extract
     name: Image Pull - Pull Images
     runs-on: ${{ format('{0}-runner-{1}', github.event.repository.name, matrix.cluster) }}
-
     strategy:
       matrix:
         cluster: ["main", "utility"]
       max-parallel: 4
       fail-fast: false
     steps:
-      - name: Download Image List
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: images-${{ matrix.cluster }}
-          path: .
-
       - name: Setup Mise
         uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
         with:
@@ -103,26 +73,10 @@ jobs:
           tool_versions: |
             talosctl latest
 
-      - name: Pull Images
-        run: |
-          images=($(jq -r '.[]' images.json))
-          if [[ ${#images[@]} -eq 0 ]]; then
-            echo "No new images for cluster ${{ matrix.cluster }}, skipping"
-            exit 0
-          fi
-          for image in "${images[@]}"; do
-            echo "Pulling $image"
-            for attempt in 1 2 3; do
-              if talosctl --nodes "$NODE" image pull "$image"; then
-                break
-              fi
-              if [[ "$attempt" -eq 3 ]]; then
-                exit 1
-              fi
-              echo "Image pull failed for $image; retrying in 20s (${attempt}/3)..." >&2
-              sleep 20
-            done
-          done
+      - name: Pull Image
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: talosctl --nodes "$NODE" image pull "$IMAGE"
 
   success:
     if: ${{ !cancelled() }}
@@ -136,4 +90,6 @@ jobs:
 
       - name: All jobs passed or skipped?
         if: ${{ !(contains(needs.*.result, 'failure')) }}
-        run: echo "All jobs passed or skipped" && echo "${{ toJSON(needs.*.result) }}"
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: echo "All jobs passed or skipped" && echo "$RESULTS"
