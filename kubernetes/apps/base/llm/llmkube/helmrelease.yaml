@@ -21,21 +21,11 @@ spec:
     remediation:
       retries: 3
   values:
-    # Controller runs in `llm` (release namespace); CRDs are cluster-scoped and
-    # rendered as templates via crds.install (chart default), so Flux manages
-    # them as normal resources.
     modelCache:
-      # Shared persistent download cache for Models with http(s) sources (see
-      # README.md — "Adding a new model"). CephFS RWX so the single per-namespace
-      # cache PVC isn't pinned to one GPU node; thin-provisioned, so it costs
-      # nothing until a model actually downloads. pvc:// sources bypass it.
       enabled: true
       storageClass: ceph-filesystem
       accessMode: ReadWriteMany
       size: 200Gi
     prometheus:
-      # We carry our own ServiceMonitor (litellm/<model>/servicemonitor.yaml) so
-      # the prometheus `job` label stays the Service name (idle-watcher depends
-      # on it). Leave the operator's inference PodMonitor off.
       inferencePodMonitor:
         enabled: false
