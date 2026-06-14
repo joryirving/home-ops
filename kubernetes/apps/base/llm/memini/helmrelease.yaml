@@ -25,52 +25,61 @@ spec:
   interval: 15m
   dependsOn: []
   values:
+    # v0.3.0 rewrote the chart on top of the bjw-s common library. The legacy
+    # top-level keys (backend/sqlite/config/embeddings/llm/rerank/httpRoute/
+    # metrics/fsck/resources) are no longer recognised; the chart silently
+    # reverts to its 1536-dim / no-LLM / no-fsck defaults if they are not
+    # moved to the new controllers.main.containers.main.env, persistence.data,
+    # route.internal, serviceMonitor.main, and controllers.fsck locations.
     fullnameOverride: memini
     # image intentionally not set: each released chart pins its own matching
     # image digest, so the OCIRepository tag above is the single version knob
     # (one Renovate PR per release instead of separate chart + image bumps)
-    backend: sqlite
-    sqlite:
-      persistence:
+    controllers:
+      main:
+        containers:
+          main:
+            env:
+              MEMINI_BACKEND: "sqlite"
+              MEMINI_DEFAULT_NAMESPACE: "default"
+              MEMINI_EMBED_BASE_URL: "http://llama-embed.llm:8080/v1"
+              MEMINI_EMBED_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+              # all-MiniLM-L6-v2 is 384-dim; the chart default (1536) silently breaks vector search
+              MEMINI_EMBED_DIMS: "384"
+              MEMINI_LLM_BASE_URL: "http://litellm.llm:4000"
+              MEMINI_LLM_MODEL: "review"
+              MEMINI_LLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: memini
+                    key: llm-api-key
+              MEMINI_RERANK: "http://llama-rerank.llm:8080/v1"
+              MEMINI_RERANK_MODEL: "qwen3-reranker"
+            resources:
+              requests:
+                cpu: 25m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+      fsck:
         enabled: true
+        cronjob:
+          # daily integrity sweep; the in-process sweeper already handles decay
+          schedule: "0 5 * * *"
+    persistence:
+      data:
         # volsync-managed claim (restored via ReplicationDestination dataSourceRef)
         existingClaim: memini
-    config:
-      defaultNamespace: default
-    embeddings:
-      baseURL: http://llama-embed.llm:8080/v1
-      model: sentence-transformers/all-MiniLM-L6-v2
-      # all-MiniLM-L6-v2 is 384-dim; the chart default (1536) silently breaks vector search
-      dims: 384
-    llm:
-      baseURL: http://litellm.llm:4000
-      model: review
-      apiKeySecret:
-        name: memini
-        key: llm-api-key
-    rerank:
-      mode: http://llama-rerank.llm:8080/v1
-      model: qwen3-reranker
-    httpRoute:
-      enabled: true
-      hostnames: ["memini.jory.dev"]
-      parentRefs:
-        - name: envoy-internal
-          namespace: network
-    metrics:
-      serviceMonitor:
+    route:
+      internal:
+        enabled: true
+        hostnames: ["memini.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    serviceMonitor:
+      main:
         enabled: true
     grafanaDashboards:
       enabled: true
       folder: llm
-    fsck:
-      cronjob:
-        enabled: true
-        # daily integrity sweep; the in-process sweeper already handles decay
-        schedule: "0 5 * * *"
-    resources:
-      requests:
-        cpu: 25m
-        memory: 128Mi
-      limits:
-        memory: 512Mi
