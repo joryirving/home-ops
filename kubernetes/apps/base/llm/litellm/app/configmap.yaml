@@ -11,7 +11,7 @@ data:
       - model_name: self-hosted
         model_info:
           mode: chat
-          max_input_tokens: 204800
+          max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
           supports_vision: true
@@ -25,7 +25,7 @@ data:
       - model_name: self-hosted
         model_info:
           mode: chat
-          max_input_tokens: 204800
+          max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
           supports_vision: true
@@ -33,27 +33,13 @@ data:
           model: openai/qwen3.6-35b-a3b@q5_k_xl
           api_base: http://mac.internal:1234/v1
           api_key: lm-studio
-          max_parallel_requests: 1
-          order: 1
-
-      - model_name: self-hosted
-        model_info:
-          mode: chat
-          max_input_tokens: 131072
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_vision: false
-        litellm_params:
-          model: openai/nvidia
-          api_base: http://llama-nvidia.llm:8080/v1
-          api_key: llama-nvidia
-          max_parallel_requests: 1
+          max_parallel_requests: 2
           order: 1
 
       - model_name: review
         model_info:
           mode: chat
-          max_input_tokens: 202752
+          max_input_tokens: 204800
           max_output_tokens: 16384
           supports_function_calling: true
           supports_vision: false
@@ -346,7 +332,7 @@ data:
       enable_pre_call_checks: true
       fallbacks:
         - review: ["dsv4f","self-hosted"]
-        - self-hosted: ["dsv4f"]
+        - self-hosted: ["dsv4f", "nvidia"]
         - dsv4f: ["go-minimax-m3"]
         - MiniMax: ["go-minimax-m3"]
 
