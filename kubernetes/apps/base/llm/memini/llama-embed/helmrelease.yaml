@@ -41,7 +41,7 @@ spec:
                 set -euo pipefail
 
                 if [ ! -s /models/all-MiniLM-L6-v2/all-MiniLM-L6-v2-Q8_0.gguf ]; then
-                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                  pip install --no-cache-dir "huggingface_hub[hf_xet]"
                   mkdir -p /models/all-MiniLM-L6-v2
                   rm -rf /models/all-MiniLM-L6-v2/.cache/huggingface/download/all-MiniLM-L6-v2-Q8_0.ggufflock
                   hf download \
@@ -52,8 +52,6 @@ spec:
                 else
                   echo "all-MiniLM-L6-v2 already downloaded, skipping"
                 fi
-            env:
-              HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
               - secretRef:
                   name: huggingface

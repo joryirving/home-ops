@@ -14,7 +14,7 @@ spec:
           command: ["/bin/sh", "-ec"]
           args:
             - |
-              pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+              pip install --no-cache-dir "huggingface_hub[hf_xet]"
               hf download Qwen/Qwen3-Embedding-0.6B-GGUF \
                 Qwen3-Embedding-0.6B-Q8_0.gguf --local-dir /models/qwen3-embedding
               hf download unsloth/gemma-4-26B-A4B-it-qat-GGUF \
@@ -25,9 +25,6 @@ spec:
                 Qwen3.6-27B-UD-Q4_K_XL.gguf \
                 mmproj-F16.gguf --local-dir /models/qwen3.6-27b
               echo "staging complete"
-          env:
-            - name: HF_HUB_ENABLE_HF_TRANSFER
-              value: "1"
           envFrom:
             - secretRef:
                 name: huggingface

@@ -122,9 +122,8 @@ spec:
           command: ["/bin/sh", "-ec"]
           args:
             - |
-              pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+              pip install --no-cache-dir "huggingface_hub[hf_xet]"
               hf download <org>/<repo> <File>.gguf --local-dir /models/<dir>
-          env: { HF_HUB_ENABLE_HF_TRANSFER: "1" }
           envFrom: [{ secretRef: { name: huggingface } }]  # for gated repos
           volumeMounts: [{ name: models, mountPath: /models }]
       volumes:

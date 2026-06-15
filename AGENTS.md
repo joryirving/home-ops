@@ -157,4 +157,12 @@ Before approving, verify:
 
 For Helm chart and container image upgrades, you **must** use tool requests (e.g., `gh_api`) to fetch release notes, changelogs, and upstream metadata from the source repository. Do not rely on the PR description alone — verify against the actual upstream release.
 
+### Kubernetes ↔ Talos compatibility
+
+This cluster runs on **Talos Linux**, which pins the node OS and the kubelet together. The deployed Talos version is the installer image in `talos/main/machineconfig.yaml.j2` (the `factory.talos.dev/installer:<version>` reference). When a PR bumps the Kubernetes version (the kubelet image, a `KubernetesUpgrade` resource, or the `kubernetes` Renovate group), you MUST:
+
+1. Read the deployed Talos version from `talos/main/machineconfig.yaml.j2`.
+2. Confirm the new Kubernetes version is supported on that Talos release against Talos's published support matrix — search the web for "talos <version> kubernetes support matrix" (the docs live at `docs.siderolabs.com`; the old `talos.dev` matrix URLs 404) and fetch it.
+3. Cite the matrix in the review. Do not approve a Kubernetes bump on "patch release" reasoning without confirming Talos supports it — an unchecked matrix is an Unknown, not an approval.
+
 _Flux automatically reconciles changes once the PR is merged._
