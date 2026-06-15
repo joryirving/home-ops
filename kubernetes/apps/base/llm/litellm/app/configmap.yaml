@@ -34,7 +34,7 @@ data:
           api_base: http://mac.internal:1234/v1
           api_key: lm-studio
           max_parallel_requests: 1
-          order: 2
+          order: 1
 
       - model_name: self-hosted
         model_info:
@@ -48,7 +48,7 @@ data:
           api_base: http://llama-nvidia.llm:8080/v1
           api_key: llama-nvidia
           max_parallel_requests: 1
-          order: 3
+          order: 1
 
       - model_name: review
         model_info:
@@ -76,21 +76,21 @@ data:
           api_base: http://mac.internal:1234/v1
           api_key: lm-studio
           max_parallel_requests: 1
-          order: 2
+          order: 1
 
       - model_name: review
         model_info:
           mode: chat
-          max_input_tokens: 131072
+          max_input_tokens: 204800
           max_output_tokens: 16384
           supports_function_calling: true
           supports_vision: false
         litellm_params:
           model: openai/review
-          api_base: http://gemma-review.llm:8080/v1
-          api_key: gemma-review
+          api_base: http://llama-nvidia-gemma.llm:8080/v1
+          api_key: llama-nvidia-gemma
           max_parallel_requests: 1
-          order: 3
+          order: 1
 
       - model_name: ryzen
         model_info:
@@ -341,6 +341,7 @@ data:
     router_settings:
       redis_host: os.environ/REDIS_HOST
       redis_port: os.environ/REDIS_PORT
+      routing_strategy: least-busy
       cooldown_time: 30
       enable_pre_call_checks: true
       fallbacks:
