@@ -1,0 +1,156 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: llama-qwen-embed
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-qwen-embed-gpu
+      hostIPC: true
+      labels:
+        igpu-workload: "true"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              igpu-workload: "true"
+    controllers:
+      llama-qwen-embed:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          model-download:
+            image:
+              repository: python
+              tag: 3.14-slim
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                set -eu
+
+                if [ ! -s /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf ]; then
+                  pip install --no-cache-dir "huggingface_hub[hf_xet]"
+                  mkdir -p /models/llama-qwen-embed
+                  rm -f /models/llama-qwen-embed/.cache/huggingface/download/*.lock
+                  hf download \
+                    Qwen/Qwen3-Embedding-0.6B-GGUF \
+                    Qwen3-Embedding-0.6B-Q8_0.gguf \
+                    --local-dir /models/llama-qwen-embed
+                  echo "llama-qwen-embed download complete"
+                else
+                  echo "llama-qwen-embed already downloaded, skipping"
+                fi
+            envFrom:
+              - secretRef:
+                  name: huggingface
+            resources:
+              requests:
+                cpu: 250m
+                memory: 512Mi
+              limits:
+                memory: 4Gi
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ggml-org/llama.cpp
+              tag: server-vulkan
+            securityContext:
+              privileged: true
+            args:
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8080"
+              - --alias
+              - llama-qwen-embed
+              - --model
+              - /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf
+              - --embeddings
+              - --pooling
+              - last
+              - --ctx-size
+              - "32768"
+              - --n-gpu-layers
+              - "99"
+              - --parallel
+              - "2"
+              - --cont-batching
+              - --batch-size
+              - "16384"
+              - --ubatch-size
+              - "16384"
+              - --threads
+              - "6"
+              - --threads-batch
+              - "12"
+              - --metrics
+              - --mmap
+            env:
+              ZES_ENABLE_SYSMAN: "1"
+              ONEAPI_DEVICE_SELECTOR: level_zero:gpu
+              UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS: "1"
+            resources:
+              claims:
+                - name: gpu
+              requests:
+                cpu: 250m
+                memory: 2Gi
+              limits:
+                memory: 4Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                  failureThreshold: 6
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  failureThreshold: 360
+                  periodSeconds: 10
+    persistence:
+      models:
+        existingClaim: llama-qwen-embed
+        globalMounts:
+          - path: /models
+      dev-dri:
+        type: hostPath
+        hostPath: /dev/dri
+        globalMounts:
+          - path: /dev/dri
+    service:
+      app:
+        ports:
+          http:
+            port: 8080

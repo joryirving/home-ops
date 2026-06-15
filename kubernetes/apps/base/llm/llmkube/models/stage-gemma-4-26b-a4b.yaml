@@ -1,0 +1,39 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stage-gemma-4-26b-a4b
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: stage
+          image: python:3.14-slim
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              pip install --no-cache-dir "huggingface_hub[hf_xet]"
+              rm -f /models/gemma-4-26b-a4b/.cache/huggingface/download/*.lock
+              hf download unsloth/gemma-4-26B-A4B-it-qat-GGUF \
+                gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf \
+                mmproj-F16.gguf \
+                mtp-gemma-4-26B-A4B-it.gguf --local-dir /models/gemma-4-26b-a4b
+          envFrom:
+            - secretRef:
+                name: huggingface
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: llmkube-models
