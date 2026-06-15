@@ -60,7 +60,7 @@ jobs:
 
       - name: Analyze PR with reusable AI reviewer
         id: analyze
-        uses: misospace/pr-reviewer-action@3479bf51ab9133414ae07af783bff985d3929884 # v1.3.0
+        uses: misospace/pr-reviewer-action@7189223d79151d0508bdb1c60b6e60097e998ce5 # v1.3.1
         env:
           # konflate's read-only MCP endpoint — the konflate evidence provider
           # fetches the rendered (post-kustomize/Helm) Flux diff for this PR.
@@ -90,16 +90,18 @@ jobs:
           ai_smart_api_format: ${{ vars.SMART_FORMAT }}
           ai_smart_model: ${{ vars.SMART_MODEL }}
           ai_smart_api_key: ${{ secrets.LITELLM_API_KEY }}
-          allowed_source_hosts: "github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net,talos.dev,www.talos.dev"
+          allowed_source_hosts: "github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net,talos.dev,www.talos.dev,docs.siderolabs.com,search.jory.dev"
           context_limit_mode: normal
           ci_status_check: "true"
           ci_timeout_sec: "600"
-          tool_mode: plan_execute_loop
+          search_url: "https://search.jory.dev/search"
+          tool_mode: native_loop
           tool_max_rounds: "2"
           tool_max_requests: "4"
-          tool_planning_timeout_sec: "45"
+          tool_loop_wall_clock_sec: "600"
+          tool_planning_timeout_sec: "300"
           tool_planning_max_context_bytes: "15000"
-          tool_planning_max_tokens: "1500"
+          tool_planning_max_tokens: "16000"
           tool_max_response_bytes: "12000"
           tool_allowed_gh_api_repos: "*"
           tool_request_timeout_sec: "15"

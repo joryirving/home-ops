@@ -29,7 +29,7 @@ spec:
                 set -euo pipefail
 
                 if [ ! -s /models/qwen3.5-9b/Qwen3.5-9B-heretic.Q4_K_M.gguf ] || [ ! -s /models/qwen3.5-9b/mmproj-F16.gguf ]; then
-                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                  pip install --no-cache-dir "huggingface_hub[hf_xet]"
                   mkdir -p /models/qwen3.5-9b
                   rm -rf /models/qwen3.5-9b/.cache/huggingface/download/Qwen3.5-9B-heretic.Q4_K_M.gguf.lock
                   hf download \
@@ -44,22 +44,20 @@ spec:
                 else
                   echo "Qwen3.5-9B already downloaded, skipping"
                 fi
-            env:
-              HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
               - secretRef:
                   name: huggingface
             resources:
               requests:
-                cpu: 250m
-                memory: 512Mi
+                cpu: 2
+                memory: 8Gi
               limits:
-                memory: 4Gi
+                memory: 20Gi
         containers:
           app:
             image:
               repository: ghcr.io/ggml-org/llama.cpp
-              tag: server-vulkan@sha256:7ba2a6d1e518a84d40741c70dc0e373c09a5ff7b770ad2aa250baf6a0a70c158
+              tag: server-vulkan@sha256:55153f52b9e12896baa78d7af410e5846e567e3232d81fd99c02c7abf628219b
             securityContext:
               privileged: true
             args:

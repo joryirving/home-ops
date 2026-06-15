@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-rerank
+  name: llama-qwen-embed
 spec:
   chartRef:
     kind: OCIRepository
@@ -14,7 +14,7 @@ spec:
     defaultPodOptions:
       resourceClaims:
         - name: gpu
-          resourceClaimTemplateName: llama-rerank-gpu
+          resourceClaimTemplateName: llama-qwen-embed-gpu
       hostIPC: true
       labels:
         igpu-workload: "true"
@@ -26,7 +26,7 @@ spec:
             matchLabels:
               igpu-workload: "true"
     controllers:
-      llama-rerank:
+      llama-qwen-embed:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -38,29 +38,29 @@ spec:
               - /bin/sh
               - -ec
               - |
-                set -euo pipefail
+                set -eu
 
-                if [ ! -s /models/Qwen3-Reranker-0.6B/qwen3-reranker-0.6b-q8_0.gguf ]; then
+                if [ ! -s /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_xet]"
-                  mkdir -p /models/Qwen3-Reranker-0.6B
-                  rm -rf /models/Qwen3-Reranker-0.6B/.cache/huggingface/download/qwen3-reranker-0.6b-q8_0.ggufflock
+                  mkdir -p /models/llama-qwen-embed
+                  rm -f /models/llama-qwen-embed/.cache/huggingface/download/*.lock
                   hf download \
-                    ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF \
-                    qwen3-reranker-0.6b-q8_0.gguf \
-                    --local-dir /models/Qwen3-Reranker-0.6B
-                  echo "Qwen3-Reranker-0.6B download complete"
+                    Qwen/Qwen3-Embedding-0.6B-GGUF \
+                    Qwen3-Embedding-0.6B-Q8_0.gguf \
+                    --local-dir /models/llama-qwen-embed
+                  echo "llama-qwen-embed download complete"
                 else
-                  echo "Qwen3-Reranker-0.6B already downloaded, skipping"
+                  echo "llama-qwen-embed already downloaded, skipping"
                 fi
             envFrom:
               - secretRef:
                   name: huggingface
             resources:
               requests:
-                cpu: 250m
-                memory: 512Mi
+                cpu: 2
+                memory: 8Gi
               limits:
-                memory: 4Gi
+                memory: 20Gi
         containers:
           app:
             image:
@@ -74,23 +74,23 @@ spec:
               - --port
               - "8080"
               - --alias
-              - qwen3-reranker
+              - llama-qwen-embed
               - --model
-              - /models/Qwen3-Reranker-0.6B/qwen3-reranker-0.6b-q8_0.gguf
-              - --rerank
+              - /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf
+              - --embeddings
               - --pooling
-              - rank
+              - last
               - --ctx-size
-              - "8192"
+              - "32768"
               - --n-gpu-layers
               - "99"
               - --parallel
-              - "4"
+              - "2"
               - --cont-batching
               - --batch-size
-              - "4096"
+              - "16384"
               - --ubatch-size
-              - "4096"
+              - "16384"
               - --threads
               - "6"
               - --threads-batch
@@ -141,7 +141,7 @@ spec:
                   periodSeconds: 10
     persistence:
       models:
-        existingClaim: llama-rerank
+        existingClaim: llama-qwen-embed
         globalMounts:
           - path: /models
       dev-dri:
