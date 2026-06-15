@@ -45,6 +45,8 @@ spec:
                     key: llm-api-key
               MEMINI_RERANK: "http://llama-rerank.llm:8080/v1"
               MEMINI_RERANK_MODEL: "qwen3-reranker"
+              MEMINI_RERANK_TOP_N: "10" # 20 docs exceeds the timeout on the shared iGPU; default 20
+              MEMINI_RERANK_TIMEOUT: "6s" # default 3s was always exceeded -> recall fell back to unreranked
             resources:
               requests:
                 cpu: 25m
