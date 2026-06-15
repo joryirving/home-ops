@@ -49,16 +49,16 @@ The single egpu / RTX 3090 has two `InferenceService`s, distinguished by
 
 - `llama-nvidia` (Qwen3.6-27B) — `replicas: 1`, priority `normal`. Default
   tenant: the `nvidia` coding model, also a LiteLLM backfill for `self-hosted`.
-- `gemma-review` (Gemma-4-26B-A4B) — `replicas: 0`, priority `high`. The review
-  burst capacity, downloaded on demand (`refreshPolicy: OnChange`).
+- `llama-nvidia-gemma` (Gemma-4-26B-A4B) — `replicas: 0`, priority `high`. The
+  review burst capacity, downloaded on demand (`refreshPolicy: OnChange`).
 
 `burst-watcher/` polls `llamacpp:requests_deferred{job="llama-review"}`. When the
-ROCm review model stays backed up, it scales `gemma-review` `0→1` only after
+ROCm review model stays backed up, it scales `llama-nvidia-gemma` `0→1` only after
 `llama-nvidia` is idle, avoiding interruption of in-flight Qwen work. When the
 queue drains (after `MIN_UP_SECONDS`), it scales back to `0` only after
-`gemma-review` is idle, then Qwen can continue as the default 3090 tenant.
-LiteLLM has `gemma-review` as an `order: 3` backfill in the `review` group, so
-traffic spreads to it once it's up.
+`llama-nvidia-gemma` is idle, then Qwen can continue as the default 3090 tenant.
+LiteLLM has `llama-nvidia-gemma` as an `order: 2` backfill in the `review` group
+(at the same `204800` context as the others), so traffic spreads to it once it's up.
 
 While a review burst is active the 3090's coding (`nvidia`) and the `self-hosted`
 backfill are unavailable — that's the cost of one card serving review instead.
