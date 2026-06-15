@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: llama-review
+  name: llama-qwen-embed
 spec:
   chartRef:
     kind: OCIRepository
@@ -12,15 +12,21 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-qwen-embed-gpu
       hostIPC: true
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+      labels:
+        igpu-workload: "true"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              igpu-workload: "true"
     controllers:
-      llama-review:
+      llama-qwen-embed:
         annotations:
           reloader.stakater.com/auto: "true"
         initContainers:
@@ -32,20 +38,19 @@ spec:
               - /bin/sh
               - -ec
               - |
-                set -euo pipefail
+                set -eu
 
-                if [ ! -s /models/glm-4.7-flash/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf ] || [ ! -s /models/glm-4.7-flash/mmproj-F16.gguf ]; then
+                if [ ! -s /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_xet]"
-                  mkdir -p /models/glm-4.7-flash
-                  rm -rf /models/glm-4.7-flash/.cache/huggingface/download/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf.lock
+                  mkdir -p /models/llama-qwen-embed
+                  rm -f /models/llama-qwen-embed/.cache/huggingface/download/*.lock
                   hf download \
-                    unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF \
-                    GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf \
-                    mmproj-F16.gguf \
-                    --local-dir /models/glm-4.7-flash
-                  echo "GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL download complete"
+                    Qwen/Qwen3-Embedding-0.6B-GGUF \
+                    Qwen3-Embedding-0.6B-Q8_0.gguf \
+                    --local-dir /models/llama-qwen-embed
+                  echo "llama-qwen-embed download complete"
                 else
-                  echo "GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL already downloaded, skipping"
+                  echo "llama-qwen-embed already downloaded, skipping"
                 fi
             envFrom:
               - secretRef:
@@ -59,74 +64,51 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-6.4.4@sha256:3bb965453ce938969bab38b78921b4160aa7e969ad4545f6c32b095acca698a0
-              pullPolicy: Always
+              repository: ghcr.io/ggml-org/llama.cpp
+              tag: server-vulkan
             securityContext:
               privileged: true
-            command:
-              - llama-server
             args:
               - --host
               - 0.0.0.0
               - --port
               - "8080"
               - --alias
-              - review
+              - llama-qwen-embed
               - --model
-              - /models/glm-4.7-flash/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf
+              - /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf
+              - --embeddings
+              - --pooling
+              - last
               - --ctx-size
-              - "202752"
+              - "32768"
               - --n-gpu-layers
               - "99"
-              - --flash-attn
-              - "on"
               - --parallel
-              - "1"
+              - "2"
               - --cont-batching
-              - -sps
-              - "0.90"
-              - --cache-prompt
-              - --kv-unified
-              - --metrics
-              - --temp
-              - "0.7"
-              - --top-p
-              - "1.0"
-              - --top-k
-              - "0"
-              - --min-p
-              - "0.01"
-              - --presence-penalty
-              - "0"
-              - --repeat-penalty
-              - "1.0"
               - --batch-size
-              - "4096"
+              - "16384"
               - --ubatch-size
-              - "1024"
+              - "16384"
               - --threads
               - "6"
               - --threads-batch
-              - "11"
-              - --cache-type-k
-              - q8_0
-              - --cache-type-v
-              - q8_0
-              - --no-mmap
-              - --jinja
-              - --reasoning
-              - on
-              - --reasoning-budget
-              - "16384"
-              - --reasoning-budget-message
-              - "Reasoning budget exhausted. Stop thinking and produce the best final answer or next tool call now."
+              - "12"
+              - --metrics
+              - --mmap
+            env:
+              ZES_ENABLE_SYSMAN: "1"
+              ONEAPI_DEVICE_SELECTOR: level_zero:gpu
+              UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS: "1"
             resources:
+              claims:
+                - name: gpu
               requests:
-                cpu: 1
-                memory: 20Gi
+                cpu: 250m
+                memory: 2Gi
               limits:
-                memory: 40Gi
+                memory: 4Gi
             probes:
               liveness:
                 enabled: true
@@ -159,7 +141,7 @@ spec:
                   periodSeconds: 10
     persistence:
       models:
-        existingClaim: llm-models
+        existingClaim: llama-qwen-embed
         globalMounts:
           - path: /models
       dev-dri:
@@ -167,17 +149,8 @@ spec:
         hostPath: /dev/dri
         globalMounts:
           - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd
     service:
       app:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.21
-        externalTrafficPolicy: Cluster
         ports:
           http:
             port: 8080
