@@ -35,7 +35,7 @@ spec:
                 set -euo pipefail
 
                 if [ ! -s /models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf ] || [ ! -s /models/qwen3.6-35b-a3b/mmproj-F16.gguf ]; then
-                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                  pip install --no-cache-dir "huggingface_hub[hf_xet]"
                   mkdir -p /models/qwen3.6-35b-a3b
                   rm -rf /models/qwen3.6-35b-a3b/.cache/huggingface/download/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf.lock
                   hf download \
@@ -48,8 +48,6 @@ spec:
                 else
                   echo "Qwen3.6-35B-A3B already downloaded, skipping"
                 fi
-            env:
-              HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
               - secretRef:
                   name: huggingface
