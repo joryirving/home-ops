@@ -41,7 +41,7 @@ spec:
                 set -euo pipefail
 
                 if [ ! -s /models/Qwen3-Reranker-0.6B/qwen3-reranker-0.6b-q8_0.gguf ]; then
-                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                  pip install --no-cache-dir "huggingface_hub[hf_xet]"
                   mkdir -p /models/Qwen3-Reranker-0.6B
                   rm -rf /models/Qwen3-Reranker-0.6B/.cache/huggingface/download/qwen3-reranker-0.6b-q8_0.ggufflock
                   hf download \
@@ -52,8 +52,6 @@ spec:
                 else
                   echo "Qwen3-Reranker-0.6B already downloaded, skipping"
                 fi
-            env:
-              HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
               - secretRef:
                   name: huggingface
