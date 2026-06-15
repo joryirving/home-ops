@@ -35,7 +35,7 @@ spec:
                 set -euo pipefail
 
                 if [ ! -s /models/glm-4.7-flash/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf ] || [ ! -s /models/glm-4.7-flash/mmproj-F16.gguf ]; then
-                  pip install --no-cache-dir "huggingface_hub[hf_transfer]"
+                  pip install --no-cache-dir "huggingface_hub[hf_xet]"
                   mkdir -p /models/glm-4.7-flash
                   rm -rf /models/glm-4.7-flash/.cache/huggingface/download/GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL.gguf.lock
                   hf download \
@@ -47,8 +47,6 @@ spec:
                 else
                   echo "GLM-4.7-Flash-REAP-23B-A3B-UD-Q4_K_XL already downloaded, skipping"
                 fi
-            env:
-              HF_HUB_ENABLE_HF_TRANSFER: "1"
             envFrom:
               - secretRef:
                   name: huggingface
