@@ -3,14 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: gatus-sidecar
+  name: nvidia-power-limit
 spec:
   interval: 1h
-  path: ./kubernetes/apps/base/observability/gatus-sidecar
-  postBuild:
-    substitute:
-      SUBDOMAIN: status
-  wait: false
+  path: ./kubernetes/apps/base/kube-system/nvidia-power-limit
+  wait: true
   prune: true
   sourceRef:
     kind: GitRepository
