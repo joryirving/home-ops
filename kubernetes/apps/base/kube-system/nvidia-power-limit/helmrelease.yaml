@@ -1,0 +1,52 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app nvidia-power-limit
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+  interval: 1h
+  values:
+    defaultPodOptions:
+      runtimeClassName: nvidia
+      nodeSelector:
+        topology.kubernetes.io: egpu
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+    controllers:
+      nvidia-power-limit:
+        type: daemonset
+        containers:
+          app:
+            image:
+              repository: docker.io/library/debian
+              tag: 12-slim
+            env:
+              NVIDIA_VISIBLE_DEVICES: all
+              NVIDIA_DRIVER_CAPABILITIES: utility
+              POWER_LIMIT_WATTS: "300"
+            command:
+              - /bin/bash
+              - -c
+              - |
+                set -euo pipefail
+                nvidia-smi -pm 1
+                nvidia-smi -pl "${POWER_LIMIT_WATTS}"
+                nvidia-smi --query-gpu=name,power.limit,power.max_limit --format=csv
+                exec sleep infinity
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
+            securityContext:
+              privileged: true
+              runAsNonRoot: false
+              runAsUser: 0
+              runAsGroup: 0
