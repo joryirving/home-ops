@@ -98,11 +98,11 @@ cached file is kept forever. Changing the `source` URL forces a fresh download
 ### Option B — pre-stage on Ceph, then reference it
 
 Use this for gated models, multi-file/vision models, or weights you already
-have on `llm-models-rook`. Download out of band, then:
+have on `llmkube-models`. Download out of band, then:
 
 ```yaml
 spec:
-  source: pvc://llm-models-rook/<dir>/<File>.gguf
+  source: pvc://llmkube-models/<dir>/<File>.gguf
 ```
 
 A one-off download Job (same pattern as the old `model-download` initContainer):
@@ -129,7 +129,7 @@ spec:
           volumeMounts: [{ name: models, mountPath: /models }]
       volumes:
         - name: models
-          persistentVolumeClaim: { claimName: llm-models-rook }
+          persistentVolumeClaim: { claimName: llmkube-models }
 ```
 
 For Ceph PVC sources, remember `--no-mmap` (cold-fault rule) in the
