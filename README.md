@@ -14,6 +14,7 @@ _... managed with Flux, Renovate, and GitHub Actions_ <img src="https://fonts.gs
 [![Talos](https://kromgo.jory.dev/badges/talos_version)](https://talos.dev)&nbsp;&nbsp;
 [![Kubernetes](https://kromgo.jory.dev/badges/kubernetes_version)](https://kubernetes.io)&nbsp;&nbsp;
 [![Flux](https://kromgo.jory.dev/badges/flux_version)](https://fluxcd.io)&nbsp;&nbsp;
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/joryirving/home-ops)&nbsp;&nbsp;
 
 </div>
 
