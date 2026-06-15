@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: stage-qwen3-6-27b
+  name: stage-${MODEL_SLUG}
 spec:
   backoffLimit: 6
   activeDeadlineSeconds: 3600
@@ -16,19 +16,20 @@ spec:
           args:
             - |
               pip install --no-cache-dir "huggingface_hub[hf_xet]"
-              rm -f /models/qwen3.6-27b/.cache/huggingface/download/*.lock
-              hf download unsloth/Qwen3.6-27B-MTP-GGUF \
-                Qwen3.6-27B-UD-Q4_K_XL.gguf \
-                mmproj-F16.gguf --local-dir /models/qwen3.6-27b
+              rm -f /models/${MODEL_DIR}/.cache/huggingface/download/*.lock
+              hf download ${MODEL_REPO} ${MODEL_FILES} --local-dir /models/${MODEL_DIR}
+          env:
+            - name: HF_XET_CHUNK_CACHE_SIZE_BYTES
+              value: "0"
           envFrom:
             - secretRef:
                 name: huggingface
           resources:
             requests:
-              cpu: 250m
-              memory: 512Mi
+              cpu: "2"
+              memory: 8Gi
             limits:
-              memory: 4Gi
+              memory: 24Gi
           volumeMounts:
             - name: models
               mountPath: /models

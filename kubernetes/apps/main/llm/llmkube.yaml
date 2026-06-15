@@ -59,3 +59,49 @@ spec:
     name: flux-system
     namespace: flux-system
   wait: false
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: stage-qwen3-6-27b
+spec:
+  dependsOn:
+    - name: llmkube-models
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/llmkube/stage
+  postBuild:
+    substitute:
+      MODEL_SLUG: qwen3-6-27b
+      MODEL_REPO: unsloth/Qwen3.6-27B-MTP-GGUF
+      MODEL_FILES: Qwen3.6-27B-UD-Q4_K_XL.gguf mmproj-F16.gguf
+      MODEL_DIR: qwen3.6-27b
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: stage-gemma-4-26b-a4b
+spec:
+  dependsOn:
+    - name: llmkube-models
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/llmkube/stage
+  postBuild:
+    substitute:
+      MODEL_SLUG: gemma-4-26b-a4b
+      MODEL_REPO: unsloth/gemma-4-26B-A4B-it-qat-GGUF
+      MODEL_FILES: gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf mmproj-F16.gguf mtp-gemma-4-26B-A4B-it.gguf
+      MODEL_DIR: gemma-4-26b-a4b
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
