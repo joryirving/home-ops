@@ -12,13 +12,19 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-rerank-gpu
       hostIPC: true
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+      labels:
+        igpu-workload: "true"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              igpu-workload: "true"
     controllers:
       llama-rerank:
         annotations:
@@ -58,13 +64,10 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: rocm-6.4.4@sha256:2ce313f3d3f853889042e837877ef65868494181064f33ca39db2b5f637fed28
-              pullPolicy: Always
+              repository: ghcr.io/ggml-org/llama.cpp
+              tag: server-vulkan
             securityContext:
               privileged: true
-            command:
-              - llama-server
             args:
               - --host
               - 0.0.0.0
@@ -93,8 +96,14 @@ spec:
               - --threads-batch
               - "12"
               - --metrics
-              - --no-mmap
+              - --mmap
+            env:
+              ZES_ENABLE_SYSMAN: "1"
+              ONEAPI_DEVICE_SELECTOR: level_zero:gpu
+              UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS: "1"
             resources:
+              claims:
+                - name: gpu
               requests:
                 cpu: 250m
                 memory: 2Gi
@@ -140,11 +149,6 @@ spec:
         hostPath: /dev/dri
         globalMounts:
           - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd
     service:
       app:
         ports:
