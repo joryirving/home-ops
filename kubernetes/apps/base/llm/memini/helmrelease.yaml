@@ -75,12 +75,12 @@ spec:
         existingClaim: memini
     route:
       main:
+        enabled: true
         parentRefs:
           - name: envoy-external
             namespace: network
             sectionName: https
-        hostnames:
-          - memini.jory.dev
+        hostnames: ["memini.jory.dev"]
         rules:
           - matches:
               - path:
@@ -99,12 +99,12 @@ spec:
       internal:
         annotations:
           gatus.home-operations.com/enabled: "false"
+        enabled: true
         parentRefs:
           - name: envoy-internal
             namespace: network
             sectionName: https
-        hostnames:
-          - memini.jory.dev
+        hostnames: ["memini.jory.dev"]
         rules:
           - backendRefs:
               - identifier: main
