@@ -10,7 +10,7 @@ spec:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    tag: v0.3.9
+    tag: v0.4.2
   url: oci://registry.erwanleboucher.dev/eleboucher/charts/memini
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
@@ -37,6 +37,8 @@ spec:
               MEMINI_EMBED_MODEL: "llama-embed" # Qwen3-Embedding-0.6B, 1024-dim, 32k ctx
               MEMINI_EMBED_DIMS: "1024"
               MEMINI_EMBED_MAX_ITEM_CHARS: "6000" # cap input so Qwen-0.6B embed stays ~sub-2s on the Intel iGPU (avoids the long-input 5s timeout 500s); covers openclaw's ≤4k-char captures fully
+              MEMINI_EMBED_MAX_CONCURRENCY: "2" # iGPU can't service a recall burst in parallel (matches llama-embed --parallel 2); serializes embeds so concurrent recalls don't overrun it
+              MEMINI_RECALL_EMBED_TIMEOUT: "3s" # query embed past this (or on error) -> recall degrades to keyword-only instead of stalling/500-ing on the slow iGPU
               MEMINI_LLM_BASE_URL: "http://litellm.llm:4000"
               MEMINI_LLM_MODEL: "self-hosted"
               MEMINI_LLM_API_KEY:
@@ -46,8 +48,9 @@ spec:
                     key: llm-api-key
               MEMINI_RERANK: "http://llama-rerank.llm:8080/v1"
               MEMINI_RERANK_MODEL: "qwen3-reranker"
-              MEMINI_RERANK_TOP_N: "10" # lighter rerank so it can finish within the consumer recall budget; default 20
-              MEMINI_RERANK_TIMEOUT: "3s" # MUST stay under consumers' timeout_ms (5s) — else slow reranks overrun it and the caller cancels (context canceled = no recall). Best-effort: reranks when the iGPU is free, fast composite fallback otherwise.
+              MEMINI_RERANK_TOP_N: "10" # lighter rerank so it finishes faster on the iGPU; default 20
+              MEMINI_RERANK_MAX_CONCURRENCY: "2" # cap in-flight reranks so concurrent recalls don't stack on the weak iGPU
+              MEMINI_RERANK_TIMEOUT: "8s" # iGPU rerank is 3-6s; give it room (v0.4.0 default 10s). Consumers must allow >this: opencode 30s (v0.4.0 default), openclaw bumped to 15s. Embed has its own RECALL_EMBED_TIMEOUT fallback.
               MEMINI_API_KEY:
                 valueFrom:
                   secretKeyRef:
@@ -75,7 +78,7 @@ spec:
       data:
         existingClaim: memini
     route:
-      internal:
+      ui:
         enabled: true
         hostnames: ["memini.jory.dev"]
         parentRefs:
