@@ -74,41 +74,12 @@ spec:
       data:
         existingClaim: memini
     route:
-      main:
+      internal:
         enabled: true
+        hostnames: ["memini.jory.dev"]
         parentRefs:
           - name: envoy-external
             namespace: network
-            sectionName: https
-        hostnames: ["memini.jory.dev"]
-        rules:
-          - matches:
-              - path:
-                  type: PathPrefix
-                  value: /v1
-              - path:
-                  type: PathPrefix
-                  value: /mcp
-              - path:
-                  type: PathPrefix
-                  value: /.well-known/
-            backendRefs:
-              - identifier: main
-                port: http
-      # Split-horizon: same host, internal gateway serves the UI (catch-all) on-LAN.
-      internal:
-        annotations:
-          gatus.home-operations.com/enabled: "false"
-        enabled: true
-        parentRefs:
-          - name: envoy-internal
-            namespace: network
-            sectionName: https
-        hostnames: ["memini.jory.dev"]
-        rules:
-          - backendRefs:
-              - identifier: main
-                port: http
     serviceMonitor:
       main:
         enabled: true
