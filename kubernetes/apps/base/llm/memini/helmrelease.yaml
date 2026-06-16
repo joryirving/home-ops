@@ -47,6 +47,11 @@ spec:
               MEMINI_RERANK_MODEL: "qwen3-reranker"
               MEMINI_RERANK_TOP_N: "10" # lighter rerank so it can finish within the consumer recall budget; default 20
               MEMINI_RERANK_TIMEOUT: "3s" # MUST stay under consumers' timeout_ms (5s) — else slow reranks overrun it and the caller cancels (context canceled = no recall). Best-effort: reranks when the iGPU is free, fast composite fallback otherwise.
+              MEMINI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: memini
+                    key: api-key
             resources:
               requests:
                 cpu: 25m
@@ -57,10 +62,24 @@ spec:
         enabled: true
         cronjob:
           schedule: "0 5 * * *"
+        containers:
+          fsck:
+            env:
+              MEMINI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: memini
+                    key: api-key
     persistence:
       data:
         existingClaim: memini
     route:
+      main:
+        enabled: true
+        hostnames: ["memini.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
       internal:
         enabled: true
         hostnames: ["memini.jory.dev"]
