@@ -59,14 +59,8 @@ spec:
                 # Install the memini memory plugin from ClawHub, version-guarded:
                 # only fetches when the pinned version differs from what's on the
                 # persistent volume, so normal restarts stay offline.
-                # Pinned to 0.2.7 — the last release with a synchronous
-                # plugin register(). memini >=0.2.8 made register() async
-                # (await registerMeminiTools), which OpenClaw rejects with
-                # "plugin register must be synchronous", so the plugin installs
-                # but never registers (no memory). Hold here until upstream
-                # restores a sync register (eleboucher/memini#17).
                 # renovate: datasource=github-tags depName=eleboucher/memini
-                MEMINI_PLUGIN_VERSION=0.2.7
+                MEMINI_PLUGIN_VERSION=0.3.7
                 if [ "$(cat "$HOME/.openclaw/extensions/memini/.clawver" 2>/dev/null)" != "$MEMINI_PLUGIN_VERSION" ]; then
                   if node dist/index.js plugins install "clawhub:@eleboucher/memini@$MEMINI_PLUGIN_VERSION" --pin --force; then
                     printf '%s' "$MEMINI_PLUGIN_VERSION" > "$HOME/.openclaw/extensions/memini/.clawver"
