@@ -38,29 +38,29 @@ spec:
               - /bin/sh
               - -ec
               - |
-                set -euo pipefail
+                set -eu
 
-                if [ ! -s /models/all-MiniLM-L6-v2/all-MiniLM-L6-v2-Q8_0.gguf ]; then
+                if [ ! -s /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf ]; then
                   pip install --no-cache-dir "huggingface_hub[hf_xet]"
-                  mkdir -p /models/all-MiniLM-L6-v2
-                  rm -rf /models/all-MiniLM-L6-v2/.cache/huggingface/download/all-MiniLM-L6-v2-Q8_0.ggufflock
+                  mkdir -p /models/llama-qwen-embed
+                  rm -f /models/llama-qwen-embed/.cache/huggingface/download/*.lock
                   hf download \
-                    second-state/All-MiniLM-L6-v2-Embedding-GGUF \
-                    all-MiniLM-L6-v2-Q8_0.gguf \
-                    --local-dir /models/all-MiniLM-L6-v2
-                  echo "all-MiniLM-L6-v2 download complete"
+                    Qwen/Qwen3-Embedding-0.6B-GGUF \
+                    Qwen3-Embedding-0.6B-Q8_0.gguf \
+                    --local-dir /models/llama-qwen-embed
+                  echo "llama-qwen-embed download complete"
                 else
-                  echo "all-MiniLM-L6-v2 already downloaded, skipping"
+                  echo "llama-qwen-embed already downloaded, skipping"
                 fi
             envFrom:
               - secretRef:
                   name: huggingface
             resources:
               requests:
-                cpu: 250m
-                memory: 512Mi
+                cpu: 2
+                memory: 8Gi
               limits:
-                memory: 4Gi
+                memory: 20Gi
         containers:
           app:
             image:
@@ -74,23 +74,23 @@ spec:
               - --port
               - "8080"
               - --alias
-              - sentence-transformers/all-MiniLM-L6-v2
+              - llama-qwen-embed
               - --model
-              - /models/all-MiniLM-L6-v2/all-MiniLM-L6-v2-Q8_0.gguf
+              - /models/llama-qwen-embed/Qwen3-Embedding-0.6B-Q8_0.gguf
               - --embeddings
               - --pooling
-              - mean
+              - last
               - --ctx-size
-              - "8192"
+              - "32768"
               - --n-gpu-layers
               - "99"
               - --parallel
-              - "4"
+              - "2"
               - --cont-batching
               - --batch-size
-              - "8192"
+              - "16384"
               - --ubatch-size
-              - "8192"
+              - "16384"
               - --threads
               - "6"
               - --threads-batch
