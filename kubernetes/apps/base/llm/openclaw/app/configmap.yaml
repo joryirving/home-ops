@@ -392,6 +392,9 @@ data:
               // agent-attributed cron/heartbeat/scheduled turns (which skip_without_agent
               // misses) — skip recall+capture so they don't accumulate as episodic noise (#19)
               skip_system_turns: true,
+              // gate per-prompt-build recall: drop low-relevance hits + cap count (curbs spray)
+              recall_min_score: 0.4,
+              recall_limit: 3,
               fallback_on_error: true,
               // 15s so a completed iGPU rerank (MEMINI_RERANK_TIMEOUT 8s + embed) isn't cancelled mid-recall
               timeout_ms: 15000,
