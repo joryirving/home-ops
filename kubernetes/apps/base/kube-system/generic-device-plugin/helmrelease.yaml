@@ -3,7 +3,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: amd-device-plugin
+  name: generic-device-plugin
 spec:
   chartRef:
     kind: OCIRepository
@@ -21,32 +21,36 @@ spec:
           operator: Exists
           effect: NoSchedule
     controllers:
-      amd-device-plugin:
+      generic-device-plugin:
+        type: daemonset
         containers:
           app:
             image:
-              repository: docker.io/rocm/k8s-device-plugin
-              tag: 1.31.0.10@sha256:0555caf9ccc1cf407b353d1aade87d4598059f87a784085aafe3ece19405b612
+              repository: ghcr.io/squat/generic-device-plugin
+              tag: latest@sha256:dc192e164c69b03f156765793a1be62ca437709ae477b27ca7d8f3dcf5021576
+            args:
+              - --device
+              - '{"name":"rocm","groups":[{"count":2,"paths":[{"path":"/dev/kfd"},{"path":"/dev/dri/renderD128"}]}]}'
+            securityContext:
+              privileged: true
             resources:
               requests:
                 cpu: 10m
               limits:
                 memory: 64Mi
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
     persistence:
+      device-plugins:
+        type: hostPath
+        hostPath: /var/lib/kubelet/device-plugins
+        globalMounts:
+          - path: /var/lib/kubelet/device-plugins
       dev-dri:
         type: hostPath
         hostPath: /dev/dri
         globalMounts:
-          - readOnly: true
-      sys:
+          - path: /dev/dri
+      dev-kfd:
         type: hostPath
-        hostPath: /sys
+        hostPath: /dev/kfd
         globalMounts:
-          - readOnly: true
-      var-lib-kubelet-device-plugins:
-        type: hostPath
-        hostPath: /var/lib/kubelet/device-plugins
+          - path: /dev/kfd
