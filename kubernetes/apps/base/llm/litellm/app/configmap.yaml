@@ -104,14 +104,6 @@ data:
           api_key: llama-nvidia
           max_parallel_requests: 1
 
-      - model_name: sentence-transformers/all-MiniLM-L6-v2
-        model_info:
-          mode: embedding
-        litellm_params:
-          model: openai/sentence-transformers/all-MiniLM-L6-v2
-          api_base: http://llama-embed.llm:8080/v1
-          api_key: llama-embed
-
       - model_name: qwen3-embedding-0-6b
         model_info:
           mode: embedding
@@ -178,6 +170,30 @@ data:
             - location: message
               index: -1
 
+      - model_name: glm-5.1
+        model_info:
+          mode: chat
+          max_input_tokens: 203000
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.1
+          api_base: https://api.z.ai/api/coding/paas/v4
+          api_key: os.environ/ZAI_API_KEY
+
+      - model_name: glm-5.2
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.1
+          api_base: https://api.z.ai/api/coding/paas/v4
+          api_key: os.environ/ZAI_API_KEY
+
       - model_name: kimi-k2.6
         model_info:
           mode: chat
@@ -190,7 +206,7 @@ data:
           api_base: https://api.moonshot.ai/v1
           api_key: os.environ/MOONSHOT_API_KEY
 
-      - model_name: glm-5.1
+      - model_name: go-glm-5.1
         model_info:
           mode: chat
           max_input_tokens: 203000
@@ -310,8 +326,8 @@ data:
       fallbacks:
         - review: ["dsv4f","self-hosted"]
         - self-hosted: ["dsv4f", "nvidia"]
-        - dsv4f: ["go-minimax-m3"]
-        - MiniMax: ["go-minimax-m3"]
+        - dsv4f: ["glm-5.1", "go-minimax-m3"]
+        - MiniMax: ["glm-5.2", "go-minimax-m3"]
 
     litellm_settings:
       success_callback: ["prometheus"]
@@ -336,5 +352,6 @@ data:
       - MINIMAX_API_KEY
       - MOONSHOT_API_KEY
       - OPENCODE_API_KEY
+      - ZAI_API_KEY
       - REDIS_HOST
       - REDIS_PORT
