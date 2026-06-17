@@ -1,0 +1,113 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: gemma-4-26b-a4b-rocm
+spec:
+  source: pvc://llm-models/gemma4-26b-a4b/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
+  format: gguf
+  quantization: UD-Q4_K_XL
+  hardware:
+    accelerator: rocm
+    gpu:
+      enabled: true
+      vendor: amd
+      count: 1
+      layers: 99
+      resourceName: devic.es/rocm
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: llama-review
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: gemma-4-26b-a4b-rocm
+  runtime: llamacpp
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:b9000e6f53fc027279d0c1bda66befa562535834b1d2f584f48bf1098b435055
+  command:
+    - llama-server
+  replicas: 1
+  priority: high
+  securityContext:
+    privileged: true
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  contextSize: 204800
+  parallelSlots: 1
+  flashAttention: true
+  jinja: true
+  cacheTypeK: q8_0
+  cacheTypeV: q8_0
+  reasoningBudget: 16384
+  batchSize: 4096
+  uBatchSize: 1024
+  resources:
+    cpu: "1"
+    memory: 20Gi
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  extraArgs:
+    - --alias
+    - review
+    - --model-draft
+    - /model-source/gemma4-26b-a4b/mtp-gemma-4-26B-A4B-it.gguf
+    - --cont-batching
+    - --spec-type
+    - draft-mtp
+    - --spec-draft-p-min
+    - "0.75"
+    - --spec-draft-n-max
+    - "3"
+    - -sps
+    - "0.90"
+    - --cache-prompt
+    - --kv-unified
+    - --temp
+    - "1.0"
+    - --top-p
+    - "0.95"
+    - --top-k
+    - "64"
+    - --min-p
+    - "0.01"
+    - --presence-penalty
+    - "0"
+    - --repeat-penalty
+    - "1.0"
+    - --threads
+    - "6"
+    - --threads-batch
+    - "11"
+    - --no-mmap
+    - --chat-template-kwargs
+    - '{"enable_thinking":true}'
+    - --reasoning
+    - "on"
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
