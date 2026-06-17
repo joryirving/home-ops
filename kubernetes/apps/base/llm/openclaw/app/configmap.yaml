@@ -384,6 +384,9 @@ data:
               // cron/heartbeat sessions reach the plugin with no agent identity;
               // skip them instead of polluting a shared fallback namespace
               skip_without_agent: true,
+              // agent-attributed cron/heartbeat/scheduled turns (which skip_without_agent
+              // misses) — skip recall+capture so they don't accumulate as episodic noise (#19)
+              skip_system_turns: true,
               fallback_on_error: true,
               // 15s so a completed iGPU rerank (MEMINI_RERANK_TIMEOUT 8s + embed) isn't cancelled mid-recall
               timeout_ms: 15000,
