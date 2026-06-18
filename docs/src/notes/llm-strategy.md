@@ -67,6 +67,54 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | `mimo-v2.5` / `mimo-v2.5-pro` | mimo-v2.5(-pro) | 262k | Lighter analysis lane |
 | `qwen3.7-plus` | qwen3.7-plus | 1M | Big-context Qwen via gateway |
 
+## Model capability ranking
+
+Benchmark snapshot as of **2026-06-17** — perishable. Numbers are mostly **vendor
+self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Terminal-Bench
+2.0 ≠ 2.1; GPT SWE-Pro drops ~15pts under standardized scaffolding), so treat deltas as
+**directional**, not precise, and re-pull when models bump. `n/p` = not published.
+
+| Model | Alias | Arch (total/active) | Ctx | SWE-V | SWE-Pro | LiveCodeB | Term-B | GPQA | AIME |
+|---|---|---|---|---|---|---|---|---|---|
+| GPT-5.5 | `chatgpt/gpt-5.5` | proprietary | 1M | 80.6 | 58.6¹ | n/p | 84.7 | 94.0 | n/p |
+| DeepSeek-V4-Pro | `dsv4p` | MoE 1.6T/49A | 1M | 80.6 | 55.4 | 93.5 | 67.9 | 90.1 | n/p |
+| GLM-5.2 | `glm-5.2` | MoE ~753B/40A | 1M | n/p | 62.1 | n/p | 81.0 | 91.2 | 99.2 |
+| Kimi K2.6 | `go-kimi-k2.6` | MoE 1T/32A | 256k | 80.2 | 58.6 | 89.6 | 66.7 | 90.5 | 96.4 |
+| MiniMax-M3 | `MiniMax` | MoE ~229B/9.8A² | 1M | 80.5¹ | 59.0 | n/p | 66.0 | 92.9 | n/p |
+| GPT-5.4 | `chatgpt/gpt-5.4` | proprietary | ~922k | 76.9 | 59.1 | n/p | 81.8 | 94.6 | n/p |
+| DeepSeek-V4-Flash | `dsv4f` | MoE 284B/13A | 1M | 79.0 | n/p | 91.6 | 56.9 | 88.1 | n/p |
+| Qwen3.6-27B dense | `nvidia` | dense 27B | 145k³ | 77.2 | 53.5 | 83.9 | 59.3 | 87.8 | 94.1 |
+| GLM-5.1 | `glm-5.1` | MoE 754B | 200k | n/p | 58.4 | n/p | 63.5 | 86.2 | 95.3 |
+| MiMo-V2.5-Pro | `mimo-v2.5-pro` | MoE 1.02T/42A | 1M | 78.9⁴ | 57.2 | 39.6⁴ | n/p | 66.7⁴ | 37.3⁴ |
+| MiniMax-M2.7 | `MiniMax-M2.7` | ~229B/n_p | n/p | n/p | 56.2 | n/p | 57.0 | n/p | n/p |
+| MiMo-V2.5 | `mimo-v2.5` | MoE 310B/15A | 1M | n/p | 56.1 | n/p | 65.8 | n/p | n/p |
+| Qwen3.6-35B-A3B | `self-hosted` | MoE 35B/3A | 262k | 73.4 | 49.5 | n/p | 51.5 | 86.0 | 92.7 |
+| Qwen3.7-Plus | `qwen3.7-plus` | MoE undisclosed | 1M | n/p | ~60 | n/p | n/p | n/p | n/p |
+| GPT-5.4-mini | `chatgpt/gpt-5.4-mini` | proprietary | 400k | n/p | 54.4 | n/p | n/p | n/p | n/p |
+| Gemma-4-26B-A4B | `review` | MoE 25.2B/3.8A | 256k | n/p⁵ | n/p | 77.1 | n/p | 82.3 | 88.3 |
+
+¹ GPT/MiniMax SWE-Pro are vendor-reported; GPT-5.5 drops to ~41.8 on Scale's standardized
+public set (scaffolding gap). ² MiniMax-M3 param count is contested across sources (also
+cited ~428B/23B); most non-coding numbers are vendor-run, independent verification pending.
+³ Qwen3.6-27B is 262k native but pinned to 145k on the 24GB 3090. ⁴ MiMo-Pro reasoning /
+LiveCodeBench from HF-card scrape only — low confidence; LiveCodeBench slice not comparable
+to others. ⁵ Gemma-4 SWE-Verified unpublished; independent reports put it **below**
+Qwen3.5-27B on real-world SWE and note it degrades under tool harnesses.
+
+Reading it for routing:
+- **Frontier tier** (`gpt-5.5`, `dsv4p`, `glm-5.2`, `kimi-k2.6`, `MiniMax-M3`) — top SWE +
+  reasoning. `gpt-5.5` is the all-rounder ceiling (kept manual to protect the weekly cap);
+  `glm-5.2` leads long-horizon agentic coding + math; `dsv4p` is the raw-coding workhorse.
+- **Cheap/fast** (`dsv4f`, `gpt-5.4-mini`, `mimo-v2.5`) — near-frontier coding at low cost;
+  `dsv4f` is the standout (SWE-V 79, LiveCodeBench 91.6, cheapest).
+- **Local** — `nvidia` (Qwen3.6-27B dense) is the local quality + speed pick; `self-hosted`
+  (35B-A3B) trails it everywhere and earns its place only on the 262k context window.
+- **`review` / Gemma-4** — strong one-shot codegen + math, but weak at *agentic/repo* SWE and
+  tool-use; GHA-only. Kept for creative tasks per observed use (no public creative-writing
+  benchmark to confirm or deny).
+- **MiniMax-M2.7 / MiMo / Qwen3.7-Plus** — agentic workhorses with thin published reasoning
+  numbers; rank on coding/agentic axes, not GPQA/AIME.
+
 ## Consumers
 
 | Consumer | In repo? | Points at |
