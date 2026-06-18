@@ -60,10 +60,6 @@ spec:
                 # only fetches when the pinned version differs from what's on the
                 # persistent volume, so normal restarts stay offline.
                 # renovate: datasource=github-tags depName=eleboucher/memini
-                # held at 0.4.6 (last loadable): the 0.4.7 clawhub package shipped no
-                # dist/, and 0.4.8 installs but fails register ("hook registration
-                # missing name") so memini never loads. Re-bump when the TS-rewrite
-                # plugin registers cleanly again.
                 MEMINI_PLUGIN_VERSION=0.4.6
                 if [ "$(cat "$HOME/.openclaw/extensions/memini/.clawver" 2>/dev/null)" != "$MEMINI_PLUGIN_VERSION" ]; then
                   if node dist/index.js plugins install "clawhub:@eleboucher/memini@$MEMINI_PLUGIN_VERSION" --pin --force; then
