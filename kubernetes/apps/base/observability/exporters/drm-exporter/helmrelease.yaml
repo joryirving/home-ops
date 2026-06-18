@@ -25,40 +25,37 @@ spec:
   interval: 1h
   values:
     hostAccess:
+      devDri: ""
       devCpu: ""
-      devDri: /dev/dri
+    securityContext:
+      capabilities:
+        add: [PERFMON]
+    config:
+      logLevel: info
     monitoring:
-      dashboards:
-        enabled: true
       serviceMonitor:
         enabled: true
-        interval: 30s
-        scrapeTimeout: 10s
-    podSecurityContext:
-      runAsGroup: 0
-      runAsNonRoot: false
-      runAsUser: 0
-      seccompProfile:
-        type: RuntimeDefault
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_endpoint_node_name]
+            targetLabel: nodename
+      dashboards:
+        enabled: true
+        grafanaOperator:
+          enabled: true
+          matchLabels:
+            dashboards: grafana
     resources:
+      claims:
+        - name: gpu
       requests:
         cpu: 10m
-        memory: 64Mi
+        memory: 32Mi
       limits:
-        memory: 256Mi
-    securityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        add:
-          - PERFMON
-        drop:
-          - ALL
-      privileged: false
-      readOnlyRootFilesystem: true
+        memory: 64Mi
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
-      - key: llm-workload
-        operator: Exists
-        effect: NoSchedule
+      # - key: llm-workload
+      #   operator: Exists
+      #   effect: NoSchedule
