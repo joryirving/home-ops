@@ -1,0 +1,64 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: drm-exporter
+spec:
+  interval: 15m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 0.2.0
+  url: oci://ghcr.io/home-operations/charts/drm-exporter
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: drm-exporter
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: drm-exporter
+  interval: 1h
+  values:
+    hostAccess:
+      devCpu: ""
+      devDri: /dev/dri
+    monitoring:
+      dashboards:
+        enabled: true
+      serviceMonitor:
+        enabled: true
+        interval: 30s
+        scrapeTimeout: 10s
+    podSecurityContext:
+      runAsGroup: 0
+      runAsNonRoot: false
+      runAsUser: 0
+      seccompProfile:
+        type: RuntimeDefault
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        add:
+          - PERFMON
+        drop:
+          - ALL
+      privileged: false
+      readOnlyRootFilesystem: true
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: llm-workload
+        operator: Exists
+        effect: NoSchedule
