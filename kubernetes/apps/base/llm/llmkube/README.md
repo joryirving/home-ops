@@ -14,8 +14,7 @@ llmkube/
   models/
     kustomization.yaml        # lists the active model files + the shared ServiceMonitor
     servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
-    qwen3.6-27b.yaml          # Model + InferenceService
-    gemma-4-26b-a4b.yaml
+    qwen3.6-27b.yaml          # Model + InferenceService (RTX 3090)
 ```
 
 All models reconcile under a single `llmkube-models` Flux Kustomization
@@ -42,26 +41,21 @@ Drop one file in `models/` (a `Model` + `InferenceService`, mirror
 folder, no Flux Kustomization — the operator and the existing `llmkube-models`
 Kustomization pick it up.
 
-## The 3090: default tenant + pressure burst
+## The 3090: single always-on tenant + review overflow
 
-The single egpu / RTX 3090 has two `InferenceService`s, distinguished by
-`priority` so the scheduler arbitrates the one card:
+The egpu / RTX 3090 runs one `InferenceService` permanently — `llama-nvidia`
+(Qwen3.6-27B, `replicas: 1`). It serves the `nvidia` coding model, a LiteLLM
+backfill for `self-hosted`, and soaks up `review` overflow.
 
-- `llama-nvidia` (Qwen3.6-27B) — `replicas: 1`, priority `normal`. Default
-  tenant: the `nvidia` coding model, also a LiteLLM backfill for `self-hosted`.
-- `llama-nvidia-gemma` (Gemma-4-26B-A4B) — `replicas: 0`, priority `high`. The
-  review burst capacity, downloaded on demand (`refreshPolicy: OnChange`).
-
-`burst-watcher/` polls `llamacpp:requests_deferred{job="llama-review"}`. When the
-ROCm review model stays backed up, it scales `llama-nvidia-gemma` `0→1` only after
-`llama-nvidia` is idle, avoiding interruption of in-flight Qwen work. When the
-queue drains (after `MIN_UP_SECONDS`), it scales back to `0` only after
-`llama-nvidia-gemma` is idle, then Qwen can continue as the default 3090 tenant.
-LiteLLM has `llama-nvidia-gemma` as an `order: 2` backfill in the `review` group
-(at the same `204800` context as the others), so traffic spreads to it once it's up.
-
-While a review burst is active the 3090's coding (`nvidia`) and the `self-hosted`
-backfill are unavailable — that's the cost of one card serving review instead.
+There's no burst-swap (the old `burst-watcher` + `llama-nvidia-gemma` were
+retired): the card holds one model, so spinning a second up meant tearing Qwen
+down — too slow, and it took `nvidia` offline for too long. Instead, `nvidia`
+(Qwen) is a deployment in LiteLLM's `review` group alongside the ROCm
+`llama-review` (GLM-4.7-Flash, now `--parallel 2`). With
+`routing_strategy: least-busy`, review stays on ROCm until it's handling its 2
+in-flight slots, then spills to the 3090's Qwen — a strong coder, so a fine
+overflow reviewer. The 3090 stays warm for `nvidia` traffic throughout; review
+just shares it on demand.
 
 ### Option A — let the operator download it (preferred for new models)
 
