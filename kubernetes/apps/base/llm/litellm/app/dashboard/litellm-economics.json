@@ -460,8 +460,17 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace((($usd_cad * (((sum(increase(litellm_input_tokens_metric_total{requested_model=~\"self-hosted|review|nvidia|ryzen|qwen3-embedding-0-6b\"}[$__range])) or vector(0)) * 0.4 + (sum(increase(litellm_output_tokens_metric_total{requested_model=~\"self-hosted|review|nvidia|ryzen|qwen3-embedding-0-6b\"}[$__range])) or vector(0)) * 1.2) / 1e6)) * (${days_in_month} * 86400 / $__range_s) - (0)), \"bucket\", \"Self-hosted\", \"\", \"\")",
+          "expr": "label_replace((($usd_cad * (((sum(increase(litellm_input_tokens_metric_total{requested_model=~\"self-hosted|review|ryzen|qwen3-embedding-0-6b\"}[$__range])) or vector(0)) * 0.4 + (sum(increase(litellm_output_tokens_metric_total{requested_model=~\"self-hosted|review|ryzen|qwen3-embedding-0-6b\"}[$__range])) or vector(0)) * 1.2) / 1e6)) * (${days_in_month} * 86400 / $__range_s) - (0)), \"bucket\", \"Self-hosted (Strix)\", \"\", \"\")",
           "refId": "E",
+          "legendFormat": "{{bucket}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_replace((($usd_cad * (((sum(increase(litellm_input_tokens_metric_total{requested_model=~\"nvidia\"}[$__range])) or vector(0)) * 0.4 + (sum(increase(litellm_output_tokens_metric_total{requested_model=~\"nvidia\"}[$__range])) or vector(0)) * 1.2) / 1e6)) * (${days_in_month} * 86400 / $__range_s) - (0)), \"bucket\", \"NVIDIA 3090\", \"\", \"\")",
+          "refId": "F",
           "legendFormat": "{{bucket}}"
         }
       ],
@@ -553,9 +562,18 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(($usd_cad * (sum(rate(litellm_input_tokens_metric_total{requested_model=~\"self-hosted|review|nvidia|ryzen|qwen3-embedding-0-6b\"}[$__rate_interval])) * 0.4 + sum(rate(litellm_output_tokens_metric_total{requested_model=~\"self-hosted|review|nvidia|ryzen|qwen3-embedding-0-6b\"}[$__rate_interval])) * 1.2) / 1e6) * 86400)",
+          "expr": "(($usd_cad * (sum(rate(litellm_input_tokens_metric_total{requested_model=~\"self-hosted|review|ryzen|qwen3-embedding-0-6b\"}[$__rate_interval])) * 0.4 + sum(rate(litellm_output_tokens_metric_total{requested_model=~\"self-hosted|review|ryzen|qwen3-embedding-0-6b\"}[$__rate_interval])) * 1.2) / 1e6) * 86400)",
           "refId": "E",
-          "legendFormat": "Self-hosted"
+          "legendFormat": "Self-hosted (Strix)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(($usd_cad * (sum(rate(litellm_input_tokens_metric_total{requested_model=~\"nvidia\"}[$__rate_interval])) * 0.4 + sum(rate(litellm_output_tokens_metric_total{requested_model=~\"nvidia\"}[$__rate_interval])) * 1.2) / 1e6) * 86400)",
+          "refId": "F",
+          "legendFormat": "NVIDIA 3090"
         }
       ],
       "title": "API-equivalent $/day by bucket",
@@ -806,7 +824,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace((sum(increase(litellm_total_tokens_metric_total{requested_model=~\"self-hosted|review|nvidia|ryzen|qwen3-embedding-0-6b\"}[$__range])) or vector(0)), \"bucket\", \"Self-hosted\", \"\", \"\")",
+          "expr": "label_replace((sum(increase(litellm_total_tokens_metric_total{requested_model=~\"self-hosted|review|ryzen|qwen3-embedding-0-6b\"}[$__range])) or vector(0)), \"bucket\", \"Self-hosted (Strix)\", \"\", \"\")",
           "refId": "E",
           "legendFormat": "{{bucket}}"
         },
@@ -815,8 +833,17 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "label_replace((sum(increase(litellm_total_tokens_metric_total{requested_model=~\"kimi-k2.6|moonshot/.*\"}[$__range])) or vector(0)), \"bucket\", \"Moonshot\", \"\", \"\")",
+          "expr": "label_replace((sum(increase(litellm_total_tokens_metric_total{requested_model=~\"nvidia\"}[$__range])) or vector(0)), \"bucket\", \"NVIDIA 3090\", \"\", \"\")",
           "refId": "F",
+          "legendFormat": "{{bucket}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_replace((sum(increase(litellm_total_tokens_metric_total{requested_model=~\"kimi-k2.6|moonshot/.*\"}[$__range])) or vector(0)), \"bucket\", \"Moonshot\", \"\", \"\")",
+          "refId": "G",
           "legendFormat": "{{bucket}}"
         }
       ],
