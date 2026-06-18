@@ -47,7 +47,7 @@ spec:
             dashboards: grafana
     resources:
       claims:
-        - name: gpu
+        - name: drm-exporter-gpu
       requests:
         cpu: 10m
         memory: 32Mi
@@ -60,3 +60,16 @@ spec:
       # - key: llm-workload
       #   operator: Exists
       #   effect: NoSchedule
+      # Chart has no pod-level resourceClaims field; inject the DRA claim.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: DaemonSet
+              name: drm-exporter
+            patch: |
+              - op: add
+                path: /spec/template/spec/resourceClaims
+                value:
+                  - name: gpu
+                    resourceClaimTemplateName: drm-exporter-gpu
