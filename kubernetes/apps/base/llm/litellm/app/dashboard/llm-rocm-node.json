@@ -544,14 +544,15 @@
         "allValue": ".*",
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "label_values(llamacpp:prompt_tokens_total, service)",
+        "definition": "query_result(group by (service) (llamacpp:prompt_tokens_total{namespace=\"llm\", service!~\".*embed.*|.*rerank.*\"} * on(pod) group_left(node) kube_pod_info{node=~\"$node\"}))",
         "refresh": 1,
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "service",
+        "regex": "/service=\"([^\"]+)\"/",
         "query": {
-          "query": "label_values(llamacpp:prompt_tokens_total, service)",
+          "query": "query_result(group by (service) (llamacpp:prompt_tokens_total{namespace=\"llm\", service!~\".*embed.*|.*rerank.*\"} * on(pod) group_left(node) kube_pod_info{node=~\"$node\"}))",
           "refId": "StandardVariableQuery"
         },
         "sort": 1,
