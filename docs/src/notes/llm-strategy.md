@@ -183,31 +183,46 @@ Observed 30-day traffic (Prometheus, `litellm_*_metric_total`), top models:
 `gpt-5.4-mini` (cheap) and `kimi-k2.6` (paid, until balance runs out) are kept as fallbacks despite
 negligible traffic. Real logged spend is MiniMax-M3 ($239, phantom) and kimi ($0.86, actual).
 
-## Target: intent-lane routing
+## Smart-routing: the `auto` alias
 
-The goal is to stop addressing provider/model names from tools and instead address **intent lanes**,
-then let LiteLLM route. The cron fleet already proves the lanes exist — formalize them:
+An opt-in `auto` alias routes for **opencode + Zed only**; every other consumer (crons, MC
+workers, Hermes roles, MiniMax) stays pinned. It's LiteLLM's rule-based **complexity router**
+(no embedding call, <1ms). Coding tools are a difficulty / context / cost axis — not a "what
+kind of task" axis — and `review`/Gemma is GHA-only, which removes the one intent split that
+would justify semantic routing, so complexity scoring alone carries it.
 
-| Lane | Model | Maps to today |
+Tiers (capability-ordered; SIMPLE offloads the single-slot 3090 onto the Strix):
+
+| Tier | Target | Why |
 |---|---|---|
-| `local-fast` | `nvidia` (3090 Qwen) | Short edits, YAML, shell, quick transforms |
-| `local-general` | `self-hosted` (Strix Qwen3.6-35B) | Default local brain; digests, decomposition, image dispatch |
-| `local-reviewer` | `review` (GLM-4.7-Flash / Gemma) | Second opinion, PR review (MC Normal) |
-| `cloud-coder` | `MiniMax-M2.7` / `dsv4f` | Agentic reasoning + high-volume coding (most crons) |
-| `frontier` | `chatgpt/gpt-5.5` | High-stakes, hard debugging (MC Escalated) |
+| SIMPLE | `self-hosted` (Strix 35B-A3B, 2 slots) | Trivia — keep the 3090 free |
+| MEDIUM | `nvidia` (Qwen3.6-27B dense) | Best + fastest local |
+| COMPLEX | `dsv4p` (DeepSeek-V4-Pro) | Raw-coding workhorse, 1M ctx |
+| REASONING | group `{glm-5.2, go-minimax-m3, go-kimi-k2.6}` | Top reasoners; least-busy across plans |
+| default (unscored) | `nvidia` | Best local |
 
-Plan, in layers (LiteLLM-native first, no new infra):
+Boundaries `0.45 / 0.65 / 0.85`, raised above LiteLLM defaults: opencode/Zed system prompts are
+code-dense and get scored alongside the user message, so complexity skews high. Tune from
+`verbose_router_logger` (`tier= score= signals=`) once real traffic lands.
 
-1. **Define the lane aliases** above as model groups.
-2. **Expose one default alias** (e.g. `auto`) for tools to point at.
-3. **Complexity Router** as first pass — token count, code presence, reasoning markers, etc. →
-   simple/medium/complex/reasoning tiers.
-4. **Auto Routing (semantic)** for intent the complexity score can't infer — e.g. "review this PR"
-   must land on `local-reviewer`, not `local-general`.
-5. **Fallbacks** stay for *availability* (3090 down → spill to gateway), not quality.
-6. **Harness-level quality escalation** in OpenClaw/Hermes — escalate to `cloud-coder`/`frontier` on
-   tool failure, uncertainty markers, failed tests/lint, or explicit "are you sure" — re-running
-   `original_prompt + local_answer + failure_signal`. This is supervision, not routing.
+Mechanics that shaped this (verified against LiteLLM source):
+- Both routers are pre-routing hooks returning a model *name*, resolved once — **no chaining**,
+  so semantic can't sit "in front of" complexity. A model *group* as a tier target works (least-busy).
+- `token_thresholds` is a complexity *signal*, not a context cap. The 145k/262k local ceilings are
+  guarded by `context_window_fallbacks` (`nvidia`→`self-hosted`→`dsv4p`) + `enable_pre_call_checks`.
+- `go-minimax-m3` is MiniMax-M3 on the OpenAI chat endpoint (flat via Opencode Go) — its reasoning
+  leaks into the harness, unlike the Anthropic `/messages` `MiniMax` alias.
+
+Excluded from `auto` by design: `MiniMax` (messages-shape), `review`/Gemma (GHA-only), `chatgpt/*`
+frontier (manual — the weekly cap is already maxed). A **semantic router** (`auto-semantic` +
+`router.json`) is scaffolded but commented out: `from_json` builds an encoder at startup
+(crashloop risk on the live gateway), so it's verify-then-enable later, not now.
+
+Still ahead:
+- Tune `tier_boundaries` from observed routes; add a busy-fallback for `nvidia` if its single slot
+  bottlenecks under opencode parallelism.
+- Harness-level quality escalation in OpenClaw/Hermes — escalate to cloud/frontier on tool failure,
+  uncertainty markers, failed tests/lint, or explicit "are you sure". Supervision, not routing.
 
 References: LiteLLM [Auto Routing](https://docs.litellm.ai/docs/proxy/auto_routing) ·
 [Fallbacks](https://docs.litellm.ai/docs/proxy/reliability).
