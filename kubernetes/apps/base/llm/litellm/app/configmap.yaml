@@ -47,7 +47,7 @@ data:
           model: openai/review
           api_base: http://llama-review.llm:8080/v1
           api_key: llama-review
-          max_parallel_requests: 1
+          max_parallel_requests: 2
           order: 1
 
       - model_name: review
@@ -67,14 +67,14 @@ data:
       - model_name: review
         model_info:
           mode: chat
-          max_input_tokens: 204800
+          max_input_tokens: 145000
           max_output_tokens: 16384
           supports_function_calling: true
           supports_vision: false
         litellm_params:
-          model: openai/review
-          api_base: http://llama-nvidia-gemma.llm:8080/v1
-          api_key: llama-nvidia-gemma
+          model: openai/nvidia
+          api_base: http://llama-nvidia.llm:8080/v1
+          api_key: llama-nvidia
           max_parallel_requests: 1
           order: 1
 
@@ -181,6 +181,20 @@ data:
           model: openai/glm-5.1
           api_base: https://api.z.ai/api/coding/paas/v4
           api_key: os.environ/ZAI_API_KEY
+          order: 1
+
+      - model_name: glm-5.1
+        model_info:
+          mode: chat
+          max_input_tokens: 203000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.1
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          order: 2
 
       - model_name: glm-5.2
         model_info:
@@ -193,6 +207,33 @@ data:
           model: openai/glm-5.2
           api_base: https://api.z.ai/api/coding/paas/v4
           api_key: os.environ/ZAI_API_KEY
+          order: 1
+
+      - model_name: glm-5.2
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.2
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          order: 2
+
+      - model_name: kimi-k2.6
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/kimi-k2.6
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          order: 1
 
       - model_name: kimi-k2.6
         model_info:
@@ -205,18 +246,7 @@ data:
           model: moonshot/kimi-k2.6
           api_base: https://api.moonshot.ai/v1
           api_key: os.environ/MOONSHOT_API_KEY
-
-      - model_name: go-glm-5.1
-        model_info:
-          mode: chat
-          max_input_tokens: 203000
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/glm-5.1
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
+          order: 2
 
       - model_name: dsv4f
         model_info:
@@ -249,18 +279,6 @@ data:
             thinking:
               type: disabled
           merge_reasoning_content_in_choices: true
-
-      - model_name: go-kimi-k2.6
-        model_info:
-          mode: chat
-          max_input_tokens: 262144
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/kimi-k2.6
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
 
       - model_name: go-minimax-m3
         model_info:
