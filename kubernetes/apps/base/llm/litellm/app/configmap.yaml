@@ -314,6 +314,72 @@ data:
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
 
+      # Load-balanced REASONING tier for the `auto` router (least-busy across plans).
+      - model_name: reasoning-pool
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.2
+          api_base: https://api.z.ai/api/coding/paas/v4
+          api_key: os.environ/ZAI_API_KEY
+
+      - model_name: reasoning-pool
+        model_info:
+          mode: chat
+          max_input_tokens: 1000000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/deepseek-v4-pro
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+
+      - model_name: reasoning-pool
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/kimi-k2.6
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+
+      # Opt-in smart-routing alias for opencode + zed. Rule-based complexity router
+      # (no embedding call); pinned consumers keep addressing their model directly.
+      - model_name: auto
+        litellm_params:
+          model: auto_router/complexity_router
+          complexity_router_default_model: self-hosted
+          complexity_router_config:
+            tiers:
+              SIMPLE: nvidia
+              MEDIUM: self-hosted
+              COMPLEX: dsv4p
+              REASONING: reasoning-pool
+            tier_boundaries:
+              simple_medium: 0.45
+              medium_complex: 0.65
+              complex_reasoning: 0.85
+
+      # Semantic intent router — SCAFFOLD, not live. Chaining into the complexity
+      # router is unsupported (auto_router_default_model must be a concrete model),
+      # and auto_router_config_path makes SemanticRouter.from_json build the encoder
+      # at startup. Before enabling: verify on a throwaway litellm, mount the
+      # router.json key (below) at /config/router.json, then point a client here.
+      # - model_name: auto-semantic
+      #   litellm_params:
+      #     model: auto_router/auto_semantic
+      #     auto_router_config_path: /config/router.json
+      #     auto_router_default_model: self-hosted
+      #     auto_router_embedding_model: qwen3-embedding-0-6b
+
     general_settings:
       health_check_endpoint: /v1/health
 
@@ -328,6 +394,9 @@ data:
         - self-hosted: ["dsv4f", "nvidia"]
         - dsv4f: ["glm-5.1", "go-minimax-m3"]
         - MiniMax: ["glm-5.2", "go-minimax-m3"]
+      context_window_fallbacks:
+        - nvidia: ["self-hosted", "dsv4p"]
+        - self-hosted: ["dsv4p"]
 
     litellm_settings:
       success_callback: ["prometheus"]
@@ -355,3 +424,17 @@ data:
       - ZAI_API_KEY
       - REDIS_HOST
       - REDIS_PORT
+
+  router.json: |
+    {
+      "encoder_type": "litellm",
+      "encoder_name": "qwen3-embedding-0-6b",
+      "routes": [
+        {
+          "name": "self-hosted",
+          "description": "placeholder — never matches; replace with real intent routes",
+          "utterances": ["zzzz scaffold placeholder never match zzzz"],
+          "score_threshold": 0.99
+        }
+      ]
+    }
