@@ -5,10 +5,16 @@ metadata:
   name: stage-${MODEL_SLUG}
 spec:
   backoffLimit: 6
-  activeDeadlineSeconds: 3600
+  activeDeadlineSeconds: ${STAGE_DEADLINE:=3600}
   template:
     spec:
       restartPolicy: OnFailure
+      nodeSelector:
+        ${STAGE_NODE_KEY:=kubernetes.io/os}: "${STAGE_NODE_VALUE:=linux}"
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: stage
           image: python:3.14-slim
@@ -36,4 +42,4 @@ spec:
       volumes:
         - name: models
           persistentVolumeClaim:
-            claimName: llmkube-models
+            claimName: ${MODEL_CLAIM:=llmkube-models}

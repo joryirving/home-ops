@@ -8,10 +8,12 @@ data:
     model_list:
       # These aliases keep the client-facing names stable while LiteLLM
       # forwards the upstream model IDs that each llama.cpp server expects.
+      # 122B hotswap test (#strix-122b): llama-strix now serves Qwen3.5-122B-A10B
+      # (ctx 150k, 1 slot). Mac 35B + ROCm review commented out below for the test.
       - model_name: self-hosted
         model_info:
           mode: chat
-          max_input_tokens: 262144
+          max_input_tokens: 150000
           max_output_tokens: 16384
           supports_function_calling: true
           supports_vision: true
@@ -19,36 +21,36 @@ data:
           model: openai/self-hosted
           api_base: http://llama-strix.llm:8080/v1
           api_key: llama-strix
-          max_parallel_requests: 2
+          max_parallel_requests: 1
           order: 1
 
-      - model_name: self-hosted
-        model_info:
-          mode: chat
-          max_input_tokens: 262144
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_vision: true
-        litellm_params:
-          model: openai/qwen3.6-35b-a3b@q5_k_xl
-          api_base: http://mac.internal:1234/v1
-          api_key: lm-studio
-          max_parallel_requests: 2
-          order: 1
+      # - model_name: self-hosted
+      #   model_info:
+      #     mode: chat
+      #     max_input_tokens: 262144
+      #     max_output_tokens: 16384
+      #     supports_function_calling: true
+      #     supports_vision: true
+      #   litellm_params:
+      #     model: openai/qwen3.6-35b-a3b@q5_k_xl
+      #     api_base: http://mac.internal:1234/v1
+      #     api_key: lm-studio
+      #     max_parallel_requests: 2
+      #     order: 1
 
-      - model_name: review
-        model_info:
-          mode: chat
-          max_input_tokens: 204800
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_vision: false
-        litellm_params:
-          model: openai/review
-          api_base: http://llama-review.llm:8080/v1
-          api_key: llama-review
-          max_parallel_requests: 2
-          order: 1
+      # - model_name: review          # ROCm Gemma-4-26B-A4B off the Strix during 122B test
+      #   model_info:
+      #     mode: chat
+      #     max_input_tokens: 204800
+      #     max_output_tokens: 16384
+      #     supports_function_calling: true
+      #     supports_vision: false
+      #   litellm_params:
+      #     model: openai/review
+      #     api_base: http://llama-review.llm:8080/v1
+      #     api_key: llama-review
+      #     max_parallel_requests: 2
+      #     order: 1
 
       - model_name: review
         model_info:
