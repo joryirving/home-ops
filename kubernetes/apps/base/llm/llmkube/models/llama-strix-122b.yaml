@@ -1,0 +1,123 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: qwen3.5-122b-a10b
+spec:
+  source: pvc://llmkube-models/qwen3.5-122b-a10b/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf
+  format: gguf
+  quantization: UD-Q4_K_XL
+  hardware:
+    accelerator: rocm
+    gpu:
+      enabled: true
+      vendor: amd
+      count: 1
+      layers: 99
+      resourceName: devic.es/rocm
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: llama-strix
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: qwen3.5-122b-a10b
+  runtime: llamacpp
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:f6f4e29550896c0f810740c0502b1bddf130ccb3412ff347c1e13bce4e753193
+  command:
+    - llama-server
+  replicas: 1
+  priority: high
+  securityContext:
+    privileged: true
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  contextSize: 150000
+  parallelSlots: 1
+  flashAttention: true
+  jinja: true
+  cacheTypeK: q8_0
+  cacheTypeV: q8_0
+  reasoningBudget: 16384
+  reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
+  batchSize: 4096
+  uBatchSize: 2048
+  resources:
+    cpu: "500m"
+    memory: 20Gi
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  extraArgs:
+    - --alias
+    - self-hosted
+    - --mmproj
+    - /model-source/qwen3.5-122b-a10b/mmproj-F16.gguf
+    - --cont-batching
+    - --spec-type
+    - draft-mtp
+    - --spec-draft-p-min
+    - "0.75"
+    - --spec-draft-n-max
+    - "3"
+    - --spec-draft-type-k
+    - q8_0
+    - --spec-draft-type-v
+    - q8_0
+    - -sps
+    - "0.90"
+    - --cache-prompt
+    - --kv-unified
+    - --no-context-shift
+    - --ctx-checkpoints
+    - "4"
+    - --checkpoint-every-n-tokens
+    - "16384"
+    - --image-min-tokens
+    - "1024"
+    - --temp
+    - "0.6"
+    - --top-p
+    - "0.95"
+    - --top-k
+    - "20"
+    - --min-p
+    - "0"
+    - --presence-penalty
+    - "0.5"
+    - --repeat-penalty
+    - "1.03"
+    - --threads
+    - "16"
+    - --threads-batch
+    - "21"
+    - --no-mmap
+    - --chat-template-kwargs
+    - '{"preserve_thinking":true}'
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
