@@ -9,7 +9,8 @@ and for designing intent-based routing on top of them.
 
 ## Subscriptions
 
-Almost everything is flat-rate. The only metered/API-billed token is Moonshot.
+Almost everything is flat-rate. The only metered/API-billed token is Moonshot — and it's now a
+*failover* under `kimi-k2.6` (OpenCode is primary), so it only bills when OpenCode is unavailable.
 
 | Plan | Price | Cap | Reset | Models | Primary use |
 |---|---|---|---|---|---|
@@ -17,7 +18,7 @@ Almost everything is flat-rate. The only metered/API-billed token is Moonshot.
 | **MiniMax Plus** | ~$200 USD/yr ($20/mo, annual = 2mo free) | 300 prompts / 5h | rolling 5h | M3 and M2.7, via the Anthropic endpoint | Agentic reasoning workhorse |
 | **Opencode Go** | $10 USD/mo | $12 / 5h, $30 / wk, $60 / mo (dollar-denominated) | rolling 5h / wk / mo | 14 models incl. DeepSeek V4 Flash/Pro, GLM-5.x, Kimi, MiMo, Qwen3.7, MiniMax | High-volume cheap lane (dsv4f) + grab-bag access |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h | rolling 5h | GLM-5.2, GLM-5.1 (added 2026-06-17), GLM-4.7, GLM-4.5-Air | GLM coding access; fallback lane |
-| **Moonshot (Kimi)** | pay-per-use | none (per-key RPM/TPM only) | n/a | kimi-k2.6 | Only metered token; deliberate paid fallback |
+| **Moonshot (Kimi)** | pay-per-use | none (per-key RPM/TPM only) | n/a | kimi-k2.6 | Metered failover under `kimi-k2.6` (OpenCode primary); bills only on failover |
 
 Caveats worth remembering:
 - **MiniMax M3 is covered by the flat plan** (both M3 and M2.7), reached via the direct Anthropic
@@ -37,7 +38,7 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | Alias | Backend | Model | Ctx (in) | Role |
 |---|---|---|---|---|
 | `self-hosted` | Strix ROCm / Mac LM Studio | Qwen3.6-35B-A3B | 262k | Default local brain; vision + tools |
-| `review` | ROCm / 3090 (llmkube) / Mac | GLM-4.7-Flash-REAP-23B / Gemma-4-26B | 204.8k | Second-opinion reviewer — don't let Qwen grade Qwen's homework |
+| `review` | ROCm (primary, ×2 slots) / Mac / 3090 overflow | GLM-4.7-Flash-REAP-23B / Gemma-4-26B / Qwen3.6-27B | 200k/slot | Reviewer; GLM on ROCm (each slot full 200k ctx), spills to 3090 Qwen via least-busy when both slots busy; PRs >145k stay on ROCm (Qwen can't fit) |
 | `nvidia` | 3090 | Qwen (CUDA) | 145k | General local, no vision |
 | `ryzen` | Ryzen CPU (Vulkan) | Qwen3.5-9B-heretic | 8.2k | Tiny/edge tasks |
 | `qwen3-embedding-0-6b` | llama.cpp | Qwen3-Embedding-0.6B | — | Embeddings (1024-dim) |
@@ -48,12 +49,12 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 |---|---|---|---|---|
 | `MiniMax` | MiniMax Plus | MiniMax-M3 (Anthropic endpoint) | 1M | Big-context generation |
 | `MiniMax-M2.7` | MiniMax Plus | MiniMax-M2.7 | 204.8k | Agentic reasoning workhorse |
-| `glm-5.1` | GLM Coding Lite | glm-5.1 (z.ai) | 203k | GLM coding |
-| `glm-5.2` | GLM Coding Lite | glm-5.2 (z.ai) | 1M | GLM big-context lane |
+| `glm-5.1` | GLM Coding Lite → OpenCode Go | glm-5.1 | 203k | GLM coding; z.ai primary, OpenCode failover |
+| `glm-5.2` | GLM Coding Lite → OpenCode Go | glm-5.2 | 1M | GLM big-context; z.ai primary, OpenCode failover |
 | `chatgpt/gpt-5.5` | ChatGPT Plus | gpt-5.5 (Codex/OAuth) | — | Frontier |
 | `chatgpt/gpt-5.4` | ChatGPT Plus | gpt-5.4 | — | Frontier (cheaper) |
 | `chatgpt/gpt-5.4-mini` | ChatGPT Plus | gpt-5.4-mini | — | Cheap fallback |
-| `kimi-k2.6` | Moonshot (metered) | kimi-k2.6 | 262k | Paid fallback (until balance runs out) |
+| `kimi-k2.6` | OpenCode Go → Moonshot | kimi-k2.6 | 262k | OpenCode-primary (flat); Moonshot only on failover |
 
 ### Cloud (Opencode Go gateway, `opencode.ai/zen/go/v1`)
 
@@ -61,11 +62,14 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 |---|---|---|---|
 | `dsv4f` | deepseek-v4-flash | 1M | High-volume cheap lane; OpenClaw subagent/heartbeat |
 | `dsv4p` | deepseek-v4-pro | 1M | Heavier DeepSeek |
-| `go-glm-5.1` | glm-5.1 | 203k | GLM via gateway |
-| `go-kimi-k2.6` | kimi-k2.6 | 262k | Kimi via gateway (flat, vs metered direct) |
-| `go-minimax-m3` / `go-minimax-m2.7` | minimax-m3 / m2.7 | 1M / 204.8k | MiniMax via gateway |
+| `go-minimax-m3` / `go-minimax-m2.7` | minimax-m3 / m2.7 | 1M / 204.8k | MiniMax via gateway (chat-shape) |
 | `mimo-v2.5` / `mimo-v2.5-pro` | mimo-v2.5(-pro) | 262k | Lighter analysis lane |
 | `qwen3.7-plus` | qwen3.7-plus | 1M | Big-context Qwen via gateway |
+
+**Provider failover** (LiteLLM `order:`, transparent to callers): `glm-5.1`/`glm-5.2` → z.ai then
+OpenCode; `kimi-k2.6` → OpenCode then Moonshot. The standalone `go-glm-5.1`/`go-kimi-k2.6` aliases
+were retired in favour of this. `go-minimax-m3/m2.7` stay separate — MiniMax's direct endpoint is
+Anthropic-shape and can't be grouped with the chat-shape gateway copy.
 
 ## Model capability ranking
 
@@ -79,7 +83,7 @@ self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Termin
 | GPT-5.5 | `chatgpt/gpt-5.5` | proprietary | 1M | 80.6 | 58.6¹ | n/p | 84.7 | 94.0 | n/p |
 | DeepSeek-V4-Pro | `dsv4p` | MoE 1.6T/49A | 1M | 80.6 | 55.4 | 93.5 | 67.9 | 90.1 | n/p |
 | GLM-5.2 | `glm-5.2` | MoE ~753B/40A | 1M | n/p | 62.1 | n/p | 81.0 | 91.2 | 99.2 |
-| Kimi K2.6 | `go-kimi-k2.6` | MoE 1T/32A | 256k | 80.2 | 58.6 | 89.6 | 66.7 | 90.5 | 96.4 |
+| Kimi K2.6 | `kimi-k2.6` | MoE 1T/32A | 256k | 80.2 | 58.6 | 89.6 | 66.7 | 90.5 | 96.4 |
 | MiniMax-M3 | `MiniMax` | MoE ~229B/9.8A² | 1M | 80.5¹ | 59.0 | n/p | 66.0 | 92.9 | n/p |
 | GPT-5.4 | `chatgpt/gpt-5.4` | proprietary | ~922k | 76.9 | 59.1 | n/p | 81.8 | 94.6 | n/p |
 | DeepSeek-V4-Flash | `dsv4f` | MoE 284B/13A | 1M | 79.0 | n/p | 91.6 | 56.9 | 88.1 | n/p |
@@ -198,7 +202,7 @@ Tiers (capability-ordered; SIMPLE offloads the single-slot 3090 onto the Strix):
 | SIMPLE | `self-hosted` (Strix 35B-A3B, 2 slots) | Trivia — keep the 3090 free |
 | MEDIUM | `nvidia` (Qwen3.6-27B dense) | Best + fastest local |
 | COMPLEX | `dsv4p` (DeepSeek-V4-Pro) | Raw-coding workhorse, 1M ctx |
-| REASONING | group `{glm-5.2, go-minimax-m3, go-kimi-k2.6}` | Top reasoners; least-busy across plans |
+| REASONING | group `{glm-5.2, go-minimax-m3, kimi-k2.6}` | Top reasoners; least-busy across plans |
 | default (unscored) | `nvidia` | Best local |
 
 Boundaries `0.45 / 0.65 / 0.85`, raised above LiteLLM defaults: opencode/Zed system prompts are
