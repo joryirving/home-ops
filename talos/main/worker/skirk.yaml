@@ -47,7 +47,7 @@ kind: OOMConfig
 # GPU pods here have memory limits and would otherwise score 0.0 (no victim).
 # System/Podruntime stay 0.0 so kubelet/containerd are never killed.
 triggerExpression: 'memory_full_avg10 > 12.0 && d_memory_full_avg10 > 0.0 && time_since_trigger > duration("500ms")'
-cgroupRankingExpression: '{Besteffort: 1.0, Burstable: 0.5, Guaranteed: 0.0, Podruntime: 0.0, System: 0.0}[class] * double(memory_current.orValue(0u))'
+cgroupRankingExpression: "{Besteffort: 1.0, Burstable: 0.5, Guaranteed: 0.0, Podruntime: 0.0, System: 0.0}[class] * double(memory_current.orValue(0u))"
 sampleInterval: 100ms
 ---
 apiVersion: v1alpha1

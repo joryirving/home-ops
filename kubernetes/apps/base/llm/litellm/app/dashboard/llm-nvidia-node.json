@@ -491,8 +491,20 @@
       "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
       "gridPos": { "h": 7, "w": 6, "x": 0, "y": 37 },
       "id": 20,
-      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
-      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])", "legendFormat": "{{service}}", "refId": "A" } ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
       "title": "PP speed (peak)",
       "type": "bargauge"
     },
@@ -502,8 +514,20 @@
       "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
       "gridPos": { "h": 7, "w": 6, "x": 6, "y": 37 },
       "id": 21,
-      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
-      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])", "legendFormat": "{{service}}", "refId": "A" } ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
       "title": "TG speed (peak)",
       "type": "bargauge"
     },
@@ -513,8 +537,20 @@
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "gridPos": { "h": 7, "w": 6, "x": 12, "y": 37 },
       "id": 22,
-      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true },
-      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "llamacpp:n_tokens_max{service=~\"$service\", service!=\"llama-embed\"}", "legendFormat": "{{service}}", "refId": "A" } ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "llamacpp:n_tokens_max{service=~\"$service\", service!=\"llama-embed\"}",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
       "title": "Context window",
       "type": "bargauge"
     },
@@ -524,8 +560,22 @@
       "fieldConfig": { "defaults": { "unit": "kwatth", "decimals": 3 }, "overrides": [] },
       "gridPos": { "h": 7, "w": 6, "x": 18, "y": 37 },
       "id": 23,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [ { "datasource": { "type": "prometheus", "uid": "${datasource}" }, "expr": "sum(increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION{instance=~\"$instance\", gpu=~\"$gpu\"}[$__range])) / 3.6e9", "legendFormat": "energy", "refId": "A" } ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum(increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION{instance=~\"$instance\", gpu=~\"$gpu\"}[$__range])) / 3.6e9",
+          "legendFormat": "energy",
+          "refId": "A"
+        }
+      ],
       "title": "GPU energy (range)",
       "type": "stat"
     }

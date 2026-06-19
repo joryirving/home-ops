@@ -35,21 +35,21 @@ home-ops/
 
 ## Key Technologies
 
-| Category   | Tool                         | Purpose                                            |
-| ---------- | ---------------------------- | -------------------------------------------------- |
+| Category   | Tool                         | Purpose                                                                         |
+| ---------- | ---------------------------- | ------------------------------------------------------------------------------- |
 | GitOps     | Flux + flux-operator         | Deploys configs from Git to k8s; flux-operator manages the Flux instance itself |
-| CI         | Renovate + GitHub Actions    | Dependency updates, automation                     |
-| Networking | cilium (eBPF)                | CNI, BGP, service mesh                             |
-| Ingress    | Envoy Gateway                | L7 proxy, ingress controller                       |
-| DNS        | external-dns                 | Syncs ingress to Cloudflare/UniFi                  |
-| TLS        | cert-manager                 | TLS certificate automation                         |
-| Secrets    | external-secrets + 1Password | Secret management                                  |
-| Storage    | Rook/Ceph + volsync          | Distributed storage + backups                      |
-| Images     | spegel                       | Local OCI mirror                                   |
-| IaC        | tofu-controller              | Terraform on k8s                                   |
-| Charts     | app-template (bjw-s)         | Common Helm chart used by most apps                |
-| Sources    | OCIRepository                | Flux source for OCI Helm charts (preferred)        |
-| Reviews    | konflate                      | Rendered-diff evidence provider for PR reviews     |
+| CI         | Renovate + GitHub Actions    | Dependency updates, automation                                                  |
+| Networking | cilium (eBPF)                | CNI, BGP, service mesh                                                          |
+| Ingress    | Envoy Gateway                | L7 proxy, ingress controller                                                    |
+| DNS        | external-dns                 | Syncs ingress to Cloudflare/UniFi                                               |
+| TLS        | cert-manager                 | TLS certificate automation                                                      |
+| Secrets    | external-secrets + 1Password | Secret management                                                               |
+| Storage    | Rook/Ceph + volsync          | Distributed storage + backups                                                   |
+| Images     | spegel                       | Local OCI mirror                                                                |
+| IaC        | tofu-controller              | Terraform on k8s                                                                |
+| Charts     | app-template (bjw-s)         | Common Helm chart used by most apps                                             |
+| Sources    | OCIRepository                | Flux source for OCI Helm charts (preferred)                                     |
+| Reviews    | konflate                     | Rendered-diff evidence provider for PR reviews                                  |
 
 ## GitOps Flow
 
@@ -77,15 +77,15 @@ Flux recursively searches `kubernetes/${cluster}/apps/` for `kustomization.yaml`
 - **Troubleshoot**: Check `flux get all -n <namespace>`, `kubectl get events --sort-by=.lastTimestamp`
 - **Scripts**: `hack/` contains operational scripts. See `hack/README.md` for the full list and usage.
 - **Task operations**: The repo is driven by Taskfile. Run `task --list` to see all commands. Common tasks:
-  - `task talos:apply-node CLUSTER=main NODE=<node>` — apply Talos config
-  - `task talos:upgrade-k8s CLUSTER=main VERSION=<ver>` — upgrade Kubernetes
-  - `task kubernetes:reconcile CLUSTER=main` — force Flux reconciliation
-  - `task kubernetes:hr-restart CLUSTER=main` — restart failed HelmReleases
-  - `task volsync:snapshot CLUSTER=main NS=<ns> APP=<app>` — trigger VolSync snapshot
-  - `task volsync:restore CLUSTER=main NS=<ns> APP=<app> PREVIOUS=<snap>` — restore from backup
-  - `task bootstrap:talos CLUSTER=main` — bootstrap a fresh Talos cluster
-  - `task op:push` / `task op:pull` — sync kubeconfig/talosconfig with 1Password
-  - `task workstation:brew` — install local workstation tools
+    - `task talos:apply-node CLUSTER=main NODE=<node>` — apply Talos config
+    - `task talos:upgrade-k8s CLUSTER=main VERSION=<ver>` — upgrade Kubernetes
+    - `task kubernetes:reconcile CLUSTER=main` — force Flux reconciliation
+    - `task kubernetes:hr-restart CLUSTER=main` — restart failed HelmReleases
+    - `task volsync:snapshot CLUSTER=main NS=<ns> APP=<app>` — trigger VolSync snapshot
+    - `task volsync:restore CLUSTER=main NS=<ns> APP=<app> PREVIOUS=<snap>` — restore from backup
+    - `task bootstrap:talos CLUSTER=main` — bootstrap a fresh Talos cluster
+    - `task op:push` / `task op:pull` — sync kubeconfig/talosconfig with 1Password
+    - `task workstation:brew` — install local workstation tools
 - **Tool management**: `.mise.toml` manages required tools (e.g. `flate`, `minijinja-cli`). Run `mise install` to set up the environment.
 - **Validate locally**: Run `flate` before pushing GitOps changes:
 

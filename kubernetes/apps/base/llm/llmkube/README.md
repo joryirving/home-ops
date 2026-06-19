@@ -24,11 +24,11 @@ All models reconcile under a single `llmkube-models` Flux Kustomization
 
 The `Model.spec.source` scheme decides what the operator does. Three modes:
 
-| `source` | What happens | Persistence |
-| --- | --- | --- |
-| `pvc://<claim>/<path>.gguf` | Mounts the claim **read-only**. No download. | You staged it |
-| `https://…/<file>.gguf` | Init container `curl`s it into the **shared cache PVC** (`llmkube-model-cache`, CephFS RWX) on first start; skipped thereafter | Persistent, survives restarts |
-| `<org>/<repo>` (bare HF id) | **vLLM runtime only** — not used by the llama.cpp runtime | — |
+| `source`                    | What happens                                                                                                                   | Persistence                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| `pvc://<claim>/<path>.gguf` | Mounts the claim **read-only**. No download.                                                                                   | You staged it                 |
+| `https://…/<file>.gguf`     | Init container `curl`s it into the **shared cache PVC** (`llmkube-model-cache`, CephFS RWX) on first start; skipped thereafter | Persistent, survives restarts |
+| `<org>/<repo>` (bare HF id) | **vLLM runtime only** — not used by the llama.cpp runtime                                                                      | —                             |
 
 > ⚠️ The cache (`modelCache` in `helmrelease.yaml`) **must stay enabled** for
 > `https://` sources. With it disabled, downloads fall back to an ephemeral
@@ -61,14 +61,14 @@ llama.cpp init container `curl`s a single file):
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: my-model
+    name: my-model
 spec:
-  source: https://huggingface.co/unsloth/<Repo>-GGUF/resolve/main/<File>.gguf
-  format: gguf
-  quantization: Q4_K_XL
-  hardware:
-    accelerator: gpu
-    gpu: { enabled: true, vendor: nvidia, count: 1, layers: 99 }
+    source: https://huggingface.co/unsloth/<Repo>-GGUF/resolve/main/<File>.gguf
+    format: gguf
+    quantization: Q4_K_XL
+    hardware:
+        accelerator: gpu
+        gpu: { enabled: true, vendor: nvidia, count: 1, layers: 99 }
 ```
 
 On first reconcile the init container downloads into the shared CephFS cache;
@@ -91,7 +91,7 @@ have on `llmkube-models`. Download out of band, then:
 
 ```yaml
 spec:
-  source: pvc://llmkube-models/<dir>/<File>.gguf
+    source: pvc://llmkube-models/<dir>/<File>.gguf
 ```
 
 A one-off download Job (same pattern as the old `model-download` initContainer):
@@ -100,24 +100,24 @@ A one-off download Job (same pattern as the old `model-download` initContainer):
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: stage-my-model
+    name: stage-my-model
 spec:
-  template:
-    spec:
-      restartPolicy: OnFailure
-      containers:
-        - name: hf
-          image: python:3.14-slim
-          command: ["/bin/sh", "-ec"]
-          args:
-            - |
-              pip install --no-cache-dir "huggingface_hub[hf_xet]"
-              hf download <org>/<repo> <File>.gguf --local-dir /models/<dir>
-          envFrom: [{ secretRef: { name: huggingface } }]  # for gated repos
-          volumeMounts: [{ name: models, mountPath: /models }]
-      volumes:
-        - name: models
-          persistentVolumeClaim: { claimName: llmkube-models }
+    template:
+        spec:
+            restartPolicy: OnFailure
+            containers:
+                - name: hf
+                  image: python:3.14-slim
+                  command: ["/bin/sh", "-ec"]
+                  args:
+                      - |
+                          pip install --no-cache-dir "huggingface_hub[hf_xet]"
+                          hf download <org>/<repo> <File>.gguf --local-dir /models/<dir>
+                  envFrom: [{ secretRef: { name: huggingface } }] # for gated repos
+                  volumeMounts: [{ name: models, mountPath: /models }]
+            volumes:
+                - name: models
+                  persistentVolumeClaim: { claimName: llmkube-models }
 ```
 
 For Ceph PVC sources, remember `--no-mmap` (cold-fault rule) in the
