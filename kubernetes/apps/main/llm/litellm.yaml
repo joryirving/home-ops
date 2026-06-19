@@ -7,12 +7,17 @@ metadata:
 spec:
   components:
     - ../../../../../components/dragonfly
+    - ../../../../../components/postgres
     - ../../../../../components/volsync
   healthCheckExprs:
     - apiVersion: dragonflydb.io/v1alpha1
       kind: Dragonfly
       failed: status.phase != 'ready'
       current: status.phase == 'ready'
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 1h
   path: ./kubernetes/apps/base/llm/litellm/app
   postBuild:
