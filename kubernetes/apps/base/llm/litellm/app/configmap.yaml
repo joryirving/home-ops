@@ -8,9 +8,9 @@ data:
     model_list:
       # These aliases keep the client-facing names stable while LiteLLM
       # forwards the upstream model IDs that each llama.cpp server expects.
-      # 2x 35B-Q5 concurrency test (#strix-2x35b): self-hosted = two Strix instances
-      # (llama-strix-a/b, Qwen3.6-35B-A3B Q5, 262k; a=3 slots, b=2); litellm simple-shuffle
-      # spreads across them = 5 concurrent.
+      # self-hosted (#strix-2x35b): two Strix instances (llama-strix-a/b, Qwen3.6-35B-A3B
+      # Q5, 262k; a=3 slots, b=2) + Mac LM Studio leg; litellm simple-shuffle spreads
+      # across all three (Mac only when the laptop's up).
       - model_name: self-hosted
         model_info:
           mode: chat
@@ -39,19 +39,19 @@ data:
           max_parallel_requests: 2
           order: 1
 
-      # - model_name: self-hosted
-      #   model_info:
-      #     mode: chat
-      #     max_input_tokens: 262144
-      #     max_output_tokens: 16384
-      #     supports_function_calling: true
-      #     supports_vision: true
-      #   litellm_params:
-      #     model: openai/qwen3.6-35b-a3b@q5_k_xl
-      #     api_base: http://mac.internal:1234/v1
-      #     api_key: lm-studio
-      #     max_parallel_requests: 2
-      #     order: 1
+      - model_name: self-hosted
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_vision: true
+        litellm_params:
+          model: openai/qwen3.6-35b-a3b@q5_k_xl
+          api_base: http://mac.internal:1234/v1
+          api_key: lm-studio
+          max_parallel_requests: 2
+          order: 1
 
       - model_name: ryzen
         model_info:
