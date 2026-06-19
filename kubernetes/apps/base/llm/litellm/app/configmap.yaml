@@ -8,8 +8,9 @@ data:
     model_list:
       # These aliases keep the client-facing names stable while LiteLLM
       # forwards the upstream model IDs that each llama.cpp server expects.
-      # 122B test (#strix-122b): llama-strix serves Qwen3.5-122B-A10B (262k × 2 slots).
-      # Mac 35B + ROCm review commented out below; review runs on the 3090 Qwen.
+      # 2x 35B-Q5 concurrency test (#strix-2x35b): self-hosted = two Strix instances
+      # (llama-strix-a/b, Qwen3.6-35B-A3B Q5, 262k x 2 slots each); litellm least-busy
+      # load-balances across them = 4 concurrent. Mac 35B + ROCm review still off (3090 Qwen).
       - model_name: self-hosted
         model_info:
           mode: chat
@@ -19,8 +20,22 @@ data:
           supports_vision: true
         litellm_params:
           model: openai/self-hosted
-          api_base: http://llama-strix.llm:8080/v1
-          api_key: llama-strix
+          api_base: http://llama-strix-a.llm:8080/v1
+          api_key: llama-strix-a
+          max_parallel_requests: 2
+          order: 1
+
+      - model_name: self-hosted
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_vision: true
+        litellm_params:
+          model: openai/self-hosted
+          api_base: http://llama-strix-b.llm:8080/v1
+          api_key: llama-strix-b
           max_parallel_requests: 2
           order: 1
 
