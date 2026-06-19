@@ -66,33 +66,6 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: stage-qwen3-5-122b
-spec:
-  dependsOn:
-    - name: llmkube-models
-  interval: 1h
-  path: ./kubernetes/apps/base/llm/llmkube/stage
-  postBuild:
-    substitute:
-      MODEL_SLUG: qwen3-5-122b
-      MODEL_REPO: unsloth/Qwen3.5-122B-A10B-MTP-GGUF
-      MODEL_FILES: UD-Q4_K_XL/Qwen3.5-122B-A10B-UD-Q4_K_XL-00001-of-00003.gguf UD-Q4_K_XL/Qwen3.5-122B-A10B-UD-Q4_K_XL-00002-of-00003.gguf UD-Q4_K_XL/Qwen3.5-122B-A10B-UD-Q4_K_XL-00003-of-00003.gguf mmproj-F16.gguf
-      MODEL_DIR: qwen3.5-122b-a10b
-      MODEL_CLAIM: llm-models
-      STAGE_NODE_KEY: topology.kubernetes.io/gpus
-      STAGE_NODE_VALUE: amd
-      STAGE_DEADLINE: "14400"
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
   name: stage-qwen3-6-35b
 spec:
   dependsOn:
@@ -109,33 +82,6 @@ spec:
       STAGE_NODE_KEY: topology.kubernetes.io/gpus
       STAGE_NODE_VALUE: amd
       STAGE_DEADLINE: "10800"
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: stage-gemma-4-26b-a4b
-spec:
-  dependsOn:
-    - name: llmkube-models
-  interval: 1h
-  path: ./kubernetes/apps/base/llm/llmkube/stage
-  postBuild:
-    substitute:
-      MODEL_SLUG: gemma-4-26b-a4b
-      MODEL_REPO: unsloth/gemma-4-26B-A4B-it-qat-GGUF
-      MODEL_FILES: gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf mmproj-F16.gguf mtp-gemma-4-26B-A4B-it.gguf
-      MODEL_DIR: gemma4-26b-a4b
-      MODEL_CLAIM: llm-models
-      STAGE_NODE_KEY: topology.kubernetes.io/gpus
-      STAGE_NODE_VALUE: amd
-      STAGE_DEADLINE: "7200"
   prune: true
   sourceRef:
     kind: GitRepository

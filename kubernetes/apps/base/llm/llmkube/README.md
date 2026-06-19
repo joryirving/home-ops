@@ -41,21 +41,16 @@ Drop one file in `models/` (a `Model` + `InferenceService`, mirror
 folder, no Flux Kustomization — the operator and the existing `llmkube-models`
 Kustomization pick it up.
 
-## The 3090: single always-on tenant + review overflow
+## The 3090: single always-on tenant
 
 The egpu / RTX 3090 runs one `InferenceService` permanently — `llama-nvidia`
-(Qwen3.6-27B, `replicas: 1`). It serves the `nvidia` coding model, a LiteLLM
-backfill for `self-hosted`, and soaks up `review` overflow.
+(Qwen3.6-27B, `replicas: 1`). It serves the `nvidia` coding model and acts as a
+LiteLLM fallback for `self-hosted`.
 
 There's no burst-swap (the old `burst-watcher` + `llama-nvidia-gemma` were
 retired): the card holds one model, so spinning a second up meant tearing Qwen
-down — too slow, and it took `nvidia` offline for too long. Instead, `nvidia`
-(Qwen) is a deployment in LiteLLM's `review` group alongside the ROCm
-`llama-review` (GLM-4.7-Flash, now `--parallel 2`). With
-`routing_strategy: least-busy`, review stays on ROCm until it's handling its 2
-in-flight slots, then spills to the 3090's Qwen — a strong coder, so a fine
-overflow reviewer. The 3090 stays warm for `nvidia` traffic throughout; review
-just shares it on demand.
+down — too slow, and it took `nvidia` offline for too long. The card stays warm
+for `nvidia` traffic throughout.
 
 ### Option A — let the operator download it (preferred for new models)
 

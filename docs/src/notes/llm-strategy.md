@@ -37,8 +37,7 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 
 | Alias | Backend | Model | Ctx (in) | Role |
 |---|---|---|---|---|
-| `self-hosted` | Strix ROCm / Mac LM Studio | Qwen3.6-35B-A3B | 262k | Default local brain; vision + tools |
-| `review` | ROCm (primary, ×2 slots) / Mac / 3090 overflow | GLM-4.7-Flash-REAP-23B / Gemma-4-26B / Qwen3.6-27B | 200k/slot | Reviewer; GLM on ROCm (each slot full 200k ctx), spills to 3090 Qwen via least-busy when both slots busy; PRs >145k stay on ROCm (Qwen can't fit) |
+| `self-hosted` | Strix ROCm (2 instances × 3 slots) | Qwen3.6-35B-A3B | 262k | Default local brain; vision + tools |
 | `nvidia` | 3090 | Qwen (CUDA) | 145k | General local, no vision |
 | `ryzen` | Ryzen CPU (Vulkan) | Qwen3.5-9B-heretic | 8.2k | Tiny/edge tasks |
 | `qwen3-embedding-0-6b` | llama.cpp | Qwen3-Embedding-0.6B | — | Embeddings (1024-dim) |
@@ -95,15 +94,13 @@ self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Termin
 | Qwen3.6-35B-A3B | `self-hosted` | MoE 35B/3A | 262k | 73.4 | 49.5 | n/p | 51.5 | 86.0 | 92.7 |
 | Qwen3.7-Plus | `qwen3.7-plus` | MoE undisclosed | 1M | n/p | ~60 | n/p | n/p | n/p | n/p |
 | GPT-5.4-mini | `chatgpt/gpt-5.4-mini` | proprietary | 400k | n/p | 54.4 | n/p | n/p | n/p | n/p |
-| Gemma-4-26B-A4B | `review` | MoE 25.2B/3.8A | 256k | n/p⁵ | n/p | 77.1 | n/p | 82.3 | 88.3 |
 
 ¹ GPT/MiniMax SWE-Pro are vendor-reported; GPT-5.5 drops to ~41.8 on Scale's standardized
 public set (scaffolding gap). ² MiniMax-M3 param count is contested across sources (also
 cited ~428B/23B); most non-coding numbers are vendor-run, independent verification pending.
 ³ Qwen3.6-27B is 262k native but pinned to 145k on the 24GB 3090. ⁴ MiMo-Pro reasoning /
 LiveCodeBench from HF-card scrape only — low confidence; LiveCodeBench slice not comparable
-to others. ⁵ Gemma-4 SWE-Verified unpublished; independent reports put it **below**
-Qwen3.5-27B on real-world SWE and note it degrades under tool harnesses.
+to others.
 
 Reading it for routing:
 - **Frontier tier** (`gpt-5.5`, `dsv4p`, `glm-5.2`, `kimi-k2.6`, `MiniMax-M3`) — top SWE +
@@ -113,9 +110,6 @@ Reading it for routing:
   `dsv4f` is the standout (SWE-V 79, LiveCodeBench 91.6, cheapest).
 - **Local** — `nvidia` (Qwen3.6-27B dense) is the local quality + speed pick; `self-hosted`
   (35B-A3B) trails it everywhere and earns its place only on the 262k context window.
-- **`review` / Gemma-4** — strong one-shot codegen + math, but weak at *agentic/repo* SWE and
-  tool-use; GHA-only. Kept for creative tasks per observed use (no public creative-writing
-  benchmark to confirm or deny).
 - **MiniMax-M2.7 / MiMo / Qwen3.7-Plus** — agentic workhorses with thin published reasoning
   numbers; rank on coding/agentic axes, not GPQA/AIME.
 
@@ -154,18 +148,20 @@ per job already encodes an intent-lane pattern by hand.
 
 Issue-worker pipelines (pick up issues and open PRs):
 
-- **MC Normal** → `review`
+- **MC Normal** → `self-hosted`
 - **MC Escalated** → `gpt-5.5`
 
 ## Current routing + observed usage
 
-Routing today is `least-busy` with hand-written availability fallbacks
-(configmap `router_settings`). There is **no** complexity/auto router yet.
+Routing today is `simple-shuffle` with hand-written availability fallbacks
+(configmap `router_settings`). `simple-shuffle` spreads a synchronized fan-out
+evenly across a group's deployments; `least-busy` increments its in-flight
+counter *after* the routing decision, so a burst reads equal counts and piles
+onto the first deployment — wrong for the 2-instance `self-hosted` group.
 
 ```yaml
-routing_strategy: least-busy
+routing_strategy: simple-shuffle
 fallbacks:
-  - review:      [dsv4f, self-hosted]
   - self-hosted: [dsv4f, nvidia]
   - dsv4f:       [glm-5.1, go-minimax-m3]
   - MiniMax:     [glm-5.2, go-minimax-m3]
@@ -180,7 +176,6 @@ Observed 30-day traffic (Prometheus, `litellm_*_metric_total`), top models:
 | MiniMax-M3 | 834M | 9,812 |
 | deepseek-v4-flash (`dsv4f`) | 811M | 9,049 |
 | nvidia | 161M | 4,798 |
-| review | 52M | 2,614 |
 | glm-5.1 | 36M | 320 |
 | gpt-5.5 | 31M | 432 |
 
@@ -192,14 +187,13 @@ negligible traffic. Real logged spend is MiniMax-M3 ($239, phantom) and kimi ($0
 An opt-in `auto` alias routes for **opencode + Zed only**; every other consumer (crons, MC
 workers, Hermes roles, MiniMax) stays pinned. It's LiteLLM's rule-based **complexity router**
 (no embedding call, <1ms). Coding tools are a difficulty / context / cost axis — not a "what
-kind of task" axis — and `review`/Gemma is GHA-only, which removes the one intent split that
-would justify semantic routing, so complexity scoring alone carries it.
+kind of task" axis, so complexity scoring alone carries it without semantic routing.
 
 Tiers (capability-ordered; SIMPLE offloads the single-slot 3090 onto the Strix):
 
 | Tier | Target | Why |
 |---|---|---|
-| SIMPLE | `self-hosted` (Strix 35B-A3B, 2 slots) | Trivia — keep the 3090 free |
+| SIMPLE | `self-hosted` (Strix 35B-A3B, 2 instances × 3 slots) | Trivia — keep the 3090 free |
 | MEDIUM | `nvidia` (Qwen3.6-27B dense) | Best + fastest local |
 | COMPLEX | `dsv4p` (DeepSeek-V4-Pro) | Raw-coding workhorse, 1M ctx |
 | REASONING | group `{glm-5.2, go-minimax-m3, kimi-k2.6}` | Top reasoners; least-busy across plans |
@@ -217,7 +211,7 @@ Mechanics that shaped this (verified against LiteLLM source):
 - `go-minimax-m3` is MiniMax-M3 on the OpenAI chat endpoint (flat via Opencode Go) — its reasoning
   leaks into the harness, unlike the Anthropic `/messages` `MiniMax` alias.
 
-Excluded from `auto` by design: `MiniMax` (messages-shape), `review`/Gemma (GHA-only), `chatgpt/*`
+Excluded from `auto` by design: `MiniMax` (messages-shape) and `chatgpt/*`
 frontier (manual — the weekly cap is already maxed). A **semantic router** (`auto-semantic` +
 `router.json`) is scaffolded but commented out: `from_json` builds an encoder at startup
 (crashloop risk on the live gateway), so it's verify-then-enable later, not now.
