@@ -18,6 +18,14 @@ resource "authentik_property_mapping_provider_scope" "email_verified" {
   EOT
 }
 
+resource "authentik_property_mapping_provider_scope" "litellm_role" {
+  name       = "LiteLLM Role"
+  scope_name = "litellm_role"
+  expression = <<-EOT
+    return {"litellm_role": "proxy_admin"}
+  EOT
+}
+
 resource "authentik_property_mapping_provider_scope" "sftpgo_username" {
   name       = "SFTGO Preferred Username"
   scope_name = "preferred_username"
@@ -25,4 +33,3 @@ resource "authentik_property_mapping_provider_scope" "sftpgo_username" {
     return user.attributes.get("preferred_username", user.username)
   EOT
 }
-

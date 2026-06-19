@@ -25,21 +25,24 @@ spec:
             args:
               - --config=/app/config.yaml
             env:
-              LITELLM_LOG: INFO
-              LITELLM_MODE: PRODUCTION
-              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
-              REDIS_PORT: "6379"
+              AUTO_REDIRECT_UI_LOGIN_TO_SSO: "true"
               CHATGPT_TOKEN_DIR: /app/chatgpt_tokens
-              PROXY_BASE_URL: https://litellm.jory.dev
-              GENERIC_AUTHORIZATION_ENDPOINT: https://sso.jory.dev/application/o/authorize/
-              GENERIC_TOKEN_ENDPOINT: https://sso.jory.dev/application/o/token/
-              GENERIC_USERINFO_ENDPOINT: https://sso.jory.dev/application/o/userinfo/
-              GENERIC_SCOPE: openid email profile
               DATABASE_URL:
                 valueFrom:
                   secretKeyRef:
                     name: "{{ .Release.Name }}-app"
                     key: uri
+              GENERIC_AUTHORIZATION_ENDPOINT: https://sso.jory.dev/application/o/authorize/
+              GENERIC_SCOPE: openid email profile litellm_role
+              GENERIC_TOKEN_ENDPOINT: https://sso.jory.dev/application/o/token/
+              GENERIC_USERINFO_ENDPOINT: https://sso.jory.dev/application/o/userinfo/
+              GENERIC_USER_ROLE_ATTRIBUTE: litellm_role
+              LITELLM_LOG: INFO
+              LITELLM_MODE: PRODUCTION
+              PROXY_BASE_URL: https://litellm.jory.dev
+              PROXY_LOGOUT_URL: https://sso.jory.dev/application/o/litellm/end-session/
+              REDIS_HOST: "{{ .Release.Name }}-dragonfly"
+              REDIS_PORT: "6379"
             envFrom:
               - secretRef:
                   name: litellm

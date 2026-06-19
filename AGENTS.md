@@ -91,7 +91,7 @@ Flux recursively searches `kubernetes/${cluster}/apps/` for `kustomization.yaml`
 
     ```bash
     # Test Kustomizations + HelmReleases for a cluster
-    flate test ks --path ./kubernetes/clusters/main
+    flate test all --path ./kubernetes/clusters/main
 
     # Diff against a baseline (e.g., main branch)
     git worktree add --detach /tmp/baseline origin/main

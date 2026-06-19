@@ -110,7 +110,7 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/litellm.png"
       redirect_uri      = "https://litellm.${var.CLUSTER_DOMAIN}/sso/callback"
       launch_url        = "https://litellm.${var.CLUSTER_DOMAIN}/ui"
-      property_mappings = local.default_property_mappings
+      property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.litellm_role.id])
     },
     Miso-Chat = {
       client_id         = module.onepassword_application["Miso-Chat"].fields["MISO_CHAT_CLIENT_ID"]
@@ -192,9 +192,9 @@ resource "authentik_provider_oauth2" "oauth2" {
   allowed_redirect_uris = concat(
     [
       {
-        matching_mode = "strict",
+        matching_mode     = "strict",
         redirect_uri_type = "authorization",
-        url           = each.value.redirect_uri,
+        url               = each.value.redirect_uri,
       },
     ],
     try(each.value.additional_redirect_uris, [])
