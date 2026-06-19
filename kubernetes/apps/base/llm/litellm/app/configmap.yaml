@@ -9,8 +9,9 @@ data:
       # These aliases keep the client-facing names stable while LiteLLM
       # forwards the upstream model IDs that each llama.cpp server expects.
       # self-hosted (#strix-2x35b): two Strix instances (llama-strix-a/b, Qwen3.6-35B-A3B
-      # Q5, 262k; a=3 slots, b=2) + Mac LM Studio leg; litellm simple-shuffle spreads
-      # across all three (Mac only when the laptop's up).
+      # Q5, 262k, 2 slots each) + Mac LM Studio leg; litellm simple-shuffle spreads across
+      # all three (Mac only when the laptop's up). 2+2, not 3+2: leaves the APU GTT headroom
+      # for comfyui (5 slots starved its iGPU allocation → OOM).
       - model_name: self-hosted
         model_info:
           mode: chat
@@ -22,7 +23,7 @@ data:
           model: openai/self-hosted
           api_base: http://llama-strix-a.llm:8080/v1
           api_key: llama-strix-a
-          max_parallel_requests: 3
+          max_parallel_requests: 2
           order: 1
 
       - model_name: self-hosted

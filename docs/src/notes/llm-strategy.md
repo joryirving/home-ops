@@ -37,7 +37,7 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 
 | Alias | Backend | Model | Ctx (in) | Role |
 |---|---|---|---|---|
-| `self-hosted` | Strix ROCm (2 instances × 3 slots) | Qwen3.6-35B-A3B | 262k | Default local brain; vision + tools |
+| `self-hosted` | Strix ROCm (2 × 2 slots) + Mac LM Studio | Qwen3.6-35B-A3B | 262k | Default local brain; vision + tools |
 | `nvidia` | 3090 | Qwen (CUDA) | 145k | General local, no vision |
 | `ryzen` | Ryzen CPU (Vulkan) | Qwen3.5-9B-heretic | 8.2k | Tiny/edge tasks |
 | `qwen3-embedding-0-6b` | llama.cpp | Qwen3-Embedding-0.6B | — | Embeddings (1024-dim) |
@@ -193,7 +193,7 @@ Tiers (capability-ordered; SIMPLE offloads the single-slot 3090 onto the Strix):
 
 | Tier | Target | Why |
 |---|---|---|
-| SIMPLE | `self-hosted` (Strix 35B-A3B, 2 instances × 3 slots) | Trivia — keep the 3090 free |
+| SIMPLE | `self-hosted` (Strix 35B-A3B, 2 instances × 2 slots) | Trivia — keep the 3090 free |
 | MEDIUM | `nvidia` (Qwen3.6-27B dense) | Best + fastest local |
 | COMPLEX | `dsv4p` (DeepSeek-V4-Pro) | Raw-coding workhorse, 1M ctx |
 | REASONING | group `{glm-5.2, go-minimax-m3, kimi-k2.6}` | Top reasoners; least-busy across plans |
