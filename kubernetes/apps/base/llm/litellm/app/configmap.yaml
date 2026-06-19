@@ -9,8 +9,8 @@ data:
       # These aliases keep the client-facing names stable while LiteLLM
       # forwards the upstream model IDs that each llama.cpp server expects.
       # 2x 35B-Q5 concurrency test (#strix-2x35b): self-hosted = two Strix instances
-      # (llama-strix-a/b, Qwen3.6-35B-A3B Q5, 262k x 3 slots each); litellm least-busy
-      # load-balances across them = 6 concurrent. Mac 35B + ROCm review still off (3090 Qwen).
+      # (llama-strix-a/b, Qwen3.6-35B-A3B Q5, 262k x 3 slots each); litellm simple-shuffle
+      # spreads across them = 6 concurrent. Mac 35B + ROCm review still off (3090 Qwen).
       - model_name: self-hosted
         model_info:
           mode: chat
@@ -429,7 +429,7 @@ data:
     router_settings:
       redis_host: os.environ/REDIS_HOST
       redis_port: os.environ/REDIS_PORT
-      routing_strategy: least-busy
+      routing_strategy: simple-shuffle
       cooldown_time: 30
       enable_pre_call_checks: true
       fallbacks:
