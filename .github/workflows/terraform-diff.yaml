@@ -90,10 +90,7 @@ jobs:
 
       - name: Tofu Plan
         working-directory: ${{ matrix.paths }}
-        env:
-          OP_CONNECT_HOST: http://onepassword-connect.external-secrets.svc.cluster.local
-          OP_CONNECT_TOKEN: ${{ secrets.OP_CONNECT_TOKEN }}
-        run: tofu plan -lock=false -input=false -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
+        run: tofu plan -lock=false -var "OP_CONNECT_TOKEN=${{ secrets.OP_CONNECT_TOKEN }}" -var "OP_CONNECT_HOST=http://onepassword-connect.external-secrets.svc.cluster.local" -out .planfile | grep -v "Refreshing state...\|Reading...\|Read complete after"
 
       - name: Post PR comment
         continue-on-error: true
