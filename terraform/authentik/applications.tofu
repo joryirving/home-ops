@@ -183,6 +183,7 @@ resource "authentik_provider_oauth2" "oauth2" {
     [
       {
         matching_mode = "strict",
+        redirect_uri_type = "authorization",
         url           = each.value.redirect_uri,
       },
     ],
