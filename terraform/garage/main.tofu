@@ -13,7 +13,10 @@ terraform {
 }
 
 # 1Password provider for secure credential retrieval
-provider "onepassword" {}
+provider "onepassword" {
+  connect_url   = var.OP_CONNECT_HOST
+  connect_token = var.OP_CONNECT_TOKEN
+}
 
 # Data source to reference the Kubernetes vault
 data "onepassword_vault" "kubernetes" {
