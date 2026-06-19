@@ -50,7 +50,7 @@ data:
         "$${GATEWAY_URL}$${CRON_TRIGGER_ENDPOINT}" \
         -H "Authorization: Bearer $${OPENCLAW_GATEWAY_TOKEN}" \
         -H "Content-Type: application/json" \
-        -d "{\"method\":\"cron.run\",\"params\":{\"id\":\"$${CRON_ID}\",\"mode\":\"force\"}}" 2>&1 || true)
+        -d "{\"method\":\"cron.run\",\"params\":{\"id\":\"$${CRON_ID}\"}}" 2>&1 || true)
       http_code=$(printf '%s\n' "$${response}" | tail -n 1)
       body=$(printf '%s\n' "$${response}" | sed '$d')
       log "gateway response: HTTP $${http_code} $${body}"
