@@ -13,7 +13,10 @@ terraform {
 }
 
 # 1Password provider for secure credential retrieval
-provider "onepassword" {}
+provider "onepassword" {
+  connect_url   = var.OP_CONNECT_HOST
+  connect_token = var.OP_CONNECT_TOKEN
+}
 
 # Module to retrieve authentik credentials from 1Password
 module "onepassword_authentik" {
