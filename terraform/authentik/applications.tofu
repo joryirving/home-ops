@@ -7,6 +7,7 @@ locals {
     "Grafana",
     "Headlamp",
     "Kyoo",
+    "LiteLLM",
     "Matrix",
     "Miso-Chat",
     "Miso-Gallery",
@@ -100,6 +101,15 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
       redirect_uri      = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/logged/authentik"
       launch_url        = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.CLUSTER_DOMAIN}/login/callback"
+      property_mappings = local.default_property_mappings
+    },
+    LiteLLM = {
+      client_id         = module.onepassword_application["LiteLLM"].fields["LITELLM_CLIENT_ID"]
+      client_secret     = module.onepassword_application["LiteLLM"].fields["LITELLM_CLIENT_SECRET"]
+      group             = "ai"
+      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/litellm.png"
+      redirect_uri      = "https://litellm.${var.CLUSTER_DOMAIN}/sso/callback"
+      launch_url        = "https://litellm.${var.CLUSTER_DOMAIN}/ui"
       property_mappings = local.default_property_mappings
     },
     Miso-Chat = {

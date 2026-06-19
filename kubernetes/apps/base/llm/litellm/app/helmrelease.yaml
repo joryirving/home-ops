@@ -20,8 +20,8 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/berriai/litellm
-              tag: v1.89.2@sha256:713e2a036aecc8f2cb24cdf0bdeffd893b4f37190d4b21eb9e26ac648939c67a
+              repository: ghcr.io/berriai/litellm-database
+              tag: v1.89.2@sha256:7a8cd7e903a9087808422bd9d6dc945a0ed719f6eac2a011bc3313d81db24b07
             args:
               - --config=/app/config.yaml
             env:
@@ -30,6 +30,16 @@ spec:
               REDIS_HOST: "{{ .Release.Name }}-dragonfly"
               REDIS_PORT: "6379"
               CHATGPT_TOKEN_DIR: /app/chatgpt_tokens
+              PROXY_BASE_URL: https://litellm.jory.dev
+              GENERIC_AUTHORIZATION_ENDPOINT: https://sso.jory.dev/application/o/authorize/
+              GENERIC_TOKEN_ENDPOINT: https://sso.jory.dev/application/o/token/
+              GENERIC_USERINFO_ENDPOINT: https://sso.jory.dev/application/o/userinfo/
+              GENERIC_SCOPE: openid email profile
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .Release.Name }}-app"
+                    key: uri
             envFrom:
               - secretRef:
                   name: litellm
