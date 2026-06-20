@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: k8s-gpu-dra-driver
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: k8s-gpu-dra-driver
+  interval: 1h
+  values:
+    cdi:
+      dynamicPath: /run/cdi
+    kubeletPlugin:
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
