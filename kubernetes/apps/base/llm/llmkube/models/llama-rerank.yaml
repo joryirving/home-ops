@@ -1,0 +1,83 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: qwen3-reranker-0.6b
+spec:
+  source: pvc://llmkube-models/qwen3-reranker-0.6b/qwen3-reranker-0.6b-q8_0.gguf
+  format: gguf
+  quantization: Q8_0
+  hardware:
+    accelerator: intel
+    gpu:
+      enabled: true
+      vendor: intel
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llmkube-models-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: llama-rerank
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: qwen3-reranker-0.6b
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:9a7ec7d8313721d9fb3a05e01f088e70fdb6017273c1d290104fb496ac7a794d
+  replicas: 1
+  priority: normal
+  securityContext:
+    privileged: true
+  contextSize: 16384
+  parallelSlots: 2
+  batchSize: 4096
+  uBatchSize: 4096
+  env:
+    - name: ZES_ENABLE_SYSMAN
+      value: "1"
+    - name: ONEAPI_DEVICE_SELECTOR
+      value: level_zero:gpu
+    - name: UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS
+      value: "1"
+  resources:
+    cpu: "250m"
+    memory: 2Gi
+  extraArgs:
+    - --alias
+    - qwen3-reranker
+    - --rerank
+    - --pooling
+    - rank
+    - --cont-batching
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    - --mmap
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
