@@ -210,5 +210,6 @@ Verify that:
 ## Notes
 
 - Do not create a per-app `ocirepository.yaml` for `app-template` apps in this repository.
+- If an app uses a non-`app-template` chart and needs its own `OCIRepository`, put it in a dedicated `ocirepository.yaml` file alongside `helmrelease.yaml` (never inline in `helmrelease.yaml`) and add `./ocirepository.yaml` to the `kustomization.yaml`.
 - Prefer minimal scaffolding that matches existing apps in the same namespace.
 - If the workload is not a good fit for `app-template`, stop and ask the user before continuing.
