@@ -13,6 +13,9 @@ spec:
   values:
     defaultPodOptions:
       hostIPC: true
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-ryzen-gpu
     controllers:
       llama-ryzen:
         annotations:
@@ -122,6 +125,8 @@ spec:
               GGML_VK_VISIBLE_DEVICES: "0"
               UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS: "1"
             resources:
+              claims:
+                - name: gpu
               requests:
                 cpu: 500m
                 memory: 8Gi
@@ -162,11 +167,6 @@ spec:
         existingClaim: llama-ryzen
         globalMounts:
           - path: /models
-      dev-dri:
-        type: hostPath
-        hostPath: /dev/dri
-        globalMounts:
-          - path: /dev/dri
     service:
       app:
         type: LoadBalancer
