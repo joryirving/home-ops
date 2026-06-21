@@ -376,22 +376,12 @@ data:
             },
             config: {
               base_url: "http://memini.llm:8080",
-              // namespace_per_agent + default template "{namespace}-{agent}" (0.2.x)
-              // => agents write to openclaw-main / openclaw-saffron / openclaw-matcha
               namespace: "openclaw",
               namespace_per_agent: true,
-              // cron/heartbeat sessions reach the plugin with no agent identity;
-              // skip them instead of polluting a shared fallback namespace
               skip_without_agent: true,
-              // agent-attributed cron/heartbeat/scheduled turns (which skip_without_agent
-              // misses) — skip recall+capture so they don't accumulate as episodic noise (#19)
               skip_system_turns: true,
               fallback_on_error: true,
-              // 15s so a completed iGPU rerank (MEMINI_RERANK_TIMEOUT 8s + embed) isn't cancelled mid-recall
               timeout_ms: 15000,
-              // curb the spray: cap injected memories per recall. The quality
-              // floor moved server-side in 0.4.13 (MEMINI_RECALL_MIN_SEMANTIC_SCORE);
-              // the plugin's recall_min_score was removed from the manifest.
               recall_limit: 3,
             },
           },
