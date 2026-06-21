@@ -10,7 +10,7 @@ probes, endpoint) — one file per model under `models/`:
 
 ```
 llmkube/
-  helmrepository.yaml   helmrelease.yaml   kustomization.yaml   # the operator
+  ocirepository.yaml    helmrelease.yaml   kustomization.yaml   # the operator
   models/
     kustomization.yaml        # lists the active model files + the shared ServiceMonitor
     servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
