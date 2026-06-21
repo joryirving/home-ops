@@ -50,10 +50,11 @@ spec:
   extraArgs:
     - --alias
     - qwen3.5-4b
-    # Qwen3.5 is a hybrid thinking model; disable reasoning so it emits content
-    # directly (lossless-claw needs a summary, not a <think> block).
-    - --reasoning-budget
-    - "0"
+    # Qwen3.5's chat template defaults thinking=1; pass enable_thinking:false to
+    # the jinja template so it never opens a <think> block and emits content
+    # directly (--reasoning-budget 0 does NOT suppress it — only force-closes).
+    - --chat-template-kwargs
+    - '{"enable_thinking": false}'
     - --cont-batching
     - --threads
     - "6"
