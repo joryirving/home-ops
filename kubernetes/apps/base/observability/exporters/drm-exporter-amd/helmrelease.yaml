@@ -1,0 +1,49 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: drm-exporter-amd
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: drm-exporter
+  interval: 15m
+  dependsOn:
+    - name: k8s-gpu-dra-driver
+      namespace: kube-system
+  values:
+    fullnameOverride: drm-exporter-amd
+    config:
+      logLevel: info
+    securityContext:
+      privileged: false
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: [ALL]
+        add: []
+    dra:
+      enabled: true
+      deviceClassName: gpu.amd.com
+      adminAccess: true
+      allocationMode: All
+    monitoring:
+      serviceMonitor:
+        enabled: true
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_endpoint_node_name]
+            targetLabel: nodename
+      dashboards:
+        enabled: false
+    resources:
+      requests:
+        cpu: 10m
+      limits:
+        memory: 64Mi
+    nodeSelector:
+      topology.kubernetes.io/gpus: amd
+    tolerations:
+      - key: llm-workload
+        operator: Exists
+        effect: NoSchedule
