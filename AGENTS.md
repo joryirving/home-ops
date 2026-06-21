@@ -67,7 +67,7 @@ Flux recursively searches `kubernetes/${cluster}/apps/` for `kustomization.yaml`
 - Apps use `HelmRelease` via Flux, rarely raw manifests
 - Clusters are mostly identical except for app selections and sizing
 - **AI instructions**: `.agents/instructions/pr-review.instructions.md` is the live system prompt for the AI PR reviewer. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). When editing YAML, follow the sorting instructions.
-- **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource, alerting rules, and the shared `app-template` `OCIRepository` into every app via kustomize components.
+- **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource and alerting rules into every app via kustomize components. Helm chart sources are per-app: each app declares its own `OCIRepository` in `ocirepository.yaml`.
 - **Namespace replacement**: `kubernetes/components/replacements/ks.yaml` propagates `spec.targetNamespace` into Flux Kustomizations automatically.
 
 ## Common Operations
@@ -125,8 +125,7 @@ When reviewing Renovate PRs, enforce these criteria. Reviews may include konflat
 
 - All applications MUST use `HelmRelease` via Flux, not raw manifests
 - HelmReleases MUST use `spec.chartRef` pointing to an `OCIRepository` with a pinned `ref.tag`. The only exception is `llmkube`, which uses the legacy `spec.chart` pattern.
-- For `app-template`-based apps, reference the shared `OCIRepository` named `app-template` (injected by the namespace component). Do not create per-app `OCIRepository` resources for `app-template`.
-- Per-app `OCIRepository` resources (for non-`app-template` charts) MUST live in a dedicated `ocirepository.yaml` file alongside the `HelmRelease`, not inline in `helmrelease.yaml`. Add `./ocirepository.yaml` to the app's `kustomization.yaml`.
+- Every app (including `app-template`-based apps) defines its own per-app `OCIRepository` in a dedicated `ocirepository.yaml` alongside the `HelmRelease`, named after the app, with `./ocirepository.yaml` listed in the app's `kustomization.yaml`. Do not put the `OCIRepository` inline in `helmrelease.yaml`, and do not rely on a shared/injected `OCIRepository`.
 - Must include `spec.interval` for reconciliation frequency
 - Resource limits (CPU/memory) SHOULD be specified for production workloads, but this is not a hard requirement
 - `valuesFrom` should reference ConfigMaps/Secrets, not inline values

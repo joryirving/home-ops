@@ -12,8 +12,8 @@ This skill scaffolds a new application for this repository's Flux layout.
 - Base app manifests live in `kubernetes/apps/base/<namespace>/<app>/`
 - Cluster overlays live in `kubernetes/apps/<cluster>/<namespace>/`
 - Flux app manifests are named `kubernetes/apps/<cluster>/<namespace>/<app>.yaml`
-- Namespace and shared repositories come from `kubernetes/components/namespace`
-- `app-template` is referenced as `spec.chartRef.name: app-template`
+- The Namespace and alerting rules come from `kubernetes/components/namespace`
+- Every app declares its own per-app `OCIRepository` in `ocirepository.yaml`; `app-template` apps point `spec.chartRef.name` at that per-app repo (named after the app)
 - Secrets use `external-secrets` with the `onepassword` `ClusterSecretStore`
 
 ## Workflow
@@ -53,6 +53,7 @@ At minimum, create:
 
 - `kustomization.yaml`
 - `helmrelease.yaml`
+- `ocirepository.yaml`
 
 Optionally create:
 
@@ -70,9 +71,10 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
     - ./helmrelease.yaml
+    - ./ocirepository.yaml
 ```
 
-Add `./externalsecret.yaml` only if secrets are needed. Add other resource files only when required.
+Add `./externalsecret.yaml` only if secrets are needed. Add other resource files only when required. Keep the resource list alphabetized.
 
 #### `kubernetes/apps/base/<namespace>/<app>/helmrelease.yaml`
 
@@ -86,7 +88,7 @@ metadata:
 spec:
     chartRef:
         kind: OCIRepository
-        name: app-template
+        name: <app>
     dependsOn: []
     interval: 15m
     values:
@@ -126,6 +128,29 @@ spec:
 ```
 
 Adjust the template to match local patterns in the same namespace. Add `route`, `persistence`, `env`, `envFrom`, or extra manifests only when needed.
+
+#### `kubernetes/apps/base/<namespace>/<app>/ocirepository.yaml`
+
+For an `app-template` app, point at the shared chart with a per-app source named after the app:
+
+```yaml
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+    name: <app>
+spec:
+    interval: 5m
+    layerSelector:
+        mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+        operation: copy
+    ref:
+        tag: 5.0.1
+    url: oci://ghcr.io/bjw-s-labs/helm/app-template
+```
+
+For a non-`app-template` chart, set `url` and `ref.tag` to that chart's OCI source instead. `spec.chartRef.name` in the `HelmRelease` must match this `metadata.name`.
 
 #### `kubernetes/apps/base/<namespace>/<app>/externalsecret.yaml`
 
@@ -204,12 +229,12 @@ Verify that:
 1. The base app directory contains the expected files.
 2. Every selected cluster has an overlay app manifest.
 3. Every selected cluster overlay `kustomization.yaml` references the new app.
-4. The HelmRelease uses the shared `app-template` repository name rather than a per-app `OCIRepository`.
+4. The app has its own `ocirepository.yaml` (named after the app), it is listed in `kustomization.yaml`, and the HelmRelease's `spec.chartRef.name` matches it.
 5. No plain-text secrets were introduced.
 
 ## Notes
 
-- Do not create a per-app `ocirepository.yaml` for `app-template` apps in this repository.
-- If an app uses a non-`app-template` chart and needs its own `OCIRepository`, put it in a dedicated `ocirepository.yaml` file alongside `helmrelease.yaml` (never inline in `helmrelease.yaml`) and add `./ocirepository.yaml` to the `kustomization.yaml`.
+- Every app gets its own `ocirepository.yaml` (named after the app), including `app-template` apps. There is no shared/injected `app-template` `OCIRepository`.
+- Never put the `OCIRepository` inline in `helmrelease.yaml`; it lives in its own `ocirepository.yaml`.
 - Prefer minimal scaffolding that matches existing apps in the same namespace.
 - If the workload is not a good fit for `app-template`, stop and ask the user before continuing.
