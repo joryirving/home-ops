@@ -9,8 +9,8 @@ and for designing intent-based routing on top of them.
 
 ## Subscriptions
 
-Almost everything is flat-rate. The only metered/API-billed token is Moonshot — and it's now a
-_failover_ under `kimi-k2.6` (OpenCode is primary), so it only bills when OpenCode is unavailable.
+Subscriptions remain the primary capacity. Neuralwatt supplies energy-metered near-frontier capacity,
+while Moonshot is the last token-metered failover under `kimi-k2.6`.
 
 | Plan                | Price                                        | Cap                                                                          | Reset                              | Models                                                                       | Primary use                                                                   |
 | ------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -18,7 +18,8 @@ _failover_ under `kimi-k2.6` (OpenCode is primary), so it only bills when OpenCo
 | **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | 300 prompts / 5h                                                             | rolling 5h                         | M3 and M2.7, via the Anthropic endpoint                                      | Agentic reasoning workhorse                                                   |
 | **Opencode Go**     | $10 USD/mo                                   | $12 / 5h, $30 / wk, $60 / mo (dollar-denominated)                            | rolling 5h / wk / mo               | 14 models incl. DeepSeek V4 Flash/Pro, GLM-5.x, Kimi, MiMo, Qwen3.7, MiniMax | High-volume cheap lane (dsv4f) + grab-bag access                              |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                                             | rolling 5h                         | GLM-5.2, GLM-5.1 (added 2026-06-17), GLM-4.7, GLM-4.5-Air                    | GLM coding access; fallback lane                                              |
-| **Moonshot (Kimi)** | pay-per-use                                  | none (per-key RPM/TPM only)                                                  | n/a                                | kimi-k2.6                                                                    | Metered failover under `kimi-k2.6` (OpenCode primary); bills only on failover |
+| **Moonshot (Kimi)** | pay-per-use                                  | none (per-key RPM/TPM only)                                                  | n/a                                | kimi-k2.6                                                                    | Last-resort metered failover under `kimi-k2.6`                                 |
+| **Neuralwatt**      | pay-per-use ($5/kWh energy billing)          | account credit; API-key allowances available                                | n/a                                | Kimi K2.6/K2.7 Code, GLM-5.2                                                  | Metered near-frontier capacity after flat plans                                |
 
 Caveats worth remembering:
 
@@ -40,7 +41,7 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | ---------------------- | ---------------------------------------- | -------------------- | -------- | ----------------------------------- |
 | `self-hosted`          | Strix ROCm (2 × 2 slots) + Mac LM Studio | Qwen3.6-35B-A3B      | 262k     | Default local brain; vision + tools |
 | `nvidia`               | 3090                                     | Qwen (CUDA)          | 145k     | General local, no vision            |
-| `ryzen`                | Ryzen CPU (Vulkan)                       | Qwen3.5-9B-heretic   | 8.2k     | Tiny/edge tasks                     |
+| `ryzen`                | Ryzen 5700G Vega iGPU (Vulkan, DRA)      | Qwen3.5-9B-heretic   | 8.2k     | Tiny/edge tasks                     |
 | `qwen3-embedding-0-6b` | llama.cpp                                | Qwen3-Embedding-0.6B | —        | Embeddings (1024-dim)               |
 
 ### Cloud (flat-rate subscriptions)
@@ -50,11 +51,25 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | `MiniMax`              | MiniMax Plus                  | MiniMax-M3 (Anthropic endpoint) | 1M       | Big-context generation                             |
 | `MiniMax-M2.7`         | MiniMax Plus                  | MiniMax-M2.7                    | 204.8k   | Agentic reasoning workhorse                        |
 | `glm-5.1`              | GLM Coding Lite → OpenCode Go | glm-5.1                         | 203k     | GLM coding; z.ai primary, OpenCode failover        |
-| `glm-5.2`              | GLM Coding Lite → OpenCode Go | glm-5.2                         | 1M       | GLM big-context; z.ai primary, OpenCode failover   |
+| `glm-5.2`              | GLM Coding Lite → OpenCode Go → Neuralwatt | glm-5.2              | 1M       | GLM big-context; Neuralwatt is metered last resort |
 | `chatgpt/gpt-5.5`      | ChatGPT Plus                  | gpt-5.5 (Codex/OAuth)           | —        | Frontier                                           |
 | `chatgpt/gpt-5.4`      | ChatGPT Plus                  | gpt-5.4                         | —        | Frontier (cheaper)                                 |
 | `chatgpt/gpt-5.4-mini` | ChatGPT Plus                  | gpt-5.4-mini                    | —        | Cheap fallback                                     |
-| `kimi-k2.6`            | OpenCode Go → Moonshot        | kimi-k2.6                       | 262k     | OpenCode-primary (flat); Moonshot only on failover |
+| `kimi-k2.6`            | OpenCode Go → Neuralwatt → Moonshot | kimi-k2.6                  | 262k     | Flat plan first; energy PAYG before token PAYG     |
+| `kimi-k2.7`            | Neuralwatt                    | kimi-k2.7-code                  | 262k     | Metered near-frontier coding/reasoning lane        |
+
+### Neuralwatt (energy-metered PAYG)
+
+| Alias                         | Upstream model | Ctx  | Role                                      |
+| ----------------------------- | -------------- | ---- | ----------------------------------------- |
+| `kimi-k2.7`                   | kimi-k2.7-code | 262k | Smart near-frontier coding/reasoning lane |
+| `neuralwatt/glm-5.2`          | glm-5.2        | 1M   | Direct long-context reasoning lane        |
+
+Neuralwatt charges this account for measured GPU energy rather than tokens. PAYG is $5/kWh;
+prefix-cache hits avoid prefill work and therefore reduce the charged energy. Neuralwatt also publishes
+token prices for compatibility, but those are not the billing basis here, so LiteLLM intentionally has no
+static token-cost metadata for these deployments. Use Neuralwatt's usage API/dashboard for authoritative
+cost and energy until its response-level `cost` and `energy` extensions are exported into Prometheus.
 
 ### Cloud (Opencode Go gateway, `opencode.ai/zen/go/v1`)
 
@@ -66,8 +81,10 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | `mimo-v2.5` / `mimo-v2.5-pro`       | mimo-v2.5(-pro)   | 262k        | Lighter analysis lane                               |
 | `qwen3.7-plus`                      | qwen3.7-plus      | 1M          | Big-context Qwen via gateway                        |
 
-**Provider failover** (LiteLLM `order:`, transparent to callers): `glm-5.1`/`glm-5.2` → z.ai then
-OpenCode; `kimi-k2.6` → OpenCode then Moonshot. The standalone `go-glm-5.1`/`go-kimi-k2.6` aliases
+**Provider failover** (LiteLLM `order:`, transparent to callers): `glm-5.1` → z.ai then OpenCode;
+`glm-5.2` → z.ai, OpenCode, then Neuralwatt; `kimi-k2.6` → OpenCode, Neuralwatt, then Moonshot.
+This reacts when an upstream starts rejecting requests; it cannot detect that an unpublished rolling
+subscription allowance is merely _close_ to exhausted. The standalone `go-glm-5.1`/`go-kimi-k2.6` aliases
 were retired in favour of this. `go-minimax-m3/m2.7` stay separate — MiniMax's direct endpoint is
 Anthropic-shape and can't be grouped with the chat-shape gateway copy.
 

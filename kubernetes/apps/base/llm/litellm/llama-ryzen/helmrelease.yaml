@@ -13,6 +13,9 @@ spec:
   values:
     defaultPodOptions:
       hostIPC: true
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-ryzen-gpu
     controllers:
       llama-ryzen:
         annotations:
@@ -57,9 +60,7 @@ spec:
           app:
             image:
               repository: ghcr.io/ggml-org/llama.cpp
-              tag: server-vulkan@sha256:2c7bf6f374d0674bbc4f6e2a2a4d2c33909952d8219743966ba98ecd3f6d5d33
-            securityContext:
-              privileged: true
+              tag: server-vulkan@sha256:c7e3aa0258d9f79f5462f3ef21368af5c3614c75459d368c7ce941b6adb42fca
             args:
               - --host
               - 0.0.0.0
@@ -122,6 +123,8 @@ spec:
               GGML_VK_VISIBLE_DEVICES: "0"
               UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS: "1"
             resources:
+              claims:
+                - name: gpu
               requests:
                 cpu: 500m
                 memory: 8Gi
@@ -162,11 +165,6 @@ spec:
         existingClaim: llama-ryzen
         globalMounts:
           - path: /models
-      dev-dri:
-        type: hostPath
-        hostPath: /dev/dri
-        globalMounts:
-          - path: /dev/dri
     service:
       app:
         type: LoadBalancer
