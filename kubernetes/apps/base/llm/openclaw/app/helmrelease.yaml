@@ -32,21 +32,11 @@ spec:
               - -c
               - |
                 set -euo pipefail
-                mkdir -p /home/node/.openclaw/extensions/agentmemory
-                chmod u+w /home/node/.openclaw /home/node/.openclaw/extensions/agentmemory || true
+                chmod u+w /home/node/.openclaw || true
                 rm -f /home/node/.openclaw/openclaw.json
-                rm -f /home/node/.openclaw/extensions/agentmemory/openclaw.plugin.json
-                rm -f /home/node/.openclaw/extensions/agentmemory/package.json
-                rm -f /home/node/.openclaw/extensions/agentmemory/plugin.mjs
                 cp /tmp/openclaw.json /home/node/.openclaw/openclaw.json
-                cp /tmp/agentmemory-plugin/openclaw.plugin.json /home/node/.openclaw/extensions/agentmemory/openclaw.plugin.json
-                cp /tmp/agentmemory-plugin/package.json /home/node/.openclaw/extensions/agentmemory/package.json
-                cp /tmp/agentmemory-plugin/plugin.mjs /home/node/.openclaw/extensions/agentmemory/plugin.mjs
                 chown 1000:100 /home/node/.openclaw/openclaw.json
-                chown -R 1000:100 /home/node/.openclaw/extensions/agentmemory
                 chmod 400 /home/node/.openclaw/openclaw.json
-                chmod 500 /home/node/.openclaw/extensions/agentmemory
-                chmod 400 /home/node/.openclaw/extensions/agentmemory/*
         containers:
           app:
             image:
@@ -149,17 +139,6 @@ spec:
         globalMounts:
           - path: /tmp/openclaw.json
             subPath: openclaw.json
-      agentmemory-plugin:
-        type: configMap
-        name: openclaw-agentmemory-plugin
-        defaultMode: 0755
-        globalMounts:
-          - path: /tmp/agentmemory-plugin/openclaw.plugin.json
-            subPath: openclaw.plugin.json
-          - path: /tmp/agentmemory-plugin/package.json
-            subPath: package.json
-          - path: /tmp/agentmemory-plugin/plugin.mjs
-            subPath: plugin.mjs
     rbac:
       roles:
         # Cluster-wide pod delete — restart any pod in any namespace
