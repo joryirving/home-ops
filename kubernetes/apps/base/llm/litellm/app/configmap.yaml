@@ -100,6 +100,22 @@ data:
           api_base: http://llama-embed.llm:8080/v1
           api_key: qwen3-embedding-0-6b
 
+      # Qwen3.5-4B (reasoning disabled) on the Intel iGPU — non-reasoning grunt
+      # model for lossless-claw summaries/expansion (replaces self-hosted, whose
+      # reasoning returned empty content). Single slot, 32k ctx.
+      - model_name: summary
+        model_info:
+          mode: chat
+          max_input_tokens: 32768
+          max_output_tokens: 8192
+          supports_function_calling: false
+          supports_vision: false
+        litellm_params:
+          model: openai/qwen3.5-4b
+          api_base: http://llama-summary.llm:8080/v1
+          api_key: qwen3.5-4b
+          max_parallel_requests: 1
+
       # ChatGPT subscription (OAuth device flow, no API key — token cached in CHATGPT_TOKEN_DIR).
       # reasoning_effort is left to the caller (none|low|medium|high|xhigh per request).
       # Only models the Codex/ChatGPT backend serves work here: 5.5, 5.4 and 5.4-mini.

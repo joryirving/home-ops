@@ -1,0 +1,87 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: qwen3.5-4b
+spec:
+  source: https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-UD-Q4_K_XL.gguf
+  format: gguf
+  quantization: Q4_K_XL
+  hardware:
+    accelerator: intel
+    gpu:
+      enabled: true
+      vendor: intel
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llmkube-models-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: llama-summary
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: qwen3.5-4b
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:c7e3aa0258d9f79f5462f3ef21368af5c3614c75459d368c7ce941b6adb42fca
+  replicas: 1
+  priority: normal
+  securityContext:
+    privileged: true
+  # Single slot so the full window is available per request — lossless-claw
+  # summarizes ~24k-token chunks (freshTailMaxTokens 24000 / leafChunkTokens 20000).
+  contextSize: 32768
+  parallelSlots: 1
+  batchSize: 2048
+  uBatchSize: 2048
+  env:
+    - name: ZES_ENABLE_SYSMAN
+      value: "1"
+    - name: ONEAPI_DEVICE_SELECTOR
+      value: level_zero:gpu
+    - name: UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS
+      value: "1"
+  resources:
+    cpu: "500m"
+    memory: 10Gi
+  extraArgs:
+    - --alias
+    - qwen3.5-4b
+    # Qwen3.5 is a hybrid thinking model; disable reasoning so it emits content
+    # directly (lossless-claw needs a summary, not a <think> block).
+    - --reasoning-budget
+    - "0"
+    - --cont-batching
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    # CephFS-cached weights: avoid mmap cold-faulting on first prefill.
+    - --no-mmap
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
