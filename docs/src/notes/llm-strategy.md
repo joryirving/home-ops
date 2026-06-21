@@ -41,7 +41,7 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | ---------------------- | ---------------------------------------- | -------------------- | -------- | ----------------------------------- |
 | `self-hosted`          | Strix ROCm (2 × 2 slots) + Mac LM Studio | Qwen3.6-35B-A3B      | 262k     | Default local brain; vision + tools |
 | `nvidia`               | 3090                                     | Qwen (CUDA)          | 145k     | General local, no vision            |
-| `ryzen`                | Ryzen CPU (Vulkan)                       | Qwen3.5-9B-heretic   | 8.2k     | Tiny/edge tasks                     |
+| `ryzen`                | Ryzen 5700G Vega iGPU (Vulkan, DRA)      | Qwen3.5-9B-heretic   | 8.2k     | Tiny/edge tasks                     |
 | `qwen3-embedding-0-6b` | llama.cpp                                | Qwen3-Embedding-0.6B | —        | Embeddings (1024-dim)               |
 
 ### Cloud (flat-rate subscriptions)
