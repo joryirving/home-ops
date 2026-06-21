@@ -126,6 +126,7 @@ When reviewing Renovate PRs, enforce these criteria. Reviews may include konflat
 - All applications MUST use `HelmRelease` via Flux, not raw manifests
 - HelmReleases MUST use `spec.chartRef` pointing to an `OCIRepository` with a pinned `ref.tag`. The only exception is `llmkube`, which uses the legacy `spec.chart` pattern.
 - For `app-template`-based apps, reference the shared `OCIRepository` named `app-template` (injected by the namespace component). Do not create per-app `OCIRepository` resources for `app-template`.
+- Per-app `OCIRepository` resources (for non-`app-template` charts) MUST live in a dedicated `ocirepository.yaml` file alongside the `HelmRelease`, not inline in `helmrelease.yaml`. Add `./ocirepository.yaml` to the app's `kustomization.yaml`.
 - Must include `spec.interval` for reconciliation frequency
 - Resource limits (CPU/memory) SHOULD be specified for production workloads, but this is not a hard requirement
 - `valuesFrom` should reference ConfigMaps/Secrets, not inline values
