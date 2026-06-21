@@ -246,6 +246,19 @@ data:
           api_key: os.environ/OPENCODE_API_KEY
           order: 2
 
+      - model_name: glm-5.2
+        model_info:
+          mode: chat
+          max_input_tokens: 1048560
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.2
+          api_base: https://api.neuralwatt.com/v1
+          api_key: os.environ/NEURALWATT_API_KEY
+          order: 3
+
       - model_name: kimi-k2.6
         model_info:
           mode: chat
@@ -266,6 +279,20 @@ data:
       - model_name: kimi-k2.6
         model_info:
           mode: chat
+          max_input_tokens: 262128
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+          supports_vision: true
+        litellm_params:
+          model: openai/kimi-k2.6
+          api_base: https://api.neuralwatt.com/v1
+          api_key: os.environ/NEURALWATT_API_KEY
+          order: 2
+
+      - model_name: kimi-k2.6
+        model_info:
+          mode: chat
           input_cost_per_token: 0.0000009500
           cache_creation_input_token_cost: 0.0000009500
           cache_read_input_token_cost: 0.0000001600
@@ -278,7 +305,35 @@ data:
           model: moonshot/kimi-k2.6
           api_base: https://api.moonshot.ai/v1
           api_key: os.environ/MOONSHOT_API_KEY
-          order: 2
+          order: 3
+
+      # Direct Neuralwatt aliases for opt-in PAYG use and cost comparison.
+      # Billing is energy-based, so static per-token costs would misstate spend.
+      # Stable alias: Neuralwatt is currently the only configured Kimi K2.7 provider.
+      - model_name: kimi-k2.7
+        model_info:
+          mode: chat
+          max_input_tokens: 262128
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+          supports_vision: true
+        litellm_params:
+          model: openai/kimi-k2.7-code
+          api_base: https://api.neuralwatt.com/v1
+          api_key: os.environ/NEURALWATT_API_KEY
+
+      - model_name: neuralwatt/glm-5.2
+        model_info:
+          mode: chat
+          max_input_tokens: 1048560
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.2
+          api_base: https://api.neuralwatt.com/v1
+          api_key: os.environ/NEURALWATT_API_KEY
 
       - model_name: dsv4f
         model_info:
@@ -518,6 +573,7 @@ data:
     environment:
       - MINIMAX_API_KEY
       - MOONSHOT_API_KEY
+      - NEURALWATT_API_KEY
       - OPENCODE_API_KEY
       - ZAI_API_KEY
       - REDIS_HOST
