@@ -15,15 +15,6 @@ spec:
       resourceClaims:
         - name: gpu
           resourceClaimTemplateName: stash-gpu
-      labels:
-        igpu-workload: "true"
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              igpu-workload: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
