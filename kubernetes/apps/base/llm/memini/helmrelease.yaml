@@ -64,6 +64,29 @@ spec:
       data:
         existingClaim: memini
     route:
+      # External: token-gated API + MCP only, path-scoped so the SPA (served at
+      # "/") is never reachable off-LAN. Split-DNS shares the hostname with ui.
+      main:
+        enabled: true
+        hostnames: ["memini.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /v1
+              - path:
+                  type: PathPrefix
+                  value: /mcp
+              - path:
+                  type: PathPrefix
+                  value: /.well-known/
+            backendRefs:
+              - identifier: main
+                port: http
+      # Internal: full app incl. the admin SPA (embeds the API key) — LAN only.
       ui:
         enabled: true
         hostnames: ["memini.jory.dev"]
