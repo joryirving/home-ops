@@ -41,6 +41,9 @@ spec:
   parallelSlots: 1
   batchSize: 2048
   uBatchSize: 2048
+  # Flash attention: faster prefill + smaller KV over the long (~24k tok) summary
+  # chunks. Try-and-measure on Intel Vulkan; revert if it doesn't help.
+  flashAttention: true
   env:
     - name: ZES_ENABLE_SYSMAN
       value: "1"
