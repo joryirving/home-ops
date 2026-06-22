@@ -29,6 +29,10 @@ spec:
   image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:c7e3aa0258d9f79f5462f3ef21368af5c3614c75459d368c7ce941b6adb42fca
   replicas: 1
   priority: normal
+  # Join the igpu-workload topology so the media transcoders' spread sees this
+  # pod and balances around it (LLMKube has no topologySpread of its own yet).
+  podLabels:
+    igpu-workload: "true"
   securityContext:
     privileged: true
   contextSize: 32768
