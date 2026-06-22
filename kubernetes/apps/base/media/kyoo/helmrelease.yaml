@@ -203,6 +203,13 @@ spec:
           resourceClaimTemplateName: kyoo-gpu
       podLabels:
         igpu-workload: "true"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              igpu-workload: "true"
       kyoo_transcoder:
         resources:
           claims:
