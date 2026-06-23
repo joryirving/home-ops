@@ -26,13 +26,18 @@ metadata:
 spec:
   modelRef: qwen3.5-4b
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:c7e3aa0258d9f79f5462f3ef21368af5c3614c75459d368c7ce941b6adb42fca
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:e1f7fafab64479a05c700cf7ac6d1e04d2c5e891362c0b6feb52aac263faa4de
   replicas: 1
   priority: normal
-  # Join the igpu-workload topology so the media transcoders' spread sees this
-  # pod and balances around it (LLMKube has no topologySpread of its own yet).
   podLabels:
     igpu-workload: "true"
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          igpu-workload: "true"
   securityContext:
     privileged: true
   # Single slot so the full window is available per request — lossless-claw
@@ -41,6 +46,9 @@ spec:
   parallelSlots: 1
   batchSize: 2048
   uBatchSize: 2048
+  # Flash attention: faster prefill + smaller KV over the long (~24k tok) summary
+  # chunks. Try-and-measure on Intel Vulkan; revert if it doesn't help.
+  flashAttention: true
   env:
     - name: ZES_ENABLE_SYSMAN
       value: "1"
