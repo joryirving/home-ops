@@ -12,6 +12,18 @@ spec:
   values:
     runtimeClassName: nvidia
     failOnInitError: false
+    config:
+      default: timeslice
+      map:
+        timeslice: |-
+          version: v1
+          flags:
+            migStrategy: none
+          sharing:
+            timeSlicing:
+              resources:
+                - name: nvidia.com/gpu
+                  replicas: 2
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
