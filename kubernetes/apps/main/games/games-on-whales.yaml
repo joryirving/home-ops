@@ -1,4 +1,30 @@
 ---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/gitrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: fenrir
+spec:
+  interval: 1h
+  ref:
+    commit: fd91750567dc038b0f608bd86be7bb335601aab0
+  url: https://github.com/shrinedogg/fenrir
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: fenrir-crds
+spec:
+  force: true
+  interval: 1h
+  path: ./crds
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: fenrir
+  wait: true
+---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -6,9 +32,9 @@ metadata:
   name: &app games-on-whales
 spec:
   dependsOn:
-    - name: games-on-whales-crds
+    - name: fenrir-crds
   interval: 1h
-  path: ./kubernetes/apps/base/games/games-on-whales/app
+  path: ./kubernetes/apps/base/games/games-on-whales
   postBuild:
     substitute:
       APP: *app
@@ -18,3 +44,23 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gpu-handoff-watcher
+spec:
+  dependsOn:
+    - name: fenrir-crds
+  interval: 1h
+  path: ./kubernetes/apps/base/games/gpu-handoff-watcher
+  postBuild:
+    substitute:
+      APP: gpu-handoff-watcher
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
