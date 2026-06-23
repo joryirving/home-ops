@@ -44,23 +44,3 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: gpu-handoff-watcher
-spec:
-  dependsOn:
-    - name: fenrir-crds
-  interval: 1h
-  path: ./kubernetes/apps/base/games/gpu-handoff-watcher
-  postBuild:
-    substitute:
-      APP: gpu-handoff-watcher
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false
