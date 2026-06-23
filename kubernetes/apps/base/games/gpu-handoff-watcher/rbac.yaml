@@ -1,0 +1,53 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gpu-handoff-watcher-games
+rules:
+  - apiGroups:
+      - direwolf.games-on-whales.github.io
+    resources:
+      - sessions
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gpu-handoff-watcher-games
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gpu-handoff-watcher-games
+subjects:
+  - kind: ServiceAccount
+    name: gpu-handoff-watcher
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gpu-handoff-watcher-llm
+  namespace: llm
+rules:
+  - apiGroups:
+      - inference.llmkube.dev
+    resources:
+      - inferenceservices
+    verbs:
+      - get
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gpu-handoff-watcher-llm
+  namespace: llm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gpu-handoff-watcher-llm
+subjects:
+  - kind: ServiceAccount
+    name: gpu-handoff-watcher
+    namespace: games

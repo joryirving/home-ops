@@ -1,0 +1,156 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-handoff-watcher-script
+data:
+  watch.sh: |
+    #!/bin/sh
+    set -eu
+
+    # ---- Configuration ----
+    PROMETHEUS_URL="$${PROMETHEUS_URL:-http://prometheus-operated.observability.svc.cluster.local:9090}"
+    LLAMA_JOB="$${LLAMA_JOB:-llama-nvidia}"
+    LLAMA_NAMESPACE="$${LLAMA_NAMESPACE:-llm}"
+    SESSIONS_NAMESPACE="$${SESSIONS_NAMESPACE:-games}"
+    POLL_INTERVAL_SECONDS="$${POLL_INTERVAL_SECONDS:-30}"
+    FORCE_AFTER_SECONDS="$${FORCE_AFTER_SECONDS:-900}"
+    RESTORE_DELAY_SECONDS="$${RESTORE_DELAY_SECONDS:-300}"
+
+    # ---- State (lost on restart, which is fine) ----
+    sessions_active_since=""
+    scaled_down="false"
+    no_sessions_since=""
+
+    # ---- Helpers ----
+    log() { echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*"; }
+
+    now_epoch() { date +%s; }
+
+    query_prometheus() {
+      local query="$1"
+      curl -sfG --max-time 10 \
+        --data-urlencode "query=$${query}" \
+        "$${PROMETHEUS_URL}/api/v1/query" \
+        | sed -n 's/.*"value":\[[^]]*,"\([^"]*\)".*/\1/p' \
+        | head -n 1
+    }
+
+    # ---- Check for active game sessions ----
+    # Active = not in Pending or Ended state (someone is playing).
+    has_active_sessions() {
+      local output
+      output=$(kubectl get sessions -n "$${SESSIONS_NAMESPACE}" -o json 2>/dev/null) || {
+        log "WARN: cannot list sessions — CRD may not be installed yet"
+        return 1
+      }
+
+      local active
+      active=$(printf '%s' "$output" | \
+        jq '[.items[]? | select(
+          .status.conditions // [] | map(select(.type == "Ready")) | if length > 0 then .[0].status == "True" else false end
+        )] | length' 2>/dev/null) || {
+        log "WARN: jq failed on sessions output"
+        return 1
+      }
+
+      [ "$${active}" -gt 0 ] 2>/dev/null
+    }
+
+    # ---- Check if llama is busy via Prometheus ----
+    llama_busy() {
+      local requests_processing requests_deferred prompt_tokens predicted_tokens
+
+      requests_processing=$(query_prometheus "max_over_time(llamacpp:requests_processing{job=\"$${LLAMA_JOB}\"}[10m])")
+      requests_deferred=$(query_prometheus "max_over_time(llamacpp:requests_deferred{job=\"$${LLAMA_JOB}\"}[10m])")
+      prompt_tokens=$(query_prometheus "increase(llamacpp:prompt_tokens_total{job=\"$${LLAMA_JOB}\"}[10m])")
+      predicted_tokens=$(query_prometheus "increase(llamacpp:tokens_predicted_total{job=\"$${LLAMA_JOB}\"}[10m])")
+
+      log "llama metrics: processing=$${requests_processing} deferred=$${requests_deferred} prompt_tok=$${prompt_tokens} predict_tok=$${predicted_tokens}"
+
+      local busy="false"
+      if [ "$${requests_processing:-0}" != "0" ] || \
+         [ "$${requests_deferred:-0}" != "0" ] || \
+         [ "$${prompt_tokens:-0}" != "0" ] || \
+         [ "$${predicted_tokens:-0}" != "0" ]; then
+        busy="true"
+      fi
+
+      [ "$busy" = "true" ]
+    }
+
+    # ---- Scale InferenceService ----
+    scale_llama() {
+      local replicas="$1"
+      log "Scaling InferenceService $${LLAMA_JOB} in $${LLAMA_NAMESPACE} to $${replicas} replicas"
+
+      kubectl patch inferenceservice "$${LLAMA_JOB}" \
+        -n "$${LLAMA_NAMESPACE}" \
+        --type merge \
+        -p "{\"spec\":{\"replicas\":$${replicas}}}" 2>/dev/null || {
+        log "ERROR: failed to scale InferenceService — resource may not exist yet"
+        return 1
+      }
+
+      log "Successfully scaled to $${replicas} replica(s)"
+    }
+
+    # ---- Main loop ----
+    log "gpu-handoff-watcher started (poll=$${POLL_INTERVAL_SECONDS}s force=$${FORCE_AFTER_SECONDS}s restore=$${RESTORE_DELAY_SECONDS}s)"
+    log "watching sessions in namespace: $${SESSIONS_NAMESPACE}"
+    log "llama InferenceService: $${LLAMA_NAMESPACE}/$${LLAMA_JOB}"
+
+    while true; do
+      if has_active_sessions; then
+        # ---- Sessions are active ----
+        if [ -z "$${sessions_active_since}" ]; then
+          sessions_active_since=$(now_epoch)
+          log "Active sessions detected"
+        fi
+
+        if [ "$scaled_down" = "false" ]; then
+          force_elapsed=$(( $(now_epoch) - sessions_active_since ))
+
+          if llama_busy; then
+            if [ "$${force_elapsed}" -ge "$${FORCE_AFTER_SECONDS}" ]; then
+              log "LLM busy but force timeout reached ($${force_elapsed}s >= $${FORCE_AFTER_SECONDS}s) — forcing scale-down"
+              scale_llama 0 && scaled_down="true"
+            else
+              remaining=$(( FORCE_AFTER_SECONDS - force_elapsed ))
+              log "Sessions active, LLM busy — waiting $${remaining}s before force (elapsed $${force_elapsed}s)"
+            fi
+          else
+            log "Sessions active, LLM idle — scaling down immediately"
+            scale_llama 0 && scaled_down="true"
+          fi
+        fi
+
+        # Reset restore timer on each active check
+        no_sessions_since=""
+
+      else
+        # ---- No active sessions ----
+        if [ -n "$${sessions_active_since}" ]; then
+          log "All sessions ended"
+          sessions_active_since=""
+        fi
+
+        if [ "$scaled_down" = "true" ]; then
+          if [ -z "$${no_sessions_since}" ]; then
+            no_sessions_since=$(now_epoch)
+          fi
+
+          restore_elapsed=$(( $(now_epoch) - no_sessions_since ))
+          if [ "$${restore_elapsed}" -ge "$${RESTORE_DELAY_SECONDS}" ]; then
+            log "No sessions for $${restore_elapsed}s (>= $${RESTORE_DELAY_SECONDS}s) — restoring InferenceService"
+            scale_llama 1 && scaled_down="false"
+            no_sessions_since=""
+          else
+            remaining=$(( RESTORE_DELAY_SECONDS - restore_elapsed ))
+            log "Waiting $${remaining}s before restore (elapsed $${restore_elapsed}s/$${RESTORE_DELAY_SECONDS}s)"
+          fi
+        fi
+      fi
+
+      sleep "$${POLL_INTERVAL_SECONDS}"
+    done

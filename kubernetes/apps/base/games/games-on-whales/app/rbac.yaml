@@ -1,0 +1,73 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: games-on-whales-operator
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - events
+      - pods
+      - secrets
+      - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - deployments/status
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - direwolf.games-on-whales.github.io
+    resources:
+      - apps
+      - pairings
+      - sessions
+      - users
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - direwolf.games-on-whales.github.io
+    resources:
+      - apps/status
+      - pairings/status
+      - sessions/status
+      - users/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: games-on-whales-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: games-on-whales-operator
+subjects:
+  - kind: ServiceAccount
+    name: games-on-whales
