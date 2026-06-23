@@ -1,0 +1,43 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: games-on-whales
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: games-on-whales
+  interval: 1h
+  dependsOn: []
+  values:
+    controllers:
+      direwolf_operator:
+        serviceAccount:
+          identifier: games-on-whales
+        containers:
+          operator:
+            args:
+              - "--lb-sharing-key=direwolf"
+            env:
+              AGENT_IMAGE: docker.io/shrinedogg/wolf-agent:v0.1.0@sha256:1205f62ab4f4dd8cde97387e0055beba62cfe673f91df4ebe38aee0d4cf3cc08
+              POD_NAMESPACE: games
+              WOLF_IMAGE: docker.io/shrinedogg/wolf:v0.1.0@sha256:9d062c45ed7533ba5949db3d739448a83aa6c85a712a41193c496d4b6c1158f8
+            image:
+              digest: sha256:398681deb415a4220fd3c68c6c500dbd2f5251f458be716e8663dd5152516df6
+              repository: docker.io/shrinedogg/direwolf-operator
+              tag: v0.1.0
+      moonlight_proxy:
+        containers:
+          proxy:
+            image:
+              digest: sha256:e8b7cf17ea1bab75c1cec1889a1166ebb3da4c5f0972ae8a7d7cc8dc2571fef0
+              repository: docker.io/shrinedogg/moonlight-proxy
+              tag: v0.1.1
+    service:
+      app:
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.43
+          lbipam.cilium.io/sharing-key: direwolf
+    serviceAccount:
+      games-on-whales: {}

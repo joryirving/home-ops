@@ -1,0 +1,45 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/shrinedogg/fenrir/main/schemas/direwolf.games-on-whales.github.io/user.json
+apiVersion: direwolf.games-on-whales.github.io/v1alpha1
+kind: User
+metadata:
+  name: alex
+spec:
+  resources:
+    limits:
+      memory: 8G
+      nvidia.com/gpu: "1"
+    requests:
+      memory: 8G
+      nvidia.com/gpu: "1"
+  sidecarPolicies:
+    wolf:
+      env:
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: all
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
+        requests:
+          nvidia.com/gpu: "1"
+      volumeMounts:
+        - mountPath: /entrypoint.sh
+          name: wolf-root-entrypoint
+          subPath: entrypoint.sh
+    wolfAgent:
+      securityContext:
+        capabilities:
+          add:
+            - NET_ADMIN
+      volumeMounts:
+        - mountPath: /run/udev
+          name: udev-data
+  volumes:
+    - configMap:
+        defaultMode: 493
+        name: wolf-root-entrypoint
+      name: wolf-root-entrypoint
+    - emptyDir: {}
+      name: udev-data

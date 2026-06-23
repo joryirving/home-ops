@@ -1,0 +1,28 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/v1/configmap.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+  name: wolf-root-entrypoint
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+    set -e
+
+    source /opt/gow/bash-lib/utils.sh
+
+    # Force root: 10-setup_user.sh becomes a no-op and we never gosu.
+    export UNAME=root PUID=0 PGID=0 HOME=/root
+
+    for init_script in /etc/cont-init.d/*.sh; do
+      gow_log
+      gow_log "[ : executing... ]"
+      # shellcheck source=/dev/null
+      source "$init_script"
+    done
+
+    gow_log "Launching the container's startup script as root"
+    chmod +x /opt/gow/startup.sh
+    exec /opt/gow/startup.sh
