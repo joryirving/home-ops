@@ -1,45 +1,69 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/shrinedogg/fenrir/main/schemas/direwolf.games-on-whales.github.io/user.json
+# yaml-language-server: $schema=https://github.com/games-on-whales/fenrir/raw/refs/heads/main/schemas/direwolf.games-on-whales.github.io/user_v1alpha1.json
 apiVersion: direwolf.games-on-whales.github.io/v1alpha1
 kind: User
 metadata:
+  # Upstream currently hardcodes the "alex" username; do not rename.
   name: alex
 spec:
   resources:
     limits:
-      memory: 8G
       nvidia.com/gpu: "1"
+      memory: 8G
     requests:
-      memory: 8G
       nvidia.com/gpu: "1"
+      memory: 8G
+  # wolf:stable must start as root: its supervisord.conf has user=root and
+  # drops privileges per-program itself, but the operator hardcodes
+  # PUID=1000/UNAME=ubuntu into the wolf container, so the GOW entrypoint
+  # gosu's to a non-root user before supervisord runs -> "Can't drop privilege
+  # as nonroot user" crash loop. Shadow /entrypoint.sh with a wrapper that
+  # forces root and skips gosu (see wolf-entrypoint.yaml). Do NOT instead set
+  # PUID/PGID/UNAME in the policy env: the operator builds the Deployment with
+  # server-side apply and env is a listType=map keyed by name, so duplicate
+  # names are rejected and the session Deployment is never created.
+  volumes:
+    - name: wolf-root-entrypoint
+      configMap:
+        name: wolf-root-entrypoint
+        defaultMode: 0755
+    # Pod-local udev database shared between the wolf-agent (writer) and the
+    # app container (reader). The agent plays wolf's fake-udev role.
+    - name: udev-data
+      emptyDir: {}
   sidecarPolicies:
     wolf:
       env:
         - name: NVIDIA_DRIVER_CAPABILITIES
           value: all
         - name: NVIDIA_VISIBLE_DEVICES
-          value: "all"
+          value: all
+        # The gpu-operator (CDI mode) injects the driver under /usr/local/lib
+        # and creates the GBM backend symlink at /usr/local/lib/gbm/, but the
+        # image's Mesa libgbm only searches /usr/lib/x86_64-linux-gnu/gbm.
+        # Without the nvidia backend, waylanddisplaysrc cannot allocate
+        # DMA-BUFs ("Failed to create GsCUDABuf" panic -> no video stream).
+        - name: GBM_BACKENDS_PATH
+          value: /usr/local/lib/gbm:/usr/lib/x86_64-linux-gnu/gbm
+      volumeMounts:
+        - name: wolf-root-entrypoint
+          mountPath: /entrypoint.sh
+          subPath: entrypoint.sh
+      # NOTE: unlike shrinedogg's cluster this does not request squat.ai/uinput
+      # (no generic-device-plugin here). Wolf still encodes video without it;
+      # virtual-input/controller hotplug needs /dev/uinput on the node (uinput
+      # kernel module + device access) -- a follow-up, see README.
       resources:
-        limits:
-          nvidia.com/gpu: "1"
         requests:
           nvidia.com/gpu: "1"
-      volumeMounts:
-        - mountPath: /entrypoint.sh
-          name: wolf-root-entrypoint
-          subPath: entrypoint.sh
+        limits:
+          nvidia.com/gpu: "1"
     wolfAgent:
-      securityContext:
-        capabilities:
-          add:
-            - NET_ADMIN
       volumeMounts:
-        - mountPath: /run/udev
-          name: udev-data
-  volumes:
-    - configMap:
-        defaultMode: 493
-        name: wolf-root-entrypoint
-      name: wolf-root-entrypoint
-    - emptyDir: {}
-      name: udev-data
+        - name: udev-data
+          mountPath: /run/udev
+      securityContext:
+        # Broadcasting synthetic libudev netlink events (fake-udev) requires
+        # CAP_NET_ADMIN in the pod's network namespace.
+        capabilities:
+          add: ["NET_ADMIN"]

@@ -1,11 +1,20 @@
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/v1/configmap.json
+# Shadows the GOW base-image /entrypoint.sh in the wolf sidecar (mounted via
+# the alex User's volumes + sidecarPolicies.wolf.volumeMounts). The stock
+# entrypoint runs the cont-init.d scripts and then gosu's to ${UNAME}, and the
+# operator hardcodes PUID=1000/UNAME=ubuntu -- but wolf's supervisord.conf has
+# user=root, so a non-root supervisord dies with "Can't drop privilege as
+# nonroot user". This wrapper keeps the init-script behavior but forces root
+# and execs the startup script without dropping privileges.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  annotations:
-    kustomize.toolkit.fluxcd.io/substitute: disabled
   name: wolf-root-entrypoint
+  annotations:
+    # The ks.yaml postBuild envsubst would otherwise blank the script's
+    # ${init_script} refs (undefined Flux var -> ""), turning the cont-init.d
+    # loop into `source ""` and crash-looping wolf. This script needs no Flux
+    # substitution, so exclude it.
+    kustomize.toolkit.fluxcd.io/substitute: disabled
 data:
   entrypoint.sh: |
     #!/usr/bin/env bash
@@ -18,9 +27,9 @@ data:
 
     for init_script in /etc/cont-init.d/*.sh; do
       gow_log
-      gow_log "[ : executing... ]"
+      gow_log "[ ${init_script}: executing... ]"
       # shellcheck source=/dev/null
-      source "$init_script"
+      source "${init_script}"
     done
 
     gow_log "Launching the container's startup script as root"

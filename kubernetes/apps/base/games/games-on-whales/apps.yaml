@@ -1,21 +1,88 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/shrinedogg/fenrir/main/schemas/direwolf.games-on-whales.github.io/app.json
+# yaml-language-server: $schema=https://github.com/games-on-whales/fenrir/raw/refs/heads/main/schemas/direwolf.games-on-whales.github.io/app_v1alpha1.json
+# Adapted from upstream examples/nvidia_devices/firefox.yaml. appAssetWebP is
+# required by the CRD; the upstream ~370KB poster is replaced with a tiny
+# generated solid-color WebP placeholder.
+apiVersion: direwolf.games-on-whales.github.io/v1alpha1
+kind: App
+metadata:
+  name: firefox
+  annotations:
+    # The container command uses shell ${PULSE_SINK}; Flux postBuild envsubst
+    # would blank it. The App needs no Flux substitution, so exclude it.
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+spec:
+  appAssetWebP: UklGRhwBAABXRUJQVlA4IBABAADQHACdASosAZABPm02mUmkIqKhICgAgA2JaW7hd2EbQAnsA99snIe+2Yy09snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPekAAD+/9O4f/1K366KRn9B8NO3tyIAAAAAAAAAAAAAAAAAA
+  id: 1
+  isHDRSupported: true
+  title: Firefox
+  # No volumeClaimTemplate -> the operator uses an ephemeral emptyDir for the
+  # Firefox profile. Add a volumeClaimTemplate (default SC openebs-zfspv, which
+  # is node-local on talos1) later if profile persistence is wanted.
+  wolfConfig:
+    runtimeVariables:
+      # CDI injects exactly one NVIDIA DRM render node into the wolf container.
+      # On talos1 it lands at renderD128 (verified: DRIVER=nvidia, RTX 3090 Ti;
+      # renderD129 does NOT exist in-container). Pointing wolf at the wrong node
+      # makes it skip every HW encoder ("not a NVIDIA GPU") -> no HEVC -> the
+      # Moonlight client gets "No video received".
+      renderNode: /dev/dri/renderD128
+  template:
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/games-on-whales/firefox:edge@sha256:1ea7331934d31d346079fb67462b371586d65b5ebb792acee8c0e64e87c185b1
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+            requests:
+              nvidia.com/gpu: "1"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              cleanup() {
+                echo "Cleaning up..." >&2
+                exit 0
+              }
+              trap cleanup SIGINT SIGTERM
+
+              # Wait for wayland display to be available
+              while [ ! -S $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY ]; do
+                echo "Waiting for wayland display..." >&2
+                sleep 1
+              done
+
+              while [ ! -S $XDG_RUNTIME_DIR/pulse-socket ]; do
+                echo "Waiting for pulse socket..." >&2
+                sleep 1
+              done
+
+              export PULSE_SINK="$(pactl list sinks short | awk '$2 ~ /^virtual_sink/ {print $2; exit}')"
+              export PULSE_SOURCE="${PULSE_SINK}.monitor"
+              exec /entrypoint.sh
+---
+# yaml-language-server: $schema=https://github.com/games-on-whales/fenrir/raw/refs/heads/main/schemas/direwolf.games-on-whales.github.io/app_v1alpha1.json
+# Adapted from upstream examples/testball.yaml; same placeholder poster as
+# above. Synthetic GStreamer test source -- no app container, useful for
+# verifying the streaming pipeline (wolf compositor + NVENC) end-to-end.
 apiVersion: direwolf.games-on-whales.github.io/v1alpha1
 kind: App
 metadata:
   name: testball
 spec:
-  appAssetWebP: UklGRlQAAABXRUJQVlA4IEgAAADQHQCdASKShYsoBDAqD0IaqbUZmPk4EnHR8QBs
-  id: 1
+  appAssetWebP: UklGRhwBAABXRUJQVlA4IBABAADQHACdASosAZABPm02mUmkIqKhICgAgA2JaW7hd2EbQAnsA99snIe+2Yy09snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPekAAD+/9O4f/1K366KRn9B8NO3tyIAAAAAAAAAAAAAAAAAA
+  id: 3
   isHDRSupported: true
   title: Test Ball
+  # No volumeClaimTemplate -> the operator uses an ephemeral emptyDir.
   wolfConfig:
-    audio:
-      source: audiotestsrc wave=ticks is-live=true
     runtimeVariables:
-      renderNode: /dev/dri/renderD128
+      renderNode: /dev/dri/renderD128 # see firefox note above
     startAudioServer: false
     startVirtualCompositor: false
+    audio:
+      source: "audiotestsrc wave=ticks is-live=true"
     video:
       source: |
         videotestsrc pattern=ball flip=true is-live=true !

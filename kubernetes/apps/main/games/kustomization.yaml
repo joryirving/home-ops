@@ -5,26 +5,12 @@ kind: Kustomization
 namespace: games
 components:
   - ../../../components/namespace
-patches:
-  - target:
-      kind: Namespace
-    patch: |
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: not-used
-        labels:
-          pod-security.kubernetes.io/enforce: privileged
-          pod-security.kubernetes.io/audit: privileged
-          pod-security.kubernetes.io/warn: privileged
 replacements:
   - path: ../../../components/replacements/ks.yaml
 resources:
   # - ./core-keeper.yaml
   - ./enshrouded.yaml
-  - ./games-on-whales-crds.yaml
   - ./games-on-whales.yaml
-  - ./gpu-handoff-watcher.yaml
   - ./minecraft.yaml
   # - ./palworld.yaml
   - ./romm.yaml
