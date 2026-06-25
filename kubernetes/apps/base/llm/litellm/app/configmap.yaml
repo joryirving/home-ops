@@ -8,10 +8,10 @@ data:
     model_list:
       # These aliases keep the client-facing names stable while LiteLLM
       # forwards the upstream model IDs that each llama.cpp server expects.
-      # self-hosted (#strix-2x35b): two Strix instances (llama-strix-a/b, Qwen3.6-35B-A3B
-      # Q5, 262k, 2 slots each) + Mac LM Studio leg; litellm simple-shuffle spreads across
-      # all three (Mac only when the laptop's up). 2+2, not 3+2: leaves the APU GTT headroom
-      # for comfyui (5 slots starved its iGPU allocation → OOM).
+      # self-hosted (#strix-2x35b): llama-strix-a (Qwen3.6-35B-A3B Q5, 262k, 2 slots) +
+      # Mac LM Studio leg; litellm simple-shuffle spreads across both (Mac only when the
+      # laptop's up). llama-strix-b now serves the standalone `ornith` model — its
+      # self-hosted leg is kept below, commented out, to restore the 2× split.
       - model_name: self-hosted
         model_info:
           mode: chat
@@ -30,23 +30,23 @@ data:
           max_parallel_requests: 2
           order: 1
 
-      - model_name: self-hosted
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000001250
-          cache_creation_input_token_cost: 0.0000001250
-          cache_read_input_token_cost: 0.0000000125
-          output_cost_per_token: 0.0000004999
-          max_input_tokens: 262144
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_vision: true
-        litellm_params:
-          model: openai/self-hosted
-          api_base: http://llama-strix-b.llm:8080/v1
-          api_key: llama-strix-b
-          max_parallel_requests: 2
-          order: 1
+      # - model_name: self-hosted
+      #   model_info:
+      #     mode: chat
+      #     input_cost_per_token: 0.0000001250
+      #     cache_creation_input_token_cost: 0.0000001250
+      #     cache_read_input_token_cost: 0.0000000125
+      #     output_cost_per_token: 0.0000004999
+      #     max_input_tokens: 262144
+      #     max_output_tokens: 16384
+      #     supports_function_calling: true
+      #     supports_vision: true
+      #   litellm_params:
+      #     model: openai/self-hosted
+      #     api_base: http://llama-strix-b.llm:8080/v1
+      #     api_key: llama-strix-b
+      #     max_parallel_requests: 2
+      #     order: 1
 
       - model_name: self-hosted
         model_info:
@@ -91,6 +91,25 @@ data:
           api_base: http://llama-nvidia.llm:8080/v1
           api_key: llama-nvidia
           max_parallel_requests: 1
+
+      # ornith (#strix-2x35b): Ornith-1.0-35B (Q5_K_M, 262k, 2 slots) on llama-strix-b,
+      # agentic-coding MoE. Standalone — no fallback, not in the auto router.
+      - model_name: ornith
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000001250
+          cache_creation_input_token_cost: 0.0000001250
+          cache_read_input_token_cost: 0.0000000125
+          output_cost_per_token: 0.0000004999
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_vision: false
+        litellm_params:
+          model: openai/ornith
+          api_base: http://llama-strix-b.llm:8080/v1
+          api_key: llama-strix-b
+          max_parallel_requests: 2
 
       - model_name: qwen3-embedding-0-6b
         model_info:

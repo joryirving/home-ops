@@ -32,6 +32,24 @@ spec:
           resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: ornith-1.0-35b
+spec:
+  source: pvc://llm-models/ornith-1.0-35b/ornith-1.0-35b-Q5_K_M.gguf
+  format: gguf
+  quantization: Q5_K_M
+  hardware:
+    accelerator: rocm
+    gpu:
+      enabled: true
+      vendor: amd
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-strix-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
   name: llama-strix-a
@@ -139,7 +157,7 @@ metadata:
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: qwen3.6-35b-a3b-q5
+  modelRef: ornith-1.0-35b
   runtime: llamacpp
   image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:8a59a303e2b4c99dcd1d339411e72473bb034b6f8ffd8317f17f7931b62ea8ca
   command:
@@ -172,26 +190,10 @@ spec:
     type: ClusterIP
   extraArgs:
     - --alias
-    - self-hosted
-    - --mmproj
-    - /model-source/qwen3.6-35b-a3b-q5/mmproj-F16.gguf
+    - ornith
     - --cont-batching
-    - --spec-type
-    - draft-mtp
-    - --spec-draft-p-min
-    - "0.75"
-    - --spec-draft-n-max
-    - "3"
-    - --spec-draft-type-k
-    - q8_0
-    - --spec-draft-type-v
-    - q8_0
-    - -sps
-    - "0.75"
     - --cache-prompt
     - --kv-unified
-    - --image-min-tokens
-    - "1024"
     - --temp
     - "0.6"
     - --top-p
