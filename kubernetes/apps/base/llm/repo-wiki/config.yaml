@@ -13,34 +13,24 @@ data:
     misospace/windowstead
     misospace/pr-reviewer-action
     misospace/miso-gallery
-  prompt.md: |
-    You are documenting a git repository for an engineering reference wiki.
-    Output GitHub-flavored markdown with EXACTLY these H2 sections, in this
-    order, with no additions or omissions:
-
-    ## Overview        — what the repo is and does, in 3-5 sentences
-    ## Architecture    — components and how they fit; include one mermaid diagram
-    ## Key Components  — a table of: path | purpose
-    ## Setup / Usage   — how to run, build, or apply it
-    ## Runbook         — common operations, failure modes, and recovery steps
-    ## Skill Candidates — discrete, reusable procedures worth extracting later
-
-    Be concrete and cite real file paths from the provided source. If a section
-    genuinely has no content, write "N/A" under it. Do not invent features.
   generate.py: |
     #!/usr/bin/env python3
-    import io, json, os, pathlib, subprocess, tarfile, urllib.error, urllib.request, fnmatch
+    # Multi-pass repo wiki: stage 1 plans pages, stage 2 writes each from its
+    # relevant files. Local-model friendly, background, no truncated whole-repo dump.
+    import io, json, os, pathlib, re, subprocess, tarfile, urllib.error, urllib.request, fnmatch
 
-    LITELLM = os.environ["OPENAI_BASE_URL"].rstrip("/")
-    KEY     = os.environ["OPENAI_API_KEY"]
-    TOKEN   = os.environ.get("GITHUB_TOKEN", "")
-    MODEL   = os.environ.get("WIKI_MODEL", "nvidia")
-    MAX     = int(os.environ.get("MAX_REPOS_PER_RUN", "2"))
-    REPO    = pathlib.Path(os.environ.get("WIKI_REPO", "/app-data/repository"))
-    STATE   = pathlib.Path("/app-data/.wiki-state.json")
-    PROMPT  = pathlib.Path("/config/prompt.md").read_text()
-    ENTRIES = [l.strip() for l in pathlib.Path("/config/repos.txt").read_text().splitlines()
-               if l.strip() and not l.startswith("#")]
+    LITELLM  = os.environ["OPENAI_BASE_URL"].rstrip("/")
+    KEY      = os.environ["OPENAI_API_KEY"]
+    TOKEN    = os.environ.get("GITHUB_TOKEN", "")
+    MODEL    = os.environ.get("WIKI_MODEL", "self-hosted")
+    MAX      = int(os.environ.get("MAX_REPOS_PER_RUN", "2"))
+    MAXPAGES = int(os.environ.get("MAX_PAGES_PER_REPO", "10"))
+    TIMEOUT  = int(os.environ.get("LLM_TIMEOUT", "1800"))
+    PAGE_CTX = int(os.environ.get("PAGE_CTX_CHARS", "120000"))
+    REPO     = pathlib.Path(os.environ.get("WIKI_REPO", "/app-data/repository"))
+    STATE    = pathlib.Path("/app-data/.wiki-state.json")
+    ENTRIES  = [l.strip() for l in pathlib.Path("/config/repos.txt").read_text().splitlines()
+                if l.strip() and not l.startswith("#")]
 
     SKIP = ("*.png", "*.jpg", "*.jpeg", "*.gif", "*.ico", "*.svg", "*.pdf", "*.zip",
             "*.gz", "*.tar", "*.lock", "*.woff*", "*.ttf", "*.bin", "*.wasm")
@@ -71,8 +61,9 @@ data:
     def expand(entry):
         if not entry.endswith("/*"):
             return [entry]
-        return [r["full_name"] for r in list_repos(entry[:-2])
-                if not r["archived"] and not r["fork"]]
+        owner = entry[:-2]
+        return [r["full_name"] for r in list_repos(owner)
+                if r["full_name"].startswith(owner + "/") and not r["archived"] and not r["fork"]]
 
     def clone_url(repo):
         return f"https://x-access-token:{TOKEN}@github.com/{repo}.git" if TOKEN \
@@ -83,36 +74,77 @@ data:
                              capture_output=True, text=True).stdout
         return out.split()[0] if out else ""
 
-    def pack(repo):
-        url = f"https://api.github.com/repos/{repo}/tarball"
-        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {TOKEN}",
-                                                   "User-Agent": "repo-wiki"})
-        tar = tarfile.open(fileobj=io.BytesIO(urllib.request.urlopen(req, timeout=120).read()))
-        chunks, total = [], 0
+    def fetch_files(repo):
+        req = urllib.request.Request(f"https://api.github.com/repos/{repo}/tarball",
+                                     headers={"Authorization": f"Bearer {TOKEN}", "User-Agent": "repo-wiki"})
+        tar = tarfile.open(fileobj=io.BytesIO(urllib.request.urlopen(req, timeout=180).read()))
+        files = {}
         for m in tar.getmembers():
-            if not m.isfile() or m.size > 64_000:
+            if not m.isfile() or m.size > 96_000:
                 continue
             rel = m.name.split("/", 1)[-1]
-            if any(fnmatch.fnmatch(rel.lower(), p) for p in SKIP):
+            if not rel or any(fnmatch.fnmatch(rel.lower(), p) for p in SKIP):
                 continue
             try:
-                text = tar.extractfile(m).read().decode("utf-8")
+                files[rel] = tar.extractfile(m).read().decode("utf-8")
             except Exception:
                 continue
-            chunks.append(f"=== {rel} ===\n{text}")
-            total += len(text)
-            if total > 400_000:
-                break
-        return "\n\n".join(chunks)
+        return files
 
-    def generate(repo, packed):
+    def chat(system, user):
         body = json.dumps({"model": MODEL, "temperature": 0.2, "messages": [
-            {"role": "system", "content": PROMPT},
-            {"role": "user", "content": f"Repository: {repo}\n\n{packed}"}]}).encode()
+            {"role": "system", "content": system},
+            {"role": "user", "content": user}]}).encode()
         req = urllib.request.Request(f"{LITELLM}/chat/completions", data=body,
             headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"})
-        resp = json.load(urllib.request.urlopen(req, timeout=600))
-        return resp["choices"][0]["message"]["content"]
+        return json.load(urllib.request.urlopen(req, timeout=TIMEOUT))["choices"][0]["message"]["content"]
+
+    PLAN_SYS = (
+        "You plan a detailed technical wiki for a code repository. Given the file tree and "
+        "README, respond with ONLY a JSON array (no prose, no code fence) of at most %d pages "
+        "that together explain the repo in depth. Each element: {\"title\": str, \"slug\": "
+        "kebab-case str, \"focus\": one sentence, \"files\": [most relevant file paths]}. "
+        "Always include an architecture/overview page, one page per major component or "
+        "subsystem, plus setup and operations." % MAXPAGES)
+
+    PAGE_SYS = (
+        "You write one page of a technical wiki in GitHub-flavored markdown. Be detailed, "
+        "accurate, and concrete: explain how things actually work, cite real file paths, and "
+        "include a mermaid diagram when it clarifies structure or flow. Start with an H1 "
+        "title. Do not invent features absent from the provided source.")
+
+    def plan(repo, files):
+        tree = "\n".join(sorted(files))
+        readme = next((files[p] for p in files
+                       if p.lower() == "readme.md" or p.lower().endswith("/readme.md")), "")[:8000]
+        out = chat(PLAN_SYS, f"Repository: {repo}\n\nFile tree:\n{tree}\n\nREADME:\n{readme}")
+        m = re.search(r"\[.*\]", out, re.S)
+        try:
+            return json.loads(m.group(0)) if m else []
+        except Exception:
+            return []
+
+    def write_page(repo, page, files):
+        ctx, total = [], 0
+        for p in page.get("files", []):
+            c = files.get(p)
+            if not c:
+                continue
+            ctx.append(f"=== {p} ===\n{c}")
+            total += len(c)
+            if total > PAGE_CTX:
+                break
+        user = (f"Repository: {repo}\nPage title: {page.get('title')}\n"
+                f"Focus: {page.get('focus', '')}\n\nRelevant source files:\n" + "\n\n".join(ctx))
+        return chat(PAGE_SYS, user)
+
+    def commit(msg):
+        subprocess.run(["git", "-C", str(REPO), "add", "-A"], check=False)
+        subprocess.run(["git", "-C", str(REPO), "-c", "user.email=repo-wiki@jory.dev",
+                        "-c", "user.name=repo-wiki", "commit", "-q", "-m", msg], check=False)
+
+    def slugify(s):
+        return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "page"
 
     subprocess.run(["git", "config", "--global", "--add", "safe.directory", str(REPO)], check=False)
     REPO.mkdir(parents=True, exist_ok=True)
@@ -124,22 +156,28 @@ data:
     stale = [(r, s) for r in candidates if (s := head_sha(r)) and state.get(r) != s][:MAX]
     print(f"{len(candidates)} repos discovered, {len(stale)} to regenerate this run", flush=True)
 
-    def commit(msg):
-        subprocess.run(["git", "-C", str(REPO), "add", "-A"], check=False)
-        subprocess.run(["git", "-C", str(REPO), "-c", "user.email=repo-wiki@jory.dev",
-                        "-c", "user.name=repo-wiki", "commit", "-q", "-m", msg], check=False)
-
     for repo, sha in stale:
-        print(f"generating {repo}", flush=True)
+        print(f"== {repo}", flush=True)
         try:
-            md = generate(repo, pack(repo))
+            files = fetch_files(repo)
+            pages = plan(repo, files)[:MAXPAGES]
+            if not pages:
+                pages = [{"title": "Overview", "slug": "overview", "focus": "repository overview",
+                          "files": sorted(files)[:40]}]
+            name = repo.split("/")[-1]
+            base = REPO / repo
+            base.mkdir(parents=True, exist_ok=True)
+            index = [f"# {repo}\n", "AI-generated wiki.\n", "## Pages\n"]
+            for pg in pages:
+                slug = pg.get("slug") or slugify(pg.get("title", "page"))
+                print(f"  page: {pg.get('title')} ({slug})", flush=True)
+                (base / f"{slug}.md").write_text(write_page(repo, pg, files))
+                index.append(f"- [{pg.get('title', slug)}]({name}/{slug})")
+            (REPO / f"{repo}.md").write_text("\n".join(index))
+            state[repo] = sha
+            STATE.write_text(json.dumps(state, indent=2))
+            commit(f"regenerate {repo} ({len(pages)} pages)")
+            print(f"  committed {repo}: {len(pages)} pages", flush=True)
         except Exception as e:
             print(f"  skipped {repo}: {e}", flush=True)
             continue
-        page = REPO / f"{repo}.md"
-        page.parent.mkdir(parents=True, exist_ok=True)
-        page.write_text(md)
-        state[repo] = sha
-        STATE.write_text(json.dumps(state, indent=2))
-        commit(f"regenerate {repo}")
-        print(f"  committed {repo}", flush=True)
