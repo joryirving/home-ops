@@ -40,6 +40,16 @@ spec:
                 memory: 512Mi
       repo-wiki-gen:
         type: cronjob
+        pod:
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values: ["repo-wiki"]
+                  topologyKey: kubernetes.io/hostname
         cronjob:
           schedule: "0 */2 * * *"
           timeZone: America/Edmonton
