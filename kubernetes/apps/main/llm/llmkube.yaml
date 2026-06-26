@@ -72,6 +72,33 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: stage-qwen3-5-4b
+spec:
+  dependsOn:
+    - name: llmkube-models
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/llmkube/stage
+  postBuild:
+    substitute:
+      MODEL_SLUG: qwen3-5-4b
+      MODEL_REPO: HauhauCS/Qwen3.5-4B-Uncensored-HauhauCS-Aggressive
+      MODEL_FILES: Qwen3.5-4B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf mmproj-Qwen3.5-4B-Uncensored-HauhauCS-Aggressive-BF16.gguf
+      MODEL_DIR: qwen3.5-4b
+      MODEL_CLAIM: llm-models
+      STAGE_NODE_KEY: topology.kubernetes.io/gpus
+      STAGE_NODE_VALUE: amd
+      STAGE_DEADLINE: "10800"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: stage-qwen3-6-27b
 spec:
   dependsOn:
