@@ -99,29 +99,6 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: stage-qwen3-6-27b
-spec:
-  dependsOn:
-    - name: llmkube-models
-  interval: 1h
-  path: ./kubernetes/apps/base/llm/llmkube/stage
-  postBuild:
-    substitute:
-      MODEL_SLUG: qwen3-6-27b
-      MODEL_REPO: unsloth/Qwen3.6-27B-MTP-GGUF
-      MODEL_FILES: Qwen3.6-27B-UD-Q4_K_XL.gguf mmproj-F16.gguf
-      MODEL_DIR: qwen3.6-27b
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
   name: stage-qwen3-6-35b
 spec:
   dependsOn:
@@ -138,52 +115,6 @@ spec:
       STAGE_NODE_KEY: topology.kubernetes.io/gpus
       STAGE_NODE_VALUE: amd
       STAGE_DEADLINE: "10800"
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: stage-qwen3-embedding-0-6b
-spec:
-  dependsOn:
-    - name: llmkube-models
-  interval: 1h
-  path: ./kubernetes/apps/base/llm/llmkube/stage
-  postBuild:
-    substitute:
-      MODEL_SLUG: qwen3-embedding-0-6b
-      MODEL_REPO: Qwen/Qwen3-Embedding-0.6B-GGUF
-      MODEL_FILES: Qwen3-Embedding-0.6B-Q8_0.gguf
-      MODEL_DIR: qwen3-embedding-0.6b
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
-  wait: false
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: stage-qwen3-reranker-0-6b
-spec:
-  dependsOn:
-    - name: llmkube-models
-  interval: 1h
-  path: ./kubernetes/apps/base/llm/llmkube/stage
-  postBuild:
-    substitute:
-      MODEL_SLUG: qwen3-reranker-0-6b
-      MODEL_REPO: ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF
-      MODEL_FILES: qwen3-reranker-0.6b-q8_0.gguf
-      MODEL_DIR: qwen3-reranker-0.6b
   prune: true
   sourceRef:
     kind: GitRepository
