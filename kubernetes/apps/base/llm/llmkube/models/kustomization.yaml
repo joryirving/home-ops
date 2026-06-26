@@ -3,17 +3,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ./priorityclass.yaml
-  - ./pvc.yaml
-  - ./servicemonitor.yaml
-  - ./qwen3.6-27b.yaml
   - ./llama-embed.yaml
   - ./llama-rerank.yaml
   - ./llama-summary.yaml
-  # 2× 35B-Q5 (#strix-2x35b): two instances (2 slots each) share the Strix —
-  # llama-strix-a serves `self-hosted` (Qwen3.6-35B-A3B), llama-strix-b serves the
-  # standalone `ornith` model (Ornith-1.0-35B). 2+2 (not 3+2) keeps APU GTT headroom
-  # for comfyui. 35B-Q8 alt off.
-  # - ./llama-strix-35b-q5.yaml
-  # - ./llama-strix-35b-q8.yaml
-  - ./llama-strix-ornith-q8.yaml
+  - ./ornith1.0-35b.yaml
+  - ./priorityclass.yaml
+  - ./pvc.yaml
+  - ./qwen3.6-27b.yaml
+  # - ./qwen3.6-35b.yaml
+  - ./servicemonitor.yaml

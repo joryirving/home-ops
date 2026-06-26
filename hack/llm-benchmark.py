@@ -15,13 +15,16 @@ async def measure_latency(
     prompt: str,
     max_tokens: int,
     temperature: float = 0.1,
-) -> tuple[float, float]:
-    """Measure TTFT and total time via SSE."""
+) -> dict:
+    """Measure TTFT, decode window, and tokens via SSE. Returns absolute perf_counter stamps."""
     start = time.perf_counter()
-    ttft = 0.0
+    first_token = 0.0
+    tokens = 0
     first = True
 
-    resp = await client.post(
+    usage_tokens = 0
+    async with client.stream(
+        "POST",
         f"{base_url}/chat/completions",
         json={
             "model": model,
@@ -29,26 +32,41 @@ async def measure_latency(
             "max_tokens": max_tokens,
             "temperature": temperature,
             "stream": True,
+            "stream_options": {"include_usage": True},
+            "cache_prompt": False,
         },
         headers={"Authorization": f"Bearer {api_key}"},
-    )
+    ) as resp:
+        async for line in resp.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            data = line[6:]
+            if data.strip() == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+            if chunk.get("usage"):
+                usage_tokens = chunk["usage"].get("completion_tokens", 0)
+            delta = (chunk.get("choices") or [{}])[0].get("delta", {})
+            # reasoning models stream think tokens under reasoning_content
+            if delta.get("content") or delta.get("reasoning_content"):
+                if first:
+                    first_token = time.perf_counter()
+                    first = False
+                tokens += 1
 
-    async for line in resp.aiter_lines():
-        if not line.startswith("data: "):
-            continue
-        data = line[6:]
-        if data.strip() == "[DONE]":
-            break
-        try:
-            chunk = json.loads(data)
-            if first:
-                ttft = time.perf_counter() - start
-                first = False
-        except json.JSONDecodeError:
-            continue
-
-    total_time = time.perf_counter() - start
-    return ttft, total_time
+    end = time.perf_counter()
+    tokens = usage_tokens or tokens
+    ttft = (first_token - start) if not first else (end - start)
+    return {
+        "ttft": ttft,
+        "total_time": end - start,
+        "first_token": first_token if not first else end,
+        "end": end,
+        "tokens": tokens or max_tokens,
+    }
 
 
 # Large prompt for meaningful prefill measurement
@@ -72,122 +90,88 @@ PROMPT = (
 )
 
 
-async def benchmark_config(
-    api_key: str,
-    litellm_base_url: str,
-    model: str,
-    max_tokens: int,
-    iterations: int,
-):
-    """Benchmark a single model/config."""
-    print(f"\n{'#'*60}")
-    print(f"# {model}")
-    print(f"{'#'*60}")
+async def run_round(client, base_url, api_key, model, max_tokens, concurrency):
+    """Fire `concurrency` requests at once; return per-request results + batch window."""
+    t0 = time.perf_counter()
+    results = await asyncio.gather(*[
+        measure_latency(client, base_url, api_key, model, PROMPT, max_tokens)
+        for _ in range(concurrency)
+    ])
+    t1 = time.perf_counter()
+    return results, t0, t1
 
-    async with httpx.AsyncClient(
-        timeout=600.0,
-        limits=httpx.Limits(
-            keepalive_expiry=300,
-            max_keepalive_connections=5,
-        ),
-    ) as client:
-        results = []
-        for i in range(1, iterations + 1):
-            print(f"  [{i}/{iterations}] Request ({max_tokens} tokens)...", end=" ", flush=True)
-            ttft, total_time = await measure_latency(
-                client, litellm_base_url, api_key, model, PROMPT, max_tokens
-            )
-            results.append({"ttft": ttft, "total_time": total_time})
-            
-            decode_time = max(total_time - ttft, 0.001)
-            tps = max_tokens / decode_time if decode_time > 0 else 0
-            print(f"TTFT={ttft:.2f}s  Decode={tps:.1f} tok/s  Total={total_time:.1f}s")
 
-    first_ttft = results[0]["ttft"] if results else 0
-    cached_ttfts = [r["ttft"] for r in results[1:]] if len(results) > 1 else []
-    avg_cached_ttft = sum(cached_ttfts) / len(cached_ttfts) if cached_ttfts else 0
-    wall_time = sum(r["total_time"] for r in results)
-
-    print(f"\n{'-'*60}")
-    print(f"  {model}")
-    print(f"{'-'*60}")
-    print(f"  First TTFT (prefill):     {first_ttft:.3f}s")
-    if cached_ttfts:
-        print(f"  Cached TTFT (avg):        {avg_cached_ttft:.3f}s")
-        print(f"  Prefill overhead:         ~{first_ttft - avg_cached_ttft:.1f}s per request")
-    print(f"  Wall time:                {wall_time:.1f}s")
-
+def summarize(results, t0, t1):
+    """Per-request decode tok/s + system aggregate over the overlapping decode window."""
+    per_req = []
+    for r in results:
+        decode_time = max(r["end"] - r["first_token"], 1e-3)
+        per_req.append(r["tokens"] / decode_time)
+    total_tokens = sum(r["tokens"] for r in results)
+    decode_window = max(r["end"] for r in results) - min(r["first_token"] for r in results)
+    aggregate = total_tokens / max(decode_window, 1e-3)
+    avg_ttft = sum(r["ttft"] for r in results) / len(results)
     return {
-        "model": model,
-        "first_ttft": first_ttft,
-        "cached_ttft": avg_cached_ttft if cached_ttfts else first_ttft,
-        "wall_time": wall_time,
+        "per_req_avg": sum(per_req) / len(per_req),
+        "per_req_min": min(per_req),
+        "per_req_max": max(per_req),
+        "aggregate": aggregate,
+        "avg_ttft": avg_ttft,
+        "wall": t1 - t0,
     }
 
 
 async def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Benchmark partial GPU offload")
-    parser.add_argument("--api-key", required=True, help="LiteLLM API key")
-    parser.add_argument("--litellm-url", default="https://litellm.jory.dev/v1", help="LiteLLM base URL")
-    parser.add_argument("--max-tokens", type=int, default=512, help="Max output tokens")
-    parser.add_argument("--iterations", type=int, default=3, help="Iterations per model")
+    parser = argparse.ArgumentParser(description="Benchmark concurrent-slot throughput")
+    parser.add_argument("--api-key", default="none", help="API key (any value for raw llama-server)")
+    parser.add_argument("--base-url", default="http://localhost:8088/v1", help="OpenAI-compatible base URL")
+    parser.add_argument("--model", default="self-hosted", help="Model/alias name")
+    parser.add_argument("--max-tokens", type=int, default=256, help="Max output tokens per request")
+    parser.add_argument("--iterations", type=int, default=2, help="Rounds per concurrency level (averaged)")
+    parser.add_argument("--concurrency", type=int, nargs="+", default=[1, 2], help="Concurrency levels to compare")
     args = parser.parse_args()
 
     print(f"\nBenchmark config:")
-    print(f"  Max output tokens: {args.max_tokens}")
-    print(f"  Iterations: {args.iterations}")
-    print(f"  Prompt: ~{len(PROMPT)//4} tokens (long)\n")
-    print("NOTE: To test partial offload, you need to update the HelmRelease --n-gpu-layers")
-    print("      value and redeploy, then run this script with the same model name.\n")
+    print(f"  Endpoint:  {args.base_url}  (model={args.model})")
+    print(f"  Max tokens: {args.max_tokens}   Rounds/level: {args.iterations}")
+    print(f"  Prompt: ~{len(PROMPT)//4} tokens   Concurrency levels: {args.concurrency}\n")
 
-    # Run both models
-    all_results = []
-    for model_name in ["intel", "ryzen"]:
-        result = await benchmark_config(
-            api_key=args.api_key,
-            litellm_base_url=args.litellm_url,
-            model=model_name,
-            max_tokens=args.max_tokens,
-            iterations=args.iterations,
-        )
-        all_results.append(result)
+    async with httpx.AsyncClient(
+        timeout=600.0,
+        limits=httpx.Limits(keepalive_expiry=300, max_keepalive_connections=16),
+    ) as client:
+        summaries = {}
+        for c in args.concurrency:
+            print(f"{'#'*60}\n# concurrency={c}\n{'#'*60}")
+            rounds = []
+            for i in range(1, args.iterations + 1):
+                results, t0, t1 = await run_round(
+                    client, args.base_url, args.api_key, args.model, args.max_tokens, c
+                )
+                s = summarize(results, t0, t1)
+                rounds.append(s)
+                print(f"  [{i}/{args.iterations}] per-req(avg)={s['per_req_avg']:.1f}  "
+                      f"aggregate={s['aggregate']:.1f} tok/s  TTFT(avg)={s['avg_ttft']:.2f}s")
+            summaries[c] = {
+                k: sum(r[k] for r in rounds) / len(rounds) for k in rounds[0]
+            }
 
-    # Summary
-    print(f"\n{'='*80}")
-    print(f"  COMPARISON: FULL GPU OFFLOAD")
-    print(f"{'='*80}")
-    
-    models = [r["model"] for r in all_results]
-    print(f"\n{'Metric':<35}", end="")
-    for m in models:
-        print(f" {m:>25}", end="")
-    print()
-    print("-" * 80)
-
-    rows = [
-        ("First TTFT - prefill (s)", lambda r: f"{r['first_ttft']:.3f}"),
-        ("Cached TTFT - decode (s)", lambda r: f"{r['cached_ttft']:.3f}"),
-        ("Wall time (s)", lambda r: f"{r['wall_time']:.1f}"),
-    ]
-
-    for label, fn in rows:
-        print(f"  {label:<35}", end="")
-        for r in all_results:
-            print(f" {fn(r):>25}", end="")
-        print()
-
-    print(f"\nTo test partial offload on llama-ryzen:")
-    print(f"  1. Edit kubernetes/apps/base/llm/litellm/llama-ryzen/helmrelease.yaml")
-    print(f"  2. Change --n-gpu-layers from 99 to a lower value (e.g., 50, 30, 10)")
-    print(f"  3. Commit and wait for Flux to deploy")
-    print(f"  4. Re-run this benchmark")
-    print(f"\nSuggested configs to test:")
-    print(f"  --n-gpu-layers 99   (current - everything on GPU)")
-    print(f"  --n-gpu-layers 50   (half on GPU, half on CPU)")
-    print(f"  --n-gpu-layers 20   (mostly CPU)")
-    print(f"  --n-gpu-layers 0    (all CPU - baseline)")
+    print(f"\n{'='*72}\n  CONCURRENCY SCALING ({args.model})\n{'='*72}")
+    print(f"  {'concurrency':<14}{'per-req tok/s':>16}{'aggregate tok/s':>18}{'TTFT(s)':>12}")
+    print("-" * 72)
+    base = summaries.get(args.concurrency[0])
+    for c in args.concurrency:
+        s = summaries[c]
+        print(f"  {c:<14}{s['per_req_avg']:>16.1f}{s['aggregate']:>18.1f}{s['avg_ttft']:>12.2f}")
+    if base and len(args.concurrency) > 1:
+        top = summaries[args.concurrency[-1]]
+        slow = (1 - top["per_req_avg"] / base["per_req_avg"]) * 100
+        gain = top["aggregate"] / base["aggregate"]
+        print("-" * 72)
+        print(f"  per-request slowdown at c={args.concurrency[-1]}: {slow:.0f}%")
+        print(f"  aggregate throughput gain:    {gain:.2f}x")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,26 @@
 ---
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: llama-strix-gpu
+spec:
+  spec:
+    devices:
+      requests:
+        - name: gpu
+          exactly:
+            deviceClassName: gpu.amd.com
+            adminAccess: true
+            allocationMode: All
+---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: qwen3.6-35b-a3b
+  name: ornith-1.0-35b-q8
 spec:
-  source: pvc://llm-models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf
+  source: pvc://llm-models/ornith-1.0-35b-q8/ornith-1.0-35b-Q8_0.gguf
   format: gguf
-  quantization: UD-Q8_K_XL
+  quantization: Q8_0
   hardware:
     accelerator: rocm
     gpu:
@@ -24,7 +38,7 @@ metadata:
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: qwen3.6-35b-a3b
+  modelRef: ornith-1.0-35b-q8
   runtime: llamacpp
   image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:0b16ad25d179bb4b6ba1967acd5039fc1b4b332ecbacd8dfd0f1edf555320770
   command:
@@ -40,7 +54,7 @@ spec:
       operator: Exists
       effect: NoSchedule
   contextSize: 262144
-  parallelSlots: 2
+  parallelSlots: 3
   flashAttention: true
   jinja: true
   cacheTypeK: q8_0
@@ -57,26 +71,12 @@ spec:
     type: ClusterIP
   extraArgs:
     - --alias
-    - self-hosted
-    - --mmproj
-    - /model-source/qwen3.6-35b-a3b/mmproj-F16.gguf
+    - ornith
     - --cont-batching
-    - --spec-type
-    - draft-mtp
-    - --spec-draft-p-min
-    - "0.75"
-    - --spec-draft-n-max
-    - "3"
-    - --spec-draft-type-k
-    - q8_0
-    - --spec-draft-type-v
-    - q8_0
-    - -sps
-    - "0.75"
     - --cache-prompt
     - --kv-unified
-    - --image-min-tokens
-    - "1024"
+    - --checkpoint-min-step
+    - "32768"
     - --temp
     - "0.6"
     - --top-p
