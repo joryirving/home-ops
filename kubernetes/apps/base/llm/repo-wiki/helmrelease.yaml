@@ -65,8 +65,10 @@ spec:
             command: ["python3", "/config/generate.py"]
             env:
               OPENAI_BASE_URL: http://litellm.llm:4000/v1
-              WIKI_MODEL: nvidia
+              WIKI_MODEL: self-hosted
               MAX_REPOS_PER_RUN: "2"
+              MAX_PAGES_PER_REPO: "10"
+              LLM_TIMEOUT: "1800"
               WIKI_REPO: /app-data/repository
             envFrom:
               - secretRef:
@@ -75,7 +77,7 @@ spec:
               requests:
                 cpu: 100m
               limits:
-                memory: 1Gi
+                memory: 2Gi
     persistence:
       data:
         existingClaim: repo-wiki
