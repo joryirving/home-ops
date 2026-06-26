@@ -124,16 +124,22 @@ data:
     stale = [(r, s) for r in candidates if (s := head_sha(r)) and state.get(r) != s][:MAX]
     print(f"{len(candidates)} repos discovered, {len(stale)} to regenerate this run", flush=True)
 
+    def commit(msg):
+        subprocess.run(["git", "-C", str(REPO), "add", "-A"], check=False)
+        subprocess.run(["git", "-C", str(REPO), "-c", "user.email=repo-wiki@jory.dev",
+                        "-c", "user.name=repo-wiki", "commit", "-q", "-m", msg], check=False)
+
     for repo, sha in stale:
         print(f"generating {repo}", flush=True)
+        try:
+            md = generate(repo, pack(repo))
+        except Exception as e:
+            print(f"  skipped {repo}: {e}", flush=True)
+            continue
         page = REPO / f"{repo}.md"
         page.parent.mkdir(parents=True, exist_ok=True)
-        page.write_text(generate(repo, pack(repo)))
+        page.write_text(md)
         state[repo] = sha
-
-    STATE.write_text(json.dumps(state, indent=2))
-    if stale:
-        subprocess.run(["git", "-C", str(REPO), "add", "-A"], check=True)
-        subprocess.run(["git", "-C", str(REPO), "-c", "user.email=repo-wiki@jory.dev",
-                        "-c", "user.name=repo-wiki", "commit", "-q", "-m",
-                        f"regenerate {len(stale)} wiki(s)"], check=False)
+        STATE.write_text(json.dumps(state, indent=2))
+        commit(f"regenerate {repo}")
+        print(f"  committed {repo}", flush=True)
