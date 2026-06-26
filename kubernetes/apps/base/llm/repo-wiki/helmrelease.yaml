@@ -1,0 +1,108 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: repo-wiki
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: repo-wiki
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 33
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      otterwiki:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: redimp/otterwiki
+              tag: 2.20.7@sha256:e8c4a4a452edb3246c2381fa302584a4933f9c3a17a1d8a47b947667b28495c5
+            env:
+              SITE_NAME: Repo Wikis
+              REPOSITORY: /app-data/repository
+              SQLALCHEMY_DATABASE_URI: sqlite:////app-data/db.sqlite
+              READ_ACCESS: ANONYMOUS
+              WRITE_ACCESS: ADMIN
+            envFrom:
+              - secretRef:
+                  name: repo-wiki
+            resources:
+              requests:
+                cpu: 50m
+              limits:
+                memory: 512Mi
+      repo-wiki-gen:
+        type: cronjob
+        pod:
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values: ["repo-wiki"]
+                  topologyKey: kubernetes.io/hostname
+        cronjob:
+          schedule: "0 */2 * * *"
+          timeZone: America/Edmonton
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+        containers:
+          app:
+            image:
+              repository: python
+              tag: "3.13@sha256:f669133e924384c808cee1fc5dc896a5316421a9342dfa77efeebdcbc1222ae3"
+            command: ["python3", "/config/generate.py"]
+            env:
+              OPENAI_BASE_URL: http://litellm.llm:4000/v1
+              WIKI_MODEL: nvidia
+              MAX_REPOS_PER_RUN: "2"
+              WIKI_REPO: /app-data/repository
+            envFrom:
+              - secretRef:
+                  name: repo-wiki
+            resources:
+              requests:
+                cpu: 100m
+              limits:
+                memory: 1Gi
+    persistence:
+      data:
+        existingClaim: repo-wiki
+        advancedMounts:
+          otterwiki:
+            app:
+              - path: /app-data
+          repo-wiki-gen:
+            app:
+              - path: /app-data
+      config:
+        type: configMap
+        name: repo-wiki
+        globalMounts:
+          - path: /config
+    route:
+      app:
+        hostnames: ["wikis.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: repo-wiki
+                port: 8080
+    service:
+      app:
+        controller: otterwiki
+        ports:
+          http:
+            port: 8080

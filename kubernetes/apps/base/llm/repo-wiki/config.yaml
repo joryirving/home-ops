@@ -1,0 +1,133 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: repo-wiki
+data:
+  repos.txt: |
+    joryirving/*
+    misospace/*
+  prompt.md: |
+    You are documenting a git repository for an engineering reference wiki.
+    Output GitHub-flavored markdown with EXACTLY these H2 sections, in this
+    order, with no additions or omissions:
+
+    ## Overview        — what the repo is and does, in 3-5 sentences
+    ## Architecture    — components and how they fit; include one mermaid diagram
+    ## Key Components  — a table of: path | purpose
+    ## Setup / Usage   — how to run, build, or apply it
+    ## Runbook         — common operations, failure modes, and recovery steps
+    ## Skill Candidates — discrete, reusable procedures worth extracting later
+
+    Be concrete and cite real file paths from the provided source. If a section
+    genuinely has no content, write "N/A" under it. Do not invent features.
+  generate.py: |
+    #!/usr/bin/env python3
+    import io, json, os, pathlib, subprocess, tarfile, urllib.error, urllib.request, fnmatch
+
+    LITELLM = os.environ["OPENAI_BASE_URL"].rstrip("/")
+    KEY     = os.environ["OPENAI_API_KEY"]
+    TOKEN   = os.environ.get("GITHUB_TOKEN", "")
+    MODEL   = os.environ.get("WIKI_MODEL", "nvidia")
+    MAX     = int(os.environ.get("MAX_REPOS_PER_RUN", "2"))
+    REPO    = pathlib.Path(os.environ.get("WIKI_REPO", "/app-data/repository"))
+    STATE   = pathlib.Path("/app-data/.wiki-state.json")
+    PROMPT  = pathlib.Path("/config/prompt.md").read_text()
+    ENTRIES = [l.strip() for l in pathlib.Path("/config/repos.txt").read_text().splitlines()
+               if l.strip() and not l.startswith("#")]
+
+    SKIP = ("*.png", "*.jpg", "*.jpeg", "*.gif", "*.ico", "*.svg", "*.pdf", "*.zip",
+            "*.gz", "*.tar", "*.lock", "*.woff*", "*.ttf", "*.bin", "*.wasm")
+
+    def gh(path):
+        req = urllib.request.Request(f"https://api.github.com{path}",
+            headers={"Authorization": f"Bearer {TOKEN}", "User-Agent": "repo-wiki",
+                     "Accept": "application/vnd.github+json"})
+        return json.load(urllib.request.urlopen(req, timeout=30))
+
+    def list_repos(owner):
+        for kind in ("orgs", "users"):
+            try:
+                out, page = [], 1
+                while True:
+                    batch = gh(f"/{kind}/{owner}/repos?per_page=100&type=all&page={page}")
+                    if not batch:
+                        break
+                    out += batch
+                    page += 1
+                return out
+            except urllib.error.HTTPError as e:
+                if e.code == 404 and kind == "orgs":
+                    continue
+                raise
+        return []
+
+    def expand(entry):
+        if not entry.endswith("/*"):
+            return [entry]
+        return [r["full_name"] for r in list_repos(entry[:-2])
+                if not r["archived"] and not r["fork"]]
+
+    def clone_url(repo):
+        return f"https://x-access-token:{TOKEN}@github.com/{repo}.git" if TOKEN \
+            else f"https://github.com/{repo}.git"
+
+    def head_sha(repo):
+        out = subprocess.run(["git", "ls-remote", clone_url(repo), "HEAD"],
+                             capture_output=True, text=True).stdout
+        return out.split()[0] if out else ""
+
+    def pack(repo):
+        url = f"https://api.github.com/repos/{repo}/tarball"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {TOKEN}",
+                                                   "User-Agent": "repo-wiki"})
+        tar = tarfile.open(fileobj=io.BytesIO(urllib.request.urlopen(req, timeout=120).read()))
+        chunks, total = [], 0
+        for m in tar.getmembers():
+            if not m.isfile() or m.size > 64_000:
+                continue
+            rel = m.name.split("/", 1)[-1]
+            if any(fnmatch.fnmatch(rel.lower(), p) for p in SKIP):
+                continue
+            try:
+                text = tar.extractfile(m).read().decode("utf-8")
+            except Exception:
+                continue
+            chunks.append(f"=== {rel} ===\n{text}")
+            total += len(text)
+            if total > 400_000:
+                break
+        return "\n\n".join(chunks)
+
+    def generate(repo, packed):
+        body = json.dumps({"model": MODEL, "temperature": 0.2, "messages": [
+            {"role": "system", "content": PROMPT},
+            {"role": "user", "content": f"Repository: {repo}\n\n{packed}"}]}).encode()
+        req = urllib.request.Request(f"{LITELLM}/chat/completions", data=body,
+            headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"})
+        resp = json.load(urllib.request.urlopen(req, timeout=600))
+        return resp["choices"][0]["message"]["content"]
+
+    subprocess.run(["git", "config", "--global", "--add", "safe.directory", str(REPO)], check=False)
+    REPO.mkdir(parents=True, exist_ok=True)
+    if not (REPO / ".git").exists():
+        subprocess.run(["git", "init", "-q", str(REPO)], check=True)
+    state = json.loads(STATE.read_text()) if STATE.exists() else {}
+
+    candidates = sorted({r for e in ENTRIES for r in expand(e)})
+    stale = [(r, s) for r in candidates if (s := head_sha(r)) and state.get(r) != s][:MAX]
+    print(f"{len(candidates)} repos discovered, {len(stale)} to regenerate this run", flush=True)
+
+    for repo, sha in stale:
+        print(f"generating {repo}", flush=True)
+        page = REPO / f"{repo}.md"
+        page.parent.mkdir(parents=True, exist_ok=True)
+        page.write_text(generate(repo, pack(repo)))
+        state[repo] = sha
+
+    STATE.write_text(json.dumps(state, indent=2))
+    if stale:
+        subprocess.run(["git", "-C", str(REPO), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(REPO), "-c", "user.email=repo-wiki@jory.dev",
+                        "-c", "user.name=repo-wiki", "commit", "-q", "-m",
+                        f"regenerate {len(stale)} wiki(s)"], check=False)
