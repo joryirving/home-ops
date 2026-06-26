@@ -38,7 +38,7 @@ metadata:
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: ornith-1.0-35b-q8
+  modelRef: ornith-1.0-35b
   runtime: llamacpp
   image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:0b16ad25d179bb4b6ba1967acd5039fc1b4b332ecbacd8dfd0f1edf555320770
   command:
@@ -65,7 +65,7 @@ spec:
   uBatchSize: 2048
   resources:
     cpu: "500m"
-    memory: 20Gi
+    memory: 36Gi
   endpoint:
     port: 8080
     type: ClusterIP
@@ -74,6 +74,8 @@ spec:
     - ornith
     - --cont-batching
     - --cache-prompt
+    - --cache-ram
+    - "24576"
     - --kv-unified
     - --checkpoint-min-step
     - "32768"
