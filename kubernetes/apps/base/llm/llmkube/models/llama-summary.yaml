@@ -42,6 +42,11 @@ spec:
           igpu-workload: "true"
   securityContext:
     privileged: true
+  podSecurityContext:
+    runAsUser: 0
+    fsGroup: 102
+    seccompProfile:
+      type: RuntimeDefault
   # Single slot so the full window is available per request — lossless-claw
   # summarizes ~24k-token chunks (freshTailMaxTokens 24000 / leafChunkTokens 20000).
   contextSize: 32768
