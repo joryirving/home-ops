@@ -149,6 +149,33 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: stage-ornith-1-0-35b-q8
+spec:
+  dependsOn:
+    - name: llmkube-models
+  interval: 1h
+  path: ./kubernetes/apps/base/llm/llmkube/stage
+  postBuild:
+    substitute:
+      MODEL_SLUG: ornith-1-0-35b-q8
+      MODEL_REPO: deepreinforce-ai/Ornith-1.0-35B-GGUF
+      MODEL_FILES: ornith-1.0-35b-Q8_0.gguf
+      MODEL_DIR: ornith-1.0-35b-q8
+      MODEL_CLAIM: llm-models
+      STAGE_NODE_KEY: topology.kubernetes.io/gpus
+      STAGE_NODE_VALUE: amd
+      STAGE_DEADLINE: "10800"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: stage-qwen3-embedding-0-6b
 spec:
   dependsOn:
