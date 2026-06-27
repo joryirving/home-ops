@@ -4,7 +4,10 @@ kind: Model
 metadata:
   name: qwen3.5-4b-vision
 spec:
-  source: pvc://llm-models/qwen3.5-4b/Qwen3.5-4B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf
+  source: hf://HauhauCS/Qwen3.5-4B-Uncensored-HauhauCS-Aggressive
+  files:
+    - Qwen3.5-4B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf
+    - mmproj-Qwen3.5-4B-Uncensored-HauhauCS-Aggressive-BF16.gguf
   format: gguf
   quantization: Q8_0
   hardware:
@@ -33,6 +36,11 @@ spec:
   priority: high
   securityContext:
     privileged: true
+  podSecurityContext:
+    runAsUser: 0
+    fsGroup: 102
+    seccompProfile:
+      type: RuntimeDefault
   nodeSelector:
     topology.kubernetes.io/gpus: amd
   tolerations:
@@ -59,7 +67,7 @@ spec:
     - --alias
     - vision
     - --mmproj
-    - /model-source/qwen3.5-4b/mmproj-Qwen3.5-4B-Uncensored-HauhauCS-Aggressive-BF16.gguf
+    - mmproj-Qwen3.5-4B-Uncensored-HauhauCS-Aggressive-BF16.gguf
     - --cont-batching
     - -sps
     - "0.75"
