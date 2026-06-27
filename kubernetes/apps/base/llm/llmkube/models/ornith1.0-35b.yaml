@@ -1,24 +1,12 @@
 ---
-apiVersion: resource.k8s.io/v1
-kind: ResourceClaimTemplate
-metadata:
-  name: llama-strix-gpu
-spec:
-  spec:
-    devices:
-      requests:
-        - name: gpu
-          exactly:
-            deviceClassName: gpu.amd.com
-            adminAccess: true
-            allocationMode: All
----
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
   name: ornith-1.0-35b
 spec:
-  source: pvc://llm-models/ornith-1.0-35b/ornith-1.0-35b-Q8_0.gguf
+  source: hf://deepreinforce-ai/Ornith-1.0-35B-GGUF
+  files:
+    - ornith-1.0-35b-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
@@ -47,6 +35,11 @@ spec:
   priority: high
   securityContext:
     privileged: true
+  podSecurityContext:
+    runAsUser: 0
+    fsGroup: 102
+    seccompProfile:
+      type: RuntimeDefault
   nodeSelector:
     topology.kubernetes.io/gpus: amd
   tolerations:
