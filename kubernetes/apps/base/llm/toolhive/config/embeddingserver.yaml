@@ -6,23 +6,18 @@ metadata:
   name: mcp-tools-embedding
 spec:
   model: Qwen/Qwen3-Embedding-0.6B
-  image: ghcr.io/huggingface/text-embeddings-inference:xpu-ipex-latest@sha256:83f55427dd1b6379816fca6c6616f1a46afc7ad95139f3f0792af332ade0e90a
+  image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest@sha256:7f8cbd5fbf27d1ad82450b68ec37e542bbfb0d03e6dc79d6d00242022f2fc4c7
   env:
     - name: HOSTNAME
       value: "::"
-    - name: ONEAPI_DEVICE_SELECTOR
-      value: level_zero:gpu
-    - name: UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS
-      value: "1"
-    - name: ZES_ENABLE_SYSMAN
-      value: "1"
   podTemplateSpec:
     spec:
       containers:
         - name: embedding
-          resources:
-            claims:
-              - name: gpu
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: toolhive-config-gpu
+          volumeMounts:
+            - name: cache
+              mountPath: /data
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: mcp-tools-embedding-cache
