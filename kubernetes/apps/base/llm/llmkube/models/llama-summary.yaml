@@ -40,21 +40,10 @@ spec:
       labelSelector:
         matchLabels:
           igpu-workload: "true"
-  securityContext:
-    privileged: true
-  podSecurityContext:
-    runAsUser: 0
-    fsGroup: 102
-    seccompProfile:
-      type: RuntimeDefault
-  # Single slot so the full window is available per request — lossless-claw
-  # summarizes ~24k-token chunks (freshTailMaxTokens 24000 / leafChunkTokens 20000).
   contextSize: 32768
-  parallelSlots: 1
+  parallelSlots: 2
   batchSize: 2048
   uBatchSize: 2048
-  # Flash attention: faster prefill + smaller KV over the long (~24k tok) summary
-  # chunks. Try-and-measure on Intel Vulkan; revert if it doesn't help.
   flashAttention: true
   env:
     - name: ZES_ENABLE_SYSMAN
@@ -69,9 +58,6 @@ spec:
   extraArgs:
     - --alias
     - qwen3.5-4b
-    # Qwen3.5's chat template defaults thinking=1; pass enable_thinking:false to
-    # the jinja template so it never opens a <think> block and emits content
-    # directly (--reasoning-budget 0 does NOT suppress it — only force-closes).
     - --chat-template-kwargs
     - '{"enable_thinking": false}'
     - --cont-batching
