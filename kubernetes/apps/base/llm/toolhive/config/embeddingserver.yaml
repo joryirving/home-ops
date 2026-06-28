@@ -5,19 +5,8 @@ kind: EmbeddingServer
 metadata:
   name: mcp-tools-embedding
 spec:
-  model: Qwen/Qwen3-Embedding-0.6B
+  model: sentence-transformers/all-MiniLM-L6-v2
   image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest@sha256:7f8cbd5fbf27d1ad82450b68ec37e542bbfb0d03e6dc79d6d00242022f2fc4c7
   env:
     - name: HOSTNAME
       value: "::"
-  podTemplateSpec:
-    spec:
-      containers:
-        - name: embedding
-          volumeMounts:
-            - name: cache
-              mountPath: /data
-      volumes:
-        - name: cache
-          persistentVolumeClaim:
-            claimName: mcp-tools-embedding-cache
