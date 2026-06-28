@@ -1,12 +1,28 @@
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: bge-small-en-v1.5-tei
+spec:
+  source: hf://BAAI/bge-small-en-v1.5
+  format: custom
+  hardware:
+    accelerator: intel
+    gpu:
+      enabled: true
+      vendor: intel
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llmkube-models-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
   name: tei-embed
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: qwen3-embedding-0.6b
+  modelRef: bge-small-en-v1.5-tei
   runtime: generic
   skipModelInit: true
   image: ghcr.io/huggingface/text-embeddings-inference:xpu-ipex-1.9@sha256:fb730e54867a5b2e6bcbb84688fd1b2536b31c82a95eca1e4fc8a8596f232b1b
