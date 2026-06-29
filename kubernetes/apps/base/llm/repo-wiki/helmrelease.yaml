@@ -25,7 +25,15 @@ spec:
               repository: squidfunk/mkdocs-material
               tag: 9.7.6@sha256:868ad4d39fb5865b72d00173ade00f4eae2b38dde7ff790a011cc44ce4a8ff8e
             command: ["mkdocs"]
-            args: ["serve", "--dirty", "-f", "/config/mkdocs.yml", "-a", "0.0.0.0:8000"]
+            args:
+              [
+                "serve",
+                "--dirty",
+                "-f",
+                "/config/mkdocs.yml",
+                "-a",
+                "0.0.0.0:8000",
+              ]
             resources:
               requests:
                 cpu: 50m
@@ -44,7 +52,7 @@ spec:
                         values: ["repo-wiki"]
                   topologyKey: kubernetes.io/hostname
         cronjob:
-          schedule: "0 2 * * *"
+          schedule: "0 */3 * * *"
           timeZone: America/Edmonton
           concurrencyPolicy: Forbid
           successfulJobsHistory: 1
