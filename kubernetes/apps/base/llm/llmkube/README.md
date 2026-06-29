@@ -6,19 +6,29 @@ hand-rolled app-template HelmReleases for GPU model serving.
 
 A model is two CRs — a **`Model`** (where the weights come from + hardware
 target) and an **`InferenceService`** (the serving pod: llama.cpp args, GPU,
-probes, endpoint) — one file per model under `models/`:
+probes, endpoint). The CRDs are cluster-wide, so each model's two CRs live **in
+the folder of the app that consumes it**, not under `llmkube/`:
 
 ```
-llmkube/
-  ocirepository.yaml    helmrelease.yaml   kustomization.yaml   # the operator
-  models/
-    kustomization.yaml        # lists the active model files + the shared ServiceMonitor
-    servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
-    qwen3.6-27b.yaml          # Model + InferenceService (RTX 3090)
+llmkube/                    # the operator + shared cluster infra only
+  ocirepository.yaml  helmrelease.yaml  kustomization.yaml   # the operator
+  priorityclass.yaml        # gpu-preemptible (3090 yields to game sessions)
+  resourceclaim.yaml        # llama-strix-gpu RCT, shared by the Strix models
+  servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
+
+memini/                     # Intel iGPU helpers, reconciled by the `memini` KS
+  llama-embed.yaml  llama-rerank.yaml  llama-summary.yaml
+
+litellm/app/                # chat/vision models, reconciled by the `litellm` KS
+  qwen3.6-27b.yaml          # llama-nvidia (RTX 3090)
+  ornith1.0-35b.yaml        # llama-strix (Strix Halo)
+  qwen3.5-4b.yaml           # llama-vision (Strix Halo)
 ```
 
-All models reconcile under a single `llmkube-models` Flux Kustomization
-(`apps/main/llm/llmkube.yaml`, `dependsOn: llmkube`).
+Each consuming app's own Flux Kustomization reconciles its models (`memini`,
+`litellm` in `apps/main/llm/`); there is no dedicated `llmkube-models`
+Kustomization. The CRDs come from the `llmkube` operator, so those apps assume
+it's already reconciled (no explicit `dependsOn`).
 
 ## How weights are sourced
 
@@ -36,10 +46,19 @@ The `Model.spec.source` scheme decides what the operator does. Three modes:
 
 ## Adding a new model
 
-Drop one file in `models/` (a `Model` + `InferenceService`, mirror
-`models/qwen3.6-27b.yaml`) and add it to `models/kustomization.yaml`. No new
-folder, no Flux Kustomization — the operator and the existing `llmkube-models`
-Kustomization pick it up.
+Drop the `Model` + `InferenceService` file into the **consuming app's** folder
+and add it to that app's `kustomization.yaml` — `memini/` for the Intel iGPU
+helpers, `litellm/app/` for the chat/vision models. No new folder, no Flux
+Kustomization — the operator and the app's existing Kustomization pick it up.
+
+GPU access depends on the target:
+
+- **Intel iGPU** — the consuming KS must pull in `components/gpu`, which
+  generates a `${APP}-gpu` ResourceClaimTemplate; reference it as the model's
+  `resourceClaimTemplateName` (e.g. `memini-gpu`).
+- **AMD Strix** — reference the shared `llama-strix-gpu` template
+  (`llmkube/resourceclaim.yaml`).
+- **NVIDIA** — no claim; request `gpu: { count: 1 }` on the hardware block.
 
 ## The 3090: single always-on tenant
 
