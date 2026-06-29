@@ -16,24 +16,16 @@ spec:
         fsGroup: 33
         fsGroupChangePolicy: OnRootMismatch
     controllers:
-      otterwiki:
+      mkdocs:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: redimp/otterwiki
-              tag: 2.20.7@sha256:e8c4a4a452edb3246c2381fa302584a4933f9c3a17a1d8a47b947667b28495c5
-            env:
-              SITE_NAME: Repo Wikis
-              REPOSITORY: /app-data/repository
-              SQLALCHEMY_DATABASE_URI: sqlite:////app-data/db.sqlite
-              READ_ACCESS: ANONYMOUS
-              WRITE_ACCESS: ADMIN
-              EMAIL_NEEDS_CONFIRMATION: "false"
-            envFrom:
-              - secretRef:
-                  name: repo-wiki
+              repository: squidfunk/mkdocs-material
+              tag: 9.7.6@sha256:868ad4d39fb5865b72d00173ade00f4eae2b38dde7ff790a011cc44ce4a8ff8e
+            command: ["mkdocs"]
+            args: ["serve", "--dirty", "-f", "/config/mkdocs.yml", "-a", "0.0.0.0:8000"]
             resources:
               requests:
                 cpu: 50m
@@ -82,7 +74,7 @@ spec:
       data:
         existingClaim: repo-wiki
         advancedMounts:
-          otterwiki:
+          mkdocs:
             app:
               - path: /app-data
           repo-wiki-gen:
@@ -102,10 +94,10 @@ spec:
         rules:
           - backendRefs:
               - name: repo-wiki
-                port: 8080
+                port: 8000
     service:
       app:
-        controller: otterwiki
+        controller: mkdocs
         ports:
           http:
-            port: 8080
+            port: 8000
