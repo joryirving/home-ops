@@ -34,6 +34,7 @@ data:
             name: Switch to dark mode
       features:
         - navigation.instant
+        - navigation.indexes
         - navigation.sections
         - navigation.top
         - navigation.footer
@@ -58,7 +59,7 @@ data:
     #!/usr/bin/env python3
     # Multi-pass repo wiki: stage 1 plans pages, stage 2 writes each from its
     # relevant files. Local-model friendly, background, no truncated whole-repo dump.
-    import io, json, os, pathlib, re, subprocess, tarfile, urllib.error, urllib.request, fnmatch
+    import io, json, os, pathlib, re, shutil, subprocess, tarfile, urllib.error, urllib.request, fnmatch
 
     LITELLM  = os.environ["OPENAI_BASE_URL"].rstrip("/")
     KEY      = os.environ["OPENAI_API_KEY"]
@@ -205,16 +206,17 @@ data:
             if not pages:
                 pages = [{"title": "Overview", "slug": "overview", "focus": "repository overview",
                           "files": sorted(files)[:40]}]
-            name = repo.split("/")[-1]
             base = REPO / repo
+            shutil.rmtree(base, ignore_errors=True)
+            (REPO / f"{repo}.md").unlink(missing_ok=True)
             base.mkdir(parents=True, exist_ok=True)
-            index = [f"# {repo}\n", "AI-generated wiki.\n", "## Pages\n"]
+            index = [f"# {repo}\n", "_AI-generated wiki._\n", "## Pages\n"]
             for pg in pages:
                 slug = pg.get("slug") or slugify(pg.get("title", "page"))
                 print(f"  page: {pg.get('title')} ({slug})", flush=True)
                 (base / f"{slug}.md").write_text(write_page(repo, pg, files))
-                index.append(f"- [{pg.get('title', slug)}]({name}/{slug})")
-            (REPO / f"{repo}.md").write_text("\n".join(index))
+                index.append(f"- [{pg.get('title', slug)}]({slug}.md)")
+            (base / "index.md").write_text("\n".join(index))
             state[repo] = sha
             STATE.write_text(json.dumps(state, indent=2))
             commit(f"regenerate {repo} ({len(pages)} pages)")
@@ -222,3 +224,13 @@ data:
         except Exception as e:
             print(f"  skipped {repo}: {e}", flush=True)
             continue
+
+    (REPO / "home.md").unlink(missing_ok=True)
+    root = ["# Repo Wikis\n", "_AI-generated documentation, one section per repository._\n"]
+    for r in candidates:
+        if (REPO / r / "index.md").exists():
+            root.append(f"- [{r}]({r}/index.md)")
+        else:
+            root.append(f"- {r} _(pending)_")
+    (REPO / "index.md").write_text("\n".join(root))
+    commit("update root index")
