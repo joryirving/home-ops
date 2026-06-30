@@ -41,7 +41,7 @@ spec:
           app:
             image:
               repository: ghcr.io/openclaw/openclaw
-              tag: 2026.6.10@sha256:af7ea052cf216f581fb18fabada01552356c53717461c0399b623cba7ecad4b1
+              tag: 2026.6.11@sha256:3814fb1f62f9cfc5944de088c5817c68c88b5d721feebe36420b666a90a61ce7
             command:
               - /bin/sh
               - -c
@@ -50,7 +50,7 @@ spec:
                 # only fetches when the pinned version differs from what's on the
                 # persistent volume, so normal restarts stay offline.
                 # renovate: datasource=github-tags depName=eleboucher/memini
-                MEMINI_PLUGIN_VERSION=0.5.0
+                MEMINI_PLUGIN_VERSION=0.5.1
                 if [ "$(cat "$HOME/.openclaw/extensions/memini/.clawver" 2>/dev/null)" != "$MEMINI_PLUGIN_VERSION" ]; then
                   if node dist/index.js plugins install "clawhub:@eleboucher/memini@$MEMINI_PLUGIN_VERSION" --pin --force; then
                     printf '%s' "$MEMINI_PLUGIN_VERSION" > "$HOME/.openclaw/extensions/memini/.clawver"
