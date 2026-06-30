@@ -248,7 +248,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range]))",
+          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
           "legendFormat": "TG tok/s",
           "refId": "A"
         }
@@ -506,7 +506,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])",
+          "expr": "max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range])",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -529,7 +529,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!=\"llama-embed\"}[$__range])",
+          "expr": "max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range])",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -552,7 +552,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "llamacpp:n_tokens_max{service=~\"$service\", service!=\"llama-embed\"}",
+          "expr": "llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}",
           "legendFormat": "{{service}}",
           "refId": "A"
         }

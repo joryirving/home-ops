@@ -17,29 +17,29 @@ spec:
         containers:
           main:
             env:
-              MEMINI_BACKEND: "sqlite"
-              MEMINI_DEFAULT_NAMESPACE: "default"
-              MEMINI_EMBED_BASE_URL: "http://llama-embed.llm:8080/v1"
-              MEMINI_EMBED_MODEL: "llama-embed" # Qwen3-Embedding-0.6B, 1024-dim, 32k ctx
+              MEMINI_BACKEND: sqlite
+              MEMINI_DEFAULT_NAMESPACE: default
+              MEMINI_EMBED_BASE_URL: http://litellm.llm:4000/v1
+              MEMINI_EMBED_MODEL: memini-embed # Qwen3-Embedding-0.6B, 1024-dim, 32k ctx
               MEMINI_EMBED_DIMS: "1024"
               MEMINI_EMBED_QUERY_PREFIX: "Instruct: Given a user message, retrieve relevant past memories\nQuery: "
-              MEMINI_EMBED_MAX_ITEM_CHARS: "6000"
-              MEMINI_EMBED_MAX_CONCURRENCY: "2"
-              MEMINI_RECALL_EMBED_TIMEOUT: "5s"
-              MEMINI_RECALL_MIN_SEMANTIC_SCORE: "0.46"
-              MEMINI_RECALL_SEMANTIC_RESERVE: "2"
-              MEMINI_WRITE_DEDUP_MIN_SCORE: "0.80"
-              MEMINI_MERGE_HINT_MIN_SCORE: "0.90"
-              MEMINI_DEDUP_TIERS: "episodic"
-              MEMINI_DEDUP_SIMILARITY: "0.80"
-              MEMINI_SHORT_TERM_CAP: "300"
-              MEMINI_DISTILL_ON_WRITE: "true"
-              MEMINI_LLM_BASE_URL: "http://litellm.llm:4000"
-              MEMINI_LLM_MODEL: "self-hosted"
-              MEMINI_RERANK: "http://llama-rerank.llm:8080/v1"
-              MEMINI_RERANK_MODEL: "qwen3-reranker"
-              MEMINI_RERANK_MAX_CONCURRENCY: "2"
-              MEMINI_RERANK_TIMEOUT: "8s"
+              MEMINI_EMBED_MAX_ITEM_CHARS: 6000
+              MEMINI_EMBED_MAX_CONCURRENCY: 2
+              MEMINI_RECALL_EMBED_TIMEOUT: 5s
+              MEMINI_RECALL_MIN_SEMANTIC_SCORE: 0.46
+              MEMINI_RECALL_SEMANTIC_RESERVE: 2
+              MEMINI_WRITE_DEDUP_MIN_SCORE: 0.80
+              MEMINI_MERGE_HINT_MIN_SCORE: 0.90
+              MEMINI_DEDUP_TIERS: episodic
+              MEMINI_DEDUP_SIMILARITY: 0.80
+              MEMINI_SHORT_TERM_CAP: 300
+              MEMINI_DISTILL_ON_WRITE: true
+              MEMINI_LLM_BASE_URL: http://litellm.llm:4000/v1
+              MEMINI_LLM_MODEL: self-hosted
+              MEMINI_RERANK: http://memini-rerank.llm:8080/v1
+              MEMINI_RERANK_MODEL: memini-rerank # direct llama.cpp /v1/rerank (--rerank --pooling rank). Litellm's mode:rerank+openai/* proxy is registered (see litellm/app/configmap.yaml) but litellm doesn't transparently forward OpenAI-shape /v1/rerank requests yet.
+              MEMINI_RERANK_MAX_CONCURRENCY: 2
+              MEMINI_RERANK_TIMEOUT: 8s
             envFrom:
               - secretRef:
                   name: memini

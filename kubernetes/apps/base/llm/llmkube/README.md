@@ -17,12 +17,15 @@ llmkube/                    # the operator + shared cluster infra only
   servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
 
 memini/                     # Intel iGPU helpers, reconciled by the `memini` KS
-  llama-embed.yaml  llama-rerank.yaml  llama-summary.yaml
+  memini-embed.yaml  memini-rerank.yaml  memini-summary.yaml
 
 litellm/app/                # chat/vision models, reconciled by the `litellm` KS
-  qwen3.6-27b.yaml          # llama-nvidia (RTX 3090)
-  ornith1.0-35b.yaml        # llama-strix (Strix Halo)
-  qwen3.5-4b.yaml           # llama-vision (Strix Halo)
+  llama-nvidia.yaml         # Qwen3.6-27B on RTX 3090
+  llama-strix.yaml          # Ornith-1.0-35B on Strix Halo
+  llama-vision.yaml         # Qwen3.5-4B on Strix Halo (multimodal)
+
+toolhive/config/            # per-app tenant model, reconciled by `toolhive-config`
+  toolhive-embed.yaml       # Qwen3-Embedding-0.6B on Intel iGPU (was a TEI EmbeddingServer CRD)
 ```
 
 Each consuming app's own Flux Kustomization reconciles its models (`memini`,
@@ -48,14 +51,15 @@ The `Model.spec.source` scheme decides what the operator does. Three modes:
 
 Drop the `Model` + `InferenceService` file into the **consuming app's** folder
 and add it to that app's `kustomization.yaml` — `memini/` for the Intel iGPU
-helpers, `litellm/app/` for the chat/vision models. No new folder, no Flux
-Kustomization — the operator and the app's existing Kustomization pick it up.
+helpers, `litellm/app/` for the chat/vision models, `toolhive/config/` for
+per-app embedding tenants. No new folder, no Flux Kustomization — the operator
+and the app's existing Kustomization pick it up.
 
 GPU access depends on the target:
 
 - **Intel iGPU** — the consuming KS must pull in `components/gpu`, which
-  generates a `${APP}-gpu` ResourceClaimTemplate; reference it as the model's
-  `resourceClaimTemplateName` (e.g. `memini-gpu`).
+  generates a `${APP}-gpu` ResourceClaimTemplate. Reference it as the model's
+  `resourceClaimTemplateName` (e.g. `memini-gpu`, `toolhive-config-gpu`).
 - **AMD Strix** — reference the shared `llama-strix-gpu` template
   (`llmkube/resourceclaim.yaml`).
 - **NVIDIA** — no claim; request `gpu: { count: 1 }` on the hardware block.
@@ -144,8 +148,11 @@ For Ceph PVC sources, remember `--no-mmap` (cold-fault rule) in the
 
 ## Continuity notes
 
-- Keep each model's `InferenceService.metadata.name` == the old Service name so
-  LiteLLM routing and the prometheus `job` label stay stable.
+- Name each `InferenceService` after its **consumer** (e.g. `memini-embed` for
+  memini, `toolhive-embed` for toolhive-config). The prometheus `service` label
+  on `llamacpp:*` metrics comes from the generated `Service`, so updating it
+  also means updating any `service!="…"` filters in dashboards. Litellm routes
+  follow `api_base` in the configmap, not the InferenceService name.
 - Carry our own `ServiceMonitor` (selector `inference.llmkube.dev/service`); the
   operator's PodMonitor is disabled so the `job` label keeps matching the
   openclaw idle-watcher.

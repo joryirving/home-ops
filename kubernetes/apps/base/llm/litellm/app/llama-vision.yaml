@@ -2,7 +2,7 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: qwen3.5-4b-vision
+  name: llama-vision
 spec:
   source: hf://HauhauCS/Qwen3.5-4B-Uncensored-HauhauCS-Aggressive
   files:
@@ -27,7 +27,7 @@ metadata:
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: qwen3.5-4b-vision
+  modelRef: llama-vision
   runtime: llamacpp
   image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:cba613ae5f65e9040a67e98e9a4ca1555cb51cb02bb030a5c01595119566e766
   command:
@@ -58,7 +58,7 @@ spec:
     type: ClusterIP
   extraArgs:
     - --alias
-    - vision
+    - llama-vision
     - --cont-batching
     - -sps
     - "0.75"
