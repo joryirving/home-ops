@@ -1,0 +1,92 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: toolhive-qwen3-embedding-0.6b
+spec:
+  source: hf://Qwen/Qwen3-Embedding-0.6B-GGUF
+  files:
+    - Qwen3-Embedding-0.6B-Q8_0.gguf
+  format: gguf
+  quantization: Q8_0
+  hardware:
+    accelerator: intel
+    gpu:
+      enabled: true
+      vendor: intel
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: toolhive-config-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: toolhive-embed
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: toolhive-qwen3-embedding-0.6b
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:6d1d6855edf8e5ddf9dc8e5cd6b4243a15451384fc047cf84d70091b9a6141b9
+  replicas: 1
+  priority: normal
+  podLabels:
+    igpu-workload: "true"
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          igpu-workload: "true"
+  contextSize: 32768
+  parallelSlots: 2
+  batchSize: 16384
+  uBatchSize: 16384
+  env:
+    - name: ZES_ENABLE_SYSMAN
+      value: "1"
+    - name: ONEAPI_DEVICE_SELECTOR
+      value: level_zero:gpu
+    - name: UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS
+      value: "1"
+  resources:
+    cpu: "250m"
+    memory: 2Gi
+  extraArgs:
+    - --alias
+    - toolhive-embed
+    - --embeddings
+    - --pooling
+    - last
+    - --cont-batching
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    - --mmap
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
