@@ -2,7 +2,7 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: toolhive-qwen3-embedding-0.6b
+  name: memini-embed
 spec:
   source: hf://Qwen/Qwen3-Embedding-0.6B-GGUF
   files:
@@ -17,16 +17,16 @@ spec:
       layers: 99
       resourceClaims:
         - name: gpu
-          resourceClaimTemplateName: toolhive-config-gpu
+          resourceClaimTemplateName: memini-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: toolhive-embed
+  name: memini-embed
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: toolhive-qwen3-embedding-0.6b
+  modelRef: memini-embed
   runtime: llamacpp
   image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:6d1d6855edf8e5ddf9dc8e5cd6b4243a15451384fc047cf84d70091b9a6141b9
   replicas: 1
@@ -56,7 +56,7 @@ spec:
     memory: 2Gi
   extraArgs:
     - --alias
-    - toolhive-embed
+    - memini-embed
     - --embeddings
     - --pooling
     - last

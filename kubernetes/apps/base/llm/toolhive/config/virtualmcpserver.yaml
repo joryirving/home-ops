@@ -14,7 +14,7 @@ spec:
     optimizer:
       embeddingProvider: openai
       embeddingModel: toolhive-embed
-      embeddingService: http://toolhive-embed.llm:8080/v1
+      embeddingService: http://litellm.llm:4000/v1
   incomingAuth:
     type: anonymous
   outgoingAuth:
@@ -23,6 +23,12 @@ spec:
     spec:
       containers:
         - name: vmcp
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: toolhive-embed
+                  key: OPENAI_API_KEY
           resources:
             requests:
               memory: 256Mi

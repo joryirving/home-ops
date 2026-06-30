@@ -2,73 +2,69 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: qwen3.6-27b
+  name: llama-strix
 spec:
-  source: hf://unsloth/Qwen3.6-27B-MTP-GGUF
+  source: hf://deepreinforce-ai/Ornith-1.0-35B-GGUF
   files:
-    - Qwen3.6-27B-UD-Q4_K_XL.gguf
+    - ornith-1.0-35b-Q8_0.gguf
   format: gguf
-  quantization: UD-Q4_K_XL
+  quantization: Q8_0
   hardware:
-    accelerator: cuda
+    accelerator: rocm
     gpu:
       enabled: true
-      vendor: nvidia
-      count: 1
+      vendor: amd
       layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-nvidia
+  name: llama-strix
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: qwen3.6-27b
+  modelRef: llama-strix
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:87f8a44b83f03e5d610e63a376a66217a38ae32d828a5aaef4170d950154321b
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:cba613ae5f65e9040a67e98e9a4ca1555cb51cb02bb030a5c01595119566e766
+  command:
+    - llama-server
   replicas: 1
-  priorityClassName: gpu-preemptible
-  runtimeClassName: nvidia
+  priority: high
   nodeSelector:
-    topology.kubernetes.io: egpu
-  env:
-    - name: NVIDIA_DRIVER_CAPABILITIES
-      value: compute,utility
-  contextSize: 131072
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  contextSize: 262144
+  parallelSlots: 3
   flashAttention: true
   jinja: true
-  parallelSlots: 1
-  batchSize: 4096
-  uBatchSize: 1024
   cacheTypeK: q8_0
   cacheTypeV: q8_0
   reasoningBudget: 16384
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
+  batchSize: 6144
+  uBatchSize: 2048
   resources:
-    gpu: 1
     cpu: "500m"
-    memory: 16Gi
+    memory: 36Gi
+  endpoint:
+    port: 8080
+    type: ClusterIP
   extraArgs:
     - --alias
-    - nvidia
+    - llama-strix
     - --cont-batching
-    - --spec-type
-    - draft-mtp
-    - --spec-draft-p-min
-    - "0.75"
-    - --spec-draft-n-max
-    - "3"
-    - --spec-draft-type-k
-    - q8_0
-    - --spec-draft-type-v
-    - q8_0
-    - -sps
-    - "0.75"
     - --cache-prompt
     - --cache-ram
-    - "16384"
+    - "24576"
     - --kv-unified
+    - --checkpoint-min-step
+    - "32768"
     - --temp
     - "0.6"
     - --top-p
@@ -82,15 +78,12 @@ spec:
     - --repeat-penalty
     - "1.03"
     - --threads
-    - "6"
+    - "16"
     - --threads-batch
-    - "12"
-    - --mmap
+    - "21"
+    - --no-mmap
     - --chat-template-kwargs
     - '{"preserve_thinking":true}'
-  endpoint:
-    port: 8080
-    type: ClusterIP
   probeOverrides:
     startup:
       httpGet:

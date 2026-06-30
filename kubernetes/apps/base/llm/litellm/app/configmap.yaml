@@ -18,7 +18,7 @@ data:
           supports_function_calling: true
           supports_vision: false
         litellm_params:
-          model: openai/self-hosted
+          model: openai/llama-strix
           api_base: http://llama-strix.llm:8080/v1
           api_key: llama-strix
           max_parallel_requests: 3
@@ -59,8 +59,8 @@ data:
           supports_function_calling: true
           supports_vision: true
         litellm_params:
-          model: openai/vision
-          api_base: http://llama-vision:8080/v1
+          model: openai/llama-vision
+          api_base: http://llama-vision.llm:8080/v1
           api_key: llama-vision
           max_parallel_requests: 2
 
@@ -76,18 +76,34 @@ data:
           supports_function_calling: true
           supports_vision: false
         litellm_params:
-          model: openai/nvidia
+          model: openai/llama-nvidia
           api_base: http://llama-nvidia.llm:8080/v1
           api_key: llama-nvidia
           max_parallel_requests: 1
 
-      - model_name: qwen3-embedding-0-6b
+      - model_name: memini-embed
         model_info:
           mode: embedding
         litellm_params:
-          model: openai/qwen3-embedding-0-6b
-          api_base: http://llama-embed.llm:8080/v1
-          api_key: qwen3-embedding-0-6b
+          model: openai/memini-embed
+          api_base: http://memini-embed.llm:8080/v1
+          api_key: memini-embed
+
+      - model_name: memini-rerank
+        model_info:
+          mode: rerank
+        litellm_params:
+          model: infinity/memini-rerank
+          api_base: http://memini-rerank.llm:8080
+          api_key: memini-rerank
+
+      - model_name: toolhive-embed
+        model_info:
+          mode: embedding
+        litellm_params:
+          model: openai/toolhive-embed
+          api_base: http://toolhive-embed.llm:8080/v1
+          api_key: toolhive-embed
 
       # Qwen3.5-4B (reasoning disabled) on the Intel iGPU — non-reasoning grunt
       # model for lossless-claw summaries/expansion (replaces self-hosted, whose
@@ -101,7 +117,7 @@ data:
           supports_vision: false
         litellm_params:
           model: openai/qwen3.5-4b
-          api_base: http://llama-summary.llm:8080/v1
+          api_base: http://memini-summary.llm:8080/v1
           api_key: qwen3.5-4b
           max_parallel_requests: 1
 
@@ -558,7 +574,7 @@ data:
       #     model: auto_router/auto_semantic
       #     auto_router_config_path: /config/router.json
       #     auto_router_default_model: self-hosted
-      #     auto_router_embedding_model: qwen3-embedding-0-6b
+      #     auto_router_embedding_model: memini-embed
 
     general_settings:
       health_check_endpoint: /v1/health
@@ -609,7 +625,7 @@ data:
   router.json: |
     {
       "encoder_type": "litellm",
-      "encoder_name": "qwen3-embedding-0-6b",
+      "encoder_name": "memini-embed",
       "routes": [
         {
           "name": "self-hosted",
