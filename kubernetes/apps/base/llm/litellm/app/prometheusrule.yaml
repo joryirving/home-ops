@@ -1,0 +1,54 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: litellm
+spec:
+  groups:
+    - name: litellm.rules
+      rules:
+        - alert: LiteLLMFallbackChainExhausted
+          expr: |-
+            sum by (requested_model, exception_status, exception_class) (
+              increase(litellm_deployment_failed_fallbacks_total[15m])
+            ) > 0
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.requested_model }} fallback chain exhausted — no working deployment
+              ({{ $labels.exception_status }} {{ $labels.exception_class }})
+          labels:
+            severity: critical
+        - alert: LiteLLMModelFailover
+          expr: |-
+            sum by (requested_model, fallback_model, exception_status, exception_class) (
+              increase(litellm_deployment_successful_fallbacks_total[10m])
+            ) > 3
+          for: 5m
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.requested_model }} failing over to {{ $labels.fallback_model }}
+              ({{ $labels.exception_status }} {{ $labels.exception_class }})
+          labels:
+            severity: warning
+        - alert: LiteLLMDeploymentOutage
+          expr: |-
+            max by (litellm_model_name) (litellm_deployment_state) >= 2
+          for: 10m
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.litellm_model_name }} out of rotation (deployment_state >= 2)
+          labels:
+            severity: warning
+        - alert: LiteLLMAuthOrQuotaFailures
+          expr: |-
+            sum by (litellm_model_name, exception_status) (
+              increase(litellm_deployment_failure_responses_total{exception_status=~"403|429"}[15m])
+            ) > 5
+          for: 5m
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.litellm_model_name }} returning {{ $labels.exception_status }}
+              (auth/quota — check the upstream key or plan cap)
+          labels:
+            severity: warning
