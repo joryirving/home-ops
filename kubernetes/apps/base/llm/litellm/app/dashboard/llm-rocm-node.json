@@ -22,13 +22,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m])",
+          "expr": "sum by (service)(rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m]))",
           "legendFormat": "PP {{service}}",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m])",
+          "expr": "sum by (service)(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]))",
           "legendFormat": "TG {{service}}",
           "refId": "B"
         }
@@ -506,7 +506,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range])",
+          "expr": "max by (service)(max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -529,7 +529,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range])",
+          "expr": "max by (service)(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -552,7 +552,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}",
+          "expr": "max by (service)(llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"})",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
