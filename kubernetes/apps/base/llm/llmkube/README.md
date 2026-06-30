@@ -149,10 +149,15 @@ For Ceph PVC sources, remember `--no-mmap` (cold-fault rule) in the
 ## Continuity notes
 
 - Name each `InferenceService` after its **consumer** (e.g. `memini-embed` for
-  memini, `toolhive-embed` for toolhive-config). The prometheus `service` label
-  on `llamacpp:*` metrics comes from the generated `Service`, so updating it
-  also means updating any `service!="…"` filters in dashboards. Litellm routes
-  follow `api_base` in the configmap, not the InferenceService name.
-- Carry our own `ServiceMonitor` (selector `inference.llmkube.dev/service`); the
-  operator's PodMonitor is disabled so the `job` label keeps matching the
-  openclaw idle-watcher.
+  memini, `toolhive-embed` for toolhive-config). The `service` label on
+  `llamacpp:*` metrics is the pod's `inference.llmkube.dev/service`, relabeled on
+  by the PodMonitor, so renaming a service means updating any `service=~`/
+  `service!~` filters in the dashboards. Litellm routes follow `api_base` in the
+  configmap, not the InferenceService name.
+- Metrics come from the operator's PodMonitor
+  (`prometheus.inferencePodMonitor.enabled: true`), which relabels
+  `inference.llmkube.dev/{service,model,runtime}` onto every series. There's no
+  hand-rolled ServiceMonitor anymore (retired with the idle-watcher). Pod and
+  Service monitors both attach per-pod `pod`/`instance` labels, so the dashboards
+  aggregate `by (service)` to keep a pod restart from fanning out into a new line
+  per pod.
