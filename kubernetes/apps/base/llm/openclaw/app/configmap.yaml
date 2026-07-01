@@ -18,11 +18,9 @@ data:
           model: {
             primary: "litellm-anthropic/MiniMax",
             fallbacks: [
-              "litellm/dsv4f",
               "litellm/self-hosted",
               "litellm/nvidia",
-              "litellm/go-minimax-m3",
-              "litellm/kimi-k2.6",
+              "litellm/dsv4f",
             ]
           },
           imageModel: {
@@ -57,14 +55,6 @@ data:
             "litellm/chatgpt/gpt-5.4": { alias: "chatgpt-5.4" },
             "litellm/chatgpt/gpt-5.4-mini": { alias: "chatgpt-5.4-mini" },
           },
-          memorySearch: {
-            provider: "openai",
-            model: "memini-embed",
-            remote: {
-              baseUrl: "http://litellm.llm:4000/v1",
-              apiKey: "$${LITELLM_API_KEY}"
-            }
-          },
           contextPruning: { mode: "off" },
           compaction: { mode: "default", reserveTokensFloor: 30000, memoryFlush: { enabled: true, softThresholdTokens: 80000, prompt: "Extract key decisions, state changes, lessons, blockers to memory/YYYY-MM-DD.md. Format: ## [HH:MM] Topic. Skip routine work. NO_FLUSH if nothing important.", systemPrompt: "Compacting session context. Extract only what's worth remembering. No fluff." },
           },
@@ -93,7 +83,7 @@ data:
             name: "Miso",
             workspace: "/home/node/.openclaw/workspace",
             agentDir: "/home/node/.openclaw/agents/main/agent",
-            thinkingDefault: "low",
+            thinkingDefault: "medium",
             tools: { alsoAllow: ["memory_recall", "memory_list", "memory_remember"] },
             identity: {
               name: "Miso",
@@ -170,7 +160,7 @@ data:
             models: [
               { id: "kimi-k2.6", name: "Kimi K2.6 (OpenCode→Moonshot)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q8_K_XL (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
-              { id: "vision", name: "Qwen3.5-4B Q8_0 (ROCm)", reasoning: true, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
+              { id: "vision", name: "Qwen3.5-4B Q8_0 (ROCm)", reasoning: false, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "nvidia", name: "Qwen3.6-27B UD Q4_K_XL (CUDA)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
               { id: "dsv4f", name: "OpenCode Go DeepSeek V4 Flash", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "dsv4p", name: "OpenCode Go DeepSeek V4 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
