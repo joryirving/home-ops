@@ -10,6 +10,10 @@ spec:
     name: foreman-dispatch-bridge
   interval: 15m
   values:
+    defaultPodOptions:
+      # app-template defaults this off; the bridge needs the SA token to create
+      # Workloads via the in-cluster kube API (load_incluster_config).
+      automountServiceAccountToken: true
     controllers:
       foreman-dispatch-bridge:
         type: cronjob
