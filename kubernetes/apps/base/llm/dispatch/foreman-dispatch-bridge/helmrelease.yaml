@@ -37,6 +37,17 @@ spec:
               DISPATCH_AGENT_NAME: foreman-coder
               DISPATCH_LANES: local,cloud,frontier
               FOREMAN_NAMESPACE: llm
+              # Stamp a generic (no-op) gateProfile on every Workload. This
+              # SUPPRESSES Foreman's Go default gate — critical because none of
+              # these repos are Go, and the coder's in-pod fast self-gate runs in
+              # the Go-only coder image (no node/python), so a real language gate
+              # would fail "command not found", exhaust retries, and downgrade the
+              # coder GO to INCOMPLETE (no PR). Generic + no commands = the self-gate
+              # and the clean-room verify Job both no-op, so the coder pushes and
+              # verification falls to the Ornith reviewer + each repo's CI + the
+              # external PR reviewer. Real per-language gates await the upstream
+              # self-gate fix (defer-to-Job on missing runtime).
+              GATEPROFILE_MAP: '{"*":{"language":"generic"}}'
             envFrom:
               - secretRef:
                   name: foreman-dispatch-bridge
