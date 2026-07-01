@@ -22,6 +22,10 @@ spec:
       # the llama-* InferenceServices over the cluster network. Roles advertised
       # here are matched against each Agent's requiredCapability.roles.
       mode: native
+      # The bridge creates Workloads (and the operator its AgenticTasks) in the
+      # llm namespace. Without this the agent watches "default" and never picks
+      # them up — tasks sit in Scheduled forever.
+      taskNamespace: llm
       roles:
         - worker
         - coder
