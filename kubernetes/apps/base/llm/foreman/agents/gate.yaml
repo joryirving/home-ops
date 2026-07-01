@@ -1,0 +1,17 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Agent
+metadata:
+  name: gate
+spec:
+  role: verifier
+  # Deterministic Agent: inferenceServiceRef omitted (no LLM). The executor's
+  # executeDeterministic() branch runs run_gate_job directly.
+  tools:
+    - run_gate_job
+  requiredCapability:
+    roles:
+      - verifier
+    accelerator: any
+  maxRetries: 3
+  requestTimeoutSeconds: 3900

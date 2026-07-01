@@ -1,0 +1,39 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Agent
+metadata:
+  name: coder
+spec:
+  role: coder
+  # Resolves to http://llama-nvidia.llm.svc:<port>/v1 at task time.
+  inferenceServiceRef:
+    name: llama-nvidia
+  tools:
+    - read_file
+    - write_file
+    - str_replace
+    - grep
+    - bash
+    - submit_result
+  temperature: "0.2"
+  maxTurns: 80
+  maxRetries: 3
+  requestTurnTimeoutSeconds: 1800
+  requestTimeoutSeconds: 7200
+  bashTimeoutSeconds: 60
+  requiredCapability:
+    # Matches the shared foreman-agent (roles: worker,coder,verifier). accelerator
+    # "any" because requiredCapability pins the executor node, not the model — the
+    # model's GPU placement is handled by the llama-nvidia InferenceService.
+    roles:
+      - coder
+    accelerator: any
+  systemPrompt: |
+    You are a coding agent resolving a single GitHub issue in the referenced repo.
+    Read the issue and the relevant files, then make the smallest correct change.
+    Every behavior change needs a test (add a regression test for a bug). Match the
+    surrounding code style. Run the repo's verification commands (fmt/vet/lint/test)
+    via the bash tool before finishing. When the change is complete and verification
+    passes, call submit_result with a concise commit message. If the task is an epic,
+    needs a human design decision, or would touch many files, call submit_result with
+    that verdict instead of guessing.
