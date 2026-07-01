@@ -16,7 +16,7 @@ data:
           thinkingDefault: "high",
           timeoutSeconds: 600,
           model: {
-            primary: "litellm-anthropic/MiniMax",
+            primary: "minimax/MiniMax-M3",
             fallbacks: [
               "litellm/self-hosted",
               "litellm/nvidia",
@@ -26,7 +26,7 @@ data:
           imageModel: {
             primary: "litellm/vision",
             fallbacks: [
-              "litellm-anthropic/MiniMax",
+              "minimax/MiniMax-M3",
               "litellm/chatgpt/gpt-5.4-mini",
             ]
           },
@@ -35,8 +35,8 @@ data:
           },
           models: {
             "litellm/kimi-k2.6": { alias: "kimi-2.6", params: { cache_prompt: true } },
-            "litellm-anthropic/MiniMax": { alias: "minimax", params: { cacheRetention: "short" } },
-            "litellm-anthropic/MiniMax-M2.7": { alias: "minimax-old", params: { cacheRetention: "short" } },
+            "minimax/MiniMax-M3": { alias: "minimax", params: { cacheRetention: "short" } },
+            "minimax/MiniMax-M2.7": { alias: "minimax-old", params: { cacheRetention: "short" } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "litellm/nvidia": { alias: "nvidia", params: { cache_prompt: true } },
             "litellm/dsv4f": { alias: "dsv4f", params: { cache_prompt: true } },
@@ -100,7 +100,7 @@ data:
             model: {
               primary: "litellm/dsv4f",
               fallbacks: [
-                "litellm-anthropic/MiniMax-M2.7",
+                "minimax/MiniMax-M2.7",
                 "litellm/self-hosted",
                 "litellm/nvidia",
               ]
@@ -121,7 +121,7 @@ data:
               primary: "litellm/glm-5.2",
               fallbacks: [
                 "litellm/glm-5.1",
-                "litellm-anthropic/MiniMax",
+                "minimax/MiniMax-M3",
                 "litellm/go-minimax-m3",
                 "litellm/dsv4f",
                 "litellm/self-hosted",
@@ -176,13 +176,13 @@ data:
               { id: "chatgpt/gpt-5.4-mini", name: "ChatGPT GPT-5.4 Mini", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 272000, maxTokens: 128000 },
             ]
           },
-          "litellm-anthropic": {
+          "minimax": {
             baseUrl: "http://litellm.llm:4000",
             apiKey: "$${LITELLM_API_KEY}",
             api: "anthropic-messages",
             timeoutSeconds: 600,
             models: [
-              { id: "MiniMax", name: "MiniMax M3", reasoning: true, input: ["text","image"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
+              { id: "MiniMax-M3", name: "MiniMax M3", reasoning: true, input: ["text","image"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 1000000, maxTokens: 32768, },
               { id: "MiniMax-M2.7", name: "MiniMax M2.7", reasoning: true, input: ["text"], cost: { input: 15, output: 60, cacheRead: 2, cacheWrite: 10 }, contextWindow: 204800, maxTokens: 32768, },
             ],
           },

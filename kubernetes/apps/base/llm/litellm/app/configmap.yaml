@@ -177,6 +177,30 @@ data:
             - location: message
               index: -1
 
+      # Versioned alias of MiniMax: OpenClaw's M3 shim (enabled→adaptive thinking,
+      # think-tag stripping) only engages when the model id starts with MiniMax-M3.
+      - model_name: MiniMax-M3
+        model_info:
+          mode: messages
+          input_cost_per_token: 0.0000003000
+          cache_creation_input_token_cost: 0.0000003000
+          cache_read_input_token_cost: 0.0000000600
+          output_cost_per_token: 0.0000012000
+          max_input_tokens: 1000000
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+          supports_vision: true
+        litellm_params:
+          model: minimax/MiniMax-M3
+          api_base: https://api.minimax.io/anthropic/v1/messages
+          api_key: os.environ/MINIMAX_API_KEY
+          cache_control_injection_points:
+            - location: message
+              role: system
+            - location: message
+              index: -1
+
       - model_name: MiniMax-M2.7
         model_info:
           mode: messages
