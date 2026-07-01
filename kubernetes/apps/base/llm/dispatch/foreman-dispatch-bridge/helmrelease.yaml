@@ -1,0 +1,60 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: foreman-dispatch-bridge
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: foreman-dispatch-bridge
+  interval: 15m
+  values:
+    controllers:
+      foreman-dispatch-bridge:
+        type: cronjob
+        cronjob:
+          schedule: "*/15 * * * *"
+          timeZone: America/Edmonton
+          concurrencyPolicy: Forbid
+          successfulJobsHistory: 1
+          failedJobsHistory: 1
+        serviceAccount:
+          identifier: foreman-dispatch-bridge
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/foreman-dispatch-bridge
+              tag: 0.1.0
+            env:
+              DISPATCH_URL: http://dispatch.llm:3000
+              DISPATCH_AGENT_NAME: foreman/coder
+              DISPATCH_LANES: local,cloud,frontier
+              FOREMAN_NAMESPACE: llm
+            envFrom:
+              - secretRef:
+                  name: foreman-dispatch-bridge
+            resources:
+              requests:
+                cpu: 25m
+              limits:
+                memory: 128Mi
+    serviceAccount:
+      foreman-dispatch-bridge: {}
+    rbac:
+      roles:
+        # Create-only on Workloads: the bridge materializes ephemeral work, nothing else.
+        foreman-dispatch-bridge:
+          type: Role
+          rules:
+            - apiGroups: ["foreman.llmkube.dev"]
+              resources: ["workloads"]
+              verbs: ["create"]
+      bindings:
+        foreman-dispatch-bridge:
+          type: RoleBinding
+          roleRef:
+            identifier: foreman-dispatch-bridge
+          subjects:
+            - identifier: foreman-dispatch-bridge
+              serviceAccount: foreman-dispatch-bridge
