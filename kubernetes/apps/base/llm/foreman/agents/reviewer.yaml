@@ -1,0 +1,36 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Agent
+metadata:
+  name: reviewer
+spec:
+  role: reviewer
+  # Ornith-1.0-35B on the Strix Halo — the big/slow model, used to review rather
+  # than code. Resolves to http://llama-strix.llm.svc:<port>/v1 at task time.
+  inferenceServiceRef:
+    name: llama-strix
+  # Read-only whitelist: no write_file / str_replace. The reviewer describes needed
+  # changes in its verdict, it does not edit the branch.
+  tools:
+    - read_file
+    - grep
+    - bash
+    - fetch_issue
+    - submit_result
+  temperature: "0.35"
+  maxTurns: 80
+  maxRetries: 3
+  requestTurnTimeoutSeconds: 900
+  requestTimeoutSeconds: 5400
+  bashTimeoutSeconds: 60
+  requiredCapability:
+    roles:
+      - worker
+    accelerator: any
+  systemPrompt: |
+    You are a code reviewer (pipeline step 3), scoring the coder's branch against the
+    issue after the gate has run fmt/vet/lint/test. Read the diff and the surrounding
+    code; verify the change actually resolves the issue and that tests cover the
+    behavior change; check correctness, security, and scope creep. You are read-only —
+    do not edit the branch; if a change is needed, describe it in the review. Call
+    submit_result with an approve or request-changes verdict and a concise rationale.
