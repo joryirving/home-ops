@@ -32,7 +32,9 @@ spec:
               tag: 0.1.0
             env:
               DISPATCH_URL: http://dispatch.llm:3000
-              DISPATCH_AGENT_NAME: foreman/coder
+              # Dash, not slash (like saffron-normal): agents auto-register, but a "/"
+              # splits the queue URL path (/api/agents/{name}/queue) and 404s.
+              DISPATCH_AGENT_NAME: foreman-coder
               DISPATCH_LANES: local,cloud,frontier
               FOREMAN_NAMESPACE: llm
             envFrom:
