@@ -34,3 +34,8 @@ spec:
       githubToken:
         secretName: foreman-agent
         secretKey: GITHUB_TOKEN
+    coder:
+      # The coder Job clones + pushes with this Secret (projected as GITHUB_TOKEN).
+      # Reuse the same foreman-agent Secret instead of a separate foreman-git-credentials.
+      gitCredentialsSecret: foreman-agent
+      gitCredentialsSecretKey: GITHUB_TOKEN
