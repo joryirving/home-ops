@@ -38,6 +38,13 @@ spec:
       githubToken:
         secretName: foreman-agent
         secretKey: GITHUB_TOKEN
+      # Git identity stamped on coder commits. Required with mode=native + the
+      # coder role: repo.Commit hard-rejects an empty author/committer email, so
+      # without this every coder GO fails at commit (no branch, no PR). Authored
+      # as Saffron via the itsmiso-ai account (the foreman-agent token owner);
+      # the numeric-prefixed noreply links the commits to that GitHub account.
+      commitAuthorName: Saffron
+      commitAuthorEmail: 263493777+itsmiso-ai@users.noreply.github.com
     coder:
       # The coder Job clones + pushes with this Secret (projected as GITHUB_TOKEN).
       # Reuse the same foreman-agent Secret instead of a separate foreman-git-credentials.
