@@ -60,13 +60,15 @@ spec:
       foreman-dispatch-bridge: {}
     rbac:
       roles:
-        # Create-only on Workloads: the bridge materializes ephemeral work, nothing else.
+        # The bridge creates Workloads and, since v0.3.0, reconciles failed ones:
+        # list/get to find Failed Workloads, delete + create to retry them (bounded).
+        # No update/patch — retry is delete-then-recreate, not in-place mutation.
         foreman-dispatch-bridge:
           type: Role
           rules:
             - apiGroups: ["foreman.llmkube.dev"]
               resources: ["workloads"]
-              verbs: ["create"]
+              verbs: ["create", "get", "list", "delete"]
       bindings:
         foreman-dispatch-bridge:
           type: RoleBinding
