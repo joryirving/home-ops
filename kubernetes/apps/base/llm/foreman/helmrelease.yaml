@@ -16,3 +16,21 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  values:
+    agent:
+      # Single shared executor: runs coder/verifier/reviewer tasks and reaches
+      # the llama-* InferenceServices over the cluster network. Roles advertised
+      # here are matched against each Agent's requiredCapability.roles.
+      mode: native
+      roles:
+        - worker
+        - coder
+        - verifier
+      image:
+        # coder image ships the Go toolchain + git the coder self-gate needs;
+        # required because roles include "coder".
+        repository: ghcr.io/defilantech/llmkube-foreman-agent-coder
+      # GITHUB_TOKEN the coder role uses to push branches (see externalsecret.yaml).
+      githubToken:
+        secretName: foreman-agent
+        secretKey: GITHUB_TOKEN
