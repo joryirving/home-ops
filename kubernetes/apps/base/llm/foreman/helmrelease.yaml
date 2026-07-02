@@ -33,9 +33,15 @@ spec:
                 value: --foreman-namespace=llm
   values:
     agent:
-      # Single shared executor: runs coder/verifier/reviewer tasks and reaches
-      # the llama-* InferenceServices over the cluster network. Roles advertised
+      # Shared executors: run coder/verifier/reviewer tasks and reach the
+      # llama-* InferenceServices over the cluster network. Roles advertised
       # here are matched against each Agent's requiredCapability.roles.
+      # The watcher is one-task-per-node (v0.1), so a single replica serializes
+      # the whole pipeline — a deep code-task queue starves verify/review and
+      # no Workload ever finishes. Two replicas let reviews run beside coding;
+      # GPU-safe because the coder hits llama-nvidia, Ornith hits llama-strix,
+      # and gate Jobs are no-ops.
+      replicaCount: 2
       mode: native
       # The bridge creates Workloads (and the operator its AgenticTasks) in the
       # llm namespace. Without this the agent watches "default" and never picks
