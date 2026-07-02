@@ -16,6 +16,21 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  # The agent submits gate Jobs into --foreman-namespace, which defaults to
+  # "foreman-system" — a namespace this cluster doesn't have (and the gate-cache
+  # PVC lives in llm anyway), so every verify task died with GATE-ERROR and
+  # cascade-failed its review. The chart doesn't expose the flag yet, so patch
+  # it in until upstream adds an agent.foremanNamespace value.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: foreman-agent
+            patch: |
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --foreman-namespace=llm
   values:
     agent:
       # Single shared executor: runs coder/verifier/reviewer tasks and reaches
