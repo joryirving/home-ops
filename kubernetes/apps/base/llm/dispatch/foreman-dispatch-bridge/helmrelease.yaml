@@ -79,6 +79,11 @@ spec:
             - apiGroups: ["foreman.llmkube.dev"]
               resources: ["workloads"]
               verbs: ["create", "get", "list", "delete"]
+            # Bridge 0.5.0 reads a failed Workload's task results (reviewer
+            # NO-GO findings, coder errors) to build feedback-carrying retries.
+            - apiGroups: ["foreman.llmkube.dev"]
+              resources: ["agentictasks"]
+              verbs: ["get", "list"]
       bindings:
         foreman-dispatch-bridge:
           type: RoleBinding
