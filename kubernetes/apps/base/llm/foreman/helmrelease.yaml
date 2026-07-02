@@ -66,6 +66,17 @@ spec:
       # the numeric-prefixed noreply links the commits to that GitHub account.
       commitAuthorName: Saffron
       commitAuthorEmail: 263493777+itsmiso-ai@users.noreply.github.com
+      # The agent Deployment mounts this PVC, so RWO ceph-block pins all
+      # replicas to whichever node attached it first — the second replica
+      # (#7978) sat in ContainerCreating forever. CephFS RWX lets both agent
+      # replicas and the gate Jobs share the cache from any node.
+      # NOTE: PVC spec is immutable — on first reconcile after this change,
+      # delete the old PVC (kubectl delete pvc foreman-gate-cache -n llm)
+      # and let Flux/helm recreate it. The cache is just Go module/build
+      # cache; loss-free.
+      gateCache:
+        storageClass: ceph-filesystem
+        accessModes: ["ReadWriteMany"]
     coder:
       # The coder Job clones + pushes with this Secret (projected as GITHUB_TOKEN).
       # Reuse the same foreman-agent Secret instead of a separate foreman-git-credentials.
