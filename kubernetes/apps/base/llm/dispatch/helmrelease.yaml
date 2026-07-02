@@ -21,6 +21,11 @@ spec:
               repository: ghcr.io/misospace/dispatch
               tag: 0.5.16@sha256:5a82ca3f5dcf1309f1d4d27758dcdd3c4bc9ca52b5f30a7bf45b08353656e700
             env:
+              # Next standalone binds to $HOSTNAME, which kubelet sets to the pod
+              # name — so the server only listened on the pod IP and the in-app
+              # scheduler's loopback POSTs to 127.0.0.1 got ECONNREFUSED. Bind all
+              # interfaces so loopback works.
+              HOSTNAME: 0.0.0.0
               DISPATCH_EXCLUDED_LABELS: renovate
               DISPATCH_GROOMER_DRY_RUN: false
               # Grooming is triage/classification, not code — a small model suffices.
