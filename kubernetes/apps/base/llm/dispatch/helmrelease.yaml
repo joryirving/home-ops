@@ -10,41 +10,39 @@ spec:
     name: dispatch
   interval: 15m
   dependsOn: []
+  # dispatch's first-party chart (built on the bjw-s common library, so values
+  # read like app-template). Differences from the app-template deployment:
+  # migrations run in a pre-install/pre-upgrade hook Job and pods always start
+  # with SKIP_DB_MIGRATIONS=true (chart default) — multi-replica safe.
   values:
     controllers:
-      dispatch:
+      main:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
-          app:
+          main:
             image:
               repository: ghcr.io/misospace/dispatch
-              tag: 0.5.17@sha256:0abe49ec7fb794dfe2209d3359c9ed827f30c4ce5154284af39ef03e6261a5c8
+              tag: 0.5.19@sha256:3cc1b73e81471d9dcd2672f0b5a102c7632fc068e47b5346738dfd9a549608f0
             env:
-              # Next standalone binds to $HOSTNAME, which kubelet sets to the pod
-              # name — so the server only listened on the pod IP and the in-app
-              # scheduler's loopback POSTs to 127.0.0.1 got ECONNREFUSED. Bind all
-              # interfaces so loopback works.
               DISPATCH_EXCLUDED_LABELS: renovate
               DISPATCH_GROOMER_DRY_RUN: false
-              # Grooming is triage/classification, not code — a small model suffices.
-              # vision = Qwen3.5-9B (llama-vision) via litellm. dispatch constrains the
-              # output with a json_schema response_format (grammar-enforced on llama.cpp),
-              # so the 4B produces reliable structure.
+              # Grooming is triage/classification, not code — a small model
+              # suffices. vision (llama-vision, Qwen3.5-9B, 3 slots) via
+              # litellm; dispatch grammar-constrains the output with a
+              # json_schema response_format (enforced on llama.cpp).
               DISPATCH_GROOMER_MODEL: vision
               DISPATCH_GROOMER_REPO_CONTEXT_ENABLED: true
               DISPATCH_HOSTED_GROOMER_ENABLED: true
-              DISPATCH_LANE_CONFIG_JSON: '{"lanes":[{"id":"local","title":"Local","claimable":true,"role":"default","description":"Local model lane (nvidia) \u2014 the default: all groomed, ready work starts here.","color":"#3b82f6"},{"id":"frontier","title":"Frontier","claimable":true,"role":"escalation","description":"Escalation lane (MiniMax-M3 via litellm) \u2014 fed by the bridge when local attempts are exhausted, not by grooming.","color":"#f97316"},{"id":"backlog","title":"Backlog","claimable":false,"description":"Needs grooming before work can start. Not directly claimable.","color":"#6b7280"}],"laneAliases":{"normal":"local","escalated":"frontier","cloud":"local"}}'
+              DISPATCH_LANE_CONFIG_JSON: '{"lanes":[{"id":"local","title":"Local","claimable":true,"role":"default","description":"Local model lane (nvidia) — the default: all groomed, ready work starts here.","color":"#3b82f6"},{"id":"frontier","title":"Frontier","claimable":true,"role":"escalation","description":"Escalation lane (MiniMax-M3 via litellm) — fed by the bridge when local attempts are exhausted, not by grooming.","color":"#f97316"},{"id":"backlog","title":"Backlog","claimable":false,"description":"Needs grooming before work can start. Not directly claimable.","color":"#6b7280"}],"laneAliases":{"normal":"local","escalated":"frontier","cloud":"local"}}'
               DISPATCH_LLM_BASE_URL: http://litellm.llm:4000/v1
-              # In-app scheduler (0.5.16+) replaces the dispatch-heartbeat cronjobs:
-              # sync 15m, groomer 10m, pr-followup 15m, prune-closed daily. Jobs
-              # loopback-POST the same endpoints the crons hit, so the sync/groomer
-              # DB locks still serialize runs. Tune via DISPATCH_*_INTERVAL_MS ("0" disables).
+              # In-app scheduler: sync 15m, groomer 10m, pr-followup 15m,
+              # prune-closed daily. Tune via DISPATCH_*_INTERVAL_MS ("0" disables).
               DISPATCH_SCHEDULER_ENABLED: true
-              DATABASE_URL:
+              DATABASE_URL: &dburl
                 valueFrom:
                   secretKeyRef:
-                    name: "{{ .Release.Name }}-app"
+                    name: dispatch-app
                     key: uri
             envFrom:
               - secretRef:
@@ -55,39 +53,16 @@ spec:
                 memory: 256Mi
               limits:
                 memory: 512Mi
-            probes:
-              liveness:
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /
-                    port: 3000
-                  initialDelaySeconds: 10
-                  periodSeconds: 10
-                  failureThreshold: 3
-              readiness:
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /
-                    port: 3000
-                  initialDelaySeconds: 5
-                  periodSeconds: 10
-                  failureThreshold: 3
-    service:
-      app:
-        ports:
-          http:
-            port: 3000
     route:
-      app:
+      main:
         hostnames: ["dispatch.jory.dev"]
         parentRefs:
           - name: envoy-internal
             namespace: network
         rules:
           - backendRefs:
-              - name: dispatch
+              - identifier: main
                 port: 3000
+    migrations:
+      env:
+        DATABASE_URL: *dburl
