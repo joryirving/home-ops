@@ -19,7 +19,7 @@ Workload (this bridge) ──► AgenticTasks (foreman-operator)
     └─ review  reviewer Agent (Ornith/strix) — read-only diff review, verdict
     │
     ▼
-PR opened as Saffron ──► repo CI + external MiniMax PR review ──► human merge
+reviewed branch pushed ──► PR (manual until LLMKube#937) ──► repo CI + MiniMax review ──► human merge
     │
     └─ 3 failed attempts? ──► bridge re-lanes issue to frontier
                               ──► coder-frontier (cloud-proxy → litellm → MiniMax-M3)
@@ -98,11 +98,15 @@ verifier) claims and executes them serially:
 A failed upstream task cascade-fails its dependents; the Workload goes
 `Failed` and re-enters the bridge's retry pass.
 
-### 5. PR opened
+### 5. PR opened — currently the missing hop
 
-On a GO chain, a PR opens under the **itsmiso-ai** account (authored as
-Saffron). From there the *external* controls take over: the repo's own CI and
-the MiniMax PR-review action. A human merges.
+**Foreman does not open PRs** ([LLMKube#937](https://github.com/defilantech/LLMKube/issues/937)):
+a fully-green Workload (`code GO -> verify GATE-PASS -> review GO`) ends as a
+pushed `foreman/<workload>/issue-<n>` branch, reviewed and unopened. Until the
+upstream feature lands (agent/operator opens the PR with the same token it
+pushed with, `Fixes #<n>` body, skip-if-exists), a human opens the PR from the
+branch. Once open, the external controls take over: the repo's own CI and the
+MiniMax PR-review action; a human merges.
 
 ## Revisiting blocked PRs (request-changes, failed CI)
 
