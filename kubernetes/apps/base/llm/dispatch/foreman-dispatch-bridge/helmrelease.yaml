@@ -35,7 +35,17 @@ spec:
               # Dash, not slash (like saffron-normal): agents auto-register, but a "/"
               # splits the queue URL path (/api/agents/{name}/queue) and 404s.
               DISPATCH_AGENT_NAME: foreman-coder
-              DISPATCH_LANES: local,cloud,frontier
+              # Two-tier flow: everything grooms into local; the bridge escalates
+              # exhausted issues into frontier (cloud lane retired — no distinct
+              # executor backed it, and upfront complexity triage was asking too
+              # much of the 4B groomer).
+              DISPATCH_LANES: local,frontier
+              # Bridge 0.4.0+: instead of tombstoning after RETRY_MAX_ATTEMPTS,
+              # re-lane the issue to frontier + unclaim; the next tick claims it
+              # there and builds the Workload with the coder-frontier Agent
+              # (cloud-proxy -> litellm -> MiniMax-M3). Ignored by older bridges.
+              ESCALATION_LANE: frontier
+              LANE_CODER_AGENTS: '{"*":"coder","frontier":"coder-frontier"}'
               FOREMAN_NAMESPACE: llm
               # Stamp a generic (no-op) gateProfile on every Workload. This
               # SUPPRESSES Foreman's Go default gate — critical because none of
