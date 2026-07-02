@@ -39,7 +39,7 @@ Issues labeled `renovate` are excluded (`DISPATCH_EXCLUDED_LABELS`).
 
 ### 2. Groomed
 
-The **hosted groomer** runs every 10m on **`vision`** (Qwen3.5-4B via litellm →
+The **hosted groomer** runs every 10m on **`vision`** (Qwen3.5-9B via litellm →
 llama.cpp). Small model, made reliable by grammar: dispatch sends a
 `json_schema` response_format and llama.cpp grammar-constrains decoding — lane
 ids, label allowlist, and title/body length bounds are enforced at the token
