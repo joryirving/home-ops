@@ -106,6 +106,12 @@ jobs:
           tool_allowed_gh_api_repos: "*"
           tool_request_timeout_sec: "15"
           tool_enable_for_forks: "false"
+          # Read-only konflate MCP tools for the native loop (advertised as
+          # mcp__konflate__get_pr_summary / get_pr_diff / list_pull_requests).
+          # Complements the evidence provider below: the provider injects the
+          # rendered-diff summary deterministically; MCP lets the model do
+          # follow-up digging (e.g. pull the full rendered diff on demand).
+          tool_mcp_servers: "konflate=https://konflate.jory.dev/mcp"
           system_prompt_file: .agents/instructions/pr-review.instructions.md
           system_prompt_mode: append
           standards_file_candidates: "AGENTS.md"
