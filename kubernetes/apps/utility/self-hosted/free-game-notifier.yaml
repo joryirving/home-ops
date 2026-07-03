@@ -3,10 +3,20 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: free-game-notifier
+  name: &name free-game-notifier
 spec:
+  components:
+    - ../../../../components/volsync
   interval: 1h
   path: ./kubernetes/apps/base/self-hosted/free-game-notifier
+  postBuild:
+    substitute:
+      APP: *app
+      STORAGECLASS: local-hostpath
+      STORAGE_HR: ${STORAGE_HR}
+      STORAGE_NS: ${STORAGE_NS}
+      VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
+      VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
   wait: false
   prune: true
   sourceRef:
