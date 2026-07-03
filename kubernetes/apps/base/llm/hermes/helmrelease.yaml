@@ -83,13 +83,15 @@ spec:
           dashboard:
             image: *image
             env:
-              TZ: America/Toronto
               GATEWAY_HEALTH_URL: http://localhost:8642
+              TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: hermes-dashboard
             args:
               - dashboard
               - --host
               - "0.0.0.0"
-              - --insecure
             resources:
               requests:
                 cpu: 500m
