@@ -51,6 +51,24 @@ data:
           api_key: llama-ryzen
           max_parallel_requests: 1
 
+      # Dedicated alias for the foreman reviewer (Ornith): same llama-strix
+      # backend as self-hosted, but its own parallelism budget so reviews don't
+      # queue behind openclaw/pr-review traffic, and deliberately NO second
+      # deployment — a reviewer must not silently fall back to a different
+      # model mid-pipeline.
+      - model_name: ornith
+        model_info:
+          mode: chat
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_vision: false
+        litellm_params:
+          model: openai/llama-strix
+          api_base: http://llama-strix.llm:8080/v1
+          api_key: llama-strix
+          max_parallel_requests: 2
+
       - model_name: vision
         model_info:
           mode: chat

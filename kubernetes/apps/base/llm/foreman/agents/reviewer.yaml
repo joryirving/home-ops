@@ -6,9 +6,18 @@ metadata:
 spec:
   role: reviewer
   # Ornith-1.0-35B on the Strix Halo — the big/slow model, used to review rather
-  # than code. Resolves to http://llama-strix.llm.svc:<port>/v1 at task time.
-  inferenceServiceRef:
-    name: llama-strix
+  # than code. Routed through litellm (dedicated "ornith" alias -> llama-strix)
+  # instead of hitting the InferenceService directly, so review traffic shows up
+  # in litellm spend/metrics attribution and gets its own parallelism budget.
+  # The alias has no fallback deployment: a reviewer must not silently swap
+  # models mid-pipeline.
+  provider: cloud-proxy
+  providerConfig:
+    baseURL: http://litellm.llm:4000/v1
+    model: ornith
+    apiKeySecretRef:
+      name: foreman-agent
+      key: LITELLM_API_KEY
   # Read-only whitelist: no write_file / str_replace. The reviewer describes needed
   # changes in its verdict, it does not edit the branch.
   tools:

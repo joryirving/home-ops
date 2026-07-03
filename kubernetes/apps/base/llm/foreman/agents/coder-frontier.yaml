@@ -8,15 +8,16 @@ spec:
   # Escalation-tier coder: issues the local coder failed RETRY_MAX_ATTEMPTS
   # times get re-laned to "frontier" by the bridge and land here. cloud-proxy
   # dispatches OpenAI-compatible requests through litellm to MiniMax-M3 (the
-  # subscription key lives in litellm; the agent only needs litellm's master
-  # key). Subject to the operator's --allow-cloud-providers switch.
+  # subscription key lives in litellm; the agent uses foreman's per-consumer
+  # litellm virtual key, so its spend is attributed to "foreman" rather than
+  # the master key). Subject to the operator's --allow-cloud-providers switch.
   provider: cloud-proxy
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
     model: MiniMax-M3-chat
     apiKeySecretRef:
-      name: litellm
-      key: LITELLM_MASTER_KEY
+      name: foreman-agent
+      key: LITELLM_API_KEY
   tools:
     - read_file
     - write_file
