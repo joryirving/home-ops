@@ -6,6 +6,7 @@ locals {
     "ErsatzTV",
     "Grafana",
     "Headlamp",
+    "Hermes",
     "Kyoo",
     "LiteLLM",
     "Matrix",
@@ -82,6 +83,15 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/headlamp-k8s/headlamp/refs/heads/main/frontend/src/resources/icon-dark.svg"
       redirect_uri      = "https://headlamp.${var.CLUSTER_DOMAIN}/oidc-callback"
       launch_url        = "https://headlamp.${var.CLUSTER_DOMAIN}/"
+      property_mappings = local.default_property_mappings
+    },
+    Hermes = {
+      client_id         = module.onepassword_application["Hermes-Agent"].fields["HERMES_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Hermes-Agent"].fields["HERMES_CLIENT_SECRET"]
+      group             = "ai"
+      icon_url          = "https://raw.githubusercontent.com/NousResearch/emoji/main/emojis/hermes.png"
+      redirect_uri      = "https://hermes.${var.CLUSTER_DOMAIN}/auth/callback"
+      launch_url        = "https://hermes.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     Matrix = {
