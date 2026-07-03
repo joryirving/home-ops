@@ -47,17 +47,8 @@ spec:
               ESCALATION_LANE: frontier
               LANE_CODER_AGENTS: '{"*":"coder","frontier":"coder-frontier"}'
               FOREMAN_NAMESPACE: llm
-              # Stamp a generic (no-op) gateProfile on every Workload. This
-              # SUPPRESSES Foreman's Go default gate — critical because none of
-              # these repos are Go, and the coder's in-pod fast self-gate runs in
-              # the Go-only coder image (no node/python), so a real language gate
-              # would fail "command not found", exhaust retries, and downgrade the
-              # coder GO to INCOMPLETE (no PR). Generic + no commands = the self-gate
-              # and the clean-room verify Job both no-op, so the coder pushes and
-              # verification falls to the Ornith reviewer + each repo's CI + the
-              # external PR reviewer. Real per-language gates await the upstream
-              # self-gate fix (defer-to-Job on missing runtime).
-              GATEPROFILE_MAP: '{"*":{"language":"generic"}}'
+              GATEPROFILE_MAP: '{"misospace/KubeTix":{"language":"python","image":"python:3.11","commands":{"format":"pip install -q black && black --check .","lint":"pip install -q flake8 && flake8 .","build":"python -m compileall -q .","test":"true"}},"misospace/miso-gallery":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q ruff && ruff check . --select=E,F,W,B,SIM,I --ignore=E501","build":"python -m compileall -q .","test":"true"}},"misospace/pr-reviewer-action":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q yamllint && yamllint action.yml examples/","build":"python -m compileall -q .","test":"true"}},"misospace/dispatch":{"language":"node","image":"node:22","commands":{"format":"true","lint":"npm ci --include=dev && npx prisma generate && NODE_ENV=development npm run lint","build":"NODE_ENV=development npm run typecheck","test":"true"}},"*":{"language":"generic"}}'
+              REVISION_CODER_AGENTS: '{"*":"coder-revision"}'
             envFrom:
               - secretRef:
                   name: foreman-dispatch-bridge
