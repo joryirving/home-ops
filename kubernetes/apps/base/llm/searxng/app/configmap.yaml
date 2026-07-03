@@ -1,0 +1,132 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-configmap
+data:
+  settings.yml: |
+    ---
+    use_default_settings: true
+
+    server:
+      limiter: true
+      image_proxy: true
+      method: GET # https://github.com/searxng/searxng/pull/3619
+      public_instance: false
+
+    search:
+      # Autocomplete and favicon resolvers were set to duckduckgo, which fires one
+      # upstream request per keystroke and per result row. For a private instance
+      # driven by automated agents (mcp-searxng, open-webui RAG, openclaw) these
+      # generate zero value and were the dominant source of DDG captcha/rate-limits.
+      # Disabling them cuts most wasted upstream calls. Set back to "duckduckgo" if
+      # interactive UI usage on search.jory.dev wants them back.
+      autocomplete: ""
+      favicon_resolver: ""
+      languages:
+        - all
+        - en
+        - en-US
+      formats:
+        - html
+        - json
+
+    general:
+      instance_name: LDS Search
+
+    ui:
+      default_theme: simple
+      infinite_scroll: true
+      query_in_title: true
+      results_on_new_tab: true
+      static_use_hash: true
+      theme_args:
+        simple_style: auto
+
+    categories_as_tabs:
+      general:
+      images:
+      videos:
+      map:
+
+    enabled_plugins:
+      - Basic Calculator
+      - Hash plugin
+      - Open Access DOI rewrite
+      - Self Informations
+      - Tracker URL remover
+      - Unit converter plugin
+
+    hostnames:
+      high_priority:
+        - (.*)\/blog\/(.*)
+        - (.*\.)?wikipedia.org$
+        - (.*\.)?github.com$
+        - (.*\.)?reddit.com$
+        - (.*\.)?docker.com$
+        - (.*\.)?archlinux.org$
+        - (.*\.)?stackoverflow.com$
+        - (.*\.)?askubuntu.com$
+        - (.*\.)?superuser.com$
+
+    # Engines disabled because they were rate-limiting / captcha-ing this instance's
+    # single egress IP. Merged by `name` against use_default_settings. If an engine
+    # stops failing after traffic drops, it can be re-enabled here.
+    engines:
+      # startpage is notoriously captcha-aggressive and was returning "Suspended: CAPTCHA".
+      - name: startpage
+        disabled: true
+      # karmasearch was returning "Suspended: access denied". NOTE: karmasearch is
+      # NOT a stock SearXNG engine in the default bundle (no matching name in
+      # upstream settings.yml). If this entry doesn't take effect, confirm the
+      # engine's exact `name:` field in the running instance (UI: Preferences ->
+      # Engines, or `kubectl exec` into the pod and grep the bundled settings).
+      - name: karmasearch
+        disabled: true
+      # brave (HTML scraper) gets IP-blocked like Google/DDG. The API-backed engine
+      # `braveapi` is quota-based and reliable. It is inactive by default; enabling
+      # it here and providing api_key routes Brave queries through the official API.
+      # The key is injected at apply time: Flux postBuild.substituteFrom reads the
+      # searxng Brave key from the searxng-brave ExternalSecret (1Password-backed).
+      - name: braveapi
+        disabled: false
+        api_key: ${BRAVE_API_KEY}
+
+  limiter.toml: |
+    [real_ip]
+
+    # Number of values to trust for X-Forwarded-For.
+
+    x_for = 1
+
+    # The prefix defines the number of leading bits in an address that are compared
+    # to determine whether or not an address is part of a (client) network.
+
+    ipv4_prefix = 32
+    ipv6_prefix = 48
+
+    [botdetection.ip_limit]
+
+    # To get unlimited access in a local network, by default link-lokal addresses
+    # (networks) are not monitored by the ip_limit
+    filter_link_local = true
+
+    # activate link_token method in the ip_limit method
+    link_token = false
+
+    [botdetection.ip_lists]
+
+    # In the limiter, the ip_lists method has priority over all other methods -> if
+    # an IP is in the pass_ip list, it has unrestricted access and it is also not
+    # checked if e.g. the "user agent" suggests a bot (e.g. curl).
+
+    block_ip = []
+
+    pass_ip = [
+      '192.168.0.0/16', # IPv4 private network
+      '10.0.0.0/8', # IPv4 private network
+    ]
+
+    # Activate passlist of (hardcoded) IPs from the SearXNG organization,
+    # e.g. `check.searx.space`.
+    pass_searxng_org = false

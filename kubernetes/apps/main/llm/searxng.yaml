@@ -16,6 +16,12 @@ spec:
   postBuild:
     substitute:
       APP: *app
+    # Injects ${BRAVE_API_KEY} into the settings.yml inlined in the
+    # searxng-configmap ConfigMap. The Secret is populated by externalsecret-brave.yaml.
+    substituteFrom:
+      - kind: Secret
+        name: searxng-brave
+        optional: true
   wait: false
   prune: true
   sourceRef:
