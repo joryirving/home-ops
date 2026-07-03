@@ -6,15 +6,14 @@ metadata:
 spec:
   role: reviewer
   # Ornith-1.0-35B on the Strix Halo — the big/slow model, used to review rather
-  # than code. Routed through litellm (dedicated "ornith" alias -> llama-strix)
-  # instead of hitting the InferenceService directly, so review traffic shows up
-  # in litellm spend/metrics attribution and gets its own parallelism budget.
-  # The alias has no fallback deployment: a reviewer must not silently swap
-  # models mid-pipeline.
+  # than code. Routed through litellm's self-hosted alias instead of hitting the
+  # InferenceService directly, so review traffic is attributed to the foreman
+  # virtual key (which is scoped to self-hosted/nvidia/MiniMax-M3-chat). Note:
+  # self-hosted falls back to the mac qwen deployment when strix is saturated.
   provider: cloud-proxy
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
-    model: ornith
+    model: self-hosted
     apiKeySecretRef:
       name: foreman-agent
       key: LITELLM_API_KEY

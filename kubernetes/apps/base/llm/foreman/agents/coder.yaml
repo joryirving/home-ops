@@ -5,9 +5,16 @@ metadata:
   name: coder
 spec:
   role: coder
-  # Resolves to http://llama-nvidia.llm.svc:<port>/v1 at task time.
-  inferenceServiceRef:
-    name: llama-nvidia
+  # llama-nvidia via litellm's nvidia alias instead of a direct
+  # inferenceServiceRef, so coder traffic is attributed to the foreman virtual
+  # key alongside reviews and escalations.
+  provider: cloud-proxy
+  providerConfig:
+    baseURL: http://litellm.llm:4000/v1
+    model: nvidia
+    apiKeySecretRef:
+      name: foreman-agent
+      key: LITELLM_API_KEY
   tools:
     - read_file
     - write_file
