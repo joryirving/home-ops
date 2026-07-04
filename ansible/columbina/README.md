@@ -1,10 +1,12 @@
 # Columbina
 
 Bootstrap the OVH VPS that fronts the Kubernetes `towonel-agent` workloads.
+Ansible prepares the host and starts `doco-cd`; `doco-cd` reconciles the
+Compose apps under `docker/columbina`.
 
 ```bash
-ansible-galaxy collection install -r ansible/towonel/requirements.yaml
-ansible-playbook -i ansible/towonel/inventory.yaml ansible/towonel/playbook.yaml
+ansible-galaxy collection install -r ansible/columbina/requirements.yaml
+ansible-playbook -i ansible/columbina/inventory.yaml ansible/columbina/playbook.yaml
 ```
 
 After `towonel.jory.dev` resolves to the VPS and the hub is healthy, create the
@@ -30,3 +32,5 @@ Important state lives in `/opt/towonel/data`. Back up at least:
 - `operator.key`
 - `invite_hash.key`
 - `hub.db`
+
+`doco-cd` keeps its generated API and webhook secrets in `/opt/doco-cd`.

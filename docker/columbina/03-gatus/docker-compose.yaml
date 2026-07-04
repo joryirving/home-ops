@@ -1,0 +1,26 @@
+---
+name: gatus
+
+services:
+  gatus:
+    container_name: gatus
+    # renovate: datasource=docker depName=ghcr.io/twin/gatus
+    image: ghcr.io/twin/gatus:v5.36.0@sha256:c5f210d095fa78e6efaa20ffeb14803f2ba4f10615e16a6d12087697149617f0
+    restart: unless-stopped
+    volumes:
+      - gatus-config:/config
+    configs:
+      - source: gatus_config
+        target: /config/config.yaml
+
+volumes:
+  gatus-config:
+
+configs:
+  gatus_config:
+    file: ./config/config.yaml
+
+networks:
+  default:
+    name: edge
+    external: true

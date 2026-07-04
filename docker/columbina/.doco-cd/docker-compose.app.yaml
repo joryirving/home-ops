@@ -1,0 +1,47 @@
+---
+# This file is copied by Ansible because doco-cd cannot manage itself.
+secrets:
+  api_secret:
+    file: /opt/doco-cd/api_secret
+  webhook_secret:
+    file: /opt/doco-cd/webhook_secret
+
+services:
+  app:
+    container_name: doco-cd
+    environment:
+      API_SECRET_FILE: /run/secrets/api_secret
+      DEPLOY_CONFIG_BASE_DIR: ./docker/columbina/
+      HTTP_PORT: 8880
+      LOG_LEVEL: info
+      POLL_CONFIG: |-
+        - url: https://github.com/joryirving/home-ops.git
+          reference: main
+          interval: 3600
+      TZ: America/Edmonton
+      WEBHOOK_SECRET_FILE: /run/secrets/webhook_secret
+    healthcheck:
+      test:
+        - CMD
+        - /doco-cd
+        - healthcheck
+      start_period: 15s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    image: ghcr.io/kimdre/doco-cd:0.94.0@sha256:378fd7d5fcbd9b038640dd14af7ded1686ab26b464bbbe7df880cc0563161e38
+    restart: unless-stopped
+    secrets:
+      - api_secret
+      - webhook_secret
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - data:/data
+
+volumes:
+  data: {}
+
+networks:
+  default:
+    name: edge
+    external: true
