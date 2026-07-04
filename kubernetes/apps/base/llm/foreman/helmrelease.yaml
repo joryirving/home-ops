@@ -18,19 +18,8 @@ spec:
       retries: 3
   values:
     agent:
-      # Shared executors: run coder/verifier/reviewer tasks and reach the
-      # llama-* InferenceServices over the cluster network. Roles advertised
-      # here are matched against each Agent's requiredCapability.roles.
-      # The watcher is one-task-per-node (v0.1), so a single replica serializes
-      # the whole pipeline — a deep code-task queue starves verify/review and
-      # no Workload ever finishes. Two replicas let reviews run beside coding;
-      # GPU-safe because the coder hits llama-nvidia, Ornith hits llama-strix,
-      # and gate Jobs are no-ops.
-      replicaCount: 2
+      replicaCount: 3
       mode: native
-      # The bridge creates Workloads (and the operator its AgenticTasks) in the
-      # llm namespace. Without this the agent watches "default" and never picks
-      # them up — tasks sit in Scheduled forever.
       taskNamespace: llm
       roles:
         - worker
@@ -40,30 +29,14 @@ spec:
         # coder image ships the Go toolchain + git the coder self-gate needs;
         # required because roles include "coder".
         repository: ghcr.io/defilantech/llmkube-foreman-agent-coder
-      # GITHUB_TOKEN the coder role uses to push branches (see externalsecret.yaml).
       githubToken:
         secretName: foreman-agent
         secretKey: GITHUB_TOKEN
-      # Git identity stamped on coder commits. Required with mode=native + the
-      # coder role: repo.Commit hard-rejects an empty author/committer email, so
-      # without this every coder GO fails at commit (no branch, no PR). Authored
-      # as Saffron via the itsmiso-ai account (the foreman-agent token owner);
-      # the numeric-prefixed noreply links the commits to that GitHub account.
       commitAuthorName: Saffron
       commitAuthorEmail: 263493777+itsmiso-ai@users.noreply.github.com
-      # The agent Deployment mounts this PVC, so RWO ceph-block pins all
-      # replicas to whichever node attached it first — the second replica
-      # (#7978) sat in ContainerCreating forever. CephFS RWX lets both agent
-      # replicas and the gate Jobs share the cache from any node.
-      # NOTE: PVC spec is immutable — on first reconcile after this change,
-      # delete the old PVC (kubectl delete pvc foreman-gate-cache -n llm)
-      # and let Flux/helm recreate it. The cache is just Go module/build
-      # cache; loss-free.
       gateCache:
         storageClass: ceph-filesystem
         accessModes: ["ReadWriteMany"]
     coder:
-      # The coder Job clones + pushes with this Secret (projected as GITHUB_TOKEN).
-      # Reuse the same foreman-agent Secret instead of a separate foreman-git-credentials.
       gitCredentialsSecret: foreman-agent
       gitCredentialsSecretKey: GITHUB_TOKEN
