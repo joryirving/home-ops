@@ -13,7 +13,7 @@ services:
       RUST_LOG: info
       TOWONEL_HUB_ALLOW_PRIVILEGED_PORTS: "true"
       TOWONEL_HUB_ENABLED: "true"
-      TOWONEL_HUB_PUBLIC_URL: https://${TOWONEL_DOMAIN}
+      TOWONEL_HUB_PUBLIC_URL: https://towonel.jory.dev
       TOWONEL_EDGE_ENABLED: "true"
       TOWONEL_EDGE_HEALTH_LISTEN_ADDR: 0.0.0.0:9092
       TOWONEL_EDGE_IROH_PORT: "51820"
@@ -23,7 +23,13 @@ services:
       - "4443"
       - "8443"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8443/v1/health"]
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - -o
+        - /dev/null
+        - http://127.0.0.1:8443/v1/health
       interval: 30s
       timeout: 5s
       start_period: 30s
@@ -33,7 +39,7 @@ services:
     logging:
       driver: json-file
       options:
-        max-size: "10m"
+        max-size: 10m
         max-file: "3"
     ports:
       - "51820:51820/udp"
@@ -42,27 +48,7 @@ services:
     volumes:
       - /opt/towonel/data:/data
 
-  caddy:
-    container_name: caddy-l4
-    environment:
-      CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL}
-      VPS_LOCAL_HOSTS: ${TOWONEL_DOMAIN}
-    image: ghcr.io/bjw-s-labs/caddy-l4:2.11.4
-    ports:
-      - "80:80"
-      - "443:443"
-    restart: unless-stopped
-    volumes:
-      - /opt/towonel/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-config:/config
-      - caddy-data:/data
-
-volumes:
-  caddy-config:
-  caddy-data:
-
 networks:
   default:
     name: edge
     external: true
-

@@ -5,10 +5,8 @@
   gather_facts: true
   vars:
     towonel_hostname: columbina
-    towonel_domain: towonel.jory.dev
-    towonel_acme_email: ops@jory.dev
-    towonel_config_dir: /opt/towonel
     towonel_data_dir: /opt/towonel/data
+    doco_cd_config_dir: /opt/doco-cd
 
   tasks:
     - name: Check host connectivity
@@ -25,6 +23,7 @@
           - curl
           - ipset
           - jq
+          - openssl
           - ufw
         state: present
         update_cache: true
@@ -43,11 +42,7 @@
         group: "{{ item.group }}"
         mode: "{{ item.mode }}"
       loop:
-        - path: "{{ towonel_config_dir }}"
-          owner: root
-          group: root
-          mode: "0755"
-        - path: "{{ towonel_config_dir }}/caddy"
+        - path: /opt/towonel
           owner: root
           group: root
           mode: "0755"
@@ -55,6 +50,10 @@
           owner: "10001"
           group: "10001"
           mode: "0750"
+        - path: "{{ doco_cd_config_dir }}"
+          owner: root
+          group: root
+          mode: "0700"
 
     - name: Create Docker edge network
       community.docker.docker_network:
@@ -62,32 +61,41 @@
         driver: bridge
         state: present
 
-    - name: Copy Docker Compose file
+    - name: Check for previous one-shot compose file
+      ansible.builtin.stat:
+        path: /opt/towonel/docker-compose.yaml
+      register: previous_compose_file
+
+    - name: Stop previous one-shot compose stack
+      ansible.builtin.command:
+        cmd: docker compose -f /opt/towonel/docker-compose.yaml down --remove-orphans
+      when: previous_compose_file.stat.exists
+      changed_when: true
+
+    - name: Copy doco-cd Compose file
       ansible.builtin.copy:
-        src: ../../docker/towonel/docker-compose.yaml
-        dest: "{{ towonel_config_dir }}/docker-compose.yaml"
+        src: ../../docker/columbina/.doco-cd/docker-compose.app.yaml
+        dest: "{{ doco_cd_config_dir }}/docker-compose.yaml"
         owner: root
         group: root
         mode: "0644"
-      register: compose_file
 
-    - name: Render Caddyfile
-      ansible.builtin.template:
-        src: caddy/Caddyfile.j2
-        dest: "{{ towonel_config_dir }}/caddy/Caddyfile"
-        owner: root
-        group: root
-        mode: "0644"
-      register: caddyfile
+    - name: Create doco-cd secret files
+      ansible.builtin.shell: |
+        set -euo pipefail
+        umask 077
+        openssl rand -base64 48 > "{{ item }}"
+      args:
+        executable: /bin/bash
+        creates: "{{ item }}"
+      loop:
+        - "{{ doco_cd_config_dir }}/api_secret"
+        - "{{ doco_cd_config_dir }}/webhook_secret"
 
-    - name: Render compose environment
-      ansible.builtin.template:
-        src: env.j2
-        dest: "{{ towonel_config_dir }}/.env"
-        owner: root
-        group: root
-        mode: "0600"
-      register: compose_env
+    - name: Remove previous one-shot compose file
+      ansible.builtin.file:
+        path: /opt/towonel/docker-compose.yaml
+        state: absent
 
     - name: Allow SSH
       community.general.ufw:
@@ -95,7 +103,7 @@
         port: "22"
         proto: tcp
 
-    - name: Allow Towonel public ports
+    - name: Allow public edge ports
       community.general.ufw:
         rule: allow
         port: "{{ item.port }}"
@@ -113,13 +121,33 @@
         state: enabled
         policy: deny
 
-    - name: Run Docker Compose
+    - name: Run doco-cd Compose
       community.docker.docker_compose_v2:
-        project_src: "{{ towonel_config_dir }}"
+        project_src: "{{ doco_cd_config_dir }}"
         files:
           - docker-compose.yaml
         pull: always
         state: present
+
+    - name: Wait for doco-cd container to become healthy
+      community.docker.docker_container_info:
+        name: doco-cd
+      register: doco_cd_container
+      until: doco_cd_container.container.State.Health.Status == "healthy"
+      retries: 30
+      delay: 5
+
+    - name: Wait for GitOps-managed containers
+      community.docker.docker_container_info:
+        name: "{{ item }}"
+      register: gitops_container
+      until: gitops_container.exists and (gitops_container.container.State.Status | default("")) == "running"
+      retries: 30
+      delay: 5
+      loop:
+        - towonel-hub
+        - caddy-l4
+        - gatus
 
     - name: Wait for Towonel container to become healthy
       community.docker.docker_container_info:
