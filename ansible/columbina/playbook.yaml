@@ -1,0 +1,136 @@
+---
+- name: Bootstrap Towonel VPS
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    towonel_hostname: columbina
+    towonel_domain: towonel.jory.dev
+    towonel_acme_email: ops@jory.dev
+    towonel_config_dir: /opt/towonel
+    towonel_data_dir: /opt/towonel/data
+
+  tasks:
+    - name: Check host connectivity
+      ansible.builtin.ping:
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ towonel_hostname }}"
+
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - ipset
+          - jq
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: Install Docker
+      ansible.builtin.shell: curl -fsSL https://get.docker.com | sh
+      args:
+        executable: /bin/bash
+        creates: /usr/bin/docker
+
+    - name: Create Towonel directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ towonel_config_dir }}"
+          owner: root
+          group: root
+          mode: "0755"
+        - path: "{{ towonel_config_dir }}/caddy"
+          owner: root
+          group: root
+          mode: "0755"
+        - path: "{{ towonel_data_dir }}"
+          owner: "10001"
+          group: "10001"
+          mode: "0750"
+
+    - name: Create Docker edge network
+      community.docker.docker_network:
+        name: edge
+        driver: bridge
+        state: present
+
+    - name: Copy Docker Compose file
+      ansible.builtin.copy:
+        src: ../../docker/towonel/docker-compose.yaml
+        dest: "{{ towonel_config_dir }}/docker-compose.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      register: compose_file
+
+    - name: Render Caddyfile
+      ansible.builtin.template:
+        src: caddy/Caddyfile.j2
+        dest: "{{ towonel_config_dir }}/caddy/Caddyfile"
+        owner: root
+        group: root
+        mode: "0644"
+      register: caddyfile
+
+    - name: Render compose environment
+      ansible.builtin.template:
+        src: env.j2
+        dest: "{{ towonel_config_dir }}/.env"
+        owner: root
+        group: root
+        mode: "0600"
+      register: compose_env
+
+    - name: Allow SSH
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Allow Towonel public ports
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+      loop:
+        - port: "80"
+          proto: tcp
+        - port: "443"
+          proto: tcp
+        - port: "51820"
+          proto: udp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        policy: deny
+
+    - name: Run Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ towonel_config_dir }}"
+        files:
+          - docker-compose.yaml
+        pull: always
+        state: present
+
+    - name: Wait for Towonel container to become healthy
+      community.docker.docker_container_info:
+        name: towonel-hub
+      register: towonel_container
+      until: towonel_container.container.State.Health.Status == "healthy"
+      retries: 30
+      delay: 5
+
+    - name: Show invite creation command
+      ansible.builtin.debug:
+        msg: >-
+          Create the Kubernetes agent invite after DNS resolves:
+          docker exec towonel-hub towonel invite create --name home-ops --hostnames '*.jory.dev'

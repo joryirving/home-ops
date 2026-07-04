@@ -1,0 +1,118 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: towonel-agent
+# Parallel to cloudflare-tunnel for the jory.dev domain; keep both until cutover.
+# TLS mode: passthrough (Towonel peeks SNI and forwards raw TLS). Origin holds the cert.
+# PROXY v2 header is prepended on passthrough connections; envoy-gateway's
+# ClientTrafficPolicy `proxyProtocol.optional: true` lets it accept them.
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: towonel-agent
+  interval: 15m
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      towonel-agent:
+        type: deployment
+        replicas: ${REPLICAS:=1}
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: codeberg.org/towonel/towonel-agent
+              tag: 1.0.1
+            env:
+              NODE_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+              POD_NAMESPACE:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              RUST_LOG: info
+              TOWONEL_AGENT_HEALTH_LISTEN_ADDR: 0.0.0.0:9090
+              TOWONEL_AGENT_SERVICES: |
+                [
+                  {"hostname":"*.jory.dev","origin":"envoy-external.{{ .Release.Namespace }}.svc.cluster.local:443"}
+                ]
+              # Raw TCP/UDP service placeholders. Format mirrors TOWONEL_AGENT_SERVICES
+              # but with a `listen_port` per service, scoped per tenant on the hub.
+              # Leave as `[]` until a real service is added; the agent reconciles
+              # declared entries against the hub on each boot.
+              # TOWONEL_AGENT_TCP_SERVICES: |
+              #   [
+              #     {"name":"...", "origin":"svc.ns.svc.cluster.local:PORT", "listen_port":PORT}
+              #   ]
+              # TOWONEL_AGENT_UDP_SERVICES: |
+              #   [
+              #     {"name":"...", "origin":"svc.ns.svc.cluster.local:PORT", "listen_port":PORT}
+              #   ]
+              TOWONEL_INVITE_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: towonel-agent-secret
+                    key: TOWONEL_INVITE_TOKEN
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 9090
+                  periodSeconds: 30
+                  timeoutSeconds: 3
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 9090
+                  periodSeconds: 10
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 9090
+                  periodSeconds: 5
+                  failureThreshold: 60
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 500m
+                memory: 64Mi
+    service:
+      app:
+        ports:
+          http:
+            port: 9090
+    serviceMonitor:
+      app:
+        endpoints:
+          - port: http
