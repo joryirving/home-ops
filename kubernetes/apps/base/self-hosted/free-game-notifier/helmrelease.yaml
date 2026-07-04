@@ -26,6 +26,10 @@ spec:
               EPIC_SCHEDULE: "0 0 * * 4"
               STEAM_SCHEDULE: "0 9 * * *"
               TWITCH_DROPS_SCHEDULE: "0 12 * * *"
+              NOITIFICATION_STORE_PATH: /data/free-games-store.json
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"

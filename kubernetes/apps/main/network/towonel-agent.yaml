@@ -3,13 +3,21 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app hypermind
+  name: towonel-agent
 spec:
+  dependsOn:
+    - name: cloudflare-dns
+    - name: towonel-agent-config
   interval: 1h
-  path: ./kubernetes/apps/base/self-hosted/hypermind
+  path: ./kubernetes/apps/base/network/towonel-agent
   postBuild:
     substitute:
-      APP: *app
+      CLUSTER: ${CLUSTER}
+      REPLICAS: "2"
+    substituteFrom:
+      - kind: Secret
+        name: towonel-agent-config
+        optional: false
   wait: false
   prune: true
   sourceRef:

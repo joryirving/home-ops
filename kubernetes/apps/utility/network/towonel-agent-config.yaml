@@ -3,14 +3,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app hypermind
+  name: towonel-agent-config
 spec:
   interval: 1h
-  path: ./kubernetes/apps/base/self-hosted/hypermind
-  postBuild:
-    substitute:
-      APP: *app
-  wait: false
+  path: ./kubernetes/apps/base/network/towonel-agent-config
+  wait: true
   prune: true
   sourceRef:
     kind: GitRepository
