@@ -10,13 +10,27 @@ spec:
   endpoints:
     - dnsName: towonel.jory.dev
       recordType: A
-      targets: ["${TOWONEL_VPS_IP}"]
+      targets: ["148.113.195.107"]
       providerSpecific:
         - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
           value: "false"
     - dnsName: columbina-gatus.jory.dev
       recordType: A
-      targets: ["${TOWONEL_VPS_IP}"]
+      targets: ["148.113.195.107"]
+      providerSpecific:
+        - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+          value: "false"
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/externaldns.k8s.io/dnsendpoint_v1alpha1.json
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: towonel-edge-external
+spec:
+  endpoints:
+    - dnsName: ${CLUSTER}-external.jory.dev
+      recordType: CNAME
+      targets: ["towonel.jory.dev"]
       providerSpecific:
         - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
           value: "false"
