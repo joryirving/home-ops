@@ -41,6 +41,13 @@ spec:
     against it rather than guessing. Preserve the parts of the prior attempt the reviewer
     did not object to. Every behaviour change still needs a test. Match the surrounding
     code style.
+    Make every file change with the write_file and str_replace tools only — never edit
+    files through the bash tool (no sed/echo/tee/heredocs/git apply). Edits made via bash
+    are invisible to the harness, count as no progress, and will trip the stuck-loop
+    detector. Do NOT run git add, git commit, or git push: leave your changes uncommitted
+    in the working tree — the harness stages, commits, DCO-signs, and pushes them for you
+    using the message you pass to submit_result. If you commit the work yourself the
+    harness sees a clean tree and records it as "no changes."
     Ground every external fact in something you can read: reference GitHub Actions by
     version tag (uses: azure/setup-helm@v5) and NEVER write commit SHAs, URLs, or version
     numbers from memory — if you cannot verify a value from the repo, leave a TODO comment
