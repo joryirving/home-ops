@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: towonel-operator
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: towonel-operator
+  interval: 15m
+  values:
+    agentNamespace: network
+    credentials:
+      existingSecret: towonel-operator-secret
+      tokenKey: TOWONEL_API_KEY
+    gatewayAPI:
+      enabled: true
+    towonel:
+      apiURL: https://towonel.jory.dev

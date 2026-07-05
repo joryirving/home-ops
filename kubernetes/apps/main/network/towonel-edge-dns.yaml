@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: towonel-edge-dns
+spec:
+  dependsOn:
+    - name: cloudflare-dns
+    - name: towonel-agent-config
+  interval: 1h
+  path: ./kubernetes/apps/base/network/towonel-edge-dns
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: towonel-agent-config
+        optional: false
+  wait: false
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system

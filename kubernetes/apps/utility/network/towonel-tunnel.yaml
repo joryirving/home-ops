@@ -3,20 +3,16 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: towonel-agent
+  name: towonel-tunnel
 spec:
   dependsOn:
-    - name: cloudflare-dns
-    - name: towonel-agent-config
+    - name: envoy-config
+    - name: towonel-operator
   interval: 1h
-  path: ./kubernetes/apps/base/network/towonel-agent
+  path: ./kubernetes/apps/base/network/towonel-tunnel
   postBuild:
     substitute:
-      REPLICAS: "2"
-    substituteFrom:
-      - kind: Secret
-        name: towonel-agent-config
-        optional: false
+      CLUSTER: ${CLUSTER}
   wait: false
   prune: true
   sourceRef:
