@@ -28,6 +28,15 @@ endpoints:
     extra-labels:
       cluster: utility
 
+  - name: columbina-gatus
+    group: cluster
+    url: "https://columbina-gatus.jory.dev"
+    interval: 1m
+    conditions:
+      - "[STATUS] == 200"
+    extra-labels:
+      cluster: columbina
+
   - name: Cloudflare
     group: connectivity
     url: icmp://1.1.1.1
@@ -68,11 +77,15 @@ ui:
       link: https://github.com/joryirving/home-ops
     - name: Utility Status
       link: https://status-utility.jory.dev
+    - name: Columbina Status
+      link: https://columbina-gatus.jory.dev
 
 remote:
   instances:
     - endpoint-prefix: ""
       url: "https://status-utility.jory.dev/api/v1/endpoints/statuses"
+    - endpoint-prefix: columbina-
+      url: "https://columbina-gatus.jory.dev/api/v1/endpoints/statuses"
 
 web:
   port: ${GATUS_WEB_PORT}
