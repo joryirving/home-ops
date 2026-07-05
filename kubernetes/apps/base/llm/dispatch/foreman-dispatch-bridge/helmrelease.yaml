@@ -29,7 +29,7 @@ spec:
           app:
             image:
               repository: ghcr.io/misospace/foreman-dispatch-bridge
-              tag: 0.6.2@sha256:6fd81671f76b8ca0f6c45817016f61310f3c7f45f3cac88ef453199a260a4819
+              tag: 0.6.3@sha256:cb7d3495e24d47a05f7dc2ab8477402a62c91f20b006848525dfe53dc6d43ff0
             env:
               DISPATCH_URL: http://dispatch.llm:3000
               # Dash, not slash (like saffron-normal): agents auto-register, but a "/"
@@ -47,6 +47,7 @@ spec:
               ESCALATION_LANE: frontier
               LANE_CODER_AGENTS: '{"*":"coder","frontier":"coder-frontier"}'
               FOREMAN_NAMESPACE: llm
+              MAX_IN_PROGRESS: "10"
               GATEPROFILE_MAP: '{"misospace/KubeTix":{"language":"python","image":"python:3.11","commands":{"format":"pip install -q black && black --check .","lint":"pip install -q flake8 && flake8 .","build":"python -m compileall -q .","test":"true"}},"misospace/miso-gallery":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q ruff && ruff check . --select=E,F,W,B,SIM,I --ignore=E501","build":"python -m compileall -q .","test":"true"}},"misospace/pr-reviewer-action":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q yamllint && yamllint action.yml examples/","build":"python -m compileall -q .","test":"true"}},"misospace/dispatch":{"language":"node","image":"node:22","commands":{"format":"true","lint":"npm ci --include=dev && npx prisma generate && NODE_ENV=development npm run lint","build":"NODE_ENV=development npm run typecheck","test":"true"}},"*":{"language":"generic"}}'
               REVISION_CODER_AGENTS: '{"*":"coder-revision"}'
               PR_FIX_ENABLED: "true"
