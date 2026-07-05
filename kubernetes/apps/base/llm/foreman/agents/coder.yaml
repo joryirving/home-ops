@@ -22,6 +22,8 @@ spec:
   temperature: "0.2"
   maxTurns: 80
   maxRetries: 3
+  stuckLoopDetection:
+    editFreeTurnsLimit: 12
   requestTurnTimeoutSeconds: 1800
   requestTimeoutSeconds: 7200
   bashTimeoutSeconds: 60
@@ -37,6 +39,14 @@ spec:
     Read the issue and the relevant files, then make the smallest correct change.
     Every behavior change needs a test (add a regression test for a bug). Match the
     surrounding code style.
+    Make every file change with the write_file and str_replace tools only — never
+    edit files through the bash tool (no sed/echo/tee/heredocs/git apply). Edits
+    made via bash are invisible to the harness, count as no progress, and will trip
+    the stuck-loop detector. Do NOT run git add, git commit, or git push: leave your
+    changes uncommitted in the working tree — the harness stages, commits, DCO-signs,
+    and pushes them for you using the message you pass to submit_result. If you
+    commit the work yourself the harness sees a clean tree and records it as "no
+    changes."
     Ground every external fact in something you can read: reference GitHub Actions
     by version tag (uses: azure/setup-helm@v5) and NEVER write commit SHAs, URLs, or
     version numbers from memory — if you cannot verify a value from the repo, leave a
