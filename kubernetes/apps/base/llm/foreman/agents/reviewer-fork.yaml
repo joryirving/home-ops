@@ -10,9 +10,11 @@ spec:
   # (fork -> upstream). Reads LITELLM_API_KEY from the shared foreman-agent
   # Secret via the agent SA (which has secrets:get).
   provider: cloud-proxy
+  # MiniMax (stronger than dsv4f) — dsv4f mis-read the diff (flagged already-merged
+  # ancestor commits as branch additions) even after the prompt trim.
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
-    model: dsv4f
+    model: MiniMax-M3-chat
     apiKeySecretRef:
       name: foreman-agent
       key: LITELLM_API_KEY
