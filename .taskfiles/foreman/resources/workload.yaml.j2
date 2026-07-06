@@ -1,0 +1,40 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Workload
+metadata:
+  name: {{ ENV.NAME }}
+  namespace: {{ ENV.NS }}
+  labels:
+    app.kubernetes.io/managed-by: foreman-adhoc
+    foreman.llmkube.dev/adhoc: "true"
+spec:
+  intent: {{ ENV.INTENT | tojson }}
+  repo: {{ ENV.REPO }}
+  issues: [{{ ENV.ISSUE }}]
+  coderAgentRef:
+    name: {{ ENV.CODER }}
+  verifierAgentRef:
+    name: {{ ENV.VERIFIER }}
+  reviewerAgentRefs:
+    - name: {{ ENV.REVIEWER }}
+  openPullRequest: {{ ENV.OPEN_PR }}
+{% if ENV.STACK == "python" %}
+  gateProfile:
+    language: python
+    image: python:3.14
+    commands:
+      format: "true"
+      lint: "pip install -q ruff && ruff check . --select=E,F,W,B,SIM,I --ignore=E501"
+      build: "python -m compileall -q ."
+      test: "true"
+{% endif %}
+{% if ENV.STACK == "node" %}
+  gateProfile:
+    language: node
+    image: node:22
+    commands:
+      format: "true"
+      lint: "npm ci --include=dev && NODE_ENV=development npm run lint"
+      build: "NODE_ENV=development npm run typecheck"
+      test: "true"
+{% endif %}

@@ -1,0 +1,94 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Generate and apply ad-hoc foreman Workloads off-git (never committed). A
+# Workload runs the full code -> verify -> review pipeline; the reviewer opens
+# the PR on a review-GO (openPullRequest, default true). This is the path for a
+# one-off fix request; the CLI `llmkube foreman dispatch` only creates a bare
+# coder task and never opens a PR.
+
+vars:
+  FOREMAN_RESOURCES_DIR: "{{.ROOT_DIR}}/.taskfiles/foreman/resources"
+
+tasks:
+  dispatch:
+    desc: Dispatch an ad-hoc Workload for one issue [REPO=required] [ISSUE=required] [STACK=go|python|node] [CODER=coder-<STACK>] [NS=llm] [OPEN_PR=true]
+    cmds:
+      - minijinja-cli {{.FOREMAN_RESOURCES_DIR}}/workload.yaml.j2 | kubectl apply --filename -
+      - echo "dispatched {{.NAME}} -> watch with 'task foreman:status' or 'kubectl -n {{.NS}} get workload {{.NAME}} -w'"
+    vars:
+      NS: '{{.NS | default "llm"}}'
+      STACK: '{{.STACK | default "go"}}'
+      CODER: '{{.CODER | default (printf "coder-%s" (.STACK | default "go"))}}'
+      VERIFIER: '{{.VERIFIER | default "gate"}}'
+      REVIEWER: '{{.REVIEWER | default "reviewer"}}'
+      OPEN_PR: '{{.OPEN_PR | default "true"}}'
+      NAME: '{{.NAME | default (printf "adhoc-%s-%v" (.REPO | replace "/" "-" | lower) .ISSUE)}}'
+      INTENT:
+        sh: gh issue view {{.ISSUE}} --repo {{.REPO}} --json title --jq .title 2>/dev/null || echo "Resolve {{.REPO}}#{{.ISSUE}}"
+    env:
+      NAME: "{{.NAME}}"
+      NS: "{{.NS}}"
+      REPO: "{{.REPO}}"
+      ISSUE: "{{.ISSUE}}"
+      STACK: "{{.STACK}}"
+      CODER: "{{.CODER}}"
+      VERIFIER: "{{.VERIFIER}}"
+      REVIEWER: "{{.REVIEWER}}"
+      OPEN_PR: "{{.OPEN_PR}}"
+      INTENT: "{{.INTENT}}"
+    requires:
+      vars: [REPO, ISSUE]
+    preconditions:
+      - test -f {{.FOREMAN_RESOURCES_DIR}}/workload.yaml.j2
+      - which minijinja-cli kubectl gh
+
+  dry-run:
+    desc: Render an ad-hoc Workload without applying it [REPO=required] [ISSUE=required] [STACK=go|python|node]
+    silent: true
+    cmd: minijinja-cli {{.FOREMAN_RESOURCES_DIR}}/workload.yaml.j2
+    vars:
+      NS: '{{.NS | default "llm"}}'
+      STACK: '{{.STACK | default "go"}}'
+      CODER: '{{.CODER | default (printf "coder-%s" (.STACK | default "go"))}}'
+      VERIFIER: '{{.VERIFIER | default "gate"}}'
+      REVIEWER: '{{.REVIEWER | default "reviewer"}}'
+      OPEN_PR: '{{.OPEN_PR | default "true"}}'
+      NAME: '{{.NAME | default (printf "adhoc-%s-%v" (.REPO | replace "/" "-" | lower) .ISSUE)}}'
+      INTENT:
+        sh: gh issue view {{.ISSUE}} --repo {{.REPO}} --json title --jq .title 2>/dev/null || echo "Resolve {{.REPO}}#{{.ISSUE}}"
+    env:
+      NAME: "{{.NAME}}"
+      NS: "{{.NS}}"
+      REPO: "{{.REPO}}"
+      ISSUE: "{{.ISSUE}}"
+      STACK: "{{.STACK}}"
+      CODER: "{{.CODER}}"
+      VERIFIER: "{{.VERIFIER}}"
+      REVIEWER: "{{.REVIEWER}}"
+      OPEN_PR: "{{.OPEN_PR}}"
+      INTENT: "{{.INTENT}}"
+    requires:
+      vars: [REPO, ISSUE]
+    preconditions:
+      - test -f {{.FOREMAN_RESOURCES_DIR}}/workload.yaml.j2
+      - which minijinja-cli gh
+
+  status:
+    desc: List ad-hoc Workloads and their phase [NS=llm]
+    cmd: kubectl --namespace {{.NS}} get workloads --selector foreman.llmkube.dev/adhoc=true --output custom-columns='NAME:.metadata.name,PHASE:.status.phase,CODER:.spec.coderAgentRef.name'
+    vars:
+      NS: '{{.NS | default "llm"}}'
+    preconditions:
+      - which kubectl
+
+  clean:
+    desc: Delete an ad-hoc Workload (children cascade) [NAME=required] [NS=llm]
+    cmd: kubectl --namespace {{.NS}} delete workload {{.NAME}}
+    vars:
+      NS: '{{.NS | default "llm"}}'
+    requires:
+      vars: [NAME]
+    preconditions:
+      - which kubectl
