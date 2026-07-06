@@ -39,14 +39,14 @@ spec:
     mode: Job
     serviceAccountName: foreman-coder
   requiredCapability:
+    # coder-fork matches ONLY the fork-pinned agent (foreman-agent-llmkube,
+    # --git-remote-url=joryirving/LLMKube), so coder-go pushes to the fork and
+    # the reviewer opens a cross-repo PR into defilantech/LLMKube. The primary
+    # fleet advertises "coder", not "coder-fork", so misospace work is excluded
+    # and coder-go never lands on the primary fleet.
     roles:
-      - coder
+      - coder-fork
     accelerator: any
-    # Pin to the fork-pinned agent (foreman-agent-llmkube, --git-remote-url set
-    # to the joryirving/LLMKube fork) so coder-go pushes to the fork and the
-    # reviewer opens a cross-repo PR into defilantech/LLMKube.
-    nodeSelector:
-      foreman-fork: llmkube
   systemPrompt: |
     You are a coding agent resolving a single GitHub issue in a Go project.
     Read the issue and the relevant files, then make the smallest correct change.

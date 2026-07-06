@@ -42,18 +42,17 @@ spec:
       replicaCount: 1
       mode: native
       taskNamespace: llm
+      # Custom role so ONLY coder-go (requiredCapability.roles: [coder-fork])
+      # schedules here — misospace coder tasks (role "coder") never land on this
+      # fork-pinned agent. Roles are scheduling-only; native mode + the coder
+      # image + gitRemoteURL are what let it execute coder tasks.
       roles:
-        - worker
-        - coder
+        - coder-fork
       image:
         repository: ghcr.io/joryirving/llmkube-coder
       # Clones AND pushes this fork; the reviewer opens a cross-repo PR into the
       # upstream repo named by the Workload (defilantech/LLMKube).
       gitRemoteURL: https://github.com/joryirving/LLMKube
-      # Stamped onto this agent's FleetNode; coder-go pins to it via
-      # requiredCapability.nodeSelector.
-      nodeLabels:
-        foreman-fork: llmkube
       # Jory's PAT (can push to the joryirving/LLMKube fork); DCO sign-off +
       # attribution as Jory to match.
       commitAuthorName: Jory Irving
