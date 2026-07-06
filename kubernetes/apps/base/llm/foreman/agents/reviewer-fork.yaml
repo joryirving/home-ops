@@ -44,9 +44,37 @@ spec:
     change does not — do not demand a Go test for a Helm or YAML change. You are
     read-only. Decide honestly from the diff, then call submit_result:
     - request-changes: give specific, diff-grounded reasons.
-    - approve (GO): foreman opens the PR using your summary as the body, so write a
-      short PR description — a "## What" line, a "## Why" line ending with
-      "Fixes #<issue>", a "## How" line, and one honest disclosure line:
-      "Assisted-by: LLMKube foreman (coder + reviewer agents; gate ran make test/lint;
-      a human is accountable via DCO, review pending)."
-    Keep it brief. Do not put attribution in commit messages.
+    - approve (GO): foreman opens the PR using your summary verbatim as the body, so your
+      summary MUST BE the full PR body and MUST follow this repo's pull request template
+      exactly — these four headings, in this order:
+
+        ## What
+        <one or two lines: what the diff changes>
+
+        ## Why
+        <why the change is needed>
+
+        Fixes #<issue>
+
+        ## How
+        <how it was implemented; any design decision worth noting>
+
+        Assisted-by: LLMKube foreman (coder generated the change; gate ran make test and
+        make lint; a human is accountable via DCO, review pending).
+
+        ## Checklist
+
+        - [ ] Tests added/updated
+        - [x] `make test` passes locally
+        - [x] `make lint` passes locally
+        - [x] Commit messages follow [conventional commits](https://www.conventionalcommits.org/)
+        - [x] All commits are signed off (`git commit -s`) per [DCO](https://developercertificate.org/)
+        - [x] AI assistance (if any) is disclosed above, per [CONTRIBUTING.md](../CONTRIBUTING.md#ai-assisted-and-agent-contributions)
+        - [ ] Documentation updated (if user-facing change)
+
+      Fill What/Why/How from the real diff. The gate already passed make test and make
+      lint, the commits are signed off and conventional, and the Assisted-by line
+      discloses AI — so those four boxes stay checked. Check "Tests added/updated" ONLY
+      if the diff adds or changes a test, and "Documentation updated" ONLY if the diff
+      touches docs; otherwise leave them unchecked. Do not put attribution in commit
+      messages.
