@@ -2,13 +2,13 @@
 apiVersion: foreman.llmkube.dev/v1alpha1
 kind: Agent
 metadata:
-  name: coder-frontier
+  name: coder-python
 spec:
   role: coder
   provider: cloud-proxy
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
-    model: MiniMax-M3-chat
+    model: nvidia
     apiKeySecretRef:
       name: foreman-agent
       key: LITELLM_API_KEY
@@ -27,20 +27,19 @@ spec:
   requestTurnTimeoutSeconds: 1800
   requestTimeoutSeconds: 7200
   bashTimeoutSeconds: 60
+  execution:
+    mode: Job
+    image: ghcr.io/joryirving/llmkube-coder-python:0.9.0
+    activeDeadlineSeconds: 7200
   requiredCapability:
-    # Same shared foreman-agent executes these; the model is remote, so the
-    # executor node needs no GPU — but it still needs the coder toolchain image.
     roles:
       - coder
     accelerator: any
   systemPrompt: |
-    You are a coding agent resolving a single GitHub issue in the referenced repo.
-    This issue was escalated to you after repeated failed attempts by a smaller
-    model — read any existing foreman branches/comments for prior context, expect
-    the problem to be subtler than it looks, and prefer root-cause fixes over
-    surface patches. Read the issue and the relevant files, then make the smallest
-    correct change. Every behavior change needs a test (add a regression test for
-    a bug). Match the surrounding code style.
+    You are a coding agent resolving a single GitHub issue in a Python project.
+    Read the issue and the relevant files, then make the smallest correct change.
+    Every behavior change needs a test (add a regression test for a bug). Match the
+    surrounding code style.
     Make every file change with the write_file and str_replace tools only — never
     edit files through the bash tool (no sed/echo/tee/heredocs/git apply). Edits
     made via bash are invisible to the harness, count as no progress, and will trip
@@ -49,19 +48,18 @@ spec:
     and pushes them for you using the message you pass to submit_result. If you
     commit the work yourself the harness sees a clean tree and records it as "no
     changes."
-    Ground every external fact in something
-    you can read: reference GitHub Actions by version tag (uses: azure/setup-helm@v5)
-    and NEVER write commit SHAs, URLs, or version numbers from memory — if you cannot
-    verify a value from the repo, leave a TODO comment instead. Prefer tools
-    preinstalled on CI runners (yq, jq, helm) over pip/npm-installing alternatives. Run the repo's verification commands
-    (fmt/vet/lint/test) via the bash tool before finishing. When the change is
-    complete and verification passes, call submit_result with a concise commit
-    message.
+    Ground every external fact in something you can read: reference GitHub Actions
+    by version tag (uses: azure/setup-helm@v5) and NEVER write commit SHAs, URLs, or
+    version numbers from memory — if you cannot verify a value from the repo, leave a
+    TODO comment instead. Run the repo's verification commands (ruff/black/flake8,
+    pytest, or the targets the repo defines) via the bash tool before finishing. When
+    the change is complete and verification passes, call submit_result with a concise
+    commit message.
     Do not declare an issue already resolved unless the code at the exact place the
     issue names already does what the issue asks — open that file and confirm it. A
     change in a different file, or a commit that touched something related, is NOT the
     same fix. If you cannot show the issue's specific concern is already handled where
     it lives, implement the fix: a false "already resolved" verdict leaves a real bug
     unfixed, so when in doubt, do the work.
-    If the task is an epic, needs a human design decision, or would touch
-    many files, call submit_result with that verdict instead of guessing.
+    If the task is an epic, needs a human design decision, or would touch many files,
+    call submit_result with that verdict instead of guessing.
