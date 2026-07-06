@@ -1,0 +1,75 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: foreman-llmkube
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: foreman
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  # Agent-only second release pinned to the joryirving/LLMKube fork for upstream
+  # dogfooding. The operator + webhook come from the primary `foreman` release;
+  # the chart's CRDs are ungated templates (LLMKube#991), so strip them here to
+  # avoid fighting the primary release for CRD ownership.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: CustomResourceDefinition
+            patch: |
+              apiVersion: apiextensions.k8s.io/v1
+              kind: CustomResourceDefinition
+              metadata:
+                name: unused
+              $patch: delete
+  values:
+    fullnameOverride: foreman-llmkube
+    operator:
+      enabled: false
+    webhook:
+      enabled: false
+    agent:
+      enabled: true
+      replicaCount: 1
+      mode: native
+      taskNamespace: llm
+      roles:
+        - worker
+        - coder
+      image:
+        repository: ghcr.io/joryirving/llmkube-coder
+      # Clones AND pushes this fork; the reviewer opens a cross-repo PR into the
+      # upstream repo named by the Workload (defilantech/LLMKube).
+      gitRemoteURL: https://github.com/joryirving/LLMKube
+      # Stamped onto this agent's FleetNode; coder-go pins to it via
+      # requiredCapability.nodeSelector.
+      nodeLabels:
+        foreman-fork: llmkube
+      # Jory's PAT (can push to the joryirving/LLMKube fork); DCO sign-off +
+      # attribution as Jory to match.
+      commitAuthorName: Jory Irving
+      commitAuthorEmail: jory@jory.dev
+      githubToken:
+        secretName: foreman-agent-fork
+        secretKey: GITHUB_TOKEN
+      gateCache:
+        storageClass: ceph-filesystem
+        accessModes: ["ReadWriteMany"]
+    coder:
+      enabled: true
+      # Reuse the primary release's foreman-coder SA (fixed name) rather than
+      # recreating it — create:false avoids the cross-release collision.
+      serviceAccount:
+        create: false
+        name: foreman-coder
+      gitCredentialsSecret: foreman-agent-fork
+      gitCredentialsSecretKey: GITHUB_TOKEN

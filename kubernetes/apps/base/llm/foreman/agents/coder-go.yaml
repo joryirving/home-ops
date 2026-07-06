@@ -42,6 +42,11 @@ spec:
     roles:
       - coder
     accelerator: any
+    # Pin to the fork-pinned agent (foreman-agent-llmkube, --git-remote-url set
+    # to the joryirving/LLMKube fork) so coder-go pushes to the fork and the
+    # reviewer opens a cross-repo PR into defilantech/LLMKube.
+    nodeSelector:
+      foreman-fork: llmkube
   systemPrompt: |
     You are a coding agent resolving a single GitHub issue in a Go project.
     Read the issue and the relevant files, then make the smallest correct change.
