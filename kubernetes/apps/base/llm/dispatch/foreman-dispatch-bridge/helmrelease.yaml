@@ -46,6 +46,7 @@ spec:
               # (cloud-proxy -> litellm -> MiniMax-M3). Ignored by older bridges.
               ESCALATION_LANE: frontier
               LANE_CODER_AGENTS: '{"*":"coder","frontier":"coder-frontier"}'
+              BASE_CODER_AGENTS: '{"python":"coder-python","node":"coder-node","go":"coder-go","*":"coder"}'
               FOREMAN_NAMESPACE: llm
               MAX_IN_PROGRESS: "10"
               GATEPROFILE_MAP: '{"misospace/KubeTix":{"language":"python","image":"python:3.11","commands":{"format":"pip install -q black && black --check .","lint":"pip install -q flake8 && flake8 .","build":"python -m compileall -q .","test":"true"}},"misospace/miso-gallery":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q ruff && ruff check . --select=E,F,W,B,SIM,I --ignore=E501","build":"python -m compileall -q .","test":"true"}},"misospace/pr-reviewer-action":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q yamllint && yamllint action.yml examples/","build":"python -m compileall -q .","test":"true"}},"misospace/dispatch":{"language":"node","image":"node:22","commands":{"format":"true","lint":"npm ci --include=dev && npx prisma generate && NODE_ENV=development npm run lint","build":"NODE_ENV=development npm run typecheck","test":"true"}},"*":{"language":"generic"}}'
