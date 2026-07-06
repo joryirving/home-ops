@@ -75,6 +75,37 @@ tasks:
       - test -f {{.FOREMAN_RESOURCES_DIR}}/workload.yaml.j2
       - which minijinja-cli gh
 
+  revise:
+    desc: Revise an ad-hoc PR's existing branch IN PLACE (no rewrite) [ISSUE=required] [FEEDBACK_FILE=required] [REPO=defilantech/LLMKube] [STACK=go] [BRANCH=auto] [NS=llm]
+    cmds:
+      - minijinja-cli {{.FOREMAN_RESOURCES_DIR}}/revise.yaml.j2 | kubectl apply --filename -
+      - echo "revising {{.BRANCH}} via {{.NAME}} ({{.CODER}}) — watch the task/Job in k9s; the coder force-pushes, updating the PR"
+    vars:
+      NS: '{{.NS | default "llm"}}'
+      REPO: '{{.REPO | default "defilantech/LLMKube"}}'
+      STACK: '{{.STACK | default "go"}}'
+      CODER: '{{.CODER | default (printf "coder-%s" (.STACK | default "go"))}}'
+      BASE: '{{.BASE | default "main"}}'
+      BRANCH: '{{.BRANCH | default (printf "foreman/adhoc-%s-%v/issue-%v" (.REPO | replace "/" "-" | lower) .ISSUE .ISSUE)}}'
+      NAME: '{{.NAME | default (printf "revise-%s-%v-%v" (.REPO | replace "/" "-" | lower) .ISSUE (now | unixEpoch))}}'
+      PROMPT:
+        sh: printf 'Revise the EXISTING branch to address the feedback below. The prior attempt is already checked out — do NOT start over; make the smallest targeted edits on top and keep everything the feedback does not object to.\n\n%s' "$(cat {{.FEEDBACK_FILE}})"
+    env:
+      NS: "{{.NS}}"
+      REPO: "{{.REPO}}"
+      ISSUE: "{{.ISSUE}}"
+      CODER: "{{.CODER}}"
+      BASE: "{{.BASE}}"
+      BRANCH: "{{.BRANCH}}"
+      NAME: "{{.NAME}}"
+      PROMPT: "{{.PROMPT}}"
+    requires:
+      vars: [ISSUE, FEEDBACK_FILE]
+    preconditions:
+      - test -f {{.FOREMAN_RESOURCES_DIR}}/revise.yaml.j2
+      - test -f {{.FEEDBACK_FILE}}
+      - which minijinja-cli kubectl
+
   status:
     desc: List ad-hoc Workloads and their phase [NS=llm]
     cmd: kubectl --namespace {{.NS}} get workloads --selector foreman.llmkube.dev/adhoc=true --output custom-columns='NAME:.metadata.name,PHASE:.status.phase,CODER:.spec.coderAgentRef.name'

@@ -1,0 +1,20 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: AgenticTask
+metadata:
+  name: {{ ENV.NAME }}
+  namespace: {{ ENV.NS }}
+  labels:
+    app.kubernetes.io/managed-by: foreman-adhoc
+    foreman.llmkube.dev/adhoc: "true"
+spec:
+  kind: issue-fix
+  agentRef:
+    name: {{ ENV.CODER }}
+  payload:
+    repo: {{ ENV.REPO }}
+    issue: {{ ENV.ISSUE }}
+    branch: {{ ENV.BRANCH }}
+    reviseFromBranch: {{ ENV.BRANCH }}
+    baseBranch: {{ ENV.BASE }}
+    prompt: {{ ENV.PROMPT | tojson }}
