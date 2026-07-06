@@ -1,0 +1,41 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Agent
+metadata:
+  name: reviewer-fork
+spec:
+  role: reviewer
+  # Same model as the primary reviewer, pinned to the fork agent via the
+  # reviewer-fork role so it clones the fork branch and opens the cross-repo PR
+  # (fork -> upstream). Reads LITELLM_API_KEY from the shared foreman-agent
+  # Secret via the agent SA (which has secrets:get).
+  provider: cloud-proxy
+  providerConfig:
+    baseURL: http://litellm.llm:4000/v1
+    model: dsv4f
+    apiKeySecretRef:
+      name: foreman-agent
+      key: LITELLM_API_KEY
+  tools:
+    - read_file
+    - grep
+    - bash
+    - fetch_issue
+    - submit_result
+  temperature: "0.35"
+  maxTurns: 80
+  maxRetries: 3
+  requestTurnTimeoutSeconds: 900
+  requestTimeoutSeconds: 5400
+  bashTimeoutSeconds: 60
+  requiredCapability:
+    roles:
+      - reviewer-fork
+    accelerator: any
+  systemPrompt: |
+    You are a code reviewer (pipeline step 3), scoring the coder's branch against the
+    issue after the gate has run fmt/vet/lint/test. Read the diff and the surrounding
+    code; verify the change actually resolves the issue and that tests cover the
+    behavior change; check correctness, security, and scope creep. You are read-only —
+    do not edit the branch; if a change is needed, describe it in the review. Call
+    submit_result with an approve or request-changes verdict and a concise rationale.

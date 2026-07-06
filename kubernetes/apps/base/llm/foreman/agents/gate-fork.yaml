@@ -1,0 +1,19 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Agent
+metadata:
+  name: gate-fork
+spec:
+  role: verifier
+  # Deterministic gate (no LLM), pinned to the fork agent via the verifier-fork
+  # role. The coder pushes the branch to the joryirving/LLMKube fork, so verify
+  # must run on the fork agent too — otherwise it clones upstream and the branch
+  # isn't found (GATE FAIL: clone).
+  tools:
+    - run_gate_job
+  requiredCapability:
+    roles:
+      - verifier-fork
+    accelerator: any
+  maxRetries: 3
+  requestTimeoutSeconds: 3900

@@ -42,14 +42,22 @@ spec:
       replicaCount: 1
       mode: native
       taskNamespace: llm
-      # Custom role so ONLY coder-go (requiredCapability.roles: [coder-fork])
-      # schedules here — misospace coder tasks (role "coder") never land on this
-      # fork-pinned agent. Roles are scheduling-only; native mode + the coder
-      # image + gitRemoteURL are what let it execute coder tasks.
+      # Custom roles so the WHOLE pipeline (code -> verify -> review -> PR) runs
+      # on this fork-pinned agent and clones/pushes the fork — misospace work
+      # (roles coder/verifier/worker) never lands here. coder-go, gate-fork, and
+      # reviewer-fork target these. Roles are scheduling-only; native mode + the
+      # coder image + gitRemoteURL are what let it execute the tasks.
       roles:
         - coder-fork
+        - verifier-fork
+        - reviewer-fork
+      # Upstream Go coder image (same as coder-go's Job image): this is a Go
+      # repo, so the orchestrator and the InProcess reviewer-fork get the Go
+      # toolchain, not our polyglot Python+Node one. Keep in lockstep with the
+      # deployed foreman version.
       image:
-        repository: ghcr.io/joryirving/llmkube-coder
+        repository: ghcr.io/defilantech/llmkube-foreman-agent-coder
+        tag: "0.9.0"
       # Clones AND pushes this fork; the reviewer opens a cross-repo PR into the
       # upstream repo named by the Workload (defilantech/LLMKube).
       gitRemoteURL: https://github.com/joryirving/LLMKube

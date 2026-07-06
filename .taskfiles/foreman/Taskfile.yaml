@@ -21,8 +21,8 @@ tasks:
       NS: '{{.NS | default "llm"}}'
       STACK: '{{.STACK | default "go"}}'
       CODER: '{{.CODER | default (printf "coder-%s" (.STACK | default "go"))}}'
-      VERIFIER: '{{.VERIFIER | default "gate"}}'
-      REVIEWER: '{{.REVIEWER | default "reviewer"}}'
+      VERIFIER: '{{.VERIFIER | default (ternary "gate-fork" "gate" (eq .STACK "go"))}}'
+      REVIEWER: '{{.REVIEWER | default (ternary "reviewer-fork" "reviewer" (eq .STACK "go"))}}'
       OPEN_PR: '{{.OPEN_PR | default "true"}}'
       NAME: '{{.NAME | default (printf "adhoc-%s-%v" (.REPO | replace "/" "-" | lower) .ISSUE)}}'
       INTENT:
@@ -52,8 +52,8 @@ tasks:
       NS: '{{.NS | default "llm"}}'
       STACK: '{{.STACK | default "go"}}'
       CODER: '{{.CODER | default (printf "coder-%s" (.STACK | default "go"))}}'
-      VERIFIER: '{{.VERIFIER | default "gate"}}'
-      REVIEWER: '{{.REVIEWER | default "reviewer"}}'
+      VERIFIER: '{{.VERIFIER | default (ternary "gate-fork" "gate" (eq .STACK "go"))}}'
+      REVIEWER: '{{.REVIEWER | default (ternary "reviewer-fork" "reviewer" (eq .STACK "go"))}}'
       OPEN_PR: '{{.OPEN_PR | default "true"}}'
       NAME: '{{.NAME | default (printf "adhoc-%s-%v" (.REPO | replace "/" "-" | lower) .ISSUE)}}'
       INTENT:
