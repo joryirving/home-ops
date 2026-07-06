@@ -194,6 +194,49 @@ kubectl -n llm get agentictasks -o name | grep "${WL#wl-}" \
   and trip the stuck-loop detector. Coders must also leave changes uncommitted
   (the harness stages/commits/DCO-signs/pushes).
 
+## Next work: NO-GO / "already-resolved" handling (spec)
+
+**Problem.** When a coder decides an issue is already fixed it returns a
+*Succeeded* code task with `result.verdict: NO-GO` and
+`result.extra.outcome: MODEL-DECIDED` (plus a summary citing the file/commit),
+and makes no change. `verify` and `review` then return `INCOMPLETE`, so the
+Workload rolls up to `Failed` — indistinguishable from a real failure, so
+`retry.py` escalates it (→ frontier → attempt cap → the `unclaim` 400). A
+genuinely-done issue burns cycles and wedges, silently. Worked example:
+`wl-misospace-kubetix-152` (#152).
+
+**Signal.** On the Workload's `*-code-*` AgenticTask:
+`status.result.verdict == "NO-GO"` (equivalently `result.extra.outcome ==
+"MODEL-DECIDED"` with no diff). Read it from the code task, not the Workload phase.
+
+**Where.** `bridge/retry.py`, in the failure-reconciliation path, **before**
+escalation: if a `Failed` Workload's code task is NO-GO, short-circuit — do not
+escalate, do not retry.
+
+**Behavior** — surface by default, auto-close opt-in via `NOGO_AUTOCLOSE`
+(default `false`):
+
+- Always: post the coder's `summary` as a comment on the GitHub issue (so the
+  cited file/commit is visible) and unclaim the dispatch issue so it leaves the
+  active queue.
+- `NOGO_AUTOCLOSE=false` (default): set the dispatch issue to a distinct status
+  (`status/needs-review`, or an `already-resolved?` label) and STOP. A human
+  confirms and closes; do **not** close the GitHub issue.
+- `NOGO_AUTOCLOSE=true`: set dispatch `status/done` and close the GitHub issue,
+  using the coder summary as the closing comment.
+
+**Why surface-first.** A NO-GO verdict is a model claim, not a guarantee. #256 is
+the cautionary case: the coder falsely claimed "already fixed" by matching
+unrelated code; auto-closing there would have buried a real bug. The coder prompt
+guard ("confirm the code at the exact place the issue names already does what the
+issue asks") raises trust but does not remove the risk — default to human
+confirmation, let the operator opt into auto-close once the verdict is trusted.
+
+**Tests.** NO-GO code task → surfaced, not escalated (default); `NOGO_AUTOCLOSE=true`
+→ dispatch `status/done` + GitHub issue closed; a real `Failed` with no NO-GO →
+still escalates as today. Bridge is Python/pytest; ship behind a `v0.6.x` release,
+then bump the tag+digest in the bridge HelmRelease.
+
 ## Change conventions
 
 - Config (Agents, HelmRelease env, `GATEPROFILE_MAP`): edit YAML in this repo,
