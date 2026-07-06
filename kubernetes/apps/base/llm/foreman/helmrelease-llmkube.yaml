@@ -71,6 +71,15 @@ spec:
       gateCache:
         storageClass: ceph-filesystem
         accessModes: ["ReadWriteMany"]
+      # reviewer-fork runs InProcess in this pod; the chart default caps CPU at
+      # 2, which throttles review. Burst to 6 cores.
+      resources:
+        requests:
+          cpu: "2"
+          memory: 512Mi
+        limits:
+          cpu: "6"
+          memory: 8Gi
     coder:
       enabled: true
       # Reuse the primary release's foreman-coder SA (fixed name) rather than
