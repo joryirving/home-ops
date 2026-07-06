@@ -92,3 +92,22 @@ spec:
       value: AlertmanagerClusterFailedToSendAlerts
     - name: integration
       value: discord
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/observability.giantswarm.io/silence_v1alpha2.json
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: foreman-ephemeral-job-failures
+spec:
+  # Foreman coder/gate Jobs are single-shot (backoffLimit 0) and fail as normal
+  # outcomes — coder NO-GO, GATE-FAIL, dogfood churn. Those are handled at the
+  # Workload level, not infra failures, so KubeJobFailed on them is pure noise.
+  matchers:
+    - name: alertname
+      value: KubeJobFailed|KubeJobNotCompleted
+      matchType: "=~"
+    - name: namespace
+      value: llm
+    - name: job_name
+      value: foreman-(coder|gate).*
+      matchType: "=~"
