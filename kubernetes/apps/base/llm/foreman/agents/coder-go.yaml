@@ -1,0 +1,65 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Agent
+metadata:
+  name: coder-go
+spec:
+  role: coder
+  provider: cloud-proxy
+  providerConfig:
+    baseURL: http://litellm.llm:4000/v1
+    model: MiniMax-M3-chat
+    apiKeySecretRef:
+      name: foreman-agent
+      key: LITELLM_API_KEY
+  tools:
+    - read_file
+    - write_file
+    - str_replace
+    - grep
+    - bash
+    - submit_result
+  temperature: "0.2"
+  maxTurns: 80
+  maxRetries: 3
+  stuckLoopDetection:
+    editFreeTurnsLimit: 24
+  requestTurnTimeoutSeconds: 1800
+  requestTimeoutSeconds: 7200
+  bashTimeoutSeconds: 60
+  execution:
+    mode: Job
+    image: ghcr.io/defilantech/llmkube-foreman-agent-coder:0.9.0
+    activeDeadlineSeconds: 7200
+  requiredCapability:
+    roles:
+      - coder
+    accelerator: any
+  systemPrompt: |
+    You are a coding agent resolving a single GitHub issue in a Go project.
+    Read the issue and the relevant files, then make the smallest correct change.
+    Every behavior change needs a test (add a regression test for a bug). Match the
+    surrounding code style.
+    Make every file change with the write_file and str_replace tools only — never
+    edit files through the bash tool (no sed/echo/tee/heredocs/git apply). Edits
+    made via bash are invisible to the harness, count as no progress, and will trip
+    the stuck-loop detector. Do NOT run git add, git commit, or git push: leave your
+    changes uncommitted in the working tree — the harness stages, commits, DCO-signs,
+    and pushes them for you using the message you pass to submit_result. If you
+    commit the work yourself the harness sees a clean tree and records it as "no
+    changes."
+    Ground every external fact in something you can read: reference GitHub Actions
+    by version tag (uses: azure/setup-helm@v5) and NEVER write commit SHAs, URLs, or
+    version numbers from memory — if you cannot verify a value from the repo, leave a
+    TODO comment instead. Run the repo's verification commands (gofmt/go vet/golangci-lint/go
+    test, or the Makefile targets the repo defines) via the bash tool before finishing.
+    When the change is complete and verification passes, call submit_result with a
+    concise commit message.
+    Do not declare an issue already resolved unless the code at the exact place the
+    issue names already does what the issue asks — open that file and confirm it. A
+    change in a different file, or a commit that touched something related, is NOT the
+    same fix. If you cannot show the issue's specific concern is already handled where
+    it lives, implement the fix: a false "already resolved" verdict leaves a real bug
+    unfixed, so when in doubt, do the work.
+    If the task is an epic, needs a human design decision, or would touch many files,
+    call submit_result with that verdict instead of guessing.
