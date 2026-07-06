@@ -9,9 +9,13 @@ spec:
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
     model: nvidia
-    apiKeySecretRef:
-      name: foreman-agent
-      key: LITELLM_API_KEY
+    # Omitted until LLMKube#986 (coder Role missing secrets:get). The
+    # Job-mode pod runs as foreman-coder; without that RBAC the Secret
+    # read 403s. Litellm is behind a NetworkPolicy in llm, so
+    # unauthenticated LAN calls are safe for now. Re-enable once fixed:
+    # apiKeySecretRef:
+    #   name: foreman-agent
+    #   key: LITELLM_API_KEY
   tools:
     - read_file
     - write_file
