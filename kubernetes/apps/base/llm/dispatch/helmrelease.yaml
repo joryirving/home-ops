@@ -24,17 +24,11 @@ spec:
             env:
               DISPATCH_EXCLUDED_LABELS: renovate
               DISPATCH_GROOMER_DRY_RUN: false
-              # Grooming is triage/classification, not code — a small model
-              # suffices. vision (llama-vision, Qwen3.5-9B, 3 slots) via
-              # litellm; dispatch grammar-constrains the output with a
-              # json_schema response_format (enforced on llama.cpp).
               DISPATCH_GROOMER_MODEL: self-hosted
               DISPATCH_GROOMER_REPO_CONTEXT_ENABLED: true
               DISPATCH_HOSTED_GROOMER_ENABLED: true
               DISPATCH_LANE_CONFIG_JSON: '{"lanes":[{"id":"local","title":"Local","claimable":true,"role":"default","description":"Local model lane (nvidia) — the default: all groomed, ready work starts here.","color":"#3b82f6"},{"id":"frontier","title":"Frontier","claimable":true,"role":"escalation","description":"Escalation lane (MiniMax-M3 via litellm) — fed by the bridge when local attempts are exhausted, not by grooming.","color":"#f97316"},{"id":"backlog","title":"Backlog","claimable":false,"description":"Needs grooming before work can start. Not directly claimable.","color":"#6b7280"}],"laneAliases":{"normal":"local","escalated":"frontier","cloud":"local"}}'
               DISPATCH_LLM_BASE_URL: http://litellm.llm:4000/v1
-              # In-app scheduler: sync 15m, groomer 10m, pr-followup 15m,
-              # prune-closed daily. Tune via DISPATCH_*_INTERVAL_MS ("0" disables).
               DISPATCH_SCHEDULER_ENABLED: true
               DATABASE_URL: &dburl
                 valueFrom:
