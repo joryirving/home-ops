@@ -172,6 +172,27 @@ kubectl -n llm get agentictasks -o name | grep "${WL#wl-}" \
   recreate the *Workload* via the bridge: delete the Workload CR and re-open the
   issue in dispatch so the next tick rebuilds it.
 
+### Apply an Agent prompt/config change
+
+InProcess agents (`reviewer`, `coder*`, and the fork `reviewer-fork`/`gate-fork`)
+load their Agent CR `spec.systemPrompt` **at pod startup and cache it**. Editing
+the Agent CR — even committed, Flux-reconciled, and confirmed live via
+`kubectl -n llm get agent <name> -o jsonpath='{.spec.systemPrompt}'` — does
+**not** touch the running pods. You must restart the fleet:
+
+```bash
+kubectl -n llm rollout restart deployment/foreman-agent deployment/foreman-llmkube-agent
+kubectl -n llm rollout status deployment/foreman-agent
+```
+
+- Symptom when forgotten: PRs opened *hours after* a prompt change still show the
+  old behavior. Diagnose by comparing the PR `createdAt` to the fix commit time
+  and the agent pod age (`kubectl -n llm get pods | grep foreman-agent`) — a pod
+  older than the fix has the stale prompt.
+- Coders run as Job-mode pods (separate), so the restart doesn't kill in-flight
+  coder Jobs. Time it while Workloads are pre-review to avoid interrupting
+  InProcess review/gate tasks (they requeue, but it wastes a run).
+
 ## Known issues / gotchas
 
 - **Escalation `unclaim` 400 (active blocker).** Failed Workloads try to escalate
