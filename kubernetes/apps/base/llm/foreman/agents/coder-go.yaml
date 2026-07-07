@@ -29,7 +29,12 @@ spec:
   maxTurns: 80
   maxRetries: 3
   stuckLoopDetection:
-    editFreeTurnsLimit: 24
+    # nvidia local model has a 131k context window; give more exploration room
+    # before the edit-free abort, and cap context just under the window (the
+    # default hard cap of 140k sat above it).
+    editFreeTurnsLimit: 100
+    contextSoftCap: 100000
+    contextHardCap: 120000
   requestTurnTimeoutSeconds: 1800
   requestTimeoutSeconds: 7200
   bashTimeoutSeconds: 60
