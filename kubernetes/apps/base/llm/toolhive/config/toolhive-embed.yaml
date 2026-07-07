@@ -8,14 +8,14 @@ spec:
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: intel
+    accelerator: rocm
     gpu:
       enabled: true
-      vendor: intel
+      vendor: amd
       layers: 99
       resourceClaims:
         - name: gpu
-          resourceClaimTemplateName: toolhive-config-gpu
+          resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -25,36 +25,30 @@ metadata:
     krr/ignore: "true"
 spec:
   modelRef: toolhive-embed
+  modelCache:
+    claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:ba79ce324b97ea25ac1ed5c1b8d0a3983ac49ed8020c792104d31eae60ea7a98
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:8891c6e3b726a76ccb7ecc0dcbc9cc632fe7ec2631f58bbf5af05c4b30b098b0
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
+  command:
+    - llama-server
   replicas: 1
   priority: normal
-  podLabels:
-    igpu-workload: "true"
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          igpu-workload: "true"
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
   contextSize: 32768
-  parallelSlots: 2
+  parallelSlots: 4
   batchSize: 16384
   uBatchSize: 16384
-  env:
-    - name: ZES_ENABLE_SYSMAN
-      value: "1"
-    - name: ONEAPI_DEVICE_SELECTOR
-      value: level_zero:gpu
-    - name: UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS
-      value: "1"
   resources:
-    cpu: "250m"
-    memory: 2Gi
+    cpu: "500m"
+    memory: 4Gi
   extraArgs:
     - --alias
     - toolhive-embed
@@ -68,7 +62,7 @@ spec:
     - "6"
     - --threads-batch
     - "12"
-    - --mmap
+    - --no-mmap
   endpoint:
     port: 8080
     type: ClusterIP
