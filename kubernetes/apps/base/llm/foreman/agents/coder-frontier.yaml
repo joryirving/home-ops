@@ -23,7 +23,12 @@ spec:
   maxTurns: 80
   maxRetries: 3
   stuckLoopDetection:
-    editFreeTurnsLimit: 24
+    # MiniMax-M3 has a ~1M context window (vs the nvidia base coders' 131k), and
+    # big audit refactors need many read/plan turns before the first edit — 15
+    # (default) and even 24 killed them mid-exploration. Size these to the model.
+    editFreeTurnsLimit: 100
+    contextSoftCap: 500000
+    contextHardCap: 800000
   requestTurnTimeoutSeconds: 1800
   requestTimeoutSeconds: 7200
   bashTimeoutSeconds: 60
