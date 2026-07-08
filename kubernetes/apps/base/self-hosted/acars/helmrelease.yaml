@@ -107,6 +107,21 @@ spec:
                 cpu: 10m
               limits:
                 memory: 512Mi
+          adsb-shim:
+            image:
+              repository: docker.io/library/python
+              # renovate: datasource=docker depName=docker.io/library/python
+              tag: 3.13-alpine
+            command: [python3, /app/shim.py]
+            envFrom:
+              - secretRef:
+                  name: acars-processor
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
       hub:
         annotations:
           reloader.stakater.com/auto: "true"
@@ -150,6 +165,15 @@ spec:
           processor:
             app:
               - path: /data
+      processor-shim:
+        type: configMap
+        name: acars-adsb-shim
+        advancedMounts:
+          processor:
+            adsb-shim:
+              - path: /app/shim.py
+                readOnly: true
+                subPath: shim.py
     route:
       app:
         hostnames: ["{{ .Release.Name }}.jory.dev"]
