@@ -29,7 +29,7 @@ spec:
           app:
             image:
               repository: ghcr.io/misospace/foreman-dispatch-bridge
-              tag: 0.6.5@sha256:dac1bf9565f7497afd47e16a6af07f9ab889cde1be95fc86e2e45971f1a1ad72
+              tag: 0.6.6@sha256:a82abe5affbfd61b0bf8ce9bd89757b85ff5faf90f7786c8c4a64c41337daaf0
             env:
               DISPATCH_URL: http://dispatch.llm:3000
               # Dash, not slash (like saffron-normal): agents auto-register, but a "/"
@@ -49,7 +49,7 @@ spec:
               BASE_CODER_AGENTS: '{"python":"coder-python","node":"coder-node","go":"coder-go","*":"coder"}'
               FOREMAN_NAMESPACE: llm
               MAX_IN_PROGRESS: "10"
-              GATEPROFILE_MAP: '{"misospace/KubeTix":{"language":"python","image":"python:3.11","commands":{"format":"pip install -q black && black --check .","lint":"pip install -q flake8 && flake8 .","build":"python -m compileall -q .","test":"true"}},"misospace/miso-gallery":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q ruff && ruff check . --select=E,F,W,B,SIM,I --ignore=E501","build":"python -m compileall -q .","test":"true"}},"misospace/pr-reviewer-action":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q yamllint && yamllint action.yml examples/","build":"python -m compileall -q .","test":"true"}},"misospace/dispatch":{"language":"node","image":"node:22","commands":{"format":"true","lint":"npm ci --include=dev && npx prisma generate && NODE_ENV=development npm run lint","build":"NODE_ENV=development npm run typecheck","test":"true"}},"*":{"language":"generic"}}'
+              GATEPROFILE_MAP: '{"misospace/KubeTix":{"language":"python","image":"python:3.11","commands":{"format":"pip install -q black && black --check .","lint":"pip install -q flake8 && flake8 .","build":"pip install -q -r requirements.txt && python -m compileall -q .","test":"pip install -q -r requirements.txt && TESTING=1 python -m pytest tests/unit/ tests/integration/ -q"}},"misospace/miso-gallery":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q ruff && ruff check . --select=E,F,W,B,SIM,I --ignore=E501","build":"pip install -q -r requirements.txt && python -m compileall -q .","test":"pip install -q -r requirements.txt pytest requests && python -m pytest -q"}},"misospace/pr-reviewer-action":{"language":"python","image":"python:3.14","commands":{"format":"true","lint":"pip install -q yamllint && yamllint action.yml examples/","build":"python -m compileall -q .","test":"pip install -q pytest && python -m pytest tests/ -q"}},"misospace/dispatch":{"language":"node","image":"node:22","commands":{"format":"true","lint":"npm ci --include=dev && npx prisma generate && NODE_ENV=development npm run lint","build":"NODE_ENV=development npm run typecheck","test":"npm run test"}},"*":{"language":"generic"}}'
               REVISION_CODER_AGENTS: '{"*":"coder-revision"}'
               PR_FIX_ENABLED: "true"
               PR_FIX_MAX_ATTEMPTS: "3"
