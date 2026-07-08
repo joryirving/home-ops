@@ -25,14 +25,13 @@ spec:
               - -c
               - |
                 set -e
-                EXTERNAL_IP=$(getent hosts ipv4.jory.dev | awk '{print $1}')
-                if [ -z "$EXTERNAL_IP" ]; then
-                  echo "ERROR: could not resolve ipv4.jory.dev" >&2
+                if [ -z "$TOWONEL_VPS_IP" ]; then
+                  echo "ERROR: TOWONEL_VPS_IP is empty" >&2
                   exit 1
                 fi
-                echo "[entrypoint] external-ip=$EXTERNAL_IP"
+                echo "[entrypoint] external-ip=$TOWONEL_VPS_IP"
                 exec turnserver -c /etc/coturn/turnserver.conf \
-                  --external-ip "$EXTERNAL_IP" \
+                  --external-ip "$TOWONEL_VPS_IP" \
                   --static-auth-secret "$TURN_STATIC_AUTH_SECRET"
             envFrom:
               - secretRef:
@@ -59,6 +58,52 @@ spec:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.45
+          towonel.io/relay-49160.public-port: "49160"
+          towonel.io/relay-49160.udp: "true"
+          towonel.io/relay-49161.public-port: "49161"
+          towonel.io/relay-49161.udp: "true"
+          towonel.io/relay-49162.public-port: "49162"
+          towonel.io/relay-49162.udp: "true"
+          towonel.io/relay-49163.public-port: "49163"
+          towonel.io/relay-49163.udp: "true"
+          towonel.io/relay-49164.public-port: "49164"
+          towonel.io/relay-49164.udp: "true"
+          towonel.io/relay-49165.public-port: "49165"
+          towonel.io/relay-49165.udp: "true"
+          towonel.io/relay-49166.public-port: "49166"
+          towonel.io/relay-49166.udp: "true"
+          towonel.io/relay-49167.public-port: "49167"
+          towonel.io/relay-49167.udp: "true"
+          towonel.io/relay-49168.public-port: "49168"
+          towonel.io/relay-49168.udp: "true"
+          towonel.io/relay-49169.public-port: "49169"
+          towonel.io/relay-49169.udp: "true"
+          towonel.io/relay-49170.public-port: "49170"
+          towonel.io/relay-49170.udp: "true"
+          towonel.io/relay-49171.public-port: "49171"
+          towonel.io/relay-49171.udp: "true"
+          towonel.io/relay-49172.public-port: "49172"
+          towonel.io/relay-49172.udp: "true"
+          towonel.io/relay-49173.public-port: "49173"
+          towonel.io/relay-49173.udp: "true"
+          towonel.io/relay-49174.public-port: "49174"
+          towonel.io/relay-49174.udp: "true"
+          towonel.io/relay-49175.public-port: "49175"
+          towonel.io/relay-49175.udp: "true"
+          towonel.io/relay-49176.public-port: "49176"
+          towonel.io/relay-49176.udp: "true"
+          towonel.io/relay-49177.public-port: "49177"
+          towonel.io/relay-49177.udp: "true"
+          towonel.io/relay-49178.public-port: "49178"
+          towonel.io/relay-49178.udp: "true"
+          towonel.io/relay-49179.public-port: "49179"
+          towonel.io/relay-49179.udp: "true"
+          towonel.io/tunnel: enable
+          towonel.io/tunnel-ref: network/towonel-main
+          towonel.io/turn-tcp.public-port: "3478"
+          towonel.io/turn-tcp.tcp: "true"
+          towonel.io/turn-udp.public-port: "3478"
+          towonel.io/turn-udp.udp: "true"
         ports:
           turn-tcp:
             port: 3478
