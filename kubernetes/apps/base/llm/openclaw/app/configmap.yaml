@@ -70,7 +70,7 @@ data:
           },
           heartbeat: {
             every: "60m",
-            model: "litellm/vision",
+            model: "litellm/self-hosted",
             directPolicy: "allow",
             lightContext: true,
             isolatedSession: false,
@@ -89,7 +89,16 @@ data:
             identity: {
               name: "Miso",
               avatar: "avatars/miso_avatar.png",
-            }
+            },
+            model: {
+              primary: "minimax/MiniMax-M3",
+              fallbacks: [
+                "litellm/dsv4f",
+                "litellm/GLM-5.1",
+                "litellm/self-hosted",
+                "litellm/nvidia",
+              ]
+            },
           },
           {
             id: "matcha",
