@@ -40,25 +40,42 @@ dispatch` runs**, which are intentionally off-git (see below).
 
 ## Agents and images
 
-Two orthogonal axes: **model tier** (`providerConfig.model`, remote via litellm)
-and **toolchain** (InProcess = the fleet pod image; Job = per-Agent
-`execution.image`). Models are always remote, so the image only supplies the
-language toolchain.
+Two orthogonal axes: **model** (`providerConfig.model` or `inferenceServiceRef`,
+served via litellm) and **toolchain** (InProcess = the fleet pod image; Job =
+per-Agent `execution.image`).
 
-| Agent | Tier / model | Execution | Image / toolchain |
-| --- | --- | --- | --- |
-| `coder` | base / `nvidia` | InProcess (fleet) | polyglot `llmkube-coder` (Py+Node). Generic/`*` + pr-fix fallback |
-| `coder-python` | base / `nvidia` | **Job** | `ghcr.io/joryirving/llmkube-coder-python` |
-| `coder-node` | base / `nvidia` | **Job** | `ghcr.io/joryirving/llmkube-coder-node` |
-| `coder-go` | `MiniMax-M3-chat` | **Job** | `ghcr.io/defilantech/llmkube-foreman-agent-coder` (upstream) |
-| `coder-frontier` | escalation / `MiniMax-M3-chat` | InProcess (fleet) | polyglot |
-| `coder-revision` | reviewer-revision / `nvidia` | InProcess (fleet) | polyglot |
-| `gate` | verifier (no LLM) | Job (per-task) | `GATEPROFILE_MAP.image` per language |
-| `reviewer` | `dsv4f` (DeepSeek) | InProcess | — |
+| Agent | Model | Cost | Execution | Image / toolchain |
+| --- | --- | --- | --- | --- |
+| `coder` | `nvidia` (local) | free | InProcess (fleet) | polyglot `llmkube-coder` (Py+Node); generic/`*` + pr-fix fallback |
+| `coder-python` | `nvidia` (local) | free | **Job** | `ghcr.io/joryirving/llmkube-coder-python` |
+| `coder-node` | `nvidia` (local) | free | **Job** | `ghcr.io/joryirving/llmkube-coder-node` |
+| `coder-go` | `llama-nvidia` (local) | free | **Job** | `ghcr.io/defilantech/llmkube-foreman-agent-coder` |
+| `coder-frontier` | `MiniMax-M3-chat` (cloud) | **$ — the only cloud spend** | InProcess (fleet) | polyglot |
+| `coder-revision` | `nvidia` (local) | free | InProcess (fleet) | polyglot (pr-fix / revision) |
+| `gate` | none (deterministic) | free | Job (per-task) | `GATEPROFILE_MAP.image` per language |
+| `reviewer` | `self-hosted` (local) | free | InProcess (fleet) | — |
 
-**The fleet pods stay polyglot on purpose.** The `foreman-agent-*` Deployment
-(`replicaCount: 3`, `mode: native`) runs `ghcr.io/joryirving/llmkube-coder`. Those
-pods (a) run the InProcess polyglot tiers (`coder`/`coder-frontier`/`coder-revision`)
+**Cost model.** Everything runs on **local** models (nvidia / self-hosted) except
+`coder-frontier` (**MiniMax, cloud**), which is the escalation tier only. The
+groomer defaults ready work to the `local` lane; `frontier` is reached only by
+bridge escalation or a deliberately-hard grooming decision, so cloud spend is
+bounded to genuinely-hard work. Reviews run on the local `self-hosted` model
+(they used to be cloud `dsv4f`) — reviews are now free regardless of volume.
+
+**Coder tuning** (all coder Agents): `maxTurns: 160`,
+`stuckLoopDetection.editFreeTurnsLimit: 100`, and context caps sized to the model
+— nvidia (131k window): soft 100k / hard 120k; `coder-frontier` (MiniMax ~1M):
+soft 500k / hard 800k. These let a coder explore a multi-file change *and*
+implement it before the turn/edit/context budget trips (the old 80-turn / 24-edit
+defaults were force-concluding coders mid-exploration with no diff).
+
+**Fork fleet.** A second deployment `foreman-llmkube-agent` runs `reviewer-fork` +
+`gate-fork` (roles pinned so they only take fork work) for PRs into
+`defilantech/LLMKube` opened from the `joryirving/LLMKube` fork.
+
+**The fleet pods stay polyglot on purpose.** The `foreman-agent` Deployment
+(`replicaCount: 2`, `mode: native`) runs `ghcr.io/joryirving/llmkube-coder`. Those
+pods (a) run the InProcess tiers (`coder`/`coder-frontier`/`coder-revision`/`reviewer`)
 and (b) **orchestrate** the Job-mode agents — when a `coder-python`/`node`/`go`
 task is claimed, a fleet pod spawns an ephemeral Job on that Agent's
 `execution.image`. Minimal per-language images only ever appear as short-lived
@@ -85,12 +102,20 @@ release.
   `coder_agent_for`: explicit lane match → base map by language → base map `*` →
   lane wildcard → default `coder`. Empty map = legacy behavior.
 - `GATEPROFILE_MAP` — repo → `{language, image, commands{format,lint,build,test}}`.
-  This is where a repo's language (used by BASE_CODER_AGENTS) and its clean-room
-  gate image/commands are defined. Add a repo here to onboard it.
+  Defines a repo's language (used by BASE_CODER_AGENTS) and its clean-room gate.
+  **Each `test` command mirrors the repo's own CI: install deps + run the real
+  suite** (e.g. `pip install -r requirements.txt && pytest`, `npm run test`), not
+  a no-op. A weak gate (`test: "true"`) rubber-stamps GATE-PASS on changes that
+  then fail real CI — the root cause of the pr-fix churn we removed. Add a repo
+  here to onboard it, and match its CI's test/lint commands.
 - `REVISION_CODER_AGENTS: {"*":"coder-revision"}` — reviewer-requested revisions.
 - `PR_FIX_ENABLED: "true"`, `PR_FIX_MAX_ATTEMPTS: "3"`,
   `PR_FIX_LANE_AGENTS: {"NORMAL":"coder","ESCALATED":"coder-frontier"}` — PR-fix
-  loop (re-pushes fixes onto an open PR when mergeability/CI fails).
+  loop: when an open PR fails CI or gets `CHANGES_REQUESTED`, it re-pushes a fix.
+  **Escalation ladder (bridge 0.6.6+):** a fix exhausts `max_attempts` on the
+  base coder (`NORMAL`) → auto-escalates to `ESCALATED` (`coder-frontier`) with a
+  fresh budget → only marks `NEEDS_HUMAN` when *every* coder tier is exhausted. A
+  human is the last resort, not the first, for a fix a coder couldn't do.
 
 To onboard a new language coder: build a minimal image in `containers`
 (`apps/llmkube-coder/` is the pattern — one runtime + git + that language's
@@ -193,78 +218,75 @@ kubectl -n llm rollout status deployment/foreman-agent
   coder Jobs. Time it while Workloads are pre-review to avoid interrupting
   InProcess review/gate tasks (they requeue, but it wastes a run).
 
-## Known issues / gotchas
+## Gotchas
 
-- **Escalation `unclaim` 400 (active blocker).** Failed Workloads try to escalate
-  → the bridge calls dispatch `POST /api/issues/unclaim` → `400 Bad Request` → the
-  issue stays wedged at its attempt cap and never re-lanes. Logs show
-  `wl-…:escalate-error:400 … /api/issues/unclaim`. This starves the base lane, so
-  the per-language coders can sit idle even when there's a backlog. Fixing this is
-  the highest-value flow unblocker; look at the dispatch `unclaim` endpoint's
-  expected payload vs what the bridge (0.6.4) sends.
-- **Lane-less ready issues** were a past flow-blocker (groomer left `currentLane`
-  unset → queue filtered them out). Fixed in dispatch; if idle-with-ready-issues
-  recurs, re-check `currentLane` assignment.
-- **pr-fix false FIXED** — older bridges marked a PR fixed without re-checking
-  GitHub mergeability; fixed in bridge (verifies `mergeable_state`).
-- **Stuck-loop (EditFreeStreak)** — coders (esp. MiniMax) burn turns without a
-  structured edit. Interim mitigation: `stuckLoopDetection.editFreeTurnsLimit: 24`
-  on the coder Agents. Durable fix is upstream (LLMKube harness: count bash edits).
-- **Never edit via bash in a coder prompt** — the harness only sees `write_file`/
+- **Agent CR changes need a fleet restart** — see "Apply an Agent prompt/config
+  change" above. Editing `systemPrompt` / `providerConfig.model` / `maxTurns` /
+  `stuckLoopDetection` silently no-ops on the running pods until a
+  `rollout restart`. This is the #1 way a change appears applied but isn't.
+- **Reviewer prompt must keep "Step 1: navigate to the branch."** Foreman does
+  NOT check out the PR branch for the reviewer or inject a diff — it hands over
+  the branch name and relies on the reviewer system prompt to
+  `git fetch origin <branch> && git checkout origin/<branch>` first. Drop that
+  step (easy to do when trimming the prompt) and every review diffs `main` →
+  phantom diffs → false NO-GOs. `reviewer.yaml` / `reviewer-fork.yaml` carry it.
+- **InProcess throughput ceiling.** All reviews + frontier coding + prfix
+  revisions run InProcess on the 2 `foreman-agent` replicas, so a grooming flood
+  queues tasks (`Pending`) behind that cap and workloads sit in `Dispatched` until
+  a replica frees. It self-drains and reviews are local/free, so it's latency not
+  cost. Levers if it matters: raise replicas (more local concurrency) or lower
+  `MAX_IN_PROGRESS`.
+- **Long runs can hit the wall-clock budget.** With `maxTurns: 160`, a genuinely
+  large change can exhaust the loop's wall-clock timeout before finishing
+  (`loop wall-clock budget exhausted`) — surfaces as a Failed Workload the
+  escalation ladder then retries on the stronger coder.
+- **Never edit via bash in a coder prompt** — the harness only sees `write_file` /
   `str_replace` edits; bash edits (`sed`/`echo`/`git apply`) count as no progress
   and trip the stuck-loop detector. Coders must also leave changes uncommitted
   (the harness stages/commits/DCO-signs/pushes).
 
-## Next work: NO-GO / "already-resolved" handling (spec)
+## Open items
 
-**Problem.** When a coder decides an issue is already fixed it returns a
-*Succeeded* code task with `result.verdict: NO-GO` and
-`result.extra.outcome: MODEL-DECIDED` (plus a summary citing the file/commit),
-and makes no change. `verify` and `review` then return `INCOMPLETE`, so the
-Workload rolls up to `Failed` — indistinguishable from a real failure, so
-`retry.py` escalates it (→ frontier → attempt cap → the `unclaim` 400). A
-genuinely-done issue burns cycles and wedges, silently. Worked example:
-`wl-misospace-kubetix-152` (#152).
-
-**Signal.** On the Workload's `*-code-*` AgenticTask:
-`status.result.verdict == "NO-GO"` (equivalently `result.extra.outcome ==
-"MODEL-DECIDED"` with no diff). Read it from the code task, not the Workload phase.
-
-**Where.** `bridge/retry.py`, in the failure-reconciliation path, **before**
-escalation: if a `Failed` Workload's code task is NO-GO, short-circuit — do not
-escalate, do not retry.
-
-**Behavior** — surface by default, auto-close opt-in via `NOGO_AUTOCLOSE`
-(default `false`):
-
-- Always: post the coder's `summary` as a comment on the GitHub issue (so the
-  cited file/commit is visible) and unclaim the dispatch issue so it leaves the
-  active queue.
-- `NOGO_AUTOCLOSE=false` (default): set the dispatch issue to a distinct status
-  (`status/needs-review`, or an `already-resolved?` label) and STOP. A human
-  confirms and closes; do **not** close the GitHub issue.
-- `NOGO_AUTOCLOSE=true`: set dispatch `status/done` and close the GitHub issue,
-  using the coder summary as the closing comment.
-
-**Why surface-first.** A NO-GO verdict is a model claim, not a guarantee. #256 is
-the cautionary case: the coder falsely claimed "already fixed" by matching
-unrelated code; auto-closing there would have buried a real bug. The coder prompt
-guard ("confirm the code at the exact place the issue names already does what the
-issue asks") raises trust but does not remove the risk — default to human
-confirmation, let the operator opt into auto-close once the verdict is trusted.
-
-**Tests.** NO-GO code task → surfaced, not escalated (default); `NOGO_AUTOCLOSE=true`
-→ dispatch `status/done` + GitHub issue closed; a real `Failed` with no NO-GO →
-still escalates as today. Bridge is Python/pytest; ship behind a `v0.6.x` release,
-then bump the tag+digest in the bridge HelmRelease.
+- **NO-GO "already-resolved" surfacing (not yet automated).** When a coder judges
+  an issue already fixed, its `*-code-*` task returns `result.verdict: NO-GO` /
+  `result.extra.outcome: MODEL-DECIDED` with a summary and no diff; verify/review
+  cascade to `INCOMPLETE` and the Workload rolls up `Failed`. These are currently
+  reconciled **by hand**: read the code task's summary, confirm the claim against
+  the actual code, then `status/done` + close the issue — or re-dispatch if the
+  claim is wrong. A NO-GO is a *model claim*, not a guarantee (a coder once matched
+  unrelated code and falsely claimed "fixed"), so confirm before closing.
+  Auto-handling (surface-first, opt-in auto-close) is not built.
+- **Reviewer fork-base diff (upstream fix pending).** A fork reviewer diffing
+  `main...HEAD` against a stale fork `main` sweeps in the upstream delta. Fixed
+  upstream in `defilantech/LLMKube` #1006; arrives with the next Foreman
+  release/image bump.
+- **Agent-config hot-reload (upstream nice-to-have).** The "Agent CR changes need
+  a fleet restart" gotcha is a papercut worth an upstream request (agent should
+  watch/reload its CR, or foreman should signal a restart is required).
 
 ## Change conventions
 
-- Config (Agents, HelmRelease env, `GATEPROFILE_MAP`): edit YAML in this repo,
-  PR → Flux reconciles. Bridge *code* changes: PR to
-  `misospace/foreman-dispatch-bridge`, then tag `v0.6.x` (patch-bump convention)
-  to publish the image, then bump the tag+digest in the bridge HelmRelease.
-- Coder images: PR to `joryirving/containers`; CI publishes; reference by
-  `:<VERSION>` (Renovate-tracked to LLMKube releases).
+- **Config** (Agents, HelmRelease env, `GATEPROFILE_MAP`): edit YAML in this repo,
+  PR → Flux reconciles. **Remember the fleet restart** for Agent CR changes.
+- **Bridge code** (`misospace/foreman-dispatch-bridge`, Python/pytest): PR → tag
+  `v0.6.x` (patch-bump) → CI publishes the image → bump the tag+digest in the
+  bridge HelmRelease here.
+- **dispatch** (`misospace/dispatch`, Next.js) is **chart-managed**: the
+  `manual-release` workflow opens a version-bump release PR (auto-merge) →
+  `publish-release` tags + publishes an OCI chart
+  `ghcr.io/misospace/charts/dispatch:<ver>` → Renovate bumps the `dispatch`
+  OCIRepository `ref.tag` here → Flux rolls it out. No image override in the
+  HelmRelease anymore — bump = chart-tag bump.
+- **Coder images** (`joryirving/containers`): PR → CI publishes; Renovate-tracked
+  to LLMKube releases. Grouped so golang + LLMKube-version bumps collapse into one
+  `llmkube-coders` PR (containers `.renovaterc.json5`); the foreman chart + coder
+  images are the `LLMKube` group in this repo's `.renovate/groups.json5`.
 - Keep config edits bare — no narration comments; rationale goes in the PR body.
-- Ad-hoc `llmkube foreman dispatch` requests are never committed.
+- Ad-hoc runs (`llmkube foreman dispatch`, or the `task foreman:dispatch` /
+  `foreman:revise` helpers in `.taskfiles/foreman/`) are never committed.
+
+## Current versions (snapshot, 2026-07-08)
+
+Bridge `0.6.6` · dispatch chart `0.5.22` · Foreman/coder images `0.9.x` (nvidia
+local base coders, MiniMax `coder-frontier`, self-hosted `reviewer`). Update this
+line when you cut a release so the next operator has a baseline.
