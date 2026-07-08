@@ -15,9 +15,11 @@ services:
       TOWONEL_HUB_ENABLED: "true"
       TOWONEL_HUB_PUBLIC_URL: https://towonel.jory.dev
       TOWONEL_EDGE_ENABLED: "true"
+      TOWONEL_EDGE_ADVERTISED_ADDRESSES: towonel.jory.dev:443
       TOWONEL_EDGE_HEALTH_LISTEN_ADDR: 0.0.0.0:9092
       TOWONEL_EDGE_IROH_PORT: "51820"
       TOWONEL_EDGE_LISTEN_ADDR: 0.0.0.0:4443
+      TOWONEL_EDGE_PUBLIC_IPS: 148.113.195.107
       TOWONEL_EDGE_PROXY_PROTOCOL: "true"
     expose:
       - "4443"
@@ -43,6 +45,12 @@ services:
         max-file: "3"
     ports:
       - "51820:51820/udp"
+      - "25565:25565/tcp"
+      - "2456:2456/udp"
+      - "2457:2457/udp"
+      - "2458:2458/udp"
+      - "15637:15637/udp"
+      - "27015:27015/udp"
     restart: unless-stopped
     user: "10001:10001"
     volumes:
