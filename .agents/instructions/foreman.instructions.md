@@ -109,6 +109,12 @@ release.
   then fail real CI — the root cause of the pr-fix churn we removed. Add a repo
   here to onboard it, and match its CI's test/lint commands.
 - `REVISION_CODER_AGENTS: {"*":"coder-revision"}` — reviewer-requested revisions.
+- `PRUNE_COMPLETED_AFTER_HOURS: "6"`, `PRUNE_FAILED_AFTER_HOURS: "48"` (defaults;
+  unset = these values) — terminal-Workload GC (bridge 0.6.7+). Each tick, after
+  reconcile, the bridge deletes Completed Workloads older than 6h (the PR already
+  lives on GitHub) and Failed ones older than 48h (longer for triage). `0` disables
+  a phase. Covers issue + pr-fix Workloads. This is why terminal Workloads no
+  longer need manual `kubectl delete`.
 - `PR_FIX_ENABLED: "true"`, `PR_FIX_MAX_ATTEMPTS: "3"`,
   `PR_FIX_LANE_AGENTS: {"NORMAL":"coder","ESCALATED":"coder-frontier"}` — PR-fix
   loop: when an open PR fails CI or gets `CHANGES_REQUESTED`, it re-pushes a fix.
@@ -287,6 +293,6 @@ kubectl -n llm rollout status deployment/foreman-agent
 
 ## Current versions (snapshot, 2026-07-08)
 
-Bridge `0.6.6` · dispatch chart `0.5.22` · Foreman/coder images `0.9.x` (nvidia
+Bridge `0.6.7` · dispatch chart `0.5.22` · Foreman/coder images `0.9.x` (nvidia
 local base coders, MiniMax `coder-frontier`, self-hosted `reviewer`). Update this
 line when you cut a release so the next operator has a baseline.
