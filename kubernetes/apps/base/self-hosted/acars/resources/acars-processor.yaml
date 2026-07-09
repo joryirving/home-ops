@@ -1208,15 +1208,23 @@ Steps:
           "ACARSProcessor.TrackingLink"}}){{if ne "" (index .
           "ACARSProcessor.FlightNumber")}} on flight {{index .
           "ACARSProcessor.FlightNumber"}}{{end}} <t:{{index .
-          "ACARSProcessor.UnixTimestamp"}}:R>{{if ne 0.0 (index .
-          "ACARSProcessor.AircraftDistanceMi")}} from {{printf "%.2f" (index .
-          "ACARSProcessor.AircraftDistanceMi")}} miles away{{end}}.
+          "ACARSProcessor.UnixTimestamp"}}:R>{{with index .
+          "ACARSProcessor.AircraftDistanceKm"}} from {{printf "%.1f" .}} km
+          away{{end}}.
 
           ```{{index . "ACARSProcessor.MessageText"}}```
 
           **Links**:
 
           [Translate this message]({{index . "ACARSProcessor.TranslateLink"}})
+          {{with index . "ACARSProcessor.AircraftLatitude"}}
+
+          [Position at transmission
+          time](https://www.openstreetmap.org/?mlat={{printf "%f"
+          .}}&mlon={{printf "%f" (index $
+          "ACARSProcessor.AircraftLongitude")}}#map=9/{{printf "%f"
+          .}}/{{printf "%f" (index $
+          "ACARSProcessor.AircraftLongitude")}}){{end}}
 
           [ACARSDrama messages from this aircraft]({{index .
           "ACARSProcessor.ACARSDramaTailNumberLink"}})
