@@ -17,6 +17,13 @@ spec:
     remediation:
       retries: 3
   values:
+    operator:
+      # Audit-record ConfigMaps (foreman.llmkube.dev/audit) accumulate one per
+      # task and are only GC'd by the operator's reaper. Default retention is 7d;
+      # trim to 48h — a homelab does not need a week of audit trail, and heavy
+      # task churn otherwise piles up hundreds of CMs (#990).
+      audit:
+        retention: 48h
     agent:
       replicaCount: 2
       mode: native
