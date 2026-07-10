@@ -54,6 +54,9 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | `MiniMax-M2.7`         | MiniMax Plus                  | MiniMax-M2.7                    | 204.8k   | Agentic reasoning workhorse                        |
 | `glm-5.1`              | GLM Coding Lite → OpenCode Go | glm-5.1                         | 203k     | GLM coding; z.ai primary, OpenCode failover        |
 | `glm-5.2`              | GLM Coding Lite → OpenCode Go → Neuralwatt | glm-5.2              | 1M       | GLM big-context; Neuralwatt is metered last resort |
+| `chatgpt/gpt-5.6-sol`   | ChatGPT Plus                  | gpt-5.6-sol (Codex/OAuth)       | —        | Flagship frontier                                  |
+| `chatgpt/gpt-5.6-terra` | ChatGPT Plus                  | gpt-5.6-terra (Codex/OAuth)     | —        | Balanced frontier                                  |
+| `chatgpt/gpt-5.6-luna`  | ChatGPT Plus                  | gpt-5.6-luna (Codex/OAuth)      | —        | Faster, lowest-cost frontier tier                  |
 | `chatgpt/gpt-5.5`      | ChatGPT Plus                  | gpt-5.5 (Codex/OAuth)           | —        | Frontier                                           |
 | `chatgpt/gpt-5.4`      | ChatGPT Plus                  | gpt-5.4                         | —        | Frontier (cheaper)                                 |
 | `chatgpt/gpt-5.4-mini` | ChatGPT Plus                  | gpt-5.4-mini                    | —        | Cheap fallback                                     |

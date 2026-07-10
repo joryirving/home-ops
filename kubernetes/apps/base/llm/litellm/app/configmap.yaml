@@ -139,9 +139,40 @@ data:
           max_parallel_requests: 1
 
       # ChatGPT subscription (OAuth device flow, no API key — token cached in CHATGPT_TOKEN_DIR).
-      # reasoning_effort is left to the caller (none|low|medium|high|xhigh per request).
-      # Only models the Codex/ChatGPT backend serves work here: 5.5, 5.4 and 5.4-mini.
+      # reasoning_effort is left to the caller (none|low|medium|high|xhigh|max per request).
+      # Only models the Codex/ChatGPT backend serves work here: 5.6-sol,
+      # 5.6-terra, 5.6-luna, 5.5, 5.4, and 5.4-mini.
       # nano and codex-spark are rejected by the backend (API-only SKUs).
+      - model_name: chatgpt/gpt-5.6-sol
+        model_info:
+          mode: responses
+          input_cost_per_token: 0.0000050000
+          cache_creation_input_token_cost: 0.0000062500
+          cache_read_input_token_cost: 0.0000005000
+          output_cost_per_token: 0.0000300000
+        litellm_params:
+          model: chatgpt/gpt-5.6-sol
+
+      - model_name: chatgpt/gpt-5.6-terra
+        model_info:
+          mode: responses
+          input_cost_per_token: 0.0000025000
+          cache_creation_input_token_cost: 0.0000031250
+          cache_read_input_token_cost: 0.0000002500
+          output_cost_per_token: 0.0000150000
+        litellm_params:
+          model: chatgpt/gpt-5.6-terra
+
+      - model_name: chatgpt/gpt-5.6-luna
+        model_info:
+          mode: responses
+          input_cost_per_token: 0.0000010000
+          cache_creation_input_token_cost: 0.0000012500
+          cache_read_input_token_cost: 0.0000001000
+          output_cost_per_token: 0.0000060000
+        litellm_params:
+          model: chatgpt/gpt-5.6-luna
+
       - model_name: chatgpt/gpt-5.5
         model_info:
           mode: responses
