@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kopiur.home-operations.com/repository_v1alpha1.json
+apiVersion: kopiur.home-operations.com/v1alpha1
+kind: Repository
+metadata:
+  name: volsync
+spec:
+  backend:
+    filesystem:
+      path: /repository
+      volume:
+        nfs:
+          path: /mnt/daena/kubernetes/volsync
+          server: voyager.internal
+  catalog:
+    periodicRefresh: true
+    refreshInterval: 1h
+  create:
+    enabled: false
+  encryption:
+    passwordSecretRef:
+      key: KOPIA_PASSWORD
+      name: kopiur-volsync-repository
+  maintenance:
+    enabled: false
+  moverDefaults:
+    podSecurityContext:
+      fsGroup: 100
+      fsGroupChangePolicy: OnRootMismatch
+    securityContext:
+      runAsGroup: 100
+      runAsUser: 1000
