@@ -1,0 +1,27 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kopiur.home-operations.com/restore_v1alpha1.json
+apiVersion: kopiur.home-operations.com/v1alpha1
+kind: Restore
+metadata:
+  name: ${APP}-kopiur-restore
+spec:
+  credentialProjection:
+    enabled: true
+  policy:
+    onMissingSnapshot: Fail
+  repository:
+    kind: ClusterRepository
+    name: volsync
+  source:
+    identity:
+      hostname: ${KOPIUR_HOSTNAME}
+      offset: ${KOPIUR_OFFSET:=0}
+      sourcePath: ${KOPIUR_SOURCE_PATH:=/data}
+      username: ${KOPIUR_USERNAME:=${APP}}
+  target:
+    pvc:
+      accessModes:
+        - ${KOPIUR_ACCESSMODES:=ReadWriteOnce}
+      capacity: ${KOPIUR_CAPACITY:=5Gi}
+      name: ${APP}-kopiur-restore
+      storageClassName: ${KOPIUR_STORAGECLASS:=ceph-block}

@@ -1,10 +1,12 @@
 ---
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kopiur.home-operations.com/repository_v1alpha1.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kopiur.home-operations.com/clusterrepository_v1alpha1.json
 apiVersion: kopiur.home-operations.com/v1alpha1
-kind: Repository
+kind: ClusterRepository
 metadata:
   name: volsync
 spec:
+  allowedNamespaces:
+    all: true
   backend:
     filesystem:
       path: /repository
@@ -17,10 +19,13 @@ spec:
     refreshInterval: 1h
   create:
     enabled: false
+  credentialProjection:
+    allowed: true
   encryption:
     passwordSecretRef:
       key: KOPIA_PASSWORD
       name: kopiur-volsync-repository
+      namespace: storage
   maintenance:
     enabled: false
   mode: ReadOnly
