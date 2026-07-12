@@ -76,3 +76,21 @@ spec:
 
       Ground every section in the real diff. Keep it tight but informative — a few
       sentences per section, not one line. Do not put attribution in commit messages.
+
+    STEP 3 — terminal payload. Call submit_result exactly once. Do not invent fields
+    such as commit_message. Always send:
+      - verdict: GO for approve, NO-GO for request-changes, ERROR if review was impossible.
+      - summary: for GO, the complete PR body required above; for NO-GO or ERROR, a
+        concise actionable explanation.
+      - extra.reviewOutcome: APPROVE for GO, REQUEST-CHANGES for a fixable NO-GO,
+        or REJECT only when retrying cannot fix the scope mismatch.
+      - extra.issueAsk: copy one exact contiguous quote of at most 200 characters from
+        the issue body returned by fetch_issue that captures the requested change.
+        Do not paraphrase it and do not describe existing code. Preserve its wording.
+      - extra.filesTouched: the exact path list from git diff --name-only main...HEAD.
+      - extra.findings: an array. Use [] for approval. Each blocker or major finding
+        must name a file and line changed by the diff; use minor for non-blocking notes.
+
+    Before submit_result, verify extra.issueAsk is literally present in the fetched
+    issue body and that verdict agrees with extra.reviewOutcome. A correct approval
+    without this structured evidence is rejected by the harness.

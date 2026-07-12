@@ -30,11 +30,9 @@ dispatch` runs**, which are intentionally off-git (see below).
 | Bridge deploy + all routing env | `kubernetes/apps/base/llm/dispatch/foreman-dispatch-bridge/helmrelease.yaml` |
 | dispatch app | `kubernetes/apps/base/llm/dispatch/` (this repo); code repo `misospace/dispatch` |
 | Bridge code | `misospace/foreman-dispatch-bridge` (Python, pytest; tag-driven releases `v0.6.x`) |
-| Coder toolchain images | `joryirving/containers` → `apps/llmkube-coder{,-python,-node}` |
+| Coder toolchain images | `misospace/llmkube-images` |
 | Upstream Foreman + CLI | `defilantech/LLMKube` |
 
-**kubeconfig:** always
-`export KUBECONFIG=/Users/jory.irving/git/personal/home-ops/kubernetes/clusters/main/kubeconfig`.
 **Namespace:** `llm`. **CRDs** (`foreman.llmkube.dev/v1alpha1`): `workloads`,
 `agentictasks`, `agents`, `fleetnodes`, `modelprofiles`, `agentreleases`.
 
@@ -137,7 +135,6 @@ issue) or force work through a chosen Agent. These runs are **never committed**;
 only the Agent definitions are GitOps config.
 
 ```bash
-export KUBECONFIG=/Users/jory.irving/git/personal/home-ops/kubernetes/clusters/main/kubeconfig
 export GITHUB_TOKEN=<token>            # reads issue title/body from GitHub
 
 # Dogfood LLMKube issue 892 on the Go coder — dry-run first to preview the task:
@@ -164,8 +161,6 @@ self-reviewed run go through dispatch/bridge instead.
 ## Common operations
 
 ```bash
-export KUBECONFIG=/Users/jory.irving/git/personal/home-ops/kubernetes/clusters/main/kubeconfig
-
 # Fleet + agents + operator health
 kubectl -n llm get pods | grep -E 'foreman|agent' | grep -v gate
 kubectl -n llm get agents
@@ -283,16 +278,16 @@ kubectl -n llm rollout status deployment/foreman-agent
   `ghcr.io/misospace/charts/dispatch:<ver>` → Renovate bumps the `dispatch`
   OCIRepository `ref.tag` here → Flux rolls it out. No image override in the
   HelmRelease anymore — bump = chart-tag bump.
-- **Coder images** (`joryirving/containers`): PR → CI publishes; Renovate-tracked
+- **Coder images** (`misospace/llmkube-images`): PR → CI publishes; Renovate-tracked
   to LLMKube releases. Grouped so golang + LLMKube-version bumps collapse into one
-  `llmkube-coders` PR (containers `.renovaterc.json5`); the foreman chart + coder
+  `llmkube-coders` PR (`llmkube-images/.renovaterc.json5`); the foreman chart + coder
   images are the `LLMKube` group in this repo's `.renovate/groups.json5`.
 - Keep config edits bare — no narration comments; rationale goes in the PR body.
 - Ad-hoc runs (`llmkube foreman dispatch`, or the `task foreman:dispatch` /
   `foreman:revise` helpers in `.taskfiles/foreman/`) are never committed.
 
-## Current versions (snapshot, 2026-07-08)
+## Current versions (snapshot, 2026-07-11)
 
-Bridge `0.6.7` · dispatch chart `0.5.22` · Foreman/coder images `0.9.x` (nvidia
+Bridge `0.6.7` · dispatch chart `0.5.25` · Foreman/coder images `0.9.3` (nvidia
 local base coders, MiniMax `coder-frontier`, self-hosted `reviewer`). Update this
 line when you cut a release so the next operator has a baseline.
