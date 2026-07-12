@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=https://helmreleases.home-operations.com/kopiur.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kopiur
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: kopiur
+  interval: 15m
+  values:
+    installScope: cluster
+    monitoring:
+      dashboards:
+        enabled: false
+      prometheusRule:
+        enabled: false
+      serviceMonitor:
+        enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi

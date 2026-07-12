@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kopiur.home-operations.com/repository_v1alpha1.json
+apiVersion: kopiur.home-operations.com/v1alpha1
+kind: Repository
+metadata:
+  name: kopiur-canary
+spec:
+  backend:
+    filesystem:
+      path: /repository
+      volume:
+        pvc:
+          name: kopiur-canary-repository
+  create:
+    enabled: true
+  encryption:
+    passwordSecretRef:
+      key: KOPIA_PASSWORD
+      name: kopiur-canary-repository
+  maintenance:
+    enabled: false
