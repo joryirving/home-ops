@@ -56,7 +56,7 @@ spec:
       capacity: 1Gi
       accessModes: [ReadWriteOnce]
 EOF
-kubectl --context test -n storage wait --for=jsonpath='{.status.phase}'=Succeeded restore/kopiur-canary-restore --timeout=5m
+kubectl --context test -n storage wait --for=jsonpath='{.status.phase}'=Completed restore/kopiur-canary-restore --timeout=5m
 kubectl --context test -n storage run kopiur-canary-verify --rm -i --restart=Never --image=ghcr.io/joryirving/busybox:1.38.0@sha256:4134704517da2f7d8392082461df5e065bf50da4d3b496376b9e5f033f31cb33 --overrides='{"spec":{"containers":[{"name":"verify","image":"ghcr.io/joryirving/busybox:1.38.0@sha256:4134704517da2f7d8392082461df5e065bf50da4d3b496376b9e5f033f31cb33","command":["/bin/sh","-ec","cd /data && sha256sum -c payload.sha256 && test \"$(cat payload)\" = \"kopiur test canary payload v1\""],"volumeMounts":[{"name":"data","mountPath":"/data"}]}],"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"kopiur-canary-restored"}}]}}'
 ```
 
