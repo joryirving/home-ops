@@ -15,6 +15,7 @@ spec:
           path: /mnt/daena/kubernetes/volsync
           server: voyager.internal
   catalog:
+    fallbackNamespace: storage
     periodicRefresh: true
     refreshInterval: 1h
   create:
@@ -26,6 +27,9 @@ spec:
       key: KOPIA_PASSWORD
       name: kopiur-volsync-repository
       namespace: storage
+  identityDefaults:
+    hostnameExpr: "'${CLUSTER}'"
+    usernameExpr: "namespace + '-' + policyName"
   maintenance:
     enabled: true
     namespace: storage
