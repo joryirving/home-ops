@@ -1,0 +1,24 @@
+---
+name: coturn
+
+services:
+  coturn:
+    container_name: coturn
+    command:
+      - --log-file=stdout
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+    # renovate: datasource=docker depName=docker.io/coturn/coturn
+    image: docker.io/coturn/coturn:4.14.0-r0@sha256:0c0e8fc0c263b85a134e9e4242b5e46e1f4c077c5029633511191c05b5c2c814
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /opt/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro

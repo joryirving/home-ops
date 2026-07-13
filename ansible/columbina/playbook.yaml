@@ -55,6 +55,33 @@
           group: root
           mode: "0700"
 
+    - name: Create coturn directory
+      ansible.builtin.file:
+        path: /opt/coturn
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Template coturn config
+      ansible.builtin.template:
+        src: templates/turnserver.conf.j2
+        dest: /opt/coturn/turnserver.conf
+        owner: "65534"
+        group: "65534"
+        mode: "0400"
+      vars:
+        turn_static_auth_secret: "{{ lookup('community.general.onepassword', 'workadventure', field='WORKADVENTURE_TURN_AUTH_SECRET', vault='kubernetes') }}"
+      no_log: true
+      register: coturn_conf
+
+    - name: Restart coturn after config change
+      ansible.builtin.command:
+        cmd: docker restart coturn
+      when: coturn_conf.changed
+      changed_when: coturn_conf.changed
+      failed_when: false
+
     - name: Create Docker edge network
       community.docker.docker_network:
         name: edge
@@ -166,6 +193,7 @@
         - towonel-hub
         - caddy-l4
         - gatus
+        - coturn
 
     - name: Wait for Towonel container to become healthy
       community.docker.docker_container_info:
