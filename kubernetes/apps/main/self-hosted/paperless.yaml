@@ -9,7 +9,7 @@ spec:
     - ../../../../components/dragonfly
     - ../../../../components/zeroscaler
     - ../../../../components/postgres
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   healthCheckExprs:
     - apiVersion: dragonflydb.io/v1alpha1
       kind: Dragonfly
@@ -24,8 +24,9 @@ spec:
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: self-hosted
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 15Gi
+      KOPIUR_CAPACITY: 15Gi
   wait: false
   prune: true
   sourceRef:

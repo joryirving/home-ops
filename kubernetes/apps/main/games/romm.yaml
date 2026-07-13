@@ -8,7 +8,7 @@ spec:
   components:
     - ../../../../components/dragonfly
     - ../../../../components/postgres
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
@@ -19,7 +19,8 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      VOLSYNC_CAPACITY: 25Gi
+      KOPIUR_HOSTNAME: games
+      KOPIUR_CAPACITY: 25Gi
   wait: false
   prune: true
   sourceRef:

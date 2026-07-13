@@ -5,13 +5,14 @@ metadata:
   name: &app agregarr
 spec:
   components:
-    - ../../../../../components/volsync
+    - ../../../../../components/kopiur/backup
     - ../../../../../components/zeroscaler
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/agregarr
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: media
   wait: false
   prune: true
   sourceRef:
@@ -28,15 +29,16 @@ spec:
   components:
     - ../../../../../components/gpu
     - ../../../../../components/igpu-spread
-    - ../../../../../components/volsync
+    - ../../../../../components/kopiur/backup
     - ../../../../../components/zeroscaler
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/app
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: media
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 50Gi
+      KOPIUR_CAPACITY: 50Gi
   wait: false
   prune: true
   sourceRef:
@@ -116,7 +118,7 @@ metadata:
   name: &app plex-trakt-sync
 spec:
   components:
-    - ../../../../../components/volsync
+    - ../../../../../components/kopiur/backup
   dependsOn:
     - name: plex
   interval: 1h
@@ -124,7 +126,8 @@ spec:
   postBuild:
     substitute:
       APP: *app
-      VOLSYNC_CAPACITY: 500Mi
+      KOPIUR_HOSTNAME: media
+      KOPIUR_CAPACITY: 500Mi
   wait: false
   prune: true
   sourceRef:

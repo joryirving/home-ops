@@ -9,14 +9,15 @@ spec:
     - ../../../../components/gpu
     - ../../../../components/igpu-spread
     - ../../../../components/zeroscaler
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   interval: 1h
   path: ./kubernetes/apps/base/media/stash
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: media
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 50Gi
+      KOPIUR_CAPACITY: 50Gi
   wait: false
   prune: true
   sourceRef:

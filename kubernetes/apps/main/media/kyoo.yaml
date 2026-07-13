@@ -8,7 +8,7 @@ spec:
   components:
     - ../../../../components/gpu
     - ../../../../components/postgres
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
@@ -19,9 +19,10 @@ spec:
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: media
       CLUSTER: ${CLUSTER}
       SSLMODE: allow
-      VOLSYNC_CAPACITY: 50Gi
+      KOPIUR_CAPACITY: 50Gi
   wait: false
   prune: true
   sourceRef:
