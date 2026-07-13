@@ -6,17 +6,18 @@ metadata:
   name: &app acars
 spec:
   components:
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   interval: 1h
   path: ./kubernetes/apps/base/self-hosted/acars
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: self-hosted
+      KOPIUR_SNAPSHOTCLASS: csi-local-hostpath
+      KOPIUR_STORAGECLASS: local-hostpath
       STORAGECLASS: local-hostpath
       STORAGE_HR: ${STORAGE_HR}
       STORAGE_NS: ${STORAGE_NS}
-      VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
-      VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
     substituteFrom:
       - kind: Secret
         name: acarsdrama

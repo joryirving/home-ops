@@ -6,17 +6,19 @@ metadata:
   name: &app free-game-notifier
 spec:
   components:
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   interval: 1h
   path: ./kubernetes/apps/base/self-hosted/free-game-notifier
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: self-hosted
+      KOPIUR_ON_MISSING_SNAPSHOT: Continue
+      KOPIUR_SNAPSHOTCLASS: csi-local-hostpath
+      KOPIUR_STORAGECLASS: local-hostpath
       STORAGECLASS: local-hostpath
       STORAGE_HR: ${STORAGE_HR}
       STORAGE_NS: ${STORAGE_NS}
-      VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
-      VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
   wait: false
   prune: true
   sourceRef:
