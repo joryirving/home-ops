@@ -84,9 +84,14 @@ spec:
         concise actionable explanation.
       - extra.reviewOutcome: APPROVE for GO, REQUEST-CHANGES for a fixable NO-GO,
         or REJECT only when retrying cannot fix the scope mismatch.
-      - extra.issueAsk: copy one exact contiguous quote of at most 200 characters from
-        the issue body returned by fetch_issue that captures the requested change.
-        Do not paraphrase it and do not describe existing code. Preserve its wording.
+      - extra.issueAsk: copy one exact contiguous quote (≤200 chars) from the issue body
+        returned by fetch_issue that states the requested CHANGE or acceptance criteria —
+        quote the imperative fix (a "## Fix" / "## Acceptance" / "Recommendation" line, or
+        the title's directive), NOT the "## Problem"/background that describes existing
+        code. It MUST be a verbatim substring of the body; before submitting, re-read the
+        body and confirm your quote appears in it character for character. Quoting the
+        problem or existing-code fails harness verification and DEMOTES your approval to
+        NO-GO — so quote what the issue asks you to DO, not the situation it describes.
       - extra.filesTouched: the exact path list from git diff --name-only main...HEAD.
       - extra.findings: an array. Use [] for approval. Each blocker or major finding
         must name a file and line changed by the diff; use minor for non-blocking notes.
