@@ -17,6 +17,7 @@ spec:
         containers:
           main:
             env:
+              MEMINI_API_KEYS_FILE: /etc/memini/api-keys.yaml
               MEMINI_BACKEND: sqlite
               MEMINI_DEFAULT_NAMESPACE: default
               MEMINI_EMBED_BASE_URL: http://litellm.llm:4000/v1
@@ -73,6 +74,15 @@ spec:
     persistence:
       data:
         existingClaim: memini
+      api-keys:
+        type: secret
+        name: memini-api-keys
+        advancedMounts:
+          main:
+            main:
+              - path: /etc/memini/api-keys.yaml
+                subPath: api-keys.yaml
+                readOnly: true
     route:
       ui:
         enabled: true
