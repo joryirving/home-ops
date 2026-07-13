@@ -7,14 +7,15 @@ metadata:
 spec:
   components:
     - ../../../../../components/gpu
-    - ../../../../../components/volsync
+    - ../../../../../components/kopiur/backup
   interval: 1h
   path: ./kubernetes/apps/base/llm/comfyui/app
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: llm
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 200Gi
+      KOPIUR_CAPACITY: 200Gi
   wait: false
   prune: true
   sourceRef:

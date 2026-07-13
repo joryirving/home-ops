@@ -7,7 +7,7 @@ metadata:
 spec:
   components:
     - ../../../../components/postgres
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
@@ -18,8 +18,9 @@ spec:
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: workadventure
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 10Gi
+      KOPIUR_CAPACITY: 10Gi
   wait: false
   prune: true
   sourceRef:

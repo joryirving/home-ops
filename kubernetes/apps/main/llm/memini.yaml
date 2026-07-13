@@ -6,7 +6,7 @@ metadata:
   name: &app memini
 spec:
   components:
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
     - ../../../../components/gpu
   dependsOn:
     - name: llmkube
@@ -15,8 +15,9 @@ spec:
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: llm
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 10Gi
+      KOPIUR_CAPACITY: 10Gi
   wait: false
   prune: true
   sourceRef:

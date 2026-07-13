@@ -6,14 +6,15 @@ metadata:
   name: &app hermes
 spec:
   components:
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   interval: 1h
   path: ./kubernetes/apps/base/llm/hermes
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: llm
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 20Gi
+      KOPIUR_CAPACITY: 20Gi
   wait: false
   prune: true
   sourceRef:

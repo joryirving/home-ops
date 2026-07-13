@@ -8,7 +8,7 @@ spec:
   components:
     - ../../../../../components/dragonfly
     - ../../../../../components/postgres
-    - ../../../../../components/volsync
+    - ../../../../../components/kopiur/backup
   dependsOn:
     - name: llmkube
   healthCheckExprs:
@@ -25,10 +25,11 @@ spec:
   postBuild:
     substitute:
       APP: litellm
-      VOLSYNC_CAPACITY: 1Gi
-      VOLSYNC_ACCESSMODES: ReadWriteMany
-      VOLSYNC_STORAGECLASS: ceph-filesystem
-      VOLSYNC_SNAPSHOTCLASS: csi-ceph-filesystem
+      KOPIUR_HOSTNAME: llm
+      KOPIUR_CAPACITY: 1Gi
+      KOPIUR_ACCESSMODES: ReadWriteMany
+      KOPIUR_STORAGECLASS: ceph-filesystem
+      KOPIUR_SNAPSHOTCLASS: csi-ceph-filesystem
   wait: false
   prune: true
   sourceRef:

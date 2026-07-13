@@ -7,14 +7,15 @@ metadata:
 spec:
   components:
     - ../../../../components/dragonfly
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   interval: 1h
   path: ./kubernetes/apps/base/self-hosted/manyfold
   postBuild:
     substitute:
       APP: *app
+      KOPIUR_HOSTNAME: self-hosted
       CLUSTER: ${CLUSTER}
-      VOLSYNC_CAPACITY: 15Gi
+      KOPIUR_CAPACITY: 15Gi
   wait: false
   prune: true
   sourceRef:
