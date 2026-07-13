@@ -27,8 +27,18 @@ spec:
       name: kopiur-volsync-repository
       namespace: storage
   maintenance:
-    enabled: false
-  mode: ReadOnly
+    enabled: true
+    namespace: storage
+    schedule:
+      full:
+        cron: "0 3 * * *"
+        jitter: 1h
+      quick:
+        cron: "0 */6 * * *"
+        jitter: 30m
+      timezone: America/Edmonton
+    takeoverPolicy: Force
+  mode: ReadWrite
   moverDefaults:
     podSecurityContext:
       fsGroup: 100
