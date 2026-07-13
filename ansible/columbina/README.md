@@ -27,6 +27,15 @@ Also keep the VPS addresses in the same item:
 - `TOWONEL_VPS_IP`: `148.113.195.107`
 - `TOWONEL_VPS_IPV6`: `2607:5300:229:c9c::1`
 
+The playbook also templates `/opt/gatus/secrets.yaml` (Discord alerting and
+Alertmanager heartbeat tokens for the buddy Gatus) from 1Password. It expects
+these fields in the `kubernetes` vault:
+
+- item `discord`, field `DISCORD_WEBHOOK_URL`
+- item `alertmanager`, field `GATUS_HEARTBEAT_TOKEN` (shared with both
+  clusters' Alertmanager, which pushes Watchdog heartbeats to
+  `https://columbina-gatus.jory.dev/api/v1/endpoints/heartbeat_<cluster>/external`)
+
 Important state lives in `/opt/towonel/data`. Back up at least:
 
 - `operator.key`

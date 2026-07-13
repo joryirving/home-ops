@@ -21,8 +21,8 @@ _... managed with Flux, Renovate, and GitHub Actions_ <img src="https://fonts.gs
 <div align="center">
 
 [![Home-Internet](https://img.shields.io/endpoint?url=https%3A%2F%2Fhealthchecks.io%2Fbadge%2Ff0288b6a-305e-4084-b492-bb0a54%2FKkxSOeO1-2.shields&style=for-the-badge&logo=ubiquiti&logoColor=white&label=Home%20Internet)](https://status.jory.dev)&nbsp;&nbsp;
-[![Status-Page](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fmain-external_gatus%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Status%20Page)](https://status.jory.dev/endpoints/main-external_gatus)&nbsp;&nbsp;
-[![Columbina](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fcluster_columbina-gatus%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Columbina)](https://status.jory.dev/endpoints/cluster_columbina-gatus)&nbsp;&nbsp;
+[![Status-Page](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fmain-external_gatus-sidecar%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Status%20Page)](https://status.jory.dev/endpoints/main-external_gatus-sidecar)&nbsp;&nbsp;
+[![Columbina](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fbuddy_columbina%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=statuspage&logoColor=white&label=Columbina)](https://status.jory.dev/endpoints/buddy_columbina)&nbsp;&nbsp;
 [![Plex](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.jory.dev%2Fapi%2Fv1%2Fendpoints%2Fmain-external_plex%2Fhealth%2Fbadge.shields&style=for-the-badge&logo=plex&logoColor=white&label=Plex)](https://status.jory.dev/endpoints/main-external_plex)
 
 </div>
@@ -102,7 +102,9 @@ This Git repository contains the following directories under [Kubernetes](./kube
 
 While most of my infrastructure and workloads are self-hosted I do rely upon the cloud for certain key parts of my setup. This saves me from having to worry about two things. (1) Dealing with chicken/egg scenarios and (2) services I critically need whether my cluster is online or not.
 
-The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), [ntfy](https://ntfy.sh/), and [Gatus](https://gatus.io/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
+The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), and [ntfy](https://ntfy.sh/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
+
+The one exception is status monitoring: the OVH VPS (Columbina) that fronts Towonel also runs a standalone [Gatus](https://gatus.io/) as a buddy monitor. It watches the clusters' status pages and receives Alertmanager heartbeats from both clusters, alerting to Discord if a cluster goes dark, while the main cluster's Gatus watches Columbina in return.
 
 | Service                                     | Use                                                               | Cost           |
 | ------------------------------------------- | ----------------------------------------------------------------- | -------------- |

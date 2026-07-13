@@ -5,6 +5,24 @@ connectivity:
     interval: 1m
 
 endpoints:
+  - name: ping
+    group: buddy
+    url: icmp://towonel.jory.dev
+    interval: 1m
+    conditions:
+      - "[CONNECTED] == true"
+    extra-labels:
+      cluster: columbina
+
+  - name: columbina
+    group: buddy
+    url: "https://columbina-gatus.jory.dev"
+    interval: 1m
+    conditions:
+      - "[STATUS] == 200"
+    extra-labels:
+      cluster: columbina
+
   - name: main-cert-expiration
     group: domain
     url: "https://status.jory.dev"
@@ -27,15 +45,6 @@ endpoints:
       - "[CERTIFICATE_EXPIRATION] > 24h"
     extra-labels:
       cluster: utility
-
-  - name: columbina-gatus
-    group: cluster
-    url: "https://columbina-gatus.jory.dev"
-    interval: 1m
-    conditions:
-      - "[STATUS] == 200"
-    extra-labels:
-      cluster: columbina
 
   - name: Cloudflare
     group: connectivity

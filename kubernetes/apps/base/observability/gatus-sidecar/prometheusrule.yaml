@@ -10,7 +10,7 @@ spec:
       rules:
         - alert: GatusEndpointDown
           expr: |-
-            gatus_results_endpoint_success{group="external"} == 0
+            gatus_results_endpoint_success{group=~".+-external"} == 0
           for: 5m
           annotations:
             summary: >-
@@ -20,10 +20,20 @@ spec:
 
         - alert: GatusEndpointExposed
           expr: |-
-            gatus_results_endpoint_success{group="guarded"} == 0
+            gatus_results_endpoint_success{group=~".+-internal"} == 0
           for: 5m
           annotations:
             summary: >-
               The {{ $labels.name }} endpoint has a public DNS record and is exposed
+          labels:
+            severity: critical
+
+        - alert: GatusBuddyDown
+          expr: |-
+            gatus_results_endpoint_success{group="buddy"} == 0
+          for: 5m
+          annotations:
+            summary: >-
+              The buddy endpoint {{ $labels.name }} on Columbina is unreachable
           labels:
             severity: critical

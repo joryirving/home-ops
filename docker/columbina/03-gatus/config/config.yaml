@@ -5,19 +5,23 @@ connectivity:
     interval: 1m
 
 endpoints:
-  - name: status
-    group: cluster
+  - name: main
+    group: buddy
     url: https://status.jory.dev
     interval: 1m
     conditions:
       - "[STATUS] == 200"
+    alerts:
+      - type: discord
 
-  - name: utility-status
-    group: cluster
+  - name: utility
+    group: buddy
     url: https://status-utility.jory.dev
     interval: 1m
     conditions:
       - "[STATUS] == 200"
+    alerts:
+      - type: discord
 
   - name: towonel-hub
     group: columbina
@@ -25,6 +29,8 @@ endpoints:
     interval: 1m
     conditions:
       - "[STATUS] == 200"
+    alerts:
+      - type: discord
 
   - name: coturn
     group: columbina
@@ -32,6 +38,8 @@ endpoints:
     interval: 1m
     conditions:
       - "[CONNECTED] == true"
+    alerts:
+      - type: discord
 
   - name: cloudflare
     group: connectivity
@@ -60,15 +68,10 @@ ui:
   logo: https://avatars.githubusercontent.com/u/46251616
   link: https://github.com/joryirving/home-ops
   buttons:
-    - name: Status
+    - name: Main Status
       link: https://status.jory.dev
     - name: Utility Status
       link: https://status-utility.jory.dev
-
-remote:
-  instances:
-    - endpoint-prefix: main-
-      url: https://status.jory.dev/api/v1/endpoints/statuses
 
 web:
   port: 8080

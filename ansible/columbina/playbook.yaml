@@ -82,6 +82,34 @@
       changed_when: coturn_conf.changed
       failed_when: false
 
+    - name: Create gatus directory
+      ansible.builtin.file:
+        path: /opt/gatus
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Template gatus secrets config
+      ansible.builtin.template:
+        src: templates/gatus-secrets.yaml.j2
+        dest: /opt/gatus/secrets.yaml
+        owner: root
+        group: root
+        mode: "0400"
+      vars:
+        gatus_discord_webhook_url: "{{ lookup('community.general.onepassword', 'discord', field='DISCORD_WEBHOOK_URL', vault='kubernetes') }}"
+        gatus_heartbeat_token: "{{ lookup('community.general.onepassword', 'alertmanager', field='GATUS_HEARTBEAT_TOKEN', vault='kubernetes') }}"
+      no_log: true
+      register: gatus_conf
+
+    - name: Restart gatus after config change
+      ansible.builtin.command:
+        cmd: docker restart gatus
+      when: gatus_conf.changed
+      changed_when: gatus_conf.changed
+      failed_when: false
+
     - name: Create Docker edge network
       community.docker.docker_network:
         name: edge
