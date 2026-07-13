@@ -4,14 +4,13 @@ apiVersion: kopiur.home-operations.com/v1alpha1
 kind: SnapshotPolicy
 metadata:
   name: ${APP}
+  annotations:
+    kopiur.home-operations.com/allow-identity-change: "true"
 spec:
   compression:
     compressor: zstd
   credentialProjection:
     enabled: true
-  identity:
-    hostname: ${KOPIUR_HOSTNAME}
-    username: ${KOPIUR_USERNAME:=${APP}}
   mover:
     securityContext:
       runAsGroup: ${KOPIUR_PGID:=100}
@@ -27,5 +26,4 @@ spec:
   sources:
     - pvc:
         name: ${APP}
-      sourcePathOverride: ${KOPIUR_SOURCE_PATH:=/data}
   volumeSnapshotClassName: ${KOPIUR_SNAPSHOTCLASS:=csi-ceph-blockpool}
