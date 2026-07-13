@@ -1,0 +1,72 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: etcd-defrag
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: etcd-defrag
+  interval: 1h
+  values:
+    defaultPodOptions:
+      hostNetwork: true
+      hostPID: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      securityContext:
+        runAsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+    controllers:
+      etcd-defrag:
+        type: cronjob
+        cronjob:
+          concurrencyPolicy: Forbid
+          failedJobsHistory: 1
+          schedule: "0 3 * * 0"
+          successfulJobsHistory: 1
+          timeZone: America/Edmonton
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ahrtr/etcd-defrag
+              tag: v0.42.0@sha256:22521435b870c41f0faca42197e0b4caf37822370ebd7ec84df492d21488ede9
+            args:
+              - --auto-disalarm
+              - --cacert=/certs/ca.crt
+              - --cert=/certs/server.crt
+              - --cluster
+              - --defrag-rule=dbQuotaUsage > 0.5 || dbSizeFree > 100*1024*1024
+              - --disalarm-threshold=0.8
+              - --endpoints=https://127.0.0.1:2379
+              - --key=/certs/server.key
+              - --move-leader
+              - --wait-between-defrags=30s
+            resources:
+              requests:
+                cpu: 25m
+                memory: 128Mi
+              limits:
+                memory: 128Mi
+            securityContext:
+              privileged: true
+    persistence:
+      certs:
+        type: hostPath
+        hostPath: /system/secrets/etcd
+        globalMounts:
+          - path: /certs
+            readOnly: true
+      tmpfs:
+        type: emptyDir
+        advancedMounts:
+          etcd-defrag:
+            app:
+              - path: /tmp
+                subPath: tmp
