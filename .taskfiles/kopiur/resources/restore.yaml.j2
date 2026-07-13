@@ -1,0 +1,23 @@
+---
+apiVersion: kopiur.home-operations.com/v1alpha1
+kind: Restore
+metadata:
+  name: {{ ENV.RESTORE }}
+  namespace: {{ ENV.NS }}
+spec:
+  credentialProjection:
+    enabled: true
+  mover:
+    securityContext:
+      runAsGroup: {{ ENV.PGID }}
+      runAsUser: {{ ENV.PUID }}
+  options:
+    enableFileDeletion: true
+  policy:
+    onMissingSnapshot: Fail
+  source:
+    snapshotRef:
+      name: {{ ENV.SNAPSHOT }}
+  target:
+    pvcRef:
+      name: {{ ENV.APP }}
