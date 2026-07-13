@@ -357,7 +357,6 @@ tasks:
     cmds:
       - '{{if eq .CLUSTER "main"}}until kubectl wait cephcluster --for=jsonpath=.status.ceph.health=HEALTH_OK --timeout=10m --all --all-namespaces &>/dev/null; do sleep 5; done{{end}}'
       - until kubectl wait jobs --all --all-namespaces --for=condition=complete --timeout=5m &>/dev/null; do sleep 5; done
-      - task: :volsync:state-suspend
     preconditions:
       - which kubectl
 
@@ -366,6 +365,5 @@ tasks:
     cmds:
       - '{{if eq .CLUSTER "main"}}until kubectl wait cephcluster --for=jsonpath=.status.ceph.health=HEALTH_OK --timeout=10m --all --all-namespaces &>/dev/null; do sleep 5; done{{end}}'
       - until kubectl wait jobs --all --all-namespaces --for=condition=complete --timeout=5m &>/dev/null; do sleep 5; done
-      - task: :volsync:state-resume
     preconditions:
       - which kubectl
