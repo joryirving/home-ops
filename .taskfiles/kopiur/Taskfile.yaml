@@ -1,0 +1,99 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+vars:
+  KOPIUR_RESOURCES_DIR: "{{.ROOT_DIR}}/.taskfiles/kopiur/resources"
+
+tasks:
+  status:
+    desc: Show Kopiur resources [CLUSTER=main]
+    cmds:
+      - kubectl --context {{.CLUSTER}} get clusterrepositories,maintenances --all-namespaces
+      - kubectl --context {{.CLUSTER}} get snapshotpolicies,snapshotschedules --all-namespaces
+      - |-
+        printf 'NAMESPACE\tRESOURCE\tPHASE\n'
+        kubectl --context {{.CLUSTER}} get snapshots,restores --all-namespaces --output=json \
+          | jq --raw-output '.items[] | .status.phase as $phase | select(["Succeeded", "Completed", "Discovered"] | index($phase) | not) | [.metadata.namespace, ((.kind | ascii_downcase) + "/" + .metadata.name), ($phase // "Pending")] | @tsv'
+    requires:
+      vars: [CLUSTER]
+    preconditions:
+      - which jq kubectl
+
+  snapshots:
+    desc: List snapshots for an app [CLUSTER=main] [NS=default] [APP=required]
+    cmd: |-
+      printf 'NAME\tPHASE\tORIGIN\tSNAPSHOT\tSTARTED\n'
+      kubectl --context {{.CLUSTER}} --namespace {{.NS}} get snapshots --output=json \
+        | jq --raw-output --arg app "{{.APP}}" \
+          '.items | map(select(.spec.policyRef.name == $app)) | sort_by(.status.timing.startTime)[] | [.metadata.name, .status.phase, .status.origin, (.status.snapshot.kopiaSnapshotID // "-"), (.status.timing.startTime // "-")] | @tsv'
+    vars:
+      NS: '{{.NS | default "default"}}'
+    requires:
+      vars: [CLUSTER, APP]
+    preconditions:
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} get snapshotpolicy {{.APP}}
+      - which jq kubectl
+
+  snapshot:
+    desc: Snapshot an app [CLUSTER=main] [NS=default] [APP=required]
+    cmds:
+      - |-
+        snapshot="$(minijinja-cli {{.KOPIUR_RESOURCES_DIR}}/snapshot.yaml.j2 | kubectl --context {{.CLUSTER}} create --filename - --output=name)"
+        echo "Waiting for ${snapshot}"
+        kubectl --context {{.CLUSTER}} --namespace {{.NS}} wait "${snapshot}" --for=jsonpath='{.status.phase}'=Succeeded --timeout=120m
+        kubectl --context {{.CLUSTER}} --namespace {{.NS}} get "${snapshot}" --output=wide
+    vars:
+      NS: '{{.NS | default "default"}}'
+    env:
+      APP: "{{.APP}}"
+      NS: "{{.NS}}"
+    requires:
+      vars: [CLUSTER, APP]
+    preconditions:
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} get snapshotpolicy {{.APP}}
+      - test -f {{.KOPIUR_RESOURCES_DIR}}/snapshot.yaml.j2
+      - which kubectl minijinja-cli
+
+  restore:
+    desc: Restore an app in place [CLUSTER=main] [NS=default] [APP=required] [SNAPSHOT=required]
+    cmds:
+      # Suspend the app and stop writers before the destructive mirror restore.
+      - flux --context {{.CLUSTER}} --namespace {{.NS}} suspend kustomization {{.APP}}
+      - flux --context {{.CLUSTER}} --namespace {{.NS}} suspend helmrelease {{.APP}}
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} scale {{.CONTROLLER}}/{{.APP}} --replicas 0
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} wait pod --for=delete --selector="app.kubernetes.io/name={{.APP}}" --timeout=5m
+      # Restore the selected snapshot into the existing PVC.
+      - minijinja-cli {{.KOPIUR_RESOURCES_DIR}}/restore.yaml.j2 | kubectl --context {{.CLUSTER}} create --filename -
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} wait restore/{{.RESTORE}} --for=jsonpath='{.status.phase}'=Completed --timeout=120m
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} get restore/{{.RESTORE}} --output=wide
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} delete restore {{.RESTORE}}
+      # Resume the app only after the restore succeeds.
+      - flux --context {{.CLUSTER}} --namespace {{.NS}} resume kustomization {{.APP}}
+      - flux --context {{.CLUSTER}} --namespace {{.NS}} resume helmrelease {{.APP}}
+      - flux --context {{.CLUSTER}} --namespace {{.NS}} reconcile kustomization {{.APP}} --with-source
+      - flux --context {{.CLUSTER}} --namespace {{.NS}} reconcile helmrelease {{.APP}} --force
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} wait pod --for=condition=ready --selector="app.kubernetes.io/instance={{.APP}}" --timeout=5m
+    vars:
+      NS: '{{.NS | default "default"}}'
+      RESTORE: '{{printf "%s-manual-%v" .APP (now | unixEpoch)}}'
+      CONTROLLER:
+        sh: kubectl --context {{.CLUSTER}} --namespace {{.NS}} get deployment {{.APP}} &>/dev/null && echo deployment || echo statefulset
+      PUID:
+        sh: kubectl --context {{.CLUSTER}} --namespace {{.NS}} get snapshotpolicy {{.APP}} --output=jsonpath='{.spec.mover.securityContext.runAsUser}'
+      PGID:
+        sh: kubectl --context {{.CLUSTER}} --namespace {{.NS}} get snapshotpolicy {{.APP}} --output=jsonpath='{.spec.mover.securityContext.runAsGroup}'
+    env:
+      APP: "{{.APP}}"
+      NS: "{{.NS}}"
+      PGID: "{{.PGID}}"
+      PUID: "{{.PUID}}"
+      RESTORE: "{{.RESTORE}}"
+      SNAPSHOT: "{{.SNAPSHOT}}"
+    requires:
+      vars: [CLUSTER, APP, SNAPSHOT]
+    preconditions:
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} get snapshot {{.SNAPSHOT}}
+      - kubectl --context {{.CLUSTER}} --namespace {{.NS}} get persistentvolumeclaim {{.APP}}
+      - test -f {{.KOPIUR_RESOURCES_DIR}}/restore.yaml.j2
+      - which flux kubectl minijinja-cli
