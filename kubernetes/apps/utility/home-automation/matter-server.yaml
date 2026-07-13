@@ -6,16 +6,17 @@ metadata:
   name: &app matter-server
 spec:
   components:
-    - ../../../../components/volsync
+    - ../../../../components/kopiur/backup
   interval: 1h
   path: ./kubernetes/apps/base/home-automation/matter-server
   postBuild:
     substitute:
       APP: matter-server
+      KOPIUR_HOSTNAME: home-automation
+      KOPIUR_SNAPSHOTCLASS: csi-local-hostpath
+      KOPIUR_STORAGECLASS: local-hostpath
       STORAGE_HR: ${STORAGE_HR}
       STORAGE_NS: ${STORAGE_NS}
-      VOLSYNC_SNAPSHOTCLASS: ${VOLSYNC_SNAPSHOTCLASS}
-      VOLSYNC_STORAGECLASS: ${VOLSYNC_STORAGECLASS}
   wait: false
   prune: true
   sourceRef:
