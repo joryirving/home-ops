@@ -1,5 +1,17 @@
 # WorkAdventure
 
+## Media architecture
+
+Bubbles of up to `MAX_USERS_FOR_WEBRTC` (default 4) users are mesh P2P between
+browsers, relayed by coturn only when NATs block a direct path. Larger bubbles
+switch to the in-cluster LiveKit SFU (`../livekit`), which replaced the
+`meet.jit.si` dependency. LiveKit works behind towonel where coturn couldn't:
+its media terminates at the SFU pod itself, which just replies to whatever
+source it sees — the tunnel's SNAT is symmetric and harmless there, unlike
+TURN's source-IP-authenticated peer leg. LiveKit advertises the VPS IP
+(`rtc.node_ip`) and needs exactly two forwarded ports: 7881/tcp (ICE-TCP
+fallback) and 7882/udp (UDP mux).
+
 ## Where is coturn?
 
 coturn runs on the columbina VPS (`docker/columbina/04-coturn`), not in the

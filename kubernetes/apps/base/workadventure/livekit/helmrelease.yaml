@@ -1,0 +1,82 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: livekit
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: livekit
+  interval: 15m
+  values:
+    controllers:
+      livekit:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/livekit/livekit-server
+              tag: v1.13.3@sha256:483b8b7b5b0654f91f1e8bdc7b46fcd37fd9911612ecf627f97e3185a89825bd
+            env:
+              LIVEKIT_CONFIG:
+                valueFrom:
+                  secretKeyRef:
+                    name: livekit
+                    key: LIVEKIT_CONFIG
+            probes:
+              liveness: &httpProbe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: http
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+              readiness: *httpProbe
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+    service:
+      app:
+        controller: livekit
+        ports:
+          http:
+            port: 7880
+      rtc:
+        controller: livekit
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.45
+          towonel.io/tunnel: enable
+          towonel.io/tunnel-ref: network/towonel-main
+          towonel.io/rtc-tcp.public-port: "7881"
+          towonel.io/rtc-tcp.tcp: "true"
+          towonel.io/rtc-udp.public-port: "7882"
+          towonel.io/rtc-udp.udp: "true"
+        ports:
+          rtc-tcp:
+            port: 7881
+            protocol: TCP
+          rtc-udp:
+            port: 7882
+            protocol: UDP
+    route:
+      main:
+        annotations:
+          gatus.home-operations.com/endpoint: |-
+            conditions: ["[STATUS] == 200"]
+        hostnames: ["livekit.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
+            sectionName: https
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: http
