@@ -86,8 +86,8 @@ locals {
       property_mappings = local.default_property_mappings
     },
     Hermes = {
-      client_id         = module.onepassword_application["Hermes-Agent"].fields["HERMES_CLIENT_ID"]
-      client_secret     = module.onepassword_application["Hermes-Agent"].fields["HERMES_CLIENT_SECRET"]
+      client_id         = module.onepassword_application["Hermes"].fields["HERMES_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Hermes"].fields["HERMES_CLIENT_SECRET"]
       group             = "ai"
       icon_url          = "https://raw.githubusercontent.com/NousResearch/emoji/main/emojis/hermes.png"
       redirect_uri      = "https://hermes.${var.CLUSTER_DOMAIN}/auth/callback"
@@ -109,8 +109,8 @@ locals {
       client_secret     = module.onepassword_application["Kyoo"].fields["KYOO_CLIENT_SECRET"]
       group             = "media"
       icon_url          = "https://raw.githubusercontent.com/zoriya/Kyoo/master/icons/icon-256x256.png"
-      redirect_uri      = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/logged/authentik"
-      launch_url        = "https://kyoo.${var.CLUSTER_DOMAIN}/api/auth/login/authentik?redirectUrl=https://kyoo.${var.CLUSTER_DOMAIN}/login/callback"
+      redirect_uri      = "https://kyoo.${var.CLUSTER_DOMAIN}/auth/oidc/logged/authentik"
+      launch_url        = "https://kyoo.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     LiteLLM = {
