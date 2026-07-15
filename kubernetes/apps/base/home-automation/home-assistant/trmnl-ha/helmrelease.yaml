@@ -71,6 +71,12 @@ spec:
     persistence:
       data:
         existingClaim: "{{ .Release.Name }}"
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
     service:
       app:
         ports:
