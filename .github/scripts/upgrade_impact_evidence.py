@@ -127,3 +127,18 @@ def select_releases(releases, old, new):
         picked.append((v, r))
     picked.sort(key=lambda t: t[0], reverse=True)
     return [r for _, r in picked[:MAX_RELEASES]], max(0, len(picked) - MAX_RELEASES)
+
+
+_SOURCE_RE = re.compile(r"\[source\]\(https://github\.com/([^/)]+/[^/)#?]+)")
+
+
+def resolve_repo_candidates(artifact, pr_body=""):
+    cands = []
+    parts = (artifact or "").split("/")
+    if len(parts) >= 3 and "." in parts[0]:
+        cands.append(f"{parts[1]}/{parts[2]}")
+    for m in _SOURCE_RE.finditer(pr_body or ""):
+        slug = m.group(1).removesuffix(".git")
+        if slug not in cands:
+            cands.append(slug)
+    return cands
