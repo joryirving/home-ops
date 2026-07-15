@@ -137,6 +137,8 @@ def resolve_repo_candidates(artifact, pr_body=""):
     parts = (artifact or "").split("/")
     if len(parts) >= 3 and "." in parts[0]:
         cands.append(f"{parts[1]}/{parts[2]}")
+        if len(parts) > 3 and f"{parts[1]}/{parts[-1]}" not in cands:
+            cands.append(f"{parts[1]}/{parts[-1]}")
     for m in _SOURCE_RE.finditer(pr_body or ""):
         slug = m.group(1).removesuffix(".git")
         if slug not in cands:
