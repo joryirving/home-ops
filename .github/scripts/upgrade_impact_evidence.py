@@ -97,3 +97,33 @@ def parse_bumps(diff_text):
                 })
             old_tag = None
     return bumps
+
+
+def parse_version(text):
+    m = re.search(r"\d+(?:\.\d+)+", text or "")
+    if not m:
+        return None
+    return tuple(int(p) for p in m.group(0).split("."))
+
+
+def select_releases(releases, old, new):
+    """Releases with version in (old, new], newest first, capped.
+
+    Returns (selected, omitted_count). Unparseable `old` widens the lower
+    bound; unparseable `new` selects nothing (can't bound the range).
+    """
+    lo, hi = parse_version(old), parse_version(new)
+    if hi is None:
+        return [], 0
+    picked = []
+    for r in releases:
+        if r.get("draft") or r.get("prerelease"):
+            continue
+        v = parse_version(r.get("tag_name", ""))
+        if v is None or v > hi:
+            continue
+        if lo is not None and v <= lo:
+            continue
+        picked.append((v, r))
+    picked.sort(key=lambda t: t[0], reverse=True)
+    return [r for _, r in picked[:MAX_RELEASES]], max(0, len(picked) - MAX_RELEASES)
