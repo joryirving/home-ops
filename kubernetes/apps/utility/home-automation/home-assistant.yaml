@@ -6,9 +6,9 @@ metadata:
   name: home-assistant
 spec:
   components:
-    - ../../../../components/kopiur/backup
+    - ../../../../../components/kopiur/backup
   interval: 1h
-  path: ./kubernetes/apps/base/home-automation/home-assistant
+  path: ./kubernetes/apps/base/home-automation/home-assistant/app
   postBuild:
     substitute:
       APP: home-assistant
@@ -22,3 +22,27 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app trmnl-ha
+spec:
+  components:
+    - ../../../../../components/kopiur/backup
+  interval: 1h
+  path: ./kubernetes/apps/base/home-automation/home-assistant/trmnl-ha
+  postBuild:
+    substitute:
+      APP: trmnl-ha
+      KOPIUR_SNAPSHOTCLASS: csi-local-hostpath
+      KOPIUR_STORAGECLASS: local-hostpath
+      STORAGE_HR: ${STORAGE_HR}
+      STORAGE_NS: ${STORAGE_NS}
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false

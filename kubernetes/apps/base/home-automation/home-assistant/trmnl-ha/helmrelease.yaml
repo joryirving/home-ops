@@ -1,0 +1,83 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: trmnl-ha
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: trmnl-ha
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      hostUsers: false
+      securityContext:
+        fsGroup: 0
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0
+    controllers:
+      trmnl-ha:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/usetrmnl/trmnl-ha-amd64
+              tag: 0.9.0@sha256:a5708d6bb8a3a165722253ebe609d01facd38024387d456b7f04c6fe055e31d0
+            env:
+              HOME_ASSISTANT_URL: http://home-assistant.home-automation.svc.cluster.local:8123
+              TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 10000
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  failureThreshold: 30
+                  httpGet:
+                    path: /health
+                    port: *port
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 25m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+    persistence:
+      data:
+        accessMode: ReadWriteOnce
+        enabled: true
+        globalMounts:
+          - path: /data
+        size: 1Gi
+        type: persistentVolumeClaim
+    service:
+      app:
+        ports:
+          http:
+            port: *port
