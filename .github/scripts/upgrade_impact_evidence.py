@@ -142,3 +142,136 @@ def resolve_repo_candidates(artifact, pr_body=""):
         if slug not in cands:
             cands.append(slug)
     return cands
+
+
+def _truncate(text, limit_bytes, marker=""):
+    if len(text.encode()) <= limit_bytes:
+        return text
+    out = text.encode()[:limit_bytes].decode("utf-8", "replace").rstrip("�")
+    return out + ("\n" + marker if marker else "")
+
+
+def build_findings(ctxs):
+    findings = []
+    for ctx in ctxs:
+        b = ctx["bump"]
+        head = f"{b['artifact'] or b['path']} {b['old']} → {b['new']} ({b['kind']} bump)"
+        if ctx.get("hr_text"):
+            findings.append({
+                "severity": "info",
+                "message": (
+                    f"Deployment configuration for {head}. These are the HelmRelease "
+                    "values this repo sets — cross-reference upstream changes against "
+                    "them and flag anything that affects configured behavior:\n\n"
+                    f"```yaml\n{_truncate(ctx['hr_text'], MAX_VALUES_BYTES, '# [truncated]')}\n```"
+                ),
+                "source": ctx["hr_path"],
+            })
+        rels = ctx.get("releases") or []
+        if rels:
+            parts = []
+            for r in rels:
+                notes = _truncate((r.get("body") or "").strip(), MAX_NOTES_BYTES,
+                                  f"[truncated — see {r.get('html_url', '')}]")
+                parts.append(f"### {r.get('tag_name')} — {r.get('name') or ''}\n{notes}")
+            skipped = ctx.get("skipped", 0)
+            more = (f"\n\n({skipped} more releases in range omitted for size — see the "
+                    "releases page.)") if skipped else ""
+            findings.append({
+                "severity": "info",
+                "message": (
+                    f"Upstream release notes for {head} — check them against the "
+                    "HelmRelease values above:\n\n" + "\n\n".join(parts) + more
+                ),
+                "source": f"https://github.com/{ctx['repo_slug']}/releases",
+            })
+        elif ctx.get("repo_slug") is None:
+            findings.append({
+                "severity": "info",
+                "message": (
+                    f"No upstream release notes retrievable for {head} — upstream "
+                    "impact is unverified; treat this as a known blind spot and "
+                    "do not guess changelog contents."
+                ),
+                "source": b["path"],
+            })
+    return findings
+
+
+def fit_budget(findings):
+    while findings and len(json.dumps(
+            {"severity": "info", "findings": findings}).encode()) > MAX_TOTAL_BYTES:
+        longest = max(findings, key=lambda f: len(f["message"].encode()))
+        size = len(longest["message"].encode())
+        if size <= 1000:
+            findings.remove(longest)
+            continue
+        longest["message"] = _truncate(longest["message"], size // 2,
+                                       "[truncated for size]")
+    return findings
+
+
+def _run(cmd, timeout=25):
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        raise RuntimeError(f"{' '.join(cmd[:3])} failed: {r.stderr.strip()[:200]}")
+    return r.stdout
+
+
+def _repo_args():
+    return ["--repo", REPO] if REPO else []
+
+
+def fetch_releases(slug):
+    data = json.loads(_run(["gh", "api", f"repos/{slug}/releases?per_page=50"]))
+    return data if isinstance(data, list) else []
+
+
+def main():
+    if not PR.isdigit():
+        _emit([])
+    try:
+        bumps = parse_bumps(_run(["gh", "pr", "diff", PR, *_repo_args()], timeout=30))
+        if not bumps:
+            _emit([])
+        try:
+            pr_body = json.loads(_run(
+                ["gh", "pr", "view", PR, *_repo_args(), "--json", "body"]))["body"] or ""
+        except Exception:
+            pr_body = ""
+        ctxs = []
+        for b in bumps:
+            if b["artifact"] is None and b["kind"] == "chart":
+                try:
+                    with open(b["path"], encoding="utf-8") as f:
+                        m = re.search(r"url: oci://(\S+)", f.read())
+                    if m:
+                        b["artifact"] = m.group(1)
+                except OSError:
+                    pass
+            ctx = {"bump": b, "repo_slug": None}
+            hr_path = os.path.join(os.path.dirname(b["path"]), "helmrelease.yaml")
+            try:
+                with open(hr_path, encoding="utf-8") as f:
+                    ctx["hr_text"] = f.read()
+                ctx["hr_path"] = hr_path
+            except OSError:
+                pass
+            for slug in resolve_repo_candidates(b["artifact"], pr_body):
+                try:
+                    selected, skipped = select_releases(
+                        fetch_releases(slug), b["old"], b["new"])
+                except Exception:
+                    continue
+                if selected:
+                    ctx.update(repo_slug=slug, releases=selected, skipped=skipped)
+                    break
+            ctxs.append(ctx)
+        _emit(fit_budget(build_findings(ctxs)))
+    except Exception as exc:  # advisory: never fail the review
+        print(f"upgrade-impact evidence provider: {exc}", file=sys.stderr)
+        _emit([])
+
+
+if __name__ == "__main__":
+    main()
