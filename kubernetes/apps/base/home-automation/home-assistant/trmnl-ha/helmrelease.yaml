@@ -70,12 +70,7 @@ spec:
                 drop: ["ALL"]
     persistence:
       data:
-        accessMode: ReadWriteOnce
-        enabled: true
-        globalMounts:
-          - path: /data
-        size: 1Gi
-        type: persistentVolumeClaim
+        existingClaim: "{{ .Release.Name }}"
     service:
       app:
         ports:
