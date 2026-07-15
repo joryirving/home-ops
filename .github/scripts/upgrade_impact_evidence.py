@@ -146,6 +146,42 @@ def resolve_repo_candidates(artifact, pr_body=""):
     return cands
 
 
+def flatten_values(tree, prefix=""):
+    """Flatten a nested values dict to dotted leaf paths; lists are leaves."""
+    if not isinstance(tree, dict):
+        return {}
+    flat = {}
+    for key, val in tree.items():
+        path = f"{prefix}.{key}" if prefix else str(key)
+        if isinstance(val, dict) and val:
+            flat.update(flatten_values(val, path))
+        else:
+            flat[path] = val
+    return flat
+
+
+def values_drift(old_defaults, new_defaults, our_values):
+    """Diff chart default values old→new and intersect with keys we set.
+
+    A key we set that disappeared from the defaults is the headline signal:
+    it may have been renamed upstream, silently turning our override into a
+    no-op that renders identically.
+    """
+    old = flatten_values(old_defaults)
+    new = flatten_values(new_defaults)
+    ours = flatten_values(our_values)
+    removed = [k for k in old if k not in new]
+    added = [k for k in new if k not in old]
+    changed = [k for k in old if k in new and old[k] != new[k]]
+    return {
+        "added": len(added),
+        "removed": len(removed),
+        "changed": len(changed),
+        "removed_set_keys": sorted(k for k in removed if k in ours),
+        "changed_set_keys": sorted((k, old[k], new[k]) for k in changed if k in ours),
+    }
+
+
 def _truncate(text, limit_bytes, marker=""):
     if len(text.encode()) <= limit_bytes:
         return text
@@ -187,7 +223,33 @@ def build_findings(ctxs):
                 ),
                 "source": f"https://github.com/{ctx['repo_slug']}/releases",
             })
-        elif ctx.get("repo_slug") is None:
+        drift = ctx.get("drift")
+        if drift:
+            totals = (f"{drift['added']} added / {drift['changed']} changed / "
+                      f"{drift['removed']} removed")
+            lines = []
+            for k in drift["removed_set_keys"]:
+                lines.append(f"- `{k}` — set in the HelmRelease but no longer in the "
+                             "chart defaults; likely renamed or removed upstream, so "
+                             "the override may now be a silent no-op. Verify against "
+                             "the new chart.")
+            for k, old_v, new_v in drift["changed_set_keys"]:
+                lines.append(f"- `{k}` — upstream default changed {old_v!r} → {new_v!r} "
+                             "(this repo overrides it, so behavior is unchanged, but "
+                             "the upstream intent shifted).")
+            if lines:
+                body = "\n".join(lines)
+            else:
+                body = ("none intersect the values this repo sets — no configured "
+                        "value was renamed, removed, or re-defaulted.")
+            findings.append({
+                "severity": "info",
+                "message": (
+                    f"Chart default values drift for {head} ({totals}): {body}"
+                ),
+                "source": b["path"],
+            })
+        if not rels and ctx.get("repo_slug") is None:
             findings.append({
                 "severity": "info",
                 "message": (
@@ -229,6 +291,41 @@ def fetch_releases(slug):
     return data if isinstance(data, list) else []
 
 
+def parse_helm_show_values(output):
+    """Parse `helm show values` stdout; helm v4 prefixes Pulled:/Digest: lines
+    before a `---` document separator."""
+    import yaml
+    lines = output.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("---"):
+            output = "\n".join(lines[i:])
+            break
+    data = yaml.safe_load(output)
+    return data if isinstance(data, dict) else {}
+
+
+def compute_chart_drift(bump, hr_text):
+    """Default-values drift for a chart bump; None if unavailable.
+
+    Requires helm and PyYAML; both are preinstalled on ubuntu-latest runners.
+    Any failure (missing tools, unpullable chart, unparseable YAML) skips the
+    signal rather than failing the provider.
+    """
+    try:
+        import yaml
+        defaults = {}
+        for ver in (bump["old"], bump["new"]):
+            defaults[ver] = parse_helm_show_values(_run(
+                ["helm", "show", "values", f"oci://{bump['artifact']}",
+                 "--version", ver], timeout=60))
+        ours = (yaml.safe_load(hr_text) or {}).get("spec", {}).get("values", {})
+        return values_drift(defaults[bump["old"]], defaults[bump["new"]], ours)
+    except Exception as exc:
+        print(f"upgrade-impact: drift skipped for {bump['artifact']}: {exc}",
+              file=sys.stderr)
+        return None
+
+
 def main():
     if not PR.isdigit():
         _emit([])
@@ -268,6 +365,10 @@ def main():
                 if selected:
                     ctx.update(repo_slug=slug, releases=selected, skipped=skipped)
                     break
+            if b["kind"] == "chart" and b["artifact"] and ctx.get("hr_text"):
+                drift = compute_chart_drift(b, ctx["hr_text"])
+                if drift is not None:
+                    ctx["drift"] = drift
             ctxs.append(ctx)
         _emit(fit_budget(build_findings(ctxs)))
     except Exception as exc:  # advisory: never fail the review
