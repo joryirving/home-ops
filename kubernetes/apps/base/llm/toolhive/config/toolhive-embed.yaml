@@ -42,10 +42,10 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  contextSize: 81920
+  contextSize: 65536
   parallelSlots: 32
-  batchSize: 16384
-  uBatchSize: 16384
+  batchSize: 1024
+  uBatchSize: 1024
   resources:
     cpu: "500m"
     memory: 4Gi
@@ -58,6 +58,7 @@ spec:
     - --cache-ram
     - "0"
     - --cont-batching
+    - --kv-unified
     - --threads
     - "6"
     - --threads-batch
