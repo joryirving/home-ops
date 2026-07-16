@@ -61,13 +61,13 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | `chatgpt/gpt-5.4`      | ChatGPT Plus                  | gpt-5.4                         | —        | Frontier (cheaper)                                 |
 | `chatgpt/gpt-5.4-mini` | ChatGPT Plus                  | gpt-5.4-mini                    | —        | Cheap fallback                                     |
 | `kimi-k2.6`            | OpenCode Go → Neuralwatt → Moonshot | kimi-k2.6                  | 262k     | Flat plan first; energy PAYG before token PAYG     |
-| `kimi-k2.7`            | Neuralwatt                    | kimi-k2.7-code                  | 262k     | Metered near-frontier coding/reasoning lane        |
+| `kimi-k2.7`            | OpenCode Go → Neuralwatt      | kimi-k2.7-code                  | 262k     | Flat plan first, then energy PAYG; newest Kimi coding lane |
 
 ### Neuralwatt (energy-metered PAYG)
 
 | Alias                         | Upstream model | Ctx  | Role                                      |
 | ----------------------------- | -------------- | ---- | ----------------------------------------- |
-| `kimi-k2.7`                   | kimi-k2.7-code | 262k | Smart near-frontier coding/reasoning lane |
+| `kimi-k2.7` (order-2 fallback) | kimi-k2.7-code | 262k | PAYG failover within `kimi-k2.7`; OpenCode Go is now primary |
 | `neuralwatt/glm-5.2`          | glm-5.2        | 1M   | Direct long-context reasoning lane        |
 
 Neuralwatt charges this account for measured GPU energy rather than tokens. PAYG is $5/kWh;
@@ -87,7 +87,8 @@ cost and energy until its response-level `cost` and `energy` extensions are expo
 | `qwen3.7-plus`                      | qwen3.7-plus      | 1M          | Big-context Qwen via gateway                        |
 
 **Provider failover** (LiteLLM `order:`, transparent to callers): `glm-5.1` → z.ai then OpenCode;
-`glm-5.2` → z.ai, OpenCode, then Neuralwatt; `kimi-k2.6` → OpenCode, Neuralwatt, then Moonshot.
+`glm-5.2` → z.ai, OpenCode, then Neuralwatt; `kimi-k2.6` → OpenCode, Neuralwatt, then Moonshot;
+`kimi-k2.7` → OpenCode Go then Neuralwatt.
 This reacts when an upstream starts rejecting requests; it cannot detect that an unpublished rolling
 subscription allowance is merely _close_ to exhausted. The standalone `go-glm-5.1`/`go-kimi-k2.6` aliases
 were retired in favour of this. `go-minimax-m3/m2.7` stay separate — MiniMax's direct endpoint is
@@ -250,3 +251,29 @@ Still ahead:
 
 References: LiteLLM [Auto Routing](https://docs.litellm.ai/docs/proxy/auto_routing) ·
 [Fallbacks](https://docs.litellm.ai/docs/proxy/reliability).
+
+## Frontier pool
+
+The `frontier-pool` alias is the "grab the smartest model with room left" lane for opencode/Zed — pick
+it and ask it to do things; LiteLLM routes to the best-available frontier model and falls down the chain
+as each subscription caps out (429 → cooldown → next). Priority order:
+
+1. `chatgpt/gpt-5.6-sol` — flagship frontier (ChatGPT Plus cap)
+2. `glm-5.2` — z.ai → OpenCode Go → Neuralwatt internally
+3. `kimi-k2.7` — OpenCode Go (flat) → Neuralwatt (PAYG)
+4. `MiniMax-M3-chat` — native OpenAI `/v1`, uncapped flat plan = the always-available floor
+
+Implemented as router-level `fallbacks` referencing the existing model groups, so each tier drains its
+own plans cheapest-first before the pool moves on. Swap the Kimi rung to `kimi-k3` once OpenCode Go
+exposes it (released upstream 2026-07-16, not yet on the gateway).
+
+Caveats:
+
+- **Know which model answered.** Failover is silent — read the `x-litellm-model-id` response header (or
+  the LiteLLM logs) to see whether you're on Sol or the MiniMax floor.
+- **MiniMax is the weakest agentic rung.** Fine as a chat/reasoning floor, but its verbose
+  reasoning-in-content ballooned multi-turn tool loops in benchmarking — expect tool-heavy tasks to
+  struggle there. It's the "you'll always get something" bottom, not a strong agentic worker.
+- **Cap detection depends on 429s.** The chain only skips a capped model if that backend returns a
+  retryable 429 — confirm ChatGPT/Codex signals its cap that way (hammer past a cap, watch the
+  `x-litellm-model-id` header walk down the chain).

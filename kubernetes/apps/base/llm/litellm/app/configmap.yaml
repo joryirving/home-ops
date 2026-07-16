@@ -408,6 +408,23 @@ data:
       # Stable alias: Neuralwatt is currently the only configured Kimi K2.7 provider.
       - model_name: kimi-k2.7
         model_info:
+          mode: chat
+          input_cost_per_token: 0.0000009500
+          cache_creation_input_token_cost: 0.0000009500
+          cache_read_input_token_cost: 0.0000001600
+          output_cost_per_token: 0.0000040000
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/kimi-k2.7-code
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          order: 1
+
+      - model_name: kimi-k2.7
+        model_info:
           input_cost_per_token: 0.0000009500
           cache_creation_input_token_cost: 0.0000009500
           cache_read_input_token_cost: 0.0000002400
@@ -422,6 +439,7 @@ data:
           model: openai/kimi-k2.7-code
           api_base: https://api.neuralwatt.com/v1
           api_key: os.environ/NEURALWATT_API_KEY
+          order: 2
 
       - model_name: neuralwatt/glm-5.2
         model_info:
@@ -630,6 +648,19 @@ data:
             - location: message
               index: -1
 
+      # Priority FRONTIER pool — grab the smartest model with room left, selectable
+      # in opencode/zed. gpt-5.6-sol primary; router fallbacks drop to glm-5.2, then
+      # kimi-k2.7 (go-first), then the uncapped MiniMax-M3-chat floor as each caps.
+      - model_name: frontier-pool
+        model_info:
+          mode: responses
+          input_cost_per_token: 0.0000050000
+          cache_creation_input_token_cost: 0.0000062500
+          cache_read_input_token_cost: 0.0000005000
+          output_cost_per_token: 0.0000300000
+        litellm_params:
+          model: chatgpt/gpt-5.6-sol
+
       # Opt-in smart-routing alias for opencode + zed. Rule-based complexity router
       # (no embedding call); pinned consumers keep addressing their model directly.
       - model_name: auto
@@ -670,6 +701,7 @@ data:
       cooldown_time: 30
       enable_pre_call_checks: true
       fallbacks:
+        - frontier-pool: ["glm-5.2", "kimi-k2.7", "MiniMax-M3-chat"]
         - self-hosted: ["nvidia"]
         - nvidia: ["self-hosted"]
         - dsv4f: ["nvidia"]
