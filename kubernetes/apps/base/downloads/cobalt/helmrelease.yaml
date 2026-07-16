@@ -1,0 +1,64 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cobalt
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: cobalt
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      cobalt:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/imputnet/cobalt
+              tag: 11.7.1@sha256:63186dd68afd57ce3bb1f62cc4c139f5fa95b9c3e87a3cf5c6e4c7a570523f62
+            env:
+              TZ: America/Edmonton
+              # API_URL: http://cobalt.downloads:9000
+              API_URL: "https://{{ .Release.Name }}.jory.dev"
+              API_PORT: &port 9000
+              DEBUG: "*"
+              WEB_HOST: "https://{{ .Release.Name }}.jory.dev"
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 1Gi
+    persistence:
+      media:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/akademiya/data
+        advancedMounts:
+          cobalt:
+            app:
+              - path: /downloads
+                subPath: cobalt
+      tmp:
+        type: emptyDir
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: *port
