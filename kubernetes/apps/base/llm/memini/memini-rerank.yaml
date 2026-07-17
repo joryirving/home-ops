@@ -8,14 +8,14 @@ spec:
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: intel
+    accelerator: rocm
     gpu:
       enabled: true
-      vendor: intel
+      vendor: amd
       layers: 99
       resourceClaims:
         - name: gpu
-          resourceClaimTemplateName: memini-gpu
+          resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -25,36 +25,28 @@ metadata:
     krr/ignore: "true"
 spec:
   modelRef: memini-rerank
+  modelCache:
+    claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:25932f6dde7478203be75a04651d210ff1a5f0ac7877fb61f4fa622943bea6df
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:f7b3842670b8c65d03845aa66be63ee6422c987384ec82d1a84d9fb1c99120bd
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
   replicas: 1
   priority: normal
-  podLabels:
-    igpu-workload: "true"
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          igpu-workload: "true"
-  contextSize: 8192
-  parallelSlots: 4
-  batchSize: 4096
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  contextSize: 16384
+  parallelSlots: 8
+  batchSize: 8192
   uBatchSize: 4096
-  env:
-    - name: ZES_ENABLE_SYSMAN
-      value: "1"
-    - name: ONEAPI_DEVICE_SELECTOR
-      value: level_zero:gpu
-    - name: UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS
-      value: "1"
   resources:
-    cpu: "250m"
-    memory: 2Gi
+    cpu: "500m"
+    memory: 4Gi
   extraArgs:
     - --alias
     - memini-rerank
@@ -69,7 +61,7 @@ spec:
     - "6"
     - --threads-batch
     - "12"
-    - --mmap
+    - --no-mmap
   endpoint:
     port: 8080
     type: ClusterIP
