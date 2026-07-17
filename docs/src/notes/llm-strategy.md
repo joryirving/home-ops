@@ -85,6 +85,7 @@ cost and energy until its response-level `cost` and `energy` extensions are expo
 | `go-minimax-m3` / `go-minimax-m2.7` | minimax-m3 / m2.7 | 1M / 204.8k | MiniMax via gateway (chat-shape)                    |
 | `mimo-v2.5` / `mimo-v2.5-pro`       | mimo-v2.5(-pro)   | 262k        | Lighter analysis lane                               |
 | `qwen3.7-plus`                      | qwen3.7-plus      | 1M          | Big-context Qwen via gateway                        |
+| `kimi-k3`                           | kimi-k3           | 1M          | Newest Kimi; frontier-pool Kimi rung (2026-07-17)   |
 
 **Provider failover** (LiteLLM `order:`, transparent to callers): `glm-5.1` → z.ai then OpenCode;
 `glm-5.2` → z.ai, OpenCode, then Neuralwatt; `kimi-k2.6` → OpenCode, Neuralwatt, then Moonshot;
@@ -260,12 +261,12 @@ as each subscription caps out (429 → cooldown → next). Priority order:
 
 1. `chatgpt/gpt-5.6-sol` — flagship frontier (ChatGPT Plus cap)
 2. `glm-5.2` — z.ai → OpenCode Go → Neuralwatt internally
-3. `kimi-k2.7` — OpenCode Go (flat) → Neuralwatt (PAYG)
+3. `kimi-k3` — OpenCode Go (flat); newest Kimi, added to the gateway 2026-07-17
 4. `MiniMax-M3-chat` — native OpenAI `/v1`, uncapped flat plan = the always-available floor
 
 Implemented as router-level `fallbacks` referencing the existing model groups, so each tier drains its
-own plans cheapest-first before the pool moves on. Swap the Kimi rung to `kimi-k3` once OpenCode Go
-exposes it (released upstream 2026-07-16, not yet on the gateway).
+own plans cheapest-first before the pool moves on. The Kimi rung was `kimi-k2.7` (go→neuralwatt) until
+K3 hit the gateway; `kimi-k2.7` remains available as a standalone alias.
 
 Caveats:
 
