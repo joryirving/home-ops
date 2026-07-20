@@ -34,7 +34,8 @@ data:
             primary: "comfy/workflow",
           },
           models: {
-            "litellm/kimi-k2.6": { alias: "kimi-2.6", params: { cache_prompt: true } },
+            "litellm/kimi-k2.7": { alias: "kimi", params: { cache_prompt: true } },
+            "litellm/kimi-k3": { alias: "kimi-k3", params: { cache_prompt: true } },
             "minimax/MiniMax-M3": { alias: "minimax", params: { cacheRetention: "short" } },
             "minimax/MiniMax-M2.7": { alias: "minimax-old", params: { cacheRetention: "short" } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
@@ -137,7 +138,7 @@ data:
                 "litellm/self-hosted",
                 "litellm/nvidia",
                 "litellm/chatgpt/gpt-5.5",
-                "litellm/kimi-k2.6",
+                "litellm/kimi-k3",
               ]
             },
             identity: {
@@ -168,7 +169,8 @@ data:
             api: "openai-completions",
             timeoutSeconds: 600,
             models: [
-              { id: "kimi-k2.6", name: "Kimi K2.6 (OpenCode→Moonshot)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
+              { id: "kimi-k2.7", name: "Kimi K2.7 Code (Kimi→Moonshot)", reasoning: true, input: ["text", "image"], cost: { input: 0.95, output: 4, cacheRead: 0.19, cacheWrite: 0.95 }, contextWindow: 262144, maxTokens: 32768 },
+              { id: "kimi-k3", name: "Kimi K3 (Kimi→Moonshot)", reasoning: true, input: ["text", "image"], cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3 }, contextWindow: 1048576, maxTokens: 131072 },
               { id: "self-hosted", name: "Qwen3.6-35B-A3B UD Q8_K_XL (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "vision", name: "Qwen3.5-9B Q8_0 (ROCm)", reasoning: false, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "nvidia", name: "Qwen3.6-27B UD Q4_K_XL (CUDA)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },

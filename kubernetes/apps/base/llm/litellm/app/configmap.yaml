@@ -354,95 +354,82 @@ data:
           api_key: os.environ/OPENCODE_API_KEY
           order: 3
 
-      - model_name: kimi-k2.6
+      # Kimi Coding subscription first; Moonshot PAYG is the transparent fallback.
+      - model_name: kimi-k2.7
         model_info:
           mode: chat
           input_cost_per_token: 0.0000009500
           cache_creation_input_token_cost: 0.0000009500
-          cache_read_input_token_cost: 0.0000001600
+          cache_read_input_token_cost: 0.0000001900
           output_cost_per_token: 0.0000040000
           max_input_tokens: 262144
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/kimi-k2.6
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
-          order: 1
-
-      - model_name: kimi-k2.6
-        model_info:
-          input_cost_per_token: 0.0000006900
-          cache_creation_input_token_cost: 0.0000006900
-          cache_read_input_token_cost: 0.0000001700
-          output_cost_per_token: 0.0000032200
-          mode: chat
-          max_input_tokens: 262128
-          max_output_tokens: 16384
+          max_output_tokens: 32768
           supports_function_calling: true
           supports_prompt_caching: true
           supports_vision: true
         litellm_params:
-          model: openai/kimi-k2.6
-          api_base: https://api.neuralwatt.com/v1
-          api_key: os.environ/NEURALWATT_API_KEY
-          order: 2
+          model: openai/kimi-for-coding
+          api_base: https://api.kimi.com/coding/v1
+          api_key: os.environ/KIMI_CODE_API_KEY
+          order: 1
+          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "reasoning_effort", "temperature", "thinking", "top_p"]
 
-      - model_name: kimi-k2.6
+      - model_name: kimi-k2.7
         model_info:
           mode: chat
           input_cost_per_token: 0.0000009500
           cache_creation_input_token_cost: 0.0000009500
-          cache_read_input_token_cost: 0.0000001600
+          cache_read_input_token_cost: 0.0000001900
           output_cost_per_token: 0.0000040000
           max_input_tokens: 262144
-          max_output_tokens: 16384
+          max_output_tokens: 32768
           supports_function_calling: true
           supports_prompt_caching: true
+          supports_vision: true
         litellm_params:
-          model: moonshot/kimi-k2.6
+          model: openai/kimi-k2.7-code
           api_base: https://api.moonshot.ai/v1
           api_key: os.environ/MOONSHOT_API_KEY
-          order: 3
+          order: 2
+          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "reasoning_effort", "temperature", "thinking", "top_p"]
 
-      # Direct Neuralwatt aliases for opt-in PAYG use and cost comparison.
-      # Billing is energy-based, so static per-token costs would misstate spend.
-      # Stable alias: Neuralwatt is currently the only configured Kimi K2.7 provider.
-      - model_name: kimi-k2.7
+      - model_name: kimi-k3
         model_info:
           mode: chat
-          input_cost_per_token: 0.0000009500
-          cache_creation_input_token_cost: 0.0000009500
-          cache_read_input_token_cost: 0.0000001600
-          output_cost_per_token: 0.0000040000
-          max_input_tokens: 262144
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/kimi-k2.7-code
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
-          order: 1
-
-      - model_name: kimi-k2.7
-        model_info:
-          input_cost_per_token: 0.0000009500
-          cache_creation_input_token_cost: 0.0000009500
-          cache_read_input_token_cost: 0.0000002400
-          output_cost_per_token: 0.0000040000
-          mode: chat
-          max_input_tokens: 262128
-          max_output_tokens: 16384
+          input_cost_per_token: 0.0000030000
+          cache_creation_input_token_cost: 0.0000030000
+          cache_read_input_token_cost: 0.0000003000
+          output_cost_per_token: 0.0000150000
+          max_input_tokens: 1048576
+          max_output_tokens: 131072
           supports_function_calling: true
           supports_prompt_caching: true
           supports_vision: true
         litellm_params:
-          model: openai/kimi-k2.7-code
-          api_base: https://api.neuralwatt.com/v1
-          api_key: os.environ/NEURALWATT_API_KEY
+          model: openai/k3
+          api_base: https://api.kimi.com/coding/v1
+          api_key: os.environ/KIMI_CODE_API_KEY
+          order: 1
+          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "temperature", "thinking", "top_p"]
+
+      - model_name: kimi-k3
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000030000
+          cache_creation_input_token_cost: 0.0000030000
+          cache_read_input_token_cost: 0.0000003000
+          output_cost_per_token: 0.0000150000
+          max_input_tokens: 1048576
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+          supports_vision: true
+        litellm_params:
+          model: openai/kimi-k3
+          api_base: https://api.moonshot.ai/v1
+          api_key: os.environ/MOONSHOT_API_KEY
           order: 2
+          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "temperature", "thinking", "top_p"]
 
       - model_name: kimi-k3
         model_info:
@@ -634,16 +621,18 @@ data:
           mode: chat
           input_cost_per_token: 0.0000009500
           cache_creation_input_token_cost: 0.0000009500
-          cache_read_input_token_cost: 0.0000001600
+          cache_read_input_token_cost: 0.0000001900
           output_cost_per_token: 0.0000040000
           max_input_tokens: 262144
-          max_output_tokens: 16384
+          max_output_tokens: 32768
           supports_function_calling: true
           supports_prompt_caching: true
+          supports_vision: true
         litellm_params:
-          model: openai/kimi-k2.6
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
+          model: openai/kimi-for-coding
+          api_base: https://api.kimi.com/coding/v1
+          api_key: os.environ/KIMI_CODE_API_KEY
+          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "reasoning_effort", "temperature", "thinking", "top_p"]
 
       - model_name: reasoning-pool
         model_info:
@@ -669,7 +658,7 @@ data:
 
       # Priority FRONTIER pool — grab the smartest model with room left, selectable
       # in opencode/zed. gpt-5.6-sol primary; router fallbacks drop to glm-5.2, then
-      # kimi-k2.7 (go-first), then the uncapped MiniMax-M3-chat floor as each caps.
+      # kimi-k3 (Kimi subscription first), then the uncapped MiniMax-M3-chat floor.
       - model_name: frontier-pool
         model_info:
           mode: responses
@@ -749,6 +738,7 @@ data:
       set_verbose: false
 
     environment:
+      - KIMI_CODE_API_KEY
       - MINIMAX_API_KEY
       - MOONSHOT_API_KEY
       - NEURALWATT_API_KEY
