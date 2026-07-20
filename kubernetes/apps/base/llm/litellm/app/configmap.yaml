@@ -286,23 +286,6 @@ data:
           api_key: os.environ/ZAI_API_KEY
           order: 1
 
-      - model_name: glm-5.1
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000014000
-          cache_creation_input_token_cost: 0.0000014000
-          cache_read_input_token_cost: 0.0000002600
-          output_cost_per_token: 0.0000044000
-          max_input_tokens: 203000
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/glm-5.1
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
-          order: 2
-
       - model_name: glm-5.2
         model_info:
           mode: chat
@@ -336,23 +319,6 @@ data:
           api_base: https://api.neuralwatt.com/v1
           api_key: os.environ/NEURALWATT_API_KEY
           order: 2
-
-      - model_name: glm-5.2
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000014000
-          cache_creation_input_token_cost: 0.0000014000
-          cache_read_input_token_cost: 0.0000002600
-          output_cost_per_token: 0.0000044000
-          max_input_tokens: 1000000
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/glm-5.2
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
-          order: 3
 
       # Kimi Coding subscription first; Moonshot PAYG is the transparent fallback.
       - model_name: kimi-k2.7
@@ -431,22 +397,6 @@ data:
           order: 2
           additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "temperature", "thinking", "top_p"]
 
-      - model_name: kimi-k3
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000009500
-          cache_creation_input_token_cost: 0.0000009500
-          cache_read_input_token_cost: 0.0000001600
-          output_cost_per_token: 0.0000040000
-          max_input_tokens: 1000000
-          max_output_tokens: 131072
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/kimi-k3
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
-
       - model_name: neuralwatt/glm-5.2
         model_info:
           input_cost_per_token: 0.0000014500
@@ -502,38 +452,6 @@ data:
             thinking:
               type: disabled
           merge_reasoning_content_in_choices: true
-
-      - model_name: go-minimax-m3
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000003000
-          cache_creation_input_token_cost: 0.0000003000
-          cache_read_input_token_cost: 0.0000000600
-          output_cost_per_token: 0.0000012000
-          max_input_tokens: 1000000
-          max_output_tokens: 32768
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/minimax-m3
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
-
-      - model_name: go-minimax-m2.7
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000003000
-          cache_creation_input_token_cost: 0.0000003000
-          cache_read_input_token_cost: 0.0000000600
-          output_cost_per_token: 0.0000012000
-          max_input_tokens: 204800
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/minimax-m2.7
-          api_base: https://opencode.ai/zen/go/v1
-          api_key: os.environ/OPENCODE_API_KEY
 
       - model_name: mimo-v2.5-pro
         model_info:
@@ -657,8 +575,10 @@ data:
               index: -1
 
       # Priority FRONTIER pool — grab the smartest model with room left, selectable
-      # in opencode/zed. gpt-5.6-sol primary; router fallbacks drop to glm-5.2, then
-      # kimi-k3 (Kimi subscription first), then the uncapped MiniMax-M3-chat floor.
+      # in opencode/zed. STRICT priority order (order:) — subscriptions first, then the
+      # uncapped MiniMax flat floor, then PAYG as last-resort backup:
+      #   1 ChatGPT sol -> 2 Kimi K3 (Kimi Coding sub) -> 3 GLM-5.2 (z.ai sub)
+      #   -> 4 MiniMax-M3-chat (flat) -> 5 Kimi K3 (Moonshot PAYG) -> 6 GLM-5.2 (Neuralwatt PAYG)
       - model_name: frontier-pool
         model_info:
           mode: responses
@@ -669,6 +589,91 @@ data:
           max_input_tokens: 1000000
         litellm_params:
           model: chatgpt/gpt-5.6-sol
+          order: 1
+
+      - model_name: frontier-pool
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000030000
+          cache_creation_input_token_cost: 0.0000030000
+          cache_read_input_token_cost: 0.0000003000
+          output_cost_per_token: 0.0000150000
+          max_input_tokens: 1000000
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/k3
+          api_base: https://api.kimi.com/coding/v1
+          api_key: os.environ/KIMI_CODE_API_KEY
+          order: 2
+          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "temperature", "thinking", "top_p"]
+
+      - model_name: frontier-pool
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000014000
+          cache_creation_input_token_cost: 0.0000014000
+          cache_read_input_token_cost: 0.0000002600
+          output_cost_per_token: 0.0000044000
+          max_input_tokens: 1000000
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.2
+          api_base: https://api.z.ai/api/coding/paas/v4
+          api_key: os.environ/ZAI_API_KEY
+          order: 3
+
+      - model_name: frontier-pool
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000003000
+          output_cost_per_token: 0.0000012000
+          max_input_tokens: 1000000
+          max_output_tokens: 131072
+          supports_function_calling: true
+        litellm_params:
+          model: openai/MiniMax-M3
+          api_base: https://api.minimax.io/v1
+          api_key: os.environ/MINIMAX_API_KEY
+          order: 4
+
+      - model_name: frontier-pool
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000030000
+          cache_creation_input_token_cost: 0.0000030000
+          cache_read_input_token_cost: 0.0000003000
+          output_cost_per_token: 0.0000150000
+          max_input_tokens: 1000000
+          max_output_tokens: 131072
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/kimi-k3
+          api_base: https://api.moonshot.ai/v1
+          api_key: os.environ/MOONSHOT_API_KEY
+          order: 5
+          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "temperature", "thinking", "top_p"]
+
+      - model_name: frontier-pool
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000014500
+          cache_creation_input_token_cost: 0.0000014500
+          cache_read_input_token_cost: 0.0000003600
+          output_cost_per_token: 0.0000045000
+          max_input_tokens: 1000000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/glm-5.2
+          api_base: https://api.neuralwatt.com/v1
+          api_key: os.environ/NEURALWATT_API_KEY
+          order: 6
 
       # Opt-in smart-routing alias for opencode + zed. Rule-based complexity router
       # (no embedding call); pinned consumers keep addressing their model directly.
@@ -710,7 +715,6 @@ data:
       cooldown_time: 30
       enable_pre_call_checks: true
       fallbacks:
-        - frontier-pool: ["glm-5.2", "kimi-k3", "MiniMax-M3-chat"]
         - self-hosted: ["nvidia"]
         - nvidia: ["self-hosted"]
         - dsv4f: ["nvidia"]
