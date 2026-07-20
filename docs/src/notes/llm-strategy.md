@@ -9,8 +9,8 @@ and for designing intent-based routing on top of them.
 
 ## Subscriptions
 
-Subscriptions remain the primary capacity. Neuralwatt supplies energy-metered near-frontier capacity,
-while Moonshot is the last token-metered failover under `kimi-k2.6`.
+Subscriptions remain the primary capacity. Neuralwatt supplies energy-metered GLM capacity, while
+Moonshot is the token-metered failover behind the Kimi Coding subscription.
 
 | Plan                | Price                                        | Cap                                                                          | Reset                              | Models                                                                       | Primary use                                                                   |
 | ------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -18,8 +18,9 @@ while Moonshot is the last token-metered failover under `kimi-k2.6`.
 | **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | 300 prompts / 5h                                                             | rolling 5h                         | M3 and M2.7, via the Anthropic endpoint                                      | Agentic reasoning workhorse                                                   |
 | **Opencode Go**     | $10 USD/mo                                   | $12 / 5h, $30 / wk, $60 / mo (dollar-denominated)                            | rolling 5h / wk / mo               | 14 models incl. DeepSeek V4 Flash/Pro, GLM-5.x, Kimi, MiMo, Qwen3.7, MiniMax | High-volume cheap lane (dsv4f) + grab-bag access                              |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                                             | rolling 5h                         | GLM-5.2, GLM-5.1 (added 2026-06-17), GLM-4.7, GLM-4.5-Air                    | GLM coding access; fallback lane                                              |
-| **Moonshot (Kimi)** | pay-per-use                                  | none (per-key RPM/TPM only)                                                  | n/a                                | kimi-k2.6                                                                    | Last-resort metered failover under `kimi-k2.6`                                 |
-| **Neuralwatt**      | pay-per-use ($5/kWh energy billing)          | account credit; API-key allowances available                                | n/a                                | Kimi K2.6/K2.7 Code, GLM-5.2                                                  | Metered near-frontier capacity after flat plans                                |
+| **Kimi Coding**     | flat subscription                            | plan allowance                                                               | plan-defined                       | Kimi K2.7 Code, Kimi K3                                                       | Primary Kimi coding and frontier lanes                                         |
+| **Moonshot (Kimi)** | pay-per-use                                  | none (per-key RPM/TPM only)                                                  | n/a                                | kimi-k2.7-code, kimi-k3                                                       | Token-metered fallback behind Kimi Coding                                      |
+| **Neuralwatt**      | pay-per-use ($5/kWh energy billing)          | account credit; API-key allowances available                                | n/a                                | GLM-5.2                                                                      | Metered GLM capacity after flat plans                                           |
 
 Caveats worth remembering:
 
@@ -30,6 +31,8 @@ Caveats worth remembering:
   weekly Codex cap is hit every week. OpenAI does not publish the exact weekly number.
 - **GLM Lite's** annual USD price is promotional and not cleanly published.
 - All 5h caps are **rolling windows** (oldest usage falls off continuously), not calendar resets.
+- Kimi subscription traffic uses equivalent Moonshot list prices for cost comparison: K2.7 Code is
+  $0.19 cached input / $0.95 cache miss / $4 output per MTok; K3 is $0.30 / $3 / $15.
 
 ## Model inventory
 
@@ -60,15 +63,14 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | `chatgpt/gpt-5.5`      | ChatGPT Plus                  | gpt-5.5 (Codex/OAuth)           | —        | Frontier                                           |
 | `chatgpt/gpt-5.4`      | ChatGPT Plus                  | gpt-5.4                         | —        | Frontier (cheaper)                                 |
 | `chatgpt/gpt-5.4-mini` | ChatGPT Plus                  | gpt-5.4-mini                    | —        | Cheap fallback                                     |
-| `kimi-k2.6`            | OpenCode Go → Neuralwatt → Moonshot | kimi-k2.6                  | 262k     | Flat plan first; energy PAYG before token PAYG     |
-| `kimi-k2.7`            | OpenCode Go → Neuralwatt      | kimi-k2.7-code                  | 262k     | Flat plan first, then energy PAYG; newest Kimi coding lane |
+| `kimi-k2.7`            | Kimi Coding → Moonshot        | kimi-for-coding / kimi-k2.7-code | 262k    | Coding subscription first, token PAYG fallback     |
+| `kimi-k3`              | Kimi Coding → Moonshot        | k3 / kimi-k3                    | 1M      | Frontier Kimi lane; subscription first             |
 
 ### Neuralwatt (energy-metered PAYG)
 
-| Alias                         | Upstream model | Ctx  | Role                                      |
-| ----------------------------- | -------------- | ---- | ----------------------------------------- |
-| `kimi-k2.7` (order-2 fallback) | kimi-k2.7-code | 262k | PAYG failover within `kimi-k2.7`; OpenCode Go is now primary |
-| `neuralwatt/glm-5.2`          | glm-5.2        | 1M   | Direct long-context reasoning lane        |
+| Alias                | Upstream model | Ctx | Role                               |
+| -------------------- | -------------- | --- | ---------------------------------- |
+| `neuralwatt/glm-5.2` | glm-5.2        | 1M  | Direct long-context reasoning lane |
 
 Neuralwatt charges this account for measured GPU energy rather than tokens. PAYG is $5/kWh;
 prefix-cache hits avoid prefill work and therefore reduce the charged energy. Neuralwatt also publishes
@@ -85,14 +87,13 @@ cost and energy until its response-level `cost` and `energy` extensions are expo
 | `go-minimax-m3` / `go-minimax-m2.7` | minimax-m3 / m2.7 | 1M / 204.8k | MiniMax via gateway (chat-shape)                    |
 | `mimo-v2.5` / `mimo-v2.5-pro`       | mimo-v2.5(-pro)   | 262k        | Lighter analysis lane                               |
 | `qwen3.7-plus`                      | qwen3.7-plus      | 1M          | Big-context Qwen via gateway                        |
-| `kimi-k3`                           | kimi-k3           | 1M          | Newest Kimi; frontier-pool Kimi rung (2026-07-17)   |
 
 **Provider failover** (LiteLLM `order:`, transparent to callers): `glm-5.1` → z.ai then OpenCode;
-`glm-5.2` → z.ai, OpenCode, then Neuralwatt; `kimi-k2.6` → OpenCode, Neuralwatt, then Moonshot;
-`kimi-k2.7` → OpenCode Go then Neuralwatt.
+`glm-5.2` → z.ai, OpenCode, then Neuralwatt; `kimi-k2.7` → Kimi Coding then Moonshot;
+`kimi-k3` → Kimi Coding then Moonshot.
 This reacts when an upstream starts rejecting requests; it cannot detect that an unpublished rolling
-subscription allowance is merely _close_ to exhausted. The standalone `go-glm-5.1`/`go-kimi-k2.6` aliases
-were retired in favour of this. `go-minimax-m3/m2.7` stay separate — MiniMax's direct endpoint is
+subscription allowance is merely _close_ to exhausted. The standalone `go-glm-5.1` alias was retired
+in favour of this. `go-minimax-m3/m2.7` stay separate — MiniMax's direct endpoint is
 Anthropic-shape and can't be grouped with the chat-shape gateway copy.
 
 ## Model capability ranking
@@ -107,7 +108,6 @@ self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Termin
 | GPT-5.5           | `chatgpt/gpt-5.5`      | proprietary         | 1M    | 80.6  | 58.6¹   | n/p       | 84.7   | 94.0  | n/p   |
 | DeepSeek-V4-Pro   | `dsv4p`                | MoE 1.6T/49A        | 1M    | 80.6  | 55.4    | 93.5      | 67.9   | 90.1  | n/p   |
 | GLM-5.2           | `glm-5.2`              | MoE ~753B/40A       | 1M    | n/p   | 62.1    | n/p       | 81.0   | 91.2  | 99.2  |
-| Kimi K2.6         | `kimi-k2.6`            | MoE 1T/32A          | 256k  | 80.2  | 58.6    | 89.6      | 66.7   | 90.5  | 96.4  |
 | MiniMax-M3        | `MiniMax`              | MoE ~229B/9.8A²     | 1M    | 80.5¹ | 59.0    | n/p       | 66.0   | 92.9  | n/p   |
 | GPT-5.4           | `chatgpt/gpt-5.4`      | proprietary         | ~922k | 76.9  | 59.1    | n/p       | 81.8   | 94.6  | n/p   |
 | DeepSeek-V4-Flash | `dsv4f`                | MoE 284B/13A        | 1M    | 79.0  | n/p     | 91.6      | 56.9   | 88.1  | n/p   |
@@ -129,7 +129,7 @@ to others.
 
 Reading it for routing:
 
-- **Frontier tier** (`gpt-5.5`, `dsv4p`, `glm-5.2`, `kimi-k2.6`, `MiniMax-M3`) — top SWE +
+- **Frontier tier** (`gpt-5.5`, `dsv4p`, `glm-5.2`, `kimi-k3`, `MiniMax-M3`) — top SWE +
   reasoning. `gpt-5.5` is the all-rounder ceiling (kept manual to protect the weekly cap);
   `glm-5.2` leads long-horizon agentic coding + math; `dsv4p` is the raw-coding workhorse.
 - **Cheap/fast** (`dsv4f`, `gpt-5.4-mini`, `mimo-v2.5`) — near-frontier coding at low cost;
@@ -143,8 +143,8 @@ Reading it for routing:
 
 | Consumer               | In repo?                                    | Points at                                                                                    |
 | ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | default `MiniMax`; subagent + heartbeat `dsv4f`; image `self-hosted`; cron jobs vary (below) |
-| **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `MiniMax`; compression/extract/approval/session-search `self-hosted`                 |
+| **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso `MiniMax-M3`; Saffron `glm-5.2`; subagent + heartbeat `dsv4f`; image `self-hosted`      |
+| **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `kimi-k3`; compression/extract/approval/session-search `self-hosted`                 |
 | **Opencode** (CLI/Zen) | no (workstation)                            | LiteLLM aliases directly; biggest single `user_agent` cluster after the agents               |
 | **Zed**                | no (workstation)                            | LiteLLM aliases directly                                                                     |
 
@@ -205,8 +205,8 @@ Observed 30-day traffic (Prometheus, `litellm_*_metric_total`), top models:
 | glm-5.1                     |          36M |            320 |
 | gpt-5.5                     |          31M |            432 |
 
-`gpt-5.4-mini` (cheap) and `kimi-k2.6` (paid, until balance runs out) are kept as fallbacks despite
-negligible traffic. Real logged spend is MiniMax-M3 ($239, phantom) and kimi ($0.86, actual).
+`gpt-5.4-mini` remains a cheap fallback despite negligible traffic. Kimi subscription traffic is
+valued at the equivalent Moonshot API rates in LiteLLM even though the plan itself is flat-rate.
 
 ## Smart-routing: the `auto` alias
 
@@ -222,7 +222,7 @@ Tiers (capability-ordered; SIMPLE offloads the single-slot 3090 onto the Strix):
 | SIMPLE             | `self-hosted` (Strix 35B-A3B, 2 instances × 2 slots) | Trivia — keep the 3090 free            |
 | MEDIUM             | `nvidia` (Qwen3.6-27B dense)                         | Best + fastest local                   |
 | COMPLEX            | `dsv4p` (DeepSeek-V4-Pro)                            | Raw-coding workhorse, 1M ctx           |
-| REASONING          | group `{glm-5.2, go-minimax-m3, kimi-k2.6}`          | Top reasoners; least-busy across plans |
+| REASONING          | group `{glm-5.2, go-minimax-m3, kimi-k2.7}`          | Top reasoners; least-busy across plans |
 | default (unscored) | `nvidia`                                             | Best local                             |
 
 Boundaries `0.45 / 0.65 / 0.85`, raised above LiteLLM defaults: opencode/Zed system prompts are
@@ -261,12 +261,11 @@ as each subscription caps out (429 → cooldown → next). Priority order:
 
 1. `chatgpt/gpt-5.6-sol` — flagship frontier (ChatGPT Plus cap)
 2. `glm-5.2` — z.ai → OpenCode Go → Neuralwatt internally
-3. `kimi-k3` — OpenCode Go (flat); newest Kimi, added to the gateway 2026-07-17
+3. `kimi-k3` — Kimi Coding (flat) → Moonshot (PAYG)
 4. `MiniMax-M3-chat` — native OpenAI `/v1`, uncapped flat plan = the always-available floor
 
 Implemented as router-level `fallbacks` referencing the existing model groups, so each tier drains its
-own plans cheapest-first before the pool moves on. The Kimi rung was `kimi-k2.7` (go→neuralwatt) until
-K3 hit the gateway; `kimi-k2.7` remains available as a standalone alias.
+own plans cheapest-first before the pool moves on.
 
 Caveats:
 
