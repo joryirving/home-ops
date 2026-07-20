@@ -99,13 +99,25 @@ release.
   — base-lane routing by the repo's language. Resolution order in
   `coder_agent_for`: explicit lane match → base map by language → base map `*` →
   lane wildcard → default `coder`. Empty map = legacy behavior.
-- `GATEPROFILE_MAP` — repo → `{language, image, commands{format,lint,build,test}}`.
+- `GATEPROFILE_MAP` — repo → `{language, image, commands{format,lint,build,test}, sourceExtensions}`.
   Defines a repo's language (used by BASE_CODER_AGENTS) and its clean-room gate.
-  **Each `test` command mirrors the repo's own CI: install deps + run the real
-  suite** (e.g. `pip install -r requirements.txt && pytest`, `npm run test`), not
-  a no-op. A weak gate (`test: "true"`) rubber-stamps GATE-PASS on changes that
-  then fail real CI — the root cause of the pr-fix churn we removed. Add a repo
-  here to onboard it, and match its CI's test/lint commands.
+  - **Mapped repos get a real gate** — each `test` mirrors the repo's own CI
+    (install deps + run the real suite: `pip install -r requirements.txt && pytest`,
+    `npm run test`). A real gate catches a broken change *before* the PR; a
+    `test: "true"` on a repo you've onboarded just defers to CI and causes pr-fix
+    churn, so match the CI commands. Add a repo here (with a real gate) to onboard it.
+  - The `*` **wildcard is a deliberate pass-through** (`golang:1.26` + all-`true`
+    commands). Unmapped repos otherwise resolve to the `generic` preset, which has
+    **no image**, so every gate Job errors GATE-ERROR (this was ~14 of the 17
+    Failed workloads on the 2026-07-20 sweep). The pass-through lets them GATE-PASS
+    so the PR opens; verification then rests on the coder's self-verify + the repo's
+    real CI + the pr-fix loop. Trade: an unmapped repo can open a PR that later
+    fails CI (the churn a real gate avoids) — accepted as the fail-open default, and
+    the interim toward making the verify step optional upstream (LLMKube #1151).
+    Onboard a repo with a real gate to move it off the pass-through.
+  - `sourceExtensions` (e.g. `[".gd"]` for windowstead) tells the reviewer's
+    scope-overlap check which files count as the repo's source, so a non-preset
+    language's issue-named files register as in-scope (LLMKube #1120, foreman 0.9.6).
 - `REVISION_CODER_AGENTS: {"*":"coder-revision"}` — reviewer-requested revisions.
 - `PRUNE_COMPLETED_AFTER_HOURS: "6"`, `PRUNE_FAILED_AFTER_HOURS: "48"` (defaults;
   unset = these values) — terminal-Workload GC (bridge 0.6.7+). Each tick, after
@@ -116,6 +128,10 @@ release.
 - `PR_FIX_ENABLED: "true"`, `PR_FIX_MAX_ATTEMPTS: "3"`,
   `PR_FIX_LANE_AGENTS: {"NORMAL":"coder","ESCALATED":"coder-frontier"}` — PR-fix
   loop: when an open PR fails CI or gets `CHANGES_REQUESTED`, it re-pushes a fix.
+  dispatch (0.5.26+) routes an AI-reviewer (Saffron) `CHANGES_REQUESTED` into this
+  loop by parsing its structured `ai-pr-reviewer` findings, instead of dead-ending
+  at `needs-human`; a prose-only review with no parseable findings still escalates
+  to a human.
   **Escalation ladder (bridge 0.6.6+):** a fix exhausts `max_attempts` on the
   base coder (`NORMAL`) → auto-escalates to `ESCALATED` (`coder-frontier`) with a
   fresh budget → only marks `NEEDS_HUMAN` when *every* coder tier is exhausted. A
@@ -264,6 +280,12 @@ kubectl -n llm rollout status deployment/foreman-agent
 - **Agent-config hot-reload (upstream nice-to-have).** The "Agent CR changes need
   a fleet restart" gotcha is a papercut worth an upstream request (agent should
   watch/reload its CR, or foreman should signal a restart is required).
+- **Verify step is mandatory (upstream request pending).** The operator always
+  emits a `verify` gate — `chooseSteps` requires `verifierAgentRef`, so there is no
+  `code → review` without one. With the coder self-verifying and the repo's own CI
+  as the real check, the pre-PR gate is redundant for CI-having repos; the `*`
+  pass-through gate hollows it out as the interim. Requested upstream as an opt-out
+  (LLMKube #1151) — until it lands, the pass-through is the mechanism.
 
 ## Change conventions
 
@@ -286,8 +308,8 @@ kubectl -n llm rollout status deployment/foreman-agent
 - Ad-hoc runs (`llmkube foreman dispatch`, or the `task foreman:dispatch` /
   `foreman:revise` helpers in `.taskfiles/foreman/`) are never committed.
 
-## Current versions (snapshot, 2026-07-11)
+## Current versions (snapshot, 2026-07-20)
 
-Bridge `0.6.7` · dispatch chart `0.5.25` · Foreman/coder images `0.9.3` (nvidia
-local base coders, MiniMax `coder-frontier`, self-hosted `reviewer`). Update this
-line when you cut a release so the next operator has a baseline.
+Bridge `0.6.9` · dispatch chart `0.5.26` · Foreman operator `0.9.7` / coder images
+`0.9.6` (nvidia local base coders, MiniMax `coder-frontier`, self-hosted `reviewer`).
+Update this line when you cut a release so the next operator has a baseline.
