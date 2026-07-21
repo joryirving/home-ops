@@ -58,6 +58,10 @@ spec:
                     echo "WARN: memini plugin install failed; starting with whatever is present"
                   fi
                 fi
+                # Start image UI in background (lives in PVC, no redeploy needed)
+                if [ -f "$HOME/.openclaw/workspace/image-ui/app.py" ]; then
+                  cd "$HOME/.openclaw/workspace/image-ui" && python3 app.py &
+                fi
                 # Start gateway
                 exec node dist/index.js gateway --bind lan
             env:
@@ -195,6 +199,15 @@ spec:
           - backendRefs:
               - name: "{{ .Release.Name }}"
                 port: &codeserverPort 12321
+      imageui:
+        hostnames: ["generate.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: &imageuiPort 8848
     service:
       app:
         type: LoadBalancer
@@ -206,5 +219,7 @@ spec:
             port: *port
           codeserver:
             port: *codeserverPort
+          imageui:
+            port: *imageuiPort
     serviceAccount:
       openclaw: {}

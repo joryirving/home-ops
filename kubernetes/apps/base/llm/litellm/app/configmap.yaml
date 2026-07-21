@@ -607,41 +607,6 @@ data:
           api_key: os.environ/MINIMAX_API_KEY
           order: 4
 
-      - model_name: frontier-pool
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000030000
-          cache_creation_input_token_cost: 0.0000030000
-          cache_read_input_token_cost: 0.0000003000
-          output_cost_per_token: 0.0000150000
-          max_input_tokens: 1000000
-          max_output_tokens: 131072
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/kimi-k3
-          api_base: https://api.moonshot.ai/v1
-          api_key: os.environ/MOONSHOT_API_KEY
-          order: 5
-          additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "temperature", "thinking", "top_p"]
-
-      - model_name: frontier-pool
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000014500
-          cache_creation_input_token_cost: 0.0000014500
-          cache_read_input_token_cost: 0.0000003600
-          output_cost_per_token: 0.0000045000
-          max_input_tokens: 1000000
-          max_output_tokens: 16384
-          supports_function_calling: true
-          supports_prompt_caching: true
-        litellm_params:
-          model: openai/glm-5.2
-          api_base: https://api.neuralwatt.com/v1
-          api_key: os.environ/NEURALWATT_API_KEY
-          order: 6
-
       # Opt-in smart-routing alias for opencode + zed. Rule-based complexity router
       # (no embedding call); pinned consumers keep addressing their model directly.
       - model_name: auto
@@ -652,8 +617,8 @@ data:
             tiers:
               SIMPLE: self-hosted
               MEDIUM: nvidia
-              COMPLEX: dsv4p
-              REASONING: reasoning-pool
+              COMPLEX: reasoning-pool
+              REASONING: frontier-pool
             tier_boundaries:
               simple_medium: 0.45
               medium_complex: 0.65
