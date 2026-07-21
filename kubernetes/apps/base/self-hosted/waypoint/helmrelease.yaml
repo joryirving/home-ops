@@ -1,0 +1,66 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: waypoint
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: waypoint
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      waypoint:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/ctrl-research/waypoint
+              tag: 0.0.8@sha256:2a94c7c2962076cbed5650c1f6621232bf264f6b94b2a512f5a5c3f659ae97da
+            env:
+              WAYPOINT_LOCAL_AUTH: false
+              WAYPOINT_LANGUAGE: en
+              WAYPOINT_MAP_STYLE_URL: https://tiles.openfreemap.org/styles/liberty
+              WAYPOINT_DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .Release.Name }}-app"
+                    key: fqdn-uri
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 512Mi
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+    route:
+      app:
+        hostnames: ["travel.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 8080
