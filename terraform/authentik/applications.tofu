@@ -184,7 +184,7 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/workadventure/workadventure/refs/heads/master/play/public/static/images/favicons/icon-512x512.png"
       redirect_uri      = "https://travel.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://travel.${var.CLUSTER_DOMAIN}"
-      property_mappings = local.default_property_mappings
+      property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.email_verified.id])
     },
     WorkAdventure = {
       client_id         = module.onepassword_application["WorkAdventure"].fields["WORKADVENTURE_OIDC_CLIENT_ID"]
