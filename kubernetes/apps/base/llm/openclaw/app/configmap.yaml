@@ -34,15 +34,14 @@ data:
             primary: "comfy/workflow",
           },
           models: {
-            "litellm/kimi-k2.7": { alias: "kimi", params: { cache_prompt: true } },
-            "litellm/kimi-k3": { alias: "kimi-k3", params: { cache_prompt: true } },
+            "litellm/kimi-k2.7": { alias: "kimi-cheap", params: { cache_prompt: true } },
+            "litellm/kimi-k3": { alias: "kimi", params: { cache_prompt: true } },
             "minimax/MiniMax-M3": { alias: "minimax", params: { cacheRetention: "short" } },
             "minimax/MiniMax-M2.7": { alias: "minimax-old", params: { cacheRetention: "short" } },
             "litellm/self-hosted": { alias: "skirk", params: { cache_prompt: true } },
             "litellm/nvidia": { alias: "nvidia", params: { cache_prompt: true } },
             "litellm/dsv4f": { alias: "dsv4f", params: { cache_prompt: true } },
             "litellm/dsv4p": { alias: "dsv4p", params: { cache_prompt: true } },
-            "litellm/glm-5.1": { alias: "glm-5.1", params: { cache_prompt: true } },
             "litellm/glm-5.2": { alias: "glm-5.2", params: { cache_prompt: true } },
             "litellm/mimo-v2.5-pro": { alias: "mimo-agent", params: { cache_prompt: true } },
             "litellm/mimo-v2.5": { alias: "mimo-v2.5", params: { cache_prompt: true } },
@@ -90,12 +89,13 @@ data:
               avatar: "avatars/miso_avatar.png",
             },
             model: {
-              primary: "minimax/MiniMax-M3",
+              primary: "litellm/kimi-k3",
               fallbacks: [
+                "minimax/MiniMax-M3",
+                "litellm/GLM-5.2",
                 "litellm/dsv4f",
-                "litellm/GLM-5.1",
-                "litellm/self-hosted",
                 "litellm/nvidia",
+                "litellm/self-hosted",
               ]
             },
           },
@@ -129,13 +129,13 @@ data:
             model: {
               primary: "litellm/frontier-pool",
               fallbacks: [
-                "litellm/glm-5.1",
-                "minimax/MiniMax-M3",
-                "litellm/dsv4f",
-                "litellm/self-hosted",
-                "litellm/nvidia",
-                "litellm/chatgpt/gpt-5.5",
+                "litellm/glm-5.2",
                 "litellm/kimi-k3",
+                "minimax/MiniMax-M3",
+                "litellm/chatgpt/gpt-5.5",
+                "litellm/dsv4f",
+                "litellm/nvidia",
+                "litellm/self-hosted",
               ]
             },
             identity: {
@@ -173,7 +173,6 @@ data:
               { id: "nvidia", name: "Qwen3.6-27B UD Q4_K_XL (CUDA)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384 },
               { id: "dsv4f", name: "OpenCode Go DeepSeek V4 Flash", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "dsv4p", name: "OpenCode Go DeepSeek V4 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
-              { id: "glm-5.1", name: "Z.Ai GLM 5.1", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 203000, maxTokens: 16384 },
               { id: "glm-5.2", name: "Z.Ai GLM 5.2", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "frontier-pool", name: "Frontier Pool (sol->K3->GLM->MiniMax)", reasoning: true, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 131072 },
               { id: "mimo-v2.5-pro", name: "OpenCode Go MiMo V2.5 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
