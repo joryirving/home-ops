@@ -36,6 +36,9 @@ spec:
                   secretKeyRef:
                     name: "{{ .Release.Name }}-app"
                     key: fqdn-uri
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
