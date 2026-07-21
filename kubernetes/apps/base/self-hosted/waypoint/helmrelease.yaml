@@ -29,14 +29,15 @@ spec:
               tag: 0.0.10@sha256:b12aaf10f5c3efd915eb19c8d9323b7118f98b98d053adf67da688cc4e0613b9
             env:
               WAYPOINT_BASE_URL: https://travel.jory.dev
-              WAYPOINT_LOCAL_AUTH: false
-              WAYPOINT_LANGUAGE: en
-              WAYPOINT_MAP_STYLE_URL: https://tiles.openfreemap.org/styles/liberty
               WAYPOINT_DATABASE_URL:
                 valueFrom:
                   secretKeyRef:
                     name: "{{ .Release.Name }}-app"
                     key: fqdn-uri
+              WAYPOINT_LANGUAGE: en
+              WAYPOINT_LOCAL_AUTH: false
+              WAYPOINT_MAP_STYLE_URL: https://tiles.openfreemap.org/styles/liberty
+              WAYPOINT_MCP: true
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
