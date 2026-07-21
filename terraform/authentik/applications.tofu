@@ -180,10 +180,10 @@ locals {
     Waypoint = {
       client_id         = module.onepassword_application["Waypoint"].fields["WAYPOINT_CLIENT_ID"]
       client_secret     = module.onepassword_application["Waypoint"].fields["WAYPOINT_CLIENT_SECRET"]
-      group             = "workadventure"
+      group             = "home"
       icon_url          = "https://raw.githubusercontent.com/workadventure/workadventure/refs/heads/master/play/public/static/images/favicons/icon-512x512.png"
-      redirect_uri      = "https://waypoint.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
-      launch_url        = "https://waypoint.${var.CLUSTER_DOMAIN}"
+      redirect_uri      = "https://travel.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
+      launch_url        = "https://travel.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     WorkAdventure = {
