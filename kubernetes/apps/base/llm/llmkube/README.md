@@ -143,7 +143,7 @@ spec:
                   persistentVolumeClaim: { claimName: llmkube-models }
 ```
 
-For Ceph PVC sources, remember `--no-mmap` (cold-fault rule) in the
+For Ceph PVC sources, remember `--load-mode none` (cold-fault rule) in the
 `InferenceService.spec.extraArgs`.
 
 ## Continuity notes
