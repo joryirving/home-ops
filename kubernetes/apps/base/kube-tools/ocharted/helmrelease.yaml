@@ -11,6 +11,15 @@ spec:
   interval: 15m
   dependsOn: []
   values:
+    replicaCount: 2
+    podDisruptionBudget:
+      enabled: true
+    auth:
+      existingSecret: ocharted-secret
+      bypassNetworks:
+        - 10.42.0.0/16
+    deploymentAnnotations:
+      reloader.stakater.com/auto: "true"
     config:
       upstreamAllowlist:
         - "*.github.io"
@@ -18,17 +27,20 @@ spec:
       logFormat: json
     httpRoute:
       enabled: true
-      parentRefs:
-        - name: envoy-internal
-          namespace: network
+      annotations:
+        gatus.home-operations.com/endpoint: |-
+          path: /healthz
+          conditions: ["[STATUS] == 200"]
       hostnames:
-        - "${SUBDOMAIN}.jory.dev"
+        - "{{ .Release.Name }}.jory.dev"
+      parentRefs:
+        - name: envoy-external
+          namespace: network
     monitoring:
       serviceMonitor:
         enabled: true
     resources:
       requests:
         cpu: 10m
-        memory: 64Mi
       limits:
         memory: 512Mi
