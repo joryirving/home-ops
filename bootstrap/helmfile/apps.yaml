@@ -1,0 +1,106 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/helmfile
+
+# Bootstraps core applications that provide a minimal runtime base for the
+# cluster. These releases are installed first so the cluster has the resources
+# Flux needs before its own reconciliation begins.
+#
+# After this bootstrap phase, Flux is ready to take over management of the
+# application stack and continue reconciling downstream state.
+
+helmDefaults:
+  cleanupOnFail: true
+  forceConflicts: true
+  wait: true
+  waitForJobs: true
+
+bases:
+  - default.yaml
+
+defaultInherit: default
+
+releases:
+  - name: cilium
+    namespace: kube-system
+    hooks:
+      - # Wait for CRDs to be available
+        command: kubectl
+        args:
+          - wait
+          - --for=create
+          - crd/ciliumbgpadvertisements.cilium.io
+          - crd/ciliumbgpclusterconfigs.cilium.io
+          - crd/ciliumbgppeerconfigs.cilium.io
+          - crd/ciliumloadbalancerippools.cilium.io
+          - --timeout=2m
+        events:
+          - postsync
+        showlogs: true
+      - # Apply Resources
+        command: kubectl
+        args:
+          - apply
+          - --namespace={{ .Release.Namespace }}
+          - --server-side
+          - --force-conflicts
+          - --filename=../../kubernetes/apps/{{ .Release.Namespace }}/{{ .Release.Name }}/networking.yaml
+        events:
+          - postsync
+        showlogs: true
+
+  - name: coredns
+    namespace: kube-system
+    needs:
+      - kube-system/cilium
+
+  - name: cert-manager
+    namespace: cert-manager
+    needs:
+      - kube-system/coredns
+
+  - name: external-secrets
+    namespace: external-secrets
+    needs:
+      - cert-manager/cert-manager
+
+  - name: onepassword-connect
+    namespace: external-secrets
+    hooks:
+      - # Wait for CRDs to be available
+        command: kubectl
+        args:
+          - wait
+          - --for=create
+          - crd/clustersecretstores.external-secrets.io
+          - --timeout=2m
+        events:
+          - postsync
+        showlogs: true
+      - # Apply Resources
+        command: kubectl
+        args:
+          - apply
+          - --server-side
+          - --force-conflicts
+          - --filename=../../kubernetes/apps/{{ .Release.Namespace }}/{{ .Release.Name }}/clustersecretstore.yaml
+        events:
+          - postsync
+        showlogs: true
+    needs:
+      - external-secrets/external-secrets
+
+  - name: flux-operator
+    namespace: flux-system
+    needs:
+      - external-secrets/onepassword-connect
+
+  - name: flux-instance
+    namespace: flux-system
+    # flux-instance lives in the cluster-specific dir (not base) because its
+    # HelmRelease values differ per cluster. Override both the chart source
+    # path and the values template to read from the cluster dir.
+    values:
+      - chartPath: "{{ printf \"../../kubernetes/clusters/%s/flux-instance/helmrelease.yaml\" (env \"CLUSTER\") }}"
+      - ./templates/flux-values.yaml.gotmpl
+    needs:
+      - flux-system/flux-operator

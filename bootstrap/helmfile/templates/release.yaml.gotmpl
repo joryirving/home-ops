@@ -1,0 +1,12 @@
+{{- /*
+  Resolves chart URL and version from the app's own OCIRepository,
+  so chart sources are never duplicated in helmfile.
+
+  Standard path:  ../../kubernetes/apps/base/<namespace>/<name>/ocirepository.yaml
+  Override path:  set `chartPath` on the release to handle nested dirs
+                  (e.g. envoy-gateway uses app/, grafana-operator uses grafana/operator/)
+*/ -}}
+{{- $path := .Values.chartPath | default (printf "../../kubernetes/apps/base/%s/%s/ocirepository.yaml" .Release.Namespace .Release.Name) -}}
+{{- $oci := fromYaml (readFile $path) -}}
+chart: {{ $oci.spec.url }}
+version: {{ $oci.spec.ref.tag }}

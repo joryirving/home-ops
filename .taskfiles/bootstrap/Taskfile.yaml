@@ -3,76 +3,140 @@
 version: "3"
 
 tasks:
-  talos:
+  cluster:
+    desc: Bootstrap a Talos & Kubernetes cluster end-to-end [CLUSTER=main]
     cmds:
-      - task: kubernetes
+      - task: nodes
+      - task: k8s
+      - task: kubeconfig
+      - task: base
       - task: apps
     requires:
       vars: [CLUSTER]
     preconditions:
       - op account get
-      - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
-      - test -d {{.BOOTSTRAP_DIR}}/templates
-      - which kubectl op
+      - test -d {{.BOOTSTRAP_DIR}}/helmfile
+      - test -d {{.BOOTSTRAP_DIR}}/kustomize
+      - which kubectl helmfile minijinja-cli op talosctl yq
 
-  kubernetes:
-    desc: Bootstrap Talos
+  nodes:
+    internal: true
+    desc: Apply Talos configuration to all nodes
     cmds:
-      - until talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} bootstrap; do sleep 5; done
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
+      - for: { var: NODES, split: " " }
+        cmd: |
+          if ! out=$(talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.ITEM}} apply-config --insecure 2>&1); then
+            if [[ "$out" == *"certificate required"* ]]; then
+              echo "Talos already configured, skipping {{.ITEM}}"
+            else
+              echo "$out" && exit 1
+            fi
+          fi
     vars:
-      RANDOM_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
+      NODES:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq -r '.nodes | join(" ")'
     requires:
       vars: [CLUSTER]
     preconditions:
       - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
-      - which yq talosctl
 
-  apps:
-    desc: Bootstrap Kubernetes Apps
-    cmds:
-      - kubectl config set-cluster {{.CLUSTER}} --server https://{{.RANDOM_CONTROLLER}}:6443
-      - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.RANDOM_CONTROLLER}} --force {{.CLUSTER_DIR}} --force-context-name {{.CLUSTER}}
-      - until kubectl --context {{.CLUSTER}} get nodes --no-headers 2>/dev/null | grep -q .; do sleep 5; done
-      - minijinja-cli {{.BOOTSTRAP_DIR}}/templates/secrets.yaml.tpl | op inject | kubectl --context {{.CLUSTER}} apply --server-side --filename -
-      - task: helmfile
+  k8s:
+    internal: true
+    desc: Bootstrap Kubernetes via Talos
+    cmd: |
+      until out=$(talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.CONTROLLER}} bootstrap 2>&1 || true) && [[ "$out" == *"AlreadyExists"* ]]; do
+        echo "Kubernetes bootstrap in progress, retrying in 5s..."
+        sleep 5
+      done
+    vars:
+      CONTROLLER:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq -r '.endpoints[0]'
     requires:
       vars: [CLUSTER]
+
+  kubeconfig:
+    internal: true
+    desc: Fetch kubeconfig from the cluster
+    cmds:
+      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.CONTROLLER}} -f --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
+      # Point kubeconfig at the controller directly (until CNI is up)
+      - defer: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig kubeconfig --nodes {{.CONTROLLER}} -f --force-context-name {{.CLUSTER}} {{.CLUSTER_DIR}}
     vars:
-      RANDOM_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
+      CONTROLLER:
+        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq -r '.endpoints[0]'
+    requires:
+      vars: [CLUSTER]
+
+  base:
+    internal: true
+    desc: Apply base manifests (namespaces + secrets + CRDs)
+    cmds:
+      # Wait for nodes to be registered
+      - |
+        until kubectl --context {{.CLUSTER}} get nodes --no-headers 2>/dev/null | grep -q .; do
+          echo "Waiting for nodes to register..."
+          sleep 5
+        done
+      # Namespaces + secrets (templated + op inject)
+      - minijinja-cli {{.BOOTSTRAP_DIR}}/kustomize/secrets.yaml.tpl --cl-arg CLUSTER={{.CLUSTER}} | op inject | kubectl --context {{.CLUSTER}} apply --server-side --force-conflicts --filename -
+      # CRDs from helmfile (render only, extract CRDs, apply)
+      - |
+        helmfile --file {{.BOOTSTRAP_DIR}}/helmfile/crds.yaml template \
+          | yq ea -r -e 'select(.kind == "CustomResourceDefinition")' \
+          | kubectl --context {{.CLUSTER}} apply --server-side --field-manager bootstrap --force-conflicts --filename -
+    requires:
+      vars: [CLUSTER]
+    env:
+      CLUSTER: "{{.CLUSTER}}"
+    preconditions:
+      - op account get
+      - test -f {{.BOOTSTRAP_DIR}}/kustomize/secrets.yaml.tpl
+      - test -f {{.BOOTSTRAP_DIR}}/helmfile/crds.yaml
+
+  apps:
+    internal: true
+    desc: Sync bootstrap applications via helmfile
+    cmd: |
+      helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile/apps.yaml sync --hide-notes
+    requires:
+      vars: [CLUSTER]
     env:
       CLUSTER: "{{.CLUSTER}}"
       CLUSTER_APPS: "{{.CLUSTER_APPS}}"
-      CLUSTER_DIR: "{{.CLUSTER_DIR}}"
+    preconditions:
+      - test -f {{.BOOTSTRAP_DIR}}/helmfile/apps.yaml
+
+  # Legacy task names (kept for backwards compat)
+  talos:
+    desc: Bootstrap Talos & Kubernetes apps [CLUSTER=main]
+    cmds:
+      - task: cluster
+    requires:
+      vars: [CLUSTER]
     preconditions:
       - op account get
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
-      - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
-      - test -d {{.BOOTSTRAP_DIR}}/templates
-      - which helmfile jq kubectl minijinja-cli op talosctl
+
+  kubernetes:
+    internal: true
+    silent: true
+    cmd: task cluster
+    requires:
+      vars: [CLUSTER]
 
   helmfile:
     internal: true
+    desc: Run helmfile (crds + apps) manually
     cmds:
-      - helmfile --file {{.BOOTSTRAP_DIR}}/helmfile.d/00-crds.yaml template | yq ea -e 'select(.kind == "CustomResourceDefinition")' \
-        | kubectl apply --server-side --field-manager bootstrap --force-conflicts --filename -
-      - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile.d/01-apps.yaml sync --hide-notes
+      - |
+        helmfile --file {{.BOOTSTRAP_DIR}}/helmfile/crds.yaml template \
+          | yq ea -r -e 'select(.kind == "CustomResourceDefinition")' \
+          | kubectl apply --server-side --field-manager bootstrap --force-conflicts --filename -
+      - helmfile --kube-context {{.CLUSTER}} --file {{.BOOTSTRAP_DIR}}/helmfile/apps.yaml sync --hide-notes
     requires:
       vars: [CLUSTER]
-    vars:
-      RANDOM_CONTROLLER:
-        sh: talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info --output yaml | yq --exit-status '.endpoints[0]'
     env:
       CLUSTER: "{{.CLUSTER}}"
       CLUSTER_APPS: "{{.CLUSTER_APPS}}"
     preconditions:
-      - op account get
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig config info
-      - talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.RANDOM_CONTROLLER}} get machineconfig
-      - test -d {{.BOOTSTRAP_DIR}}/helmfile.d
-      - test -d {{.BOOTSTRAP_DIR}}/templates
-      - which helmfile kubectl yq
+      - test -f {{.BOOTSTRAP_DIR}}/helmfile/crds.yaml
+      - test -f {{.BOOTSTRAP_DIR}}/helmfile/apps.yaml
