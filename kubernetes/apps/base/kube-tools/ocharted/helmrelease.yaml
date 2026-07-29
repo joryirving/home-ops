@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ocharted
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: ocharted
+  interval: 15m
+  dependsOn: []
+  values:
+    config:
+      upstreamAllowlist:
+        - "*.github.io"
+      logLevel: info
+      logFormat: json
+    httpRoute:
+      enabled: true
+      parentRefs:
+        - name: envoy-internal
+          namespace: network
+      hostnames:
+        - "${SUBDOMAIN}.jory.dev"
+    monitoring:
+      serviceMonitor:
+        enabled: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 512Mi
