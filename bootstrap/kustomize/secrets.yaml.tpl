@@ -38,7 +38,7 @@ metadata:
   name: onepassword-connect-vault-secret
   namespace: external-secrets
 stringData:
-  OP_CONNECT_TOKEN: op://kubernetes/op-connect-{{ .CLUSTER }}/OP_CONNECT_TOKEN
+  OP_CONNECT_TOKEN: op://kubernetes/1password-{{ .CLUSTER }}/OP_CONNECT_TOKEN
 ---
 apiVersion: v1
 kind: Secret
