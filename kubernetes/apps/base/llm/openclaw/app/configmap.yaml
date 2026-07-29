@@ -10,9 +10,15 @@ data:
     {
       agents: {
         defaults: {
-          contextInjection: "always",
-          bootstrapMaxChars: 50000,
-          bootstrapTotalMaxChars: 100000,
+          // continuation-skip: workspace files inject once per session, not on every
+          // continuation turn; agents rely on lossless-claw summaries + memory_recall after.
+          // If agents "forget their contract" deep into long sessions, flip back to "always".
+          contextInjection: "continuation-skip",
+          // Truncation caps, not allocations (live files are ~3KB each after the 2026-07-29
+          // prompt-hygiene trim). Sized to catch runaway daily memory/YYYY-MM-DD.md logs.
+          // Previous values: 50000 / 100000.
+          bootstrapMaxChars: 16384,
+          bootstrapTotalMaxChars: 49152,
           thinkingDefault: "high",
           timeoutSeconds: 600,
           model: {
