@@ -70,7 +70,7 @@ data:
             model: "litellm/nvidia",
             directPolicy: "allow",
             lightContext: true,
-            isolatedSession: false,
+            isolatedSession: true,
             includeReasoning: false,
           },
         },
@@ -90,11 +90,11 @@ data:
             model: {
               primary: "litellm/kimi-k3",
               fallbacks: [
-                "litellm/GLM-5.2",
                 "minimax/MiniMax-M3",
                 "litellm/dsv4f",
                 "litellm/nvidia",
                 "litellm/self-hosted",
+                "litellm/glm-5.2",
               ]
             },
           },
@@ -128,10 +128,6 @@ data:
             model: {
               primary: "litellm/frontier-pool",
               fallbacks: [
-                "litellm/glm-5.2",
-                "litellm/kimi-k3",
-                "minimax/MiniMax-M3",
-                "litellm/chatgpt/gpt-5.5",
                 "litellm/dsv4f",
                 "litellm/nvidia",
                 "litellm/self-hosted",
@@ -174,6 +170,7 @@ data:
               { id: "dsv4p", name: "OpenCode Go DeepSeek V4 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "glm-5.2", name: "Z.Ai GLM 5.2", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
               { id: "frontier-pool", name: "Frontier Pool (sol->K3->GLM->MiniMax)", reasoning: true, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 131072 },
+              { id: "reasoning-pool", name: "Reasoning Pool (glm-5.2/minimax/kimi, load-balanced)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "mimo-v2.5-pro", name: "OpenCode Go MiMo V2.5 Pro", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "mimo-v2.5", name: "OpenCode Go MiMo V2.5", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384 },
               { id: "qwen3.7-plus", name: "OpenCode Go Qwen 3.7 Plus", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 1000000, maxTokens: 16384 },
@@ -253,7 +250,7 @@ data:
         },
       },
       plugins: {
-        allow: ["discord", "lossless-claw", "memini", "searxng", "composio", "openclaw-better-gateway"],
+        allow: ["discord", "lossless-claw", "memini", "searxng", "openclaw-better-gateway"],
         entries: {
           discord: { enabled: true },
           comfy: {
@@ -349,9 +346,6 @@ data:
             enabled: true,
           },
           browser: {
-            enabled: true,
-          },
-          "memory-core": {
             enabled: true,
           },
           memini: {
