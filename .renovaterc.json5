@@ -19,6 +19,15 @@
   flux: {
     managerFilePatterns: ["/^kubernetes/.+\\.yaml(?:\\.j2)?$/"],
   },
+  hostRules: [
+    {
+      description: "Authenticate against the ocharted OCI registry",
+      matchHost: "ocharted.jory.dev",
+      hostType: "docker",
+      username: "{{ secrets.OCHARTED_USERNAME }}",
+      password: "{{ secrets.OCHARTED_PASSWORD }}",
+    },
+  ],
   forkProcessing: "disabled",
   kubernetes: {
     managerFilePatterns: ["/^kubernetes/.+\\.yaml(?:\\.j2)?$/"],
