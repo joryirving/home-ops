@@ -16,8 +16,11 @@ dispatch (Next.js)  --groom/claim-->  foreman-dispatch-bridge (Python CronJob)  
   `foreman-coder`, builds a Foreman `Workload` per issue, handles escalation,
   revision, and PR-fix. Pure glue; owns no execution.
 - **Foreman** — the LLMKube operator decomposes each `Workload` into
-  `AgenticTask`s (code → verify → review), schedules them onto `FleetNode`s, and
-  runs the coder/gate/reviewer agents. It commits, DCO-signs, and opens the PR.
+  `AgenticTask`s (code → review; **gateless** since 2026-07-29 via
+  `VERIFY_ENABLED=false` — no deterministic verify gate Jobs run), schedules
+  them onto `FleetNode`s, and runs the coder/reviewer agents (the
+  deterministic `gate` agent still exists but is idle in gateless mode). It
+  commits, DCO-signs, and opens the PR.
 
 Everything here is GitOps-managed in this repo **except ad-hoc `llmkube foreman
 dispatch` runs**, which are intentionally off-git (see below).
@@ -50,7 +53,7 @@ per-Agent `execution.image`).
 | `coder-go` | `llama-nvidia` (local) | free | **Job** | `ghcr.io/defilantech/llmkube-foreman-agent-coder` |
 | `coder-frontier` | `MiniMax-M3-chat` (cloud) | **$ — the only cloud spend** | InProcess (fleet) | polyglot |
 | `coder-revision` | `nvidia` (local) | free | InProcess (fleet) | polyglot (pr-fix / revision) |
-| `gate` | none (deterministic) | free | Job (per-task) | `GATEPROFILE_MAP.image` per language |
+| `gate` | none (deterministic) | free | Job (per-task) | **idle in gateless mode** (`VERIFY_ENABLED=false`); was `GATEPROFILE_MAP.image` per language |
 | `reviewer` | `self-hosted` (local) | free | InProcess (fleet) | — |
 
 **Cost model.** Everything runs on **local** models (nvidia / self-hosted) except
@@ -92,6 +95,12 @@ release.
 - `DISPATCH_LANES: local,frontier` · `ESCALATION_LANE: frontier` — base work
   grooms into `local`; exhausted issues get re-laned to `frontier`.
 - `MAX_IN_PROGRESS: "10"` — cap on concurrent non-terminal Workloads.
+- `VERIFY_ENABLED: "false"` — **gateless mode** (bridge 0.6.10+, #58; operator
+  ≥0.9.9 via LLMKube#1166). Workloads decompose `code → review` with no verify
+  gate Job. Verification = the coder's own in-loop test run + the repo's real
+  CI on the opened PR + the pr-fix loop. This ended the gate-failure class
+  outright (imageless-generic GATE-ERRORs, the 63-char gate-Job-name
+  truncation bug on long repo names).
 - `LANE_CODER_AGENTS: {"*":"coder","frontier":"coder-frontier"}` — explicit
   per-lane coder; **wins outright** and is language-agnostic (keeps escalation on
   polyglot `coder-frontier`).
@@ -99,25 +108,17 @@ release.
   — base-lane routing by the repo's language. Resolution order in
   `coder_agent_for`: explicit lane match → base map by language → base map `*` →
   lane wildcard → default `coder`. Empty map = legacy behavior.
-- `GATEPROFILE_MAP` — repo → `{language, image, commands{format,lint,build,test}, sourceExtensions}`.
-  Defines a repo's language (used by BASE_CODER_AGENTS) and its clean-room gate.
-  - **Mapped repos get a real gate** — each `test` mirrors the repo's own CI
-    (install deps + run the real suite: `pip install -r requirements.txt && pytest`,
-    `npm run test`). A real gate catches a broken change *before* the PR; a
-    `test: "true"` on a repo you've onboarded just defers to CI and causes pr-fix
-    churn, so match the CI commands. Add a repo here (with a real gate) to onboard it.
-  - The `*` **wildcard is a deliberate pass-through** (`golang:1.26` + all-`true`
-    commands). Unmapped repos otherwise resolve to the `generic` preset, which has
-    **no image**, so every gate Job errors GATE-ERROR (this was ~14 of the 17
-    Failed workloads on the 2026-07-20 sweep). The pass-through lets them GATE-PASS
-    so the PR opens; verification then rests on the coder's self-verify + the repo's
-    real CI + the pr-fix loop. Trade: an unmapped repo can open a PR that later
-    fails CI (the churn a real gate avoids) — accepted as the fail-open default, and
-    the interim toward making the verify step optional upstream (LLMKube #1151).
-    Onboard a repo with a real gate to move it off the pass-through.
+- `GATEPROFILE_MAP` — repo → `{language, commands{...}, sourceExtensions, image}`.
+  With gateless mode no verify gate Job ever runs, but the map still matters:
+  - `language` drives BASE_CODER_AGENTS routing.
+  - `commands` feed the **coder self-gate** (the coder runs them in-loop before
+    concluding); keep them mirroring the repo's CI.
   - `sourceExtensions` (e.g. `[".gd"]` for windowstead) tells the reviewer's
-    scope-overlap check which files count as the repo's source, so a non-preset
-    language's issue-named files register as in-scope (LLMKube #1120, foreman 0.9.6).
+    scope-overlap check which files count as the repo's source (LLMKube #1120).
+  - `image` is **dead config in gateless mode** (it only ever ran the gate Job);
+    the `*` pass-through wildcard entry is likewise inert legacy from the
+    pre-gateless interim. Both can be slimmed at leisure.
+  Onboarding a repo = add `{language, commands, sourceExtensions}` here.
 - `REVISION_CODER_AGENTS: {"*":"coder-revision"}` — reviewer-requested revisions.
 - `PRUNE_COMPLETED_AFTER_HOURS: "6"`, `PRUNE_FAILED_AFTER_HOURS: "48"` (defaults;
   unset = these values) — terminal-Workload GC (bridge 0.6.7+). Each tick, after
@@ -171,7 +172,7 @@ Flags: `--repo owner/repo` (req), `--agents a,b` (req, round-robin), `-n/--names
 `--base-branch`, `--branch-prefix`, `--prompt-file ISSUE=PATH`, `--poll-interval`.
 
 **Caveat:** `dispatch` creates **standalone coder tasks** (code → PR), *not* the
-full `Workload` pipeline (code → verify → review). For a self-verifying,
+full `Workload` pipeline (code → review). For a self-reviewing,
 self-reviewed run go through dispatch/bridge instead.
 
 ## Common operations
@@ -195,24 +196,33 @@ kubectl -n llm logs job/bridge-manual
 kubectl -n llm delete job bridge-manual
 ```
 
-### Retrigger a failed Workload
+### Retrigger a failed Workload (issue-state first!)
 
-There is no retry verb. The `WorkloadReconciler` re-renders and recreates the
-pipeline whenever a Workload has **zero** child `AgenticTask`s (independent of
-phase). So delete *all* children:
+**Deleting a Workload does NOT reset its issue.** The issue stays
+`status/in-progress` + claimed (`agent/foreman-coder` label + lease), which the
+queue never serves again — a stranded issue (this bit twice: 17 strands on
+2026-07-21, 24 on 2026-07-29). The claim label and the lane both gate
+claimability: `ready` + still-labeled is dead, and `ready` without a
+`currentLane` is equally dead (lanes are only assigned by the groomer, whose
+candidates are `backlog`).
 
-```bash
-WL=wl-misospace-kubetix-153
-kubectl -n llm get agentictasks -o name | grep "${WL#wl-}" \
-  | xargs -r kubectl -n llm delete
-```
+The correct re-run flow:
 
-- Deleting only the failed children does **not** re-run — any surviving child
-  makes the reconciler roll up instead of re-render.
-- The re-run uses the Workload's baked `coderAgentRef` (e.g. an old Workload
-  still says `coder`, not `coder-python`). To pick up current routing you must
-  recreate the *Workload* via the bridge: delete the Workload CR and re-open the
-  issue in dispatch so the next tick rebuilds it.
+1. **Unclaim via dispatch** — the `unclaim_issue` MCP tool or the dispatch UI
+   (NOT raw `gh` label edits): removes the agent label, releases the lease,
+   flips `in-progress → ready`, and **keeps the groomed lane**, so the next
+   bridge tick re-claims it.
+2. Delete the Workload CR. The bridge rebuilds it with **current** routing/
+   config (a re-rendered old Workload would reuse its baked `coderAgentRef`).
+
+Bridge `#68` (merged, ships in the next tag > 0.6.10) automates the recovery:
+a per-tick reconcile resets issues that are in-progress with no live Workload
+and no open PR, and the Failed-workload GC unclaims at prune time — so manual
+strands self-heal within a tick once that release is deployed.
+
+Dispatch MCP tools for this surgery (dispatch 0.5.27+): `unclaim_issue`,
+`get_queue`, `list_issues`, `list_pr_fixes`, `mark_pr_fix`, `run_groomer`
+(groom now instead of waiting out the 10-min cron).
 
 ### Apply an Agent prompt/config change
 
@@ -273,19 +283,20 @@ kubectl -n llm rollout status deployment/foreman-agent
   claim is wrong. A NO-GO is a *model claim*, not a guarantee (a coder once matched
   unrelated code and falsely claimed "fixed"), so confirm before closing.
   Auto-handling (surface-first, opt-in auto-close) is not built.
-- **Reviewer fork-base diff (upstream fix pending).** A fork reviewer diffing
-  `main...HEAD` against a stale fork `main` sweeps in the upstream delta. Fixed
-  upstream in `defilantech/LLMKube` #1006; arrives with the next Foreman
-  release/image bump.
 - **Agent-config hot-reload (upstream nice-to-have).** The "Agent CR changes need
   a fleet restart" gotcha is a papercut worth an upstream request (agent should
   watch/reload its CR, or foreman should signal a restart is required).
-- **Verify step is mandatory (upstream request pending).** The operator always
-  emits a `verify` gate — `chooseSteps` requires `verifierAgentRef`, so there is no
-  `code → review` without one. With the coder self-verifying and the repo's own CI
-  as the real check, the pre-PR gate is redundant for CI-having repos; the `*`
-  pass-through gate hollows it out as the interim. Requested upstream as an opt-out
-  (LLMKube #1151) — until it lands, the pass-through is the mechanism.
+- **Cut bridge v0.6.11.** Merged-but-unreleased on the bridge: #68 (stranded-
+  issue reconcile + GC-time unclaim), #70 (HTTP retry/backoff to dispatch),
+  #69, #71. Tag `v0.6.11` → CI publishes → bump the digest here.
+- **Coder images lag the operator.** Operator `0.9.13` vs coder images `0.9.6`
+  (`misospace/llmkube-images` hasn't cut a 0.9.13 build). Violates the
+  "coders match the operator release" rule above — resolve when llmkube-images
+  ships the bump.
+- **dispatch hygiene (filed, unfixed).** dispatch#691 (pr-followup sync
+  silently degrades under GitHub rate limiting — "complete" with most repo
+  fetches swallowed) and dispatch#692 (queue items never reaped when their PR
+  merges — stale BLOCKED entries linger).
 
 ## Change conventions
 
@@ -308,8 +319,10 @@ kubectl -n llm rollout status deployment/foreman-agent
 - Ad-hoc runs (`llmkube foreman dispatch`, or the `task foreman:dispatch` /
   `foreman:revise` helpers in `.taskfiles/foreman/`) are never committed.
 
-## Current versions (snapshot, 2026-07-20)
+## Current versions (snapshot, 2026-07-30)
 
-Bridge `0.6.9` · dispatch chart `0.5.26` · Foreman operator `0.9.7` / coder images
-`0.9.6` (nvidia local base coders, MiniMax `coder-frontier`, self-hosted `reviewer`).
-Update this line when you cut a release so the next operator has a baseline.
+Bridge `0.6.10` (v0.6.11 pending — see open items) · dispatch chart `0.5.28` ·
+Foreman operator `0.9.13` / coder images `0.9.6` (lagging — see open items).
+Gateless (`VERIFY_ENABLED=false`) since 2026-07-29. nvidia local base coders,
+MiniMax `coder-frontier`, self-hosted `reviewer`. Update this line when you cut
+a release so the next operator has a baseline.
