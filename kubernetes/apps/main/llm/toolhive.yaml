@@ -37,9 +37,17 @@ metadata:
   name: &name toolhive-config
 spec:
   components:
+    - ../../../../../components/dragonfly
     - ../../../../../components/gpu
   dependsOn:
+    - name: dragonfly-operator
+      namespace: database
     - name: toolhive
+  healthCheckExprs:
+    - apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      failed: status.phase != 'ready'
+      current: status.phase == 'ready'
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/config
   postBuild:
@@ -68,24 +76,6 @@ spec:
       namespace: downloads
   interval: 1h
   path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/arr-mcp
-  wait: false
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: comfyui-mcp
-spec:
-  dependsOn:
-    - name: toolhive
-    - name: comfyui
-  interval: 1h
-  path: ./kubernetes/apps/base/llm/toolhive/mcp-servers/comfyui-mcp
   wait: false
   prune: true
   sourceRef:
