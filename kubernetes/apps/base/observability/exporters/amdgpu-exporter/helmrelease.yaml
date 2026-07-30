@@ -3,11 +3,11 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: &app rocm-smi-exporter
+  name: &app amdgpu-exporter
 spec:
   chartRef:
     kind: OCIRepository
-    name: rocm-smi-exporter
+    name: amdgpu-exporter
   interval: 15m
   dependsOn: []
   values:
@@ -23,14 +23,14 @@ spec:
           operator: Exists
           effect: NoSchedule
     controllers:
-      rocm-smi-exporter:
+      amdgpu-exporter:
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
-              repository: ghcr.io/joryirving/rocm-smi-exporter
-              tag: 0.1.0@sha256:a3824733b42f7ca0b411c87b73a14cb771c1a1ceb4928d093ab1f932c5eb3f36
+              repository: ghcr.io/defilantech/llmkube-amdgpu-exporter
+              tag: candidate-0f8f0d2ebc6eb616598e6874fac50404b271fce8@sha256:7fb21e54382afd60ddd3f0f5f69bd16f653fe3db300c6f8765124e5598818192
             env:
               SYSFS_ROOT: /host/sys
               TZ: America/Edmonton

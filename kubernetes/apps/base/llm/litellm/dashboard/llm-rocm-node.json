@@ -38,7 +38,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "GPU engine busy from rocm-smi-exporter, with memory pressure falling back to GTT allocation percentage when mem_busy_percent is not exposed by the kernel.",
+      "description": "GPU engine busy from amdgpu-exporter, with memory pressure falling back to GTT allocation percentage when mem_busy_percent is not exposed by the kernel.",
       "fieldConfig": { "defaults": { "max": 100, "min": 0, "unit": "percent" }, "overrides": [] },
       "gridPos": { "h": 7, "w": 12, "x": 12, "y": 1 },
       "id": 3,
@@ -49,13 +49,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_gpu_busy_percent{card=~\"$gpu\"}",
+          "expr": "amdgpu_gpu_busy_percent{card=~\"$gpu\"}",
           "legendFormat": "gpu busy {{card}}",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))",
+          "expr": "amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1))",
           "legendFormat": "memory pressure {{card}}",
           "refId": "B"
         }
@@ -103,7 +103,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max(rocm_smi_gpu_busy_percent{card=~\"$gpu\"})",
+          "expr": "max(amdgpu_gpu_busy_percent{card=~\"$gpu\"})",
           "legendFormat": "GPU busy",
           "refId": "A"
         }
@@ -113,7 +113,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Last observed memory pressure. Uses rocm_smi_memory_busy_percent when present, otherwise falls back to GTT allocation percentage because Strix Halo does not currently expose mem_busy_percent here.",
+      "description": "Last observed memory pressure. Uses amdgpu_memory_busy_percent when present, otherwise falls back to GTT allocation percentage because Strix Halo does not currently expose mem_busy_percent here.",
       "fieldConfig": {
         "defaults": {
           "max": 100,
@@ -143,7 +143,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max(rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1)))",
+          "expr": "max(amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1)))",
           "legendFormat": "memory pressure",
           "refId": "A"
         }
@@ -183,7 +183,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "100 * sum(rocm_smi_vram_used_bytes{card=~\"$gpu\"}) / clamp_min(sum(rocm_smi_vram_total_bytes{card=~\"$gpu\"}), 1)",
+          "expr": "100 * sum(amdgpu_vram_used_bytes{card=~\"$gpu\"}) / clamp_min(sum(amdgpu_vram_total_bytes{card=~\"$gpu\"}), 1)",
           "legendFormat": "VRAM used",
           "refId": "A"
         }
@@ -302,7 +302,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_clock_hertz{card=~\"$gpu\"}",
+          "expr": "amdgpu_clock_hertz{card=~\"$gpu\"}",
           "legendFormat": "{{sensor}} {{card}}",
           "refId": "A"
         }
@@ -335,13 +335,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_power_watts{card=~\"$gpu\", type=\"average\"}",
+          "expr": "amdgpu_power_watts{card=~\"$gpu\", type=\"average\"}",
           "legendFormat": "power {{card}}",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_temperature_celsius{card=~\"$gpu\"}",
+          "expr": "amdgpu_temperature_celsius{card=~\"$gpu\"}",
           "legendFormat": "temp {{sensor}} {{card}}",
           "refId": "B"
         }
@@ -362,19 +362,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_vram_used_bytes{card=~\"$gpu\"}",
+          "expr": "amdgpu_vram_used_bytes{card=~\"$gpu\"}",
           "legendFormat": "vram used {{card}}",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_gtt_used_bytes{card=~\"$gpu\"}",
+          "expr": "amdgpu_gtt_used_bytes{card=~\"$gpu\"}",
           "legendFormat": "gtt used {{card}}",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_visible_vram_used_bytes{card=~\"$gpu\"}",
+          "expr": "amdgpu_visible_vram_used_bytes{card=~\"$gpu\"}",
           "legendFormat": "visible vram used {{card}}",
           "refId": "C"
         }
@@ -395,19 +395,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_gpu_busy_percent{card=~\"$gpu\"}",
+          "expr": "amdgpu_gpu_busy_percent{card=~\"$gpu\"}",
           "legendFormat": "gpu busy {{card}}",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))",
+          "expr": "amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1))",
           "legendFormat": "memory pressure {{card}}",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "(rocm_smi_memory_busy_percent{card=~\"$gpu\"} or (100 * rocm_smi_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(rocm_smi_gtt_total_bytes{card=~\"$gpu\"}, 1))) - rocm_smi_gpu_busy_percent{card=~\"$gpu\"}",
+          "expr": "(amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1))) - amdgpu_gpu_busy_percent{card=~\"$gpu\"}",
           "legendFormat": "memory pressure minus gpu {{card}}",
           "refId": "C"
         }
@@ -598,13 +598,13 @@
         "allValue": ".*",
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "label_values(rocm_smi_gpu_info, card)",
+        "definition": "label_values(amdgpu_gpu_info, card)",
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "gpu",
         "query": {
-          "query": "label_values(rocm_smi_gpu_info, card)",
+          "query": "label_values(amdgpu_gpu_info, card)",
           "refId": "StandardVariableQuery"
         },
         "sort": 1,
