@@ -142,10 +142,10 @@ data:
       - model_name: chatgpt/gpt-5.6-terra
         model_info:
           mode: responses
-          input_cost_per_token: 0.0000025000
-          cache_creation_input_token_cost: 0.0000031250
-          cache_read_input_token_cost: 0.0000002500
-          output_cost_per_token: 0.0000150000
+          input_cost_per_token: 0.0000020000
+          cache_creation_input_token_cost: 0.0000025000
+          cache_read_input_token_cost: 0.0000002000
+          output_cost_per_token: 0.0000120000
           max_input_tokens: 1050000
         litellm_params:
           model: chatgpt/gpt-5.6-terra
@@ -153,10 +153,10 @@ data:
       - model_name: chatgpt/gpt-5.6-luna
         model_info:
           mode: responses
-          input_cost_per_token: 0.0000010000
-          cache_creation_input_token_cost: 0.0000012500
-          cache_read_input_token_cost: 0.0000001000
-          output_cost_per_token: 0.0000060000
+          input_cost_per_token: 0.0000002000
+          cache_creation_input_token_cost: 0.0000002500
+          cache_read_input_token_cost: 0.0000000200
+          output_cost_per_token: 0.0000012000
           max_input_tokens: 1050000
         litellm_params:
           model: chatgpt/gpt-5.6-luna
@@ -471,22 +471,18 @@ data:
 
       # Priority REASONING tier for the `auto` router. Keep requests on one provider
       # for prompt-cache locality, advancing only when a higher-priority plan fails:
-      #   1 GLM-5.2 (z.ai sub) -> 2 Kimi K2.7 (Kimi Coding sub) -> 3 MiniMax-M3 (flat)
+      #   1 GPT-5.6 Luna (ChatGPT sub) -> 2 Kimi K2.7 (Kimi Coding sub)
+      #   -> 3 DeepSeek V4 Pro (OpenCode Go) -> 4 MiniMax-M3 (flat)
       - model_name: reasoning-pool
         model_info:
-          mode: chat
-          input_cost_per_token: 0.0000014000
-          cache_creation_input_token_cost: 0.0000014000
-          cache_read_input_token_cost: 0.0000002600
-          output_cost_per_token: 0.0000044000
-          max_input_tokens: 1000000
-          max_output_tokens: 131072
-          supports_function_calling: true
-          supports_prompt_caching: true
+          mode: responses
+          input_cost_per_token: 0.0000002000
+          cache_creation_input_token_cost: 0.0000002500
+          cache_read_input_token_cost: 0.0000000200
+          output_cost_per_token: 0.0000012000
+          max_input_tokens: 1050000
         litellm_params:
-          model: openai/glm-5.2
-          api_base: https://api.z.ai/api/coding/paas/v4
-          api_key: os.environ/ZAI_API_KEY
+          model: chatgpt/gpt-5.6-luna
           order: 1
 
       - model_name: reasoning-pool
@@ -511,6 +507,27 @@ data:
       - model_name: reasoning-pool
         model_info:
           mode: chat
+          input_cost_per_token: 0.0000017400
+          cache_creation_input_token_cost: 0.0000017400
+          cache_read_input_token_cost: 0.0000001450
+          output_cost_per_token: 0.0000034800
+          max_input_tokens: 1000000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/deepseek-v4-pro
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          order: 3
+          extra_body: # https://github.com/BerriAI/litellm/issues/26395
+            thinking:
+              type: disabled
+          merge_reasoning_content_in_choices: true
+
+      - model_name: reasoning-pool
+        model_info:
+          mode: chat
           input_cost_per_token: 0.0000003000
           output_cost_per_token: 0.0000012000
           max_input_tokens: 1000000
@@ -520,14 +537,13 @@ data:
           model: openai/MiniMax-M3
           api_base: https://api.minimax.io/v1
           api_key: os.environ/MINIMAX_API_KEY
-          order: 3
+          order: 4
 
       # Priority FRONTIER pool — grab the smartest model with room left, selectable
       # in opencode/zed. STRICT priority order (order:) — each subscription is followed
-      # by its PAYG counterpart, with the uncapped MiniMax flat plan as the floor:
+      # by its PAYG counterpart:
       #   1 ChatGPT sol -> 2 Kimi K3 (Kimi Coding sub) -> 3 Kimi K3 (Moonshot PAYG)
       #   -> 4 GLM-5.2 (z.ai sub) -> 5 GLM-5.2 (Neuralwatt PAYG)
-      #   -> 6 MiniMax-M3-chat (flat)
       - model_name: frontier-pool
         model_info:
           mode: responses
@@ -610,20 +626,6 @@ data:
           api_base: https://api.neuralwatt.com/v1
           api_key: os.environ/NEURALWATT_API_KEY
           order: 5
-
-      - model_name: frontier-pool
-        model_info:
-          mode: chat
-          input_cost_per_token: 0.0000003000
-          output_cost_per_token: 0.0000012000
-          max_input_tokens: 1000000
-          max_output_tokens: 131072
-          supports_function_calling: true
-        litellm_params:
-          model: openai/MiniMax-M3
-          api_base: https://api.minimax.io/v1
-          api_key: os.environ/MINIMAX_API_KEY
-          order: 6
 
       # Opt-in smart-routing alias for opencode + zed. Rule-based complexity router
       # (no embedding call); pinned consumers keep addressing their model directly.
