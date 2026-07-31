@@ -30,7 +30,7 @@ jobs:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
     name: Image Pull - Extract Images
-    runs-on: ubuntu-latest
+    runs-on: ${{ format('{0}-runner-{1}', github.event.repository.name, matrix.cluster) }}
     strategy:
       matrix:
         cluster: ["main", "utility"]
