@@ -56,6 +56,13 @@ per-Agent `execution.image`).
 | `gate` | none (deterministic) | free | Job (per-task) | **idle in gateless mode** (`VERIFY_ENABLED=false`); was `GATEPROFILE_MAP.image` per language |
 | `reviewer` | `self-hosted` (local) | free | InProcess (fleet) | — |
 
+Every LLM agent (all coders + both reviewers) has `spec.mcp` enabled with the
+hosted context7 server (`resolve-library-id`, `query-docs`) for up-to-date
+library docs mid-task; auth rides the `CONTEXT7_API_KEY` header from the
+`foreman-agent` Secret (1Password `context7` item, `OPENCODE_API_KEY`
+field). `gate`/`gate-fork` have no MCP (deterministic, no LLM loop). Adding
+another MCP server = add a `servers` entry per agent + any header secret.
+
 **Cost model.** Everything runs on **local** models (nvidia / self-hosted) except
 `coder-frontier` (**MiniMax, cloud**), which is the escalation tier only. The
 groomer defaults ready work to the `local` lane; `frontier` is reached only by
