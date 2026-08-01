@@ -19,6 +19,18 @@ spec:
     - grep
     - bash
     - submit_result
+  mcp:
+    enabled: true
+    servers:
+      - name: foreman-agent
+        transport: http
+        url: https://mcp.context7.com/mcp
+        headers:
+          - name: CONTEXT7_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: foreman-agent
+                key: CONTEXT7_API_KEY
   temperature: "0.2"
   maxTurns: 160
   maxRetries: 3
