@@ -3,7 +3,7 @@ set -euo pipefail
 
 file="${1:?Usage: validate-images.sh <file>}"
 
-ALLOWED_REGISTRIES="docker.io ghcr.io registry.erwanleboucher.dev registry.k8s.io quay.io mirror.gcr.io atdr.meo.ws"
+ALLOWED_REGISTRIES="docker.io ghcr.io nvcr.io public.ecr.aws registry.erwanleboucher.dev registry.k8s.io quay.io mirror.gcr.io atdr.meo.ws"
 MAX_IMAGES=500
 MAX_FILE_BYTES=65536
 

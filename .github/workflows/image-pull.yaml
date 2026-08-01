@@ -88,10 +88,10 @@ jobs:
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
         run: |
-          for result in $(echo "$RESULTS" | jq -r '.[]'); do
+          while IFS= read -r result; do
             case "$result" in
               success|skipped) ;;
               *) echo "::error::Unexpected job result: $result" >&2; exit 1 ;;
             esac
-          done
+          done < <(echo "$RESULTS" | jq -r '.[]')
           echo "All jobs passed or skipped"
