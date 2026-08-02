@@ -62,12 +62,12 @@ jobs:
     name: Image Pull - Success
     runs-on: ubuntu-latest
     steps:
-      - name: Fail on filter failure
-        if: ${{ needs.filter.result == 'failure' }}
+      - name: Fail on filter not success or skipped
+        if: ${{ !(needs.filter.result == 'success' || needs.filter.result == 'skipped') }}
         run: exit 1
 
-      - name: Fail on pull failure
-        if: ${{ needs.pull.result == 'failure' }}
+      - name: Fail on pull not success or skipped
+        if: ${{ !(needs.pull.result == 'success' || needs.pull.result == 'skipped') }}
         run: exit 1
 
       - name: All jobs passed or skipped
