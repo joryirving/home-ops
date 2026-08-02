@@ -14,7 +14,7 @@ Moonshot is the token-metered failover behind the Kimi Coding subscription.
 
 | Plan                | Price                                        | Cap                                                                          | Reset                              | Models                                                                       | Primary use                                                                   |
 | ------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage                  | rolling (3h chat) + weekly (Codex) | GPT-5.6 Sol, Terra, Luna; legacy GPT-5.5/5.4 aliases                          | Sol frontier; Luna is the reasoning-pool lead                                 |
+| **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage                  | rolling (3h chat) + weekly (Codex) | GPT-5.6 Sol, Terra, Luna                                                      | Sol frontier; Luna is the reasoning-pool lead                                 |
 | **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | 300 prompts / 5h                                                             | rolling 5h                         | M3 and M2.7, via the Anthropic endpoint                                      | Agentic reasoning workhorse                                                   |
 | **Opencode Go**     | $10 USD/mo                                   | $12 / 5h, $30 / wk, $60 / mo (dollar-denominated)                            | rolling 5h / wk / mo               | DeepSeek V4 Flash/Pro, MiMo v2.5/Pro, Qwen3.7-plus (frontier models moved to dedicated subs) | Cheap lane only (dsv4f workhorse) — go's $ cap is reserved for cheap models  |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                                             | rolling 5h                         | GLM-5.2, GLM-4.7, GLM-4.5-Air                                                | GLM coding access; fallback lane                                              |
@@ -60,9 +60,6 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 | `chatgpt/gpt-5.6-sol`   | ChatGPT Plus                  | gpt-5.6-sol (Codex/OAuth)       | 1.1M     | Flagship frontier                                  |
 | `chatgpt/gpt-5.6-terra` | ChatGPT Plus                  | gpt-5.6-terra (Codex/OAuth)     | 1.05M    | Balanced, explicit-only OpenAI tier                |
 | `chatgpt/gpt-5.6-luna`  | ChatGPT Plus                  | gpt-5.6-luna (Codex/OAuth)      | 1.05M    | Reasoning-pool lead; high-volume OpenAI tier       |
-| `chatgpt/gpt-5.5`      | ChatGPT Plus                  | gpt-5.5 (Codex/OAuth)           | —        | Frontier                                           |
-| `chatgpt/gpt-5.4`      | ChatGPT Plus                  | gpt-5.4                         | —        | Frontier (cheaper)                                 |
-| `chatgpt/gpt-5.4-mini` | ChatGPT Plus                  | gpt-5.4-mini                    | —        | Cheap fallback                                     |
 | `kimi-k2.7`            | Kimi Coding → Moonshot        | kimi-for-coding / kimi-k2.7-code | 262k    | Coding subscription first, token PAYG fallback     |
 | `kimi-k3`              | Kimi Coding → Moonshot        | k3 / kimi-k3                    | 1M      | Frontier Kimi lane; subscription first             |
 
@@ -141,7 +138,7 @@ Reading it for routing:
 - **Reasoning tier** (`gpt-5.6-luna`, `kimi-k2.7`, `dsv4p`, `MiniMax-M3`) — a separate ordered
   lane for strong, economical reasoning work. DSV4P is the coding-oriented OpenCode Go rung;
   MiniMax is the flat-plan floor.
-- **Cheap/fast** (`dsv4f`, `gpt-5.4-mini`, `mimo-v2.5`) — near-frontier coding at low cost;
+- **Cheap/fast** (`dsv4f`, `mimo-v2.5`) — near-frontier coding at low cost;
   `dsv4f` is the standout (SWE-V 79, LiveCodeBench 91.6, cheapest).
 - **Local** — `nvidia` (Qwen3.6-27B dense) is the local quality + speed pick; `self-hosted`
   (35B-A3B) trails it everywhere and earns its place only on the 262k context window.
@@ -184,7 +181,7 @@ per job already encodes an intent-lane pattern by hand.
 Issue-worker pipelines (pick up issues and open PRs):
 
 - **MC Normal** → `self-hosted`
-- **MC Escalated** → `gpt-5.5`
+- **MC Escalated** → `gpt-5.6-sol`
 
 ## Current routing + observed usage
 
@@ -211,10 +208,9 @@ Observed 30-day traffic (Prometheus, `litellm_*_metric_total`), top models:
 | MiniMax-M3                  |         834M |          9,812 |
 | deepseek-v4-flash (`dsv4f`) |         811M |          9,049 |
 | nvidia                      |         161M |          4,798 |
-| gpt-5.5                     |          31M |            432 |
 
-`gpt-5.4-mini` remains a cheap fallback despite negligible traffic. Kimi subscription traffic is
-valued at the equivalent Moonshot API rates in LiteLLM even though the plan itself is flat-rate.
+Kimi subscription traffic is valued at the equivalent Moonshot API rates in LiteLLM even though the
+plan itself is flat-rate.
 
 ## Smart-routing: the `auto` alias
 
