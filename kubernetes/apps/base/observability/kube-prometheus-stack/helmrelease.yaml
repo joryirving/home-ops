@@ -12,6 +12,30 @@ spec:
   dependsOn: []
   values:
     additionalPrometheusRulesMap:
+      coredns-rules:
+        groups:
+          - name: coredns
+            rules:
+              - alert: CoreDnsForwardHealthcheckFailure
+                annotations:
+                  summary: CoreDNS pod {{ $labels.pod }} on cluster {{ $labels.cluster
+                    }} has forward healthcheck failures.
+                expr: sum by (pod) (rate(coredns_forward_healthcheck_broken_total[5m]))
+                  > 0
+                for: 5m
+                labels:
+                  severity: warning
+              - alert: CoreDnsServfailHigh
+                annotations:
+                  summary: CoreDNS pod {{ $labels.pod }} on cluster {{ $labels.cluster
+                    }} has a SERVFAIL response ratio of {{ $value | humanizePercentage
+                    }}.
+                expr: ((sum by (pod) (rate(coredns_dns_responses_total{rcode="SERVFAIL"}[5m]))
+                  / sum by (pod) (rate(coredns_dns_responses_total[5m]))) > 0.01)
+                  and (sum by (pod) (rate(coredns_dns_responses_total[5m])) > 0)
+                for: 5m
+                labels:
+                  severity: warning
       dockerhub-rules:
         groups:
           - name: dockerhub

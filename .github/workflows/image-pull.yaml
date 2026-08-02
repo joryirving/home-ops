@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Image Pull
 
-on:
+"on":
   pull_request:
     branches: ["main"]
 
@@ -26,15 +26,15 @@ jobs:
         with:
           patterns: kubernetes/**/*
 
-  extract:
+  pull:
     if: ${{ needs.filter.outputs.changed-files != '[]' }}
     needs: filter
-    name: Image Pull - Extract Images
+    name: Image Pull - Pull Images
     runs-on: ${{ format('{0}-runner-{1}', github.event.repository.name, matrix.cluster) }}
     strategy:
+      fail-fast: false
       matrix:
         cluster: ["main", "utility"]
-      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,59 +47,28 @@ jobs:
         with:
           cache: false
           tool_versions: |
-            github:home-operations/flate latest
+            github:home-operations/flate 0.4.12
+            aqua:siderolabs/talos 1.13.7
 
       - name: Extract Images
         run: flate diff images -p ./kubernetes/clusters/${{ matrix.cluster }} -o json > images.json
 
-      - name: Upload Image List
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: images-${{ matrix.cluster }}
-          path: images.json
-          retention-days: 1
-
-  pull:
-    needs: extract
-    name: Image Pull - Pull Images
-    runs-on: ${{ format('{0}-runner-{1}', github.event.repository.name, matrix.cluster) }}
-    strategy:
-      matrix:
-        cluster: ["main", "utility"]
-      max-parallel: 4
-      fail-fast: false
-    steps:
-      - name: Download Image List
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: images-${{ matrix.cluster }}
-
-      - name: Setup Mise
-        uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
-        with:
-          cache: false
-          tool_versions: |
-            talosctl latest
-
       - name: Pull Images
-        run: |
-          jq -r '.[]' images.json | while read -r image; do
-            echo "Pulling $image"
-            talosctl --nodes "$NODE" image pull "$image"
-          done
+        run: jq -r '.[]' images.json | xargs -r -n1 talosctl --nodes "$NODE" image pull
 
   success:
-    if: ${{ !cancelled() }}
-    needs: pull
+    if: ${{ always() }}
+    needs: [filter, pull]
     name: Image Pull - Success
     runs-on: ubuntu-latest
     steps:
-      - name: Any jobs failed?
-        if: ${{ contains(needs.*.result, 'failure') }}
+      - name: Fail on filter not success or skipped
+        if: ${{ !(needs.filter.result == 'success' || needs.filter.result == 'skipped') }}
         run: exit 1
 
-      - name: All jobs passed or skipped?
-        if: ${{ !(contains(needs.*.result, 'failure')) }}
-        env:
-          RESULTS: ${{ toJSON(needs.*.result) }}
-        run: echo "All jobs passed or skipped" && echo "$RESULTS"
+      - name: Fail on pull not success or skipped
+        if: ${{ !(needs.pull.result == 'success' || needs.pull.result == 'skipped') }}
+        run: exit 1
+
+      - name: All jobs passed or skipped
+        run: echo "All jobs passed or skipped"
