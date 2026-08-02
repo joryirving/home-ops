@@ -53,30 +53,8 @@ jobs:
       - name: Extract Images
         run: flate diff images -p ./kubernetes/clusters/${{ matrix.cluster }} -o json > images.json
 
-      - name: Validate Images
-        run: .github/scripts/validate-images.sh images.json
-
       - name: Pull Images
-        run: |
-          jq -r '.[]' images.json | while IFS= read -r image; do
-            attempt=1
-            max_attempts=3
-            while [ "$attempt" -le "$max_attempts" ]; do
-              echo "Pulling $image (attempt ${attempt}/${max_attempts})"
-              if talosctl --nodes "$NODE" image pull "$image"; then
-                echo "Pulled $image"
-                break
-              fi
-              if [ "$attempt" -eq "$max_attempts" ]; then
-                echo "::error::Failed to pull $image after ${max_attempts} attempts" >&2
-                exit 1
-              fi
-              wait_secs=$(( attempt * 5 ))
-              echo "Pull failed for $image, attempt ${attempt}/${max_attempts}, retrying in ${wait_secs}s"
-              sleep "$wait_secs"
-              attempt=$(( attempt + 1 ))
-            done
-          done
+        run: jq -r '.[]' images.json | xargs -r -n1 talosctl --nodes "$NODE" image pull
 
   success:
     if: ${{ always() }}
@@ -84,14 +62,13 @@ jobs:
     name: Image Pull - Success
     runs-on: ubuntu-latest
     steps:
-      - name: Check results
-        env:
-          RESULTS: ${{ toJSON(needs.*.result) }}
-        run: |
-          while IFS= read -r result; do
-            case "$result" in
-              success|skipped) ;;
-              *) echo "::error::Unexpected job result: $result" >&2; exit 1 ;;
-            esac
-          done < <(echo "$RESULTS" | jq -r '.[]')
-          echo "All jobs passed or skipped"
+      - name: Fail on filter failure
+        if: ${{ needs.filter.result == 'failure' }}
+        run: exit 1
+
+      - name: Fail on pull failure
+        if: ${{ needs.pull.result == 'failure' }}
+        run: exit 1
+
+      - name: All jobs passed or skipped
+        run: echo "All jobs passed or skipped"
