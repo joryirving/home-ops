@@ -21,6 +21,10 @@ spec:
           }]
       hostUsers: false
       securityContext:
+        sysctls:
+          # Accept Thread OMR route advertisements on the Multus interface.
+          - name: net.ipv6.conf.net1.accept_ra_rt_info_max_plen
+            value: "64"
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
