@@ -87,7 +87,8 @@ cost and energy until its response-level `cost` and `energy` extensions are expo
 **Provider failover** (LiteLLM `order:`, transparent to callers): `glm-5.2` → z.ai then Neuralwatt;
 `kimi-k2.7` → Kimi Coding then Moonshot;
 `kimi-k3` → Kimi Coding then Moonshot. **OpenCode Go is not a frontier-pool rung** (K3/GLM burn its
-dollar cap too fast); DSV4P is retained only as the third reasoning-pool fallback. This reacts when an
+dollar cap too fast); DSV4F holds the third reasoning-pool rung, and DSV4P is now reachable only by
+explicit selection. This reacts when an
 upstream rejects requests; it cannot detect that an unpublished rolling allowance is merely _close_ to
 exhausted. `go-minimax-m3` / `go-minimax-m2.7` were removed entirely (redundant with the flat MiniMax
 plan + the native `MiniMax-M3-chat` endpoint).
@@ -135,11 +136,14 @@ Reading it for routing:
 - **Frontier tier** (`gpt-5.6-sol`, `kimi-k3`, `glm-5.2`) — strict subscription/PAYG escalation;
   Sol is the ceiling, K3 is the independent coding/frontier lane, and GLM is the long-horizon fallback.
   MiniMax intentionally does not appear here.
-- **Reasoning tier** (`gpt-5.6-luna`, `kimi-k2.7`, `dsv4p`, `MiniMax-M3`) — a separate ordered
-  lane for strong, economical reasoning work. DSV4P is the coding-oriented OpenCode Go rung;
-  MiniMax is the flat-plan floor.
+- **Reasoning tier** (`gpt-5.6-luna`, `kimi-k2.7`, `dsv4f`, `MiniMax-M3`) — a separate ordered
+  lane for strong, economical reasoning work. DSV4F is the OpenCode Go rung; MiniMax is the
+  flat-plan floor. Luna is pinned to `xhigh` reasoning effort (see below).
 - **Cheap/fast** (`dsv4f`, `mimo-v2.5`) — near-frontier coding at low cost;
-  `dsv4f` is the standout (SWE-V 79, LiveCodeBench 91.6, cheapest).
+  `dsv4f` is the standout (SWE-V 79, LiveCodeBench 91.6, cheapest). Since V4 Flash went GA it
+  no longer belongs only in this tier: repo-bench re-scored it 0.895 → 0.957, at or above the
+  previous top cluster, while V4 Pro stayed at 0.864 — and Flash is 12.4× cheaper per token.
+  That inversion is why the reasoning tier and Hermes' fallback chain now reach for Flash, not Pro.
 - **Local** — `nvidia` (Qwen3.6-27B dense) is the local quality + speed pick; `self-hosted`
   (35B-A3B) trails it everywhere and earns its place only on the 262k context window.
 - **MiniMax-M2.7 / MiMo / Qwen3.7-Plus** — agentic workhorses with thin published reasoning
@@ -225,7 +229,7 @@ Tiers (capability-ordered; SIMPLE offloads the single-slot 3090 onto the Strix):
 | ------------------ | ---------------------------------------------------- | -------------------------------------- |
 | SIMPLE             | `self-hosted` (Strix 35B-A3B, 2 instances × 2 slots) | Trivia — keep the 3090 free            |
 | MEDIUM             | `nvidia` (Qwen3.6-27B dense)                         | Best + fastest local                   |
-| COMPLEX            | `reasoning-pool`                                     | Strict priority: Luna → K2.7 → DSV4P → M3 |
+| COMPLEX            | `reasoning-pool`                                     | Strict priority: Luna → K2.7 → DSV4F → M3 |
 | REASONING          | `frontier-pool`                                      | Strict priority: Sol → K3 → GLM       |
 | default (unscored) | `nvidia`                                             | Best local                             |
 
@@ -238,8 +242,8 @@ Mechanics that shaped this (verified against LiteLLM source):
 - Both routers are pre-routing hooks returning a model _name_, resolved once — **no chaining**,
   so semantic can't sit "in front of" complexity. A model _group_ as a tier target works.
 - `token_thresholds` is a complexity _signal_, not a context cap. The 145k/262k local ceilings are
-  guarded by `context_window_fallbacks` (`nvidia`→`self-hosted`→`dsv4p`) + `enable_pre_call_checks`.
-- `reasoning-pool` is a strict priority chain: Luna → K2.7 → DSV4P → MiniMax M3. Its M3 rung uses
+  guarded by `context_window_fallbacks` (`nvidia`→`self-hosted`, `self-hosted`→`dsv4f`) + `enable_pre_call_checks`.
+- `reasoning-pool` is a strict priority chain: Luna → K2.7 → DSV4F → MiniMax M3. Its M3 rung uses
   MiniMax's OpenAI-compatible `/v1` endpoint, so it may expose thinking in content; that is acceptable
   for this lane. OpenClaw's native `MiniMax-M3` alias instead uses the Anthropic `/messages` endpoint
   and its think-tag stripping shim.
@@ -281,6 +285,51 @@ Caveats:
   the LiteLLM logs) to see whether you're on Sol, K3, or GLM.
 - **No silent quality downgrade.** Once both K3 and GLM capacity paths reject a request, the frontier
   request fails. Use `reasoning-pool` when MiniMax M3 is an acceptable final fallback.
-- **Cap detection depends on 429s.** The chain only skips a capped model if that backend returns a
-  retryable 429 — confirm ChatGPT/Codex signals its cap that way (hammer past a cap, watch the
-  `x-litellm-model-id` header walk down the chain).
+- **Cap signals are not all 429s.** Kimi Coding announces exhaustion with a **403**, not a 429. A 403
+  is retried but never cools the deployment down, so retries re-hit the capped rung; what actually
+  advances the chain is LiteLLM's automatic **order-based fallback**, which synthesises fallback
+  entries for the higher `order:` rungs of the same group once retries are exhausted. No separate
+  model_name or `fallbacks:` entry is needed for that, and none should be added.
+- **Fallbacks fire on any exception, including 400s.** `run_async_fallback` filters nothing by type or
+  status, so a hard `BadRequestError` walks the chain rather than failing the caller. That is what
+  makes thinking-mode-vs-forced-tool-choice (below) a graceful degradation instead of an outage.
+- **Diagnose rungs from metrics, not guesses.** `litellm_deployment_failure_responses_total`
+  (labelled by `exception_status` / `api_base`) plus
+  `litellm_deployment_{successful,failed}_fallbacks_total` show exactly which rung answered and why
+  the previous one didn't.
+
+## Reasoning-effort and thinking-mode pinning
+
+Two per-deployment behaviours are pinned in the configmap without inline comment; the reasoning lives
+here.
+
+**Luna is pinned to `xhigh` reasoning effort** via `extra_body: {reasoning: {effort: xhigh}}` on the
+`reasoning-pool` rung. The nested `extra_body` form is deliberate:
+
+- `extra_body` is merged onto the wire *after* the provider transform, so it survives the `chatgpt/`
+  provider's strict allow-list (which permits nested `reasoning` but strips `reasoning_effort`).
+- A bare `reasoning_effort: "xhigh"` string does work on LiteLLM v1.94.0, but `"max"` does **not** —
+  `_map_reasoning_effort` has no `max` branch, returns `None`, and the whole `reasoning` field is
+  dropped silently, landing on the `medium` default. `max` is a real gpt-5.6 effort above `xhigh`, so
+  if it is ever wanted it must use the `extra_body` form too. The Codex client only exposes `xhigh`.
+- This is a default, not an override: client kwargs are merged last and win. A true hard override
+  would need a proxy `async_pre_call_hook`.
+- Effort costs subscription quota. The ChatGPT plan meters reasoning work, and Luna leads the tier at
+  `order: 1`, so it fronts every COMPLEX-classified request. Drop it to `high` if the window runs dry.
+
+**DeepSeek V4 Flash runs with thinking default-on.** The `thinking: {type: disabled}` workaround for
+[litellm#26395](https://github.com/BerriAI/litellm/issues/26395) was removed after retesting the live
+OpenCode Go endpoint (2026-08-04):
+
+- Multi-turn and full agentic tool round-trips now succeed with `reasoning_content` stripped — the
+  failure the workaround existed for is fixed server-side. LiteLLM's own
+  `DeepSeekChatConfig._fill_reasoning_content()` fix is irrelevant here either way: it is bound to
+  `custom_llm_provider="deepseek"` and never runs on an `openai/`-via-OpenCode rung.
+- The one surviving constraint is **forced** tool choice: `tool_choice: "required"` or a named
+  function returns `400 "Thinking mode does not support this tool_choice"`. `tool_choice: "auto"` is
+  fine, and forced calls fall through to the `dsv4f` → `nvidia` router fallback rather than failing.
+- Watch `litellm_deployment_successful_fallbacks_total{requested_model="dsv4f",fallback_model="nvidia"}`.
+  If it climbs, a consumer is forcing a tool and `extra_body: {thinking: {type: disabled}}` should be
+  restored on that deployment. The likeliest source is the `self-hosted` → `dsv4f` context-window
+  fallback, which arrives carrying whatever `tool_choice` the original caller set.
+- `dsv4p` keeps the disable; it is only reachable by explicit selection now.
