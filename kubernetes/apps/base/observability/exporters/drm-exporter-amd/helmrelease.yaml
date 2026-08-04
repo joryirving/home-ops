@@ -51,3 +51,20 @@ spec:
       - key: llm-workload
         operator: Exists
         effect: NoSchedule
+  # Force one rollout to clear stale DRA/CDI allocation on existing pods.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: DaemonSet
+              name: drm-exporter-amd
+            patch: |
+              apiVersion: apps/v1
+              kind: DaemonSet
+              metadata:
+                name: drm-exporter-amd
+              spec:
+                template:
+                  metadata:
+                    annotations:
+                      drm-exporter.home-operations.com/restartedAt: "2026-08-04"
