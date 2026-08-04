@@ -124,7 +124,11 @@ data:
           max_parallel_requests: 3
 
       # ChatGPT subscription (OAuth device flow, no API key — token cached in CHATGPT_TOKEN_DIR).
-      # reasoning_effort is left to the caller (none|low|medium|high|xhigh|max per request).
+      # reasoning_effort is left to the caller (none|low|medium|high|xhigh per request).
+      # `max` is a real gpt-5.6 effort but is NOT usable as a bare reasoning_effort string
+      # on litellm v1.94.0 — _map_reasoning_effort has no `max` branch, returns None, and
+      # the reasoning field is dropped silently (lands on medium). Pass it as
+      # extra_body: {reasoning: {effort: max}} instead, as reasoning-pool's luna rung does.
       # Only models the Codex/ChatGPT backend serves work here: 5.6-sol,
       # 5.6-terra, 5.6-luna, 5.5, 5.4, and 5.4-mini.
       # nano and codex-spark are rejected by the backend (API-only SKUs).
@@ -442,7 +446,7 @@ data:
       # Priority REASONING tier for the `auto` router. Keep requests on one provider
       # for prompt-cache locality, advancing only when a higher-priority plan fails:
       #   1 GPT-5.6 Luna (ChatGPT sub) -> 2 Kimi K2.7 (Kimi Coding sub)
-      #   -> 3 DeepSeek V4 Pro (OpenCode Go) -> 4 MiniMax-M3 (flat)
+      #   -> 3 DeepSeek V4 Flash (OpenCode Go) -> 4 MiniMax-M3 (flat)
       - model_name: reasoning-pool
         model_info:
           mode: responses
@@ -454,6 +458,14 @@ data:
         litellm_params:
           model: chatgpt/gpt-5.6-luna
           order: 1
+          # Pin max-practical reasoning depth for the tier lead. MUST be the nested
+          # extra_body form: a bare `reasoning_effort: xhigh` string survives v1.94.0's
+          # _map_reasoning_effort whitelist, but `max` does NOT and is silently dropped
+          # (no error, falls back to medium). extra_body merges onto the wire after the
+          # provider transform, so it clears the chatgpt/ allow-list intact.
+          extra_body:
+            reasoning:
+              effort: xhigh
 
       - model_name: reasoning-pool
         model_info:
@@ -477,22 +489,28 @@ data:
       - model_name: reasoning-pool
         model_info:
           mode: chat
-          input_cost_per_token: 0.0000017400
-          cache_creation_input_token_cost: 0.0000017400
-          cache_read_input_token_cost: 0.0000001450
-          output_cost_per_token: 0.0000034800
+          input_cost_per_token: 0.0000001400
+          cache_creation_input_token_cost: 0.0000001400
+          cache_read_input_token_cost: 0.0000000280
+          output_cost_per_token: 0.0000002800
           max_input_tokens: 1000000
           max_output_tokens: 16384
           supports_function_calling: true
           supports_prompt_caching: true
         litellm_params:
-          model: openai/deepseek-v4-pro
+          model: openai/deepseek-v4-flash
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
           order: 3
-          extra_body: # https://github.com/BerriAI/litellm/issues/26395
-            thinking:
-              type: disabled
+          # Thinking left DEFAULT-ON here (the reasoning tier should reason). Retested
+          # 2026-08-04 against the live endpoint: the #26395 multi-turn failure no longer
+          # reproduces — agentic tool round-trips pass with reasoning_content stripped.
+          # Remaining constraint: thinking rejects FORCED tool choice with
+          # "Thinking mode does not support this tool_choice" (400, non-retryable, no
+          # fallback). Safe while callers send tool_choice auto; if a consumer starts
+          # forcing a tool, restore extra_body: {thinking: {type: disabled}} on this rung.
+          # The canonical dsv4f/dsv4p groups keep the disable — they back agentic
+          # harnesses whose tool_choice we don't control.
           merge_reasoning_content_in_choices: true
 
       - model_name: reasoning-pool
