@@ -22,11 +22,16 @@ spec:
           - name: alertname
             value: Watchdog
             matchType: =
-      - receiver: discord
+      - receiver: triage
+        continue: true
+        groupWait: 0s
+        groupInterval: 1m
+        repeatInterval: 12h
         matchers:
           - name: severity
             value: critical
-            matchType: =
+            matchType: "!="
+      - receiver: discord
     groupBy: ["alertname", "cluster", "job"]
     groupInterval: 10m
     groupWait: 1m
@@ -41,6 +46,10 @@ spec:
           value: warning
           matchType: =
   receivers:
+    - name: triage
+      webhookConfigs:
+        - url: http://alert-triage.observability.svc.cluster.local:8080/webhook
+          sendResolved: false
     - name: blackhole
     - name: heartbeat
       webhookConfigs:

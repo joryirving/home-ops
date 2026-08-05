@@ -1,0 +1,36 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/v1/serviceaccount.json
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: &name alert-triage
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/rbac.authorization.k8s.io/clusterrole_v1.json
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alert-triage
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "events"]
+    verbs: ["get", "list"]
+  - apiGroups: ["helm.toolkit.fluxcd.io"]
+    resources: ["helmreleases"]
+    verbs: ["get", "list"]
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources: ["kustomizations"]
+    verbs: ["get", "list"]
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/rbac.authorization.k8s.io/clusterrolebinding_v1.json
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alert-triage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: alert-triage
+subjects:
+  - kind: ServiceAccount
+    name: alert-triage
+    namespace: observability

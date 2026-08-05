@@ -1,0 +1,69 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alert-triage
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: alert-triage
+  interval: 15m
+  dependsOn:
+    - name: kube-prometheus-stack
+  values:
+    defaultPodOptions:
+      serviceAccountName: alert-triage
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      alert-triage:
+        strategy: Recreate
+        containers:
+          app:
+            image:
+              repository: ghcr.io/misospace/alert-triage
+              tag: 0.1.0@sha256:877f109ca54f9780de5ae20d02ba708bd13b78ddff04fe1ba1da938281863b17
+            env:
+              LITELLM_URL: http://litellm.llm:4000/v1
+              MODEL: dsv4f
+              HISTORY_PATH: /data/history.jsonl
+            envFrom:
+              - secretRef:
+                  name: alert-triage-secret
+            probes:
+              liveness: &probe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 30
+              readiness: *probe
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+    service:
+      app:
+        controller: alert-triage
+        ports:
+          http:
+            port: 8080
+    persistence:
+      data:
+        existingClaim: alert-triage
+        globalMounts:
+          - path: /data
