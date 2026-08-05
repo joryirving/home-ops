@@ -38,25 +38,11 @@ spec:
       kopia:
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          initialize-ui-preferences:
-            image: &image
-              repository: ghcr.io/joryirving/kopia
-              tag: 0.23.1@sha256:4161487c3d66f361fb48c5b245af17b174550ddde196164794add759a91c6dd5
-            command:
-              - sh
-              - -ec
-              - |
-                umask 007
-                if [ ! -e /config/ui-preferences/preferences.json ]; then
-                  printf '%s\n' '{"defaultSnapshotViewAll":true}' > /config/ui-preferences/preferences.json
-                fi
-            securityContext:
-              runAsGroup: 100
-              runAsUser: 1000
         containers:
           app:
-            image: *image
+            image:
+              repository: ghcr.io/joryirving/kopia
+              tag: 0.23.1@sha256:4161487c3d66f361fb48c5b245af17b174550ddde196164794add759a91c6dd5
             env:
               KOPIA_WEB_ENABLED: true
               KOPIA_WEB_PORT: &port 80
@@ -66,7 +52,6 @@ spec:
                   name: kopia-secret
             args:
               - --without-password
-              - --ui-preferences-file=/config/ui-preferences/preferences.json
             probes:
               liveness: &probes
                 enabled: false
