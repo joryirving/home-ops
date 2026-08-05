@@ -32,12 +32,18 @@ spec:
           labels:
             severity: warning
         - alert: LiteLLMDeploymentOutage
+          # deployment_state latches at 2 via the cooldown callback's pool label and
+          # never resets (success callbacks label by requested model). Require
+          # ongoing failures so a recovered deployment doesn't alert forever.
           expr: |-
             max by (litellm_model_name) (litellm_deployment_state) >= 2
+            and on (litellm_model_name)
+            sum by (litellm_model_name) (rate(litellm_deployment_failure_responses_total[15m])) > 0
           for: 10m
           annotations:
             summary: >-
-              LiteLLM {{ $labels.litellm_model_name }} out of rotation (deployment_state >= 2)
+              LiteLLM {{ $labels.litellm_model_name }} out of rotation and still failing
+              (deployment_state >= 2)
           labels:
             severity: warning
         - alert: LiteLLMAuthOrQuotaFailures
