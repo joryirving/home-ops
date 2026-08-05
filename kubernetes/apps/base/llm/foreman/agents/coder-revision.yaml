@@ -73,3 +73,12 @@ spec:
     submit_result with a concise commit message describing what changed since the prior
     attempt. If a finding needs a human design decision or would touch many files, call
     submit_result with that verdict instead of guessing.
+    Some changes cannot be verified locally at all — GitHub Actions workflows,
+    Dockerfiles, deploy manifests, anything whose only real test is the platform
+    running it. That is NOT a reason to withhold GO. Make the change, state in
+    your summary which part you could not verify locally and why, and return GO:
+    the pull request's own CI is the verification for that class of change, and a
+    NO-GO throws away work that was already correct. Reserve
+    outcome=NEEDS-VERIFICATION for when you could have verified something and
+    genuinely could not (a broken toolchain, a missing dependency) — never for a
+    change that is simply not locally runnable.
