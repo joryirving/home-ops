@@ -87,6 +87,11 @@ spec:
     service:
       app:
         controller: alert-triage
+        annotations:
+          gatus.home-operations.com/endpoint: |-
+            group: services
+            url: http://alert-triage.observability.svc.cluster.local:8080/healthz
+            conditions: ["[STATUS] == 200"]
         ports:
           http:
             port: 8080
