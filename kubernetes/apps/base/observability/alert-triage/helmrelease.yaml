@@ -13,7 +13,9 @@ spec:
     - name: kube-prometheus-stack
   values:
     defaultPodOptions:
-      serviceAccountName: alert-triage
+      # app-template defaults this off; triage needs the SA token to read pod,
+      # event and Flux state from the in-cluster kube API.
+      automountServiceAccountToken: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
@@ -23,6 +25,8 @@ spec:
     controllers:
       alert-triage:
         strategy: Recreate
+        serviceAccount:
+          identifier: alert-triage
         containers:
           app:
             image:
@@ -56,6 +60,30 @@ spec:
                 memory: 32Mi
               limits:
                 memory: 128Mi
+    serviceAccount:
+      alert-triage: {}
+    rbac:
+      roles:
+        alert-triage:
+          type: ClusterRole
+          rules:
+            - apiGroups: [""]
+              resources: ["pods", "events"]
+              verbs: ["get", "list"]
+            - apiGroups: ["helm.toolkit.fluxcd.io"]
+              resources: ["helmreleases"]
+              verbs: ["get", "list"]
+            - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+              resources: ["kustomizations"]
+              verbs: ["get", "list"]
+      bindings:
+        alert-triage:
+          type: ClusterRoleBinding
+          roleRef:
+            identifier: alert-triage
+          subjects:
+            - identifier: alert-triage
+              serviceAccount: alert-triage
     service:
       app:
         controller: alert-triage
