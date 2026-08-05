@@ -49,6 +49,29 @@ spec:
                   100
                 labels:
                   severity: critical
+      hpa-rules:
+        groups:
+          - name: hpa
+            rules:
+              - alert: KubeHpaMaxedOut
+                annotations:
+                  description: HPA {{ $labels.namespace }}/{{
+                    $labels.horizontalpodautoscaler }} has been running at max
+                    replicas for longer than 15 minutes on cluster {{
+                    $labels.cluster }}.
+                  runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpamaxedout
+                  summary: HPA is running at max replicas
+                expr: (kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics"}
+                  == kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics"})
+                  and on (namespace, horizontalpodautoscaler, cluster)
+                  (kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics"}
+                  != kube_horizontalpodautoscaler_spec_min_replicas{job="kube-state-metrics"})
+                  and on (namespace, horizontalpodautoscaler, cluster)
+                  (kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics"}
+                  > 1)
+                for: 15m
+                labels:
+                  severity: warning
       oom-rules:
         groups:
           - name: oom
@@ -98,6 +121,9 @@ spec:
                 requests:
                   storage: 1Gi
     cleanPrometheusOperatorObjectNames: true
+    defaultRules:
+      disabled:
+        KubeHpaMaxedOut: true
     grafana:
       enabled: false
       forceDeployDashboards: true
@@ -161,6 +187,12 @@ spec:
                   storage: ${PVC_CAPACITY}Gi
     prometheus-node-exporter:
       fullnameOverride: node-exporter
+      prometheus:
+        monitor:
+          metricRelabelings:
+            - action: drop
+              sourceLabels: ["mountpoint"]
+              regex: /etc/.*
   valuesFrom:
     - kind: ConfigMap
       name: flux-metrics-configmap
