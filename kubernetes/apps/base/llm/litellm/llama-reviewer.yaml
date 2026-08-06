@@ -2,14 +2,14 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: qwen3.6-35b-a3b
+  name: llama-reviewer
 spec:
-  source: hf://deepreinforce-ai/Ornith-1.0-35B-GGUF
+  # JetBrains ships per-quant GGUF repos; this one holds a single file.
+  source: hf://JetBrains/Mellum2-12B-A2.5B-Instruct-GGUF-Q4_K_M
   files:
-    - Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf
-  mmproj: mmproj-F16.gguf
+    - Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf
   format: gguf
-  quantization: UD-Q8_K_XL
+  quantization: Q4_K_M
   hardware:
     accelerator: rocm
     gpu:
@@ -23,13 +23,15 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-strix
+  name: llama-reviewer
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: qwen3.6-35b-a3b
+  modelRef: llama-reviewer
+  modelCache:
+    claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:b68186919252bb526113f06797f9999674dd8724cfa861cce236a5b338a5543b
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:77324834b648fede9f2b09fabca6dcb26e994cff460305d51df41ec2930b57d1
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
@@ -43,66 +45,55 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  contextSize: 262144
-  parallelSlots: 3
+  # Mellum2's ceiling is 131072 (layer-selective YaRN extension), below the
+  # 262144 the strix service runs — do not raise it past the model's own limit.
+  contextSize: 131072
+  parallelSlots: 2
   flashAttention: true
   jinja: true
   cacheTypeK: q8_0
   cacheTypeV: q8_0
-  reasoningBudget: 16384
-  reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
   batchSize: 6144
   uBatchSize: 2048
   resources:
     cpu: "500m"
-    memory: 20Gi
+    memory: 12Gi
   endpoint:
     port: 8080
     type: ClusterIP
   extraArgs:
     - --alias
-    - self-hosted
-    - --mmproj
-    - /model-source/qwen3.6-35b-a3b/mmproj-F16.gguf
+    - llama-reviewer
     - --cont-batching
-    - --spec-type
-    - draft-mtp
-    - --spec-draft-p-min
-    - "0.75"
-    - --spec-draft-n-max
-    - "3"
-    - --spec-draft-type-k
-    - q8_0
-    - --spec-draft-type-v
-    - q8_0
     - -sps
     - "0.75"
     - --cache-prompt
     - --kv-unified
     - --checkpoint-min-step
-    - "32768"
-    - --image-min-tokens
-    - "1024"
+    - "65536"
     - --temp
-    - "0.6"
+    - "0.35"
     - --top-p
-    - "0.95"
+    - "0.9"
     - --top-k
     - "20"
     - --min-p
     - "0"
     - --presence-penalty
-    - "0.5"
+    - "0"
     - --repeat-penalty
     - "1.03"
     - --threads
-    - "16"
+    - "8"
     - --threads-batch
-    - "21"
+    - "16"
     - --load-mode
     - none
-    - --chat-template-kwargs
-    - '{"preserve_thinking":true}'
+    # The Instruct variant is tuned for direct answers rather than reasoning
+    # traces, so there is no thinking budget to manage. Swapping to the Thinking
+    # variant means turning this back on and adding a reasoningBudget.
+    - --reasoning
+    - off
   probeOverrides:
     startup:
       httpGet:

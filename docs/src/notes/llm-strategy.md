@@ -44,7 +44,8 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 
 | Alias                  | Backend                                  | Model                | Ctx (in) | Role                                |
 | ---------------------- | ---------------------------------------- | -------------------- | -------- | ----------------------------------- |
-| `self-hosted`          | Strix ROCm (2 × 2 slots) + Mac LM Studio | Qwen3.6-35B-A3B      | 262k     | Default local brain; vision + tools |
+| `self-hosted`          | Strix ROCm (2 × 2 slots) + Mac LM Studio | Qwen3.6-35B-A3B ⁶    | 262k     | Default local brain; vision + tools |
+| `reviewer`             | Strix ROCm                               | Mellum2-12B-A2.5B    | 131k     | Foreman code review only            |
 | `nvidia`               | 3090                                     | Qwen (CUDA)          | 145k     | General local, no vision            |
 | `memini-embed`         | llama.cpp                                | Qwen3-Embedding-0.6B | —        | Embeddings (1024-dim); iGPU tenant  |
 | `memini-rerank`        | llama.cpp                                | Qwen3-Reranker-0.6B  | —        | Reranking (infinity); iGPU tenant   |
@@ -115,6 +116,7 @@ self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Termin
 | MiniMax-M2.7      | `MiniMax-M2.7`         | ~229B/n_p           | n/p   | n/p   | 56.2    | n/p       | 57.0   | n/p   | n/p   |
 | MiMo-V2.5         | `mimo-v2.5`            | MoE 310B/15A        | 1M    | n/p   | 56.1    | n/p       | 65.8   | n/p   | n/p   |
 | Qwen3.6-35B-A3B   | `self-hosted`          | MoE 35B/3A          | 262k  | 73.4  | 49.5    | n/p       | 51.5   | 86.0  | 92.7  |
+| Mellum2-12B-A2.5B | `reviewer`             | MoE 12B/2.5A        | 131k  | n/p⁷  | n/p     | n/p       | n/p    | n/p   | n/p   |
 | Qwen3.7-Plus      | `qwen3.7-plus`         | MoE undisclosed     | 1M    | n/p   | ~60     | n/p       | n/p    | n/p   | n/p   |
 
 ¹ GPT/MiniMax SWE-Pro are vendor-reported; cross-provider agent scaffolding can materially shift
@@ -131,6 +133,19 @@ Opus 4.8 / GLM-5.2; #1 on the Frontend Code Arena past Fable 5 (1679 Elo). Artif
 Intelligence Index 57 (Fable 60 / Sol 59) corroborates the ~#3 rank but flags hallucination ~51%
 (up from 39%). Pricing $0.30 cached / $3 miss / $15 output per MTok. Treat as marketing until repo-bench.
 
+⁶ `self-hosted` runs the abliterated Qwen3.6-35B-A3B (HauhauCS "Aggressive", Q5_K_P) with its
+mmproj loaded, which is what makes this box the image backend. It replaced Ornith-1.0-35B — a
+post-tune of the *same* Qwen3.6-35B-A3B — so the swap kept the architecture and dropped the
+post-tune. The Mac LM Studio upstream is multimodal too but NOT abliterated: it will refuse
+content the Strix answers, and it is flagged `supports_vision` anyway so `enable_pre_call_checks`
+keeps it eligible for image failover rather than leaving images with no fallback.
+
+⁷ Mellum2 publishes none of these benches. The number it does publish is BFCL v3 **66.3**
+(tool use), which is the axis that actually matters for a reviewer: the verdict is a structured
+`submit_result` call whose `issueAsk` must be a verbatim substring of the issue body, and a
+malformed payload is rejected by the harness regardless of how good the judgement was. Rank it on
+independence and format reliability, not on a coding leaderboard.
+
 Reading it for routing:
 
 - **Frontier tier** (`gpt-5.6-sol`, `kimi-k3`, `glm-5.2`) — strict subscription/PAYG escalation;
@@ -146,6 +161,13 @@ Reading it for routing:
   That inversion is why the reasoning tier and Hermes' fallback chain now reach for Flash, not Pro.
 - **Local** — `nvidia` (Qwen3.6-27B dense) is the local quality + speed pick; `self-hosted`
   (35B-A3B) trails it everywhere and earns its place only on the 262k context window.
+- **`reviewer` is a deliberate family split, not a quality pick.** Foreman's coder runs
+  Qwen (`nvidia`), so a Qwen reviewer inherits the coder's blind spots — it was Qwen
+  reviewing Qwen while `self-hosted` served review, since Ornith was itself a
+  Qwen3.6-35B-A3B post-tune. Mellum2 is JetBrains' software-engineering MoE, trained from
+  scratch on 10.6T tokens, and at 2.5B active it reviews faster than the 35B it replaced
+  while costing nothing. It exists to disagree with the coder, so published coding scores
+  matter less here than independence and structured-output reliability.
 - **MiniMax-M2.7 / MiMo / Qwen3.7-Plus** — agentic workhorses with thin published reasoning
   numbers; rank on coding/agentic axes, not GPQA/AIME.
 
@@ -155,6 +177,7 @@ Reading it for routing:
 | ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso `MiniMax-M3`; Saffron `glm-5.2`; subagent + heartbeat `dsv4f`; image `self-hosted`      |
 | **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `kimi-k3`; compression/extract/approval/session-search `self-hosted`                 |
+| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | coders `nvidia`, frontier coder `MiniMax-M3-chat`, reviewers `reviewer`                      |
 | **Opencode** (CLI/Zen) | no (workstation)                            | LiteLLM aliases directly; biggest single `user_agent` cluster after the agents               |
 | **Zed**                | no (workstation)                            | LiteLLM aliases directly                                                                     |
 

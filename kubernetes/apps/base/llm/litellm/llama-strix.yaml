@@ -4,9 +4,12 @@ kind: Model
 metadata:
   name: llama-strix
 spec:
-  source: https://huggingface.co/deepreinforce-ai/Ornith-1.0-35B-GGUF/resolve/main/ornith-1.0-35b-Q8_0.gguf
+  source: hf://HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
+  files:
+    - Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf
+  mmproj: mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf
   format: gguf
-  quantization: Q8_0
+  quantization: Q5_K_P
   hardware:
     accelerator: rocm
     gpu:
@@ -54,13 +57,17 @@ spec:
   uBatchSize: 2048
   resources:
     cpu: "500m"
-    memory: 36Gi
+    memory: 28Gi
   endpoint:
     port: 8080
     type: ClusterIP
   extraArgs:
     - --alias
     - llama-strix
+    - --mmproj
+    - /model-source/llama-strix/mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf
+    - --image-min-tokens
+    - "1024"
     - --cont-batching
     - --cache-prompt
     - --kv-unified
