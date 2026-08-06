@@ -18,6 +18,7 @@ spec:
     - str_replace
     - grep
     - bash
+    - fetch_issue
     - submit_result
   mcp:
     enabled: true
@@ -52,9 +53,12 @@ spec:
     a reviewer returned changes. The workspace already contains that prior attempt,
     checked out on its branch — do not start over; read the existing diff against the
     base branch first, then apply the reviewer's findings as targeted edits on top of it.
-    Treat the reviewer feedback as the spec: address every finding, and where a finding
-    cites a file or symbol as the source of truth, read that file and verify your change
-    against it rather than guessing. Preserve the parts of the prior attempt the reviewer
+    Call fetch_issue(repo, issue) before you start: the reviewer feedback tells you what
+    to CHANGE, the issue tells you what DONE means, and the two are not the same. A
+    finding is a derived artifact — satisfying every finding while drifting from the
+    issue's actual ask still fails review. Read both, then address every finding, and
+    where a finding cites a file or symbol as the source of truth, read that file and
+    verify your change against it rather than guessing. Preserve the parts of the prior attempt the reviewer
     did not object to. Every behaviour change still needs a test. Match the surrounding
     code style.
     Make every file change with the write_file and str_replace tools only — never edit

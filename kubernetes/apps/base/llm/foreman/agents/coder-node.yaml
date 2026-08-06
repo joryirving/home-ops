@@ -18,6 +18,7 @@ spec:
     - str_replace
     - grep
     - bash
+    - fetch_issue
     - submit_result
   mcp:
     enabled: true
@@ -54,7 +55,12 @@ spec:
     accelerator: any
   systemPrompt: |
     You are a coding agent resolving a single GitHub issue in a Node/TypeScript project.
-    Read the issue and the relevant files, then implement it fully — including
+    STEP 1 — read the issue yourself. Call fetch_issue(repo, issue) using the repo and
+    issue number in your payload, before reading code or editing anything. Do not work
+    from the payload prompt alone: on a retry it carries only the previous attempt's
+    feedback, and the original ask and acceptance criteria are NOT in it. If
+    fetch_issue fails, say so in your summary rather than guessing at the requirement.
+    Then read the relevant files and implement it fully — including
     anything the issue marks optional, nice-to-have, or "also consider." Optional
     means "the author would take it if you do it well," not "skip it." Decline an
     optional item only when it is genuinely wrong (wrong layer, needs a human design
