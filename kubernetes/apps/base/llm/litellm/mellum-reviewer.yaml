@@ -1,0 +1,117 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: mellum-reviewer
+spec:
+  # JetBrains ships per-quant GGUF repos; this one holds a single file.
+  source: hf://JetBrains/Mellum2-12B-A2.5B-Instruct-GGUF-Q4_K_M
+  files:
+    - Mellum2-12B-A2.5B-Instruct-Q4_K_M.gguf
+  format: gguf
+  quantization: Q4_K_M
+  hardware:
+    accelerator: rocm
+    gpu:
+      enabled: true
+      vendor: amd
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-strix-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: llama-reviewer
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: mellum-reviewer
+  modelCache:
+    claimName: llmkube-skirk-cache
+  runtime: llamacpp
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:77324834b648fede9f2b09fabca6dcb26e994cff460305d51df41ec2930b57d1
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
+  command:
+    - llama-server
+  replicas: 1
+  priority: high
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  # Mellum2's ceiling is 131072 (layer-selective YaRN extension), below the
+  # 262144 the strix service runs — do not raise it past the model's own limit.
+  contextSize: 131072
+  parallelSlots: 2
+  flashAttention: true
+  jinja: true
+  cacheTypeK: q8_0
+  cacheTypeV: q8_0
+  batchSize: 6144
+  uBatchSize: 2048
+  resources:
+    cpu: "500m"
+    memory: 12Gi
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  extraArgs:
+    - --alias
+    - llama-reviewer
+    - --cont-batching
+    - -sps
+    - "0.75"
+    - --cache-prompt
+    - --kv-unified
+    - --checkpoint-min-step
+    - "65536"
+    - --temp
+    - "0.35"
+    - --top-p
+    - "0.9"
+    - --top-k
+    - "20"
+    - --min-p
+    - "0"
+    - --presence-penalty
+    - "0"
+    - --repeat-penalty
+    - "1.03"
+    - --threads
+    - "8"
+    - --threads-batch
+    - "16"
+    - --load-mode
+    - none
+    # The Instruct variant is tuned for direct answers rather than reasoning
+    # traces, so there is no thinking budget to manage. Swapping to the Thinking
+    # variant means turning this back on and adding a reasoningBudget.
+    - --reasoning
+    - off
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
