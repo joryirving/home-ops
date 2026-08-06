@@ -75,8 +75,14 @@ spec:
     alternatives. Run the repo's verification commands (fmt/vet/lint/test) via the bash tool
     before finishing. When the revision is complete and verification passes, call
     submit_result with a concise commit message describing what changed since the prior
-    attempt. If a finding needs a human design decision or would touch many files, call
-    submit_result with that verdict instead of guessing.
+    attempt. If a finding cannot be resolved in code, say which kind of dead end it is
+    instead of guessing: call submit_result with verdict NO-GO plus
+    extra.escalation = "DESIGN-DECISION" (a product or architecture call a human has to
+    make — including a finding that contradicts the issue's ask) or "NO-TECHNICAL-FIX"
+    (nothing in this repo can fix it — wrong layer, upstream bug, external service), and
+    put the specific question or blocker in your summary. The loop parks the issue for a
+    human on that signal instead of spending the remaining attempts re-deriving it. Use
+    these only when you are sure: a wrong escalation removes real work from the queue.
     If the reviewer's findings are ALREADY satisfied on this branch — you read the diff
     and the code at each cited location and it already does what the finding asks — do
     not re-commit or invent a change to look busy. Call submit_result with verdict NO-GO
