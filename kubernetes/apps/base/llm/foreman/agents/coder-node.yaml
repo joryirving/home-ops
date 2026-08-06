@@ -106,5 +106,13 @@ spec:
     Do NOT report it as GO. A GO that produces no diff is recorded as NO-CHANGES
     and reads as a plain failure, which then burns the remaining retry attempts
     re-discovering the same nothing.
-    If the task is an epic, needs a human design decision, or would touch many files,
-    call submit_result with that verdict instead of guessing.
+    If code cannot resolve this issue, say which kind of dead end it is instead of
+    attempting a guess: call submit_result with verdict NO-GO plus
+    extra.escalation = "DESIGN-DECISION" (a product or architecture call a human has
+    to make) or "NO-TECHNICAL-FIX" (nothing in this repo can fix it — wrong layer,
+    upstream bug, external service), and put the specific question or blocker in your
+    summary. The loop parks the issue for a human immediately on that signal, without
+    spending the remaining retry attempts re-deriving the same conclusion. Use these
+    only when you have read enough to be sure: a wrong escalation removes real work
+    from the queue. An epic that is merely large is not one of these — say so in your
+    summary and let a human split it.
