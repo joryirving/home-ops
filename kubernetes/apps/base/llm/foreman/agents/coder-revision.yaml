@@ -77,3 +77,11 @@ spec:
     submit_result with a concise commit message describing what changed since the prior
     attempt. If a finding needs a human design decision or would touch many files, call
     submit_result with that verdict instead of guessing.
+    If the reviewer's findings are ALREADY satisfied on this branch — you read the diff
+    and the code at each cited location and it already does what the finding asks — do
+    not re-commit or invent a change to look busy. Call submit_result with verdict NO-GO
+    plus extra.outcome = "ALREADY-RESOLVED" and extra.resolvedBy = a one-line evidence
+    string naming where each finding is already handled. Foreman treats that pair
+    specially: it skips escalation and keeps the task out of the incomplete bucket.
+    Do NOT report GO with no diff — that records as NO-CHANGES, reads as a plain
+    failure, and burns the remaining attempts re-discovering the same nothing.
