@@ -22,7 +22,7 @@ memini/                     # Intel iGPU helpers, reconciled by the `memini` KS
 litellm/app/                # chat/vision models, reconciled by the `litellm` KS
   llama-nvidia.yaml         # Qwen3.6-27B on RTX 3090
   llama-strix.yaml          # Qwen3.6-35B-A3B Uncensored on Strix Halo (multimodal)
-  mellum-reviewer.yaml      # Mellum2-12B-A2.5B on Strix Halo (foreman reviewer)
+  llama-reviewer.yaml       # Mellum2-12B-A2.5B on Strix Halo (foreman reviewer)
 
 toolhive/config/            # per-app tenant model, reconciled by `toolhive-config`
   toolhive-embed.yaml       # Qwen3-Embedding-0.6B on Intel iGPU (was a TEI EmbeddingServer CRD)
