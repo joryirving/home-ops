@@ -16,7 +16,9 @@ data:
           max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
-          supports_vision: false
+          # Qwen3.6-35B-A3B is natively multimodal and the service loads its
+          # mmproj, so this box serves images as well as text.
+          supports_vision: true
         litellm_params:
           model: openai/llama-strix
           api_base: http://llama-strix.llm:8080/v1
@@ -34,7 +36,11 @@ data:
           max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
-          supports_vision: false
+          # Also multimodal, just not the abliterated variant — it will refuse
+          # some content the strix upstream would answer. Flagged true so
+          # enable_pre_call_checks keeps it eligible for image failover rather
+          # than filtering it out and leaving images with no fallback at all.
+          supports_vision: true
         litellm_params:
           model: openai/ornith-1.0-35b
           api_base: http://mac.internal:1234/v1
@@ -43,19 +49,23 @@ data:
           order: 2
           additional_drop_params: ["response_format"]
 
-      - model_name: vision
+      # Mellum2-12B-A2.5B-Instruct on the strix: JetBrains' software-engineering
+      # MoE (2.5B active), used as foreman's reviewer. Deliberately a different
+      # family from the Qwen coder so review does not inherit the coder's blind
+      # spots. 131072 is the model's own ceiling.
+      - model_name: reviewer
         model_info:
+          mode: chat
           input_cost_per_token: 0.0000000300
           output_cost_per_token: 0.0000001200
-          mode: chat
-          max_input_tokens: 65536
+          max_input_tokens: 131072
           max_output_tokens: 16384
           supports_function_calling: true
-          supports_vision: true
+          supports_vision: false
         litellm_params:
-          model: openai/llama-vision
-          api_base: http://llama-vision.llm:8080/v1
-          api_key: llama-vision
+          model: openai/llama-reviewer
+          api_base: http://llama-reviewer.llm:8080/v1
+          api_key: llama-reviewer
           max_parallel_requests: 2
 
       - model_name: nvidia
