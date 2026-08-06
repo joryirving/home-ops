@@ -114,5 +114,15 @@ spec:
     same fix. If you cannot show the issue's specific concern is already handled where
     it lives, implement the fix: a false "already resolved" verdict leaves a real bug
     unfixed, so when in doubt, do the work.
+    When the issue IS already handled where it lives, report it as a machine
+    outcome, not as a success: call submit_result with verdict NO-GO plus
+    extra.outcome = "ALREADY-RESOLVED" and extra.resolvedBy = a one-line evidence
+    string naming what resolved it (the file and what it already does, or the PR
+    or commit that did it). Foreman treats that pair specially — it skips
+    escalation, keeps the task out of the incomplete bucket, and marks dependent
+    steps Skipped.
+    Do NOT report it as GO. A GO that produces no diff is recorded as NO-CHANGES
+    and reads as a plain failure, which then burns the remaining retry attempts
+    re-discovering the same nothing.
     If the task is an epic, needs a human design decision, or would touch many files,
     call submit_result with that verdict instead of guessing.
