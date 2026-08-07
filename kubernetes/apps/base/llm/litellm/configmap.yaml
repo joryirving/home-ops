@@ -16,8 +16,6 @@ data:
           max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
-          # Qwen3.6-35B-A3B is natively multimodal and the service loads its
-          # mmproj, so this box serves images as well as text.
           supports_vision: true
         litellm_params:
           model: openai/llama-strix
@@ -38,20 +36,12 @@ data:
           supports_function_calling: true
           supports_vision: true
         litellm_params:
-          # Must match an id LM Studio actually serves — it 400s on an unknown
-          # model rather than falling back to whatever is loaded. Aliased to
-          # `self-hosted` in LM Studio so it matches the strix build.
           model: openai/self-hosted
           api_base: http://mac.internal:1234/v1
           api_key: lm-studio
           max_parallel_requests: 1
-          # Same order as the strix: simple-shuffle load-splits across both.
           order: 1
 
-      # Mellum2-12B-A2.5B-Instruct on the strix: JetBrains' software-engineering
-      # MoE (2.5B active), used as foreman's reviewer. Deliberately a different
-      # family from the Qwen coder so review does not inherit the coder's blind
-      # spots. 131072 is the model's own ceiling.
       - model_name: reviewer
         model_info:
           mode: chat
@@ -114,9 +104,6 @@ data:
           api_base: http://toolhive-embed.llm:8080/v1
           api_key: toolhive-embed
 
-      # Qwen3.5-4B (reasoning disabled) on the Intel iGPU — non-reasoning grunt
-      # model for lossless-claw summaries/expansion (replaces self-hosted, whose
-      # reasoning returned empty content). Single slot, 32k ctx.
       - model_name: summary
         model_info:
           input_cost_per_token: 0.0000000100
@@ -132,11 +119,6 @@ data:
           api_key: qwen3.5-4b
           max_parallel_requests: 3
 
-      # ChatGPT subscription (OAuth device flow, no API key — token cached in CHATGPT_TOKEN_DIR).
-      # reasoning_effort is left to the caller (none|low|medium|high|xhigh per request).
-      # Only models the Codex/ChatGPT backend serves work here: 5.6-sol,
-      # 5.6-terra, 5.6-luna, 5.5, 5.4, and 5.4-mini.
-      # nano and codex-spark are rejected by the backend (API-only SKUs).
       - model_name: chatgpt/gpt-5.6-sol
         model_info:
           mode: responses
@@ -170,10 +152,6 @@ data:
         litellm_params:
           model: chatgpt/gpt-5.6-luna
 
-      # OpenAI-compatible MiniMax-M3 for OpenAI-speaking clients (the foreman
-      # coder-frontier Agent dispatches /chat/completions). The MiniMax-M3 entry
-      # below is Anthropic-messages mode for OpenClaw — pointing an OpenAI client
-      # at it 404s on MiniMax's side.
       - model_name: MiniMax-M3-chat
         model_info:
           mode: chat
@@ -187,8 +165,6 @@ data:
           api_base: https://api.minimax.io/v1
           api_key: os.environ/MINIMAX_API_KEY
 
-      # OpenClaw's M3 shim (enabled→adaptive thinking, think-tag stripping) only
-      # engages when the model id starts with MiniMax-M3, so keep the name versioned.
       - model_name: MiniMax-M3
         model_info:
           mode: messages
@@ -267,7 +243,6 @@ data:
           api_key: os.environ/NEURALWATT_API_KEY
           order: 2
 
-      # Kimi Coding subscription first; Moonshot PAYG is the transparent fallback.
       - model_name: kimi-k2.7
         model_info:
           mode: chat
@@ -391,7 +366,7 @@ data:
           model: openai/deepseek-v4-pro
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
-          extra_body: # https://github.com/BerriAI/litellm/issues/26395
+          extra_body:
             thinking:
               type: disabled
           merge_reasoning_content_in_choices: true
@@ -460,10 +435,6 @@ data:
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
 
-      # Priority REASONING tier for the `auto` router. Keep requests on one provider
-      # for prompt-cache locality, advancing only when a higher-priority plan fails:
-      #   1 GPT-5.6 Luna (ChatGPT sub) -> 2 Kimi K2.7 (Kimi Coding sub)
-      #   -> 3 DeepSeek V4 Flash (OpenCode Go) -> 4 MiniMax-M3 (flat)
       - model_name: reasoning-pool
         model_info:
           mode: responses
@@ -529,11 +500,6 @@ data:
           api_key: os.environ/MINIMAX_API_KEY
           order: 4
 
-      # Priority FRONTIER pool — grab the smartest model with room left, selectable
-      # in opencode/zed. STRICT priority order (order:) — each subscription is followed
-      # by its PAYG counterpart:
-      #   1 ChatGPT sol -> 2 Kimi K3 (Kimi Coding sub) -> 3 Kimi K3 (Moonshot PAYG)
-      #   -> 4 GLM-5.2 (z.ai sub) -> 5 GLM-5.2 (Neuralwatt PAYG)
       - model_name: frontier-pool
         model_info:
           mode: responses
@@ -617,12 +583,6 @@ data:
           api_key: os.environ/NEURALWATT_API_KEY
           order: 5
 
-      # Opt-in smart-routing alias for opencode + zed. LLM classifier, not the
-      # rule-based scorer: the scorer measured 25% tier accuracy because COMPLEX
-      # scores below MEDIUM on prose-heavy prompts. REASONING folds into COMPLEX
-      # (no classifier tested could separate them). classifier_fallback is
-      # default_model, not heuristic, so a classifier miss lands on MEDIUM rather
-      # than silently collapsing to the scorer.
       - model_name: auto
         litellm_params:
           model: auto_router/complexity_router
@@ -639,18 +599,6 @@ data:
               timeout_ms: 20000
             classifier_fallback: default_model
 
-      # Semantic intent router — SCAFFOLD, not live. Chaining into the complexity
-      # router is unsupported (auto_router_default_model must be a concrete model),
-      # and auto_router_config_path makes SemanticRouter.from_json build the encoder
-      # at startup. Before enabling: verify on a throwaway litellm, mount the
-      # router.json key (below) at /config/router.json, then point a client here.
-      # - model_name: auto-semantic
-      #   litellm_params:
-      #     model: auto_router/auto_semantic
-      #     auto_router_config_path: /config/router.json
-      #     auto_router_default_model: self-hosted
-      #     auto_router_embedding_model: memini-embed
-
     general_settings:
       health_check_endpoint: /v1/health
       store_model_in_db: false
@@ -665,6 +613,7 @@ data:
         - self-hosted: ["nvidia"]
         - nvidia: ["self-hosted"]
         - dsv4f: ["nvidia"]
+        - auto: ["dsv4f", "MiniMax-M3-chat"]
       context_window_fallbacks:
         - nvidia: ["self-hosted"]
         - self-hosted: ["dsv4f"]
@@ -673,8 +622,6 @@ data:
       success_callback: ["prometheus"]
       failure_callback: ["prometheus"]
       prometheus_adapter: true
-      # v1.88.x enforces auth on /metrics; the ServiceMonitor scrapes tokenless,
-      # so keep the endpoint open for in-cluster Prometheus scraping.
       require_auth_for_metrics_endpoint: false
       cache: true
       cache_params:
