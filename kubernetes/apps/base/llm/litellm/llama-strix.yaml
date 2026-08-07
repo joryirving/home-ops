@@ -4,12 +4,12 @@ kind: Model
 metadata:
   name: llama-strix
 spec:
-  source: hf://HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
+  source: hf://SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF
   files:
-    - Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf
-  mmproj: mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf
+    - Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-I-Balanced.gguf
+  mmproj: mmproj-Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-F16.gguf
   format: gguf
-  quantization: Q5_K_P
+  quantization: I-Balanced
   hardware:
     accelerator: rocm
     gpu:
@@ -67,6 +67,16 @@ spec:
     - --image-min-tokens
     - "1024"
     - --cont-batching
+    - --spec-type
+    - draft-mtp
+    - --spec-draft-p-min
+    - "0.75"
+    - --spec-draft-n-max
+    - "3"
+    - --spec-draft-type-k
+    - q8_0
+    - --spec-draft-type-v
+    - q8_0
     - --cache-prompt
     - --kv-unified
     - --checkpoint-min-step
