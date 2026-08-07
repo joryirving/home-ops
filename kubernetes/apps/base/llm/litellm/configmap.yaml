@@ -36,19 +36,17 @@ data:
           max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
-          # Also multimodal, just not the abliterated variant — it will refuse
-          # some content the strix upstream would answer. Flagged true so
-          # enable_pre_call_checks keeps it eligible for image failover rather
-          # than filtering it out and leaving images with no fallback at all.
           supports_vision: true
         litellm_params:
           # Must match an id LM Studio actually serves — it 400s on an unknown
-          # model rather than falling back to whatever is loaded.
-          model: openai/qwen3.6-35b-a3b
+          # model rather than falling back to whatever is loaded. Aliased to
+          # `self-hosted` in LM Studio so it matches the strix build.
+          model: openai/self-hosted
           api_base: http://mac.internal:1234/v1
           api_key: lm-studio
           max_parallel_requests: 1
-          order: 2
+          # Same order as the strix: simple-shuffle load-splits across both.
+          order: 1
           additional_drop_params: ["response_format"]
 
       # Mellum2-12B-A2.5B-Instruct on the strix: JetBrains' software-engineering
