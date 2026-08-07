@@ -242,48 +242,87 @@ plan itself is flat-rate.
 ## Smart-routing: the `auto` alias
 
 An opt-in `auto` alias routes for **opencode + Zed only**; every other consumer (crons, MC
-workers, Hermes roles, MiniMax) stays pinned. It's LiteLLM's rule-based **complexity router**
-(no embedding call, <1ms). Coding tools are a difficulty / context / cost axis — not a "what
-kind of task" axis, so complexity scoring alone carries it without semantic routing.
+workers, Hermes roles, MiniMax) stays pinned. It uses LiteLLM's **LLM classifier**
+(`classifier_type: llm`), not the rule-based complexity scorer — see the measurements below.
 
-Tiers (capability-ordered; SIMPLE offloads the single-slot 3090 onto the Strix):
+Tiers (three effective tiers; REASONING is folded into COMPLEX):
 
-| Tier               | Target                                               | Why                                    |
-| ------------------ | ---------------------------------------------------- | -------------------------------------- |
-| SIMPLE             | `self-hosted` (Strix 35B-A3B, 2 instances × 2 slots) | Trivia — keep the 3090 free            |
-| MEDIUM             | `nvidia` (Qwen3.6-27B dense)                         | Best + fastest local                   |
-| COMPLEX            | `reasoning-pool`                                     | Strict priority: Luna → K2.7 → DSV4F → M3 |
-| REASONING          | `frontier-pool`                                      | Strict priority: Sol → K3 → GLM       |
-| default (unscored) | `nvidia`                                             | Best local                             |
+| Tier               | Target                              | Why                                          |
+| ------------------ | ----------------------------------- | -------------------------------------------- |
+| SIMPLE             | `self-hosted` (Strix 35B-A3B)       | Trivia — 0.4s, local, free                   |
+| MEDIUM             | `MiniMax-M3-chat`                   | Flat sub, ~1.1s, no weekly quota to burn     |
+| COMPLEX            | `reasoning-pool`                    | Luna → Kimi-for-Coding → DSV4F → M3          |
+| REASONING          | `reasoning-pool`                    | Folded — no classifier could separate it     |
+| default (miss)     | `MiniMax-M3-chat`                   | `classifier_fallback: default_model`         |
 
-Boundaries `0.45 / 0.65 / 0.85`, raised above LiteLLM defaults: opencode/Zed system prompts are
-code-dense and get scored alongside the user message, so complexity skews high. Tune from
-`verbose_router_logger` (`tier= score= signals=`) once real traffic lands.
+Classifier is `reviewer` (Mellum2-12B, ~0.5s) — a software-engineering model classifying a
+software-engineering axis, and the cheapest thing in the fleet to put in every request's path.
 
-Mechanics that shaped this (verified against LiteLLM source):
+`frontier-pool` is deliberately **not** a tier target: `auto` must not compete with interactive
+sessions for the weekly ChatGPT/Kimi caps. COMPLEX still reaches Luna and Kimi automatically
+through `reasoning-pool`'s top rungs once those caps reset.
+
+### Measured (2026-08-07, LiteLLM 1.95.0)
+
+Two 20-prompt corpora, one held out. Scored against a throwaway proxy running the real router
+against real backends.
+
+| Config                                     | Tier accuracy      |
+| ------------------------------------------ | ------------------ |
+| Rule-based scorer, boundaries `.45/.65/.85` | **5/20 (25%)**     |
+| Rule-based scorer, boundaries `.15/.35/.60` | 7/20 (35%)         |
+| LLM classifier (`reviewer`), held out       | 17/20 (85%) 3-tier |
+| LLM classifier, end-to-end on real pools    | **16/20 (80%)**    |
+
+The scorer cannot be fixed by tuning. Observed score means: SIMPLE −0.120, MEDIUM +0.115,
+**COMPLEX +0.085**, REASONING +0.205 — COMPLEX scores *below* MEDIUM, and the ceiling is 0.325.
+It keys on code presence and keyword density, not reasoning depth, so a prose-heavy proof scores
+under a request to rename a variable. No boundary choice recovers an ordering that isn't there.
+
+This corrects a prior claim in this document that complexity "skews high" under code-dense system
+prompts. It skews **low**; the raised boundaries were the direct cause of ~90% of traffic pinning
+to SIMPLE. `tier_boundaries` is now removed (inert once `classifier_type: llm` is set).
+
+`classifier_fallback` is `default_model`, **not** `heuristic` — a heuristic fallback silently
+reverts to the 25% scorer on any classifier timeout, which is invisible in production.
+
+Every remaining error is a conservative over-route (nothing hard lands somewhere weak); all 10
+genuinely-hard prompts routed correctly in the end-to-end run.
+
+**Known gap:** the corpora are bare user prompts. Real opencode traffic carries a large code-dense
+system prompt that was never tested — the exact variable the old rationale was about. Treat 80% as
+measured-on-bare-prompts. Audit with the `cause=` decision log
+(`cause=llm_classifier | complexity_scorer | literal_keyword_match | session_affinity_pin`).
+The classifier is also non-deterministic: identical inputs scored 15/20 and 17/20, so ±2.
+
+Mechanics (verified against LiteLLM source):
 
 - Both routers are pre-routing hooks returning a model _name_, resolved once — **no chaining**,
   so semantic can't sit "in front of" complexity. A model _group_ as a tier target works.
-- `token_thresholds` is a complexity _signal_, not a context cap. The 145k/262k local ceilings are
-  guarded by `context_window_fallbacks` (`nvidia`→`self-hosted`, `self-hosted`→`dsv4f`) + `enable_pre_call_checks`.
-- `reasoning-pool` is a strict priority chain: Luna → K2.7 → DSV4F → MiniMax M3. Its M3 rung uses
-  MiniMax's OpenAI-compatible `/v1` endpoint, so it may expose thinking in content; that is acceptable
-  for this lane. OpenClaw's native `MiniMax-M3` alias instead uses the Anthropic `/messages` endpoint
-  and its think-tag stripping shim.
+- Local context ceilings (145k/262k) are guarded by `context_window_fallbacks` +
+  `enable_pre_call_checks`, not by any router setting.
+- `reasoning-pool`'s M3 rung uses MiniMax's OpenAI-compatible `/v1` endpoint, so it may expose
+  thinking in content; acceptable for this lane. OpenClaw's native `MiniMax-M3` alias uses the
+  Anthropic `/messages` endpoint and its think-tag stripping shim.
 
 Excluded from `auto` by design: the native `MiniMax` messages alias and the manual Sol/Terra aliases.
-Luna is intentionally included through `reasoning-pool`. A **semantic router** (`auto-semantic` +
-`router.json`) is scaffolded but commented out: `from_json` builds an encoder at startup
-(crashloop risk on the live gateway), so it's verify-then-enable later, not now.
+A **semantic router** (`auto-semantic` + `router.json`) is scaffolded but commented out: `from_json`
+builds an encoder at startup (crashloop risk on the live gateway), so it's verify-then-enable later.
 
 Still ahead:
 
-- Tune `tier_boundaries` from observed routes; add a busy-fallback for `nvidia` if its single slot
-  bottlenecks under opencode parallelism.
-- Harness-level quality escalation in OpenClaw/Hermes — escalate to cloud/frontier on tool failure,
-  uncertainty markers, failed tests/lint, or explicit "are you sure". Supervision, not routing.
+- Swap MEDIUM to `nvidia` once Foreman's backlog drains — it's the better model and free, but was
+  measured at 37–90s under contention, unusable for a tier that receives over-routed volume.
+- Re-measure against real opencode system prompts rather than bare user messages.
+- Auto Router v2 offers `keyword_tier_rules` (deterministic tier overrides, `cause=literal_keyword_match`)
+  if specific terms should force a tier regardless of classification.
+- Harness-level quality escalation in OpenClaw/Hermes — escalate on tool failure, uncertainty markers,
+  failed tests/lint, or explicit "are you sure". Supervision, not routing.
+
+Reproduce: harness at `~/.cache/autorouter-probe` (configs, both corpora, probe scripts).
 
 References: LiteLLM [Auto Routing](https://docs.litellm.ai/docs/proxy/auto_routing) ·
+[Auto Router v2](https://docs.litellm.ai/blog/autorouter-v2) ·
 [Fallbacks](https://docs.litellm.ai/docs/proxy/reliability).
 
 ## Frontier pool
