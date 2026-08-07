@@ -16,6 +16,7 @@ data:
           max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
+          supports_response_schema: true
           # Qwen3.6-35B-A3B is natively multimodal and the service loads its
           # mmproj, so this box serves images as well as text.
           supports_vision: true
@@ -36,6 +37,11 @@ data:
           max_input_tokens: 262144
           max_output_tokens: 16384
           supports_function_calling: true
+          # Paired with additional_drop_params below: this member silently strips
+          # response_format, so a json_schema request answered here returns prose.
+          # enable_pre_call_checks filters this deployment out for schema-bearing
+          # requests instead, leaving it in the pool for ordinary chat.
+          supports_response_schema: false
           supports_vision: true
         litellm_params:
           # Must match an id LM Studio actually serves — it 400s on an unknown
