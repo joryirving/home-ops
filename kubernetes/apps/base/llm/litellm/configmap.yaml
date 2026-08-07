@@ -620,22 +620,27 @@ data:
           api_key: os.environ/NEURALWATT_API_KEY
           order: 5
 
-      # Opt-in smart-routing alias for opencode + zed. Rule-based complexity router
-      # (no embedding call); pinned consumers keep addressing their model directly.
+      # Opt-in smart-routing alias for opencode + zed. LLM classifier, not the
+      # rule-based scorer: the scorer measured 25% tier accuracy because COMPLEX
+      # scores below MEDIUM on prose-heavy prompts. REASONING folds into COMPLEX
+      # (no classifier tested could separate them). classifier_fallback is
+      # default_model, not heuristic, so a classifier miss lands on MEDIUM rather
+      # than silently collapsing to the scorer.
       - model_name: auto
         litellm_params:
           model: auto_router/complexity_router
-          complexity_router_default_model: nvidia
+          complexity_router_default_model: MiniMax-M3-chat
           complexity_router_config:
             tiers:
               SIMPLE: self-hosted
-              MEDIUM: nvidia
+              MEDIUM: MiniMax-M3-chat
               COMPLEX: reasoning-pool
-              REASONING: frontier-pool
-            tier_boundaries:
-              simple_medium: 0.45
-              medium_complex: 0.65
-              complex_reasoning: 0.85
+              REASONING: reasoning-pool
+            classifier_type: llm
+            classifier_llm_config:
+              model: reviewer
+              timeout_ms: 20000
+            classifier_fallback: default_model
 
       # Semantic intent router — SCAFFOLD, not live. Chaining into the complexity
       # router is unsupported (auto_router_default_model must be a concrete model),
