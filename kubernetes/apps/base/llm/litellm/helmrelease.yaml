@@ -107,6 +107,16 @@ spec:
         parentRefs:
           - name: envoy-external
             namespace: network
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: 4000
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  set:
+                    - name: x-litellm-session-id
+                      value: "%REQ(x-session-id)%"
     service:
       app:
         ports:

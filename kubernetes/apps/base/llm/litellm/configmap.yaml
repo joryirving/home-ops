@@ -466,7 +466,7 @@ data:
           model: openai/kimi-for-coding
           api_base: https://api.kimi.com/coding/v1
           api_key: os.environ/KIMI_CODE_API_KEY
-          order: 2
+          order: 3
           additional_drop_params: ["frequency_penalty", "n", "presence_penalty", "reasoning_effort", "temperature", "thinking", "top_p"]
 
       - model_name: reasoning-pool
@@ -484,7 +484,7 @@ data:
           model: openai/deepseek-v4-flash
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
-          order: 3
+          order: 2
 
       - model_name: reasoning-pool
         model_info:
@@ -598,6 +598,8 @@ data:
               model: reviewer
               timeout_ms: 20000
             classifier_fallback: default_model
+            session_affinity: true
+            session_affinity_ttl_seconds: 3600
 
     general_settings:
       health_check_endpoint: /v1/health
