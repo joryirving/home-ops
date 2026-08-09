@@ -1,91 +1,79 @@
 # Foreman
 
 Optional [LLMKube](https://llmkube.com/docs/foreman) add-on control plane that dispatches
-agentic coder/verifier/reviewer workloads across the fleet, running in the `llm` namespace.
+agentic coder/reviewer workloads across the fleet, running in the `llm` namespace.
 Depends on the `llmkube` core operator (its Flux Kustomization sets `dependsOn: llmkube`).
 
 This folder installs the operator (the `foreman` Helm chart, which ships the `Workload`,
 `AgenticTask`, `Agent`, and `FleetNode` CRDs) **and** the `Agent` CRs under `agents/`.
 `FleetNode`s register themselves at runtime, and per-issue `Workload`s are materialized by
 the [foreman-dispatch-bridge](https://github.com/misospace/foreman-dispatch-bridge) CronJob —
-both are ephemeral runtime state and are not committed.
+both are ephemeral runtime state and are not committed. The loop itself (dataflow, lanes,
+retry/escalation, PR fixes) is documented in
+[`../dispatch/foreman-dispatch-bridge/README.md`](../dispatch/foreman-dispatch-bridge/README.md);
+this file covers the agents and how they get their runtimes.
 
 Chart: `oci://ghcr.io/defilantech/charts/foreman`, pinned in `ocirepository.yaml`.
 
-## How an agent gets its runtime
+## One polyglot coder image
 
-This is the part that is easy to get wrong, because two different mechanisms decide it.
+Every coder agent runs the same image: `ghcr.io/misospace/llmkube-coder` — Python 3.14,
+Node, Go 1.26, Godot 4.7.1 (headless), and Elixir 1.18/OTP 27, plus each language's
+linters (~475 MB compressed, amd64 only; the fleet is amd64). Rootless coders cannot
+install anything at run time, so every runtime is baked in — the replacement for the old
+root-and-apt-get Saffron pods.
 
-**`spec.execution.image` decides where the agent runs.**
+This replaced four per-language images in 2026-08 (`llmkube-coder-{python,node,go,godot}`,
+retired in misospace/llmkube-images#165). The Python/Node/Go ones were strict subsets of
+the polyglot base, and `llmkube-coder-go` was *larger* than the base that already contained
+Go. The published packages still exist on ghcr for old digest pins; nothing builds them.
+
+**Rule of thumb:** stay on one image until a runtime is huge or conflicting (JVM, CUDA,
+Android SDK class), and split only that one out.
+
+## How an agent executes
+
+`spec.execution` decides where an agent runs:
 
 | `execution` | Runs | Consequence |
 |---|---|---|
-| empty | in-process inside the `foreman-agent` pods | uses the Deployment's image; **dies on any `foreman-agent` restart** |
-| `image: …` | its own Job, one per task | survives restarts; gets exactly that image |
+| `image: … / mode: Job` | one Job per task | survives `foreman-agent` restarts |
+| empty | in-process inside the `foreman-agent` pods | dies on any restart |
 
-Today `coder-go`, `coder-node`, `coder-python` (and `coder-godot`) run as Jobs. Everything
-else — `coder`, `coder-frontier`, `coder-revision`, `gate*`, `reviewer*` — runs in-process
-and therefore uses whatever image the `foreman-agent` Deployment runs, currently
-`ghcr.io/misospace/llmkube-coder` (Python 3.14 + Node 22 + Go 1.26, "the polyglot image").
+All seven coders (`coder`, `coder-frontier`, `coder-revision`, `coder-python`,
+`coder-node`, `coder-go`, `coder-godot`) are Job-based on the polyglot image. Only the
+gates and reviewers are in-process — they need no language runtime, and their tasks are
+short enough that a restart losing one is cheap.
 
-`coder-frontier` is a separate **agent**, not a separate image: it differs only by model
-(`MiniMax-M3-chat` vs `nvidia`). It inherits the polyglot image like every other in-process
-agent.
+The per-language agents survive as **prompt specializations of the same image**, not
+different runtimes: `coder-godot`'s prompt carries GDScript traps (`assert_eq` arity is a
+parse error that silently drops the whole test file), `coder-python`'s carries Python
+gate specifics, and so on. `coder-frontier` differs only by model (`MiniMax-M3-chat`).
 
-**The bridge decides which agent a repo gets**, in this precedence order:
+The bridge picks the agent per issue: `LANE_CODER_AGENTS` (escalation) →
+`REPO_CODER_AGENTS` (exact repo — exists because `gateProfile.language` is an enum, so
+GDScript/Elixir repos are both `generic` and indistinguishable by language) →
+`BASE_CODER_AGENTS` (language) → wildcards.
 
-1. `LANE_CODER_AGENTS` — lane, e.g. the frontier escalation tier
-2. `REPO_CODER_AGENTS` — exact repo full name
-3. `BASE_CODER_AGENTS` — the repo's gate-profile language
-4. wildcards, then the default `coder`
+## Why runtimes-in-the-coder matters
 
-The repo tier exists because `Workload.spec.gateProfile.language` is an **enum** —
-`go|python|rust|node|generic` — so every repo outside those presets is `generic` and cannot
-be told apart by language. windowstead (GDScript) and pinchflat (Elixir) are both `generic`
-and need different runtimes.
-
-## Why this matters
-
-A coder without its repo's runtime cannot run the tests it just wrote. On
-misospace/windowstead#321 foreman deferred its self-gate with `runtime missing in the coder
-image`, deferring to a clean-room verify Job that is **disabled fleet-wide**
-(`VERIFY_ENABLED=false`; repo CI is the verifier instead). The reviewer then returned GO
-while stating it could not verify, and the PR opened with a test file that did not parse —
-which drops the whole file, so the pre-existing tests in it silently stopped running too.
-CI caught it. Nothing before CI did.
-
-Escalation reintroduces the same gap: the lane tier outranks the repo tier, and
-`coder-frontier` is in-process, so an escalated GDScript or Elixir task is back on the
-polyglot image with no engine.
-
-## Per-language images vs one polyglot image
-
-Measured 2026-08-08, compressed, amd64:
-
-| Image | Size | Contents |
-|---|---|---|
-| `llmkube-coder` (polyglot) | 265 MB | python3, node, go, ruff, black, flake8, yamllint, eslint, gofmt |
-| `llmkube-coder-python` | 96 MB | python3 + the Python linters — a strict **subset** |
-| `llmkube-coder-node` | 180 MB | node + JS linters — a strict **subset** |
-| `llmkube-coder-go` | 388 MB | go only — **larger than the polyglot image that already contains Go** |
-| `llmkube-coder-godot` | 112 MB | Godot 4.2.2 headless — genuinely additive |
-
-The per-language images for Python/Node/Go add **no capability** the polyglot image lacks;
-they are smaller, and `coder-go` is not even that. The images that earn their existence are
-the ones carrying a runtime the polyglot image does not have.
-
-Consolidating the three onto the polyglot image, and adding Godot/Elixir to it, would put
-the base near ~377 MB — still smaller than `llmkube-coder-go` is today — and would fix the
-escalation gap for free, since every in-process agent would then have every runtime. The
-cost is that all three `foreman-agent` replicas pull it.
+The coder **self-gate runs the repo's `GATEPROFILE_MAP` commands** before submitting.
+With `VERIFY_ENABLED=false` (clean-room verify Jobs are off; repo CI is the verifier),
+the self-gate is the only pre-PR test execution — and it silently no-ops when the
+runtime is missing (`self-gate-deferred`, deferring to a backstop that is disabled).
+That is how misospace/windowstead#321 shipped a test file that did not parse: no Godot
+in the coder, no gate Job, reviewer GO'd anyway (LLMKube#1454). With the polyglot image
+the self-gate has every runtime, so the gate profiles do their job inside the coder.
 
 ## Gotchas
 
-- **Agent CRs are cached at startup.** Editing a `systemPrompt` or `maxOutputTokens` needs
-  `kubectl rollout restart deployment/foreman-agent`, which kills in-flight in-process work
-  (the Deployment is `Recreate`, with no drain — LLMKube#1438).
-- **Coder images are digest-pinned** because the CRD has no `imagePullPolicy` and the tag is
-  mutable. Renovate bumps the digests.
-- **`gateProfile` without a verifier is decorative.** With `VERIFY_ENABLED=false` no gate Job
-  is created, so the profile's commands never run; they exist for the coder's own self-gate
-  and for whenever verification is re-enabled.
+- **Agent CRs are cached at startup.** Editing a `systemPrompt` or `maxOutputTokens`
+  needs `kubectl rollout restart deployment/foreman-agent`. Since coders are Job-based,
+  a restart now only interrupts in-flight reviews/gates (LLMKube#1438 tracks a drain).
+- **Images are digest-pinned** (no `imagePullPolicy` in the CRD; tags are mutable).
+  Renovate bumps digests — including inside `GATEPROFILE_MAP`'s JSON, via a custom
+  regex manager in `.renovate/customManagers.json5` (the flux manager cannot see refs
+  embedded in a JSON string; the godot-gate pin sat stale at 4.2.2 because of this).
+- **Godot versions are pinned in three places** that must agree: the polyglot image, the
+  `godot-gate` pin in `GATEPROFILE_MAP`, and each Godot repo's own `godot-toolchain.json`
+  (which its CI reads). All three are 4.7.1 as of 2026-08.
