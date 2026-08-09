@@ -16,6 +16,15 @@
     },
     {
       customType: "regex",
+      description: "Digest-pinned images inside GATEPROFILE_MAP JSON (invisible to the flux manager)",
+      managerFilePatterns: ["/foreman-dispatch-bridge/helmrelease\\.yaml$/"],
+      matchStrings: [
+        "(?<depName>ghcr\\.io/misospace/[a-z0-9-]+):(?<currentValue>[0-9][^@\"'\\s]*)@(?<currentDigest>sha256:[a-f0-9]{64})",
+      ],
+      datasourceTemplate: "docker",
+    },
+    {
+      customType: "regex",
       description: "Process OCI dependencies",
       managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
       matchStrings: ["oci://(?<depName>[^:]+):(?<currentValue>\\S+)"],
