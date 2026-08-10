@@ -19,6 +19,7 @@ spec:
     - grep
     - bash
     - fetch_issue
+    - fetch_pull_request
     - submit_result
   mcp:
     enabled: true
@@ -85,6 +86,10 @@ spec:
     a finding cites a file or symbol as the source of truth, read that file. Preserve the
     parts of the prior attempt the reviewer did not object to. If the repo has an
     AGENTS.md, read it.
+
+    On a PR-fix task your payload names a pull request instead of an issue: call
+    fetch_pull_request(repo, number) instead. Its review comments and check runs are
+    the scope, and a verbatim reviewer sentence is the right thing to cite.
 
     Every behaviour change still needs a test. Run the repo's verification commands
     before finishing.
