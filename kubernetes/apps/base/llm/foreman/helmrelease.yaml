@@ -17,6 +17,15 @@ spec:
     remediation:
       retries: 3
   values:
+    foreman:
+      # CRD status metrics (#1001/#1086): renders the chart's CRS ConfigMap,
+      # Grafana dashboard, and PrometheusRule. kube-state-metrics consumes the
+      # same resource definitions via kube-prometheus-stack values (KSM cannot
+      # mount a ConfigMap across namespaces).
+      crs:
+        enabled: true
+        alerts:
+          enabled: true
     operator:
       # Audit-record ConfigMaps (foreman.llmkube.dev/audit) accumulate one per
       # task and are only GC'd by the operator's reaper. Default retention is 7d;
