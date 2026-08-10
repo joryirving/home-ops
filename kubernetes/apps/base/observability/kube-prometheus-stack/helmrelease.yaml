@@ -138,6 +138,59 @@ spec:
         - pods=[*]
         - deployments=[*]
         - persistentvolumeclaims=[*]
+      rbac:
+        extraRules:
+          - apiGroups: ["foreman.llmkube.dev"]
+            resources: ["agentictasks", "workloads"]
+            verbs: ["list", "watch"]
+      customResourceState:
+        enabled: true
+        config:
+          kind: CustomResourceStateMetrics
+          spec:
+            resources:
+              - groupVersionKind:
+                  group: foreman.llmkube.dev
+                  version: v1alpha1
+                  kind: AgenticTask
+                metricNamePrefix: foreman_agentictask
+                labelsFromPath:
+                  name: [metadata, name]
+                  agent: [spec, agentRef, name]
+                  task_kind: [spec, kind]
+                metrics:
+                  - name: phase
+                    help: AgenticTask lifecycle phase
+                    each:
+                      type: StateSet
+                      stateSet:
+                        labelName: phase
+                        path: [status, phase]
+                        list: [Pending, Running, Succeeded, Failed]
+                  - name: verdict
+                    help: AgenticTask terminal verdict
+                    each:
+                      type: StateSet
+                      stateSet:
+                        labelName: verdict
+                        path: [status, verdict]
+                        list: [GO, NO-GO, INCOMPLETE, ERROR, Skipped]
+              - groupVersionKind:
+                  group: foreman.llmkube.dev
+                  version: v1alpha1
+                  kind: Workload
+                metricNamePrefix: foreman_workload
+                labelsFromPath:
+                  name: [metadata, name]
+                metrics:
+                  - name: phase
+                    help: Workload lifecycle phase
+                    each:
+                      type: StateSet
+                      stateSet:
+                        labelName: phase
+                        path: [status, phase]
+                        list: [Pending, Dispatched, Completed, Failed]
     kubeEtcd:
       service:
         selector:
