@@ -38,7 +38,9 @@ spec:
       audit:
         retention: 48h
     agent:
-      replicaCount: 3
+      # One task per FleetNode, and Job-based coders hold theirs for the
+      # whole Job — so replicas cap concurrent coders + reviews (#1496).
+      replicaCount: 12
       mode: native
       taskNamespace: llm
       roles:
