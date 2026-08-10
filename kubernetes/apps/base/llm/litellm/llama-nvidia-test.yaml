@@ -7,7 +7,7 @@ spec:
   source: hf://meta-models/Muse-Glimmer-30B-GGUF
   files:
     - muse-glimmer-30B-kquant-17gb.gguf
-  mmproj: mmproj-kquant.gguf
+    - dflash-kquant.gguf
   format: gguf
   quantization: kquant
   hardware:
@@ -39,7 +39,7 @@ spec:
   env:
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
-  contextSize: 120000
+  contextSize: 131072
   flashAttention: true
   jinja: true
   parallelSlots: 1
@@ -55,6 +55,18 @@ spec:
     - --alias
     - llama-nvidia-test
     - --cont-batching
+    - --spec-type
+    - draft-dflash
+    - --spec-draft-model
+    - /models/464557bd230a5831/dflash-kquant.gguf
+    - --spec-draft-n-max
+    - "3"
+    - --spec-draft-p-min
+    - "0.75"
+    - --spec-draft-type-k
+    - q8_0
+    - --spec-draft-type-v
+    - q8_0
     - --cache-prompt
     - --cache-ram
     - "16384"
