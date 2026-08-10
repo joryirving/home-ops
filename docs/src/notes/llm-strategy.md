@@ -44,9 +44,9 @@ Aliases as defined in the LiteLLM configmap, grouped by where they run.
 
 | Alias                  | Backend                                  | Model                | Ctx (in) | Role                                |
 | ---------------------- | ---------------------------------------- | -------------------- | -------- | ----------------------------------- |
-| `self-hosted`          | Strix ROCm (2 × 2 slots) + Mac LM Studio | Qwen3.6-35B-A3B ⁶    | 262k     | Default local brain; vision + tools |
-| `reviewer`             | Strix ROCm                               | Mellum2-12B-A2.5B    | 131k     | Foreman code review only            |
-| `nvidia`               | 3090                                     | Qwen (CUDA)          | 145k     | General local, no vision            |
+| `self-hosted`          | Strix ROCm (2 slots) + Mac LM Studio (2 slots) | Qwen3.6-35B-A3B ⁶    | 262k     | Default local brain; vision + tools |
+| `reviewer`             | Strix ROCm (3 slots)                     | Mellum2-12B-A2.5B    | 131k     | Foreman code review only            |
+| `nvidia`               | 3090 (1 slot)                            | Qwen (CUDA)          | 145k     | General local, no vision            |
 | `memini-embed`         | llama.cpp                                | Qwen3-Embedding-0.6B | —        | Embeddings (1024-dim); iGPU tenant  |
 | `memini-rerank`        | llama.cpp                                | Qwen3-Reranker-0.6B  | —        | Reranking (infinity); iGPU tenant   |
 | `toolhive-embed`       | llama.cpp                                | Qwen3-Embedding-0.6B | —        | Embeddings for toolhive vMCP; iGPU  |
@@ -177,7 +177,7 @@ Reading it for routing:
 | ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso `MiniMax-M3`; Saffron `glm-5.2`; subagent + heartbeat `dsv4f`; image `self-hosted`      |
 | **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `kimi-k3`; compression/extract/approval/session-search `self-hosted`                 |
-| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | coders `nvidia`, frontier coder `MiniMax-M3-chat`, reviewers `reviewer`                      |
+| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | `coder` → `nvidia`; `coder-strix` + `coder-revision` → `self-hosted`; `coder-frontier` → `MiniMax-M3-chat`; reviewers → `reviewer` |
 | **Opencode** (CLI/Zen) | no (workstation)                            | LiteLLM aliases directly; biggest single `user_agent` cluster after the agents               |
 | **Zed**                | no (workstation)                            | LiteLLM aliases directly                                                                     |
 
@@ -238,6 +238,30 @@ Observed 30-day traffic (Prometheus, `litellm_*_metric_total`), top models:
 
 Kimi subscription traffic is valued at the equivalent Moonshot API rates in LiteLLM even though the
 plan itself is flat-rate.
+
+### Slot accounting on the local pools
+
+`max_parallel_requests` per LiteLLM member must match the backend's real `parallelSlots`,
+because the two failure modes are asymmetric:
+
+- **Cap above the backend** and requests queue *inside* llama.cpp, invisible to the router.
+  `llama-nvidia` sat at 2 against a single slot; the queueing surfaced as a 53 s average
+  time-to-first-token on the `nvidia` alias while the model itself was fine (fixed 2026-08).
+- **Cap below the backend** and provisioned VRAM goes unused. `llama-reviewer` served 3
+  slots while LiteLLM dispatched into 2 — a third of the model unreachable (fixed 2026-08).
+
+Current: Strix 2, Mac 2, reviewer 3, nvidia 1. The Strix box is memory-bandwidth bound, so
+aggregate tok/s improves with concurrent streams spread **across** resident models rather
+than piled onto one — the useful range is roughly 6-8 streams for the whole box, not per
+model. Both `self-hosted` members stay `order: 1` deliberately: the Mac is used whenever it
+is awake, and a failed call when it sleeps is the accepted cost of not idling it.
+
+Foreman's demand cannot currently be bounded per-Agent
+([LLMKube#1497](https://github.com/defilantech/LLMKube/issues/1497)), so the only levers on
+its share of `self-hosted` are the bridge's `MAX_IN_PROGRESS` and the `LANE_CODER_AGENTS`
+split ratio — both blunt. Measured `self-hosted` utilisation across *all* consumers
+(Foreman, home-ops PR reviews, groomer, repo-wiki) is ~15 busy-hours/day against 96
+slot-hours, so headroom is real and the risk is bursts, not steady state.
 
 ## Smart-routing: the `auto` alias
 
