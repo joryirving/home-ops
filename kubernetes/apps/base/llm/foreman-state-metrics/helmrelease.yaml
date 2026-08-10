@@ -1,0 +1,41 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: foreman-state-metrics
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: foreman-state-metrics
+  interval: 15m
+  values:
+    fullnameOverride: foreman-state-metrics
+    # CRS-only: serve the foreman chart's CustomResourceState metrics and
+    # nothing else — the cluster-wide kube-state-metrics keeps owning core
+    # resources.
+    extraArgs:
+      - --custom-resource-state-only=true
+    customResourceState:
+      enabled: true
+      # Consume the foreman chart's own ConfigMap (foreman.crs.enabled) in
+      # place; definitions update on foreman chart bumps with no copy here.
+      create: false
+      name: foreman-crs
+      key: foreman-crs.yaml
+    rbac:
+      extraRules:
+        - apiGroups: ["foreman.llmkube.dev"]
+          resources: ["agentictasks", "workloads", "fleetnodes"]
+          verbs: ["list", "watch"]
+    annotations:
+      reloader.stakater.com/auto: "true"
+    prometheus:
+      monitor:
+        enabled: true
+    resources:
+      requests:
+        cpu: 5m
+        memory: 32Mi
+      limits:
+        memory: 64Mi
