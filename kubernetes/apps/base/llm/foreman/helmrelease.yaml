@@ -24,12 +24,11 @@ spec:
       # mount a ConfigMap across namespaces).
       crs:
         enabled: true
-        # Chart 0.9.16's shipped rule uses time_seconds(), which is not a
-        # PromQL function; the prometheus-operator admission webhook rejects
-        # it and the whole Helm upgrade rolls back. Re-enable when the fix
-        # ships upstream.
+        # Render the CRS ConfigMap where the cluster kube-state-metrics can
+        # mount it (0.9.17, LLMKube#1492).
+        namespace: observability
         alerts:
-          enabled: false
+          enabled: true
     operator:
       # Audit-record ConfigMaps (foreman.llmkube.dev/audit) accumulate one per
       # task and are only GC'd by the operator's reaper. Default retention is 7d;

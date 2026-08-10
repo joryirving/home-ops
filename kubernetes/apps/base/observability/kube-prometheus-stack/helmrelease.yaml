@@ -138,6 +138,18 @@ spec:
         - pods=[*]
         - deployments=[*]
         - persistentvolumeclaims=[*]
+      rbac:
+        extraRules:
+          - apiGroups: ["foreman.llmkube.dev"]
+            resources: ["agentictasks", "workloads", "fleetnodes"]
+            verbs: ["list", "watch"]
+      customResourceState:
+        enabled: true
+        # The foreman chart renders this ConfigMap into observability
+        # (foreman.crs.namespace); definitions update on foreman chart bumps.
+        create: false
+        name: foreman-crs
+        key: foreman-crs.yaml
     kubeEtcd:
       service:
         selector:
