@@ -19,7 +19,6 @@ spec:
     - grep
     - bash
     - fetch_issue
-    - fetch_pull_request
     - submit_result
   mcp:
     enabled: true
@@ -53,10 +52,7 @@ spec:
       1. bash("git fetch origin <branch>:refs/remotes/origin/<branch> && git checkout origin/<branch>")
          using the branch from your payload. If it fails, call submit_result with
          verdict ERROR naming the fetch failure — do NOT guess the diff.
-      2. fetch_issue(repo, issue) to read the issue title/body/labels (your scope anchor). If the
-         payload also names a pull request, fetch_pull_request(repo, number) for its
-         reviews, review_comments, and check_runs — prior feedback your verdict
-         should account for.
+      2. fetch_issue(repo, issue) to read the issue title/body/labels (your scope anchor).
       3. bash("git log -1 --pretty=full HEAD") for the commit message.
       4. bash("git diff --stat main...HEAD") then bash("git diff main...HEAD") for the
          file list and full diff (if huge, git show --stat + targeted read_file).
