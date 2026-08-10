@@ -19,6 +19,7 @@ spec:
     - grep
     - bash
     - fetch_issue
+    - fetch_pull_request
     - submit_result
   mcp:
     enabled: true
@@ -62,7 +63,10 @@ spec:
     checked out on its branch — do not start over; read the existing diff against the
     base branch first, then apply the reviewer's findings as targeted edits on top of it.
     Call fetch_issue(repo, issue) before you start: the reviewer feedback tells you what
-    to CHANGE, the issue tells you what DONE means, and the two are not the same. A
+    to CHANGE, the issue tells you what DONE means, and the two are not the same. If a
+    pull request already exists for this branch, call fetch_pull_request(repo, number)
+    too: the live review thread and check runs are the authoritative version of that
+    feedback. A
     finding is a derived artifact — satisfying every finding while drifting from the
     issue's actual ask still fails review. Read both, then address every finding, and
     where a finding cites a file or symbol as the source of truth, read that file and
