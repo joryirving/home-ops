@@ -14,7 +14,7 @@ data:
           cache_read_input_token_cost: 0.0000000125
           output_cost_per_token: 0.0000004999
           max_input_tokens: 262144
-          max_output_tokens: 16384
+          max_output_tokens: 20480
           supports_function_calling: true
           supports_vision: true
         litellm_params:
@@ -32,14 +32,14 @@ data:
           output_cost_per_token: 0.0000004999
           mode: chat
           max_input_tokens: 262144
-          max_output_tokens: 16384
+          max_output_tokens: 20480
           supports_function_calling: true
           supports_vision: true
         litellm_params:
           model: openai/self-hosted
           api_base: http://mac.internal:1234/v1
           api_key: lm-studio
-          max_parallel_requests: 1
+          max_parallel_requests: 2
           order: 1
 
       - model_name: reviewer
@@ -606,6 +606,12 @@ data:
       store_model_in_db: false
 
     router_settings:
+      # Coder lane is split per-issue across nvidia and self-hosted; a down
+      # backend's requests transparently take the other (self-hosted also fails
+      # over internally strix <-> mac).
+      fallbacks:
+        - nvidia: ["self-hosted"]
+        - self-hosted: ["nvidia"]
       redis_host: os.environ/REDIS_HOST
       redis_port: os.environ/REDIS_PORT
       routing_strategy: simple-shuffle

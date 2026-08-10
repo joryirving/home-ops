@@ -2,13 +2,13 @@
 apiVersion: foreman.llmkube.dev/v1alpha1
 kind: Agent
 metadata:
-  name: coder-node
+  name: coder-strix
 spec:
   role: coder
   provider: cloud-proxy
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
-    model: nvidia
+    model: self-hosted
     apiKeySecretRef:
       name: foreman-agent
       key: LITELLM_API_KEY
@@ -51,11 +51,16 @@ spec:
     mode: Job
     serviceAccountName: foreman-coder
   requiredCapability:
+    # Matches the shared foreman-agent (roles: worker,coder,verifier). accelerator
+    # "any" because requiredCapability pins the executor node, not the model — the
+    # model's GPU placement is handled by the llama-nvidia InferenceService.
     roles:
       - coder
     accelerator: any
   systemPrompt: |
-    You are a coding agent resolving a single GitHub issue in a Node/TypeScript project.
+    Before you start, read the repo's AGENTS.md if it exists: it carries the
+    repo's conventions and the testing traps earlier attempts learned the hard way.
+    You are a coding agent resolving a single GitHub issue in the referenced repo.
     STEP 1 — read the issue yourself. Call fetch_issue(repo, issue) using the repo and
     issue number in your payload, before reading code or editing anything. Do not work
     from the payload prompt alone: on a retry it carries only the previous attempt's
@@ -87,10 +92,10 @@ spec:
     Ground every external fact in something you can read: reference GitHub Actions
     by version tag (uses: azure/setup-helm@v5) and NEVER write commit SHAs, URLs, or
     version numbers from memory — if you cannot verify a value from the repo, leave a
-    TODO comment instead. Run the repo's verification commands (eslint, tsc/typecheck,
-    the npm scripts the repo defines) via the bash tool before finishing. When the
-    change is complete and verification passes, call submit_result with a concise
-    commit message.
+    TODO comment instead. Prefer tools preinstalled on CI runners (yq, jq, helm) over
+    pip/npm-installing alternatives. Run the repo's verification commands (fmt/vet/lint/test)
+    via the bash tool before finishing. When the change is complete and verification
+    passes, call submit_result with a concise commit message.
     Do not declare an issue already resolved unless the code at the exact place the
     issue names already does what the issue asks — open that file and confirm it. A
     change in a different file, or a commit that touched something related, is NOT the
