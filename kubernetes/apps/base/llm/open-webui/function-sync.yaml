@@ -64,9 +64,9 @@ data:
     )
     FUNCTIONS = (
         ("openclaw_gateway", "OpenClaw - Miso", "main", "openclaw-bridge"),
-        ("openclaw_matcha", "OpenClaw - Matcha", "matcha", "openclaw-bridge-matcha"),
         ("openclaw_saffron", "OpenClaw - Saffron", "saffron", "openclaw-bridge-saffron"),
     )
+    RETIRED_FUNCTION_IDS = ("openclaw_matcha",)
 
 
     def fetch_pipe() -> str:
@@ -147,6 +147,19 @@ data:
 
         source = fetch_pipe()
         source_manifest = manifest(source)
+
+        for function_id in RETIRED_FUNCTION_IDS:
+            existing = await Functions.get_function_by_id(function_id)
+            if existing and not await Functions.update_function_by_id(
+                function_id,
+                {
+                    "is_active": False,
+                    "is_global": False,
+                },
+            ):
+                raise RuntimeError(f"failed to retire function {function_id}")
+            if existing:
+                print(f"retired {function_id}")
 
         for function_id, function_name, agent_id, state_suffix in FUNCTIONS:
             content = named_source(source, f"{function_name} / ")
