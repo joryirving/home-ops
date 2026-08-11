@@ -2,14 +2,14 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: llama-strix
+  name: llama-strix-muse
 spec:
-  source: hf://SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF
+  source: hf://unsloth/Muse-Glimmer-30B-GGUF
   files:
-    - Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-I-Balanced.gguf
-  mmproj: mmproj-Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-F16.gguf
+    - Muse-Glimmer-30B-UD-Q5_K_XL.gguf
+  mmproj: mmproj-Muse-Glimmer-30B-Q8_0.gguf
   format: gguf
-  quantization: I-Balanced
+  quantization: UD-Q5_K_XL
   hardware:
     accelerator: rocm
     gpu:
@@ -23,21 +23,20 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-strix
+  name: llama-strix-muse
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: llama-strix
+  modelRef: llama-strix-muse
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
   image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:0d4df8387ccb224200d7b086d5089b64b41a65d1e609618df39112d74b5fc4de
   rolloutPolicy:
-    waitForIdle: true
-    idleTimeoutSeconds: 86400
+    waitForIdle: false
   command:
     - llama-server
-  replicas: 0
+  replicas: 1
   priority: high
   nodeSelector:
     topology.kubernetes.io/gpus: amd
@@ -45,14 +44,12 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  contextSize: 262144
+  contextSize: 131072
   parallelSlots: 2
   flashAttention: true
   jinja: true
   cacheTypeK: q8_0
   cacheTypeV: q8_0
-  reasoningBudget: 16384
-  reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
   batchSize: 6144
   uBatchSize: 2048
   resources:
@@ -63,44 +60,20 @@ spec:
     type: ClusterIP
   extraArgs:
     - --alias
-    - llama-strix
+    - llama-strix-muse
     - --image-min-tokens
     - "1024"
     - --cont-batching
-    - --spec-type
-    - draft-mtp
-    - --spec-draft-p-min
-    - "0.75"
-    - --spec-draft-n-max
-    - "3"
-    - --spec-draft-type-k
-    - q8_0
-    - --spec-draft-type-v
-    - q8_0
     - --cache-prompt
     - --kv-unified
     - --checkpoint-min-step
     - "32768"
-    - --temp
-    - "0.6"
-    - --top-p
-    - "0.95"
-    - --top-k
-    - "20"
-    - --min-p
-    - "0"
-    - --presence-penalty
-    - "0.2"
-    - --repeat-penalty
-    - "1.03"
     - --threads
     - "16"
     - --threads-batch
     - "21"
     - --load-mode
     - none
-    - --chat-template-kwargs
-    - '{"preserve_thinking":true}'
   probeOverrides:
     startup:
       httpGet:
