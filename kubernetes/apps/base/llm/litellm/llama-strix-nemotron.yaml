@@ -2,14 +2,13 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: llama-strix-muse
+  name: llama-strix-nemotron
 spec:
-  source: hf://meta-models/Muse-Glimmer-30B-GGUF
+  source: hf://ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF
   files:
-    - muse-glimmer-30B-kquant-17gb.gguf
-  mmproj: mmproj-kquant.gguf
+    - NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_K_M.gguf
   format: gguf
-  quantization: kquant
+  quantization: Q4_K_M
   hardware:
     accelerator: rocm
     gpu:
@@ -23,11 +22,11 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-strix-muse
+  name: llama-strix-nemotron
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: llama-strix-muse
+  modelRef: llama-strix-nemotron
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
@@ -36,7 +35,7 @@ spec:
     waitForIdle: false
   command:
     - llama-server
-  replicas: 0
+  replicas: 1
   priority: high
   nodeSelector:
     topology.kubernetes.io/gpus: amd
@@ -44,7 +43,7 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  contextSize: 131072
+  contextSize: 262144
   parallelSlots: 2
   flashAttention: true
   jinja: true
@@ -60,7 +59,7 @@ spec:
     type: ClusterIP
   extraArgs:
     - --alias
-    - llama-strix-muse
+    - llama-strix-nemotron
     - --image-min-tokens
     - "1024"
     - --cont-batching
