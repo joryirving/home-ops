@@ -41,7 +41,7 @@ data:
         "http://10.69.10.120:8080/v1",
     ]
     OPENAI_ENABLED_URLS = {"https://litellm.jory.dev/v1"}
-    OLLAMA_BASE_URLS = ["http://llama-swap.llm:8080"]
+    OLLAMA_BASE_URLS = []
     FUNCTION_DESCRIPTION = (
         "Run an OpenClaw agent over its native Gateway WebSocket with "
         "streaming tool cards and persistent sessions."
@@ -110,16 +110,17 @@ data:
             openai_api_configs[str(index)] = config
 
         ollama_api_configs = provider_config.get("ollama.api_configs") or {}
-        ollama_config = dict(ollama_api_configs.get("0", {}))
-        ollama_config["enable"] = True
-        ollama_api_configs["0"] = ollama_config
+        for index, config in ollama_api_configs.items():
+            config = dict(config)
+            config["enable"] = False
+            ollama_api_configs[index] = config
 
         await Config.upsert(
             {
                 "openai.enable": True,
                 "openai.api_base_urls": OPENAI_BASE_URLS,
                 "openai.api_configs": openai_api_configs,
-                "ollama.enable": True,
+                "ollama.enable": False,
                 "ollama.base_urls": OLLAMA_BASE_URLS,
                 "ollama.api_configs": ollama_api_configs,
             }
