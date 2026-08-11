@@ -29,6 +29,19 @@ data:
         'os.environ.get("OPENCLAW_GATEWAY_TOKEN", "")'
     )
     NAME_MARKER = "\n\nimport asyncio\n"
+    OPENAI_BASE_URLS = [
+        "http://llama-server.llm:8080/v1",
+        "http://smurf-pc:1234/v1",
+        "http://mac:1234/v1",
+        "http://macbookpro:1234/v1",
+        "http://llama-memory:8080/v1",
+        "http://llama-vision:8080/v1",
+        "https://api.minimax.io/v1",
+        "https://litellm.jory.dev/v1",
+        "http://10.69.10.120:8080/v1",
+    ]
+    OPENAI_ENABLED_URLS = {"https://litellm.jory.dev/v1"}
+    OLLAMA_BASE_URLS = ["http://llama-swap.llm:8080"]
     FUNCTION_DESCRIPTION = (
         "Run an OpenClaw agent over its native Gateway WebSocket with "
         "streaming tool cards and persistent sessions."
@@ -83,15 +96,32 @@ data:
 
 
     async def sync() -> None:
-        # Open WebUI persists these settings in PostgreSQL, so the
-        # ENABLE_OPENAI_API=false environment variable alone does not remove
-        # old admin-configured OpenAI endpoints. Keep the database aligned with
-        # the deployment intent and stop refreshes against stale LAN hosts.
+        # Open WebUI persists these settings in PostgreSQL, so environment
+        # variables alone do not reconcile provider endpoints. Keep the database
+        # aligned with the deployment intent while disabling stale LAN probes.
+        provider_config = await Config.get_many(
+            "openai.api_configs",
+            "ollama.api_configs",
+        )
+        openai_api_configs = provider_config.get("openai.api_configs") or {}
+        for index, url in enumerate(OPENAI_BASE_URLS):
+            config = dict(openai_api_configs.get(str(index), {}))
+            config["enable"] = url in OPENAI_ENABLED_URLS
+            openai_api_configs[str(index)] = config
+
+        ollama_api_configs = provider_config.get("ollama.api_configs") or {}
+        ollama_config = dict(ollama_api_configs.get("0", {}))
+        ollama_config["enable"] = True
+        ollama_api_configs["0"] = ollama_config
+
         await Config.upsert(
             {
-                "openai.enable": False,
-                "openai.api_base_urls": [],
+                "openai.enable": True,
+                "openai.api_base_urls": OPENAI_BASE_URLS,
+                "openai.api_configs": openai_api_configs,
                 "ollama.enable": True,
+                "ollama.base_urls": OLLAMA_BASE_URLS,
+                "ollama.api_configs": ollama_api_configs,
             }
         )
 
