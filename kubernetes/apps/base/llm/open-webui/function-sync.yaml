@@ -58,6 +58,8 @@ data:
         "            pipe_log(f\"Gateway model discovery connection failed: {e}\")\n"
         "            conn = None\n"
     )
+    MODEL_NAME_MARKER = '            name = f"{friendly} ({provider}) · OpenClaw"\n'
+    MODEL_NAME_PATCH = '            name = f"{MODEL_DISPLAY_NAME} · {friendly} ({provider})"\n'
     FUNCTION_DESCRIPTION = (
         "Run an OpenClaw agent over its native Gateway WebSocket with "
         "streaming tool cards and persistent sessions."
@@ -92,6 +94,9 @@ data:
         if source.count(MODEL_DISCOVERY_MARKER) != 1:
             raise RuntimeError("OpenClaw pipe model discovery layout changed upstream")
         source = source.replace(MODEL_DISCOVERY_MARKER, MODEL_DISCOVERY_PATCH, 1)
+        if source.count(MODEL_NAME_MARKER) != 1:
+            raise RuntimeError("OpenClaw pipe model naming layout changed upstream")
+        source = source.replace(MODEL_NAME_MARKER, MODEL_NAME_PATCH, 1)
         return source
 
 
@@ -106,10 +111,12 @@ data:
         return values
 
 
-    def named_source(source: str, display_name: str) -> str:
+    def named_source(source: str, function_name: str) -> str:
         return source.replace(
             NAME_MARKER,
-            f"\n\nname = {display_name!r}\n" + NAME_MARKER,
+            f"\n\nname = {function_name + ' / '!r}\n"
+            f"MODEL_DISPLAY_NAME = {function_name!r}\n"
+            + NAME_MARKER,
             1,
         )
 
@@ -162,7 +169,7 @@ data:
                 print(f"retired {function_id}")
 
         for function_id, function_name, agent_id, state_suffix in FUNCTIONS:
-            content = named_source(source, f"{function_name} / ")
+            content = named_source(source, function_name)
             form = FunctionForm(
                 id=function_id,
                 name=function_name,
