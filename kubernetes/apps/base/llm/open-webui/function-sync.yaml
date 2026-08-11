@@ -60,6 +60,8 @@ data:
     )
     MODEL_NAME_MARKER = '            name = f"{friendly} ({provider}) · OpenClaw"\n'
     MODEL_NAME_PATCH = '            name = f"{MODEL_DISPLAY_NAME} · {friendly} ({provider})"\n'
+    DEFAULT_NAME_MARKER = '        default_name = "OpenClaw · Default"\n'
+    DEFAULT_NAME_PATCH = '        default_name = f"{MODEL_DISPLAY_NAME} · Default"\n'
     FUNCTION_DESCRIPTION = (
         "Run an OpenClaw agent over its native Gateway WebSocket with "
         "streaming tool cards and persistent sessions."
@@ -97,6 +99,9 @@ data:
         if source.count(MODEL_NAME_MARKER) != 1:
             raise RuntimeError("OpenClaw pipe model naming layout changed upstream")
         source = source.replace(MODEL_NAME_MARKER, MODEL_NAME_PATCH, 1)
+        if source.count(DEFAULT_NAME_MARKER) != 1:
+            raise RuntimeError("OpenClaw pipe default naming layout changed upstream")
+        source = source.replace(DEFAULT_NAME_MARKER, DEFAULT_NAME_PATCH, 1)
         return source
 
 
