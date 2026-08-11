@@ -2,7 +2,7 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: llama-nvidia-test
+  name: llama-strix-muse
 spec:
   source: hf://meta-models/Muse-Glimmer-30B-GGUF
   files:
@@ -12,55 +12,65 @@ spec:
   format: gguf
   quantization: kquant
   hardware:
-    accelerator: cuda
+    accelerator: rocm
     gpu:
       enabled: true
-      vendor: nvidia
-      count: 1
+      vendor: amd
       layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-nvidia-test
+  name: llama-strix-muse
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: llama-nvidia-test
+  modelRef: llama-strix-muse
+  modelCache:
+    claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:1caad187e691f18327d9050464f6884ae193fd7151b71f3a192f21213a59208f
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:0d4df8387ccb224200d7b086d5089b64b41a65d1e609618df39112d74b5fc4de
   rolloutPolicy:
     waitForIdle: false
-  replicas: 0
-  priorityClassName: gpu-preemptible
-  runtimeClassName: nvidia
+  command:
+    - llama-server
+  replicas: 1
+  priority: high
   nodeSelector:
-    topology.kubernetes.io: egpu
-  env:
-    - name: NVIDIA_DRIVER_CAPABILITIES
-      value: compute,utility
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
   contextSize: 131072
+  parallelSlots: 2
   flashAttention: true
   jinja: true
-  parallelSlots: 2
-  batchSize: 4096
-  uBatchSize: 1024
   cacheTypeK: q8_0
   cacheTypeV: q8_0
+  batchSize: 6144
+  uBatchSize: 2048
   resources:
-    gpu: 1
     cpu: "500m"
-    memory: 16Gi
+    memory: 28Gi
+  endpoint:
+    port: 8080
+    type: ClusterIP
   extraArgs:
     - --alias
-    - llama-nvidia-test
+    - llama-strix-muse
+    - --image-min-tokens
+    - "1024"
     - --cont-batching
     - --spec-type
     - draft-dflash
     - --spec-draft-model
     - /models/464557bd230a5831/dflash-kquant.gguf
     - --spec-draft-n-max
-    - "15"
+    - "3"
     - --spec-draft-p-min
     - "0.75"
     - --spec-draft-type-k
@@ -68,17 +78,15 @@ spec:
     - --spec-draft-type-v
     - q8_0
     - --cache-prompt
-    - --cache-ram
-    - "16384"
     - --kv-unified
+    - --checkpoint-min-step
+    - "32768"
     - --threads
-    - "6"
+    - "16"
     - --threads-batch
-    - "12"
-    - --mmap
-  endpoint:
-    port: 8080
-    type: ClusterIP
+    - "21"
+    - --load-mode
+    - none
   probeOverrides:
     startup:
       httpGet:
