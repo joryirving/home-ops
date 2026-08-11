@@ -42,6 +42,22 @@ data:
     ]
     OPENAI_ENABLED_URLS = {"https://litellm.jory.dev/v1"}
     OLLAMA_BASE_URLS = []
+    MODEL_DISCOVERY_MARKER = (
+        "    # 1. Try live gateway (fast path only if already connected)\n"
+        "    global _gateway_connection\n"
+        "    conn = _gateway_connection\n"
+    )
+    MODEL_DISCOVERY_PATCH = (
+        "    # 1. Try live gateway, connecting when the picker asks.\n"
+        "    global _gateway_connection\n"
+        "    conn = _gateway_connection\n"
+        "    if conn is None:\n"
+        "        try:\n"
+        "            conn = await _get_gateway_connection(lambda: valves)\n"
+        "        except Exception as e:\n"
+        "            pipe_log(f\"Gateway model discovery connection failed: {e}\")\n"
+        "            conn = None\n"
+    )
     FUNCTION_DESCRIPTION = (
         "Run an OpenClaw agent over its native Gateway WebSocket with "
         "streaming tool cards and persistent sessions."
@@ -73,6 +89,9 @@ data:
         source = source.replace(TOKEN_LINE, TOKEN_FALLBACK, 1)
         if source.count(NAME_MARKER) != 1:
             raise RuntimeError("OpenClaw pipe import layout changed upstream")
+        if source.count(MODEL_DISCOVERY_MARKER) != 1:
+            raise RuntimeError("OpenClaw pipe model discovery layout changed upstream")
+        source = source.replace(MODEL_DISCOVERY_MARKER, MODEL_DISCOVERY_PATCH, 1)
         return source
 
 
