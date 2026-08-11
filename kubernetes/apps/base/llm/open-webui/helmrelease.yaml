@@ -15,6 +15,21 @@ spec:
       open-webui:
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          function-sync:
+            image:
+              repository: ghcr.io/open-webui/open-webui
+              tag: v0.11.0@sha256:72c0ba641ba75e7aa52655cb242570906ececd09b1140fb736483038a22b3228
+            command: [python, /opt/openclaw-function-sync.py]
+            env:
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .Release.Name }}-app"
+                    key: uri
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
         containers:
           app:
             image:
@@ -31,6 +46,8 @@ spec:
               IMAGE_STEPS: 8
               COMFYUI_BASE_URL: http://smurf-pc:8188
               # Open-webui settings
+              ENABLE_PIP_INSTALL_FRONTMATTER_REQUIREMENTS: true
+              ENABLE_PLUGINS: true
               OLLAMA_BASE_URL: http://llama-swap.llm:8080/v1
               ENABLE_RAG_WEB_SEARCH: true
               ENABLE_SEARCH_QUERY: true
@@ -58,6 +75,13 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /app/backend/data
+      function-sync:
+        type: configMap
+        name: open-webui-function-sync
+        globalMounts:
+          - path: /opt/openclaw-function-sync.py
+            subPath: sync.py
+            readOnly: true
     route:
       app:
         hostnames: ["chat.jory.dev"]
