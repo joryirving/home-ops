@@ -2,78 +2,83 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: llama-strix-muse
+  name: llama-nvidia
 spec:
   source: hf://meta-models/Muse-Glimmer-30B-GGUF
   files:
     - muse-glimmer-30B-kquant-17gb.gguf
+    - dflash-kquant.gguf
   mmproj: mmproj-kquant.gguf
   format: gguf
   quantization: kquant
   hardware:
-    accelerator: rocm
+    accelerator: cuda
     gpu:
       enabled: true
-      vendor: amd
+      vendor: nvidia
+      count: 1
       layers: 99
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-strix-muse
+  name: llama-nvidia
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: llama-strix-muse
-  modelCache:
-    claimName: llmkube-skirk-cache
+  modelRef: llama-nvidia
   runtime: llamacpp
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:6c5b95e6d080b41beca21256b62fbbf8457a0f0f18299a968a16e582225e51ac
+  image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:1caad187e691f18327d9050464f6884ae193fd7151b71f3a192f21213a59208f
   rolloutPolicy:
     waitForIdle: false
-  command:
-    - llama-server
-  replicas: 0
-  priority: high
+  replicas: 1
+  priorityClassName: gpu-preemptible
+  runtimeClassName: nvidia
   nodeSelector:
-    topology.kubernetes.io/gpus: amd
-  tolerations:
-    - key: llm-workload
-      operator: Exists
-      effect: NoSchedule
+    topology.kubernetes.io: egpu
+  env:
+    - name: NVIDIA_DRIVER_CAPABILITIES
+      value: compute,utility
   contextSize: 131072
-  parallelSlots: 2
   flashAttention: true
   jinja: true
+  parallelSlots: 2
+  batchSize: 4096
+  uBatchSize: 1024
   cacheTypeK: q8_0
   cacheTypeV: q8_0
-  batchSize: 6144
-  uBatchSize: 2048
   resources:
+    gpu: 1
     cpu: "500m"
-    memory: 28Gi
+    memory: 16Gi
+  extraArgs:
+    - --alias
+    - llama-nvidia-test
+    - --cont-batching
+    - --spec-type
+    - draft-dflash
+    - --spec-draft-model
+    - /models/5112e8376dfd8c46/dflash-kquant.gguf
+    - --spec-draft-n-max
+    - "15"
+    - --spec-draft-p-min
+    - "0.75"
+    - --spec-draft-type-k
+    - q8_0
+    - --spec-draft-type-v
+    - q8_0
+    - --cache-prompt
+    - --cache-ram
+    - "16384"
+    - --kv-unified
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    - --mmap
   endpoint:
     port: 8080
     type: ClusterIP
-  extraArgs:
-    - --alias
-    - llama-strix-muse
-    - --image-min-tokens
-    - "1024"
-    - --cont-batching
-    - --cache-prompt
-    - --kv-unified
-    - --checkpoint-min-step
-    - "32768"
-    - --threads
-    - "16"
-    - --threads-batch
-    - "21"
-    - --load-mode
-    - none
   probeOverrides:
     startup:
       httpGet:
