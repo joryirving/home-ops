@@ -128,6 +128,15 @@ data:
             if not result:
                 raise RuntimeError(f"failed to reconcile function {function_id}")
 
+            if not await Functions.update_function_by_id(
+                function_id,
+                {
+                    "is_active": True,
+                    "is_global": True,
+                },
+            ):
+                raise RuntimeError(f"failed to activate function {function_id}")
+
             valves = {
                 "GATEWAY_URL": "openclaw.llm.svc.cluster.local:18789",
                 "GATEWAY_TOKEN": "",
