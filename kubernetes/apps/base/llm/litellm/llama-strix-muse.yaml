@@ -7,6 +7,7 @@ spec:
   source: hf://meta-models/Muse-Glimmer-30B-GGUF
   files:
     - muse-glimmer-30B-kquant-17gb.gguf
+    - dflash-kquant.gguf
   mmproj: mmproj-kquant.gguf
   format: gguf
   quantization: kquant
@@ -64,6 +65,18 @@ spec:
     - --image-min-tokens
     - "1024"
     - --cont-batching
+    - --spec-type
+    - draft-dflash
+    - --spec-draft-model
+    - /models/464557bd230a5831/dflash-kquant.gguf
+    - --spec-draft-n-max
+    - "3"
+    - --spec-draft-p-min
+    - "0.75"
+    - --spec-draft-type-k
+    - q8_0
+    - --spec-draft-type-v
+    - q8_0
     - --cache-prompt
     - --kv-unified
     - --checkpoint-min-step
