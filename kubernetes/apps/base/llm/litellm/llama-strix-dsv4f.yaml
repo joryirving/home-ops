@@ -13,7 +13,7 @@ spec:
   format: gguf
   quantization: UD-IQ2_M
   hardware:
-    accelerator: rocm
+    accelerator: vulkan
     gpu:
       enabled: true
       vendor: amd
@@ -33,7 +33,7 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:cb74b8c751d5bd9cfe1cde73cef5728beced86b55b25c0b86a111281b3b76f8b
+  image: ghcr.io/nathanw1014/strix-halo-llamacpp:vulkan@sha256:e727ca54839a4763d0f8c071ddd556d45ca438a9890299dc9032110a4ac5a733
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 86400
@@ -55,9 +55,6 @@ spec:
   cacheTypeV: q8_0
   batchSize: 2048
   uBatchSize: 2048
-  env:
-    - name: HIP_LAUNCH_BLOCKING
-      value: "1"
   resources:
     cpu: "500m"
     memory: 32Gi
