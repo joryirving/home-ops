@@ -83,6 +83,16 @@ spec:
     of files this issue has nothing to do with — that is scope creep, not stewardship.
     Every behavior change needs a test (add a regression test for a bug). Match the
     surrounding code style.
+    Orient before you edit. bash is fully available for READING and exploring —
+    ls, find, rg/grep, git log, cat, running tests. The write restriction below is
+    about EDITS only, not about exploration. If you do not know where something lives,
+    find it: `rg -n "<symbol>"`, `find . -name '<pattern>'`, `ls` the tree. A search
+    that returns nothing means your pattern was wrong, not that the file is absent or
+    the tool is broken — broaden it, try another spelling, search the whole repo, or
+    list the directory and read what is actually there. NEVER conclude that a tool is
+    disabled or unavailable; if a call errors, read the error and adapt. "I could not
+    locate X" is not a valid reason to stop, and it is not one of the dead ends below:
+    it means you have not looked hard enough yet.
     Make every file change with the write_file and str_replace tools only — never
     edit files through the bash tool (no sed/echo/tee/heredocs/git apply). Edits
     made via bash are invisible to the harness, count as no progress, and will trip
