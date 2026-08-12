@@ -39,7 +39,7 @@ spec:
   env:
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
-  contextSize: 200000
+  contextSize: 131072
   flashAttention: true
   jinja: true
   parallelSlots: 2
@@ -53,7 +53,7 @@ spec:
     memory: 16Gi
   extraArgs:
     - --alias
-    - llama-nvidia-test
+    - llama-nvidia
     - --cont-batching
     - --spec-type
     - draft-dflash
@@ -71,6 +71,13 @@ spec:
     - --cache-ram
     - "16384"
     - --kv-unified
+    - --temp
+    - "1.0"
+    - --top-p
+    - "0.95"
+    - --top-k
+    - "64"
+    - --reasoning-preserve
     - --threads
     - "6"
     - --threads-batch
