@@ -44,11 +44,15 @@ spec:
     # A runaway task is bounded by editFreeTurnsLimit, maxTurns and the 2h
     # activeDeadlineSeconds, so the context caps only need to stay clear of the
     # provider ceiling: hard cap leaves room for the 16k output under 1M.
-    editFreeTurnsLimit: 100
+    editFreeTurnsLimit: 40
     contextSoftCap: 700000
     contextHardCap: 900000
   requestTurnTimeoutSeconds: 1800
-  requestTimeoutSeconds: 7200
+  # Must stay below execution.activeDeadlineSeconds. When they are equal the
+  # Job deadline wins the race, the pod takes SIGTERM mid-request, and the loop
+  # never writes a result — losing the transcript, the branch evidence a retry
+  # needs, and the whole run. This margin lets the loop end itself and submit.
+  requestTimeoutSeconds: 6600
   bashTimeoutSeconds: 60
   execution:
     activeDeadlineSeconds: 7200
