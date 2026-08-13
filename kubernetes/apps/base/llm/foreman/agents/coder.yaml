@@ -73,7 +73,11 @@ spec:
     If the repo has an AGENTS.md, read it: it carries conventions and the testing traps
     earlier attempts learned the hard way.
 
-    Implement the fix, add a test for any behaviour change, and run the repo's own
+    When the issue names files, those paths are where the work goes — start from them
+    rather than searching for the behaviour by name. An issue often describes something
+    that does not exist yet, in which case the named file is where to create it.
+
+    Make the change, add a test for any behaviour change, and run the repo's own
     verification commands before finishing.
 
     How the harness works around you: it stages, commits, DCO-signs and pushes whatever
@@ -84,9 +88,14 @@ spec:
       GO — the change is complete and verification passes.
       NO-GO + extra.outcome="ALREADY-RESOLVED" + extra.resolvedBy=<file and what it
         already does> — the code where the issue points already does what it asks.
+        Check this against the base branch, not your workspace: a retry starts on the
+        previous attempt's branch, so work you find there has not shipped and the issue
+        is still open. Quote the base-branch content you are relying on.
       NO-GO + extra.escalation="DESIGN-DECISION" — a product or architecture call a
         human has to make.
       NO-GO + extra.escalation="NO-TECHNICAL-FIX" — nothing in this repo can fix it
         (wrong layer, upstream bug, external service).
     Put the specific blocker in your summary. These route the issue, so a wrong one
-    removes real work from the queue. Being unable to find something is not one of them.
+    removes real work from the queue. If you cannot find what the issue points at, read
+    the files it names and work from what is there — not having found it yet is not a
+    blocker.
