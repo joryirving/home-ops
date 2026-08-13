@@ -36,13 +36,17 @@ spec:
   maxRetries: 3
   maxOutputTokens: 16384
   stuckLoopDetection:
-    # Hosted dsv4f serves a ~1M context, so the 100k soft cap the local models
-    # need does not apply. That cap is what aborted dispatch#714 (turn 44),
-    # bridge#99 (turn 63) and alert-triage#30 (turn 26) before they could call
-    # submit_result; give this lane room to finish the long ones instead.
+    # LiteLLM declares max_input_tokens 1000000 for this alias, so the 100k cap
+    # the local models need for their 131k window does not apply. That cap is
+    # what aborted dispatch#714 (turn 44), bridge#99 (turn 63) and
+    # alert-triage#30 (turn 26) before they could call submit_result.
+    #
+    # A runaway task is bounded by editFreeTurnsLimit, maxTurns and the 2h
+    # activeDeadlineSeconds, so the context caps only need to stay clear of the
+    # provider ceiling: hard cap leaves room for the 16k output under 1M.
     editFreeTurnsLimit: 100
-    contextSoftCap: 180000
-    contextHardCap: 240000
+    contextSoftCap: 700000
+    contextHardCap: 900000
   requestTurnTimeoutSeconds: 1800
   requestTimeoutSeconds: 7200
   bashTimeoutSeconds: 60
