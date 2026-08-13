@@ -19,27 +19,34 @@ spec:
           app:
             image:
               repository: yanwk/comfyui-boot
-              tag: rocm7@sha256:e4a01a6a0567924e67e2ba149b9afe318c4881bec92bec3ce0d0f32315d11ddb
-            securityContext:
-              privileged: true
+              tag: xpu@sha256:ab1ac553bfd6756fdf15f52f7da370cdef74a26cbca4e84177ac9720bc5d52f2
             env:
-              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
-              HSA_ENABLE_SDMA: "0"
-              HIP_VISIBLE_DEVICES: "0"
-              ROCR_VISIBLE_DEVICES: "0"
-              PYTORCH_HIP_ALLOC_CONF: "max_split_size_mb:256,garbage_collection_threshold:0.6"
               CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap"
-            # No resources block on purpose: BestEffort QoS makes comfyui the
-            # first pod the Talos OOM manager kills (ranking weight 1.0) and the
-            # first kubelet evicts under node MemoryPressure on the shared UMA node.
+            # It no longer shares a node with an LLM, so it no longer has to be the
+            # sacrificial pod. Real requests instead of BestEffort. No limits: the
+            # iGPU draws from system RAM and a hard cap would OOM mid-generation.
+            resources:
+              claims:
+                - name: gpu
+              requests:
+                cpu: 500m
+                memory: 8Gi
     defaultPodOptions:
       hostIPC: true
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
-          effect: NoSchedule
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: comfyui-gpu
+      # Steer AWAY from the labelled GPU node (skirk) rather than naming the Intel
+      # ones: DRA picks whichever of ayaka/eula/ganyu has a free i915 device. Same
+      # approach as tdarr-node. skirk also carries an llm-workload NoSchedule taint
+      # we no longer tolerate, so it is excluded twice over.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/gpus
+                    operator: DoesNotExist
     service:
       app:
         type: LoadBalancer
@@ -69,13 +76,3 @@ spec:
             subPath: output
           - path: /root/ComfyUI/input
             subPath: input
-      dev-dri:
-        type: hostPath
-        hostPath: /dev/dri
-        globalMounts:
-          - path: /dev/dri
-      dev-kfd:
-        type: hostPath
-        hostPath: /dev/kfd
-        globalMounts:
-          - path: /dev/kfd
