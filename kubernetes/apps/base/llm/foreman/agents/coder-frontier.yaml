@@ -53,6 +53,19 @@ spec:
   requestTimeoutSeconds: 39600
   bashTimeoutSeconds: 60
   execution:
+    # The Job default mirrors the gate (2 CPU / 4Gi requested), but a coder is
+    # I/O-bound on model calls and only bursts during the repo's test command.
+    # At MAX_IN_PROGRESS 14 the default reserved 28 CPU against ~57 schedulable
+    # (skirk's 32 carries the llm-workload taint), so Jobs sat Pending on
+    # "Insufficient cpu" while node utilisation was 27%. Limits stay high so a
+    # test run can still burst.
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
     activeDeadlineSeconds: 43200
     image: ghcr.io/misospace/llmkube-coder:0.9.16@sha256:c99120f992ae588fdaa5000377da4da1d4e04f349ba681e27083f5a4008cc97f
     mode: Job
