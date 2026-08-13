@@ -19,34 +19,27 @@ spec:
           app:
             image:
               repository: yanwk/comfyui-boot
-              tag: xpu@sha256:ab1ac553bfd6756fdf15f52f7da370cdef74a26cbca4e84177ac9720bc5d52f2
+              tag: cpu@sha256:28813f118b7ec92d7c58fa729d382364ceaf87f6ea43eda9a44a5d73009ab0dd
             env:
-              # Iris Xe (Gen12 Xe-LP) keeps rejecting mixed-dtype kernels with
-              # level_zero error 45 (UR_RESULT_ERROR_INVALID_ARGUMENT). Setting
-              # per-component dtypes fixed the VAE and then exposed the same failure
-              # in the CLIP embedding, which casts fp16 weights to fp32 output.
-              # --force-fp32 removes the whole class of cast rather than chasing it
-              # component by component. Slower, but fp32 is native on Xe-LP.
-              # If this still fails, Xe-LP is not viable for diffusion.
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --force-fp32"
-            # It no longer shares a node with an LLM, so it no longer has to be the
-            # sacrificial pod. Real requests instead of BestEffort. No limits: the
-            # iGPU draws from system RAM and a hard cap would OOM mid-generation.
+              # --cpu is required; without it ComfyUI probes for an accelerator.
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --cpu"
+              OMP_NUM_THREADS: "16"
+              MKL_NUM_THREADS: "16"
+            # It no longer shares a node with an LLM, so it no longer has to be
+            # the sacrificial BestEffort pod. CPU inference wants cores: request 4
+            # so it always schedules, cap at 16 of eula's 20 so a long generation
+            # cannot starve the control plane. No memory limit - a hard cap would
+            # OOM mid-generation, and the request is what protects it.
             resources:
-              claims:
-                - name: gpu
               requests:
-                cpu: 500m
-                memory: 8Gi
+                cpu: "4"
+                memory: 16Gi
+              limits:
+                cpu: "16"
     defaultPodOptions:
       hostIPC: true
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: comfyui-gpu
-      # Steer AWAY from the labelled GPU node (skirk) rather than naming the Intel
-      # ones: DRA picks whichever of ayaka/eula/ganyu has a free i915 device. Same
-      # approach as tdarr-node. skirk also carries an llm-workload NoSchedule taint
-      # we no longer tolerate, so it is excluded twice over.
+      # No GPU at all now, so nothing pins this beyond keeping it off skirk —
+      # that node's RAM belongs to dsv4f and comfyui no longer needs its iGPU.
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
