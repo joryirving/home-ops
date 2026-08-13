@@ -44,14 +44,22 @@ spec:
     # A runaway task is bounded by editFreeTurnsLimit, maxTurns and the 2h
     # activeDeadlineSeconds, so the context caps only need to stay clear of the
     # provider ceiling: hard cap leaves room for the 16k output under 1M.
-    editFreeTurnsLimit: 100
+    editFreeTurnsLimit: 40
     contextSoftCap: 700000
     contextHardCap: 900000
   requestTurnTimeoutSeconds: 1800
-  requestTimeoutSeconds: 7200
+  # Must stay below execution.activeDeadlineSeconds. When they were equal (both
+  # 7200) the Job deadline won the race, the pod took SIGTERM mid-request, and
+  # the loop never wrote a result — losing the transcript, the branch evidence a
+  # retry needs, and the whole run. This margin lets the loop end itself first.
+  #
+  # Wall clock is now a backstop, not the limit that bites: maxTurns and
+  # editFreeTurnsLimit bound the loop semantically, and a hung turn dies on
+  # requestTurnTimeoutSeconds.
+  requestTimeoutSeconds: 39600
   bashTimeoutSeconds: 60
   execution:
-    activeDeadlineSeconds: 7200
+    activeDeadlineSeconds: 43200
     image: ghcr.io/misospace/llmkube-coder:0.9.16@sha256:c99120f992ae588fdaa5000377da4da1d4e04f349ba681e27083f5a4008cc97f
     mode: Job
     serviceAccountName: foreman-coder

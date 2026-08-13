@@ -39,14 +39,22 @@ spec:
     # nvidia local model has a 131k context window; give more exploration room
     # before the edit-free abort, and cap context just under the window (the
     # default hard cap of 140k sat above it).
-    editFreeTurnsLimit: 100
+    editFreeTurnsLimit: 40
     contextSoftCap: 100000
     contextHardCap: 120000
   requestTurnTimeoutSeconds: 1800
-  requestTimeoutSeconds: 7200
+  # Must stay below execution.activeDeadlineSeconds. When they were equal (both
+  # 7200) the Job deadline won the race, the pod took SIGTERM mid-request, and
+  # the loop never wrote a result — losing the transcript, the branch evidence a
+  # retry needs, and the whole run. This margin lets the loop end itself first.
+  #
+  # Wall clock is now a backstop, not the limit that bites: maxTurns and
+  # editFreeTurnsLimit bound the loop semantically, and a hung turn dies on
+  # requestTurnTimeoutSeconds.
+  requestTimeoutSeconds: 39600
   bashTimeoutSeconds: 60
   execution:
-    activeDeadlineSeconds: 7200
+    activeDeadlineSeconds: 43200
     image: ghcr.io/misospace/llmkube-coder:0.9.16@sha256:c99120f992ae588fdaa5000377da4da1d4e04f349ba681e27083f5a4008cc97f
     mode: Job
     serviceAccountName: foreman-coder
