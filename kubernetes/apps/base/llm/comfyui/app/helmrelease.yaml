@@ -23,8 +23,16 @@ spec:
             env:
               # --cpu is required; without it ComfyUI probes for an accelerator.
               CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --cpu"
-              OMP_NUM_THREADS: "16"
-              MKL_NUM_THREADS: "16"
+              # eula is an i9-13900H: P-cores are CPUs 0-11, E-cores 12-19. An
+              # OpenMP parallel region finishes when its SLOWEST thread does, so
+              # spreading 16 threads over both core types made every iteration wait
+              # on Gracemont. Bind to P-cores only. GOMP_ for libgomp, KMP_ for the
+              # Intel OpenMP runtime MKL may load instead.
+              OMP_NUM_THREADS: "12"
+              MKL_NUM_THREADS: "12"
+              GOMP_CPU_AFFINITY: "0-11"
+              KMP_AFFINITY: "granularity=fine,proc_list=[0-11],explicit"
+              OMP_PROC_BIND: "close"
             # It no longer shares a node with an LLM, so it no longer has to be
             # the sacrificial BestEffort pod. CPU inference wants cores: request 4
             # so it always schedules, cap at 16 of eula's 20 so a long generation
