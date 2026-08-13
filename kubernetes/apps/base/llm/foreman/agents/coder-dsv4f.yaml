@@ -1,0 +1,86 @@
+---
+apiVersion: foreman.llmkube.dev/v1alpha1
+kind: Agent
+metadata:
+  name: coder-dsv4f
+spec:
+  role: coder
+  provider: cloud-proxy
+  providerConfig:
+    baseURL: http://litellm.llm:4000/v1
+    model: dsv4f
+    apiKeySecretRef:
+      name: foreman-agent
+      key: LITELLM_API_KEY
+  tools:
+    - read_file
+    - write_file
+    - str_replace
+    - grep
+    - bash
+    - fetch_issue
+    - submit_result
+  mcp:
+    enabled: true
+    servers:
+      - name: context7
+        transport: http
+        url: https://mcp.context7.com/mcp
+        headers:
+          - name: CONTEXT7_API_KEY
+            valueFrom:
+              name: foreman-agent
+              key: CONTEXT7_API_KEY
+  temperature: "0.2"
+  maxTurns: 160
+  maxRetries: 3
+  maxOutputTokens: 16384
+  stuckLoopDetection:
+    # LiteLLM declares max_input_tokens 1000000 for this alias, so the 100k cap
+    # the local models need for their 131k window does not apply. That cap is
+    # what aborted dispatch#714 (turn 44), bridge#99 (turn 63) and
+    # alert-triage#30 (turn 26) before they could call submit_result.
+    #
+    # A runaway task is bounded by editFreeTurnsLimit, maxTurns and the 2h
+    # activeDeadlineSeconds, so the context caps only need to stay clear of the
+    # provider ceiling: hard cap leaves room for the 16k output under 1M.
+    editFreeTurnsLimit: 100
+    contextSoftCap: 700000
+    contextHardCap: 900000
+  requestTurnTimeoutSeconds: 1800
+  requestTimeoutSeconds: 7200
+  bashTimeoutSeconds: 60
+  execution:
+    activeDeadlineSeconds: 7200
+    image: ghcr.io/misospace/llmkube-coder:0.9.16@sha256:c99120f992ae588fdaa5000377da4da1d4e04f349ba681e27083f5a4008cc97f
+    mode: Job
+    serviceAccountName: foreman-coder
+  requiredCapability:
+    roles:
+      - coder
+    accelerator: any
+  systemPrompt: |
+    You are a coding agent resolving one GitHub issue in the referenced repo.
+
+    Start by calling fetch_issue(repo, issue). On a retry the payload carries only the
+    previous attempt's feedback — the original ask and acceptance criteria are not in it.
+    If the repo has an AGENTS.md, read it: it carries conventions and the testing traps
+    earlier attempts learned the hard way.
+
+    Implement the fix, add a test for any behaviour change, and run the repo's own
+    verification commands before finishing.
+
+    How the harness works around you: it stages, commits, DCO-signs and pushes whatever
+    your edit tools changed, using the commit message you pass to submit_result. Progress
+    is measured by those edit-tool calls, so changes made another way do not register.
+
+    Finish with submit_result:
+      GO — the change is complete and verification passes.
+      NO-GO + extra.outcome="ALREADY-RESOLVED" + extra.resolvedBy=<file and what it
+        already does> — the code where the issue points already does what it asks.
+      NO-GO + extra.escalation="DESIGN-DECISION" — a product or architecture call a
+        human has to make.
+      NO-GO + extra.escalation="NO-TECHNICAL-FIX" — nothing in this repo can fix it
+        (wrong layer, upstream bug, external service).
+    Put the specific blocker in your summary. These route the issue, so a wrong one
+    removes real work from the queue. Being unable to find something is not one of them.
