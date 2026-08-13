@@ -21,7 +21,12 @@ spec:
               repository: yanwk/comfyui-boot
               tag: xpu@sha256:ab1ac553bfd6756fdf15f52f7da370cdef74a26cbca4e84177ac9720bc5d52f2
             env:
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap"
+              # Iris Xe is Gen12 Xe-LP: fp16 is native, bf16 is NOT (that is an XMX
+              # feature on Arc and newer). ComfyUI defaulted the VAE to bf16 and
+              # Level Zero rejected the kernel with UR_RESULT_ERROR_INVALID_ARGUMENT.
+              # fp32 for the VAE rather than fp16, which upstream warns can produce
+              # black images.
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --fp16-unet --fp32-vae"
             # It no longer shares a node with an LLM, so it no longer has to be the
             # sacrificial pod. Real requests instead of BestEffort. No limits: the
             # iGPU draws from system RAM and a hard cap would OOM mid-generation.
