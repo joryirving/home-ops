@@ -21,12 +21,14 @@ spec:
               repository: yanwk/comfyui-boot
               tag: xpu@sha256:ab1ac553bfd6756fdf15f52f7da370cdef74a26cbca4e84177ac9720bc5d52f2
             env:
-              # Iris Xe is Gen12 Xe-LP: fp16 is native, bf16 is NOT (that is an XMX
-              # feature on Arc and newer). ComfyUI defaulted the VAE to bf16 and
-              # Level Zero rejected the kernel with UR_RESULT_ERROR_INVALID_ARGUMENT.
-              # fp32 for the VAE rather than fp16, which upstream warns can produce
-              # black images.
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --fp16-unet --fp32-vae"
+              # Iris Xe (Gen12 Xe-LP) keeps rejecting mixed-dtype kernels with
+              # level_zero error 45 (UR_RESULT_ERROR_INVALID_ARGUMENT). Setting
+              # per-component dtypes fixed the VAE and then exposed the same failure
+              # in the CLIP embedding, which casts fp16 weights to fp32 output.
+              # --force-fp32 removes the whole class of cast rather than chasing it
+              # component by component. Slower, but fp32 is native on Xe-LP.
+              # If this still fails, Xe-LP is not viable for diffusion.
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --force-fp32"
             # It no longer shares a node with an LLM, so it no longer has to be the
             # sacrificial pod. Real requests instead of BestEffort. No limits: the
             # iGPU draws from system RAM and a hard cap would OOM mid-generation.
