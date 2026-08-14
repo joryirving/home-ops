@@ -48,7 +48,7 @@ spec:
   uBatchSize: 512
   cacheTypeK: q8_0
   cacheTypeV: q8_0
-  reasoningBudget: 16384
+  reasoningBudget: 32768
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
   resources:
     gpu: 1
@@ -95,6 +95,8 @@ spec:
     - --mmap
     - --chat-template-kwargs
     - '{"preserve_thinking":true}'
+    - --n-predict
+    - "40960"
   endpoint:
     port: 8080
     type: ClusterIP
