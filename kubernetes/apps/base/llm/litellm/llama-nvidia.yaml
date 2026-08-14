@@ -30,7 +30,7 @@ spec:
   runtime: llamacpp
   image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:a475c08c7c472425e3ebf7f6be9c6cb3a17e82ec28070ddeb22fffe3ca754a94
   rolloutPolicy:
-    waitForIdle: true
+    waitForIdle: false
     idleTimeoutSeconds: 86400
   replicas: 1
   priorityClassName: gpu-preemptible
@@ -40,10 +40,10 @@ spec:
   env:
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
-  contextSize: 125000
+  contextSize: 120000
   flashAttention: true
   jinja: true
-  parallelSlots: 1
+  parallelSlots: 2
   batchSize: 4096
   uBatchSize: 512
   cacheTypeK: q8_0
