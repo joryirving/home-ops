@@ -8,7 +8,7 @@ spec:
   provider: cloud-proxy
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
-    model: dsv4f-local
+    model: nvidia
     apiKeySecretRef:
       name: foreman-agent
       key: LITELLM_API_KEY
@@ -41,8 +41,8 @@ spec:
     # before the edit-free abort, and cap context just under the window (the
     # default hard cap of 140k sat above it).
     editFreeTurnsLimit: 40
-    contextSoftCap: 100000
-    contextHardCap: 120000
+    contextSoftCap: 85000
+    contextHardCap: 98000
   requestTurnTimeoutSeconds: 1800
   # Must stay below execution.activeDeadlineSeconds. When they were equal (both
   # 7200) the Job deadline won the race, the pod took SIGTERM mid-request, and
