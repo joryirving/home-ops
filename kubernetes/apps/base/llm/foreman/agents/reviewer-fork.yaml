@@ -12,7 +12,7 @@ spec:
   provider: cloud-proxy
   providerConfig:
     baseURL: http://litellm.llm:4000/v1
-    model: nvidia
+    model: nemotron
     apiKeySecretRef:
       name: foreman-agent
       key: LITELLM_API_KEY
@@ -38,6 +38,9 @@ spec:
   maxOutputTokens: 40960
   maxTurns: 80
   maxRetries: 3
+  stuckLoopDetection:
+    contextSoftCap: 180000
+    contextHardCap: 210000
   requestTurnTimeoutSeconds: 900
   requestTimeoutSeconds: 5400
   bashTimeoutSeconds: 60
