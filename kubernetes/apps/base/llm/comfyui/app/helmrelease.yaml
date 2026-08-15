@@ -19,42 +19,27 @@ spec:
           app:
             image:
               repository: yanwk/comfyui-boot
-              tag: cpu@sha256:28813f118b7ec92d7c58fa729d382364ceaf87f6ea43eda9a44a5d73009ab0dd
+              tag: rocm7@sha256:e4a01a6a0567924e67e2ba149b9afe318c4881bec92bec3ce0d0f32315d11ddb
+            securityContext:
+              privileged: true
             env:
-              # --cpu is required; without it ComfyUI probes for an accelerator.
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --cpu"
-              # eula is an i9-13900H: P-cores are CPUs 0-11, E-cores 12-19. An
-              # OpenMP parallel region finishes when its SLOWEST thread does, so
-              # spreading 16 threads over both core types made every iteration wait
-              # on Gracemont. Bind to P-cores only. GOMP_ for libgomp, KMP_ for the
-              # Intel OpenMP runtime MKL may load instead.
-              OMP_NUM_THREADS: "12"
-              MKL_NUM_THREADS: "12"
-              GOMP_CPU_AFFINITY: "0-11"
-              KMP_AFFINITY: "granularity=fine,proc_list=[0-11],explicit"
-              OMP_PROC_BIND: "close"
-            # It no longer shares a node with an LLM, so it no longer has to be
-            # the sacrificial BestEffort pod. CPU inference wants cores: request 4
-            # so it always schedules, cap at 16 of eula's 20 so a long generation
-            # cannot starve the control plane. No memory limit - a hard cap would
-            # OOM mid-generation, and the request is what protects it.
-            resources:
-              requests:
-                cpu: "4"
-                memory: 16Gi
-              limits:
-                cpu: "16"
+              HSA_OVERRIDE_GFX_VERSION: "11.5.1"
+              HSA_ENABLE_SDMA: "0"
+              HIP_VISIBLE_DEVICES: "0"
+              ROCR_VISIBLE_DEVICES: "0"
+              PYTORCH_HIP_ALLOC_CONF: "max_split_size_mb:256,garbage_collection_threshold:0.6"
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap"
+            # No resources block on purpose: BestEffort QoS makes comfyui the
+            # first pod the Talos OOM manager kills (ranking weight 1.0) and the
+            # first kubelet evicts under MemoryPressure on the shared UMA node.
     defaultPodOptions:
       hostIPC: true
-      # No GPU at all now, so nothing pins this beyond keeping it off skirk —
-      # that node's RAM belongs to dsv4f and comfyui no longer needs its iGPU.
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: topology.kubernetes.io/gpus
-                    operator: DoesNotExist
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
     service:
       app:
         type: LoadBalancer
