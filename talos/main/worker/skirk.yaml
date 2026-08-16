@@ -6,9 +6,6 @@ machine:
   nodeLabels:
     topology.kubernetes.io/gpus: amd
     node-role.kubernetes.io/rocm-worker: "true"
-  sysctls:
-    vm.min_free_kbytes: "4194304"              # 4GiB | UMA node, keep a real free floor so GTT bursts skip direct reclaim
-    vm.watermark_scale_factor: "500"           # 5% | kswapd reclaims ahead of the allocation instead of stalling it
   kubelet:
     extraArgs:
       max-pods: "50"
