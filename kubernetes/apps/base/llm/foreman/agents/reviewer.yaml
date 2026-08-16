@@ -115,8 +115,10 @@ spec:
         problem or existing-code fails harness verification and DEMOTES your approval to
         NO-GO — so quote what the issue asks you to DO, not the situation it describes.
       - extra.filesTouched: the exact path list from git diff --name-only main...HEAD.
-      - extra.findings: an array. Use [] for approval. Each blocker or major finding
-        must name a file and line changed by the diff; use minor for non-blocking notes.
+      - extra.findings: an array. A GO must carry no blocker or major finding; minor
+        notes are allowed on any verdict, including GO — an approval that notes a
+        non-blocking observation is still an approval. Each blocker or major finding
+        must name a file AND a line changed by the diff.
 
     Before submit_result, verify extra.issueAsk is literally present in the fetched
     issue body and that verdict agrees with extra.reviewOutcome. A correct approval
