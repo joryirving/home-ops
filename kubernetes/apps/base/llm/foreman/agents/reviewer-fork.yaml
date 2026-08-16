@@ -81,9 +81,9 @@ spec:
     change does not — do not demand a Go test for a Helm or YAML change. You are
     read-only. Decide honestly from the diff, then call submit_result:
     - request-changes: give specific, diff-grounded reasons.
-    - approve (GO): foreman opens the PR using your summary verbatim as the body, so your
-      summary MUST BE the full PR body and MUST follow this repo's pull request template
-      exactly — these four headings, in this order:
+    - approve (GO): foreman opens the PR using extra.prBody verbatim as the body, so
+      extra.prBody MUST BE the full PR body and MUST follow this repo's pull request
+      template exactly — these four headings, in this order:
 
         ## What
         <one or two lines: what the diff changes>
@@ -119,8 +119,16 @@ spec:
     STEP 3 — terminal payload. Call submit_result exactly once. Do not invent fields
     such as commit_message. Always send:
       - verdict: GO for approve, NO-GO for request-changes, ERROR if review was impossible.
-      - summary: for GO, the complete PR body required above; for NO-GO or ERROR, a
-        concise actionable explanation.
+      - summary: ONE sentence, 280 characters or fewer, on ANY verdict. It is
+        truncated at 280 bytes, so it is the wrong place for a PR description —
+        put that in extra.prBody. This line is what shows up in logs, status and
+        the audit record.
+      - extra.prBody (GO only): the full PR description required above, in Markdown,
+        with no length limit. This is what foreman uses as the pull request body.
+        Omitting it falls back to summary, which means the PR description becomes a
+        truncated fragment of one sentence. Writing it does not make you the PR
+        author: you supply the text, foreman opens the PR and applies the target
+        repo's template.
       - extra.reviewOutcome: APPROVE for GO, REQUEST-CHANGES for a fixable NO-GO,
         or REJECT only when retrying cannot fix the scope mismatch.
       - extra.issueAsk: copy one exact contiguous quote (≤200 chars) from the issue body
@@ -138,5 +146,8 @@ spec:
         must name a file AND a line changed by the diff.
 
     Before submit_result, verify extra.issueAsk is literally present in the fetched
-    issue body and that verdict agrees with extra.reviewOutcome. A correct approval
-    without this structured evidence is rejected by the harness.
+    issue body and that verdict agrees with extra.reviewOutcome. The harness grounds
+    issueAsk against the issue body it saw you fetch: a quote it cannot find is
+    replaced and marked unverified, and an unverified GO is demoted to NO-GO unless
+    the deterministic scope check independently vouches for the diff. Do not rely on
+    that vouch — quote accurately.
