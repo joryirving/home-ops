@@ -1,9 +1,28 @@
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/toolhive.stacklok.dev/virtualmcpserver_v1beta1.json
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPServer
 metadata:
   name: mcp-gateway-internal
 spec:
+  authServerConfig:
+    issuer: https://mcp.jory.dev
+    signingKeySecretRefs:
+      - key: signing-key
+        name: toolhive-auth
+    upstreamProviders:
+      - name: authentik
+        oidcConfig:
+          clientId: toolhive
+          clientSecretRef:
+            key: client-secret
+            name: toolhive-auth
+          issuerUrl: https://sso.jory.dev/application/o/toolhive/
+          scopes:
+            - openid
+            - profile
+            - email
+        type: oidc
   groupRef:
     name: mcp-tools
   config:
@@ -17,7 +36,13 @@ spec:
       embeddingService: http://litellm.llm:4000/v1
       embeddingServiceTimeout: 60s
   incomingAuth:
-    type: anonymous
+    oidcConfigRef:
+      audience: https://mcp.jory.dev
+      name: mcp-gateway
+      resourceUrl: https://mcp.jory.dev
+      scopes:
+        - openid
+    type: oidc
   outgoingAuth:
     source: discovered
   podTemplateSpec:
