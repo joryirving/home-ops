@@ -12,17 +12,22 @@ spec:
         name: toolhive-auth
     upstreamProviders:
       - name: authentik
-        oidcConfig:
+        oauth2Config:
+          allowPrivateIPs: true
+          authorizationEndpoint: https://sso.jory.dev/application/o/authorize/
           clientId: toolhive
           clientSecretRef:
             key: client-secret
             name: toolhive-auth
-          issuerUrl: https://sso.jory.dev/application/o/toolhive/
+          redirectUri: https://mcp.jory.dev/oauth/callback
           scopes:
             - openid
             - profile
             - email
-        type: oidc
+          tokenEndpoint: https://sso.jory.dev/application/o/token/
+          userInfo:
+            endpointUrl: https://sso.jory.dev/application/o/userinfo/
+        type: oauth2
   groupRef:
     name: mcp-tools
   config:
