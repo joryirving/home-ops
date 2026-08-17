@@ -13,6 +13,14 @@ spec:
     signingKeySecretRefs:
       - key: signing-key
         name: toolhive-auth
+    storage:
+      redis:
+        aclUserConfig:
+          passwordSecretRef:
+            key: password
+            name: toolhive-config-redis
+        addr: toolhive-config-dragonfly.llm:6379
+      type: redis
     upstreamProviders:
       - name: authentik
         oauth2Config:
