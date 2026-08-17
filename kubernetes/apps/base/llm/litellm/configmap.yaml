@@ -389,6 +389,41 @@ data:
           model: openai/deepseek-v4-flash
           api_base: https://opencode.ai/zen/go/v1
           api_key: os.environ/OPENCODE_API_KEY
+          order: 1
+
+      - model_name: dsv4f
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.0000002
+          cache_creation_input_token_cost: 0.00000025
+          cache_read_input_token_cost: 0.00000002
+          output_cost_per_token: 0.0000012
+          max_input_tokens: 272000
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/gpt-5.6-luna
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          order: 2
+
+      - model_name: dsv4f
+        model_info:
+          mode: chat
+          input_cost_per_token: 0.00000014
+          cache_creation_input_token_cost: 0.00000014
+          cache_read_input_token_cost: 0.0000000028
+          output_cost_per_token: 0.00000028
+          max_input_tokens: 262144
+          max_output_tokens: 16384
+          supports_function_calling: true
+          supports_prompt_caching: true
+        litellm_params:
+          model: openai/mimo-v2.5
+          api_base: https://opencode.ai/zen/go/v1
+          api_key: os.environ/OPENCODE_API_KEY
+          order: 3
 
       - model_name: dsv4p
         model_info:
@@ -653,7 +688,7 @@ data:
       fallbacks:
         - self-hosted: ["nvidia"]
         - nvidia: ["self-hosted"]
-        - dsv4f: ["go-gpt-5.6-luna", "nvidia"]
+        - dsv4f: ["nvidia"]
         - auto: ["dsv4f", "MiniMax-M3-chat"]
       context_window_fallbacks:
         - nvidia: ["self-hosted"]
