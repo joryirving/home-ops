@@ -29,9 +29,9 @@ spec:
               - --port
               - "8080"
               - --max-context
-              - "65536"
+              - "140000"
               - --kv-capacity
-              - "65536"
+              - auto
               - --max-concurrency
               - "1"
               - --max-pending-requests
@@ -52,6 +52,9 @@ spec:
               requests:
                 cpu: 500m
                 memory: 16Gi
+                nvidia.com/gpu: 1
+              limits:
+                nvidia.com/gpu: 1
     defaultPodOptions:
       runtimeClassName: nvidia
       nodeSelector:
