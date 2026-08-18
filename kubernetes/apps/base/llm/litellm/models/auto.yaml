@@ -1,0 +1,25 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: auto
+spec:
+  modelName: auto
+  proxyRef: litellm
+  params:
+    model: auto_router/complexity_router
+    additional:
+      complexity_router_default_model: MiniMax-M3
+      complexity_router_config:
+        tiers:
+          SIMPLE: nvidia
+          MEDIUM: MiniMax-M3
+          COMPLEX: reasoning-pool
+          REASONING: reasoning-pool
+        classifier_type: llm
+        classifier_llm_config:
+          model: reviewer
+          timeout_ms: 20000
+        classifier_fallback: default_model
+        session_affinity: true
+        session_affinity_ttl_seconds: 3600
