@@ -183,9 +183,9 @@ spec:
       target:
         kind: Kustomization
         labelSelector: "components.postgres/cnpg=init"
-    - # Disable Redis Cluster emulation for ToolHive auth storage.
-      # Dragonfly replication remains enabled; this only removes cluster mode
-      # for clients whose Lua scripts are incompatible with emulated clusters.
+    - # Configure Dragonfly for ToolHive's Redis auth-storage Lua scripts.
+      # Replication remains enabled; standalone mode and undeclared-key access
+      # are required by ToolHive's scripts.
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
         kind: Kustomization
@@ -200,6 +200,9 @@ spec:
               patch: |-
                 - op: remove
                   path: /spec/args/2
+                - op: add
+                  path: /spec/args/-
+                  value: --default_lua_flags=allow-undeclared-keys
       target:
         kind: Kustomization
         labelSelector: "components.dragonfly/cluster-mode=non-cluster"
