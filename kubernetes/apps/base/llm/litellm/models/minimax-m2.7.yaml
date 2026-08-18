@@ -1,0 +1,30 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: minimax-m2.7
+spec:
+  modelName: MiniMax-M2.7
+  proxyRef: litellm
+  params:
+    model: minimax/MiniMax-M2.7
+    apiBase: https://api.minimax.io/anthropic/v1/messages
+    apiKey: os.environ/MINIMAX_API_KEY
+    additional:
+      cache_control_injection_points:
+      - location: message
+        role: system
+      - location: message
+        index: -1
+  info:
+    mode: messages
+    maxInputTokens: 204800
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    supportsPromptCaching: true
+    supportsVision: false
+    extra:
+      input_cost_per_token: 3.0e-07
+      cache_creation_input_token_cost: 3.75e-07
+      cache_read_input_token_cost: 6.0e-08
+      output_cost_per_token: 1.2e-06

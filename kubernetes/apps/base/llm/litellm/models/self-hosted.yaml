@@ -1,0 +1,27 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: self-hosted
+spec:
+  modelName: self-hosted
+  proxyRef: litellm
+  params:
+    model: openai/llama-strix
+    apiBase: http://llama-strix.llm:8080/v1
+    apiKey: llama-strix
+    additional:
+      additional_drop_params:
+      - reasoning_effort
+      max_parallel_requests: 1
+  info:
+    mode: chat
+    maxInputTokens: 262144
+    maxOutputTokens: 20480
+    supportsFunctionCalling: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 1.25e-07
+      cache_creation_input_token_cost: 1.25e-07
+      cache_read_input_token_cost: 1.25e-08
+      output_cost_per_token: 4.999e-07

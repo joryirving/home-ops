@@ -1,0 +1,129 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMProxy
+metadata:
+  name: litellm
+spec:
+  applyMode: file
+  image: ghcr.io/berriai/litellm-database:v1.97.0@sha256:4b3226f4ccd7793d7dca6862d3681604d7ab640d8d6285be6061fd48514e6e71
+  replicas: 3
+  service:
+    port: 4000
+    type: ClusterIP
+  env:
+  - name: AUTO_REDIRECT_UI_LOGIN_TO_SSO
+    value: 'true'
+  - name: CHATGPT_TOKEN_DIR
+    value: /app/chatgpt_tokens
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        key: uri
+        name: litellm-app
+  - name: GENERIC_AUTHORIZATION_ENDPOINT
+    value: https://sso.jory.dev/application/o/authorize/
+  - name: GENERIC_SCOPE
+    value: openid email profile litellm_role
+  - name: GENERIC_TOKEN_ENDPOINT
+    value: https://sso.jory.dev/application/o/token/
+  - name: GENERIC_USERINFO_ENDPOINT
+    value: https://sso.jory.dev/application/o/userinfo/
+  - name: GENERIC_USER_ROLE_ATTRIBUTE
+    value: litellm_role
+  - name: LITELLM_LOG
+    value: INFO
+  - name: LITELLM_MODE
+    value: PRODUCTION
+  - name: PROXY_BASE_URL
+    value: https://litellm.jory.dev
+  - name: PROXY_LOGOUT_URL
+    value: https://sso.jory.dev/application/o/litellm/end-session/
+  - name: REDIS_HOST
+    value: litellm-dragonfly
+  - name: REDIS_PORT
+    value: '6379'
+  envFrom:
+  - secretRef:
+      name: litellm
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 2Gi
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 4000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    failureThreshold: 30
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 4000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    failureThreshold: 3
+  volumes:
+  - name: cache
+    emptyDir: {}
+  - name: ui
+    persistentVolumeClaim:
+      claimName: litellm
+  volumeMounts:
+  - name: cache
+    mountPath: /app/cache
+  - name: ui
+    mountPath: /app/chatgpt_tokens
+  routerSettings:
+    redis_host: os.environ/REDIS_HOST
+    redis_port: os.environ/REDIS_PORT
+    routing_strategy: simple-shuffle
+    cooldown_time: 30
+    enable_pre_call_checks: true
+    fallbacks:
+    - self-hosted:
+      - nvidia
+    - nvidia:
+      - self-hosted
+    - dsv4f:
+      - nvidia
+    - auto:
+      - dsv4f
+      - MiniMax-M3-chat
+    context_window_fallbacks:
+    - nvidia:
+      - self-hosted
+    - self-hosted:
+      - dsv4f
+  litellmSettings:
+    success_callback:
+    - prometheus
+    failure_callback:
+    - prometheus
+    prometheus_adapter: true
+    require_auth_for_metrics_endpoint: false
+    cache: true
+    cache_params:
+      type: redis
+      host: os.environ/REDIS_HOST
+      port: os.environ/REDIS_PORT
+      ttl: 300
+    request_timeout: 1200
+    num_retries: 2
+    retry_after: 5
+    set_verbose: false
+  generalSettings:
+    health_check_endpoint: /v1/health
+    store_model_in_db: false
+  extraConfig:
+    environment:
+    - KIMI_CODE_API_KEY
+    - MINIMAX_API_KEY
+    - MOONSHOT_API_KEY
+    - NEURALWATT_API_KEY
+    - OPENCODE_API_KEY
+    - ZAI_API_KEY
+    - REDIS_HOST
+    - REDIS_PORT
