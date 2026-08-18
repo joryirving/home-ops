@@ -36,27 +36,68 @@ spec:
       # task churn otherwise piles up hundreds of CMs (#990).
       audit:
         retention: 48h
+    # Defaults every entry in `agents` merges over (LLMKube#994).
     agent:
-      # One task per FleetNode, and Job-based coders hold theirs for the
-      # whole Job — so replicas cap concurrent coders + reviews (#1496).
-      replicaCount: 7
       mode: native
       taskNamespace: llm
-      roles:
-        - worker
-        - coder
-        - verifier
       image:
         repository: ghcr.io/misospace/llmkube-coder
         tag: 0.9.18@sha256:8ad1c3e385d782bf1933333302d20c783c4b7155d390a3e02f2d2ba5fb75c55b
-      githubToken:
-        secretName: foreman-agent
-        secretKey: GITHUB_TOKEN
-      commitAuthorName: Saffron
-      commitAuthorEmail: 263493777+itsmiso-ai@users.noreply.github.com
       gateCache:
         storageClass: ceph-filesystem
         accessModes: ["ReadWriteMany"]
+    agents:
+      default:
+        enabled: true
+        # One task per FleetNode, and Job-based coders hold theirs for the
+        # whole Job — so replicas cap concurrent coders + reviews (#1496).
+        replicaCount: 7
+        roles:
+          - worker
+          - coder
+          - verifier
+        githubToken:
+          secretName: foreman-agent
+          secretKey: GITHUB_TOKEN
+        commitAuthorName: Saffron
+        commitAuthorEmail: 263493777+itsmiso-ai@users.noreply.github.com
+        gateCache:
+          name: foreman-gate-cache
+      llmkube:
+        enabled: true
+        replicaCount: 1
+        # Custom roles so the WHOLE pipeline (code -> verify -> review -> PR) runs
+        # on this fork-pinned agent and clones/pushes the fork — misospace work
+        # (roles coder/verifier/worker) never lands here. coder-go, gate-fork, and
+        # reviewer-fork target these. Roles are scheduling-only; native mode + the
+        # coder image + gitRemoteURL are what let it execute the tasks.
+        roles:
+          - coder-fork
+          - verifier-fork
+          - reviewer-fork
+        # Clones AND pushes this fork; the reviewer opens a cross-repo PR into the
+        # upstream repo named by the Workload (defilantech/LLMKube).
+        gitRemoteURL: https://github.com/joryirving/LLMKube
+        # Jory's PAT (can push to the joryirving/LLMKube fork); DCO sign-off +
+        # attribution as Jory to match.
+        commitAuthorName: Jory Irving
+        commitAuthorEmail: jory@jory.dev
+        githubToken:
+          secretName: foreman-agent-fork
+          secretKey: GITHUB_TOKEN
+        coderGitSecret: foreman-agent-fork
+        coderGitSecretKey: GITHUB_TOKEN
+        gateCache:
+          name: foreman-llmkube-gate-cache
+        # reviewer-fork runs InProcess in this pod; the chart default caps CPU at
+        # 2, which throttles review. Burst to 6 cores.
+        resources:
+          requests:
+            cpu: "2"
+            memory: 512Mi
+          limits:
+            cpu: "6"
+            memory: 8Gi
     coder:
       gitCredentialsSecret: foreman-agent
       gitCredentialsSecretKey: GITHUB_TOKEN
