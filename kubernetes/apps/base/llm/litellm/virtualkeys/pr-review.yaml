@@ -1,0 +1,33 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: pr-review
+spec:
+  proxyRef: litellm
+  keyAlias: Github Actions PR Reviewer
+  secretName: litellm-key-pr-review
+  secretKey: api-key
+  models:
+  - self-hosted
+  - dsv4f
+  - MiniMax-M2.7
+  - nvidia
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: pr-review
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-pr-review
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_PR_REVIEW_API_KEY

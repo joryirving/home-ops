@@ -1,0 +1,28 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: hermes
+spec:
+  proxyRef: litellm
+  keyAlias: Hermes
+  secretName: litellm-key-hermes
+  secretKey: api-key
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: hermes
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-hermes
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_HERMES_API_KEY

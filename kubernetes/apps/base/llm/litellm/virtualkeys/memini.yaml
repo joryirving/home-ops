@@ -1,0 +1,32 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: memini
+spec:
+  proxyRef: litellm
+  keyAlias: Memini
+  secretName: litellm-key-memini
+  secretKey: api-key
+  models:
+  - memini-embed
+  - rerank
+  - self-hosted
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: memini
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-memini
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_MEMINI_API_KEY
