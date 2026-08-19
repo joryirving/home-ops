@@ -83,19 +83,19 @@ spec:
     cooldown_time: 30
     enable_pre_call_checks: true
     fallbacks:
-    - self-hosted:
-      - nvidia
-    - nvidia:
-      - self-hosted
+    - llama-strix:
+      - llama-nvidia
+    - llama-nvidia:
+      - llama-strix
     - dsv4f:
-      - nvidia
+      - llama-nvidia
     - auto:
       - dsv4f
       - MiniMax-M3-chat
     context_window_fallbacks:
-    - nvidia:
-      - self-hosted
-    - self-hosted:
+    - llama-nvidia:
+      - llama-strix
+    - llama-strix:
       - dsv4f
   litellmSettings:
     success_callback:
@@ -114,6 +114,7 @@ spec:
     num_retries: 2
     retry_after: 5
     set_verbose: false
+    drop_params: true
   generalSettings:
     health_check_endpoint: /v1/health
     store_model_in_db: false
