@@ -1,0 +1,32 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: foreman
+spec:
+  proxyRef: litellm
+  keyAlias: Foreman
+  secretName: litellm-key-foreman
+  secretKey: api-key
+  models:
+  - nvidia
+  - MiniMax-M3-chat
+  - nemotron
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: foreman
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-foreman
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_FOREMAN_API_KEY

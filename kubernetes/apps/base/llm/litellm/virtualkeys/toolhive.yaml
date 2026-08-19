@@ -1,0 +1,30 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: toolhive
+spec:
+  proxyRef: litellm
+  keyAlias: ToolHive
+  secretName: litellm-key-toolhive
+  secretKey: api-key
+  models:
+  - toolhive-embed
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: toolhive
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-toolhive
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_TOOLHIVE_API_KEY

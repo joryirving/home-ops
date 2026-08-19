@@ -1,0 +1,34 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: alert-triage
+spec:
+  proxyRef: litellm
+  keyAlias: Alert Triage
+  secretName: litellm-key-alert-triage
+  secretKey: api-key
+  models:
+  - self-hosted
+  - nvidia
+  - vision
+  - dsv4f
+  - reasoning-pool
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: alert-triage
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-alert-triage
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: alert-triage
+        property: LITELLM_ALERT_TRIAGE_API_KEY

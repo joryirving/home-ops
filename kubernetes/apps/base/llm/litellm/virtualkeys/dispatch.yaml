@@ -1,0 +1,31 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: dispatch
+spec:
+  proxyRef: litellm
+  keyAlias: Dispatch
+  secretName: litellm-key-dispatch
+  secretKey: api-key
+  models:
+  - vision
+  - self-hosted
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: dispatch
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-dispatch
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_DISPATCH_API_KEY
