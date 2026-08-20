@@ -30,6 +30,59 @@ data:
       "$schema": "https://opencode.ai/config.json",
       "model": "litellm-anthropic/auto",
       "enabled_providers": ["litellm-anthropic", "litellm", "opencode"],
+      "agent": {
+        "coordinator": {
+          "description": "Reasoning coordinator — plans, then delegates to role subagents (explorer/fixer/fixer-bigctx/oracle/reviewer)",
+          "mode": "primary",
+          "model": "litellm/reasoning-pool",
+          "prompt": "You are a coordinator. Do the high-level reasoning and synthesis yourself; delegate the legwork to role subagents via the task tool.\n\nCONTRACTS: when you delegate, hand each sub a self-contained brief — objective, the decisions already settled (inline the exact values), the files it owns, what's out of scope, and the observable check that proves success. A sub should never have to infer scope or re-derive a decision you already made.\n\nCAPACITY POLICY: `explorer`, `fixer-bigctx`, and `oracle` sit on the Opencode Go plan, which is metered in DOLLARS, not flat-rate. Their cost is real and they are not interchangeable: `explorer` (mimo-v2.5) is the cheapest by a wide margin — fan it out freely and in parallel, this is how you buy context. `fixer-bigctx` and especially `oracle` are materially more expensive per token; use them deliberately rather than by default, and prefer several `explorer` passes over one speculative `oracle` call. `fixer` (nvidia) is the low-latency lane for small scoped edits and the only lane that can read images, but it is heavily contended by an automated pipeline, so keep its jobs small and bounded.\n\nROLES:\n- `explorer` (mimo-v2.5 — 256k ctx): default recon. Codebase search, 'where/how is X', parallel scouting. Read-only. Cheapest lane available — fan out several at once; this is the cheapest way to buy context. It is the weakest reasoner, so give it locating and summarising work, not judgement calls.\n- `oracle` (dsv4p — 1M ctx, prepaid, strongest analysis tier): hard debugging, root-cause, architecture. Read-mostly; return analysis, don't sprawl into edits.\n- `fixer-bigctx` (dsv4f — 1M ctx): primary bulk coding lane. Large context, independent implementation attempts, alternative fixes, extra parallel coding capacity. Mid-priced of the Go lanes and capped tighter than the others, so prefer `explorer` for anything that is really recon.\n- `fixer` (nvidia — Qwen3.8-27B, 140k, multimodal): fast local coder and the only image-capable lane. Prefer it for small, well-bounded edits where latency matters, and route anything involving images here.\n- `reviewer` (MiniMax M3): independent second opinion and creative/prose.\n\nPARALLEL CODING: default to `fixer-bigctx` for substantive implementation and run several instances concurrently rather than narrowing scope. Use `fixer` alongside it for the small fast edits. Route anything involving images to `fixer`, the only lane that can read them.\n\nCOUNCIL (high-stakes review): get independent verdicts from different model families — `oracle` (DeepSeek), `reviewer` (MiniMax), and `fixer`/`fixer-bigctx` (Qwen) — then reconcile. Never let one model grade its own work."
+        },
+        "explorer": {
+          "description": "Default recon — codebase scouting, search, 'where/how is X', read-only. MiMo V2.5 (256k ctx), the cheapest Go lane: fan out freely, several at a time. Weakest reasoner — locating and summarising, not judgement.",
+          "mode": "subagent",
+          "model": "litellm/mimo-v2.5"
+        },
+        "fixer": {
+          "description": "Fast scoped edits — Qwen3.8-27B local on the 3090 (140k, multimodal). Low latency; prefer it for small, well-bounded changes, and for anything involving images.",
+          "mode": "subagent",
+          "model": "litellm/llama-nvidia"
+        },
+        "fixer-bigctx": {
+          "description": "Primary bulk coding lane — DeepSeek V4 Flash (1M ctx). Large context, independent implementation attempts, alternative fixes, parallel coding capacity. Falls back to GPT-5.6 Luna when its cap is spent.",
+          "mode": "subagent",
+          "model": "litellm/dsv4f"
+        },
+        "oracle": {
+          "description": "Hard debugging / architecture — DeepSeek V4 Pro (1M ctx, prepaid, strongest analysis tier). Read-mostly deep analysis; return a recommendation, don't sprawl into edits",
+          "mode": "subagent",
+          "model": "litellm/dsv4p"
+        },
+        "reviewer": {
+          "description": "Independent review / creative — MiniMax M3 (distinct family from the Qwen coders and the DeepSeek analysis lanes). Second opinions and prose.",
+          "mode": "subagent",
+          "model": "litellm-anthropic/MiniMax-M3"
+        },
+        "lean": {
+          "description": "Minimal MCP context — toolhive router only (reaches other MCPs via call_tool)",
+          "mode": "primary",
+          "tools": {
+            "github*": false,
+            "kubectl*": false,
+            "konflate*": false,
+            "dispatch*": false,
+            "context7*": false
+          }
+        },
+        "gitops": {
+          "description": "Cluster ops — kubectl/konflate direct on macOS; via toolhive router off-Mac",
+          "mode": "primary",
+          "tools": {
+            "github*": false,
+            "dispatch*": false,
+            "context7*": false
+          }
+        }
+      },
       "provider": {
         "litellm": {
           "npm": "@ai-sdk/openai-compatible",
