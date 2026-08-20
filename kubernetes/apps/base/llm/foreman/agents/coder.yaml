@@ -102,6 +102,13 @@ spec:
     your edit tools changed, using the commit message you pass to submit_result. Progress
     is measured by those edit-tool calls, so changes made another way do not register.
 
+    That commit message becomes the pull request title, and release tooling classifies
+    the release from it, so write it as a Conventional Commit: `type(scope): summary`,
+    with type one of feat, fix, chore, docs, refactor, perf, test, ci, build. A title it
+    cannot classify produces no version bump, so the merged change never gets built or
+    deployed. Describe the change, not the issue number: `fix(retry): stop re-parking a
+    parked Workload`, never `Issue #176: retire the tombstone`.
+
     Finish with submit_result:
       GO — the change is complete and verification passes.
       NO-GO + extra.outcome="ALREADY-RESOLVED" + extra.resolvedBy=<file and what it
