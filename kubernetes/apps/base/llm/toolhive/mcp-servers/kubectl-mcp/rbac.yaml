@@ -4,12 +4,18 @@ kind: ServiceAccount
 metadata:
   name: kubectl-mcp-readonly
 ---
-# Broad read-only access for kubectl MCP. Kubernetes Secrets (core v1) are excluded.
+# Broad read-only access for kubectl MCP, split across two ClusterRoles. Kubernetes
+# Secrets (core v1) are excluded from both.
 #
-# - aggregationRule: same selector as built-in "view" — expands with operators that ship
-#   rbac.authorization.k8s.io/aggregate-to-view ClusterRoles (CRDs, etc.).
-# - Non-core apiGroups: resources "*" is safe for Secret *objects* (they only exist in group "").
-# - Core group "": explicit resource list — secrets omitted; exec/proxy-style subresources omitted.
+# The split is mandatory, not stylistic: a ClusterRole carrying an aggregationRule has
+# its rules field owned by the aggregation controller, which overwrites any rules written
+# alongside it. Both roles are bound to the same ServiceAccount.
+#
+# - kubectl-mcp-readonly: aggregation only, same selector as built-in "view" — expands with
+#   operators that ship rbac.authorization.k8s.io/aggregate-to-view ClusterRoles.
+# - kubectl-mcp-readonly-explicit: the rules the aggregation does not cover.
+#   Non-core apiGroups: resources "*" is safe for Secret *objects* (they only exist in group "").
+#   Core group "": explicit resource list — secrets omitted; exec/proxy-style subresources omitted.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -18,6 +24,12 @@ aggregationRule:
   clusterRoleSelectors:
     - matchLabels:
         rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubectl-mcp-readonly-explicit
 rules:
   - nonResourceURLs:
       - /api
@@ -87,6 +99,7 @@ rules:
       - coordination.k8s.io
       - csi.ceph.io
       - deviceplugin.intel.com
+      - direwolf.games-on-whales.github.io
       - discovery.k8s.io
       - dragonflydb.io
       - events.k8s.io
@@ -95,6 +108,7 @@ rules:
       - externaldns.k8s.io
       - flowcontrol.apiserver.k8s.io
       - fluxcd.controlplane.io
+      - foreman.llmkube.dev
       - fpga.intel.com
       - gateway.envoyproxy.io
       - gateway.networking.k8s.io
@@ -104,9 +118,13 @@ rules:
       - groupsnapshot.storage.k8s.io
       - helm.toolkit.fluxcd.io
       - image.toolkit.fluxcd.io
+      - inference.llmkube.dev
+      - infra.contrib.fluxcd.io
       - k8s.cni.cncf.io
       - keda.sh
+      - kopiur.home-operations.com
       - kustomize.toolkit.fluxcd.io
+      - litellm.home-operations.com
       - metrics.k8s.io
       - monitoring.coreos.com
       - monitoring.giantswarm.io
@@ -126,6 +144,7 @@ rules:
       - storage.k8s.io
       - talos.dev
       - toolhive.stacklok.dev
+      - towonel.io
       - tuppr.home-operations.com
       - upgrade.cattle.io
     resources:
@@ -143,6 +162,19 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kubectl-mcp-readonly
+subjects:
+  - kind: ServiceAccount
+    name: kubectl-mcp-readonly
+    namespace: llm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubectl-mcp-readonly-explicit
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubectl-mcp-readonly-explicit
 subjects:
   - kind: ServiceAccount
     name: kubectl-mcp-readonly
