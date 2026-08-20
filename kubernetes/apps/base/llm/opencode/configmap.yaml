@@ -15,12 +15,12 @@ data:
     git config --global --add safe.directory '*'
 
     umask 077
-    printf 'https://x-access-token:%s@github.com\n' "${GITHUB_TOKEN}" > "${HOME}/.git-credentials"
+    printf 'https://x-access-token:%s@github.com\n' "$${GITHUB_TOKEN}" > "$${HOME}/.git-credentials"
     umask 022
 
-    mkdir -p "${HOME}/projects"
-    if [[ ! -d "${HOME}/projects/home-ops/.git" ]]; then
-      git clone --filter=blob:none https://github.com/joryirving/home-ops.git "${HOME}/projects/home-ops" \
+    mkdir -p "$${HOME}/projects"
+    if [[ ! -d "$${HOME}/projects/home-ops/.git" ]]; then
+      git clone --filter=blob:none https://github.com/joryirving/home-ops.git "$${HOME}/projects/home-ops" \
         || echo "WARN: home-ops clone failed; clone it from a session instead"
     fi
 
