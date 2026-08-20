@@ -16,7 +16,6 @@ locals {
     "Paperless",
     "Portainer",
     "RomM",
-    "ToolHive",
     "Waypoint",
     "WorkAdventure",
   ]
@@ -177,16 +176,6 @@ locals {
       redirect_uri      = "https://romm.${var.CLUSTER_DOMAIN}/api/oauth/openid"
       launch_url        = "https://romm.${var.CLUSTER_DOMAIN}"
       property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.email_verified.id])
-    },
-    ToolHive = {
-      # This must match authServerConfig.upstreamProviders[].oidcConfig.clientId.
-      client_id         = "toolhive"
-      client_secret     = module.onepassword_application["ToolHive"].fields["TOOLHIVE_CLIENT_SECRET"]
-      group             = "ai"
-      icon_url          = "https://github.com/stacklok.png"
-      redirect_uri      = "https://mcp.${var.CLUSTER_DOMAIN}/oauth/callback"
-      launch_url        = "https://mcp.${var.CLUSTER_DOMAIN}"
-      property_mappings = local.default_property_mappings
     },
     Waypoint = {
       client_id         = module.onepassword_application["Waypoint"].fields["WAYPOINT_CLIENT_ID"]
