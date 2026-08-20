@@ -1,0 +1,92 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app opencode
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: *app
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      opencode:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/opencode
+              tag: 1.18.19@sha256:b8b1712f8a8e21a9d1e62146a3c7f6ddf388bb7369962a1934ff4e1091605eb5
+            command: ["/etc/opencode/entrypoint.sh"]
+            env:
+              HOME: &homepath /home/opencode
+              OPENCODE_CONFIG: /etc/opencode/opencode.json
+              TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: opencode
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: &port 4096
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 5
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: *port
+                  initialDelaySeconds: 15
+                  periodSeconds: 15
+                  failureThreshold: 6
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 8Gi
+    service:
+      app:
+        controller: opencode
+        ports:
+          http:
+            port: *port
+    route:
+      app:
+        annotations:
+          gatus.home-operations.com/endpoint: |
+            conditions: ["[STATUS] == 401"]
+        hostnames: ["opencode.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: *port
+    persistence:
+      home:
+        existingClaim: *app
+        globalMounts:
+          - path: *homepath
+      config:
+        type: configMap
+        name: opencode-config
+        defaultMode: 0755
+        globalMounts:
+          - path: /etc/opencode
