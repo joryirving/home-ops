@@ -10,6 +10,19 @@ spec:
   service:
     port: 4000
     type: ClusterIP
+  route:
+    hostnames:
+    - litellm.jory.dev
+    parentRefs:
+    - name: envoy-external
+      namespace: network
+      sectionName: https
+    filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        set:
+        - name: x-litellm-session-id
+          value: '%REQ(x-session-id)%'
   env:
   - name: AUTO_REDIRECT_UI_LOGIN_TO_SSO
     value: 'true'
