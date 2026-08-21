@@ -73,8 +73,6 @@ spec:
             enabled: true
           - name: pg_autoscaler
             enabled: true
-          - name: rook
-            enabled: true
       resources:
         mgr:
           limits:
@@ -82,6 +80,13 @@ spec:
           requests:
             cpu: 500m
             memory: 2Gi
+      security:
+        cephx:
+          csi:
+            keyType: aes
+          daemon:
+            keyGeneration: 2
+            keyRotationPolicy: KeyGeneration
       network:
         provider: host
         addressRanges:
