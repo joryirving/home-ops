@@ -71,13 +71,16 @@ spec:
       roles:
         # The bridge creates Workloads and, since v0.3.0, reconciles failed ones:
         # list/get to find Failed Workloads, delete + create to retry them (bounded).
-        # No update/patch — retry is delete-then-recreate, not in-place mutation.
+        # Retry stays delete-then-recreate, not in-place mutation. patch covers one
+        # narrow case: bridge 0.6.28 stamps a bridge-owned terminal-since annotation
+        # so the prune TTL is measured against a timestamp the Foreman controller
+        # does not rewrite (misospace/foreman-dispatch-bridge#170).
         foreman-dispatch-bridge:
           type: Role
           rules:
             - apiGroups: ["foreman.llmkube.dev"]
               resources: ["workloads"]
-              verbs: ["create", "get", "list", "delete"]
+              verbs: ["create", "get", "list", "delete", "patch"]
             # Bridge 0.5.0 reads a failed Workload's task results (reviewer
             # NO-GO findings, coder errors) to build feedback-carrying retries.
             - apiGroups: ["foreman.llmkube.dev"]
