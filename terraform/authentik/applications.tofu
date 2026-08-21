@@ -13,6 +13,7 @@ locals {
     "Miso-Chat",
     "Miso-Gallery",
     "Open-WebUI",
+    "OpenCode",
     "Paperless",
     "Portainer",
     "RomM",
@@ -139,6 +140,15 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/joryirving/miso-gallery/main/assets/miso-gallery-logo.png"
       redirect_uri      = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc"
+      property_mappings = local.default_property_mappings
+    },
+    OpenCode = {
+      client_id         = module.onepassword_application["OpenCode"].fields["OPENCODE_CLIENT_ID"]
+      client_secret     = module.onepassword_application["OpenCode"].fields["OPENCODE_CLIENT_SECRET"]
+      group             = "ai"
+      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/opencode.png"
+      redirect_uri      = "https://opencode.${var.CLUSTER_DOMAIN}/oauth2/callback"
+      launch_url        = "https://opencode.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     Open-WebUI = {
