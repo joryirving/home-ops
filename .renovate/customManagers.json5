@@ -3,6 +3,15 @@
   customManagers: [
     {
       customType: "regex",
+      description: "opencode plugins pinned in the ConfigMap JSON (no comments possible inside it)",
+      managerFilePatterns: ["/(^|/)llm/opencode/configmap\\.yaml$/"],
+      matchStrings: [
+        "\"(?<depName>@[^\"/]+/[^\"@]+)@(?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
+      ],
+      datasourceTemplate: "npm",
+    },
+    {
+      customType: "regex",
       description: "Process annotated dependencies",
       managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
       matchStrings: [
