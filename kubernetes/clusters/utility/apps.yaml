@@ -10,11 +10,9 @@ spec:
   interval: 1h
   path: ./kubernetes/apps/utility
   postBuild:
-    substitute:
-      CLUSTER: utility
-      SECRET_DOMAIN: jory.dev
-      STORAGE_HR: democratic-csi
-      STORAGE_NS: storage
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-info
   prune: true
   sourceRef:
     kind: GitRepository
@@ -32,7 +30,6 @@ spec:
           postBuild:
             substitute:
               CLUSTER: ${CLUSTER}
-              SECRET_DOMAIN: ${SECRET_DOMAIN}
               STORAGE_HR: ${STORAGE_HR}
               STORAGE_NS: ${STORAGE_NS}
           patches:

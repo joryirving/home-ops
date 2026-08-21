@@ -10,9 +10,9 @@ spec:
   interval: 1h
   path: ./kubernetes/apps/main
   postBuild:
-    substitute:
-      CLUSTER: main
-      SECRET_DOMAIN: jory.dev
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-info
   prune: true
   sourceRef:
     kind: GitRepository
@@ -30,7 +30,6 @@ spec:
           postBuild:
             substitute:
               CLUSTER: ${CLUSTER}
-              SECRET_DOMAIN: ${SECRET_DOMAIN}
           patches:
             - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -58,101 +57,6 @@ spec:
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
-    - # Update Cert-manager replicas
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
-          patches:
-            - patch: |-
-                apiVersion: helm.toolkit.fluxcd.io/v2
-                kind: HelmRelease
-                metadata:
-                  name: not-used
-                spec:
-                  values:
-                    webhook:
-                      replicaCount: 2
-                      podDisruptionBudget:
-                        enabled: true
-              target:
-                kind: HelmRelease
-                name: cert-manager
-      target:
-        kind: Kustomization
-        name: cert-manager
-    - # Update Cilium Operator replicas
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
-          patches:
-            - patch: |-
-                apiVersion: helm.toolkit.fluxcd.io/v2
-                kind: HelmRelease
-                metadata:
-                  name: not-used
-                spec:
-                  values:
-                    cluster:
-                      name: main
-                    operator:
-                      replicas: 2
-              target:
-                kind: HelmRelease
-                name: cilium
-      target:
-        kind: Kustomization
-        name: cilium
-    - # Update CoreDNS replicas
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
-          patches:
-            - patch: |-
-                apiVersion: helm.toolkit.fluxcd.io/v2
-                kind: HelmRelease
-                metadata:
-                  name: not-used
-                spec:
-                  values:
-                    replicaCount: 3
-              target:
-                kind: HelmRelease
-                name: coredns
-      target:
-        kind: Kustomization
-        name: coredns
-    - # Update External-Secrets replicas
-      patch: |-
-        apiVersion: kustomize.toolkit.fluxcd.io/v1
-        kind: Kustomization
-        metadata:
-          name: not-used
-        spec:
-          patches:
-            - patch: |-
-                apiVersion: helm.toolkit.fluxcd.io/v2
-                kind: HelmRelease
-                metadata:
-                  name: not-used
-                spec:
-                  values:
-                    webhook:
-                      replicaCount: 2
-              target:
-                kind: HelmRelease
-                name: external-secrets
-      target:
-        kind: Kustomization
-        name: external-secrets
     - # Net-new CNPG cluster: plain initdb (no Barman recovery).
       # Use the `components.postgres/cnpg=init` label on an app's Flux Kustomization
       # to mark it as a brand-new cluster with no existing data. The component

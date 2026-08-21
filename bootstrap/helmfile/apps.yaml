@@ -96,11 +96,5 @@ releases:
 
   - name: flux-instance
     namespace: flux-system
-    # flux-instance lives in the cluster-specific dir (not base) because its
-    # HelmRelease values differ per cluster. Override both the chart source
-    # path and the values template to read from the cluster dir.
-    values:
-      - chartPath: "{{ printf \"../../kubernetes/clusters/%s/flux-instance/helmrelease.yaml\" (env \"CLUSTER\") }}"
-      - ./templates/flux-values.yaml.gotmpl
     needs:
       - flux-system/flux-operator
