@@ -65,6 +65,16 @@ spec:
         urlPrefix: /
         ssl: false
         prometheusEndpoint: http://prometheus-operated.observability.svc.cluster.local:9090
+      healthCheck:
+        muteHealthWarning:
+          AUTH_INSECURE_ROTATING_SERVICE_KEY_TYPE:
+            policy: mute
+          AUTH_INSECURE_CLIENT_KEY_TYPE:
+            policy: mute
+          AUTH_INSECURE_KEYS_ALLOWED:
+            policy: mute
+          AUTH_INSECURE_KEYS_CREATABLE:
+            policy: mute
       mgr:
         modules:
           - name: diskprediction_local
@@ -74,7 +84,7 @@ spec:
           - name: pg_autoscaler
             enabled: true
           - name: rook
-            enabled: true
+            enabled: false
       resources:
         mgr:
           limits:
@@ -82,6 +92,13 @@ spec:
           requests:
             cpu: 500m
             memory: 2Gi
+      security:
+        cephx:
+          csi:
+            keyType: aes
+          daemon:
+            keyGeneration: 2
+            keyRotationPolicy: KeyGeneration
       network:
         provider: host
         addressRanges:
