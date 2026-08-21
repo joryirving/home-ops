@@ -1,0 +1,26 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: dispatch
+spec:
+  image: ghcr.io/misospace/dispatch-mcp:sha-e4eaba8@sha256:11fee95712142758e1ff4c608ff0c7104ab391926fec5f96e8ea6ec63a8b1bed
+  transport: stdio
+  proxyMode: streamable-http
+  proxyPort: 8080
+  env:
+    - name: DISPATCH_URL
+      value: http://dispatch.llm:3000
+  secrets:
+    - name: toolhive-dispatch
+      key: token
+      targetEnvName: DISPATCH_AGENT_TOKEN
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  groupRef:
+    name: mcp-tools
