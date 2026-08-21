@@ -10,9 +10,9 @@ spec:
   interval: 1h
   path: ./kubernetes/apps/main
   postBuild:
-    substitute:
-      CLUSTER: main
-      SECRET_DOMAIN: jory.dev
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-info
   prune: true
   sourceRef:
     kind: GitRepository
