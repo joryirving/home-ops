@@ -3,10 +3,23 @@
   so chart sources are never duplicated in helmfile.
 
   Standard path:  ../../kubernetes/apps/base/<namespace>/<name>/ocirepository.yaml
-  Override path:  set `chartPath` on the release to handle nested dirs
-                  (e.g. envoy-gateway uses app/, grafana-operator uses grafana/operator/)
+  Overrides:      releases whose manifests live in nested or cluster-specific
+                  dirs are mapped explicitly below. helmfile does not expose
+                  release-level values entries while templating release fields,
+                  so the map must live here rather than in the state file.
 */ -}}
-{{- $path := .Values.chartPath | default (printf "../../kubernetes/apps/base/%s/%s/ocirepository.yaml" .Release.Namespace .Release.Name) -}}
-{{- $oci := fromYaml (readFile $path) -}}
-chart: {{ $oci.spec.url }}
-version: {{ $oci.spec.ref.tag }}
+{{- $overrides := dict
+      "network/envoy-gateway" "../../kubernetes/apps/base/network/envoy-gateway/app/ocirepository.yaml"
+      "observability/grafana-operator" "../../kubernetes/apps/base/observability/grafana/operator/ocirepository.yaml"
+      "flux-system/flux-instance" (printf "../../kubernetes/clusters/%s/flux-instance/helmrelease.yaml" (requiredEnv "CLUSTER"))
+-}}
+{{- $path := index $overrides (printf "%s/%s" .Release.Namespace .Release.Name) | default (printf "../../kubernetes/apps/base/%s/%s/ocirepository.yaml" .Release.Namespace .Release.Name) -}}
+{{- $oci := dict -}}
+{{- range regexSplit `(?m)^---\s*$` (readFile $path) -1 -}}
+  {{- $doc := fromYaml . -}}
+  {{- if and $doc (eq (index $doc "kind" | default "") "OCIRepository") -}}
+    {{- $oci = $doc -}}
+  {{- end -}}
+{{- end -}}
+chart: {{ index $oci "spec" "url" }}
+version: {{ index $oci "spec" "ref" "tag" }}

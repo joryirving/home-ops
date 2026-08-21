@@ -1,1 +1,28 @@
-{{ exec "yq" (list "select(.kind == \"HelmRelease\").spec.values" (printf "../../kubernetes/apps/base/%s/%s/helmrelease.yaml" .Release.Namespace .Release.Name)) }}
+{{- /*
+  Extracts values from the app's HelmRelease, then resolves Flux
+  postBuild-substitution variables the same way kustomize-controller would:
+  ${CLUSTER...} from the CLUSTER env, any remaining ${VAR:=default} to its
+  default. Substitution happens on the YAML text before parsing, so scalar
+  types (ints, bools) survive intact.
+
+  readFile (not exec) is required: helmfile renders values templates with the
+  chart cache dir as cwd, so relative paths only resolve via readFile, which
+  is anchored to this template's dir (hence one more ../ than in
+  release.yaml.gotmpl, whose readFile anchors to the state file).
+*/ -}}
+{{- $overrides := dict
+      "network/envoy-gateway" "../../../kubernetes/apps/base/network/envoy-gateway/app/helmrelease.yaml"
+      "observability/grafana-operator" "../../../kubernetes/apps/base/observability/grafana/operator/helmrelease.yaml"
+      "flux-system/flux-instance" (printf "../../../kubernetes/clusters/%s/flux-instance/helmrelease.yaml" (requiredEnv "CLUSTER"))
+-}}
+{{- $path := index $overrides (printf "%s/%s" .Release.Namespace .Release.Name) | default (printf "../../../kubernetes/apps/base/%s/%s/helmrelease.yaml" .Release.Namespace .Release.Name) -}}
+{{- $values := "" -}}
+{{- range regexSplit `(?m)^---\s*$` (readFile $path) -1 -}}
+  {{- $doc := fromYaml . -}}
+  {{- if and $doc (eq (index $doc "kind" | default "") "HelmRelease") -}}
+    {{- $values = toYaml (index $doc "spec" "values" | default dict) -}}
+  {{- end -}}
+{{- end -}}
+{{- $values = regexReplaceAll `\$\{CLUSTER(:=[^}]*)?\}` $values (requiredEnv "CLUSTER") -}}
+{{- $values = regexReplaceAll `\$\{[A-Za-z0-9_]+:=([^}]*)\}` $values `${1}` -}}
+{{ $values }}
