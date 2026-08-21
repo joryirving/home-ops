@@ -1,0 +1,41 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: opencode-oidc
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: opencode
+  oidc:
+    provider:
+      issuer: https://sso.jory.dev/application/o/opencode/
+    clientIDRef:
+      group: ""
+      kind: Secret
+      name: opencode-oidc
+    clientSecret:
+      group: ""
+      kind: Secret
+      name: opencode-oidc
+    redirectURL: https://opencode.jory.dev/oauth2/callback
+    logoutPath: /logout
+    scopes: ["openid", "email", "profile"]
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: opencode-api-basic-auth
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: opencode-api
+  basicAuth:
+    users:
+      group: ""
+      kind: Secret
+      name: opencode-htpasswd
