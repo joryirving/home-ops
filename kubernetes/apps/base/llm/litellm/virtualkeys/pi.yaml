@@ -1,0 +1,49 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: pi
+spec:
+  proxyRef: litellm
+  keyAlias: Pi
+  secretName: litellm-key-pi
+  secretKey: api-key
+  models:
+  - auto
+  - chatgpt/gpt-5.6-luna
+  - chatgpt/gpt-5.6-sol
+  - chatgpt/gpt-5.6-terra
+  - dsv4f
+  - dsv4p
+  - frontier-pool
+  - glm-5.3
+  - kimi-k2.7
+  - kimi-k3
+  - llama-nvidia
+  - llama-strix
+  - llama-strix-nemotron
+  - llama-vision
+  - mimo-v2.5
+  - mimo-v2.5-pro
+  - MiniMax-M2.7
+  - MiniMax-M3
+  - MiniMax-M3-chat
+  - reasoning-pool
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: pi
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-pi
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_PI_API_KEY
