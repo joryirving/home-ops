@@ -19,7 +19,7 @@ Moonshot is the token-metered failover behind the Kimi Coding subscription.
 | ------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage                  | rolling (3h chat) + weekly (Codex) | GPT-5.6 Sol, Terra, Luna                                                      | Sol frontier; Luna is the reasoning-pool lead                                 |
 | **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | 300 prompts / 5h                                                             | rolling 5h                         | M3 and M2.7, via the Anthropic endpoint                                      | Agentic reasoning workhorse                                                   |
-| **Opencode Go**     | $10 USD/mo                                   | $12 / 5h, $30 / wk, $60 / mo (dollar-denominated)                            | rolling 5h / wk / mo               | DeepSeek V4 Flash/Pro, MiMo v2.5/Pro, Qwen3.7-plus                              | High-volume coding/reasoning lane; current pricing is no longer assumed cheap |
+| **Opencode Go**     | $10 USD/mo                                   | $12 / 5h, $30 / wk, $60 / mo (dollar-denominated)                            | rolling 5h / wk / mo               | DeepSeek V4 Flash/Pro, MiMo v2.5/Pro, Qwen3.8-Max                              | High-volume coding/reasoning lane; current pricing is no longer assumed cheap |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                                             | rolling 5h                         | GLM-5.3 on the Z.AI coding endpoint; GLM-5.2 remains a Neuralwatt fallback       | OpenClaw main primary; cache-sensitive long-context lane                       |
 | **Kimi Coding**     | ~$180 USD/yr ($15/mo; ~$261 CAD/12mo)        | plan allowance                                                               | plan-defined                       | Kimi K2.7 Code, Kimi K3                                                         | Primary Kimi coding and frontier lanes                                          |
 | **Moonshot (Kimi)** | pay-per-use                                  | none (per-key RPM/TPM only)                                                  | n/a                                | kimi-k2.7-code, kimi-k3                                                         | Token-metered fallback behind Kimi Coding                                       |
@@ -94,7 +94,7 @@ not the billing authority.
 | `dsv4f`                             | deepseek-v4-flash | 1M          | OpenClaw subagent/heartbeat and reasoning-pool rung; cache-sensitive after repricing |
 | `dsv4p`                             | deepseek-v4-pro   | 1M          | Heavier DeepSeek                                    |
 | `mimo-v2.5` / `mimo-v2.5-pro`       | mimo-v2.5(-pro)   | 262k        | Lighter analysis lane                               |
-| `qwen3.7-plus`                      | qwen3.7-plus      | 1M          | Big-context Qwen via gateway                        |
+| `qwen3.8-max`                       | qwen3.8-max       | 1M          | Big-context Qwen via gateway                        |
 
 **Provider failover** (LiteLLM `order:`, transparent to callers): `kimi-k2.7` and `kimi-k3` use their
 Kimi Coding deployments before Moonshot; `frontier-pool` and `dsv4f` have explicit ordered PAYG rungs;
@@ -116,74 +116,178 @@ subscription remains available through the Kimi aliases and `frontier-pool`.
 
 ## Model capability ranking
 
-Benchmark snapshot as of **2026-07-30** — perishable. The table retains the comparable GLM-5.2
-benchmark row, while the production OpenClaw main route is GLM-5.3. Do not use the benchmark row as a
-proxy for current provider pricing, cache behavior, or quota consumption. Numbers are mostly **vendor
+Benchmark snapshot as of **2026-08-23** — perishable. Numbers remain largely **vendor
 self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Terminal-Bench
-2.0 ≠ 2.1; GPT SWE-Pro drops ~15pts under standardized scaffolding), so treat deltas as
-**directional**, not precise, and re-pull when models bump. `n/p` = not published.
+2.0 ≠ 2.1 ≠ 3.0; vendor SWE-Pro runs 15–30pts above standardized scaffolding), so treat deltas as
+**directional**, not precise, and re-pull when models bump. `n/p` = not published. Do not read this
+table as a statement about pricing, cache behaviour, or quota consumption.
 
-| Model             | Alias                  | Arch (total/active) | Ctx   | SWE-V | SWE-Pro | LiveCodeB | Term-B | GPQA  | AIME  |
-| ----------------- | ---------------------- | ------------------- | ----- | ----- | ------- | --------- | ------ | ----- | ----- |
-| GPT-5.6 Sol       | `chatgpt/gpt-5.6-sol`  | proprietary         | 1.1M  | n/p   | 64.6    | n/p       | 88.8   | 94.6  | n/p   |
-| GPT-5.6 Terra     | `chatgpt/gpt-5.6-terra`| proprietary         | 1.05M | n/p   | 63.4    | n/p       | 87.4   | 92.9  | n/p   |
-| GPT-5.6 Luna      | `chatgpt/gpt-5.6-luna` | proprietary         | 1.05M | n/p   | 62.7    | n/p       | 84.7   | 92.3  | n/p   |
-| DeepSeek-V4-Pro   | `dsv4p`                | MoE 1.6T/49A        | 1M    | 80.6  | 55.4    | 93.5      | 67.9   | 90.1  | n/p   |
-| GLM-5.2           | `glm-5.2`              | MoE ~753B/40A       | 1M    | n/p   | 62.1    | n/p       | 81.0   | 91.2  | 99.2  |
-| Kimi K3           | `kimi-k3`              | MoE 2.8T/50A        | 1M    | 77.8⁵ | n/p     | n/p       | 88.3⁵  | 93.5⁵ | n/p   |
-| MiniMax-M3        | `MiniMax`              | MoE ~229B/9.8A²     | 1M    | 80.5¹ | 59.0    | n/p       | 66.0   | 92.9  | n/p   |
-| DeepSeek-V4-Flash | `dsv4f`                | MoE 284B/13A        | 1M    | 79.0  | n/p     | 91.6      | 56.9   | 88.1  | n/p   |
-| Qwen3.6-27B dense | `nvidia`               | dense 27B           | 145k³ | 77.2  | 53.5    | 83.9      | 59.3   | 87.8  | 94.1  |
-| MiMo-V2.5-Pro     | `mimo-v2.5-pro`        | MoE 1.02T/42A       | 1M    | 78.9⁴ | 57.2    | 39.6⁴     | n/p    | 66.7⁴ | 37.3⁴ |
-| MiniMax-M2.7      | `MiniMax-M2.7`         | ~229B/n_p           | n/p   | n/p   | 56.2    | n/p       | 57.0   | n/p   | n/p   |
-| MiMo-V2.5         | `mimo-v2.5`            | MoE 310B/15A        | 1M    | n/p   | 56.1    | n/p       | 65.8   | n/p   | n/p   |
-| Qwen3.6-35B-A3B   | `self-hosted`          | MoE 35B/3A          | 262k  | 73.4  | 49.5    | n/p       | 51.5   | 86.0  | 92.7  |
-| Mellum2-12B-A2.5B | `reviewer`             | MoE 12B/2.5A        | 131k  | n/p⁷  | n/p     | n/p       | n/p    | n/p   | n/p   |
-| Qwen3.7-Plus      | `qwen3.7-plus`         | MoE undisclosed     | 1M    | n/p   | ~60     | n/p       | n/p    | n/p   | n/p   |
+Rows are ordered by **AA-II**, the [Artificial Analysis Intelligence Index](https://artificialanalysis.ai/leaderboards/models)
+(v4.1.1) — the only axis in this table measured on one harness across every model here, and therefore
+the only column where a cross-row comparison is defensible on its own. Every other column mixes
+harnesses. Cells marked ⁱ are **independently run**; everything else is vendor-reported.
 
-¹ GPT/MiniMax SWE-Pro are vendor-reported; cross-provider agent scaffolding can materially shift
-reported results. ² MiniMax-M3 param count is contested across sources (also
-cited ~428B/23B); most non-coding numbers are vendor-run, independent verification pending.
-³ Qwen3.6-27B is 262k native but pinned to 145k on the 24GB 3090. ⁴ MiMo-Pro reasoning /
-LiveCodeBench from HF-card scrape only — low confidence; LiveCodeBench slice not comparable
-to others. ⁵ Kimi K3 (Moonshot; API launch 2026-07-16, open weights ~07-27): MoE 2.8T total /
-~50B active (16 of 896 experts), Kimi Delta Attention, 1M ctx / 131k default output, MXFP4,
-native vision. All numbers self-reported on renamed benches (SWE-V ≈ ProgramBench 77.8; Term-B
-is 2.1 = 88.3; GPQA-Diamond 93.5) — no weights, report, or third-party SWE run yet. Self-positions
-**#3 overall, behind BOTH Claude Fable 5 AND GPT-5.6 Sol** (not "beats all but Fable"), ahead of
-Opus 4.8 / GLM-5.2; #1 on the Frontend Code Arena past Fable 5 (1679 Elo). Artificial Analysis
-Intelligence Index 57 (Fable 60 / Sol 59) corroborates the ~#3 rank but flags hallucination ~51%
-(up from 39%). Pricing $0.30 cached / $3 miss / $15 output per MTok. Treat as marketing until repo-bench.
+| Model               | Alias                   | Arch (total/active) | Ctx   | AA-II | SWE-V | SWE-Pro | LiveCodeB | Term-B 2.1 | GPQA  | AIME  |
+| ------------------- | ----------------------- | ------------------- | ----- | ----- | ----- | ------- | --------- | ---------- | ----- | ----- |
+| GPT-5.6 Sol         | `chatgpt/gpt-5.6-sol`   | proprietary         | 1.05M | 61ⁱ   | 96.2ⁱ | 64.6    | n/p       | 89.5ⁱ ²    | 94.1ⁱ | n/p   |
+| GLM-5.3             | `glm-5.3`               | MoE ~753B/40A ³     | 1M    | 60ⁱ   | n/p   | n/p ³   | n/p       | 88.2 ⁴     | n/p   | n/p   |
+| Qwen3.8-Max         | `qwen3.8-max`           | MoE 2.4T/95A        | 1M    | 58ⁱ   | n/p   | 67.7    | n/p       | 86.6 ⁵     | 92.6  | n/p   |
+| Kimi K3             | `kimi-k3`               | MoE 2.8T/104A ⁶     | 1M    | 57ⁱ   | 93.4ⁱ | n/p     | 87.2ⁱ     | 80.9ⁱ ⁶    | 93.5  | n/p   |
+| GPT-5.6 Terra       | `chatgpt/gpt-5.6-terra` | proprietary         | 1.05M | 55ⁱ   | n/p   | 63.4    | n/p       | 73.4ⁱ ²    | n/p ² | n/p   |
+| DeepSeek-V4-Pro     | `dsv4p`                 | MoE 1.6T/49A        | 1M    | 53ⁱ   | 96.4ⁱ | n/p ⁷   | n/p ⁷     | 87.9       | n/p ⁷ | n/p   |
+| GLM-5.2             | `glm-5.2`               | MoE ~753B/40A       | 1M    | 53ⁱ   | n/p   | 62.1    | n/p       | 78ⁱ ⁴      | 89ⁱ   | 99.2  |
+| DeepSeek-V4-Flash   | `dsv4f`                 | MoE 284B/13A        | 1M    | 52ⁱ   | n/p ⁷ | n/p ⁷   | n/p ⁷     | 79ⁱ ⁷      | 91ⁱ   | n/p   |
+| Qwen3.8-27B dense   | `nvidia`                | dense 27.8B         | 145k⁸ | 52ⁱ   | n/p ⁸ | 61.7    | 90.3      | 73.0       | 89.2  | n/p   |
+| GPT-5.6 Luna        | `chatgpt/gpt-5.6-luna`  | proprietary         | 1.05M | 51ⁱ   | n/p   | 62.7    | n/p       | 84.7       | n/p ² | n/p   |
+| MiniMax-M3          | `MiniMax`               | MoE ~428B/23A ¹     | 1M    | 45ⁱ   | 80.5  | 59.0    | n/p       | 66.0       | 93ⁱ   | n/p   |
+| MiMo-V2.5-Pro       | `mimo-v2.5-pro`         | MoE 1.02T/42A       | 1M    | 43ⁱ   | 78.9  | 57.2    | n/p ⁹     | n/p ⁹      | n/p ⁹ | n/p ⁹ |
+| MiniMax-M2.7        | `MiniMax-M2.7`          | MoE ~230B/10A       | 205k  | 39ⁱ   | n/p   | 56.2    | n/p       | n/p ⁹      | 89.8  | 94.2  |
+| MiMo-V2.5           | `mimo-v2.5`             | MoE 310B/15A        | 1M    | 38ⁱ   | n/p   | 56.1    | n/p       | n/p ⁹      | n/p   | n/p   |
+| Qwen3.6-35B-A3B     | `self-hosted`           | MoE 35B/3A          | 262k  | 32ⁱ   | 73.4  | 49.5    | 80.4      | n/p ⁹      | 86.0  | 92.7  |
+| Mellum2-12B-A2.5B   | `reviewer`              | MoE 12B/2.5A        | 131k  | n/p   | n/p   | n/p     | 37.2      | n/p        | 40.9  | 41.7  |
 
-⁶ `self-hosted` runs the abliterated Qwen3.6-35B-A3B (HauhauCS "Aggressive", Q5_K_P) with its
+¹ MiniMax-M3 is **~428B total / ~23B active** — the ~229B/9.8B figure the previous snapshot carried is
+M2.7's spec, misattributed. The [official config](https://huggingface.co/MiniMaxAI/MiniMax-M3/raw/main/config.json)
+gives 60 layers, 128 experts (4 routed + 1 shared per token), which arithmetically yields ~428B/~23B;
+every source citing "229.9B across 256 experts" is reciting M2.7. GPQA is
+[Artificial Analysis](https://artificialanalysis.ai/models/minimax-m3)-run; the coding rows remain
+vendor-run on MiniMax's own sandbox against leaderboard-sourced competitor numbers — a mixed-harness
+comparison. [Vals AI](https://www.vals.ai/models/minimax_MiniMax-M3) has M3 ranked on SWE-bench,
+LiveCodeBench and Terminal-Bench 2.1 but does not expose the values. The HF card's
+"Long-Horizon Terminal Bench 38.5" is **not** Terminal-Bench 2.x and must not be compared to the 66.0.
+
+² OpenAI published **no** SWE-bench Verified, GPQA, AIME, or LiveCodeBench for any 5.6 tier — it led
+with agentic evals. Sol's SWE-V 96.2 and Terra's Term-B 73.4 are
+[Vals AI](https://www.vals.ai/models/openai_gpt-5.6-sol) runs, not OpenAI's. Terminal-Bench 2.1 for Sol
+has three values on the same benchmark version — vendor 88.8,
+[AA](https://artificialanalysis.ai/evaluations/terminalbench-v2-1) 89.5, Vals 85.8 — so the harness,
+not the model, moves it several points. The GPQA triple 94.6/92.9/92.3 the previous snapshot carried
+appears only in aggregator blogs with no primary source; AA independently measures Sol at 94.1, and
+Terra/Luna are unmeasured. The ~15pt SWE-Pro scaffolding penalty is confirmed and
+[wider than thought](https://www.morphllm.com/swe-bench-pro) — 15 to 30pts — and no 5.6 tier has ever
+been run on standardized SWE-Pro scaffolding at all.
+
+³ [GLM-5.3](https://z.ai/blog/glm-5.3) (2026-08-14) is a **post-training-only** refresh of GLM-5.2 —
+same base model, same 753B/40A architecture, no retrain. Weights are still not public as of this
+snapshot (the blog promised them "in two weeks"), so there is no HuggingFace card and every GLM-5.3
+number is vendor-sourced from that blog. Z.ai has **never** published SWE-bench Verified for any GLM,
+and dropped SWE-bench Pro from the 5.3 table after reporting 62.1 for 5.2 — so a "SWE-bench 62.1"
+citation is Pro, not Verified. The headline "+50% coding" rests entirely on **Z.ai Code Bench, a private
+in-house benchmark**, unreproducible by anyone.
+
+⁴ Discount GLM's Terminal-Bench claims. The [official tbench.ai board](https://www.tbench.ai/leaderboard/terminal-bench/2.1)
+has no GLM-5.2 or 5.3 submission at all; the one GLM datapoint it does hold, GLM-5.1, scores **58.7
+against Z.ai's self-reported 69.0 on the same bench and harness** — a ~10pt vendor gap. AA
+independently puts GLM-5.2 at 78 (vendor 81.0). GLM-5.3's 88.2 has no independent run. Separately,
+the widely-quoted "4.6 → 28.3" jump is **Terminal-Bench 3.0**, a different benchmark; never line it up
+against 2.0 or 2.1. Z.ai also silently re-ran several GLM-5.2 baselines between the two blogs
+(SWE-Marathon 13.0 → 19.4, FrontierSWE 74.4 → 67.5).
+
+⁵ Qwen3.8-Max's agentic claim is the weakest in the table.
+[Vals AI measures Terminal-Bench at 67.4 against the vendor's 86.6](https://www.yottalabs.ai/post/qwen-3-8-benchmarks-what-is-verified-2026) —
+a 19pt collapse, versus roughly 3pts for GPT. Most of its vendor coding rows were run under
+*Anthropic's* Claude Code harness rather than a neutral one, and its FrontierSWE / DeepSWE 1.1 figures
+are non-standard names with no public leaderboard. Architecture is disclosed, not undisclosed:
+2.4T/95A MoE. Note the row it replaces: `qwen3.7-plus` still exists as a separate, cheaper tier and was
+not superseded — swapping the gateway alias to `qwen3.8-max` was a tier jump at 5× the input price,
+not a like-for-like upgrade.
+
+⁶ K3 corrections. Active params are **104B**, not the ~50B previously recorded (896 experts, 16 routed
++ 2 shared, 93 layers) per the [HF card](https://huggingface.co/moonshotai/Kimi-K3). More importantly,
+**the previous footnote's claim that these were renamed benches was wrong**:
+[ProgramBench](https://www.vals.ai/benchmarks/programbench) is a genuine third-party benchmark
+(arXiv 2605.03546, program reconstruction — not issue resolution), so it was never a SWE-bench rename
+and the old table's "SWE-V ≈ ProgramBench 77.8" mapping was invalid. Independent runs now exist and
+they cut both ways: Vals gives K3 **SWE-bench Verified 93.4** (rank #3, a number Moonshot never
+published) but scores ProgramBench at **62.8 against the vendor's 77.8** and Terminal-Bench 2.1 at
+**80.9 against the vendor's 88.3**. Vals notes K3 "forfeits 22 tasks to zero, mostly submissions that
+fail to build" — harness sensitivity, not noise. The genuinely self-named bench to distrust is **Kimi
+Code Bench 2.0 (72.9)**. AA corroborates rank ~#3 at index 57 but flags hallucination **51%**, up from
+39%. Still absent from the official swebench.com and Scale SEAL boards.
+
+⁷ DeepSeek shipped **V4-Flash-0731** (2026-07-31) and **V4-Pro-0813** (2026-08-13); there is no "0713".
+Both GA cards **replaced the benchmark suite wholesale**, dropping SWE-bench Verified, SWE-bench Pro,
+LiveCodeBench, GPQA and MMLU-Pro entirely — so the familiar Flash figures (SWE-V 79.0, SWE-Pro 52.6,
+LiveCodeBench 91.6, GPQA 88.1) and Pro figures (80.6 / 55.4 / 93.5 / 90.1) are **preview-build numbers
+that no longer describe the deployed model**, and are marked `n/p` here rather than carried forward.
+Architecture is unchanged across the refresh; the 304B/1.7T figures on the GA HF repos include an
+attached speculative-decoding draft module and are not model size. The refresh was large where it is
+measured — Flash Terminal-Bench 2.1 61.8 → 82.7, DeepSWE 7.3 → 54.4 — and AA independently confirms
+the direction, lifting Flash from index 40 to 52. Note also that Flash's old 56.9 was Terminal-Bench
+**2.0**; the 2.1 retro-score for the same build is 61.8.
+
+⁸ `nvidia` has run **Qwen3.8-27B** since 2026-08-14, not the Qwen3.6-27B the previous snapshot listed —
+that row was wrong on the model name irrespective of benchmarks. Qwen publishes no SWE-bench Verified
+for it (the nearest vendor substitute, QwenSWEBench 79.0, is Qwen's own harness) and no AIME, so the
+generational SWE-V and AIME comparisons against Qwen3.6-27B cannot be made. Terminal-Bench also
+switched versions between generations: 3.6-27B's 59.3 was 2.0, 3.8-27B's 73.0 is 2.1, so the +13.7
+arithmetic is cross-version and wrong — the vendor states the real delta as **+9.6 on 2.1**. Native
+context is 262k, pinned to 145k on the 24GB 3090. There is no Qwen3.8-35B-A3B.
+
+⁹ Terminal-Bench 2.0-only rows, shown as `n/p` in the 2.1 column to keep it comparable: MiniMax-M2.7
+**57.0**, MiMo-V2.5 **65.8**, MiMo-V2.5-Pro **68.4**, Qwen3.6-35B-A3B **51.5**. Separately, the
+MiMo-Pro LiveCodeBench 39.6 / GPQA 66.7 / AIME 37.3 the previous snapshot carried are
+**base-model few-shot pretraining evals** (1-shot LCB v6, 5-shot GPQA, 2-shot AIME 24&25) that an
+automated HF metadata PR flattened into the card alongside post-trained numbers. They are not
+comparable to any other row here and have been removed rather than corrected — Xiaomi publishes no
+post-trained equivalents.
+
+`self-hosted` runs the abliterated Qwen3.6-35B-A3B (HauhauCS "Aggressive", Q5_K_P) with its
 mmproj loaded, which is what makes this box the image backend. It replaced Ornith-1.0-35B — a
 post-tune of the *same* Qwen3.6-35B-A3B — so the swap kept the architecture and dropped the
 post-tune. The Mac LM Studio upstream is multimodal too but NOT abliterated: it will refuse
 content the Strix answers, and it is flagged `supports_vision` anyway so `enable_pre_call_checks`
 keeps it eligible for image failover rather than leaving images with no fallback.
 
-⁷ Mellum2 publishes none of these benches. The number it does publish is BFCL v3 **66.3**
-(tool use), which is the axis that actually matters for a reviewer: the verdict is a structured
-`submit_result` call whose `issueAsk` must be a verbatim substring of the issue body, and a
-malformed payload is rejected by the harness regardless of how good the judgement was. Rank it on
-independence and format reliability, not on a coding leaderboard.
+`reviewer` publishes more than the previous snapshot credited it with — the
+[Mellum2 Instruct card](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) carries
+LiveCodeBench v6 37.2, EvalPlus 78.4, MultiPL-E 67.1, GPQA 40.9 and AIME 41.7, all self-reported. What
+it genuinely does not publish is any *agentic* coding bench: no SWE-bench of any slice, no
+Terminal-Bench. Its headline remains **BFCL v3 66.3** (tool use), which is the axis that actually
+matters for a reviewer: the verdict is a structured `submit_result` call whose `issueAsk` must be a
+verbatim substring of the issue body, and a malformed payload is rejected by the harness regardless of
+how good the judgement was. Newer numbers exist that the row does not use — BFCL v4 44.2, and a
+**Thinking** variant at BFCL v3 69.4 / LiveCodeBench v6 69.9, nearly double the Instruct build. Rank it
+on independence and format reliability, not on a coding leaderboard.
 
 Reading it for routing:
 
-- **Frontier tier** (`gpt-5.6-sol`, `kimi-k3`, `glm-5.3`) — strict subscription/PAYG escalation;
-  Sol is the ceiling, K3 is the independent coding/frontier lane, and GLM is the long-horizon fallback.
-  Neuralwatt supplies the PAYG safety rungs. MiniMax intentionally does not appear here.
-- **Reasoning tier** (`gpt-5.6-luna`, `dsv4f`, `MiniMax-M3`) — a separate ordered lane for strong
-  reasoning work. Luna leads, DSV4F is the OpenCode Go rung, and MiniMax is the flat-plan floor. The
-  pool now has a 1M effective context because the 262k Kimi-for-Coding member was removed.
-- **Cheap/fast** (`dsv4f`, `mimo-v2.5`) — near-frontier coding at low cost; `dsv4f` remains a strong
-  workhorse, but the August 2026 provider repricing means it is no longer safe to call it cheapest
-  without accounting for cache hits and prompt size. Since V4 Flash went GA it no longer belongs only
-  in this tier: repo-bench re-scored it 0.895 -> 0.957, at or above the previous top cluster, while V4
-  Pro stayed at 0.864. That inversion is why the reasoning tier and Hermes' fallback chain reach for
-  Flash, not Pro.
-- **Local** — `nvidia` (Qwen3.6-27B dense) is the local quality + speed pick; `self-hosted`
-  (35B-A3B) trails it everywhere and earns its place only on the 262k context window.
+- **The independent numbers narrowed the frontier, they did not reorder it.** On AA's single harness
+  the top of this table is Sol 61, GLM-5.3 60, Qwen3.8-Max 58, K3 57 — a four-point spread across four
+  different subscriptions. Treating any of them as decisively better than the others is not supported.
+- **Frontier tier** (`gpt-5.6-sol`, `kimi-k3`, `glm-5.3`) — unchanged, and now better evidenced. Sol
+  is the ceiling on the strength of an independent SWE-V 96.2 that OpenAI never claimed itself; K3 is
+  the independent coding lane at SWE-V 93.4; GLM-5.3 is the long-horizon fallback but is the *least*
+  independently verified model in the tier — its entire benchmark table is one vendor blog, its weights
+  are unreleased, and the only official-board GLM datapoint runs 10pts under the vendor's own claim.
+- **What dropping Opencode Go actually costs.** Go supplies `dsv4p`, `dsv4f`, `mimo-v2.5(-pro)` and
+  `qwen3.8-max`. Taking them in turn:
+  - `dsv4p` is the real loss and it is narrow: **SWE-bench Verified 96.4, the second-best score on
+    Vals' board**. But Sol sits at 96.2 on that *same* harness. The capability is duplicated by a
+    subscription that is staying, at a 0.2pt difference — inside anyone's error bar.
+  - `dsv4f` is the volume workhorse, and its replacement is already racked. Flash and the local
+    Qwen3.8-27B on the 3090 **both score AA-II 52**. For OpenClaw subagent and heartbeat traffic,
+    which is what Flash actually serves, the local box is a like-for-like substitute at zero marginal
+    cost. Flash's genuine edge over local is the 1M context and the throughput, not the intelligence.
+  - `qwen3.8-max` posts the highest AA-II of the Go set at 58, but it is also the row whose vendor
+    claims collapse hardest under independent testing (Term-B 86.6 → 67.4). GLM-5.3 at 60 and K3 at 57
+    bracket it on a harness that measured all three the same way.
+  - `mimo-v2.5` (38) and `mimo-v2.5-pro` (43) are beaten by MiniMax-M3 (45) on the flat plan, and by
+    the local Qwen3.8-27B (52). Nothing is lost.
+  - **Net: the frontier ceiling is unaffected and the cheap lane moves to hardware already owned.** The
+    exposure is operational rather than qualitative — losing 1M-context cheap throughput, and losing
+    `dsv4f` as the third reasoning-pool rung, which would need repointing at local or MiniMax.
+- **DeepSeek V4 Flash is still genuinely strong and the refresh made it stronger** — AA lifted it 40 →
+  52 on the 0731 build, its independently-measured GPQA is 91, and repo-bench previously re-scored it
+  0.895 → 0.957 while V4 Pro stayed at 0.864. The argument for dropping it is that the capability is
+  now duplicated locally and by flat-rate plans, not that the model is weak.
+- **Reasoning tier** (`gpt-5.6-luna`, `dsv4f`, `MiniMax-M3`) — note Luna is the weakest GPT tier here
+  at AA-II 51 and its long-context recall collapses (vendor MRCR 41.3 against Sol's 91.5), so the pool's
+  nominal 1M context is not usable depth on that rung. Luna is pinned to `xhigh` reasoning effort.
+- **Local** — `nvidia` is now Qwen3.8-27B and the gap to `self-hosted` widened from "trails it
+  everywhere" to a 20-point AA-II spread (52 vs 32). `self-hosted` earns its place on the 262k window
+  and vision, nothing else. The local box is now competitive with paid cheap-tier cloud, which is the
+  single most decision-relevant change in this refresh.
 - **`reviewer` is a deliberate family split, not a quality pick.** Foreman's coder runs
   Qwen (`nvidia`), so a Qwen reviewer inherits the coder's blind spots — it was Qwen
   reviewing Qwen while `self-hosted` served review, since Ornith was itself a
@@ -191,8 +295,24 @@ Reading it for routing:
   scratch on 10.6T tokens, and at 2.5B active it reviews faster than the 35B it replaced
   while costing nothing. It exists to disagree with the coder, so published coding scores
   matter less here than independence and structured-output reliability.
-- **MiniMax-M2.7 / MiMo / Qwen3.7-Plus** — agentic workhorses with thin published reasoning
-  numbers; rank on coding/agentic axes, not GPQA/AIME.
+- **MiniMax-M2.7 / MiMo** — agentic workhorses with thin published reasoning numbers; rank on
+  coding/agentic axes, not GPQA/AIME.
+
+Sources: [Artificial Analysis](https://artificialanalysis.ai/leaderboards/models) ·
+[AA Terminal-Bench v2.1](https://artificialanalysis.ai/evaluations/terminalbench-v2-1) ·
+[Vals AI SWE-bench Verified](https://www.vals.ai/benchmarks/swebench) ·
+[Vals ProgramBench](https://www.vals.ai/benchmarks/programbench) ·
+[tbench.ai Terminal-Bench 2.1](https://www.tbench.ai/leaderboard/terminal-bench/2.1) ·
+[GLM-5.3](https://z.ai/blog/glm-5.3) · [GLM-5.2](https://huggingface.co/zai-org/GLM-5.2) ·
+[Kimi K3](https://huggingface.co/moonshotai/Kimi-K3) ·
+[MiniMax-M3](https://huggingface.co/MiniMaxAI/MiniMax-M3) ·
+[DeepSeek-V4-Flash-0731](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731) ·
+[DeepSeek-V4-Pro-0813](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813) ·
+[Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) ·
+[Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) ·
+[MiMo-V2.5-Pro](https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro) ·
+[Mellum2-12B-A2.5B](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) ·
+[GPT-5.6 models](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
 
 ## Consumers
 
