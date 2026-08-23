@@ -112,6 +112,34 @@ spec:
                 cpu: 10m
               limits:
                 memory: 1Gi
+    rawResources:
+      openclaw-imageui-oidc:
+        enabled: true
+        forceRename: openclaw-imageui-oidc
+        manifest:
+          apiVersion: gateway.envoyproxy.io/v1alpha1
+          kind: SecurityPolicy
+          metadata:
+            name: openclaw-imageui-oidc
+          spec:
+            targetRefs:
+              - group: gateway.networking.k8s.io
+                kind: HTTPRoute
+                name: openclaw-imageui
+            oidc:
+              provider:
+                issuer: https://sso.jory.dev/application/o/opencode/
+              clientIDRef:
+                group: ""
+                kind: Secret
+                name: opencode-oidc
+              clientSecret:
+                group: ""
+                kind: Secret
+                name: opencode-oidc
+              redirectURL: https://generate.jory.dev/oauth2/callback
+              logoutPath: /logout
+              scopes: ["openid", "email", "profile"]
     persistence:
       openclaw-home:
         type: emptyDir
@@ -202,9 +230,12 @@ spec:
               - name: "{{ .Release.Name }}"
                 port: &codeserverPort 12321
       imageui:
+        annotations:
+          gatus.home-operations.com/endpoint: |
+            conditions: ["[STATUS] == 302"]
         hostnames: ["generate.jory.dev"]
         parentRefs:
-          - name: envoy-internal
+          - name: envoy-external
             namespace: network
         rules:
           - backendRefs:
