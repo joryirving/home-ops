@@ -56,7 +56,7 @@ data:
             "litellm/chatgpt/gpt-5.6-luna": { alias: "gpt-cheap" },
           },
           contextPruning: { mode: "off" },
-          compaction: { mode: "default", timeoutSeconds: 600, reserveTokensFloor: 30000, memoryFlush: { enabled: true, softThresholdTokens: 80000, prompt: "Extract key decisions, state changes, lessons, blockers to memory/YYYY-MM-DD.md. Format: ## [HH:MM] Topic. Skip routine work. NO_FLUSH if nothing important.", systemPrompt: "Compacting session context. Extract only what's worth remembering. No fluff." },
+          compaction: { mode: "default", timeoutSeconds: 600, reserveTokensFloor: 40000, memoryFlush: { enabled: true, softThresholdTokens: 80000, prompt: "Extract key decisions, state changes, lessons, blockers to memory/YYYY-MM-DD.md. Format: ## [HH:MM] Topic. Skip routine work. NO_FLUSH if nothing important.", systemPrompt: "Compacting session context. Extract only what's worth remembering. No fluff." },
           },
           maxConcurrent: 4,
           subagents: {
@@ -282,6 +282,13 @@ data:
             subagent: { allowModelOverride: true, allowedModels: [ "litellm/llama-nvidia" ], },
             config: {
               contextThreshold: 0.75,
+              contextThresholdOverrides: [
+                {
+                  name: "llama-nvidia-safe",
+                  match: { model: "litellm/llama-nvidia" },
+                  contextThreshold: 0.55,
+                },
+              ],
               delegationTimeoutMs: 1000000,
               expansionModel: "litellm/llama-nvidia",
               freshTailCount: 64,
