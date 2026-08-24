@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &name misospace-runner-${CLUSTER}
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: gha-runner-scale-set-misospace
+  interval: 15m
+  dependsOn: []
+  values:
+    containerMode:
+      type: kubernetes
+      kubernetesModeWorkVolumeClaim:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-hostpath
+        resources:
+          requests:
+            storage: 25Gi
+    controllerServiceAccount:
+      name: actions-runner-controller
+      namespace: actions-runner-system
+    githubConfigSecret: misospace-runner-secret
+    githubConfigUrl: https://github.com/misospace
+    runnerScaleSetName: misospace-${CLUSTER}
+    maxRunners: ${misospaceMaxRunners:=2}
+    minRunners: ${misospaceMinRunners:=0}
+    template:
+      spec:
+        containers:
+          - name: runner
+            image: ghcr.io/joryirving/actions-runner:2.336.0@sha256:1495127fbb7e148fb288587d96f07305c7cc93f15b2dc43187cfe13f1a875eeb
+            command: ["/home/runner/run.sh"]
+            env:
+              - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+                value: "false"
+        serviceAccountName: *name
