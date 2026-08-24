@@ -30,6 +30,7 @@ spec:
               MULTITHREAD_ENABLED: true
               COMMUNITY_SERVER: false
               SERVER_SETTINGS_MODE: auto
+              RESTAPI_ENABLED: true
               ## Server Gameplay Settings
               DEATH_PENALTY: None
               BASE_CAMP_WORKER_MAXNUM: 20
@@ -97,25 +98,18 @@ spec:
             app:
               - path: /tmp
                 subPath: tmp
-    route:
-      app:
-        annotations:
-          external-dns.alpha.kubernetes.io/target: ipv4.jory.dev
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
-        parentRefs:
-          - name: envoy-external
-            namespace: network
-        # pod:
-        #   securityContext:
-        #     runAsUser: 1000
-        #     runAsGroup: 100
-        #     fsGroup: 100
-        #     fsGroupChangePolicy: OnRootMismatch
     service:
       app:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.39
+          external-dns.alpha.kubernetes.io/hostname: palworld.jory.dev
+          external-dns.alpha.kubernetes.io/target: towonel.jory.dev
+          external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+          towonel.io/game.public-port: "8211"
+          towonel.io/game.udp: "true"
+          towonel.io/tunnel: enable
+          towonel.io/tunnel-ref: network/towonel-main
         ports:
           http:
             port: 9877

@@ -1,23 +1,21 @@
-# ---
-# # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
-# apiVersion: kustomize.toolkit.fluxcd.io/v1
-# kind: Kustomization
-# metadata:
-#   name: &app palworld
-# spec:
-#   components:
-#     - ../../../../components/volsync
-#   interval: 1h
-#   path: ./kubernetes/apps/base/games/palworld
-#   postBuild:
-#     substitute:
-#       APP: *app
-#       VOLSYNC_CAPACITY: 50Gi
-#       VOLSYNC_UID: "1000"
-#       VOLSYNC_GID: "1000"
-#   wait: false
-#   prune: true
-#   sourceRef:
-#     kind: GitRepository
-#     name: flux-system
-#     namespace: flux-system
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app palworld
+spec:
+  components:
+    - ../../../../components/kopiur/backup
+  interval: 1h
+  path: ./kubernetes/apps/base/games/palworld
+  postBuild:
+    substitute:
+      APP: *app
+      KOPIUR_CAPACITY: 50Gi
+  wait: false
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
