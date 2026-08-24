@@ -1,40 +1,10 @@
 ---
+# No ClusterRole. This ServiceAccount deliberately has no cluster-wide grants:
+# the misospace repos are public, so anything a job on this runner can reach is
+# reachable from an approved fork PR. Its only permissions come from a
+# namespaced RoleBinding in the misospace-ci namespace (see
+# kubernetes/apps/base/misospace-ci/rbac).
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: misospace-runner-${CLUSTER}
----
-# Scoped deliberately: this runner serves an org whose repos are not this repo,
-# so it gets what an ephemeral PR environment needs and nothing else. The
-# home-ops runner is cluster-admin because it manages the cluster itself; this
-# one only stands up and tears down its own namespaces.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: misospace-runner-${CLUSTER}
-rules:
-  - apiGroups: [""]
-    resources: ["namespaces"]
-    verbs: ["create", "delete", "get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["pods", "pods/log", "pods/exec", "services", "configmaps", "secrets", "persistentvolumeclaims", "serviceaccounts", "events"]
-    verbs: ["*"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "statefulsets", "replicasets"]
-    verbs: ["*"]
-  - apiGroups: ["batch"]
-    resources: ["jobs", "cronjobs"]
-    verbs: ["*"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: misospace-runner-${CLUSTER}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: misospace-runner-${CLUSTER}
-subjects:
-  - kind: ServiceAccount
-    name: misospace-runner-${CLUSTER}
-    namespace: actions-runner-system
