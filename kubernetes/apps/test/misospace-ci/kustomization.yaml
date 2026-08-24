@@ -9,3 +9,64 @@ replacements:
   - path: ../../../components/replacements/ks.yaml
 resources:
   - ./rbac.yaml
+patches:
+  # Enforce Pod Security. Without this the runner's namespaced pods:["*"] is a
+  # node escape rather than a sandbox: a job can create a privileged pod with
+  # hostPath:/ and read every secret on the node off /var/lib/kubelet, which on
+  # this single-node cluster includes the home-ops runner's cluster-admin token
+  # and its Talos os:admin cert. Verified before this change with
+  # `kubectl apply --dry-run=server --as=…:misospace-runner-test`: the API
+  # server admitted exactly that pod.
+  #
+  # baseline (not restricted) is what gets enforced, because it rejects
+  # privileged/hostPath/hostPID/hostNetwork without requiring every CI manifest
+  # to carry a securityContext. warn+audit are set to restricted so the gap to
+  # the stricter level is visible before anyone tries to close it.
+  - target:
+      kind: Namespace
+    patch: |-
+      - op: add
+        path: /metadata/labels/pod-security.kubernetes.io~1enforce
+        value: baseline
+      - op: add
+        path: /metadata/labels/pod-security.kubernetes.io~1enforce-version
+        value: latest
+      - op: add
+        path: /metadata/labels/pod-security.kubernetes.io~1warn
+        value: restricted
+      - op: add
+        path: /metadata/labels/pod-security.kubernetes.io~1audit
+        value: restricted
+  # The shared namespace component ships a Flux github-status alert, which
+  # creates a GitHub token secret in every namespace that uses it. This
+  # namespace exists to run code from public repositories, and the runner has
+  # secrets:["*"] here, so that token would be readable by any CI job with no
+  # escape required. Drop the three resources rather than the whole component,
+  # which also supplies the namespace itself and the alertmanager alert.
+  - target:
+      kind: ExternalSecret
+      name: github-status-token
+    patch: |-
+      $patch: delete
+      apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      metadata:
+        name: github-status-token
+  - target:
+      kind: Provider
+      name: github-status
+    patch: |-
+      $patch: delete
+      apiVersion: notification.toolkit.fluxcd.io/v1beta3
+      kind: Provider
+      metadata:
+        name: github-status
+  - target:
+      kind: Alert
+      name: github-status
+    patch: |-
+      $patch: delete
+      apiVersion: notification.toolkit.fluxcd.io/v1beta3
+      kind: Alert
+      metadata:
+        name: github-status
