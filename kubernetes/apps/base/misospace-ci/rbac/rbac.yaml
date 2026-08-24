@@ -1,0 +1,34 @@
+---
+# Everything the misospace CI runner is allowed to do, scoped to this namespace
+# only. targetNamespace on the parent Flux Kustomization places these here, so
+# they carry no explicit namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: misospace-runner
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "services", "configmaps", "secrets", "persistentvolumeclaims", "serviceaccounts", "events"]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["*"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: misospace-runner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: misospace-runner
+subjects:
+  # The runner's ServiceAccount lives with the scale set, not here. A subject
+  # namespace is not rewritten by targetNamespace, so this crosses namespaces
+  # deliberately and is the only link between the two.
+  - kind: ServiceAccount
+    name: misospace-runner-${CLUSTER}
+    namespace: actions-runner-system
