@@ -126,22 +126,6 @@ spec:
       current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 1h
   path: ./kubernetes/apps/base/media/plex/scrob
-  patches:
-    - # PostgreSQL 18 canary; keep PostgreSQL 17 recovery data in its old archive.
-      patch: |-
-        - op: replace
-          path: /spec/imageName
-          value: ghcr.io/cloudnative-pg/postgresql:18.6-202608240816-system-bullseye@sha256:a66f9e4c34950b78668fa4741bf55e6a58227cc31a6e60c128f2ce1d4c072928
-        - op: replace
-          path: /spec/backup/barmanObjectStore/serverName
-          value: scrob-pg18
-        - op: replace
-          path: /spec/externalClusters/0/barmanObjectStore/serverName
-          value: scrob-pg18
-      target:
-        group: postgresql.cnpg.io
-        kind: Cluster
-        version: v1
   postBuild:
     substitute:
       APP: *app
