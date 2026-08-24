@@ -29,6 +29,13 @@ spec:
     minRunners: ${misospaceMinRunners:=0}
     template:
       spec:
+        # Required for containerMode: kubernetes. The kubelet chowns the work
+        # volume to this group, and without it the PVC stays root-owned and the
+        # runner (uid 1001) dies with "Fail to create and validate runner's work
+        # directory '/home/runner/_work'". The home-ops scale set gets this from
+        # the chart default; supplying our own template.spec suppressed it.
+        securityContext:
+          fsGroup: 123
         containers:
           - name: runner
             image: ghcr.io/joryirving/actions-runner:2.336.0@sha256:1495127fbb7e148fb288587d96f07305c7cc93f15b2dc43187cfe13f1a875eeb
