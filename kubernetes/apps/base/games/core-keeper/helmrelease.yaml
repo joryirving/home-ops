@@ -18,26 +18,6 @@ spec:
         runAsGroup: 100
         fsGroup: 100
         fsGroupChangePolicy: OnRootMismatch
-    # service:
-    #   app:
-    #     controller: *app
-    #     type: LoadBalancer
-    #     annotations:
-    #       lbipam.cilium.io/ips: 10.69.10.37
-    #     ports:
-    #       game:
-    #         protocol: UDP
-    #         port: *port
-    # route:
-    #   app:
-    #     hostnames: ["{{ .Release.Name }}.jory.dev"]
-    #     parentRefs:
-    #       - name: external
-    #         namespace: kube-system
-    #     rules:
-    #       - backendRefs:
-    #           - name: *app
-    #             port: *port
     controllers:
       core-keeper:
         annotations:
@@ -46,7 +26,7 @@ spec:
           app:
             image:
               repository: escaping/core-keeper-dedicated
-              tag: latest #yuck
+              tag: latest@sha256:87fa7925596264e1460cb6c7c128e9d39ac5445206e04e587993b5d4afa7c90f
             env:
               ## Container Settings
               TZ: America/Edmonton
@@ -55,10 +35,9 @@ spec:
               # WORLD_SEED: "0" # The seed to use for a new world. Set to 0 to generate random seed.
               DATA_PATH: &datapath /home/steam/core-keeper-data # Save file location. If not set it defaults to a sub-folder named "DedicatedServer" at the default Core Keeper save location.
               MAX_PLAYERS: "8" # Maximum number of players that will be allowed to connect to server.
-              DISCORD: "1" # Enables discord webhook features witch sends GameID to a channel.
               SEASON: "0" # Enables Seasonal Events. 0 is default, 1 is Easter, 2 is Halloween, 3 is Christmas.
-              # SERVER_IP: 0.0.0.0 # Only used if port is set. Sets the address that the server will bind to.
-              # SERVER_PORT: &port "27015" # What port to bind to. If not set, then the server will use the Steam relay network. If set the clients will connect to the server directly and the port needs to be open.
+              SERVER_IP: 0.0.0.0 # Bind the direct-connect listener on all pod interfaces.
+              SERVER_PORT: &port "27015" # Towonel forwards this UDP port to the edge.
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
@@ -81,3 +60,20 @@ spec:
         existingClaim: "{{ .Release.Name }}-server-files"
         globalMounts:
           - path: /home/steam/core-keeper-dedicated
+    service:
+      app:
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.37
+          external-dns.alpha.kubernetes.io/hostname: core-keeper.jory.dev
+          external-dns.alpha.kubernetes.io/target: towonel.jory.dev
+          external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+          towonel.io/game.public-port: "27015"
+          towonel.io/game.udp: "true"
+          towonel.io/tunnel: enable
+          towonel.io/tunnel-ref: network/towonel-main
+        ports:
+          game:
+            enabled: true
+            protocol: UDP
+            port: *port
