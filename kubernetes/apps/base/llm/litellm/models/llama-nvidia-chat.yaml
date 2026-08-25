@@ -1,0 +1,20 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: llama-nvidia-chat
+spec:
+  modelName: llama-nvidia-chat
+  proxyRef: litellm
+  params:
+    model: openai/llama-nvidia
+    apiBase: http://llama-nvidia.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 0.7
+  info:
+    mode: chat
+    maxInputTokens: 140000
+    maxOutputTokens: 40960
+    supportsFunctionCalling: true
+    supportsVision: true
