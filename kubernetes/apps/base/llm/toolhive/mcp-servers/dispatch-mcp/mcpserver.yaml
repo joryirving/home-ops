@@ -22,5 +22,15 @@ spec:
       memory: 128Mi
     limits:
       memory: 512Mi
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
   groupRef:
     name: mcp-tools
