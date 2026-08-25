@@ -26,17 +26,32 @@ ROOT = Path(__file__).resolve().parent.parent
 LLM = ROOT / "kubernetes/apps/base/llm"
 
 
-def docs(path: Path):
+def docs(path: Path, strict: bool = False):
+    """Yield the mapping documents in a YAML file.
+
+    With strict=True the file is required to parse and to contain at least one
+    mapping; a truncated or emptied manifest would otherwise contribute zero
+    references and let the check pass while the file is broken. The tree-wide
+    InferenceService sweep stays lenient, since it legitimately encounters
+    list-valued YAML it does not care about.
+    """
     try:
-        yield from (d for d in yaml.safe_load_all(path.read_text()) if isinstance(d, dict))
-    except yaml.YAMLError:
-        return
+        loaded = list(yaml.safe_load_all(path.read_text()))
+    except yaml.YAMLError as exc:
+        if not strict:
+            return
+        print(f"{path}: not parseable as YAML -- {exc}", file=sys.stderr)
+        raise SystemExit(2)
+    if strict and not any(isinstance(d, dict) for d in loaded):
+        print(f"{path}: contains no YAML documents -- truncated or emptied?", file=sys.stderr)
+        raise SystemExit(2)
+    yield from (d for d in loaded if isinstance(d, dict))
 
 
 def served() -> set[str]:
     names = set()
     for path in (LLM / "litellm/models").glob("*.yaml"):
-        for doc in docs(path):
+        for doc in docs(path, strict=True):
             if doc.get("kind") == "LiteLLMModel":
                 names.add(doc["spec"]["modelName"])
     for path in (ROOT / "kubernetes").rglob("*.yaml"):
@@ -55,7 +70,7 @@ def known(ref: str, names: set[str]) -> bool:
 def refs_from_virtualkeys() -> list[tuple[str, str]]:
     out = []
     for path in (LLM / "litellm/virtualkeys").glob("*.yaml"):
-        for doc in docs(path):
+        for doc in docs(path, strict=True):
             if doc.get("kind") == "LiteLLMVirtualKey":
                 for m in doc["spec"].get("models", []):
                     out.append((f"virtualkey {path.stem}", m))
