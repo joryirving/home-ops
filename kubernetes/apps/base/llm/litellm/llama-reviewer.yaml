@@ -2,7 +2,7 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: llama-strix-nemotron
+  name: llama-reviewer
 spec:
   source: hf://unsloth/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF
   files:
@@ -22,11 +22,11 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-strix-nemotron
+  name: llama-reviewer
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: llama-strix-nemotron
+  modelRef: llama-reviewer
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
@@ -63,7 +63,11 @@ spec:
     type: ClusterIP
   extraArgs:
     - --alias
-    - llama-strix-nemotron
+    - llama-reviewer
+    - --temp
+    - "1.0"
+    - --top-p
+    - "0.95"
     - --image-min-tokens
     - "1024"
     - --cont-batching
