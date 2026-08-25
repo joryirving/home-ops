@@ -46,7 +46,7 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  contextSize: 32768
+  contextSize: 16384
   parallelSlots: 2
   flashAttention: true
   jinja: true
@@ -66,6 +66,7 @@ spec:
     - --cont-batching
     - --cache-ram
     - "0"
+    - --kv-unified
     # MiniCPM-V 4.5 uses its model-defined 448px slicing and 64-token
     # resampler; --image-min/max-tokens target other vision families.
     - --reasoning
