@@ -24,15 +24,14 @@ data:
           model: {
             primary: "minimax/MiniMax-M3",
             fallbacks: [
-              "litellm/llama-strix",
+              "litellm/llama-flash-next",
               "litellm/llama-nvidia",
               "litellm/dsv4f",
             ]
           },
           imageModel: {
-            primary: "litellm/llama-vision",
+            primary: "litellm/llama-nvidia",
             fallbacks: [
-              "litellm/llama-strix-chat",
               "litellm/llama-nvidia-chat",
               "minimax/MiniMax-M3",
             ]
@@ -45,11 +44,8 @@ data:
             "litellm/kimi-k3": { alias: "kimi", params: { cache_prompt: true } },
             "minimax/MiniMax-M3": { alias: "minimax", params: { cacheRetention: "short" } },
             "minimax/MiniMax-M2.7": { alias: "minimax-old", params: { cacheRetention: "short" } },
-            "litellm/llama-strix": { alias: "skirk", params: { cache_prompt: true } },
-            "litellm/llama-strix-chat": { alias: "skirk-chat", params: { cache_prompt: true } },
-            "litellm/llama-reviewer": { alias: "reviewer", params: { cache_prompt: true } },
-            "litellm/llama-reviewer-chat": { alias: "reviewer-chat", params: { cache_prompt: true } },
-            "litellm/llama-vision": { alias: "vision" },
+            "litellm/llama-flash-next": { alias: "skirk", params: { cache_prompt: true } },
+            "litellm/llama-flash-next-chat": { alias: "skirk-chat", params: { cache_prompt: true } },
             "litellm/llama-nvidia": { alias: "nvidia", params: { cache_prompt: true } },
             "litellm/llama-nvidia-chat": { alias: "nvidia-chat", params: { cache_prompt: true } },
             "litellm/dsv4f": { alias: "dsv4f", params: { cache_prompt: true } },
@@ -101,7 +97,7 @@ data:
                 "litellm/kimi-k3",
                 "litellm/dsv4f",
                 "litellm/llama-nvidia",
-                "litellm/llama-strix",
+                "litellm/llama-flash-next",
               ]
             },
           },
@@ -116,7 +112,7 @@ data:
               primary: "litellm/dsv4f",
               fallbacks: [
                 "minimax/MiniMax-M2.7",
-                "litellm/llama-strix",
+                "litellm/llama-flash-next",
                 "litellm/llama-nvidia",
               ]
             },
@@ -137,7 +133,7 @@ data:
               fallbacks: [
                 "litellm/dsv4f",
                 "litellm/llama-nvidia",
-                "litellm/llama-strix",
+                "litellm/llama-flash-next",
               ]
             },
             identity: {
@@ -170,11 +166,8 @@ data:
             models: [
               { id: "kimi-k2.7", name: "Kimi K2.7 Code", reasoning: true, input: ["text", "image"], cost: { input: 0.95, output: 4, cacheRead: 0.19, cacheWrite: 0.95 }, contextWindow: 262144, maxTokens: 32768 },
               { id: "kimi-k3", name: "Kimi K3", reasoning: true, input: ["text", "image"], cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3 }, contextWindow: 1048576, maxTokens: 131072 },
-              { id: "llama-strix", name: "Qwen3.6-35B-A3B UD-Q4_K_XL (ROCm)", reasoning: true, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 20480 },
-              { id: "llama-strix-chat", name: "Qwen3.6-35B-A3B non-thinking (ROCm)", reasoning: false, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 20480 },
-              { id: "llama-reviewer", name: "Nemotron 3.5 Lightning 30B-A3B (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 200000, maxTokens: 20480 },
-              { id: "llama-reviewer-chat", name: "Nemotron 3.5 non-thinking (ROCm)", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 200000, maxTokens: 20480 },
-              { id: "llama-vision", name: "MiniCPM-V 4.5 Abliterated Q8_0 (ROCm)", reasoning: false, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 32768, maxTokens: 8192 },
+              { id: "llama-flash-next", name: "Qwen3.8-Flash-Next UD-Q3_K_XL (ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 20480 },
+              { id: "llama-flash-next-chat", name: "Qwen3.8-Flash-Next non-thinking (ROCm)", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 20480 },
               { id: "llama-nvidia", name: "Qwen3.8-27B UD Q4_K_XL (CUDA)", reasoning: true, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 140000, maxTokens: 40960 },
               { id: "llama-nvidia-chat", name: "Qwen3.8-27B non-thinking (CUDA)", reasoning: false, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 140000, maxTokens: 40960 },
               { id: "dsv4f", name: "DeepSeek V4 Flash (neuralwatt)", reasoning: true, input: ["text"], cost: { input: 0.0577, output: 0.0577, cacheRead: 0.0577, cacheWrite: 0.0577 }, contextWindow: 1000000, maxTokens: 16384 },
