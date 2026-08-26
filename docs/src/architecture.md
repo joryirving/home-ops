@@ -22,7 +22,7 @@ Git Repository → Flux (GitOps Operator) → Kubernetes Clusters
 2. **Renovate** scans for dependency updates, creates PRs
 3. **PRs merged** to main branch
 4. **Flux** detects changes via Git source
-5. **Flux** recursively searches `kubernetes/${cluster}/apps` for kustomizations
+5. **Flux** recursively searches `kubernetes/apps/${cluster}` for kustomizations
 6. **Flux** applies `HelmRelease` and other resources to the cluster
 
 ### Directory Structure (Apps)
