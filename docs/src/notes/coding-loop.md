@@ -20,7 +20,7 @@ Workload (this bridge) ──► AgenticTasks (foreman-operator)
     │
     ├─ code    coder Agent (Job, polyglot image) — clone, fix, SELF-GATE, push branch
     │          issues split deterministically: coder (nvidia) / coder-strix (self-hosted)
-    └─ review  reviewer Agent (Mellum2, read-only) — diff review, verdict
+    └─ review  reviewer Agent (Nemotron 3.5 Lightning, read-only) — diff review, verdict
     │
     ▼ review GO
 foreman opens the PR (summary grounded against the diff)
@@ -52,7 +52,7 @@ survives retries (bridge 0.6.20; losing it once collided every third attempt ont
 **4. Execute.** The operator decomposes into `code → review` (verify Jobs are off:
 `VERIFY_ENABLED=false`, repo CI is the verifier). The coder runs as its own Job on the
 polyglot image, runs the `gateProfile` commands as a **self-gate** before submitting, and
-pushes `foreman/<workload>/issue-<n>`. The reviewer (Mellum2 via the `reviewer` alias)
+pushes `foreman/<workload>/issue-<n>`. The reviewer (Nemotron 3.5 Lightning via `llama-reviewer`)
 reads the diff and issues a verdict; deterministic rails ground its claims (filesTouched,
 issueAsk, findings, and — since 0.9.15 — the PR-body summary against the diff).
 
@@ -111,25 +111,38 @@ Go. The published packages still exist on ghcr for old digest pins; nothing buil
 **Rule of thumb:** stay on one image until a runtime is huge or conflicting (JVM, CUDA,
 Android SDK class), and split only that one out.
 
-## Fleet capacity is agent replicas, not models
+## Fleet capacity is in-process work, not coders
 
-Foreman enforces **one task per FleetNode**, and one FleetNode is one `foreman-agent`
-replica. A Job-mode task still reserves its node for the Job's entire lifetime even though
-the work runs in a separate pod — so N replicas cap *concurrent coders plus everything
-else combined*.
+A FleetNode is one `foreman-agent` **pod**, not a machine: `spec.nodeName` is the pod's own
+name and `status.kubernetesNode` is the host it landed on.
 
-At `replicaCount: 3` that ceiling was invisible and brutal: three long coder Jobs held
-every node, and in-process reviews became unschedulable, with the operator looping
-`no free FleetNode matches; will retry` while reviews sat Pending for hours and their
-workloads held claim slots. Replicas are coordinators (measured ~2m CPU, ~20Mi RSS), so
-`replicaCount: 12` is sized for `MAX_IN_PROGRESS` coders + pr-fix coders + headroom for
-reviews and gates. Upstream: [LLMKube#1496](https://github.com/defilantech/LLMKube/issues/1496)
-(Job-mode tasks should not reserve a node) and
-[#1497](https://github.com/defilantech/LLMKube/issues/1497) (per-Agent concurrency cap,
-which today does not exist — `Agent.spec` bounds turns and retries, never in-flight tasks).
+This section used to say replicas cap concurrent coders, because Job-mode tasks reserved
+their node for the Job's whole life. [LLMKube#1496](https://github.com/defilantech/LLMKube/issues/1496)
+fixed that, so **Job-mode tasks now select a node without reserving it** and replica count
+does not bound them at all. One FleetNode was observed carrying two Job-mode coder tasks
+and an in-process review at the same time. Concurrent coders are bounded by the bridge's
+`CODER_AGENT_SLOTS` and `MAX_IN_PROGRESS` instead.
 
-**If reviews stop happening, check FleetNode occupancy before suspecting the model:**
-`kubectl get fleetnode -n llm -o custom-columns=NAME:.metadata.name,TASK:.status.currentTask`
+What replicas still cap is **in-process** work. Every coder Agent runs `execution.mode: Job`,
+so the only in-process consumer here is the reviewer — and its backend runs `--parallel 2`,
+so a third concurrent review queues at the GPU regardless of how many slots exist. Hence
+`replicaCount: 2`. Idle replicas are not free of consequence: a rollout orphans every
+FleetNode at once (8 reaped in 48h from one rollout), and an in-flight in-process review
+dies with its pod.
+
+The historical incident is still worth knowing: at `replicaCount: 3`, when Job-mode *did*
+reserve, three long coder Jobs held every node and reviews sat Pending for hours while the
+operator looped `no free FleetNode matches; will retry`.
+
+[#1497](https://github.com/defilantech/LLMKube/issues/1497) also landed, so `Agent.spec`
+now has `maxConcurrentTasks` (present in the CRD). We do not set it; the bridge's slot
+config is the bound today.
+
+**Do not diagnose by FleetNode occupancy any more.** `status.currentTask` is empty on every
+node now, because Job-mode never sets it — it reports only in-process reservations. If work
+is not flowing, check whether the model is deferring requests instead:
+`llamacpp:requests_deferred` (alerted as `LlamaCppRequestsDeferred`), since inference is
+the real constraint at roughly 94% of pipeline wall clock.
 
 ## Gates: the coder verifies its own work
 
