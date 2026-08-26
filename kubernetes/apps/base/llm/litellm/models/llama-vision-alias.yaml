@@ -2,22 +2,17 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: llama-reviewer-chat
+  name: llama-vision-alias
 spec:
-  modelName: llama-reviewer-chat
+  modelName: llama-vision
   proxyRef: litellm
   params:
     model: openai/llama-nvidia
     apiBase: http://llama-nvidia.llm.svc.cluster.local:8080/v1
     apiKey: sk-llmkube-noauth
-    additional:
-      temperature: 1.0
-      top_p: 0.95
-      reasoning_effort: none
-      allowed_openai_params:
-        - reasoning_effort
   info:
     mode: chat
-    maxInputTokens: 200000
-    maxOutputTokens: 20480
+    maxInputTokens: 140000
+    maxOutputTokens: 40960
     supportsFunctionCalling: true
+    supportsVision: true
