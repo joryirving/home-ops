@@ -43,7 +43,7 @@ releases:
           - --namespace={{ .Release.Namespace }}
           - --server-side
           - --force-conflicts
-          - --filename=../../kubernetes/apps/{{ .Release.Namespace }}/{{ .Release.Name }}/networking.yaml
+          - --filename=../../kubernetes/apps/{{ requiredEnv "CLUSTER" }}/{{ .Release.Namespace }}/{{ .Release.Name }}/networking.yaml
         events:
           - postsync
         showlogs: true
@@ -82,7 +82,7 @@ releases:
           - apply
           - --server-side
           - --force-conflicts
-          - --filename=../../kubernetes/apps/{{ .Release.Namespace }}/{{ .Release.Name }}/clustersecretstore.yaml
+          - --filename=../../kubernetes/apps/base/{{ .Release.Namespace }}/{{ .Release.Name }}/clustersecretstore.yaml
         events:
           - postsync
         showlogs: true
