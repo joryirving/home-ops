@@ -49,9 +49,14 @@ spec:
     agents:
       default:
         enabled: true
-        # One task per FleetNode, and Job-based coders hold theirs for the
-        # whole Job — so replicas cap concurrent coders + reviews (#1496).
-        replicaCount: 7
+        # Replicas cap in-process work only. Job-mode tasks select a node
+        # without reserving it (#1496), so they are not capped by this: one
+        # FleetNode was observed carrying two Job-mode coders and a review
+        # concurrently. Concurrent coders are capped by the bridge's
+        # CODER_AGENT_SLOTS instead. The only in-process consumer here is the
+        # reviewer, and its backend runs --parallel 2, so a third concurrent
+        # review would queue at the GPU regardless.
+        replicaCount: 2
         roles:
           - worker
           - coder
