@@ -43,7 +43,9 @@ spec:
                     key: password
               SONARR__POSTGRES__PORT: "5432"
               SONARR__POSTGRES__USER: "{{ .Release.Name }}"
+              SONARR__SERVER__ALLOWEDHOSTS: sonarr.jory.dev,sonarr.downloads,sonarr.downloads.svc,sonarr.downloads.svc.cluster.local
               SONARR__SERVER__PORT: &port 80
+              SONARR__SERVER__TRUSTEDNETWORKS: 10.42.0.0/16
               SONARR__UPDATE__BRANCH: develop
               TZ: America/Edmonton
             envFrom:
@@ -57,6 +59,9 @@ spec:
                   httpGet:
                     path: /ping
                     port: *port
+                    httpHeaders:
+                      - name: Host
+                        value: localhost
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
