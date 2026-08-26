@@ -58,3 +58,21 @@ spec:
               (auth/quota — check the upstream key or plan cap)
           labels:
             severity: warning
+    - name: llamacpp.rules
+      rules:
+        - alert: LlamaCppRequestsDeferred
+          # A llama-server defers a request when every slot is busy. Sustained
+          # deferral means the loop is serialising on that model rather than on
+          # agent capacity — llama-nvidia runs --parallel 1, so the coder lane
+          # queues here long before it queues anywhere else. This is the signal
+          # that settles whether to raise --parallel or lower the bridge's
+          # CODER_AGENT_SLOTS, rather than guessing at either.
+          expr: |-
+            max by (service) (llamacpp:requests_deferred) > 0
+          for: 10m
+          annotations:
+            summary: >-
+              {{ $labels.service }} has had {{ $value }} request(s) queued behind its
+              inference slots for 10m — work is serialising on this model
+          labels:
+            severity: warning
