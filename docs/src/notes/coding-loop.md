@@ -238,13 +238,18 @@ Env on this HelmRelease unless noted:
 - [LLMKube#1447](https://github.com/defilantech/LLMKube/issues/1447) — reviewer
   scope-overlap can false-NO-GO test-coverage issues (diff touches `X.test.ts`, issue
   names `X.ts`).
-- [LLMKube#1496](https://github.com/defilantech/LLMKube/issues/1496) — a Job-mode task
-  reserves a FleetNode for the Job's whole lifetime, so long coder Jobs starve in-process
-  reviewers. Symptom: `no free FleetNode matches` and reviews Pending for hours. Mitigated
-  by `agent.replicaCount: 12`.
-- [LLMKube#1497](https://github.com/defilantech/LLMKube/issues/1497) — no per-Agent
-  concurrency cap, so a backend shared with other consumers cannot be reserved from
-  Foreman's side.
+- ~~[LLMKube#1496](https://github.com/defilantech/LLMKube/issues/1496)~~ — **resolved.**
+  Job-mode tasks no longer reserve a FleetNode, so long coder Jobs cannot starve in-process
+  reviewers. This is why `replicaCount` no longer bounds coders; see the fleet-capacity
+  section above.
+- ~~[LLMKube#1497](https://github.com/defilantech/LLMKube/issues/1497)~~ — **resolved.**
+  `Agent.spec.maxConcurrentTasks` exists in the CRD. We do not set it; the bridge's
+  `CODER_AGENT_SLOTS` is the bound today.
+- [LLMKube#1634](https://github.com/defilantech/LLMKube/issues/1634) — Job-mode placement
+  picks the alphabetically first eligible node without reserving it, so tasks concentrate
+  on one node while others idle. [#1669](https://github.com/defilantech/LLMKube/pull/1669)
+  proposes round-robin, but derives the rotation from a live in-flight count that collapses
+  to zero when tasks are dispatched serially, so it does not fix the trickle case.
 - [LLMKube#1481](https://github.com/defilantech/LLMKube/issues/1481) — `fetch_pull_request`
   reports which check failed but not its error text, so a CI-failure fix still works from
   the re-dispatcher's summary rather than the actual output.
