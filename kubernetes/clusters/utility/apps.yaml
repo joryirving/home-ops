@@ -30,8 +30,11 @@ spec:
           postBuild:
             substitute:
               CLUSTER: ${CLUSTER}
+              SNAPSHOTCLASS: ${SNAPSHOTCLASS}
+              STORAGECLASS: ${STORAGECLASS}
               STORAGE_HR: ${STORAGE_HR}
               STORAGE_NS: ${STORAGE_NS}
+              SUBDOMAIN_SUFFIX: ${SUBDOMAIN_SUFFIX} # not injected on main: an empty value renders as null and fails admission
           patches:
             - patch: |-
                 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -59,6 +62,59 @@ spec:
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
+    - # Net-new CNPG cluster: plain initdb (no Barman recovery).
+      # Use the `components.postgres/cnpg=init` label on an app's Flux Kustomization
+      # to mark it as a brand-new cluster with no existing data. The component
+      # default is bootstrap.recovery from Barman; this label opts out for net-new
+      # apps that have no backup yet to recover from.
+      # $${...} escape preserves the variable through outer (cluster-apps) substitution
+      # so the inner (app) Kustomization's postBuild can resolve APP/POSTGRES_USERNAME.
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
+            - target:
+                group: postgresql.cnpg.io
+                version: v1
+                kind: Cluster
+              patch: |-
+                - op: replace
+                  path: /spec/bootstrap
+                  value:
+                    initdb:
+                      database: $${POSTGRES_USERNAME:=$${APP}}
+                      owner: $${POSTGRES_USERNAME:=$${APP}}
+                - op: remove
+                  path: /spec/externalClusters
+      target:
+        kind: Kustomization
+        labelSelector: "components.postgres/cnpg=init"
+    - # Configure Dragonfly for ToolHive's Redis auth-storage Lua scripts.
+      # Replication remains enabled; standalone mode and undeclared-key access
+      # are required by ToolHive's scripts.
+      patch: |-
+        apiVersion: kustomize.toolkit.fluxcd.io/v1
+        kind: Kustomization
+        metadata:
+          name: not-used
+        spec:
+          patches:
+            - target:
+                group: dragonflydb.io
+                version: v1alpha1
+                kind: Dragonfly
+              patch: |-
+                - op: remove
+                  path: /spec/args/2
+                - op: add
+                  path: /spec/args/-
+                  value: --default_lua_flags=allow-undeclared-keys
+      target:
+        kind: Kustomization
+        labelSelector: "components.dragonfly/cluster-mode=non-cluster"
     - # Fix ARC Runner perms for D-CSI
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -71,7 +127,7 @@ spec:
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
-                  name: home-ops-runner-test
+                  name: not-used
                 spec:
                   values:
                     template:
@@ -83,6 +139,7 @@ spec:
       target:
         kind: Kustomization
         name: actions-runner-controller-runners
+        labelSelector: "components.storage/driver=democratic-csi"
     - # Set Snapshot controller value for D-CSI
       patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -95,7 +152,7 @@ spec:
                 apiVersion: helm.toolkit.fluxcd.io/v2
                 kind: HelmRelease
                 metadata:
-                  name: snapshot-controller
+                  name: not-used
                 spec:
                   values:
                     controller:
@@ -106,3 +163,4 @@ spec:
       target:
         kind: Kustomization
         name: snapshot-controller
+        labelSelector: "components.storage/driver=democratic-csi"

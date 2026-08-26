@@ -3,9 +3,9 @@
 version: v1alpha1
 machine:
   ca:
-    crt: op://Kubernetes/talos-utility/MACHINE_CA_CRT
+    crt: op://Kubernetes/talos-{{ ENV.CLUSTER }}/MACHINE_CA_CRT
     {% if ENV.MACHINE_TYPE == 'controlplane' %}
-    key: op://Kubernetes/talos-utility/MACHINE_CA_KEY
+    key: op://Kubernetes/talos-{{ ENV.CLUSTER }}/MACHINE_CA_KEY
     {% endif %}
   features:
     diskQuotaSupport: true
@@ -88,19 +88,19 @@ machine:
     vm.dirty_ratio: "20"                      # Cap dirty page buildup
     vm.dirty_expire_centisecs: "3000"         # Expire dirty data after 30s
     vm.dirty_writeback_centisecs: "500"       # Flush dirty pages every 5s
-  token: op://Kubernetes/talos-utility/MACHINE_TOKEN
+  token: op://Kubernetes/talos-{{ ENV.CLUSTER }}/MACHINE_TOKEN
   type: {{ ENV.MACHINE_TYPE }}
   sysfs:
     devices.system.cpu.cpufreq.policy0.scaling_governor: powersave
-    devices.system.cpu.cpufreq.policy0.energy_performance_preference: balancer_power
+    devices.system.cpu.cpufreq.policy0.energy_performance_preference: balance_power
   time:
     disabled: false
     servers: ["time.cloudflare.com"]
 cluster:
   ca:
-    crt: op://Kubernetes/talos-utility/CLUSTER_CA_CRT
+    crt: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_CA_CRT
     {% if ENV.MACHINE_TYPE == 'controlplane' %}
-    key: op://Kubernetes/talos-utility/CLUSTER_CA_KEY
+    key: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_CA_KEY
     {% endif %}
   clusterName: utility
   controlPlane:
@@ -112,19 +112,19 @@ cluster:
         disabled: true
       service:
         disabled: false
-  id: op://Kubernetes/talos-utility/CLUSTER_ID
+  id: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_ID
   network:
     cni:
       name: none
     dnsDomain: cluster.local
     podSubnets: ["10.42.0.0/16"]
     serviceSubnets: ["10.43.0.0/16"]
-  secret: op://Kubernetes/talos-utility/CLUSTER_SECRET
-  token: op://Kubernetes/talos-utility/CLUSTER_TOKEN
+  secret: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_SECRET
+  token: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_TOKEN
   {% if ENV.MACHINE_TYPE == 'controlplane' %}
   aggregatorCA:
-    crt: op://Kubernetes/talos-utility/CLUSTER_AGGREGATORCA_CRT
-    key: op://Kubernetes/talos-utility/CLUSTER_AGGREGATORCA_KEY
+    crt: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_AGGREGATORCA_CRT
+    key: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_AGGREGATORCA_KEY
   allowSchedulingOnControlPlanes: true
   apiServer:
     certSANs: ["k8s.utility.internal", "127.0.0.1"]
@@ -141,14 +141,14 @@ cluster:
   etcd:
     advertisedSubnets: ["10.69.1.0/24"]
     ca:
-      crt: op://Kubernetes/talos-utility/CLUSTER_ETCD_CA_CRT
-      key: op://Kubernetes/talos-utility/CLUSTER_ETCD_CA_KEY
+      crt: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_ETCD_CA_CRT
+      key: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_ETCD_CA_KEY
     extraArgs:
       listen-metrics-urls: http://0.0.0.0:2381
   proxy:
     disabled: true
     image: registry.k8s.io/kube-proxy:v1.36.2
-  secretboxEncryptionSecret: op://Kubernetes/talos-utility/CLUSTER_SECRETBOXENCRYPTIONSECRET
+  secretboxEncryptionSecret: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_SECRETBOXENCRYPTIONSECRET
   scheduler:
     config:
       apiVersion: kubescheduler.config.k8s.io/v1
@@ -171,7 +171,7 @@ cluster:
     extraArgs:
       bind-address: 0.0.0.0
   serviceAccount:
-    key: op://Kubernetes/talos-utility/CLUSTER_SERVICEACCOUNT_KEY
+    key: op://Kubernetes/talos-{{ ENV.CLUSTER }}/CLUSTER_SERVICEACCOUNT_KEY
   {% endif %}
 ---
 apiVersion: v1alpha1

@@ -57,7 +57,7 @@ home-ops/
 Git push → Flux source sync → Kustomization → HelmRelease → k8s resources
 ```
 
-Flux recursively searches `kubernetes/${cluster}/apps/` for `kustomization.yaml` files. Each must define a namespace and Flux kustomization (`ks.yaml`).
+Flux recursively searches `kubernetes/apps/${cluster}/` for `kustomization.yaml` files. Each must define a namespace and Flux kustomization (`ks.yaml`).
 
 ## Conventions
 
