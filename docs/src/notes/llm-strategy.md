@@ -64,11 +64,11 @@ weights, KV cache and slots, so the second door costs no memory.
 | ----------------------- | -------------------- | ---------------------------------------------- | -------- | ------------------------------------- |
 | `llama-strix`           | Strix ROCm (2 slots) | Qwen3.6-35B-A3B unsloth UD-Q4_K_XL, native MTP | 262k     | General local brain; vision + tools   |
 | `llama-strix-chat`      | same server          | —                                              | 262k     | Non-thinking door; memini scoring     |
-| `llama-nvidia`          | 3090 (1 slot)        | Qwen3.8-27B unsloth UD-Q4_K_XL                 | 140k     | Coding lane; vision                   |
-| `llama-nvidia-chat`     | same server          | —                                              | 140k     | Non-thinking door                     |
+| `llama-nvidia`          | 3090 (2 slots)       | Qwen3.8-27B unsloth UD-Q4_K_XL                 | 131k     | Coding lane; vision                   |
+| `llama-nvidia-chat`     | same server          | —                                              | 131k     | Non-thinking door                     |
 | `llama-reviewer`        | Strix ROCm (2 slots) | Nemotron 3.5 Lightning 30B-A3B UD-Q4_K_XL, MTP | 200k     | Foreman code review                   |
 | `llama-reviewer-chat`   | same server          | —                                              | 200k     | Non-thinking door                     |
-| `llama-vision`          | Strix ROCm (2 slots) | MiniCPM-V 4.5 abliterated Q8_0                 | 16k      | Image analysis; will not refuse       |
+| `llama-vision`          | Strix ROCm (2 slots) | MiniCPM-V 4.5 abliterated Q4_K_M               | 16k      | Image analysis; will not refuse       |
 | `memini-embed`          | Intel iGPU           | Qwen3-Embedding-0.6B                           | —        | Embeddings (1024-dim)                 |
 | `memini-rerank`         | Strix ROCm           | Qwen3-Reranker-0.6B                            | —        | Reranking                             |
 | `toolhive-embed`        | Intel iGPU           | Qwen3-Embedding-0.6B                           | —        | Embeddings for toolhive vMCP          |
@@ -335,13 +335,67 @@ Sources: [Artificial Analysis](https://artificialanalysis.ai/leaderboards/models
 [Mellum2-12B-A2.5B](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) ·
 [GPT-5.6 models](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
 
+## v2 bench: the local models are within noise of each other
+
+Four suites from `repo-bench` v2, scored on this repo's own material. Error rows (transport
+failures) are dropped rather than counted as zeros — the `tally` subcommand does this.
+
+| Candidate | Troubleshooting | Reviewing | Agentic | Coding | Mean |
+| --------- | --------------- | --------- | ------- | ------ | ---- |
+| `llama-nvidia` 27B Q4 (3090) | 0.981 | 0.923 | 0.718 | 0.710 | 0.833 |
+| Qwen3.8-27B FP8 (Strix) | 0.938 | 0.920 | 0.782 | 0.760 | 0.850 |
+| Flash-Next UD-Q3_K_XL (Strix) | 0.978* | 0.792 | 0.833 | 0.760 | 0.841 |
+| Flash-Next NVFP4 + FP8 engram (borrowed RTX 6000 Pro) | 0.991 | 0.838 | 0.788 | 0.620 | 0.809 |
+| Nemotron 3.5 30B-A3B (Strix) | 0.910 | 0.817 | 0.756 | 0.080 | 0.641 |
+| `MiniMax-M3` | 0.956 | 0.759 | 0.558 | 0.590 | 0.716 |
+| `MiniMax-M2.7` | 0.956 | 0.842 | 0.481 | 0.500 | 0.695 |
+| `chatgpt/gpt-5.6-luna` (effort=medium) | 0.926 | 0.758 | 0.744 | 0.620 | 0.762 |
+
+\* n=15; three tasks died on the qwen4exp indexer assert and were dropped.
+
+**Run-to-run noise is ±0.02**, measured from the duplicate `nvidia`/`llama-nvidia` pair (same model,
+different dates: deltas 0.016 / 0.003 / 0.019 / 0.020). So the top three rows are a tie, and a 180B
+at Q3 does not beat a 27B on this bench.
+
+Reviewing is Flash-Next's worst suite and both 27Bs' best; agentic is the reverse. Nemotron's coding
+score is broken, which is fine for a review-only lane and disqualifying for a coder.
+
+Caveat on luna: it ran at `effort=medium`, and every real consumer reaches it through
+`reasoning-pool` which pins `effort: max`. That row is not evidence about the deployed path.
+
+Methodology trap: candidate names are not stable across time. `llama-strix` meant Ornith in August
+and Flash-Next later, and `tally` merges by candidate name — check what the alias pointed at before
+comparing rows.
+
+## Where a model runs is decided by memory bandwidth
+
+Strix Halo has ~256 GB/s theoretical and ~200-220 GB/s real. Decode is bandwidth-bound, so what
+matters is **active** parameters per token, not total parameters:
+
+| Model | Arch | Weights | Read/token | Measured TG |
+| ----- | ---- | ------- | ---------- | ----------- |
+| Qwen3.6-35B-A3B Q4 | MoE, 3B active | 21.3 GiB | ~1.7 GiB | 34-42 t/s |
+| Nemotron 3.5 30B-A3B Q4 | MoE, 3B active | 23.8 GiB | ~1.7 GiB | ~35 t/s |
+| Qwen3.8-27B ROCmFP8 | dense 27B | 26.3 GiB | 26.3 GiB | ~8-10 t/s |
+| Qwen3.8-Flash-Next UD-Q3_K_XL | MoE 180B-A6B | 101.3 GiB | ~4 GiB + engram | 11 t/s |
+
+So **Strix runs A3B-class MoE and small dense vision models; the 3090 runs the dense 27B**, where
+900+ GB/s of VRAM gives it 44 t/s on weights that would crawl on the APU. A dense model on Strix is
+slow no matter how good it scores, and Flash-Next is slow *and* needs 101 GiB — it evicts the whole
+rest of the resident set to hold a tie on quality (see the v2 bench section).
+
+Measured footprint of the resident set, mid-generate, 2026-08-27: GTT **76.8 GiB of 124**, ~47 GiB
+free, with ComfyUI actually taking **6.8 GiB** rather than the 14 GiB its `--reserve-vram 110`
+permits. Wall power: skirk **48.7 W** serving three models plus an image generation; the 3090
+**142 W idle**, ~299 W under load.
+
 ## Consumers
 
 | Consumer               | In repo?                                    | Points at                                                                                    |
 | ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso/main `glm-5.3`; Matcha `dsv4f`; Saffron `reasoning-pool`; subagents `MiniMax-M3`; heartbeat `llama-nvidia`; image `llama-vision` |
+| **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso/main `glm-5.3-flash`; Matcha `dsv4f`; Saffron `reasoning-pool`; subagents `MiniMax-M3`; heartbeat `llama-nvidia`; image `llama-vision`; lossless-claw expansion/summary `llama-strix-chat` |
 | **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `MiniMax-M3`; compression/extract/approval/session-search `llama-strix`; vision `llama-vision` |
-| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | `coder` → `llama-nvidia`; `coder-revision` + `coder-frontier` → `MiniMax-M3-chat`; reviewers → `llama-reviewer` |
+| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | `coder` → `llama-nvidia`; `coder-revision` + `coder-frontier` → `MiniMax-M3-chat`; `reviewer` + `reviewer-fork` → `llama-reviewer` |
 | **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)     | default `auto`; coordinator `reasoning-pool`; role subagents `MiniMax-M3`/`llama-nvidia`/`llama-strix`/`glm-5.3`/`llama-reviewer`, plus the workstation CLI on LiteLLM aliases directly |
 | **Zed**                | no (workstation)                            | LiteLLM aliases directly                                                                     |
 
