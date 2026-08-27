@@ -32,7 +32,7 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-7.14-qwen-3.8-flash-next@sha256:88fb04a0d5d4d9b10f1d334e310f3fd109f70742cb3138161e53f3856d4131fa
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv@sha256:3048ccb03134311307db7eac895ba329f0fd0ba2e0d3a65e923dfbd2b5d9ec3d
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
@@ -86,6 +86,8 @@ spec:
     - "8"
     - --threads-batch
     - "16"
+    - --tensor-read-lazy
+    - "on"
     - --load-mode
     - none
     - --chat-template-kwargs
