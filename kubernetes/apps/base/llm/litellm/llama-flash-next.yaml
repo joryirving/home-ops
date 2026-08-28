@@ -22,6 +22,22 @@ spec:
           resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: llama-strix-mtp
+spec:
+  source: hf://EasiiX/Qwen3.8-Flash-Next-MTP-Strix-Halo-GGUF
+  files:
+    - mtp-Qwen3.8-Flash-Next-Q8_0.gguf
+  format: gguf
+  quantization: Q8_0
+  hardware:
+    accelerator: rocm
+    gpu:
+      enabled: true
+      vendor: amd
+---
+apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
   name: llama-strix
@@ -29,10 +45,15 @@ metadata:
     krr/ignore: "true"
 spec:
   modelRef: llama-strix
+  speculativeDecoding:
+    type: draft-mtp
+    draftModelRef: llama-strix-mtp
+    nDraftMax: 4
+    pMin: 0.75
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv@sha256:3048ccb03134311307db7eac895ba329f0fd0ba2e0d3a65e923dfbd2b5d9ec3d
+  image: ghcr.io/joryirving/engramhalo:rocm-gfx1151@sha256:35621b72a8b37ab4a6aae77a28baf3ec7d92ec0688cb604b1df4ecf952e72ac5
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 86400
@@ -56,6 +77,9 @@ spec:
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
   batchSize: 6144
   uBatchSize: 2048
+  env:
+    - name: ROCBLAS_USE_HIPBLASLT
+      value: "1"
   resources:
     cpu: "500m"
     memory: 16Gi
@@ -88,12 +112,10 @@ spec:
     - "16"
     - --tensor-read-lazy
     - "on"
-    - --override-tensor
-    - "per_layer_token_embd\\.weight=CPU"
     - -lv
     - "4"
     - --load-mode
-    - auto
+    - none
     - --chat-template-kwargs
     - '{"preserve_thinking":true}'
   probeOverrides:
