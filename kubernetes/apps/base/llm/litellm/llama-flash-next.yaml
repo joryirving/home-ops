@@ -14,11 +14,11 @@ spec:
   format: gguf
   quantization: UD-Q3_K_XL
   hardware:
-    accelerator: vulkan
+    accelerator: rocm
     gpu:
       enabled: true
       vendor: amd
-      runtime: vulkan
+      runtime: rocm
       layers: 99
       resourceClaims:
         - name: gpu
@@ -35,11 +35,11 @@ spec:
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: vulkan
+    accelerator: rocm
     gpu:
       enabled: true
       vendor: amd
-      runtime: vulkan
+      runtime: rocm
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -52,12 +52,12 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: ghcr.io/joryirving/llama-qwen4exp:0.2.0@sha256:710242362fdcdfbc43c8ca06819babefe6b93f88ceaa4f7d4a140b6568e77364
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-10.0_20260830T191356@sha256:65fcb5855f6186b8a6ddf56e89abf743fa0fa91ce76394ad2bd7ed7bc9cd10b6
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 86400
   command:
-    - /app/llama-server
+    - llama-server
   replicas: 1
   priority: high
   nodeSelector:
@@ -70,17 +70,15 @@ spec:
   parallelSlots: 1
   flashAttention: true
   jinja: true
-  speculativeDecoding:
-    type: draft-mtp
-    draftModelRef: llama-strix-mtp
-    nDraftMax: 6
-    pMin: 0.75
   cacheTypeK: q8_0
   cacheTypeV: q8_0
   reasoningBudget: 16384
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
   batchSize: 6144
   uBatchSize: 2048
+  env:
+    - name: ROCBLAS_USE_HIPBLASLT
+      value: "1"
   resources:
     cpu: "500m"
     memory: 16Gi
@@ -114,9 +112,7 @@ spec:
     - --threads-batch
     - "16"
     - --load-mode
-    - mmap
-    - --tensor-read-lazy
-    - "on"
+    - none
     - --chat-template-kwargs
     - '{"preserve_thinking":true}'
   probeOverrides:
