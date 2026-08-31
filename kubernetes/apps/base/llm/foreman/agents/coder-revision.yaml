@@ -4,6 +4,12 @@ kind: Agent
 metadata:
   name: coder-revision
 spec:
+  # LLMKube 0.9.23 began opening every Foreman PR as a draft, and our AI PR
+  # reviewer skips drafts by design (ai-pr-review.yaml gates on
+  # `!github.event.pull_request.draft`), which is the normal reading of what a
+  # draft means. That inserted a manual "mark ready" step into an unattended
+  # loop. Requested upstream as LLMKube#1706 and shipped in 0.9.24 (#1707).
+  openPullRequestsAsDraft: false
   role: coder
   provider: cloud-proxy
   providerConfig:
