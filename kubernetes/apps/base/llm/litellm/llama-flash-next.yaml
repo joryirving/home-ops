@@ -52,7 +52,7 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-vulkan-b10689@sha256:eb03bd6428ce479209eb74b064f5503f85a65c438f2719e232d33f87b416f17d
+  image: ghcr.io/joryirving/llama-qwen4exp:0.2.0@sha256:710242362fdcdfbc43c8ca06819babefe6b93f88ceaa4f7d4a140b6568e77364
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 86400
@@ -70,6 +70,11 @@ spec:
   parallelSlots: 1
   flashAttention: true
   jinja: true
+  speculativeDecoding:
+    type: draft-mtp
+    draftModelRef: llama-strix-mtp
+    nDraftMax: 6
+    pMin: 0.75
   cacheTypeK: q8_0
   cacheTypeV: q8_0
   reasoningBudget: 16384
