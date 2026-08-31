@@ -3,7 +3,7 @@
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
 metadata:
-  name: dispatch
+  name: dispatch-mcp
 spec:
   image: ghcr.io/misospace/dispatch-mcp:sha-e4eaba8@sha256:11fee95712142758e1ff4c608ff0c7104ab391926fec5f96e8ea6ec63a8b1bed
   transport: stdio
@@ -22,5 +22,15 @@ spec:
       memory: 128Mi
     limits:
       memory: 512Mi
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: mcp
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
   groupRef:
     name: mcp-tools

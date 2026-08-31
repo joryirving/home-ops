@@ -3,20 +3,19 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app manyfold
+  name: &app forgejo
 spec:
   components:
-    - ../../../../components/dragonfly
     - ../../../../components/kopiur/backup
   interval: 1h
-  path: ./kubernetes/apps/base/self-hosted/manyfold
+  path: ./kubernetes/apps/base/self-hosted/forgejo
   postBuild:
     substitute:
       APP: *app
-      KOPIUR_CAPACITY: 15Gi
-  wait: false
+      KOPIUR_CAPACITY: 50Gi
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
+  wait: false

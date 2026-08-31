@@ -1,0 +1,26 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: llama-strix-chat
+spec:
+  modelName: llama-strix-chat
+  proxyRef: litellm
+  params:
+    model: openai/llama-strix
+    apiBase: http://llama-strix.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 0.7
+      top_p: 0.8
+      presence_penalty: 1.5
+      repetition_penalty: 1.0
+      reasoning_effort: none
+      allowed_openai_params:
+        - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 262144
+    maxOutputTokens: 20480
+    supportsFunctionCalling: true
+    supportsVision: true

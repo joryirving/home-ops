@@ -103,7 +103,7 @@ spec:
       route:
         main:
           enabled: true
-          hostnames: ["${ALERTMANAGER_SUBDOMAIN}.jory.dev"]
+          hostnames: ["${ALERTMANAGER_SUBDOMAIN}${SUBDOMAIN_SUFFIX:=}.jory.dev"]
           parentRefs:
             - name: envoy-internal
               namespace: network
@@ -112,7 +112,7 @@ spec:
           name: alertmanager
           global:
             resolveTimeout: 5m
-        externalUrl: https://${ALERTMANAGER_SUBDOMAIN}.jory.dev
+        externalUrl: https://${ALERTMANAGER_SUBDOMAIN}${SUBDOMAIN_SUFFIX:=}.jory.dev
         storage:
           volumeClaimTemplate:
             spec:
@@ -160,14 +160,14 @@ spec:
       route:
         main:
           enabled: true
-          hostnames: ["${SUBDOMAIN}.jory.dev"]
+          hostnames: ["${SUBDOMAIN}${SUBDOMAIN_SUFFIX:=}.jory.dev"]
           parentRefs:
             - name: envoy-internal
               namespace: network
       prometheusSpec:
         externalLabels:
           cluster: ${CLUSTER}
-        externalUrl: ${SUBDOMAIN}.jory.dev
+        externalUrl: ${SUBDOMAIN}${SUBDOMAIN_SUFFIX:=}.jory.dev
         resources:
           requests:
             cpu: 100m
@@ -177,7 +177,7 @@ spec:
         image:
           registry: mirror.gcr.io
           repository: prompp/prompp
-          tag: 0.8.10
+          tag: 0.8.11
         securityContext:
           runAsNonRoot: true
           runAsUser: 64535

@@ -1,0 +1,142 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: llama-strix
+spec:
+  source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
+  files:
+    - UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf
+    - UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00002-of-00003.gguf
+    - UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00003-of-00003.gguf
+    - mmproj-F16.gguf
+  mmproj: mmproj-F16.gguf
+  format: gguf
+  quantization: UD-Q3_K_XL
+  hardware:
+    accelerator: vulkan
+    gpu:
+      enabled: true
+      vendor: amd
+      runtime: vulkan
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-strix-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: llama-strix-mtp
+spec:
+  source: hf://jockevaupptaget/Qwen3.8-Flash-Next-MTP-GGUF
+  files:
+    - mtp-Qwen-Qwen3.8-Flash-Next-Q8_0.gguf
+  format: gguf
+  quantization: Q8_0
+  hardware:
+    accelerator: vulkan
+    gpu:
+      enabled: true
+      vendor: amd
+      runtime: vulkan
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: llama-strix
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: llama-strix
+  modelCache:
+    claimName: llmkube-skirk-cache
+  runtime: llamacpp
+  image: ghcr.io/joryirving/llama-qwen4exp:0.2.0@sha256:710242362fdcdfbc43c8ca06819babefe6b93f88ceaa4f7d4a140b6568e77364
+  rolloutPolicy:
+    waitForIdle: false
+    idleTimeoutSeconds: 86400
+  command:
+    - /app/llama-server
+  replicas: 1
+  priority: high
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  contextSize: 262144
+  parallelSlots: 1
+  flashAttention: true
+  jinja: true
+  speculativeDecoding:
+    type: draft-mtp
+    draftModelRef: llama-strix-mtp
+    nDraftMax: 6
+    pMin: 0.75
+  cacheTypeK: q8_0
+  cacheTypeV: q8_0
+  reasoningBudget: 16384
+  reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
+  batchSize: 6144
+  uBatchSize: 2048
+  resources:
+    cpu: "500m"
+    memory: 16Gi
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  extraArgs:
+    - --alias
+    - llama-strix
+    - --image-min-tokens
+    - "1024"
+    - --cont-batching
+    - --cache-prompt
+    - --kv-unified
+    - --checkpoint-min-step
+    - "32768"
+    - --temp
+    - "1.0"
+    - --top-p
+    - "0.95"
+    - --top-k
+    - "20"
+    - --min-p
+    - "0"
+    - --presence-penalty
+    - "0"
+    - --repeat-penalty
+    - "1"
+    - --threads
+    - "8"
+    - --threads-batch
+    - "16"
+    - --load-mode
+    - mmap
+    - --tensor-read-lazy
+    - "on"
+    - --chat-template-kwargs
+    - '{"preserve_thinking":true}'
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 720
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6

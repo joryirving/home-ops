@@ -16,7 +16,7 @@ spec:
       statusChecks: true
       statusCheckName: "Konflate (${CLUSTER})"
       prComments: ${KONFLATE_PR_COMMENTS:=true}
-      publicUrl: "https://${SUBDOMAIN}.jory.dev"
+      publicUrl: "https://${SUBDOMAIN}${SUBDOMAIN_SUFFIX:=}.jory.dev"
       repo: github://joryirving/home-ops
       mcp: true
     persistence:
@@ -33,7 +33,7 @@ spec:
       parentRefs:
         - name: envoy-external
           namespace: network
-      hostnames: ["${SUBDOMAIN}.jory.dev"]
+      hostnames: ["${SUBDOMAIN}${SUBDOMAIN_SUFFIX:=}.jory.dev"]
     monitoring:
       serviceMonitor:
         enabled: true

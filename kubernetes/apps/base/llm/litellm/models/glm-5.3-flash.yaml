@@ -1,0 +1,27 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: glm-5.3-flash
+spec:
+  modelName: glm-5.3-flash
+  proxyRef: litellm
+  params:
+    model: openai/glm-5.3-flash
+    apiBase: https://api.z.ai/api/coding/paas/v4
+    apiKey: os.environ/ZAI_API_KEY
+    additional:
+      allowed_openai_params:
+      - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 1000000
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    supportsPromptCaching: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 1.5e-07
+      cache_creation_input_token_cost: 1.5e-07
+      cache_read_input_token_cost: 3.0e-08
+      output_cost_per_token: 5.0e-07

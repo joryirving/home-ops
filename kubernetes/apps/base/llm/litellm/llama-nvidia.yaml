@@ -28,9 +28,9 @@ metadata:
 spec:
   modelRef: llama-nvidia
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:750f56822bd4ca3190e2515c7f668ba9be06fb93365cdb6adedb50971b30340e
+  image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:e52c610406cd18714902d1ca3bffadebca4a2a8370faaba8a5be5cc5d5203921
   rolloutPolicy:
-    waitForIdle: false
+    waitForIdle: true
     idleTimeoutSeconds: 86400
   replicas: 1
   priorityClassName: gpu-preemptible
@@ -40,12 +40,14 @@ spec:
   env:
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
-  contextSize: 140000
+  # contextSize: 140000
+  contextSize: 131072
   flashAttention: true
   jinja: true
-  parallelSlots: 1
+  # parallelSlots: 1
+  parallelSlots: 2
   batchSize: 4096
-  uBatchSize: 512
+  uBatchSize: 1024
   cacheTypeK: q8_0
   cacheTypeV: q8_0
   reasoningBudget: 32768
@@ -66,7 +68,7 @@ spec:
     - --spec-draft-p-min
     - "0.75"
     - --spec-draft-n-max
-    - "3"
+    - "2"
     - --spec-draft-type-k
     - q8_0
     - --spec-draft-type-v
@@ -95,7 +97,7 @@ spec:
     - "12"
     - --mmap
     - --chat-template-kwargs
-    - '{"reasoning_effort":"medium"}'
+    - '{"reasoning_effort":"medium","preserve_thinking":true}'
     - --n-predict
     - "40960"
   endpoint:

@@ -7,13 +7,17 @@ Everything funnels through **LiteLLM** (`kubernetes/apps/base/llm/litellm/litell
 aliases; LiteLLM forwards to the upstream a given subscription or local server expects. This doc is the
 reference for keeping those aliases meaningful and for designing intent-based routing on top of them.
 
+**Last reconciled against the cluster: 2026-08-25.** That pass retired Opencode Go and Moonshot,
+removed `glm-5.2`, renamed `llama-strix-nemotron` to `llama-reviewer`, moved the local models to
+unsloth builds, and added a non-thinking `-chat` door beside each one.
+
 This is a strategy snapshot, not a live quota ledger. Provider pricing, rolling allowances, and
 Prometheus counters are perishable; dated observations below are labeled as such.
 
 ## Subscriptions
 
-Subscriptions remain the primary capacity. Neuralwatt supplies energy-metered GLM capacity, while
-Moonshot is the token-metered failover behind the Kimi Coding subscription.
+Subscriptions remain the primary capacity. Neuralwatt supplies a dwindling energy-metered PAYG
+balance behind `dsv4f`. Moonshot and Opencode Go were both retired on 2026-08-25.
 
 | Plan                | Price                                        | Cap                                                                          | Reset                              | Models                                                                       | Primary use                                                                   |
 | ------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -50,69 +54,82 @@ Caveats worth remembering:
 
 Aliases as defined in the LiteLLM configmap, grouped by where they run.
 
+Each local generative model exposes two aliases against **one** server: the bare name runs the
+vendor's thinking recipe, and the `-chat` suffix runs the non-thinking (instruct) one. They share
+weights, KV cache and slots, so the second door costs no memory.
+
 ### Local (self-hosted, $0 marginal)
 
-| Alias                  | Backend                                  | Model                | Ctx (in) | Role                                |
-| ---------------------- | ---------------------------------------- | -------------------- | -------- | ----------------------------------- |
-| `self-hosted`          | Strix ROCm (2 slots) + Mac LM Studio (2 slots) | Qwen3.6-35B-A3B ⁶    | 262k     | Default local brain; vision + tools |
-| `reviewer`             | Strix ROCm (3 slots)                     | Mellum2-12B-A2.5B    | 131k     | Foreman code review only            |
-| `nvidia`               | 3090 (1 slot)                            | Qwen (CUDA)          | 145k     | General local, no vision            |
-| `memini-embed`         | llama.cpp                                | Qwen3-Embedding-0.6B | —        | Embeddings (1024-dim); iGPU tenant  |
-| `memini-rerank`        | llama.cpp                                | Qwen3-Reranker-0.6B  | —        | Reranking (infinity); iGPU tenant   |
-| `toolhive-embed`       | llama.cpp                                | Qwen3-Embedding-0.6B | —        | Embeddings for toolhive vMCP; iGPU  |
+| Alias                   | Backend              | Model                                          | Ctx (in) | Role                                  |
+| ----------------------- | -------------------- | ---------------------------------------------- | -------- | ------------------------------------- |
+| `llama-strix`           | Strix ROCm (2 slots) | Qwen3.6-35B-A3B unsloth UD-Q4_K_XL, native MTP | 262k     | General local brain; vision + tools   |
+| `llama-strix-chat`      | same server          | —                                              | 262k     | Non-thinking door; memini scoring     |
+| `llama-nvidia`          | 3090 (2 slots)       | Qwen3.8-27B unsloth UD-Q4_K_XL                 | 131k     | Coding lane; vision                   |
+| `llama-nvidia-chat`     | same server          | —                                              | 131k     | Non-thinking door                     |
+| `llama-reviewer`        | Strix ROCm (2 slots) | Nemotron 3.5 Lightning 30B-A3B UD-Q4_K_XL, MTP | 200k     | Foreman code review                   |
+| `llama-reviewer-chat`   | same server          | —                                              | 200k     | Non-thinking door                     |
+| `llama-vision`          | Strix ROCm (2 slots) | MiniCPM-V 4.5 abliterated Q4_K_M               | 16k      | Image analysis; will not refuse       |
+| `memini-embed`          | Intel iGPU           | Qwen3-Embedding-0.6B                           | —        | Embeddings (1024-dim)                 |
+| `memini-rerank`         | Strix ROCm           | Qwen3-Reranker-0.6B                            | —        | Reranking                             |
+| `toolhive-embed`        | Intel iGPU           | Qwen3-Embedding-0.6B                           | —        | Embeddings for toolhive vMCP          |
+
+`llama-strix-dsv4f` (DeepSeek-V4-Flash UD-IQ2_M) and `llama-strix-fp8` exist in git but are commented
+out of the kustomization — they need most of the box to themselves.
 
 ### Cloud (flat-rate subscriptions)
 
-| Alias                  | Subscription                  | Upstream model                  | Ctx (in) | Role                                               |
-| ---------------------- | ----------------------------- | ------------------------------- | -------- | -------------------------------------------------- |
-| `MiniMax`              | MiniMax Plus                  | MiniMax-M3 (Anthropic endpoint) | 1M       | Big-context generation                             |
-| `MiniMax-M2.7`         | MiniMax Plus                  | MiniMax-M2.7                    | 204.8k   | Agentic reasoning workhorse                        |
-| `glm-5.3`              | GLM Coding Lite              | glm-5.3 (Z.AI)                  | 1M       | OpenClaw main primary; upstream prompt-cache lane |
-| `chatgpt/gpt-5.6-sol`   | ChatGPT Plus                  | gpt-5.6-sol (Codex/OAuth)       | 1.1M     | Flagship frontier                                  |
-| `chatgpt/gpt-5.6-terra` | ChatGPT Plus                  | gpt-5.6-terra (Codex/OAuth)     | 1.05M    | Balanced, explicit-only OpenAI tier                |
-| `chatgpt/gpt-5.6-luna`  | ChatGPT Plus                  | gpt-5.6-luna (Codex/OAuth)      | 1.05M    | Reasoning-pool lead; high-volume OpenAI tier       |
-| `kimi-k2.7`            | Kimi Coding → Moonshot        | kimi-for-coding / kimi-k2.7-code | 262k    | Coding subscription first, token PAYG fallback     |
-| `kimi-k3`              | Kimi Coding → Moonshot        | k3 / kimi-k3                    | 1M      | Frontier Kimi lane; subscription first             |
+| Alias                   | Subscription    | Upstream model                  | Ctx (in) | Role                                          |
+| ----------------------- | --------------- | ------------------------------- | -------- | --------------------------------------------- |
+| `MiniMax-M3`            | MiniMax Plus    | MiniMax-M3 (Anthropic endpoint) | 1M       | Big-context generation                        |
+| `MiniMax-M3-chat`       | MiniMax Plus    | MiniMax-M3 (OpenAI endpoint)    | 1M       | Terminal fallback sink for the local models    |
+| `MiniMax-M2.7`          | MiniMax Plus    | MiniMax-M2.7                    | 204.8k   | Agentic reasoning workhorse                   |
+| `glm-5.3`               | GLM Coding Lite | glm-5.3 (Z.AI)                  | 1M       | OpenClaw main primary                         |
+| `chatgpt/gpt-5.6-sol`   | ChatGPT Plus    | gpt-5.6-sol (Codex/OAuth)       | 1.1M     | Flagship frontier                             |
+| `chatgpt/gpt-5.6-terra` | ChatGPT Plus    | gpt-5.6-terra (Codex/OAuth)     | 1.05M    | Balanced, explicit-only OpenAI tier           |
+| `chatgpt/gpt-5.6-luna`  | ChatGPT Plus    | gpt-5.6-luna (Codex/OAuth)      | 1.05M    | Reasoning-pool lead                           |
+| `kimi-k2.7`             | Kimi Coding     | kimi-for-coding                 | 262k     | Coding subscription                           |
+| `kimi-k3`               | Kimi Coding     | k3                              | 1M       | Frontier Kimi lane                            |
+
+**Moonshot is gone** (2026-08-25). Its credits were deliberately drained rather than topped up, so
+`kimi-k2.7` and `kimi-k3` are now single-rung on the Kimi Coding subscription with no PAYG rung
+beneath. Kimi Coding signals cap-out with a 403, which LiteLLM retries but never cools down, so both
+groups have an explicit router fallback to `MiniMax-M3-chat`.
 
 ### Neuralwatt (energy-metered PAYG)
 
-| Alias                    | Upstream model     | Ctx | Role                                          |
-| ------------------------ | ------------------ | --- | --------------------------------------------- |
-| `neuralwatt/glm-5.2`     | glm-5.2            | 1M  | Direct long-context reasoning fallback        |
-| `dsv4f` (Neuralwatt rung) | deepseek-v4-flash | 1M  | PAYG fallback when OpenCode Go is unavailable |
+| Alias   | Upstream model    | Ctx | Role                                              |
+| ------- | ----------------- | --- | ------------------------------------------------- |
+| `dsv4f` | deepseek-v4-flash | 1M  | Sole surviving DeepSeek lane; frontier-pool floor |
 
-Neuralwatt charges this account for measured GPU energy rather than tokens. PAYG is $5/kWh;
-prefix-cache hits avoid prefill work and therefore reduce the charged energy. Neuralwatt also publishes
-token prices for compatibility, but those are not the billing basis here. Use Neuralwatt's usage
-API/dashboard for authoritative cost and energy; LiteLLM and Prometheus are routing/volume telemetry,
-not the billing authority.
+Neuralwatt charges for measured GPU energy rather than tokens. PAYG is $5/kWh; prefix-cache hits
+avoid prefill work and therefore reduce the charged energy. Use Neuralwatt's usage API/dashboard for
+authoritative cost; LiteLLM and Prometheus are routing/volume telemetry, not the billing authority.
 
-### Cloud (Opencode Go gateway, `opencode.ai/zen/go/v1`)
+**This is a runway, not a subscription.** As of 2026-08-25 the balance is ~$9.52 against a trailing
+burn of ~$3.17/day, so `dsv4f` has days rather than months. When it zeroes, `dsv4f` and
+`frontier-pool` rung 4 both go with it. `glm-5.2` and `neuralwatt/glm-5.2` were removed on 2026-08-25
+— neither had a single consumer.
 
-| Alias                               | Upstream model    | Ctx (in)    | Role                                                |
-| ----------------------------------- | ----------------- | ----------- | --------------------------------------------------- |
-| `dsv4f`                             | deepseek-v4-flash | 1M          | OpenClaw subagent/heartbeat and reasoning-pool rung; cache-sensitive after repricing |
-| `dsv4p`                             | deepseek-v4-pro   | 1M          | Heavier DeepSeek                                    |
-| `mimo-v2.5` / `mimo-v2.5-pro`       | mimo-v2.5(-pro)   | 262k        | Lighter analysis lane                               |
-| `qwen3.8-max`                       | qwen3.8-max       | 1M          | Big-context Qwen via gateway                        |
+### Cloud (Opencode Go gateway) — retired
 
-**Provider failover** (LiteLLM `order:`, transparent to callers): `kimi-k2.7` and `kimi-k3` use their
-Kimi Coding deployments before Moonshot; `frontier-pool` and `dsv4f` have explicit ordered PAYG rungs;
-`glm-5.3` is the OpenClaw main primary and `glm-5.2` remains a Neuralwatt fallback lane. This reacts
-when an upstream rejects requests; it cannot detect that an unpublished rolling allowance is merely
-_close_ to exhausted. `go-minimax-m3` / `go-minimax-m2.7` were removed entirely (redundant with the
-flat MiniMax plan + the native `MiniMax-M3-chat` endpoint).
+Retired 2026-08-25 when the plan capped out, ahead of its 08-28 lapse. It had supplied `dsv4f`
+(Go rung), `dsv4p`, `mimo-v2.5`, `mimo-v2.5-pro`, `qwen3.8-max`, `go-gpt-5.6-luna` and a
+`reasoning-pool` rung. `dsv4f` survives on Neuralwatt; the rest were deleted along with the
+`OPENCODE_API_KEY` wiring.
 
-The current ordered pools are deliberately separate:
+### Ordered pools
 
-| Pool | Order | Members | Effective input context | Policy |
-| ---- | ----- | ------- | ----------------------- | ------ |
-| `reasoning-pool` | 1 -> 2 -> 3 | GPT-5.6 Luna -> DSV4F (OpenCode Go) -> MiniMax-M3 | 1M | Strong reasoning lane; M3 is the flat-plan floor |
-| `frontier-pool` | 1 -> 6 | GPT-5.6 Sol -> Kimi K3 sub -> Kimi K3 Moonshot -> GLM-5.3 -> DSV4F Neuralwatt -> GLM-5.2 Neuralwatt | 1M | Frontier escalation for Opencode/Zed; no MiniMax downgrade |
+| Pool | Order | Members | Policy |
+| ---- | ----- | ------- | ------ |
+| `reasoning-pool` | 1 -> 2 | GPT-5.6 Luna -> MiniMax-M3 | Strong reasoning lane; M3 is the flat-plan floor |
+| `frontier-pool` | 1 -> 4 | GPT-5.6 Sol -> Kimi K3 (Kimi Coding) -> GLM-5.3 (Z.AI) -> DSV4F (Neuralwatt) | Frontier escalation, subscriptions before PAYG |
 
-Kimi-for-Coding was removed from `reasoning-pool`: its 262k context limit made it the pool's
-conservative ceiling even though Kimi K3 itself is a 1M standalone/frontier model. The Kimi Coding
-subscription remains available through the Kimi aliases and `frontier-pool`.
+**Provider failover** (LiteLLM `order:`, transparent to callers) reacts when an upstream rejects a
+request; it cannot detect that an unpublished rolling allowance is merely _close_ to exhausted.
+
+Kimi-for-Coding was removed from `reasoning-pool`: its 262k context made it the pool's conservative
+ceiling even though Kimi K3 is a 1M model standalone. It remains available via the Kimi aliases and
+`frontier-pool`.
 
 ## Model capability ranking
 
@@ -121,6 +138,10 @@ self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Termin
 2.0 ≠ 2.1 ≠ 3.0; vendor SWE-Pro runs 15–30pts above standardized scaffolding), so treat deltas as
 **directional**, not precise, and re-pull when models bump. `n/p` = not published. Do not read this
 table as a statement about pricing, cache behaviour, or quota consumption.
+
+Rows for `dsv4p`, `glm-5.2`, `mimo-v2.5` and `mimo-v2.5-pro` are kept for reference only — those
+aliases were retired on 2026-08-25 and are no longer served. The Mellum2 row is likewise
+historical: `llama-reviewer` now serves Nemotron 3.5 Lightning 30B-A3B.
 
 Rows are ordered by **AA-II**, the [Artificial Analysis Intelligence Index](https://artificialanalysis.ai/leaderboards/models)
 (v4.1.1) — the only axis in this table measured on one harness across every model here, and therefore
@@ -137,14 +158,14 @@ harnesses. Cells marked ⁱ are **independently run**; everything else is vendor
 | DeepSeek-V4-Pro     | `dsv4p`                 | MoE 1.6T/49A        | 1M    | 53ⁱ   | 96.4ⁱ | n/p ⁷   | n/p ⁷     | 87.9       | n/p ⁷ | n/p   |
 | GLM-5.2             | `glm-5.2`               | MoE ~753B/40A       | 1M    | 53ⁱ   | n/p   | 62.1    | n/p       | 78ⁱ ⁴      | 89ⁱ   | 99.2  |
 | DeepSeek-V4-Flash   | `dsv4f`                 | MoE 284B/13A        | 1M    | 52ⁱ   | n/p ⁷ | n/p ⁷   | n/p ⁷     | 79ⁱ ⁷      | 91ⁱ   | n/p   |
-| Qwen3.8-27B dense   | `nvidia`                | dense 27.8B         | 145k⁸ | 52ⁱ   | n/p ⁸ | 61.7    | 90.3      | 73.0       | 89.2  | n/p   |
+| Qwen3.8-27B dense   | `llama-nvidia`                | dense 27.8B         | 145k⁸ | 52ⁱ   | n/p ⁸ | 61.7    | 90.3      | 73.0       | 89.2  | n/p   |
 | GPT-5.6 Luna        | `chatgpt/gpt-5.6-luna`  | proprietary         | 1.05M | 51ⁱ   | n/p   | 62.7    | n/p       | 84.7       | n/p ² | n/p   |
 | MiniMax-M3          | `MiniMax`               | MoE ~428B/23A ¹     | 1M    | 45ⁱ   | 80.5  | 59.0    | n/p       | 66.0       | 93ⁱ   | n/p   |
 | MiMo-V2.5-Pro       | `mimo-v2.5-pro`         | MoE 1.02T/42A       | 1M    | 43ⁱ   | 78.9  | 57.2    | n/p ⁹     | n/p ⁹      | n/p ⁹ | n/p ⁹ |
 | MiniMax-M2.7        | `MiniMax-M2.7`          | MoE ~230B/10A       | 205k  | 39ⁱ   | n/p   | 56.2    | n/p       | n/p ⁹      | 89.8  | 94.2  |
 | MiMo-V2.5           | `mimo-v2.5`             | MoE 310B/15A        | 1M    | 38ⁱ   | n/p   | 56.1    | n/p       | n/p ⁹      | n/p   | n/p   |
-| Qwen3.6-35B-A3B     | `self-hosted`           | MoE 35B/3A          | 262k  | 32ⁱ   | 73.4  | 49.5    | 80.4      | n/p ⁹      | 86.0  | 92.7  |
-| Mellum2-12B-A2.5B   | `reviewer`              | MoE 12B/2.5A        | 131k  | n/p   | n/p   | n/p     | 37.2      | n/p        | 40.9  | 41.7  |
+| Qwen3.6-35B-A3B     | `llama-strix`           | MoE 35B/3A          | 262k  | 32ⁱ   | 73.4  | 49.5    | 80.4      | n/p ⁹      | 86.0  | 92.7  |
+| Mellum2-12B-A2.5B   | — (retired)                   | MoE 12B/2.5A        | 131k  | n/p   | n/p   | n/p     | 37.2      | n/p        | 40.9  | 41.7  |
 
 ¹ MiniMax-M3 is **~428B total / ~23B active** — the ~229B/9.8B figure the previous snapshot carried is
 M2.7's spec, misattributed. The [official config](https://huggingface.co/MiniMaxAI/MiniMax-M3/raw/main/config.json)
@@ -216,13 +237,13 @@ measured — Flash Terminal-Bench 2.1 61.8 → 82.7, DeepSWE 7.3 → 54.4 — an
 the direction, lifting Flash from index 40 to 52. Note also that Flash's old 56.9 was Terminal-Bench
 **2.0**; the 2.1 retro-score for the same build is 61.8.
 
-⁸ `nvidia` has run **Qwen3.8-27B** since 2026-08-14, not the Qwen3.6-27B the previous snapshot listed —
+⁸ `llama-nvidia` has run **Qwen3.8-27B** since 2026-08-14, not the Qwen3.6-27B the previous snapshot listed —
 that row was wrong on the model name irrespective of benchmarks. Qwen publishes no SWE-bench Verified
 for it (the nearest vendor substitute, QwenSWEBench 79.0, is Qwen's own harness) and no AIME, so the
 generational SWE-V and AIME comparisons against Qwen3.6-27B cannot be made. Terminal-Bench also
 switched versions between generations: 3.6-27B's 59.3 was 2.0, 3.8-27B's 73.0 is 2.1, so the +13.7
 arithmetic is cross-version and wrong — the vendor states the real delta as **+9.6 on 2.1**. Native
-context is 262k, pinned to 145k on the 24GB 3090. There is no Qwen3.8-35B-A3B.
+context is 262k, pinned to 140k on the 24GB 3090. There is no Qwen3.8-35B-A3B.
 
 ⁹ Terminal-Bench 2.0-only rows, shown as `n/p` in the 2.1 column to keep it comparable: MiniMax-M2.7
 **57.0**, MiMo-V2.5 **65.8**, MiMo-V2.5-Pro **68.4**, Qwen3.6-35B-A3B **51.5**. Separately, the
@@ -232,14 +253,14 @@ automated HF metadata PR flattened into the card alongside post-trained numbers.
 comparable to any other row here and have been removed rather than corrected — Xiaomi publishes no
 post-trained equivalents.
 
-`self-hosted` runs the abliterated Qwen3.6-35B-A3B (HauhauCS "Aggressive", Q5_K_P) with its
-mmproj loaded, which is what makes this box the image backend. It replaced Ornith-1.0-35B — a
-post-tune of the *same* Qwen3.6-35B-A3B — so the swap kept the architecture and dropped the
-post-tune. The Mac LM Studio upstream is multimodal too but NOT abliterated: it will refuse
-content the Strix answers, and it is flagged `supports_vision` anyway so `enable_pre_call_checks`
-keeps it eligible for image failover rather than leaving images with no fallback.
+`llama-strix` runs the stock unsloth Qwen3.6-35B-A3B (UD-Q4_K_XL, native MTP) with its
+mmproj loaded. The abliterated HauhauCS build it previously ran — and Ornith-1.0-35B before
+that, a post-tune of the *same* Qwen3.6-35B-A3B — were dropped in the 2026-08-25 move to
+unsloth builds, so the box keeps the architecture without a post-tune. Uncensored image
+analysis now lives on `llama-vision` (abliterated MiniCPM-V 4.5); the Mac LM Studio member
+is gone, so there is no second `llama-strix` upstream to reason about.
 
-`reviewer` publishes more than the previous snapshot credited it with — the
+`llama-reviewer` publishes more than the previous snapshot credited it with — the
 [Mellum2 Instruct card](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) carries
 LiveCodeBench v6 37.2, EvalPlus 78.4, MultiPL-E 67.1, GPQA 40.9 and AIME 41.7, all self-reported. What
 it genuinely does not publish is any *agentic* coding bench: no SWE-bench of any slice, no
@@ -260,8 +281,8 @@ Reading it for routing:
   the independent coding lane at SWE-V 93.4; GLM-5.3 is the long-horizon fallback but is the *least*
   independently verified model in the tier — its entire benchmark table is one vendor blog, its weights
   are unreleased, and the only official-board GLM datapoint runs 10pts under the vendor's own claim.
-- **What dropping Opencode Go actually costs.** Go supplies `dsv4p`, `dsv4f`, `mimo-v2.5(-pro)` and
-  `qwen3.8-max`. Taking them in turn:
+- **What dropping Opencode Go cost.** *(Executed 2026-08-25.)* Go supplied `dsv4p`, `dsv4f`,
+  `mimo-v2.5(-pro)` and `qwen3.8-max`. The reasoning at the time, which held:
   - `dsv4p` is the real loss and it is narrow: **SWE-bench Verified 96.4, the second-best score on
     Vals' board**. But Sol sits at 96.2 on that *same* harness. The capability is duplicated by a
     subscription that is staying, at a 0.2pt difference — inside anyone's error bar.
@@ -281,19 +302,19 @@ Reading it for routing:
   52 on the 0731 build, its independently-measured GPQA is 91, and repo-bench previously re-scored it
   0.895 → 0.957 while V4 Pro stayed at 0.864. The argument for dropping it is that the capability is
   now duplicated locally and by flat-rate plans, not that the model is weak.
-- **Reasoning tier** (`gpt-5.6-luna`, `dsv4f`, `MiniMax-M3`) — note Luna is the weakest GPT tier here
+- **Reasoning tier** (`gpt-5.6-luna`, `MiniMax-M3`) — note Luna is the weakest GPT tier here
   at AA-II 51 and its long-context recall collapses (vendor MRCR 41.3 against Sol's 91.5), so the pool's
   nominal 1M context is not usable depth on that rung. Luna is pinned to `xhigh` reasoning effort.
-- **Local** — `nvidia` is now Qwen3.8-27B and the gap to `self-hosted` widened from "trails it
-  everywhere" to a 20-point AA-II spread (52 vs 32). `self-hosted` earns its place on the 262k window
+- **Local** — `llama-nvidia` is now Qwen3.8-27B and the gap to `llama-strix` widened from "trails it
+  everywhere" to a 20-point AA-II spread (52 vs 32). `llama-strix` earns its place on the 262k window
   and vision, nothing else. The local box is now competitive with paid cheap-tier cloud, which is the
   single most decision-relevant change in this refresh.
-- **`reviewer` is a deliberate family split, not a quality pick.** Foreman's coder runs
-  Qwen (`nvidia`), so a Qwen reviewer inherits the coder's blind spots — it was Qwen
-  reviewing Qwen while `self-hosted` served review, since Ornith was itself a
-  Qwen3.6-35B-A3B post-tune. Mellum2 is JetBrains' software-engineering MoE, trained from
-  scratch on 10.6T tokens, and at 2.5B active it reviews faster than the 35B it replaced
-  while costing nothing. It exists to disagree with the coder, so published coding scores
+- **`llama-reviewer` is a deliberate family split, not a quality pick.** Foreman's coder runs
+  Qwen (`llama-nvidia`), so a Qwen reviewer inherits the coder's blind spots — it was Qwen
+  reviewing Qwen while `llama-strix` served review, since Ornith was itself a
+  Qwen3.6-35B-A3B post-tune. The lane went to JetBrains' Mellum2 first and now runs
+  NVIDIA's Nemotron 3.5 Lightning 30B-A3B — still a non-Qwen family, ~3B active, free.
+  It exists to disagree with the coder, so published coding scores
   matter less here than independence and structured-output reliability.
 - **MiniMax-M2.7 / MiMo** — agentic workhorses with thin published reasoning numbers; rank on
   coding/agentic axes, not GPQA/AIME.
@@ -314,14 +335,68 @@ Sources: [Artificial Analysis](https://artificialanalysis.ai/leaderboards/models
 [Mellum2-12B-A2.5B](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) ·
 [GPT-5.6 models](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
 
+## v2 bench: the local models are within noise of each other
+
+Four suites from `repo-bench` v2, scored on this repo's own material. Error rows (transport
+failures) are dropped rather than counted as zeros — the `tally` subcommand does this.
+
+| Candidate | Troubleshooting | Reviewing | Agentic | Coding | Mean |
+| --------- | --------------- | --------- | ------- | ------ | ---- |
+| `llama-nvidia` 27B Q4 (3090) | 0.981 | 0.923 | 0.718 | 0.710 | 0.833 |
+| Qwen3.8-27B FP8 (Strix) | 0.938 | 0.920 | 0.782 | 0.760 | 0.850 |
+| Flash-Next UD-Q3_K_XL (Strix) | 0.978* | 0.792 | 0.833 | 0.760 | 0.841 |
+| Flash-Next NVFP4 + FP8 engram (borrowed RTX 6000 Pro) | 0.991 | 0.838 | 0.788 | 0.620 | 0.809 |
+| Nemotron 3.5 30B-A3B (Strix) | 0.910 | 0.817 | 0.756 | 0.080 | 0.641 |
+| `MiniMax-M3` | 0.956 | 0.759 | 0.558 | 0.590 | 0.716 |
+| `MiniMax-M2.7` | 0.956 | 0.842 | 0.481 | 0.500 | 0.695 |
+| `chatgpt/gpt-5.6-luna` (effort=medium) | 0.926 | 0.758 | 0.744 | 0.620 | 0.762 |
+
+\* n=15; three tasks died on the qwen4exp indexer assert and were dropped.
+
+**Run-to-run noise is ±0.02**, measured from the duplicate `nvidia`/`llama-nvidia` pair (same model,
+different dates: deltas 0.016 / 0.003 / 0.019 / 0.020). So the top three rows are a tie, and a 180B
+at Q3 does not beat a 27B on this bench.
+
+Reviewing is Flash-Next's worst suite and both 27Bs' best; agentic is the reverse. Nemotron's coding
+score is broken, which is fine for a review-only lane and disqualifying for a coder.
+
+Caveat on luna: it ran at `effort=medium`, and every real consumer reaches it through
+`reasoning-pool` which pins `effort: max`. That row is not evidence about the deployed path.
+
+Methodology trap: candidate names are not stable across time. `llama-strix` meant Ornith in August
+and Flash-Next later, and `tally` merges by candidate name — check what the alias pointed at before
+comparing rows.
+
+## Where a model runs is decided by memory bandwidth
+
+Strix Halo has ~256 GB/s theoretical and ~200-220 GB/s real. Decode is bandwidth-bound, so what
+matters is **active** parameters per token, not total parameters:
+
+| Model | Arch | Weights | Read/token | Measured TG |
+| ----- | ---- | ------- | ---------- | ----------- |
+| Qwen3.6-35B-A3B Q4 | MoE, 3B active | 21.3 GiB | ~1.7 GiB | 34-42 t/s |
+| Nemotron 3.5 30B-A3B Q4 | MoE, 3B active | 23.8 GiB | ~1.7 GiB | ~35 t/s |
+| Qwen3.8-27B ROCmFP8 | dense 27B | 26.3 GiB | 26.3 GiB | ~8-10 t/s |
+| Qwen3.8-Flash-Next UD-Q3_K_XL | MoE 180B-A6B | 101.3 GiB | ~4 GiB + engram | 11 t/s |
+
+So **Strix runs A3B-class MoE and small dense vision models; the 3090 runs the dense 27B**, where
+900+ GB/s of VRAM gives it 44 t/s on weights that would crawl on the APU. A dense model on Strix is
+slow no matter how good it scores, and Flash-Next is slow *and* needs 101 GiB — it evicts the whole
+rest of the resident set to hold a tie on quality (see the v2 bench section).
+
+Measured footprint of the resident set, mid-generate, 2026-08-27: GTT **76.8 GiB of 124**, ~47 GiB
+free, with ComfyUI actually taking **6.8 GiB** rather than the 14 GiB its `--reserve-vram 110`
+permits. Wall power: skirk **48.7 W** serving three models plus an image generation; the 3090
+**142 W idle**, ~299 W under load.
+
 ## Consumers
 
 | Consumer               | In repo?                                    | Points at                                                                                    |
 | ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso/main `glm-5.3`; Saffron `reasoning-pool`; subagents `dsv4f`; heartbeat `llama-nvidia`; image `self-hosted` |
-| **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `kimi-k3`; compression/extract/approval/session-search `self-hosted`                 |
-| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | `coder` → `nvidia`; `coder-strix` + `coder-revision` → `self-hosted`; `coder-frontier` → `MiniMax-M3-chat`; reviewers → `reviewer` |
-| **Opencode** (CLI/Zen) | no (workstation)                            | LiteLLM aliases directly; ad-hoc interactive coding, not unattended fleet traffic             |
+| **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso/main `glm-5.3-flash`; Matcha `dsv4f`; Saffron `reasoning-pool`; subagents `MiniMax-M3`; heartbeat `llama-nvidia`; image `llama-vision`; lossless-claw expansion/summary `llama-strix-chat` |
+| **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `MiniMax-M3`; compression/extract/approval/session-search `llama-strix`; vision `llama-vision` |
+| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | `coder` → `llama-nvidia`; `coder-revision` + `coder-frontier` → `MiniMax-M3-chat`; `reviewer` + `reviewer-fork` → `llama-reviewer` |
+| **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)     | default `auto`; coordinator `reasoning-pool`; role subagents `MiniMax-M3`/`llama-nvidia`/`llama-strix`/`glm-5.3`/`llama-reviewer`, plus the workstation CLI on LiteLLM aliases directly |
 | **Zed**                | no (workstation)                            | LiteLLM aliases directly                                                                     |
 
 ### OpenClaw cron fleet
@@ -332,25 +407,25 @@ per job already encodes an intent-lane pattern by hand.
 | Job                             | Agent   | Model        | Schedule        | Purpose                                        |
 | ------------------------------- | ------- | ------------ | --------------- | ---------------------------------------------- |
 | Afternoon Email/Finance Check   | Miso    | MiniMax-M2.7 | 4pm daily       | Email + financial anomaly scan                 |
-| Instagram Hourly Image Dispatch | Miso    | self-hosted  | 9am–8pm Mon–Thu | Publish one approved staged IG post per window |
+| Instagram Hourly Image Dispatch | Miso    | llama-strix  | 9am–8pm Mon–Thu | Publish one approved staged IG post per window |
 | Image Category Creation         | Miso    | MiniMax      | every 6h        | Generate new image category + gallery          |
 | Evening Email/Finance Check     | Miso    | MiniMax-M2.7 | 9pm daily       | End-of-day email + finance summary             |
-| Nightly Audit Decomposer        | Saffron | self-hosted  | 2am daily       | Decompose audit umbrellas into child issues    |
-| Nightly Tech Sweep              | Saffron | mimo-v2.5    | 6:20am daily    | Overnight health check + low-risk fixes        |
+| Nightly Audit Decomposer        | Saffron | llama-strix  | 2am daily       | Decompose audit umbrellas into child issues    |
+| Nightly Tech Sweep              | Saffron | MiniMax-M3-chat    | 6:20am daily    | Overnight health check + low-risk fixes        |
 | Unified Morning Brief           | Miso    | MiniMax-M2.7 | 7:30am daily    | Weather, calendar, inbox, IG pool, news, radon |
-| Daily LLM + HN Digest           | Miso    | self-hosted  | 8:30am daily    | r/LocalLLaMA etc. + HN top stories             |
+| Daily LLM + HN Digest           | Miso    | llama-strix  | 8:30am daily    | r/LocalLLaMA etc. + HN top stories             |
 | Daily Home-Ops Updates          | Saffron | MiniMax-M2.7 | 9am daily       | Commit watch on homelab k8s repos              |
-| Daily Image (Miso)              | Miso    | self-hosted  | 9:15am daily    | Character image generation                     |
-| Alertmanager Health Digest      | Saffron | mimo-v2.5    | 9:30am daily    | Firing Prometheus alerts + investigation       |
+| Daily Image (Miso)              | Miso    | llama-strix  | 9:15am daily    | Character image generation                     |
+| Alertmanager Health Digest      | Saffron | MiniMax-M3-chat    | 9:30am daily    | Firing Prometheus alerts + investigation       |
 | Solar Daily Check               | Miso    | MiniMax-M2.7 | 9:35am daily    | Solar generation + weather + guess tracking    |
-| Daily Image (Saffron)           | Saffron | self-hosted  | 10:15am daily   | Character image generation                     |
-| Weekly IG Posting Times         | Miso    | mimo-v2.5    | 11am Fri        | Research optimal IG posting times              |
+| Daily Image (Saffron)           | Saffron | llama-strix  | 10:15am daily   | Character image generation                     |
+| Weekly IG Posting Times         | Miso    | MiniMax-M3-chat    | 11am Fri        | Research optimal IG posting times              |
 | Weekly Audit                    | Saffron | MiniMax-M2.7 | 1am Wed         | Spawn per-repo audit sub-agents                |
-| Weekly Prompt Hygiene           | Saffron | mimo-v2.5    | 10:45am Wed     | Audit prompt files for bloat/contradictions    |
+| Weekly Prompt Hygiene           | Saffron | MiniMax-M3-chat    | 10:45am Wed     | Audit prompt files for bloat/contradictions    |
 
 Issue-worker pipelines (pick up issues and open PRs):
 
-- **MC Normal** → `self-hosted`
+- **MC Normal** → `llama-strix`
 - **MC Escalated** → `gpt-5.6-sol`
 
 ## Current routing + observed usage
@@ -359,14 +434,16 @@ Routing today is `simple-shuffle` with hand-written availability fallbacks
 (`kubernetes/apps/base/llm/litellm/litellmproxy.yaml`). `simple-shuffle` spreads a synchronized fan-out
 evenly across a group's deployments; `least-busy` increments its in-flight
 counter _after_ the routing decision, so a burst reads equal counts and piles
-onto the first deployment — wrong for the 2-instance `self-hosted` group.
+onto the first deployment — wrong for the 2-instance `llama-strix` group.
 
 ```yaml
 routing_strategy: simple-shuffle
 fallbacks:
-    - llama-strix: [llama-nvidia]
-    - llama-nvidia: [llama-strix]
+    - llama-strix: [llama-nvidia, MiniMax-M3-chat]
+    - llama-nvidia: [llama-strix, MiniMax-M3-chat]
     - dsv4f: [llama-nvidia]
+    - kimi-k2.7: [MiniMax-M3-chat]
+    - kimi-k3: [MiniMax-M3-chat]
     - auto: [dsv4f, MiniMax-M3-chat]
 context_window_fallbacks:
     - llama-nvidia: [llama-strix]
@@ -383,8 +460,8 @@ included; all consumers combined):
 | llama-nvidia                |               219.8M |
 | deepseek-v4-flash (`dsv4f`) |               203.7M |
 | glm-5.3                     |                74.5M |
-| llama-strix-nemotron        |                45.0M |
-| mimo-v2.5                   |                22.8M |
+| llama-reviewer              |                45.0M |
+| MiniMax-M3-chat                   |                22.8M |
 | MiniMax-M2.7                |                13.7M |
 | k3                          |                 7.4M |
 
@@ -411,7 +488,7 @@ away from GLM based on that counter alone.
 ### Context economics and guardrails
 
 OpenClaw main intentionally stays on GLM-5.3. Saffron uses the 1M `reasoning-pool`; subagents use
-DSV4F and heartbeats use the local NVIDIA model. This preserves the quality lanes instead of routing
+MiniMax-M3 and heartbeats use the local NVIDIA model. This preserves the quality lanes instead of routing
 main away from GLM merely because one provider's streaming usage telemetry is incomplete.
 
 The OpenClaw ConfigMap's lossless-claw settings are now tuned for the actual failure mode:
@@ -437,26 +514,25 @@ because the two failure modes are asymmetric:
 
 - **Cap above the backend** and requests queue *inside* llama.cpp, invisible to the router.
   `llama-nvidia` sat at 2 against a single slot; the queueing surfaced as a 53 s average
-  time-to-first-token on the `nvidia` alias while the model itself was fine (fixed 2026-08).
+  time-to-first-token on the `llama-nvidia` alias while the model itself was fine (fixed 2026-08).
 - **Cap below the backend** and provisioned VRAM goes unused. `llama-reviewer` served 3
   slots while LiteLLM dispatched into 2 — a third of the model unreachable (fixed 2026-08).
 
-Current: Strix 2, Mac 2, reviewer 3, nvidia 1. The Strix box is memory-bandwidth bound, so
+Current: Strix 2, reviewer 2, nvidia 1. The Strix box is memory-bandwidth bound, so
 aggregate tok/s improves with concurrent streams spread **across** resident models rather
 than piled onto one — the useful range is roughly 6-8 streams for the whole box, not per
-model. Both `self-hosted` members stay `order: 1` deliberately: the Mac is used whenever it
-is awake, and a failed call when it sleeps is the accepted cost of not idling it.
+model. The Mac LM Studio member was removed; `llama-strix` is now the single cluster server.
 
 Foreman's demand cannot currently be bounded per-Agent
 ([LLMKube#1497](https://github.com/defilantech/LLMKube/issues/1497)), so the only levers on
-its share of `self-hosted` are the bridge's `MAX_IN_PROGRESS` and the `LANE_CODER_AGENTS`
-split ratio — both blunt. Measured `self-hosted` utilisation across *all* consumers
+its share of `llama-strix` are the bridge's `MAX_IN_PROGRESS` and the `LANE_CODER_AGENTS`
+split ratio — both blunt. Measured `llama-strix` utilisation across *all* consumers
 (Foreman, home-ops PR reviews, groomer, repo-wiki) is ~15 busy-hours/day against 96
 slot-hours, so headroom is real and the risk is bursts, not steady state.
 
 ## Smart-routing: the `auto` alias
 
-An opt-in `auto` alias routes for **opencode + Zed only**; every other consumer (crons, MC
+An opt-in `auto` alias routes for **opencode, Zed and pi only**; every other consumer (crons, MC
 workers, Hermes roles, MiniMax) stays pinned. It uses LiteLLM's **LLM classifier**
 (`classifier_type: llm`), not the rule-based complexity scorer — see the measurements below.
 
@@ -464,17 +540,17 @@ Tiers (three effective tiers; REASONING is folded into COMPLEX):
 
 | Tier               | Target                              | Why                                          |
 | ------------------ | ----------------------------------- | -------------------------------------------- |
-| SIMPLE             | `self-hosted` (Strix 35B-A3B)       | Trivia — 0.4s, local, free                   |
-| MEDIUM             | `MiniMax-M3-chat`                   | Flat sub, ~1.1s, no weekly quota to burn     |
+| SIMPLE             | `llama-nvidia` (3090 Qwen3.8-27B)   | Trivia — local, free                         |
+| MEDIUM             | `MiniMax-M3`                        | Flat sub, no weekly quota to burn            |
 | COMPLEX            | `reasoning-pool`                    | Luna -> DSV4F -> MiniMax-M3                  |
 | REASONING          | `reasoning-pool`                    | Folded — no classifier could separate it     |
-| default (miss)     | `MiniMax-M3-chat`                   | `classifier_fallback: default_model`         |
+| default (miss)     | `MiniMax-M3`                        | `classifier_fallback: default_model`         |
 
-Classifier is `reviewer` (Mellum2-12B, ~0.5s) — a software-engineering model classifying a
-software-engineering axis, and the cheapest thing in the fleet to put in every request's path.
+Classifier is `llama-strix` (`classifier_llm_config`, 20s timeout) — local and free to sit in
+every request's path. It replaced the reviewer-alias classifier on 2026-08-22.
 
 `frontier-pool` is deliberately **not** a tier target: `auto` must not compete with interactive
-sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Luna and DSV4F through `reasoning-pool`;
+sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Luna and MiniMax-M3 through `reasoning-pool`;
 Kimi K3 remains in `frontier-pool` or explicit selection rather than being a reasoning-pool rung.
 
 ### Measured (2026-08-07, LiteLLM 1.95.0)
@@ -486,7 +562,7 @@ against real backends.
 | ------------------------------------------ | ------------------ |
 | Rule-based scorer, boundaries `.45/.65/.85` | **5/20 (25%)**     |
 | Rule-based scorer, boundaries `.15/.35/.60` | 7/20 (35%)         |
-| LLM classifier (`reviewer`), held out       | 17/20 (85%) 3-tier |
+| LLM classifier (`llama-reviewer`), held out       | 17/20 (85%) 3-tier |
 | LLM classifier, end-to-end on real pools    | **16/20 (80%)**    |
 
 The scorer cannot be fixed by tuning. Observed score means: SIMPLE −0.120, MEDIUM +0.115,
@@ -514,19 +590,20 @@ Mechanics (verified against LiteLLM source):
 
 - Both routers are pre-routing hooks returning a model _name_, resolved once — **no chaining**,
   so semantic can't sit "in front of" complexity. A model _group_ as a tier target works.
-- Local context ceilings (145k/262k) are guarded by `context_window_fallbacks` +
+- Local context ceilings (140k/262k) are guarded by `context_window_fallbacks` +
   `enable_pre_call_checks`, not by any router setting.
 - `reasoning-pool`'s M3 rung uses MiniMax's OpenAI-compatible `/v1` endpoint, so it may expose
   thinking in content; acceptable for this lane. OpenClaw's native `MiniMax-M3` alias uses the
   Anthropic `/messages` endpoint and its think-tag stripping shim.
 
-Excluded from `auto` by design: the native `MiniMax` messages alias and the manual Sol/Terra aliases.
+Excluded from `auto` by design: the manual Sol/Terra aliases. The native `MiniMax-M3` messages
+alias is now the MEDIUM tier and the classifier-miss default.
 A **semantic router** (`auto-semantic` + `router.json`) is scaffolded but commented out: `from_json`
 builds an encoder at startup (crashloop risk on the live gateway), so it's verify-then-enable later.
 
 Still ahead:
 
-- Swap MEDIUM to `nvidia` once Foreman's backlog drains — it's the better model and free, but was
+- Swap MEDIUM to `llama-nvidia` once Foreman's backlog drains — it's the better model and free, but was
   measured at 37–90s under contention, unusable for a tier that receives over-routed volume.
 - Re-measure against real opencode system prompts rather than bare user messages.
 - Auto Router v2 offers `keyword_tier_rules` (deterministic tier overrides, `cause=literal_keyword_match`)
@@ -548,10 +625,8 @@ a strict `order:` chain (429/403 -> cooldown -> next). Subscriptions first, then
 
 1. `gpt-5.6-sol` — flagship frontier (ChatGPT Plus sub)
 2. `kimi-k3` @ Kimi Coding — dedicated Kimi sub (flat)
-3. `kimi-k3` @ Moonshot — PAYG backup
 4. `glm-5.3` @ Z.AI — GLM Coding Lite sub
 5. `dsv4f` @ Neuralwatt — PAYG DeepSeek fallback
-6. `glm-5.2` @ Neuralwatt — PAYG GLM fallback
 
 Implemented as one **self-contained `order:` group**, not router fallbacks referencing the shared
 groups. It intentionally has no MiniMax floor: a frontier request fails rather than silently degrading
@@ -605,9 +680,9 @@ OpenCode Go endpoint (2026-08-04):
   `custom_llm_provider="deepseek"` and never runs on an `openai/`-via-OpenCode rung.
 - The one surviving constraint is **forced** tool choice: `tool_choice: "required"` or a named
   function returns `400 "Thinking mode does not support this tool_choice"`. `tool_choice: "auto"` is
-  fine, and forced calls fall through to the `dsv4f` → `nvidia` router fallback rather than failing.
-- Watch `litellm_deployment_successful_fallbacks_total{requested_model="dsv4f",fallback_model="nvidia"}`.
+  fine, and forced calls fall through to the `dsv4f` → `llama-nvidia` router fallback rather than failing.
+- Watch `litellm_deployment_successful_fallbacks_total{requested_model="dsv4f",fallback_model="llama-nvidia"}`.
   If it climbs, a consumer is forcing a tool and `extra_body: {thinking: {type: disabled}}` should be
-  restored on that deployment. The likeliest source is the `self-hosted` → `dsv4f` context-window
+  restored on that deployment. The likeliest source is the `llama-strix` → `dsv4f` context-window
   fallback, which arrives carrying whatever `tool_choice` the original caller set.
-- `dsv4p` keeps the disable; it is only reachable by explicit selection now.
+- `dsv4p` was retired with the Opencode Go plan on 2026-08-25; the note is kept for history.

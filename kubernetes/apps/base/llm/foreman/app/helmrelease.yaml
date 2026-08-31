@@ -42,16 +42,21 @@ spec:
       taskNamespace: llm
       image:
         repository: ghcr.io/misospace/llmkube-coder
-        tag: 0.9.20@sha256:04356eb120bfdc33577355a507c8ed37774b7c67041ff03045a7f465f9b264b3
+        tag: 0.9.24@sha256:1b23b7d2b18e2e94d24c86bbff5d047d3c315e33e043a194397d07d180bf8945
       gateCache:
         storageClass: ceph-filesystem
         accessModes: ["ReadWriteMany"]
     agents:
       default:
         enabled: true
-        # One task per FleetNode, and Job-based coders hold theirs for the
-        # whole Job — so replicas cap concurrent coders + reviews (#1496).
-        replicaCount: 7
+        # Replicas cap in-process work only. Job-mode tasks select a node
+        # without reserving it (#1496), so they are not capped by this: one
+        # FleetNode was observed carrying two Job-mode coders and a review
+        # concurrently. Concurrent coders are capped by the bridge's
+        # CODER_AGENT_SLOTS instead. The only in-process consumer here is the
+        # reviewer, and its backend runs --parallel 2, so a third concurrent
+        # review would queue at the GPU regardless.
+        replicaCount: 2
         roles:
           - worker
           - coder

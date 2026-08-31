@@ -20,7 +20,7 @@ spec:
           app:
             image:
               repository: yanwk/comfyui-boot
-              tag: rocm7@sha256:47cc550cefec5a10fb8572cbc670af1ed4d547c8e865512902d57d3811ec41b8
+              tag: rocm7@sha256:524afc652f932e4cf7daaceee6cf19277da7a9d3346f2559c61cd7f6a0834fd8
             securityContext:
               privileged: true
             env:
@@ -29,10 +29,11 @@ spec:
               HIP_VISIBLE_DEVICES: "0"
               ROCR_VISIBLE_DEVICES: "0"
               PYTORCH_HIP_ALLOC_CONF: "max_split_size_mb:256,garbage_collection_threshold:0.6"
-              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --reserve-vram 90"
-            # No resources block on purpose: BestEffort QoS makes comfyui the
-            # first pod the Talos OOM manager kills (ranking weight 1.0) and the
-            # first kubelet evicts under MemoryPressure on the shared UMA node.
+              CLI_ARGS: "--listen 0.0.0.0 --port 8188 --use-pytorch-cross-attention --disable-mmap --reserve-vram 110 --highvram"
+            resources:
+              requests:
+                cpu: 500m
+                memory: 8Gi
     defaultPodOptions:
       hostIPC: true
       nodeSelector:

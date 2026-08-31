@@ -6,11 +6,11 @@ metadata:
 spec:
   source: hf://huihui-ai/Huihui-MiniCPM-V-4_5-abliterated
   files:
-    - GGUF/ggml-model-Q8_0.gguf
+    - GGUF/ggml-model-Q4_K_M.gguf
     - GGUF/mmproj-model-f16.gguf
   mmproj: GGUF/mmproj-model-f16.gguf
   format: gguf
-  quantization: Q8_0
+  quantization: Q4_K_M
   hardware:
     accelerator: rocm
     gpu:
@@ -32,7 +32,7 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:324bf6fa8517efb5a67a647e9ed704940b9829dd785c9d086d0bceb71254209b
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:1c655ca0443655f2e7603d054770b07cd8c79267145728b3261295f005053947
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
@@ -46,7 +46,7 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  contextSize: 32768
+  contextSize: 16384
   parallelSlots: 2
   flashAttention: true
   jinja: true
@@ -56,7 +56,7 @@ spec:
   uBatchSize: 1024
   resources:
     cpu: "500m"
-    memory: 20Gi
+    memory: 12Gi
   endpoint:
     port: 8080
     type: ClusterIP
@@ -64,6 +64,9 @@ spec:
     - --alias
     - llama-vision
     - --cont-batching
+    - --cache-ram
+    - "0"
+    - --kv-unified
     # MiniCPM-V 4.5 uses its model-defined 448px slicing and 64-token
     # resampler; --image-min/max-tokens target other vision families.
     - --reasoning

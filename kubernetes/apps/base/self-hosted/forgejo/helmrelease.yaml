@@ -1,0 +1,68 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: forgejo
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: forgejo
+  interval: 30m
+  dependsOn: []
+  values:
+    gitea:
+      admin:
+        passwordMode: initialOnlyRequireReset
+        username: joryirving
+      config:
+        indexer:
+          REPO_INDEXER_ENABLED: true
+        mailer:
+          ENABLED: false
+        openid:
+          ENABLE_OPENID_SIGNIN: false
+          ENABLE_OPENID_SIGNUP: false
+        repository:
+          DEFAULT_REPO_UNITS: repo.code,repo.releases,repo.issues,repo.pulls
+          DISABLED_REPO_UNITS: repo.ext_wiki,repo.ext_issues
+          ROOT: /data/git/repositories
+        security:
+          REVERSE_PROXY_TRUSTED_PROXIES: 10.42.0.0/16
+        server:
+          DOMAIN: forgejo.jory.dev
+          PROTOCOL: http
+          ROOT_URL: https://forgejo.jory.dev
+          SSH_DOMAIN: forgejo-ssh.self-hosted.svc.cluster.local
+          SSH_LISTEN_PORT: 2222
+          SSH_PORT: 22
+          START_SSH_SERVER: true
+        service:
+          DEFAULT_ENABLE_TIMETRACKING: false
+          DISABLE_REGISTRATION: true
+          ENABLE_NOTIFY_MAIL: false
+          REQUIRE_SIGNIN_VIEW: true
+          SHOW_REGISTRATION_BUTTON: false
+    httpRoute:
+      enabled: false
+    image:
+      digest: sha256:1131f4c646d6115577b7cb9ccfe8cd2c289bb54a1e1ed42400be0e22916af924
+      registry: code.forgejo.org
+      repository: forgejo/forgejo
+      rootless: true
+      tag: 16.0.3-rootless
+    persistence:
+      claimName: forgejo
+      create: false
+      enabled: true
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+    service:
+      ssh:
+        port: 22
+    tcpRoute:
+      enabled: false

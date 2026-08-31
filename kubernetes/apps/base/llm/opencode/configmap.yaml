@@ -33,7 +33,7 @@ data:
       "compaction": { "auto": true, "prune": true, "preserve_recent_tokens": 20000, "reserved": 16384 },
       "tool_output": { "max_lines": 800, "max_bytes": 16384 },
       "plugin": [
-        ["@eleboucher/opencode-memini@0.7.20", { "base_url": "http://memini.llm:8080", "namespace": "opencode", "auto_update": false }]
+        ["@eleboucher/opencode-memini@0.7.21", { "base_url": "http://memini.llm:8080", "namespace": "opencode", "auto_update": false }]
       ],
       "enabled_providers": ["litellm-anthropic", "litellm", "opencode"],
       "agent": {
@@ -41,7 +41,7 @@ data:
           "description": "Reasoning coordinator — plans, then delegates to role subagents (explorer/fixer/fixer-bigctx/oracle/reviewer)",
           "mode": "primary",
           "model": "litellm/reasoning-pool",
-          "prompt": "You are a coordinator. Do the high-level reasoning and synthesis yourself; delegate the legwork to role subagents via the task tool.\n\nCONTRACTS: hand each sub a self-contained brief — objective, the decisions already settled (inline the exact values), the files it owns, what's out of scope, and the observable check that proves success. A sub should never have to infer scope or re-derive a decision you already made. Ask for a compact handoff back — findings, file paths, the change that matters — not a full transcript.\n\nROLES:\n- `explorer` (MiniMax M3 — 1M ctx, flat-rate plan): default recon, read-only scouting, 'where/how is X'. It is the one lane with real concurrency (3-4 at once), so fan out here.\n- `fixer` (llama-nvidia — local, free, 145k, vision-capable): small scoped edits and anything involving images. One slot, heavily contended by an automated pipeline — keep its jobs small and bounded.\n- `fixer-bigctx` (llama-strix — local, free, 262k): bulk coding lane. One slot, so concurrent calls just queue; run one at a time.\n- `oracle` (glm-5.3): hard debugging, root-cause, architecture. The only rate-capped lane left (~80 prompts / 5h, shared with other consumers) — use it deliberately, never by default.\n- `reviewer` (llama-strix-nemotron — local, free, two slots): independent second opinion and prose.\n\nCOUNCIL (high-stakes review): collect independent verdicts from different model families — MiniMax (`explorer`), Qwen on Strix (`fixer-bigctx`), Qwen on the 3090 (`fixer`), GLM (`oracle`), Nemotron (`reviewer`) — then reconcile. Never let one model grade its own work."
+          "prompt": "You are a coordinator. Do the high-level reasoning and synthesis yourself; delegate the legwork to role subagents via the task tool.\n\nCONTRACTS: hand each sub a self-contained brief — objective, the decisions already settled (inline the exact values), the files it owns, what's out of scope, and the observable check that proves success. A sub should never have to infer scope or re-derive a decision you already made. Ask for a compact handoff back — findings, file paths, the change that matters — not a full transcript.\n\nROLES:\n- `explorer` (MiniMax M3 — 1M ctx, flat-rate plan): default recon, read-only scouting, 'where/how is X'. It is the one lane with real concurrency (3-4 at once), so fan out here.\n- `fixer` (llama-nvidia — local, free, 131k, vision-capable): small scoped edits and anything involving images. Two slots on the 3090, shared with an automated pipeline — keep its jobs small and bounded.\n- `fixer-bigctx` (llama-strix — local, free, 262k): bulk coding lane. Two slots, so up to two at once; beyond that they queue.\n- `oracle` (glm-5.3-flash): hard debugging, root-cause, architecture. Rate-capped but roomy (~3x the GLM-5.3 quota, shared with other consumers) — still not the default lane.\n- `reviewer` (llama-reviewer — local, free, two slots): independent second opinion and prose.\n\nCOUNCIL (high-stakes review): collect independent verdicts from different model families — MiniMax (`explorer`), Qwen on Strix (`fixer-bigctx`), Qwen on the 3090 (`fixer`), GLM (`oracle`), Nemotron (`reviewer`) — then reconcile. Never let one model grade its own work."
         },
         "explorer": {
           "description": "Default recon — codebase scouting, search, 'where/how is X', read-only. MiniMax M3 (1M ctx, flat-rate). The one lane with real concurrency: fan out 3-4 at a time.",
@@ -54,19 +54,19 @@ data:
           "model": "litellm/llama-nvidia"
         },
         "fixer-bigctx": {
-          "description": "Bulk coding lane — Qwen3.6-35B-A3B local on Strix (262k). Free, but one slot: concurrent calls queue, so run one at a time.",
+          "description": "Bulk coding lane — Qwen3.6-35B-A3B local on Strix (262k, two slots). Free; two concurrent calls are fine, beyond that they queue.",
           "mode": "subagent",
           "model": "litellm/llama-strix"
         },
         "oracle": {
-          "description": "Hard debugging / architecture — GLM 5.3 (1M ctx). The only rate-capped lane left (~80 prompts / 5h, shared with other consumers): use deliberately. Read-mostly deep analysis; return a recommendation, don't sprawl into edits",
+          "description": "Hard debugging / architecture — GLM 5.3 Flash (1M ctx, multimodal). Rate-capped but roomy: ~3x the GLM-5.3 quota on the coding plan, shared with other consumers. Read-mostly deep analysis; return a recommendation, don't sprawl into edits",
           "mode": "subagent",
-          "model": "litellm/glm-5.3"
+          "model": "litellm/glm-5.3-flash"
         },
         "reviewer": {
           "description": "Independent review / creative — Nemotron 3.5 Lightning 30B-A3B local on Strix (free, two slots). Distinct family from the Qwen coders and the MiniMax explorer. Second opinions and prose.",
           "mode": "subagent",
-          "model": "litellm/llama-strix-nemotron"
+          "model": "litellm/llama-reviewer"
         },
         "lean": {
           "description": "Minimal MCP context — toolhive router only (reaches other MCPs via call_tool)",
@@ -100,12 +100,13 @@ data:
           },
           "models": {
             "llama-strix": { "name": "Qwen3.6-35B-A3B heretic (Strix)", "limit": { "context": 262144, "output": 20480 } },
-            "llama-nvidia": { "name": "Qwen3.8-27B (3090)", "limit": { "context": 140000, "output": 40960 } },
-            "llama-strix-nemotron": { "name": "Nemotron 3.5 Lightning 30B-A3B (Strix)", "limit": { "context": 262144, "output": 20480 } },
+            "llama-nvidia": { "name": "Qwen3.8-27B (3090)", "limit": { "context": 131072, "output": 40960 } },
+            "llama-reviewer": { "name": "Nemotron 3.5 Lightning 30B-A3B (Strix)", "limit": { "context": 200000, "output": 20480 } },
             "kimi-k2.7": { "name": "Kimi K2.7 Code", "limit": { "context": 262144, "output": 32768 } },
             "kimi-k3": { "name": "Kimi K3", "limit": { "context": 1048576, "output": 131072 } },
             "dsv4f": { "name": "DeepSeek V4 Flash", "limit": { "context": 1000000, "output": 16384 } },
             "MiniMax-M3-chat": { "name": "MiniMax M3 (chat)", "limit": { "context": 1000000, "output": 16384 } },
+            "glm-5.3-flash": { "name": "GLM 5.3 Flash", "limit": { "context": 1000000, "output": 131072 } },
             "glm-5.3": { "name": "GLM 5.3", "limit": { "context": 1000000, "output": 131072 } },
             "reasoning-pool": { "name": "Reasoning Pool", "limit": { "context": 1050000, "output": 16384 } },
             "frontier-pool": { "name": "Frontier Pool", "limit": { "context": 1000000, "output": 16384 } },

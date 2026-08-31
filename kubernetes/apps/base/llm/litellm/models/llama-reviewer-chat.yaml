@@ -1,0 +1,23 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: llama-reviewer-chat
+spec:
+  modelName: llama-reviewer-chat
+  proxyRef: litellm
+  params:
+    model: openai/llama-reviewer
+    apiBase: http://llama-reviewer.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+      reasoning_effort: none
+      allowed_openai_params:
+        - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 200000
+    maxOutputTokens: 20480
+    supportsFunctionCalling: true
