@@ -14,11 +14,11 @@ spec:
   format: gguf
   quantization: UD-Q3_K_XL
   hardware:
-    accelerator: rocm
+    accelerator: vulkan
     gpu:
       enabled: true
       vendor: amd
-      runtime: rocm
+      runtime: vulkan
       layers: 99
       resourceClaims:
         - name: gpu
@@ -29,17 +29,17 @@ kind: Model
 metadata:
   name: llama-strix-mtp
 spec:
-  source: hf://EasiiX/Qwen3.8-Flash-Next-MTP-Strix-Halo-GGUF
+  source: hf://jockevaupptaget/Qwen3.8-Flash-Next-MTP-GGUF
   files:
-    - mtp-Qwen3.8-Flash-Next-Q8_0.gguf
+    - mtp-Qwen-Qwen3.8-Flash-Next-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: rocm
+    accelerator: vulkan
     gpu:
       enabled: true
       vendor: amd
-      runtime: rocm
+      runtime: vulkan
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -52,12 +52,12 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: docker.io/marty314/engramhalo:rocm10@sha256:3b4a02e1ae06700bdc0038d49a1cd5ea6c886f756272d3ace68912bc8c251ec4
+  image: ghcr.io/joryirving/llama-qwen4exp:0.2.0@sha256:710242362fdcdfbc43c8ca06819babefe6b93f88ceaa4f7d4a140b6568e77364
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 86400
   command:
-    - llama-server
+    - /app/llama-server
   replicas: 1
   priority: high
   nodeSelector:
@@ -73,7 +73,7 @@ spec:
   speculativeDecoding:
     type: draft-mtp
     draftModelRef: llama-strix-mtp
-    nDraftMax: 4
+    nDraftMax: 6
     pMin: 0.75
   cacheTypeK: q8_0
   cacheTypeV: q8_0
@@ -81,11 +81,6 @@ spec:
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
   batchSize: 6144
   uBatchSize: 2048
-  env:
-    - name: ROCBLAS_USE_HIPBLASLT
-      value: "1"
-    - name: LLAMA_QSA_GATHER
-      value: "1"
   resources:
     cpu: "500m"
     memory: 16Gi
