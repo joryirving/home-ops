@@ -43,6 +43,12 @@ data:
           "model": "litellm/reasoning-pool",
           "prompt": "You are a coordinator. Do the high-level reasoning and synthesis yourself; delegate the legwork to role subagents via the task tool.\n\nCONTRACTS: hand each sub a self-contained brief — objective, the decisions already settled (inline the exact values), the files it owns, what's out of scope, and the observable check that proves success. A sub should never have to infer scope or re-derive a decision you already made. Ask for a compact handoff back — findings, file paths, the change that matters — not a full transcript.\n\nROLES:\n- `explorer` (MiniMax M3 — 1M ctx, flat-rate plan): default recon, read-only scouting, 'where/how is X'. It is the one lane with real concurrency (3-4 at once), so fan out here.\n- `fixer` (llama-nvidia — local, free, 131k, vision-capable): small scoped edits and anything involving images. Two slots on the 3090, shared with an automated pipeline — keep its jobs small and bounded.\n- `fixer-bigctx` (llama-strix — local, free, 262k): bulk coding lane. Two slots, so up to two at once; beyond that they queue.\n- `oracle` (glm-5.3-flash): hard debugging, root-cause, architecture. Rate-capped but roomy (~3x the GLM-5.3 quota, shared with other consumers) — still not the default lane.\n- `reviewer` (llama-reviewer — local, free, two slots): independent second opinion and prose.\n\nCOUNCIL (high-stakes review): collect independent verdicts from different model families — MiniMax (`explorer`), Qwen on Strix (`fixer-bigctx`), Qwen on the 3090 (`fixer`), GLM (`oracle`), Nemotron (`reviewer`) — then reconcile. Never let one model grade its own work."
         },
+        "local": {
+          "description": "Local-only coordinator - Flash-Next (llama-strix, 262k) plans and delegates to LOCAL lanes only (fixer=27B, reviewer=Nemotron). No cloud, no rate caps.",
+          "mode": "primary",
+          "model": "litellm/llama-strix",
+          "prompt": "You are a LOCAL-ONLY coordinator on Flash-Next (Qwen3.8-Flash-Next, 262k). Do the high-level reasoning yourself; delegate legwork to LOCAL subagents via the task tool. Offline profile: do NOT use `explorer` (MiniMax) or `oracle` (GLM) - both cloud. LOCAL LANES: `fixer` (llama-nvidia, Qwen3.8-27B, 3090, low-latency, multimodal) - the coder/fast lane, scoped edits, keep jobs small and bounded. `reviewer` (llama-reviewer, Nemotron, local) - independent second opinion and prose. Do recon yourself or via a bounded `fixer` job; no concurrent recon lane here."
+        },
         "explorer": {
           "description": "Default recon — codebase scouting, search, 'where/how is X', read-only. MiniMax M3 (1M ctx, flat-rate). The one lane with real concurrency: fan out 3-4 at a time.",
           "mode": "subagent",
@@ -54,7 +60,7 @@ data:
           "model": "litellm/llama-nvidia"
         },
         "fixer-bigctx": {
-          "description": "Bulk coding lane — Qwen3.6-35B-A3B local on Strix (262k, two slots). Free; two concurrent calls are fine, beyond that they queue.",
+          "description": "Bulk coding lane — Qwen3.8-Flash-Next local on Strix (262k, one slot, multimodal). Run singly; concurrent calls queue.",
           "mode": "subagent",
           "model": "litellm/llama-strix"
         },
@@ -99,7 +105,7 @@ data:
             "timeout": 1800000
           },
           "models": {
-            "llama-strix": { "name": "Qwen3.6-35B-A3B heretic (Strix)", "limit": { "context": 262144, "output": 20480 } },
+            "llama-strix": { "name": "Qwen3.8-Flash-Next (Strix)", "limit": { "context": 262144, "output": 20480 } },
             "llama-nvidia": { "name": "Qwen3.8-27B (3090)", "limit": { "context": 131072, "output": 40960 } },
             "llama-reviewer": { "name": "Nemotron 3.5 Lightning 30B-A3B (Strix)", "limit": { "context": 200000, "output": 20480 } },
             "kimi-k2.7": { "name": "Kimi K2.7 Code", "limit": { "context": 262144, "output": 32768 } },
