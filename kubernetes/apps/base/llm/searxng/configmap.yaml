@@ -83,13 +83,21 @@ data:
       # Engines, or `kubectl exec` into the pod and grep the bundled settings).
       - name: karmasearch
         disabled: true
+      # The new image ships `duckduckgo_web` as `duckduckgo web`, using
+      # duckduckgo.com instead of html.duckduckgo.com. Replace the legacy
+      # captcha-prone engine so general searches use the newer implementation.
+      - name: duckduckgo
+        disabled: true
+      - name: duckduckgo web
+        disabled: false
       # brave (HTML scraper) gets IP-blocked like Google/DDG. The API-backed engine
       # `braveapi` is quota-based and reliable. It is inactive by default; enabling
       # it here and providing api_key routes Brave queries through the official API.
       # The key is injected at apply time: Flux postBuild.substituteFrom reads the
-      # searxng Brave key from the searxng-brave ExternalSecret (1Password-backed).
+      # searxng Brave key from the searxng ExternalSecret (1Password-backed).
       - name: braveapi
         disabled: false
+        inactive: false
         api_key: $${BRAVE_API_KEY}
 
   limiter.toml: |

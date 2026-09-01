@@ -14,6 +14,13 @@
       versioning: "regex:^rocm-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
       allowedVersions: "/^rocm-6\\./",
     },
+    {
+      description: ["Custom regex versioning for SearXNG CalVer SHA tags"],
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/searxng/searxng"],
+      ignoreUnstable: false,
+      versioning: "regex:^(?<major>\\d{4})\\.(?<minor>\\d{1,2})\\.(?<patch>\\d{1,2})-(?<prerelease>[0-9a-f]+)$",
+    },
     // ocharted serves no org.opencontainers.image.source annotation, so release notes
     // need the upstream repo named explicitly.
     {
