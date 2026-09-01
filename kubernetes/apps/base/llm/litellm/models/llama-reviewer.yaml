@@ -1,0 +1,21 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: llama-reviewer
+spec:
+  modelName: llama-reviewer
+  proxyRef: litellm
+  params:
+    model: openai/gemma-4-12b-it-qat
+    apiBase: http://smurf-pc.internal:1234/v1
+    apiKey: sk-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+  info:
+    mode: chat
+    maxInputTokens: 262144
+    maxOutputTokens: 32768
+    supportsFunctionCalling: true
+    supportsVision: true
