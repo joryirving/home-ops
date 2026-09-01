@@ -1,0 +1,30 @@
+---
+# yaml-language-server: $schema=https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#configmap-v1-core
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gemma-wake-config
+data:
+  config.toml: |
+    port = ":8080"
+    timeout = "5m"
+    response_header_timeout = "20m"
+    poll_interval = "5s"
+    health_check_interval = "30s"
+    health_cache_duration = "10s"
+
+    [[machines]]
+    name = "smurf-pc"
+    # Wake-on-LAN uses the built-in 1G NIC.
+    mac_address = "b4:2e:99:3e:2c:f3"
+    broadcast_ip = "192.168.30.255"
+    wol_port = 9
+    # Liveness uses the 10G SFP NIC, which carries LM Studio traffic.
+    health_check = "tcp://192.168.30.14:1234"
+
+    [[routes]]
+    machine = "smurf-pc"
+    hostname = "gemma-wake.llm"
+    # Proxy traffic uses the 10G SFP NIC rather than the WoL NIC.
+    destination = "http://192.168.30.14:1234"
+    health_check = "tcp://192.168.30.14:1234"
