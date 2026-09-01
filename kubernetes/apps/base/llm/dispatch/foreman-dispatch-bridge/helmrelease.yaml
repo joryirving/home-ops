@@ -47,7 +47,19 @@ spec:
               # (cloud-proxy -> litellm -> MiniMax-M3). Ignored by older bridges.
               ESCALATION_LANE: frontier
               LANE_CODER_AGENTS: '{"*":["coder"],"frontier":["coder-frontier"]}'
-              CODER_AGENT_SLOTS: '{"coder":2,"coder-frontier":4}'
+              # coder is 1, not 2, deliberately. llama-nvidia runs
+              # parallelSlots: 2, and admitting two local coders fills both,
+              # so everything else on that backend queues behind runs that
+              # last 24-88 minutes. The groomer needs seconds and lost that
+              # race: windowstead#347 failed to groom three times with
+              # "Groomer LLM call to model 'local-pool' aborted after
+              # 100000ms", observed while requests_processing was 2 and
+              # requests_deferred was 1.
+              #
+              # One coder leaves a slot free for grooming, reviews and probes.
+              # coder-frontier stays at 4 — that lane is MiniMax over the
+              # network and does not touch local hardware.
+              CODER_AGENT_SLOTS: '{"coder":1,"coder-frontier":4}'
               FOREMAN_NAMESPACE: llm
               MAX_IN_PROGRESS: "14"
               VERIFY_ENABLED: "false"
