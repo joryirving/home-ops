@@ -2,21 +2,23 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: llama-reviewer
+  name: local-pool-3
 spec:
-  modelName: llama-reviewer
+  modelName: local-pool
   proxyRef: litellm
   params:
-    model: openai/gemma-4-12b-it-qat
-    apiBase: http://smurf-pc.internal:1234/v1
-    apiKey: sk-noauth
+    model: openai/llama-strix
+    apiBase: http://llama-strix.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
     additional:
       temperature: 1.0
       top_p: 0.95
-      top_k: 64
+      top_k: 20
+      min_p: 0
+      order: 3
   info:
     mode: chat
     maxInputTokens: 262144
-    maxOutputTokens: 32768
+    maxOutputTokens: 20480
     supportsFunctionCalling: true
     supportsVision: true

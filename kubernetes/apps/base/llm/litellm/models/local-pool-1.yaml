@@ -2,17 +2,20 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: llama-local
+  name: local-pool-1
 spec:
-  modelName: llama-local
+  modelName: local-pool
   proxyRef: litellm
   params:
     model: openai/llama-nvidia
     apiBase: http://llama-nvidia.llm.svc.cluster.local:8080/v1
     apiKey: sk-llmkube-noauth
     additional:
-      temperature: 0.7
-      top_p: 0.8
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 20
+      min_p: 0
+      order: 1
   info:
     mode: chat
     maxInputTokens: 131072

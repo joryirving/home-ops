@@ -1,0 +1,26 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: local-pool-chat-1
+spec:
+  modelName: local-pool-chat
+  proxyRef: litellm
+  params:
+    model: openai/llama-nvidia
+    apiBase: http://llama-nvidia.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 0.7
+      top_p: 0.8
+      presence_penalty: 1.5
+      reasoning_effort: none
+      order: 1
+      allowed_openai_params:
+        - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 131072
+    maxOutputTokens: 40960
+    supportsFunctionCalling: true
+    supportsVision: true
