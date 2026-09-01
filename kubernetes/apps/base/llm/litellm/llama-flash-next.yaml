@@ -52,7 +52,7 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: ghcr.io/joryirving/llama-qwen4exp:0.4.4@sha256:5baf044f1eb2d5cba4cff9056231130503436c94bdbb178b4b711359760b73c8
+  image: ghcr.io/joryirving/llama-qwen4exp:0.4.5@sha256:c86d62b7f3db7925130bfa8c80fd622c43fc87967be7dc19a4486398535acbdb
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 86400
@@ -116,9 +116,8 @@ spec:
     - --load-mode
     - mmap
     - --lazy-mode
-    - "on"
-    - --chat-template-kwargs
-    - '{"preserve_thinking":true}'
+    - on-direct
+    - --reasoning-preserve
   probeOverrides:
     startup:
       httpGet:
