@@ -2,25 +2,25 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: llama-strix-chat
+  name: local-pool-chat-2
 spec:
-  modelName: llama-strix-chat
+  modelName: local-pool-chat
   proxyRef: litellm
   params:
-    model: openai/llama-strix
-    apiBase: http://llama-strix.llm.svc.cluster.local:8080/v1
-    apiKey: sk-llmkube-noauth
+    model: openai/gemma-4-12b-it-qat
+    apiBase: http://smurf-pc.internal:1234/v1
+    apiKey: sk-noauth
     additional:
-      temperature: 0.7
-      top_p: 0.8
-      presence_penalty: 1.5
-      repetition_penalty: 1.0
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 64
       reasoning_effort: none
+      order: 2
       allowed_openai_params:
         - reasoning_effort
   info:
     mode: chat
     maxInputTokens: 262144
-    maxOutputTokens: 40960
+    maxOutputTokens: 16384
     supportsFunctionCalling: true
     supportsVision: true

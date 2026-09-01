@@ -2,9 +2,9 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: llama-reviewer-chat
+  name: local-pool-2
 spec:
-  modelName: llama-reviewer-chat
+  modelName: local-pool
   proxyRef: litellm
   params:
     model: openai/gemma-4-12b-it-qat
@@ -14,12 +14,10 @@ spec:
       temperature: 1.0
       top_p: 0.95
       top_k: 64
-      reasoning_effort: none
-      allowed_openai_params:
-        - reasoning_effort
+      order: 2
   info:
     mode: chat
     maxInputTokens: 262144
-    maxOutputTokens: 16384
+    maxOutputTokens: 32768
     supportsFunctionCalling: true
     supportsVision: true
