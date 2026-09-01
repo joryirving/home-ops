@@ -9,6 +9,7 @@ spec:
     - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf
     - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00002-of-00003.gguf
     - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00003-of-00003.gguf
+    - MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
     - mmproj-F16.gguf
   mmproj: mmproj-F16.gguf
   format: gguf
@@ -23,23 +24,6 @@ spec:
       resourceClaims:
         - name: gpu
           resourceClaimTemplateName: llama-strix-gpu
----
-apiVersion: inference.llmkube.dev/v1alpha1
-kind: Model
-metadata:
-  name: llama-strix-mtp
-spec:
-  source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
-  files:
-    - MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
-  format: gguf
-  quantization: Q8_0
-  hardware:
-    accelerator: vulkan
-    gpu:
-      enabled: true
-      vendor: amd
-      runtime: vulkan
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -72,14 +56,14 @@ spec:
   jinja: true
   speculativeDecoding:
     type: draft-mtp
-    draftModelRef: llama-strix-mtp
+    draftModel: MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
     nDraftMax: 7
     pMin: 0.75
   cacheTypeK: q8_0
   cacheTypeV: q8_0
   reasoningBudget: 16384
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
-  batchSize: 2048
+  batchSize: 4096
   uBatchSize: 2048
   resources:
     cpu: "500m"
