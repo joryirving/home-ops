@@ -6,13 +6,13 @@ metadata:
 spec:
   source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
   files:
-    - UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf
-    - UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00002-of-00003.gguf
-    - UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00003-of-00003.gguf
+    - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf
+    - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00002-of-00003.gguf
+    - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00003-of-00003.gguf
     - mmproj-F16.gguf
   mmproj: mmproj-F16.gguf
   format: gguf
-  quantization: UD-Q3_K_XL
+  quantization: UD-IQ4_XS
   hardware:
     accelerator: vulkan
     gpu:
@@ -29,9 +29,9 @@ kind: Model
 metadata:
   name: llama-strix-mtp
 spec:
-  source: hf://jockevaupptaget/Qwen3.8-Flash-Next-MTP-GGUF
+  source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
   files:
-    - mtp-Qwen-Qwen3.8-Flash-Next-Q8_0.gguf
+    - MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
@@ -52,7 +52,7 @@ spec:
   modelCache:
     claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: ghcr.io/joryirving/llama-qwen4exp:0.4.5@sha256:c86d62b7f3db7925130bfa8c80fd622c43fc87967be7dc19a4486398535acbdb
+  image: ghcr.io/joryirving/llama-qwen4exp:0.5.0
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 86400
@@ -73,13 +73,13 @@ spec:
   speculativeDecoding:
     type: draft-mtp
     draftModelRef: llama-strix-mtp
-    nDraftMax: 6
+    nDraftMax: 7
     pMin: 0.75
   cacheTypeK: q8_0
   cacheTypeV: q8_0
   reasoningBudget: 16384
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
-  batchSize: 6144
+  batchSize: 2048
   uBatchSize: 2048
   resources:
     cpu: "500m"
@@ -115,9 +115,14 @@ spec:
     - "16"
     - --load-mode
     - mmap
-    - --lazy-mode
-    - on-direct
+    - --tensor-read-lazy
+    - auto
     - --reasoning-preserve
+    - --no-host
+    - --no-repack
+    - --spec-draft-adaptive
+    - --spec-draft-n-min
+    - "0"
   probeOverrides:
     startup:
       httpGet:
