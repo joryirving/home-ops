@@ -45,15 +45,15 @@ data:
             "litellm/kimi-k3": { alias: "kimi", params: { cache_prompt: true } },
             "minimax/MiniMax-M3": { alias: "minimax", params: { cacheRetention: "short" } },
             "minimax/MiniMax-M2.7": { alias: "minimax-old", params: { cacheRetention: "short" } },
-            "litellm/llama-strix": { alias: "skirk", params: { cache_prompt: true } },
-            "litellm/llama-strix-chat": { alias: "skirk-chat", params: { cache_prompt: true } },
-            "litellm/llama-reviewer": { alias: "reviewer", params: { cache_prompt: true } },
-            "litellm/llama-reviewer-chat": { alias: "reviewer-chat", params: { cache_prompt: true } },
-            "litellm/local-pool": { alias: "local", params: { cache_prompt: true } },
-            "litellm/local-pool-chat": { alias: "local-chat", params: { cache_prompt: true } },
+            "litellm/llama-strix": { alias: "skirk", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/llama-strix-chat": { alias: "skirk-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/llama-reviewer": { alias: "reviewer", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/llama-reviewer-chat": { alias: "reviewer-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/local-pool": { alias: "local", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/local-pool-chat": { alias: "local-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
             "litellm/llama-vision": { alias: "vision" },
-            "litellm/llama-nvidia": { alias: "nvidia", params: { cache_prompt: true } },
-            "litellm/llama-nvidia-chat": { alias: "nvidia-chat", params: { cache_prompt: true } },
+            "litellm/llama-nvidia": { alias: "nvidia", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/llama-nvidia-chat": { alias: "nvidia-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
             "litellm/dsv4f": { alias: "dsv4f", params: { cache_prompt: true } },
             "litellm/glm-5.3-flash": { alias: "glm-flash", params: { cache_prompt: true } },
             "litellm/glm-5.3": { alias: "glm-5.3", params: { cache_prompt: true } },
@@ -419,6 +419,14 @@ data:
           memory: "memini",
           contextEngine: "lossless-claw"
         },
+      },
+      diagnostics: {
+        // A deep prefill on Strix emits nothing for minutes, so the default no-progress
+        // abort (a 5 minute floor) killed runs that were still making progress. The
+        // return_progress extra_body on the local lanes keeps the stream alive; these are
+        // the backstop for when it stops arriving.
+        stuckSessionWarnMs: 600000,
+        stuckSessionAbortMs: 1500000,
       },
       session: {
         dmScope: "main",
