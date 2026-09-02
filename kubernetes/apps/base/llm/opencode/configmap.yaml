@@ -38,16 +38,16 @@ data:
       "enabled_providers": ["litellm-anthropic", "litellm", "opencode"],
       "agent": {
         "coordinator": {
-          "description": "Reasoning coordinator — plans, then delegates to role subagents (explorer/fixer/fixer-bigctx/oracle/reviewer)",
+          "description": "Reasoning coordinator — plans, then delegates to role subagents (explorer/fixer/agentic-local/oracle/reviewer)",
           "mode": "primary",
           "model": "litellm/reasoning-pool",
-          "prompt": "You are a coordinator. Do the high-level reasoning and synthesis yourself; delegate the legwork to role subagents via the task tool.\n\nCONTRACTS: hand each sub a self-contained brief — objective, the decisions already settled (inline the exact values), the files it owns, what's out of scope, and the observable check that proves success. A sub should never have to infer scope or re-derive a decision you already made. Ask for a compact handoff back — findings, file paths, the change that matters — not a full transcript.\n\nROLES:\n- `explorer` (MiniMax M3 — 1M ctx, flat-rate plan): default recon, read-only scouting, 'where/how is X'. It is the one lane with real concurrency (3-4 at once), so fan out here.\n- `fixer` (llama-nvidia — local, free, 131k, vision-capable): small scoped edits and anything involving images. Two slots on the 3090, shared with an automated pipeline — keep its jobs small and bounded.\n- `fixer-bigctx` (llama-strix — local, free, 262k): bulk coding lane. ONE slot, so run it singly; concurrent calls queue.\n- `oracle` (glm-5.3-flash): hard debugging, root-cause, architecture. Rate-capped but roomy (~3x the GLM-5.3 quota, shared with other consumers) — still not the default lane.\n- `reviewer` (llama-reviewer — Gemma-4-12B on the 9070XT, part-time/non-Qwen, 4 slots; MiniMax-M3 fallback when the box is off): independent second opinion and prose.\n\nCOUNCIL (high-stakes review): collect independent verdicts from different model families — MiniMax (`explorer`), Qwen on Strix (`fixer-bigctx`), Qwen on the 3090 (`fixer`), GLM (`oracle`), Gemma (`reviewer`) — then reconcile. Never let one model grade its own work."
+          "prompt": "You are a coordinator. Do the high-level reasoning and synthesis yourself; delegate the legwork to role subagents via the task tool.\n\nCONTRACTS: hand each sub a self-contained brief — objective, the decisions already settled (inline the exact values), the files it owns, what's out of scope, and the observable check that proves success. A sub should never have to infer scope or re-derive a decision you already made. Ask for a compact handoff back — findings, file paths, the change that matters — not a full transcript.\n\nROLES:\n- `explorer` (MiniMax M3 — 1M ctx, flat-rate plan): default recon, read-only scouting, 'where/how is X'. It is the one lane with real concurrency (3-4 at once), so fan out here.\n- `fixer` (llama-nvidia — local, free, 131k, vision-capable): small scoped edits and anything involving images. Two slots on the 3090, shared with an automated pipeline — keep its jobs small and bounded.\n- `agentic-local` (llama-strix, Qwen3.8-Flash-Next 180B-A6B UD-IQ4_XS — local, free, 262k, vision): the long-context and agentic lane. Reach for it when the job will not fit `fixer`'s 131k window, or for long-horizon multi-step work. Slower and weaker at pure code (~300 t/s prefill at depth, ~26 t/s decode). ONE slot, so run it singly.\n- `oracle` (glm-5.3-flash): hard debugging, root-cause, architecture. Rate-capped but roomy (~3x the GLM-5.3 quota, shared with other consumers) — still not the default lane.\n- `reviewer` (llama-reviewer — Gemma-4-12B on the 9070XT, part-time/non-Qwen, 4 slots; MiniMax-M3 fallback when the box is off): independent second opinion and prose.\n\nCOUNCIL (high-stakes review): collect independent verdicts from different model families — MiniMax (`explorer`), Qwen on Strix (`agentic-local`), Qwen on the 3090 (`fixer`), GLM (`oracle`), Gemma (`reviewer`) — then reconcile. Never let one model grade its own work."
         },
         "local": {
           "description": "Local-only coordinator - Flash-Next (llama-strix, 262k) plans, delegates edits to the 27B fixer (llama-nvidia) and recon to local-explorer (Gemma on the 9070XT). No rate caps; cloud only if the 9070XT cannot be woken.",
           "mode": "primary",
           "model": "litellm/llama-strix",
-          "prompt": "You are a LOCAL-ONLY coordinator on Flash-Next (Qwen3.8-Flash-Next, 262k). Do the planning and synthesis yourself and delegate the legwork.\n\nLANES:\n- `fixer` (llama-nvidia, Qwen3.8-27B, 3090, 131k, low-latency, multimodal): scoped implementation and edits, and anything involving images. Two time-sliced slots on one card, contended by an automated pipeline, so keep jobs small and bounded.\n- `local-explorer` (llama-reviewer, Gemma-4-12B on the 9070XT, 4 slots, non-Qwen): read-only recon and independent second opinions. It is the only lane here that runs concurrently, so fan out for scouting. The box is woken on demand, so the first call after an idle period takes about a minute; if it cannot be woken the request is served by MiniMax in the cloud, which is acceptable.\n\nUse `local-explorer` rather than grading your own work: it is the one non-Qwen family available locally. Do NOT use `explorer` or `oracle` - cloud lanes. Do NOT use `fixer-bigctx` - it is this same single-slot server, so delegating there only queues behind you."
+          "prompt": "You are a LOCAL-ONLY coordinator on Flash-Next (Qwen3.8-Flash-Next, 262k). Do the planning and synthesis yourself and delegate the legwork.\n\nLANES:\n- `fixer` (llama-nvidia, Qwen3.8-27B, 3090, 131k, low-latency, multimodal): scoped implementation and edits, and anything involving images. Two time-sliced slots on one card, contended by an automated pipeline, so keep jobs small and bounded.\n- `local-explorer` (llama-reviewer, Gemma-4-12B on the 9070XT, 4 slots, non-Qwen): read-only recon and independent second opinions. It is the only lane here that runs concurrently, so fan out for scouting. The box is woken on demand, so the first call after an idle period takes about a minute; if it cannot be woken the request is served by MiniMax in the cloud, which is acceptable.\n\nUse `local-explorer` rather than grading your own work: it is the one non-Qwen family available locally. Do NOT use `explorer` or `oracle` - cloud lanes. Do NOT use `agentic-local` - it is this same single-slot server, so delegating there only queues behind you."
         },
         "explorer": {
           "description": "Default recon — codebase scouting, search, 'where/how is X', read-only. MiniMax M3 (1M ctx, flat-rate). The one lane with real concurrency: fan out 3-4 at a time.",
@@ -55,12 +55,12 @@ data:
           "model": "litellm-anthropic/MiniMax-M3"
         },
         "fixer": {
-          "description": "Fast scoped edits — Qwen3.8-27B local on the 3090 (131k, vision-capable). Two time-sliced slots on the one card, contended by an automated pipeline: keep jobs small and bounded. Route anything involving images here.",
+          "description": "Primary coding lane — Qwen3.8-27B dense UD-Q4_K_XL on the 3090 (131k, vision-capable). The fastest and strongest coder available: ~1000-1100 t/s prefill, ~50 t/s decode. Two time-sliced slots on the one card, shared with an automated pipeline, so watch contention rather than shrinking the work. Route anything involving images here.",
           "mode": "subagent",
           "model": "litellm/llama-nvidia"
         },
-        "fixer-bigctx": {
-          "description": "Bulk coding lane — Qwen3.8-Flash-Next local on Strix (262k, one slot, multimodal). Run singly; concurrent calls queue.",
+        "agentic-local": {
+          "description": "Long-context and agentic lane — Qwen3.8-Flash-Next UD-IQ4_XS, a 180B-A6B MoE on Strix (262k, vision). Use it when the work will not fit fixer's 131k window, or for long-horizon multi-step tasks where its agentic strength pays. Slower and weaker at pure code: ~300 t/s prefill at depth, ~26 t/s decode. ONE slot, so it serialises.",
           "mode": "subagent",
           "model": "litellm/llama-strix"
         },
@@ -110,8 +110,8 @@ data:
             "timeout": 1800000
           },
           "models": {
-            "llama-strix": { "name": "Qwen3.8-Flash-Next (Strix)", "limit": { "context": 262144, "output": 20480 } },
-            "llama-nvidia": { "name": "Qwen3.8-27B (3090)", "limit": { "context": 131072, "output": 40960 } },
+            "llama-strix": { "name": "Qwen3.8-Flash-Next UD-IQ4_XS (Strix)", "limit": { "context": 262144, "output": 20480 } },
+            "llama-nvidia": { "name": "Qwen3.8-27B UD-Q4_K_XL (3090)", "limit": { "context": 131072, "output": 40960 } },
             "llama-reviewer": { "name": "Gemma-4-12B-it-QAT (9070XT)", "limit": { "context": 262144, "output": 32768 } },
             "kimi-k2.7": { "name": "Kimi K2.7 Code", "limit": { "context": 262144, "output": 32768 } },
             "kimi-k3": { "name": "Kimi K3", "limit": { "context": 1048576, "output": 131072 } },
@@ -121,7 +121,7 @@ data:
             "glm-5.3": { "name": "GLM 5.3", "limit": { "context": 1000000, "output": 131072 } },
             "reasoning-pool": { "name": "Reasoning Pool", "limit": { "context": 1050000, "output": 16384 } },
             "frontier-pool": { "name": "Frontier Pool", "limit": { "context": 1000000, "output": 16384 } },
-            "auto": { "name": "Auto (router)", "limit": { "context": 140000, "output": 16384 } },
+            "auto": { "name": "Auto (router)", "limit": { "context": 131072, "output": 16384 } },
             "chatgpt/gpt-5.6-sol": { "name": "ChatGPT GPT-5.6 Sol", "limit": { "context": 1100000, "output": 128000 } },
             "chatgpt/gpt-5.6-terra": { "name": "ChatGPT GPT-5.6 Terra", "limit": { "context": 1050000, "output": 128000 } },
             "chatgpt/gpt-5.6-luna": { "name": "ChatGPT GPT-5.6 Luna", "limit": { "context": 1050000, "output": 128000 } }
