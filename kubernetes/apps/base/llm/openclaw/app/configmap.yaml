@@ -152,7 +152,7 @@ data:
             name: "Sage",
             workspace: "/home/node/.openclaw/workspace-sage",
             agentDir: "/home/node/.openclaw/agents/sage/agent",
-            tools: { allow: ["web_fetch", "web_search", "image", "memory_recall", "memory_list", "memory_remember"] },
+            tools: { allow: ["web_fetch", "web_search", "image", "chart_generate", "memory_recall", "memory_list", "memory_remember"] },
             thinkingDefault: "low",
             model: {
               primary: "litellm/llama-nvidia-chat",
@@ -176,6 +176,8 @@ data:
         native: "auto",
         nativeSkills: "auto",
         restart: false,
+        ownerAllowFrom: ["discord:$${DISCORD_ADMIN_USER_ID}"],
+        allowFrom: { discord: ["user:$${DISCORD_ADMIN_USER_ID}"] },
       },
       models: {
         providers: {
@@ -288,9 +290,10 @@ data:
         },
       },
       plugins: {
-        allow: ["discord", "lossless-claw", "memini", "searxng", "comfy", "memory-wiki"],
+        allow: ["discord", "lossless-claw", "memini", "searxng", "comfy", "memory-wiki", "chart-renderer"],
         entries: {
           discord: { enabled: true },
+          "chart-renderer": { enabled: true },
           comfy: {
             enabled: true,
             config: {
