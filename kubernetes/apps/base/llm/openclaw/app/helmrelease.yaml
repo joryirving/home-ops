@@ -37,6 +37,24 @@ spec:
                 cp /tmp/openclaw.json /home/node/.openclaw/openclaw.json
                 chown 1000:100 /home/node/.openclaw/openclaw.json
                 chmod 400 /home/node/.openclaw/openclaw.json
+
+                # Reusing Sage's Discord account must not reuse the retired agent's local state.
+                migration=/home/node/.openclaw/.migrations/subaru-sage-v1
+                if [ ! -f "$migration" ]; then
+                  rm -rf \
+                    /home/node/.openclaw/agents/sage \
+                    /home/node/.openclaw/workspace-sage \
+                    /home/node/.openclaw/agents/subaru-sage \
+                    /home/node/.openclaw/workspace-subaru-sage
+                  mkdir -p /home/node/.openclaw/workspace-subaru-sage "$$(dirname "$migration")"
+                  cp /tmp/sage-bootstrap/AGENTS.md /home/node/.openclaw/workspace-subaru-sage/AGENTS.md
+                  cp /tmp/sage-bootstrap/SOUL.md /home/node/.openclaw/workspace-subaru-sage/SOUL.md
+                  cp /tmp/sage-bootstrap/IDENTITY.md /home/node/.openclaw/workspace-subaru-sage/IDENTITY.md
+                  cp /tmp/sage-bootstrap/TOOLS.md /home/node/.openclaw/workspace-subaru-sage/TOOLS.md
+                  chown -R 1000:100 /home/node/.openclaw/workspace-subaru-sage
+                  touch "$migration"
+                  chown 1000:100 "$migration"
+                fi
         containers:
           app:
             image:
@@ -174,6 +192,14 @@ spec:
         globalMounts:
           - path: /tmp/openclaw.json
             subPath: openclaw.json
+          - path: /tmp/sage-bootstrap/AGENTS.md
+            subPath: sage-AGENTS.md
+          - path: /tmp/sage-bootstrap/SOUL.md
+            subPath: sage-SOUL.md
+          - path: /tmp/sage-bootstrap/IDENTITY.md
+            subPath: sage-IDENTITY.md
+          - path: /tmp/sage-bootstrap/TOOLS.md
+            subPath: sage-TOOLS.md
     rbac:
       roles:
         # Cluster-wide pod delete — restart any pod in any namespace
