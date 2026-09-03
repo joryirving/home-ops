@@ -62,7 +62,12 @@ data:
             "litellm/chatgpt/gpt-5.6-terra": { alias: "gpt-balanced" },
             "litellm/chatgpt/gpt-5.6-luna": { alias: "gpt-cheap" },
           },
-          contextPruning: { mode: "off" },
+          // Tool results were 88% of Sage's transcript (385 KB of 436 KB), which inflated
+          // OpenClaw's bytes/4 context estimate to 109k tokens against a real 4.1k context
+          // and aborted every turn in preflight. Pruning soft-trims old tool results in
+          // memory before each call; only toolResult messages are eligible and the last 3
+          // assistant turns are never touched, so conversation text is untouched.
+          contextPruning: { mode: "cache-ttl", ttl: "5m" },
           compaction: { mode: "default", timeoutSeconds: 600, reserveTokensFloor: 40000, memoryFlush: { enabled: true, softThresholdTokens: 80000, prompt: "Extract key decisions, state changes, lessons, blockers to memory/YYYY-MM-DD.md. Format: ## [HH:MM] Topic. Skip routine work. NO_FLUSH if nothing important.", systemPrompt: "Compacting session context. Extract only what's worth remembering. No fluff." },
           },
           maxConcurrent: 4,
