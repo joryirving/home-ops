@@ -56,7 +56,7 @@ spec:
                 Qwen3.8-Flash-Next-Uncensored-IQ4_XS-00003-of-00003.gguf \
                 Qwen3.8-Flash-Next-Uncensored-MTP-draft.gguf \
                 mmproj-Qwen3.8-Flash-Next-Uncensored-F16.gguf ; do
-                want=$(curl -fsSLI -H "Authorization: Bearer $${HF_TOKEN}" "$${BASE}/$${f}" \
+                want=$(curl -fsSLI --http1.1 -H "Authorization: Bearer $${HF_TOKEN}" "$${BASE}/$${f}" \
                        | tr -d '\r' | awk 'tolower($1)=="content-length:"{n=$2} END{print n}')
                 have=$(stat -c %s "$${DEST}/$${f}" 2>/dev/null || echo 0)
                 if [ -n "$${want}" ] && [ "$${have}" = "$${want}" ]; then
@@ -64,7 +64,12 @@ spec:
                   continue
                 fi
                 echo "fetching $${f} (have $${have}, want $${want})"
-                curl -fL --retry 8 --retry-delay 15 --retry-connrefused -C - \
+                # --http1.1: HF's CDN cancels long-lived HTTP/2 streams part-way
+                # ("stream not closed cleanly: CANCEL", curl 92), which killed this every
+                # ~30 GB. --speed-limit/--speed-time fail a wedged transfer in 2 min rather
+                # than hanging until the pod is reaped; -C - resumes either way.
+                curl -fL --http1.1 --retry 8 --retry-delay 15 --retry-connrefused \
+                     --speed-limit 1048576 --speed-time 120 -C - \
                      -H "Authorization: Bearer $${HF_TOKEN}" \
                      -o "$${DEST}/$${f}" "$${BASE}/$${f}"
               done
