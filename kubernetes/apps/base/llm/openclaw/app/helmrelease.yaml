@@ -27,9 +27,6 @@ spec:
             image:
               repository: docker.io/library/alpine
               tag: "3.24"
-            envFrom:
-              - secretRef:
-                  name: openclaw
             command:
               - sh
               - -c
@@ -40,28 +37,6 @@ spec:
                 cp /tmp/openclaw.json /home/node/.openclaw/openclaw.json
                 chown 1000:100 /home/node/.openclaw/openclaw.json
                 chmod 400 /home/node/.openclaw/openclaw.json
-
-                # Reusing Sage's identity must not reuse the retired agent's local state.
-                migration=/home/node/.openclaw/.migrations/sage-public-bot-v1
-                if [ ! -f "$migration" ]; then
-                  # Fail closed: do not start Sage under the old Memini namespace if the purge fails.
-                  apk add --no-cache curl
-                  curl --fail --silent --show-error --request DELETE \
-                    --header "Authorization: Bearer $MEMINI_API_KEY" \
-                    --header "X-Memini-Namespace: openclaw/sage" \
-                    http://memini.llm:8080/v1/namespaces
-                  rm -rf \
-                    /home/node/.openclaw/agents/sage \
-                    /home/node/.openclaw/workspace-sage
-                  mkdir -p /home/node/.openclaw/workspace-sage "$(dirname "$migration")"
-                  cp /tmp/sage-bootstrap/AGENTS.md /home/node/.openclaw/workspace-sage/AGENTS.md
-                  cp /tmp/sage-bootstrap/SOUL.md /home/node/.openclaw/workspace-sage/SOUL.md
-                  cp /tmp/sage-bootstrap/IDENTITY.md /home/node/.openclaw/workspace-sage/IDENTITY.md
-                  cp /tmp/sage-bootstrap/TOOLS.md /home/node/.openclaw/workspace-sage/TOOLS.md
-                  chown -R 1000:100 /home/node/.openclaw/workspace-sage
-                  touch "$migration"
-                  chown 1000:100 "$migration"
-                fi
         containers:
           app:
             image:
@@ -199,14 +174,6 @@ spec:
         globalMounts:
           - path: /tmp/openclaw.json
             subPath: openclaw.json
-          - path: /tmp/sage-bootstrap/AGENTS.md
-            subPath: sage-AGENTS.md
-          - path: /tmp/sage-bootstrap/SOUL.md
-            subPath: sage-SOUL.md
-          - path: /tmp/sage-bootstrap/IDENTITY.md
-            subPath: sage-IDENTITY.md
-          - path: /tmp/sage-bootstrap/TOOLS.md
-            subPath: sage-TOOLS.md
     rbac:
       roles:
         # Cluster-wide pod delete — restart any pod in any namespace
