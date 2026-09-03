@@ -62,6 +62,21 @@ spec:
                     echo "WARN: memini plugin install failed; starting with whatever is present"
                   fi
                 fi
+                # Install the chart plugin vendored in this release ConfigMap. Building in
+                # the pod keeps OpenClaw and its plugin SDK on the same runtime version.
+                CHART_PLUGIN_VERSION=0.1.0
+                CHART_PLUGIN_DIR="$HOME/.openclaw/extensions/chart-renderer"
+                if [ "$(cat "$CHART_PLUGIN_DIR/.chartver" 2>/dev/null)" != "$CHART_PLUGIN_VERSION" ]; then
+                  rm -rf "$CHART_PLUGIN_DIR"
+                  cp -R /opt/openclaw-plugins/chart-renderer "$CHART_PLUGIN_DIR"
+                  cd "$CHART_PLUGIN_DIR"
+                  if npm ci --include=dev && npm run plugin:build && npm prune --omit=dev; then
+                    printf '%s' "$CHART_PLUGIN_VERSION" > "$CHART_PLUGIN_DIR/.chartver"
+                  else
+                    echo "ERROR: chart-renderer plugin install failed"
+                    exit 1
+                  fi
+                fi
                 # Start image UI in background (lives in PVC, no redeploy needed)
                 if [ -f "$HOME/.openclaw/workspace/image-ui/app.py" ]; then
                   cd "$HOME/.openclaw/workspace/image-ui" && python3 app.py &
@@ -178,6 +193,12 @@ spec:
         globalMounts:
           - path: /tmp/openclaw.json
             subPath: openclaw.json
+      chart-renderer:
+        type: configMap
+        name: "{{ .Release.Name }}-chart-renderer"
+        defaultMode: 0444
+        globalMounts:
+          - path: /opt/openclaw-plugins/chart-renderer
     rbac:
       roles:
         # Cluster-wide pod delete — restart any pod in any namespace
