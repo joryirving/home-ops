@@ -1,0 +1,68 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: llama-strix-uncensored-prestage
+  annotations:
+    # llmkube's model-downloader is a bare `curl -f -L -o` with no Authorization
+    # header, and hfTokenSecretRef only exists on the vllm/tgi/sglang runtimes, so
+    # the llamacpp path cannot fetch a gated repo. Stage the files into the cache
+    # first; the init container only downloads when the file is absent, so it will
+    # find these and skip.
+    #
+    # The cache directory is sha256(spec.source)[:16]:
+    #   hf://orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF -> 6c3699adf55ca6bf
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: OnFailure
+      # the cache is a node-bound local-hostpath volume
+      nodeSelector:
+        kubernetes.io/hostname: skirk
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: stage
+          image: docker.io/python:3.14-slim
+          envFrom:
+            - secretRef:
+                name: huggingface
+          env:
+            - name: HF_HUB_ENABLE_HF_TRANSFER
+              value: "0"
+            - name: REPO
+              value: orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF
+            - name: DEST
+              value: /models/6c3699adf55ca6bf
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              pip install --no-cache-dir --quiet "huggingface_hub[hf_xet]"
+              mkdir -p "$${DEST}"
+              hf download "$${REPO}" \
+                --local-dir "$${DEST}" \
+                --include "Qwen3.8-Flash-Next-Uncensored-IQ4_XS-*.gguf" \
+                --include "Qwen3.8-Flash-Next-Uncensored-MTP-draft.gguf" \
+                --include "mmproj-Qwen3.8-Flash-Next-Uncensored-F16.gguf"
+              rm -rf "$${DEST}/.cache"
+              echo "--- staged ---"
+              ls -la "$${DEST}"
+              du -sh "$${DEST}"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: llmkube-skirk-cache
