@@ -12,9 +12,14 @@ metadata:
     #
     # The cache directory is sha256(spec.source)[:16]:
     #   hf://orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF -> 6c3699adf55ca6bf
+    #
+    # This mirrors llmkube's own downloader rather than using the Python client:
+    # `hf download` with the Xet backend buffers whole chunks in memory and was
+    # OOM-killed at 4Gi on a node that is already tight. curl streams to disk in a
+    # few MiB and resumes, so it can run with a trivial memory ceiling.
     kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
-  backoffLimit: 2
+  backoffLimit: 6
   ttlSecondsAfterFinished: 86400
   template:
     spec:
@@ -26,39 +31,52 @@ spec:
         - key: llm-workload
           operator: Exists
           effect: NoSchedule
+      securityContext:
+        runAsUser: 0
       containers:
         - name: stage
-          image: docker.io/python:3.14-slim
+          image: docker.io/curlimages/curl:8.18.0
           envFrom:
             - secretRef:
                 name: huggingface
           env:
-            - name: HF_HUB_ENABLE_HF_TRANSFER
-              value: "0"
-            - name: REPO
-              value: orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF
+            - name: BASE
+              value: https://huggingface.co/orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF/resolve/main
             - name: DEST
               value: /models/6c3699adf55ca6bf
           command: ["/bin/sh", "-ec"]
           args:
             - |
-              pip install --no-cache-dir --quiet "huggingface_hub[hf_xet]"
-              mkdir -p "$${DEST}"
-              hf download "$${REPO}" \
-                --local-dir "$${DEST}" \
-                --include "Qwen3.8-Flash-Next-Uncensored-IQ4_XS-*.gguf" \
-                --include "Qwen3.8-Flash-Next-Uncensored-MTP-draft.gguf" \
-                --include "mmproj-Qwen3.8-Flash-Next-Uncensored-F16.gguf"
+              # the Python client's partial blobs are unusable here; reclaim them once
               rm -rf "$${DEST}/.cache"
+              mkdir -p "$${DEST}"
+              for f in \
+                Qwen3.8-Flash-Next-Uncensored-IQ4_XS-00001-of-00003.gguf \
+                Qwen3.8-Flash-Next-Uncensored-IQ4_XS-00002-of-00003.gguf \
+                Qwen3.8-Flash-Next-Uncensored-IQ4_XS-00003-of-00003.gguf \
+                Qwen3.8-Flash-Next-Uncensored-MTP-draft.gguf \
+                mmproj-Qwen3.8-Flash-Next-Uncensored-F16.gguf ; do
+                want=$(curl -fsSLI -H "Authorization: Bearer $${HF_TOKEN}" "$${BASE}/$${f}" \
+                       | tr -d '\r' | awk 'tolower($1)=="content-length:"{n=$2} END{print n}')
+                have=$(stat -c %s "$${DEST}/$${f}" 2>/dev/null || echo 0)
+                if [ -n "$${want}" ] && [ "$${have}" = "$${want}" ]; then
+                  echo "have $${f} ($${have} bytes), skipping"
+                  continue
+                fi
+                echo "fetching $${f} (have $${have}, want $${want})"
+                curl -fL --retry 8 --retry-delay 15 --retry-connrefused -C - \
+                     -H "Authorization: Bearer $${HF_TOKEN}" \
+                     -o "$${DEST}/$${f}" "$${BASE}/$${f}"
+              done
               echo "--- staged ---"
-              ls -la "$${DEST}"
+              ls -l "$${DEST}"
               du -sh "$${DEST}"
           resources:
             requests:
-              cpu: 500m
-              memory: 1Gi
+              cpu: 200m
+              memory: 64Mi
             limits:
-              memory: 4Gi
+              memory: 256Mi
           volumeMounts:
             - name: models
               mountPath: /models
