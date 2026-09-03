@@ -12,6 +12,10 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      # OpenClaw puts its own hostname in the Runtime block near the end of the system
+      # prompt, so a pod name change rewrites the prompt ~30k tokens in and invalidates
+      # every cached token after it. Pin it so restarts keep the prefix.
+      hostname: openclaw
       automountServiceAccountToken: true
       securityContext:
         runAsUser: 1000
