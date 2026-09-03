@@ -182,8 +182,7 @@ data:
         nativeSkills: "auto",
         restart: false,
         ownerAllowFrom: ["discord:$${DISCORD_ADMIN_USER_ID}"],
-        allowFrom: { discord: ["user:$${DISCORD_ADMIN_USER_ID}"] },
-        useAccessGroups: false,
+        allowFrom: { discord: ["$${DISCORD_ADMIN_USER_ID}"] },
       },
       models: {
         providers: {
@@ -268,10 +267,16 @@ data:
             default: {
               token: "$${DISCORD_BOT_TOKEN}",
               responsePrefix: "[{model}]",
+              guilds: {
+                "tako-tuesday": { users: ["$${DISCORD_ADMIN_USER_ID}"] },
+              },
             },
             saffron: {
               token: "$${SAFFRON_BOT_TOKEN}",
               responsePrefix: "[{model}]",
+              guilds: {
+                "tako-tuesday": { users: ["$${DISCORD_ADMIN_USER_ID}"] },
+              },
             },
             matcha: {
               token: "$${MATCHA_BOT_TOKEN}",
@@ -290,6 +295,7 @@ data:
                 "western-subaru-club": {
                   requireMention: true,
                 },
+                "tako-tuesday": { users: ["$${DISCORD_ADMIN_USER_ID}"] },
               },
             },
           },
