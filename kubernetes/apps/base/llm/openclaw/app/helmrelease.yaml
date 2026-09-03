@@ -27,6 +27,9 @@ spec:
             image:
               repository: docker.io/library/alpine
               tag: "3.24"
+            envFrom:
+              - secretRef:
+                  name: openclaw
             command:
               - sh
               - -c
@@ -38,20 +41,24 @@ spec:
                 chown 1000:100 /home/node/.openclaw/openclaw.json
                 chmod 400 /home/node/.openclaw/openclaw.json
 
-                # Reusing Sage's Discord account must not reuse the retired agent's local state.
-                migration=/home/node/.openclaw/.migrations/subaru-sage-v1
+                # Reusing Sage's identity must not reuse the retired agent's local state.
+                migration=/home/node/.openclaw/.migrations/sage-public-bot-v1
                 if [ ! -f "$migration" ]; then
+                  # Fail closed: do not start Sage under the old Memini namespace if the purge fails.
+                  apk add --no-cache curl
+                  curl --fail --silent --show-error --request DELETE \
+                    --header "Authorization: Bearer $MEMINI_API_KEY" \
+                    --header "X-Memini-Namespace: openclaw/sage" \
+                    http://memini.llm:8080/v1/namespaces
                   rm -rf \
                     /home/node/.openclaw/agents/sage \
-                    /home/node/.openclaw/workspace-sage \
-                    /home/node/.openclaw/agents/subaru-sage \
-                    /home/node/.openclaw/workspace-subaru-sage
-                  mkdir -p /home/node/.openclaw/workspace-subaru-sage "$$(dirname "$migration")"
-                  cp /tmp/sage-bootstrap/AGENTS.md /home/node/.openclaw/workspace-subaru-sage/AGENTS.md
-                  cp /tmp/sage-bootstrap/SOUL.md /home/node/.openclaw/workspace-subaru-sage/SOUL.md
-                  cp /tmp/sage-bootstrap/IDENTITY.md /home/node/.openclaw/workspace-subaru-sage/IDENTITY.md
-                  cp /tmp/sage-bootstrap/TOOLS.md /home/node/.openclaw/workspace-subaru-sage/TOOLS.md
-                  chown -R 1000:100 /home/node/.openclaw/workspace-subaru-sage
+                    /home/node/.openclaw/workspace-sage
+                  mkdir -p /home/node/.openclaw/workspace-sage "$(dirname "$migration")"
+                  cp /tmp/sage-bootstrap/AGENTS.md /home/node/.openclaw/workspace-sage/AGENTS.md
+                  cp /tmp/sage-bootstrap/SOUL.md /home/node/.openclaw/workspace-sage/SOUL.md
+                  cp /tmp/sage-bootstrap/IDENTITY.md /home/node/.openclaw/workspace-sage/IDENTITY.md
+                  cp /tmp/sage-bootstrap/TOOLS.md /home/node/.openclaw/workspace-sage/TOOLS.md
+                  chown -R 1000:100 /home/node/.openclaw/workspace-sage
                   touch "$migration"
                   chown 1000:100 "$migration"
                 fi
