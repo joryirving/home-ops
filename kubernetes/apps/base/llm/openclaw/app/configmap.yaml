@@ -148,6 +148,21 @@ data:
               avatar: "avatars/saffron_avatar.png",
             }
           },
+          {
+            id: "sage",
+            name: "Sage",
+            workspace: "/home/node/.openclaw/workspace-sage",
+            agentDir: "/home/node/.openclaw/agents/sage/agent",
+            tools: { allow: ["web_fetch", "web_search", "memory_recall", "memory_list", "memory_remember"] },
+            thinkingDefault: "low",
+            model: {
+              primary: "litellm/llama-nvidia-chat",
+              fallbacks: [],
+            },
+            identity: {
+              name: "Sage",
+            }
+          },
         ],
       },
       tools: {
@@ -214,6 +229,7 @@ data:
         { agentId: "saffron", match: { channel: "discord", accountId: "saffron" } },
         { agentId: "matcha",  match: { channel: "discord", accountId: "matcha" } },
         { agentId: "matcha",  match: { channel: "discord", accountId: "matcha", peer: { kind: "channel", id: "$${MATCHA_CHANNEL_ID}" } } },
+        { agentId: "sage", match: { channel: "discord", accountId: "sage" } },
       ],
       channels: {
         discord: {
@@ -256,6 +272,15 @@ data:
                   channels: {
                     "$${MATCHA_CHANNEL_ID}": { enabled: true, requireMention: false },
                   },
+                },
+              },
+            },
+            sage: {
+              token: "$${SAGE_BOT_TOKEN}",
+              dmPolicy: "disabled",
+              guilds: {
+                "$${WSC_SERVER_ID}": {
+                  requireMention: true,
                 },
               },
             },
