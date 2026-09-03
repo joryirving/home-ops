@@ -43,10 +43,12 @@ spec:
   maxRetries: 3
   maxOutputTokens: 20480
   stuckLoopDetection:
-    # nvidia local model has a 131k context window; give more exploration room
-    # before the edit-free abort, and cap context just under the window (the
+    # The edit-free limit exists to break loops, not to bound investigation. A
+    # coder reconstructing branch state does dozens of distinct reads before it
+    # can edit anything; at 40 that work was aborted mid-way while maxTurns 160
+    # sat unused. Context is capped just under the model's 131k window (the
     # default hard cap of 140k sat above it).
-    editFreeTurnsLimit: 40
+    editFreeTurnsLimit: 90
     contextSoftCap: 85000
     contextHardCap: 98000
   requestTurnTimeoutSeconds: 1800
@@ -126,6 +128,12 @@ spec:
         human has to make.
       NO-GO + extra.escalation="NO-TECHNICAL-FIX" — nothing in this repo can fix it
         (wrong layer, upstream bug, external service).
+      NO-GO + extra.escalation="BUDGET-EXHAUSTED" — you ran out of turns or lost the
+        exploration tools, and the work is neither done nor impossible. Use this only
+        when you know what the remaining step is; say what it is in your summary, and
+        name any commit you already pushed. It buys another attempt, so it is the
+        honest answer to running out of room — the other two say the work needs a
+        person, which removes it from the queue.
     Put the specific blocker in your summary. These route the issue, so a wrong one
     removes real work from the queue. If you cannot find what the issue points at, read
     the files it names and work from what is there — not having found it yet is not a

@@ -45,7 +45,7 @@ spec:
     # MiniMax-M3 has a ~1M context window (vs the nvidia base coders' 131k), and
     # big audit refactors need many read/plan turns before the first edit — 15
     # (default) and even 24 killed them mid-exploration. Size these to the model.
-    editFreeTurnsLimit: 40
+    editFreeTurnsLimit: 90
     contextSoftCap: 500000
     contextHardCap: 800000
   requestTurnTimeoutSeconds: 1800
@@ -124,6 +124,12 @@ spec:
         human has to make.
       NO-GO + extra.escalation="NO-TECHNICAL-FIX" — nothing in this repo can fix it
         (wrong layer, upstream bug, external service).
+      NO-GO + extra.escalation="BUDGET-EXHAUSTED" — you ran out of turns or lost the
+        exploration tools, and the work is neither done nor impossible. Use this only
+        when you know what the remaining step is; say what it is in your summary, and
+        name any commit you already pushed. It buys another attempt, so it is the
+        honest answer to running out of room — the other two say the work needs a
+        person, which removes it from the queue.
     Put the specific blocker in your summary. These route the issue, so a wrong one
     removes real work from the queue. If you cannot find what the issue points at, read
     the files it names and work from what is there — not having found it yet is not a
