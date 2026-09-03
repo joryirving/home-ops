@@ -37,11 +37,11 @@ spec:
             env:
               CLUSTER: ${CLUSTER}
               LITELLM_URL: ${LITELLM_URL:=http://litellm.llm:4000/v1}
-              MODEL: llama-nvidia
+              MODEL: llama-strix
               HISTORY_PATH: /data/history.jsonl
             envFrom:
               - secretRef:
-                  name: alert-triage-secret
+                  name: "{{ .Release.Name }}"
             probes:
               liveness: &probe
                 enabled: true
@@ -103,6 +103,6 @@ spec:
             port: 8080
     persistence:
       data:
-        existingClaim: alert-triage
+        existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /data
