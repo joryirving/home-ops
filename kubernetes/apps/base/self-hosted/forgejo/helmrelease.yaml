@@ -33,7 +33,7 @@ spec:
           DOMAIN: forgejo.jory.dev
           PROTOCOL: http
           ROOT_URL: https://forgejo.jory.dev
-          SSH_DOMAIN: forgejo-ssh.self-hosted.svc.cluster.local
+          SSH_DOMAIN: forgejo-ssh.jory.dev
           SSH_LISTEN_PORT: 2222
           SSH_PORT: 22
           START_SSH_SERVER: true
@@ -63,6 +63,12 @@ spec:
         memory: 256Mi
     service:
       ssh:
+        type: LoadBalancer
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: forgejo-ssh.jory.dev
+          external-dns.alpha.kubernetes.io/target: internal.jory.dev
+          lbipam.cilium.io/ips: 10.69.10.46
+        externalTrafficPolicy: Local
         port: 22
     tcpRoute:
       enabled: false
