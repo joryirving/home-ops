@@ -8,14 +8,7 @@ spec:
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: intel
-    gpu:
-      enabled: true
-      vendor: intel
-      layers: 99
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: memini-gpu
+    accelerator: cpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -26,35 +19,33 @@ metadata:
 spec:
   modelRef: memini-embed
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:f862c901a0089bc3dc326bd24f208bfcd147839783328d252e911a004c94ff3c
+  image: ghcr.io/ggml-org/llama.cpp:server@sha256:fcca4dac388066ca93db561751e8caf5fc7d46d9df5f00a7422026db68468e31
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
   replicas: 1
   priority: normal
   podLabels:
-    igpu-workload: "true"
+    cpu-inference: "true"
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: kubernetes.io/hostname
       whenUnsatisfiable: ScheduleAnyway
       labelSelector:
         matchLabels:
-          igpu-workload: "true"
+          cpu-inference: "true"
   contextSize: 32768
   parallelSlots: 2
   batchSize: 16384
   uBatchSize: 16384
   env:
-    - name: ZES_ENABLE_SYSMAN
-      value: "1"
-    - name: ONEAPI_DEVICE_SELECTOR
-      value: level_zero:gpu
-    - name: UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS
-      value: "1"
+    - name: GOMP_CPU_AFFINITY
+      value: "0-11"
+    - name: KMP_AFFINITY
+      value: "granularity=fine,proc_list=[0-11],explicit"
   resources:
-    cpu: "250m"
-    memory: 2Gi
+    cpu: "6"
+    memory: 8Gi
   extraArgs:
     - --alias
     - memini-embed

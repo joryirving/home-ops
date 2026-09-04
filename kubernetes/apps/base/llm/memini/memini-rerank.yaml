@@ -8,14 +8,7 @@ spec:
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: rocm
-    gpu:
-      enabled: true
-      vendor: amd
-      layers: 99
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: llama-strix-gpu
+    accelerator: cpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -25,29 +18,33 @@ metadata:
     krr/ignore: "true"
 spec:
   modelRef: memini-rerank
-  modelCache:
-    claimName: llmkube-skirk-cache
   runtime: llamacpp
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-6.4.4@sha256:1c655ca0443655f2e7603d054770b07cd8c79267145728b3261295f005053947
+  image: ghcr.io/ggml-org/llama.cpp:server@sha256:fcca4dac388066ca93db561751e8caf5fc7d46d9df5f00a7422026db68468e31
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  command:
-    - llama-server
   replicas: 1
   priority: normal
-  nodeSelector:
-    topology.kubernetes.io/gpus: amd
-  tolerations:
-    - key: llm-workload
-      operator: Exists
-      effect: NoSchedule
+  podLabels:
+    cpu-inference: "true"
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          cpu-inference: "true"
   contextSize: 8096
   parallelSlots: 2
   batchSize: 2048
   uBatchSize: 2048
+  env:
+    - name: GOMP_CPU_AFFINITY
+      value: "0-11"
+    - name: KMP_AFFINITY
+      value: "granularity=fine,proc_list=[0-11],explicit"
   resources:
-    cpu: "500m"
+    cpu: "6"
     memory: 4Gi
   extraArgs:
     - --alias
@@ -63,8 +60,7 @@ spec:
     - "6"
     - --threads-batch
     - "12"
-    - --load-mode
-    - none
+    - --mmap
   endpoint:
     port: 8080
     type: ClusterIP
