@@ -1,0 +1,103 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: whisper-iris
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: whisper
+  interval: 15m
+  values:
+    controllers:
+      whisper-iris:
+        replicas: 1
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          fetch:
+            image:
+              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
+              tag: vulkan-radv@sha256:e826113103d41100bfab93bcdf95aa6141285a4391f871dc40b8887dfe67ca3f
+            command:
+              - bash
+              - -c
+              - |
+                set -euo pipefail
+                cd /cache
+                if [ ! -x "bin/$${WHISPER_VERSION}/whisper-server" ]; then
+                  curl -fsSL -o w.tgz "https://github.com/lemonade-sdk/whisper.cpp-rocm/releases/download/$${WHISPER_VERSION}/whisper-$${WHISPER_VERSION}-linux-vulkan-x86_64.tar.gz"
+                  python3 -c "import tarfile;tarfile.open('w.tgz').extractall('x')"
+                  mkdir -p "bin/$${WHISPER_VERSION}"
+                  mv x/whisper-*-linux-vulkan-x86_64/* "bin/$${WHISPER_VERSION}/"
+                  rm -rf x w.tgz
+                fi
+                if [ ! -s "$${WHISPER_MODEL_FILE}" ]; then
+                  curl -fsSL -o "$${WHISPER_MODEL_FILE}" "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$${WHISPER_MODEL_FILE}"
+                fi
+                ls -l "bin/$${WHISPER_VERSION}/whisper-server" "$${WHISPER_MODEL_FILE}"
+            env:
+              WHISPER_VERSION: v1.8.4
+              WHISPER_MODEL_FILE: ggml-large-v3-turbo-q8_0.bin
+        containers:
+          app:
+            image:
+              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
+              tag: vulkan-radv@sha256:e826113103d41100bfab93bcdf95aa6141285a4391f871dc40b8887dfe67ca3f
+            securityContext:
+              privileged: true
+            command:
+              - /cache/bin/v1.8.4/whisper-server
+            args:
+              - --model
+              - /cache/ggml-large-v3-turbo-q8_0.bin
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8080"
+              - --threads
+              - "4"
+            env:
+              LD_LIBRARY_PATH: /cache/bin/v1.8.4
+            resources:
+              requests:
+                cpu: 500m
+                memory: 4Gi
+              limits:
+                memory: 8Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /, port: 8080 }
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /, port: 8080 }
+                  initialDelaySeconds: 15
+                  periodSeconds: 10
+                  failureThreshold: 6
+    defaultPodOptions:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: whisper-iris
+    service:
+      app:
+        ports:
+          http:
+            port: 8080
+    persistence:
+      cache:
+        existingClaim: whisper-iris-cache
+        globalMounts:
+          - path: /cache
