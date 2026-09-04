@@ -42,12 +42,15 @@ spec:
   maxTurns: 160
   maxRetries: 3
   maxOutputTokens: 20480
+  contextStrategy: session
+  contextWindowTokens: 80000
   stuckLoopDetection:
     # The edit-free limit exists to break loops, not to bound investigation. A
     # coder reconstructing branch state does dozens of distinct reads before it
     # can edit anything; at 40 that work was aborted mid-way while maxTurns 160
     # sat unused. Context is capped just under the model's 131k window (the
     # default hard cap of 140k sat above it).
+    repeatedToolThreshold: 5
     editFreeTurnsLimit: 90
     contextSoftCap: 85000
     contextHardCap: 98000
