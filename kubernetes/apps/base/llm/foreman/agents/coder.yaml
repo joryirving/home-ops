@@ -42,12 +42,15 @@ spec:
   maxTurns: 160
   maxRetries: 3
   maxOutputTokens: 20480
+  contextStrategy: session
+  contextWindowTokens: 80000
   stuckLoopDetection:
     # The edit-free limit exists to break loops, not to bound investigation. A
     # coder reconstructing branch state does dozens of distinct reads before it
     # can edit anything; at 40 that work was aborted mid-way while maxTurns 160
     # sat unused. Context is capped just under the model's 131k window (the
     # default hard cap of 140k sat above it).
+    repeatedToolThreshold: 5
     editFreeTurnsLimit: 90
     contextSoftCap: 85000
     contextHardCap: 98000
@@ -72,9 +75,9 @@ spec:
     resources:
       requests:
         cpu: 500m
-        memory: 2Gi
+        memory: 3Gi
       limits:
-        cpu: 4
+        cpu: 8
         memory: 8Gi
     activeDeadlineSeconds: 43200
     image: ghcr.io/misospace/llmkube-coder:0.9.24@sha256:cd6309efd0f0a874e8fd9f431d539d5e7eb9f2b1f6fce802aa8b685cc05300ef

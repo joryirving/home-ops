@@ -41,10 +41,13 @@ spec:
   temperature: "0.2"
   maxTurns: 160
   maxRetries: 3
+  contextStrategy: session
+  contextWindowTokens: 480000
   stuckLoopDetection:
     # MiniMax-M3 has a ~1M context window (vs the nvidia base coders' 131k), and
     # big audit refactors need many read/plan turns before the first edit — 15
     # (default) and even 24 killed them mid-exploration. Size these to the model.
+    repeatedToolThreshold: 5
     editFreeTurnsLimit: 90
     contextSoftCap: 500000
     contextHardCap: 800000
@@ -69,9 +72,9 @@ spec:
     resources:
       requests:
         cpu: 500m
-        memory: 2Gi
+        memory: 3Gi
       limits:
-        cpu: 4
+        cpu: 8
         memory: 8Gi
     activeDeadlineSeconds: 43200
     image: ghcr.io/misospace/llmkube-coder:0.9.24@sha256:cd6309efd0f0a874e8fd9f431d539d5e7eb9f2b1f6fce802aa8b685cc05300ef
