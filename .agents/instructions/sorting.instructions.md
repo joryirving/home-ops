@@ -20,6 +20,18 @@ Whenever asked to sort these files, follow these instructions:
     - `annotations`
     - `labels`
 
+## ExternalSecret conventions
+
+Before adding or editing an `ExternalSecret`, read 1-2 neighboring `externalsecret.yaml` files and match their structure, templating, naming anchors, and indentation. Apply this to integrations within existing apps as well as new apps.
+
+For the usual 1Password-backed secret:
+
+- Use `secretStoreRef` with `kind: ClusterSecretStore` and `name: onepassword`.
+- Keep `spec` fields in this order: `refreshInterval` (if used locally), `secretStoreRef`, `target`, `dataFrom`. This overrides alphabetical sorting.
+- Use `dataFrom.extract.key` for the 1Password item, matching neighboring manifests. Do not replace it with individual `data.remoteRef.property` mappings just because only one field is needed.
+- When selecting, renaming, or formatting output keys, use `target.template.data`; for example, `Authorization: "Bearer {{ .MCP_ACCESS_TOKEN }}"`. Keep credentials out of manifests.
+- Preserve specialized existing configurations. If a different retrieval structure is required, explain the concrete reason instead of silently introducing a new pattern.
+
 ## HelmRelease rules for app-template
 
 This section gives instructions specifically for HelmReleases that are based on the `app-template` chart. In this repository, that is typically identified by `spec.chartRef.name: app-template`.
