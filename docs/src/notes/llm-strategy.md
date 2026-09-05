@@ -126,13 +126,31 @@ Retired 2026-08-25 when the plan capped out, ahead of its 08-28 lapse. It had su
 
 | Pool | Order | Members | Policy |
 | ---- | ----- | ------- | ------ |
-| `reasoning-pool` | 1 -> 3 | GPT-5.6 Luna -> GLM-5.3-Flash (Z.AI) -> MiniMax-M3 | Strong reasoning lane; M3 is the flat-plan floor |
+| `reasoning-pool` | 1 -> 4 | GPT-5.6 Terra -> GLM-5.3-Flash (Z.AI) -> MiniMax-M3 -> llama-strix | Planning lane; M3 is the flat-plan floor, strix the local one |
+| `implementation-pool` | 1 -> 3 | GPT-5.6 Luna (effort high) -> MiniMax-M2.7 -> llama-nvidia | Implementation lane, deliberately below the planning lane |
 | `frontier-pool` | 1 -> 4 | GPT-6 Astra -> Kimi K3 (Kimi Coding) -> GLM-5.3 (Z.AI) -> DSV4F (Neuralwatt) | Frontier escalation, subscriptions before PAYG |
+
+The three pools are a capability ladder, not three copies of the same idea: `frontier-pool` for
+actual problems, `reasoning-pool` for planning, `implementation-pool` for carrying out a plan already
+made. Each has a distinct ChatGPT rung at the top (Astra, Terra, Luna), so a ChatGPT cap-out drops all
+three to their second rungs at once — they degrade in parallel rather than starving each other, but the
+subscription is now the single most load-bearing dependency in the stack.
+
+Reasoning effort is **passed through**, not pinned, on every ChatGPT rung except Luna in
+`implementation-pool`, which is pinned to `high`. At `xhigh` Luna's TTFT measures ~60s against ~10s at
+`high`, which is the wrong trade for a lane whose whole job is throughput. Note Luna is pinned in
+`chatgpt-gpt-5.6-luna.yaml` as well, so it has no passthrough on either path -- a caller asking Luna
+for `xhigh` does not get it. Every other ChatGPT rung takes the caller's effort.
+
+`implementation-pool` declares 131072 rather than Luna's 1.05M: a group's usable window is the smallest
+rung it can land on, and rung 3 is llama-nvidia. Raise it only if truncation on fall-through is
+acceptable. `reasoning-pool` keeps its 1.05M declaration because llama-strix sits at rung 4, reached
+only once ChatGPT, Z.AI and MiniMax have all failed.
 
 **Provider failover** (LiteLLM `order:`, transparent to callers) reacts when an upstream rejects a
 request; it cannot detect that an unpublished rolling allowance is merely _close_ to exhausted.
 
-`glm-5.3-flash` sits between Luna and the M3 floor. It is a reasoning model in its own right
+`glm-5.3-flash` sits between Terra and the M3 floor. It is a reasoning model in its own right
 (it takes `reasoning_effort`, pinned to `high` on this rung to match Luna) and a stronger rung than
 dropping straight to M3, but it spends GLM Coding Lite quota — the same subscription behind
 `frontier-pool` rung 3 — so sustained reasoning overflow can leave frontier escalation a rung
@@ -553,7 +571,7 @@ Tiers (three effective tiers; REASONING is folded into COMPLEX):
 | ------------------ | ----------------------------------- | -------------------------------------------- |
 | SIMPLE             | `llama-nvidia` (3090 Qwen3.8-27B)   | Trivia — local, free                         |
 | MEDIUM             | `MiniMax-M3`                        | Flat sub, no weekly quota to burn            |
-| COMPLEX            | `reasoning-pool`                    | Luna -> GLM-5.3-Flash -> MiniMax-M3          |
+| COMPLEX            | `reasoning-pool`                    | Terra -> GLM-5.3-Flash -> MiniMax-M3         |
 | REASONING          | `reasoning-pool`                    | Folded — no classifier could separate it     |
 | default (miss)     | `MiniMax-M3`                        | `classifier_fallback: default_model`         |
 
@@ -561,7 +579,7 @@ Classifier is `llama-strix` (`classifier_llm_config`, 20s timeout) — local and
 every request's path. It replaced the reviewer-alias classifier on 2026-08-22.
 
 `frontier-pool` is deliberately **not** a tier target: `auto` must not compete with interactive
-sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Luna, GLM-5.3-Flash and MiniMax-M3 through
+sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Terra, GLM-5.3-Flash and MiniMax-M3 through
 `reasoning-pool`;
 Kimi K3 remains in `frontier-pool` or explicit selection rather than being a reasoning-pool rung.
 

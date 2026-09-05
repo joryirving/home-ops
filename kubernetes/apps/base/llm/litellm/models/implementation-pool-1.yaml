@@ -1,0 +1,25 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: implementation-pool-1
+spec:
+  modelName: implementation-pool
+  proxyRef: litellm
+  params:
+    model: chatgpt/gpt-5.6-luna
+    additional:
+      additional_drop_params:
+      - temperature
+      order: 1
+      extra_body:
+        reasoning:
+          effort: high
+  info:
+    mode: responses
+    maxInputTokens: 1050000
+    extra:
+      input_cost_per_token: 2.0e-07
+      cache_creation_input_token_cost: 2.5e-07
+      cache_read_input_token_cost: 2.0e-08
+      output_cost_per_token: 1.2e-06
