@@ -84,11 +84,16 @@ out of the kustomization — they need most of the box to themselves.
 | `MiniMax-M3-chat`       | MiniMax Plus    | MiniMax-M3 (OpenAI endpoint)    | 1M       | Terminal fallback sink for the local models    |
 | `MiniMax-M2.7`          | MiniMax Plus    | MiniMax-M2.7                    | 204.8k   | Agentic reasoning workhorse                   |
 | `glm-5.3`               | GLM Coding Lite | glm-5.3 (Z.AI)                  | 1M       | OpenClaw main primary                         |
-| `chatgpt/gpt-5.6-sol`   | ChatGPT Plus    | gpt-5.6-sol (Codex/OAuth)       | 1.1M     | Flagship frontier                             |
+| `chatgpt/gpt-6-astra`   | ChatGPT Plus    | gpt-6-astra (Codex/OAuth)       | 272k*    | Frontier-pool lead                            |
+| `chatgpt/gpt-5.6-sol`   | ChatGPT Plus    | gpt-5.6-sol (Codex/OAuth)       | 1.1M     | Previous flagship, direct-call only           |
 | `chatgpt/gpt-5.6-terra` | ChatGPT Plus    | gpt-5.6-terra (Codex/OAuth)     | 1.05M    | Balanced, explicit-only OpenAI tier           |
 | `chatgpt/gpt-5.6-luna`  | ChatGPT Plus    | gpt-5.6-luna (Codex/OAuth)      | 1.05M    | Reasoning-pool lead                           |
 | `kimi-k2.7`             | Kimi Coding     | kimi-for-coding                 | 262k     | Coding subscription                           |
 | `kimi-k3`               | Kimi Coding     | k3                              | 1M       | Frontier Kimi lane                            |
+
+\* `gpt-6-astra`'s real window is 1.05M, but a prompt past 272k reprices the *entire* request at
+2x input/cache and 1.5x output, so it is declared at the cheap ceiling. Raise it deliberately if a
+long-context call is ever worth the multiplier.
 
 **Moonshot is gone** (2026-08-25). Its credits were deliberately drained rather than topped up, so
 `kimi-k2.7` and `kimi-k3` are now single-rung on the Kimi Coding subscription with no PAYG rung
@@ -623,10 +628,14 @@ The `frontier-pool` alias is the "grab the smartest model with room left" lane f
 it and ask it to do things; LiteLLM routes to the best-available frontier model and falls down the chain
 a strict `order:` chain (429/403 -> cooldown -> next). Subscriptions first, then their PAYG counterparts:
 
-1. `gpt-5.6-sol` — flagship frontier (ChatGPT Plus sub)
+1. `gpt-6-astra` — flagship frontier (ChatGPT Plus sub), capped at 272k (see below)
 2. `kimi-k3` @ Kimi Coding — dedicated Kimi sub (flat)
 4. `glm-5.3` @ Z.AI — GLM Coding Lite sub
 5. `dsv4f` @ Neuralwatt — PAYG DeepSeek fallback
+
+`gpt-5.6-sol` is no longer a rung. It draws the same ChatGPT rolling window as Astra, so pairing the
+two would have given a second rung with no headroom of its own; it stays reachable as a direct model.
+The pool's declared window follows rung 1 at 272k rather than the 1M of the rungs below it.
 
 Implemented as one **self-contained `order:` group**, not router fallbacks referencing the shared
 groups. It intentionally has no MiniMax floor: a frontier request fails rather than silently degrading
