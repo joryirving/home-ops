@@ -1,0 +1,25 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: reasoning-pool-4
+spec:
+  modelName: reasoning-pool
+  proxyRef: litellm
+  params:
+    model: openai/llama-strix
+    apiBase: http://llama-strix.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 20
+      min_p: 0
+      order: 4
+      max_parallel_requests: 2
+  info:
+    mode: chat
+    maxInputTokens: 262144
+    maxOutputTokens: 40960
+    supportsFunctionCalling: true
+    supportsVision: true

@@ -84,11 +84,16 @@ out of the kustomization — they need most of the box to themselves.
 | `MiniMax-M3-chat`       | MiniMax Plus    | MiniMax-M3 (OpenAI endpoint)    | 1M       | Terminal fallback sink for the local models    |
 | `MiniMax-M2.7`          | MiniMax Plus    | MiniMax-M2.7                    | 204.8k   | Agentic reasoning workhorse                   |
 | `glm-5.3`               | GLM Coding Lite | glm-5.3 (Z.AI)                  | 1M       | OpenClaw main primary                         |
-| `chatgpt/gpt-5.6-sol`   | ChatGPT Plus    | gpt-5.6-sol (Codex/OAuth)       | 1.1M     | Flagship frontier                             |
+| `chatgpt/gpt-6-astra`   | ChatGPT Plus    | gpt-6-astra (Codex/OAuth)       | 272k*    | Frontier-pool lead                            |
+| `chatgpt/gpt-5.6-sol`   | ChatGPT Plus    | gpt-5.6-sol (Codex/OAuth)       | 1.1M     | Previous flagship, direct-call only           |
 | `chatgpt/gpt-5.6-terra` | ChatGPT Plus    | gpt-5.6-terra (Codex/OAuth)     | 1.05M    | Balanced, explicit-only OpenAI tier           |
 | `chatgpt/gpt-5.6-luna`  | ChatGPT Plus    | gpt-5.6-luna (Codex/OAuth)      | 1.05M    | Reasoning-pool lead                           |
 | `kimi-k2.7`             | Kimi Coding     | kimi-for-coding                 | 262k     | Coding subscription                           |
 | `kimi-k3`               | Kimi Coding     | k3                              | 1M       | Frontier Kimi lane                            |
+
+\* `gpt-6-astra`'s real window is 1.05M, but a prompt past 272k reprices the *entire* request at
+2x input/cache and 1.5x output, so it is declared at the cheap ceiling. Raise it deliberately if a
+long-context call is ever worth the multiplier.
 
 **Moonshot is gone** (2026-08-25). Its credits were deliberately drained rather than topped up, so
 `kimi-k2.7` and `kimi-k3` are now single-rung on the Kimi Coding subscription with no PAYG rung
@@ -121,11 +126,35 @@ Retired 2026-08-25 when the plan capped out, ahead of its 08-28 lapse. It had su
 
 | Pool | Order | Members | Policy |
 | ---- | ----- | ------- | ------ |
-| `reasoning-pool` | 1 -> 2 | GPT-5.6 Luna -> MiniMax-M3 | Strong reasoning lane; M3 is the flat-plan floor |
-| `frontier-pool` | 1 -> 4 | GPT-5.6 Sol -> Kimi K3 (Kimi Coding) -> GLM-5.3 (Z.AI) -> DSV4F (Neuralwatt) | Frontier escalation, subscriptions before PAYG |
+| `reasoning-pool` | 1 -> 4 | GPT-5.6 Terra -> GLM-5.3-Flash (Z.AI) -> MiniMax-M3 -> llama-strix | Planning lane; M3 is the flat-plan floor, strix the local one |
+| `implementation-pool` | 1 -> 3 | GPT-5.6 Luna (effort high) -> MiniMax-M2.7 -> llama-nvidia | Implementation lane, deliberately below the planning lane |
+| `frontier-pool` | 1 -> 4 | GPT-6 Astra -> Kimi K3 (Kimi Coding) -> GLM-5.3 (Z.AI) -> DSV4F (Neuralwatt) | Frontier escalation, subscriptions before PAYG |
+
+The three pools are a capability ladder, not three copies of the same idea: `frontier-pool` for
+actual problems, `reasoning-pool` for planning, `implementation-pool` for carrying out a plan already
+made. Each has a distinct ChatGPT rung at the top (Astra, Terra, Luna), so a ChatGPT cap-out drops all
+three to their second rungs at once — they degrade in parallel rather than starving each other, but the
+subscription is now the single most load-bearing dependency in the stack.
+
+Reasoning effort is **passed through**, not pinned, on every ChatGPT rung except Luna in
+`implementation-pool`, which is pinned to `high`. At `xhigh` Luna's TTFT measures ~60s against ~10s at
+`high`, which is the wrong trade for a lane whose whole job is throughput. Note Luna is pinned in
+`chatgpt-gpt-5.6-luna.yaml` as well, so it has no passthrough on either path -- a caller asking Luna
+for `xhigh` does not get it. Every other ChatGPT rung takes the caller's effort.
+
+`implementation-pool` declares 131072 rather than Luna's 1.05M: a group's usable window is the smallest
+rung it can land on, and rung 3 is llama-nvidia. Raise it only if truncation on fall-through is
+acceptable. `reasoning-pool` keeps its 1.05M declaration because llama-strix sits at rung 4, reached
+only once ChatGPT, Z.AI and MiniMax have all failed.
 
 **Provider failover** (LiteLLM `order:`, transparent to callers) reacts when an upstream rejects a
 request; it cannot detect that an unpublished rolling allowance is merely _close_ to exhausted.
+
+`glm-5.3-flash` sits between Terra and the M3 floor. It is a reasoning model in its own right
+(it takes `reasoning_effort`, pinned to `high` on this rung to match Luna) and a stronger rung than
+dropping straight to M3, but it spends GLM Coding Lite quota — the same subscription behind
+`frontier-pool` rung 3 — so sustained reasoning overflow can leave frontier escalation a rung
+shorter. M3 remains the floor precisely because the flat plan cannot be exhausted this way.
 
 Kimi-for-Coding was removed from `reasoning-pool`: its 262k context made it the pool's conservative
 ceiling even though Kimi K3 is a 1M model standalone. It remains available via the Kimi aliases and
@@ -542,7 +571,7 @@ Tiers (three effective tiers; REASONING is folded into COMPLEX):
 | ------------------ | ----------------------------------- | -------------------------------------------- |
 | SIMPLE             | `llama-nvidia` (3090 Qwen3.8-27B)   | Trivia — local, free                         |
 | MEDIUM             | `MiniMax-M3`                        | Flat sub, no weekly quota to burn            |
-| COMPLEX            | `reasoning-pool`                    | Luna -> DSV4F -> MiniMax-M3                  |
+| COMPLEX            | `reasoning-pool`                    | Terra -> GLM-5.3-Flash -> MiniMax-M3         |
 | REASONING          | `reasoning-pool`                    | Folded — no classifier could separate it     |
 | default (miss)     | `MiniMax-M3`                        | `classifier_fallback: default_model`         |
 
@@ -550,7 +579,8 @@ Classifier is `llama-strix` (`classifier_llm_config`, 20s timeout) — local and
 every request's path. It replaced the reviewer-alias classifier on 2026-08-22.
 
 `frontier-pool` is deliberately **not** a tier target: `auto` must not compete with interactive
-sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Luna and MiniMax-M3 through `reasoning-pool`;
+sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Terra, GLM-5.3-Flash and MiniMax-M3 through
+`reasoning-pool`;
 Kimi K3 remains in `frontier-pool` or explicit selection rather than being a reasoning-pool rung.
 
 ### Measured (2026-08-07, LiteLLM 1.95.0)
@@ -623,10 +653,14 @@ The `frontier-pool` alias is the "grab the smartest model with room left" lane f
 it and ask it to do things; LiteLLM routes to the best-available frontier model and falls down the chain
 a strict `order:` chain (429/403 -> cooldown -> next). Subscriptions first, then their PAYG counterparts:
 
-1. `gpt-5.6-sol` — flagship frontier (ChatGPT Plus sub)
+1. `gpt-6-astra` — flagship frontier (ChatGPT Plus sub), capped at 272k (see below)
 2. `kimi-k3` @ Kimi Coding — dedicated Kimi sub (flat)
 4. `glm-5.3` @ Z.AI — GLM Coding Lite sub
 5. `dsv4f` @ Neuralwatt — PAYG DeepSeek fallback
+
+`gpt-5.6-sol` is no longer a rung. It draws the same ChatGPT rolling window as Astra, so pairing the
+two would have given a second rung with no headroom of its own; it stays reachable as a direct model.
+The pool's declared window follows rung 1 at 272k rather than the 1M of the rungs below it.
 
 Implemented as one **self-contained `order:` group**, not router fallbacks referencing the shared
 groups. It intentionally has no MiniMax floor: a frontier request fails rather than silently degrading
@@ -635,7 +669,7 @@ to the reasoning lane.
 Caveats:
 
 - **Know which model answered.** Failover is silent — read the `x-litellm-model-id` response header (or
-  the LiteLLM logs) to see whether you're on Sol, K3, or GLM.
+  the LiteLLM logs) to see whether you're on Astra, K3, or GLM.
 - **No silent quality downgrade.** Once both K3 and GLM capacity paths reject a request, the frontier
   request fails. Use `reasoning-pool` when MiniMax M3 is an acceptable final fallback.
 - **Cap signals are not all 429s.** Kimi Coding announces exhaustion with a **403**, not a 429. A 403
