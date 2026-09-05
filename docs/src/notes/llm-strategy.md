@@ -126,11 +126,17 @@ Retired 2026-08-25 when the plan capped out, ahead of its 08-28 lapse. It had su
 
 | Pool | Order | Members | Policy |
 | ---- | ----- | ------- | ------ |
-| `reasoning-pool` | 1 -> 2 | GPT-5.6 Luna -> MiniMax-M3 | Strong reasoning lane; M3 is the flat-plan floor |
-| `frontier-pool` | 1 -> 4 | GPT-5.6 Sol -> Kimi K3 (Kimi Coding) -> GLM-5.3 (Z.AI) -> DSV4F (Neuralwatt) | Frontier escalation, subscriptions before PAYG |
+| `reasoning-pool` | 1 -> 3 | GPT-5.6 Luna -> GLM-5.3-Flash (Z.AI) -> MiniMax-M3 | Strong reasoning lane; M3 is the flat-plan floor |
+| `frontier-pool` | 1 -> 4 | GPT-6 Astra -> Kimi K3 (Kimi Coding) -> GLM-5.3 (Z.AI) -> DSV4F (Neuralwatt) | Frontier escalation, subscriptions before PAYG |
 
 **Provider failover** (LiteLLM `order:`, transparent to callers) reacts when an upstream rejects a
 request; it cannot detect that an unpublished rolling allowance is merely _close_ to exhausted.
+
+`glm-5.3-flash` sits between Luna and the M3 floor. It is a reasoning model in its own right
+(it takes `reasoning_effort`, pinned to `high` on this rung to match Luna) and a stronger rung than
+dropping straight to M3, but it spends GLM Coding Lite quota — the same subscription behind
+`frontier-pool` rung 3 — so sustained reasoning overflow can leave frontier escalation a rung
+shorter. M3 remains the floor precisely because the flat plan cannot be exhausted this way.
 
 Kimi-for-Coding was removed from `reasoning-pool`: its 262k context made it the pool's conservative
 ceiling even though Kimi K3 is a 1M model standalone. It remains available via the Kimi aliases and
@@ -547,7 +553,7 @@ Tiers (three effective tiers; REASONING is folded into COMPLEX):
 | ------------------ | ----------------------------------- | -------------------------------------------- |
 | SIMPLE             | `llama-nvidia` (3090 Qwen3.8-27B)   | Trivia — local, free                         |
 | MEDIUM             | `MiniMax-M3`                        | Flat sub, no weekly quota to burn            |
-| COMPLEX            | `reasoning-pool`                    | Luna -> DSV4F -> MiniMax-M3                  |
+| COMPLEX            | `reasoning-pool`                    | Luna -> GLM-5.3-Flash -> MiniMax-M3          |
 | REASONING          | `reasoning-pool`                    | Folded — no classifier could separate it     |
 | default (miss)     | `MiniMax-M3`                        | `classifier_fallback: default_model`         |
 
@@ -555,7 +561,8 @@ Classifier is `llama-strix` (`classifier_llm_config`, 20s timeout) — local and
 every request's path. It replaced the reviewer-alias classifier on 2026-08-22.
 
 `frontier-pool` is deliberately **not** a tier target: `auto` must not compete with interactive
-sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Luna and MiniMax-M3 through `reasoning-pool`;
+sessions for the weekly ChatGPT/Kimi caps. COMPLEX reaches Luna, GLM-5.3-Flash and MiniMax-M3 through
+`reasoning-pool`;
 Kimi K3 remains in `frontier-pool` or explicit selection rather than being a reasoning-pool rung.
 
 ### Measured (2026-08-07, LiteLLM 1.95.0)
@@ -644,7 +651,7 @@ to the reasoning lane.
 Caveats:
 
 - **Know which model answered.** Failover is silent — read the `x-litellm-model-id` response header (or
-  the LiteLLM logs) to see whether you're on Sol, K3, or GLM.
+  the LiteLLM logs) to see whether you're on Astra, K3, or GLM.
 - **No silent quality downgrade.** Once both K3 and GLM capacity paths reject a request, the frontier
   request fails. Use `reasoning-pool` when MiniMax M3 is an acceptable final fallback.
 - **Cap signals are not all 429s.** Kimi Coding announces exhaustion with a **403**, not a 429. A 403

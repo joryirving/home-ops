@@ -1,0 +1,22 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: reasoning-pool-3
+spec:
+  modelName: reasoning-pool
+  proxyRef: litellm
+  params:
+    model: openai/MiniMax-M3
+    apiBase: https://api.minimax.io/v1
+    apiKey: os.environ/MINIMAX_API_KEY
+    additional:
+      order: 3
+  info:
+    mode: chat
+    maxInputTokens: 1000000
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    extra:
+      input_cost_per_token: 3.0e-07
+      output_cost_per_token: 1.2e-06
