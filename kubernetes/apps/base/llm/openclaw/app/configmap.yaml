@@ -249,7 +249,7 @@ data:
       },
       auth: {
         profiles: {
-          "openai-codex:$${OPENAI_CODEX_USERNAME}": { provider: "openai-codex", mode: "oauth" },
+          "openai:$${OPENAI_CODEX_USERNAME}": { provider: "openai", mode: "oauth" },
         },
       },
       bindings: [
@@ -329,7 +329,7 @@ data:
         },
       },
       plugins: {
-        allow: ["discord", "lossless-claw", "memini", "memory-core", "searxng", "comfy", "memory-wiki", "chart-renderer", "youtube-tldw", "reddit-thread", "facebook-listing", "sage-environment", "sage-reference-memory"],
+        allow: ["discord", "lossless-claw", "memini", "memory-core", "searxng", "comfy", "memory-wiki", "chart-renderer", "youtube-tldw", "reddit-thread", "facebook-listing", "sage-environment", "sage-reference-memory", "minimax", "litellm", "browser", "admin-http-rpc", "openai"],
         entries: {
           discord: { enabled: true },
           "chart-renderer": { enabled: true },
@@ -543,6 +543,14 @@ data:
               Authorization: "Bearer $${WAYPOINT_API_KEY}",
             },
           },
+        },
+      },
+      // Required by OpenClaw's config guard: preserve GitOps-authored config
+      // instead of restoring an older last-known-good copy on each rollout.
+      meta: {
+        lastTouchedVersion: "2026.9.2",
+        migrations: {
+          modelPolicyAllowlist: true,
         },
       },
       skills: {
