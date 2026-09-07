@@ -1,0 +1,33 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: sillytavern
+spec:
+  proxyRef: litellm
+  keyAlias: SillyTavern
+  secretName: litellm-key-sillytavern
+  secretKey: api-key
+  models:
+  - local-pool
+  - llama-strix
+  - llama-nvidia
+  - MiniMax-M3-chat
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: sillytavern
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-sillytavern
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_SILLYTAVERN_API_KEY
