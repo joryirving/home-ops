@@ -171,6 +171,23 @@ spec:
         path: /mnt/daena/comfyui/output
         globalMounts:
           - path: /home/node/.openclaw/workspace/images
+      # OpenClaw resolves ffmpeg/ffprobe only from /usr/bin, /bin, /usr/sbin, /sbin
+      # and /usr/local/bin (src/infra/resolve-system-bin.ts) and never consults PATH,
+      # so the static builds already on the volume are invisible to it. Mount them as
+      # individual files: mounting over /usr/local/bin itself would shadow node and the
+      # openclaw entrypoint that live there. Needed for Discord voice-message OGG/Opus
+      # plus waveform generation; TTS itself does not use ffmpeg.
+      ffmpeg:
+        existingClaim: "{{ .Release.Name }}"
+        advancedMounts:
+          openclaw:
+            app:
+              - path: /usr/local/bin/ffmpeg
+                subPath: .openclaw/workspace/bin/ffmpeg
+                readOnly: true
+              - path: /usr/local/bin/ffprobe
+                subPath: .openclaw/workspace/bin/ffprobe
+                readOnly: true
       configmap:
         type: configMap
         name: "{{ .Release.Name }}-config"
