@@ -4,7 +4,7 @@ kind: Model
 metadata:
   name: memini-rerank
 spec:
-  source: https://huggingface.co/ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF/resolve/main/qwen3-reranker-0.6b-q8_0.gguf
+  source: https://huggingface.co/gpustack/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
@@ -23,7 +23,7 @@ spec:
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  replicas: 1
+  replicas: 3
   priority: normal
   podLabels:
     cpu-inference: "true"
@@ -33,9 +33,9 @@ spec:
       whenUnsatisfiable: ScheduleAnyway
       labelSelector:
         matchLabels:
-          cpu-inference: "true"
+          app: memini-rerank
   contextSize: 8096
-  parallelSlots: 2
+  parallelSlots: 1
   batchSize: 8192
   uBatchSize: 8192
   env:
