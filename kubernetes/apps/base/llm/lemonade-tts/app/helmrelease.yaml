@@ -1,0 +1,113 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lemonade-tts
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: lemonade-tts
+  interval: 15m
+  values:
+    controllers:
+      lemonade-tts:
+        replicas: 1
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          # config.json is a sparse override file; only the keys set here differ
+          # from Lemonade's built-in defaults. Written by an init container
+          # rather than mounted from a ConfigMap because the same directory is a
+          # persistent volume that Lemonade also writes its own state into.
+          config:
+            image:
+              repository: ghcr.io/lemonade-sdk/lemonade-server
+              tag: latest@sha256:3873d3ec672eaebdf4484cf1592daae1ae0f73d0f6377a03f38f931f972ca122
+            command:
+              - sh
+              - -c
+              - |
+                set -eu
+                mkdir -p /opt/lemonade/.config/lemonade
+                cat > /opt/lemonade/.config/lemonade/config.json <<'JSON'
+                {
+                  "openmoss": {
+                    "backend": "vulkan"
+                  }
+                }
+                JSON
+                cat /opt/lemonade/.config/lemonade/config.json
+        containers:
+          app:
+            image:
+              repository: ghcr.io/lemonade-sdk/lemonade-server
+              tag: latest@sha256:3873d3ec672eaebdf4484cf1592daae1ae0f73d0f6377a03f38f931f972ca122
+            # Vulkan on the Strix Halo iGPU needs /dev/kfd and /dev/dri; this is
+            # the same access pattern the whisper deployment on this node uses.
+            securityContext:
+              privileged: true
+            command:
+              - ./lemond
+            args:
+              - --host
+              - 0.0.0.0
+              - --port
+              - "13305"
+            resources:
+              requests:
+                cpu: 500m
+                # GTT is not charged to any cgroup on this node, so the request
+                # is the only signal the scheduler has for what this consumes.
+                memory: 8Gi
+              limits:
+                memory: 16Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /api/v1/health, port: 13305 }
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /api/v1/health, port: 13305 }
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                  failureThreshold: 12
+    defaultPodOptions:
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        ports:
+          http:
+            port: 13305
+    persistence:
+      cache:
+        existingClaim: lemonade-tts-cache
+        advancedMounts:
+          lemonade-tts:
+            config:
+              - path: /opt/lemonade/.config/lemonade
+                subPath: config
+            app:
+              - path: /opt/lemonade/.cache/huggingface
+                subPath: huggingface
+              - path: /opt/lemonade/.cache/lemonade
+                subPath: lemonade
+              - path: /opt/lemonade/.config/lemonade
+                subPath: config
+              - path: /opt/lemonade/llama
+                subPath: llama
