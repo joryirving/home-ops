@@ -1,0 +1,85 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sillytavern
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: sillytavern
+  interval: 15m
+  dependsOn: []
+  values:
+    controllers:
+      sillytavern:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/sillytavern/sillytavern
+              tag: 1.18.0@sha256:7b30a1698b605d01dbd01a20459600c035f0d2c866912b69d7eee98065dcedd3
+            env:
+              # In-container browser launch is a no-op that only logs errors
+              SILLYTAVERN_BROWSERLAUNCH_ENABLED: "false"
+              # Required behind a reverse proxy: Origin differs from the app host
+              SILLYTAVERN_DISABLECSRFPROTECTION: "true"
+              # Acknowledge listen-without-auth; network trust comes from envoy-internal
+              SILLYTAVERN_SECURITYOVERRIDE: "true"
+              # Default config whitelists loopback only, which would 403 every request
+              SILLYTAVERN_WHITELISTMODE: "false"
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            resources:
+              requests:
+                cpu: 100m
+              limits:
+                memory: 1Gi
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+    persistence:
+      backups:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /home/node/app/backups
+            subPath: backups
+      config:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /home/node/app/config
+            subPath: config
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /home/node/app/data
+            subPath: data
+      extensions:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /home/node/app/public/scripts/extensions/third-party
+            subPath: extensions
+      plugins:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /home/node/app/plugins
+            subPath: plugins
+    route:
+      app:
+        hostnames: ["tavern.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    service:
+      app:
+        ports:
+          http:
+            port: 8000
