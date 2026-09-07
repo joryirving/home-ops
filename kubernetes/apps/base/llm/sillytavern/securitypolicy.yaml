@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: sillytavern-oidc
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: sillytavern
+  oidc:
+    provider:
+      issuer: https://sso.jory.dev/application/o/opencode/
+    clientIDRef:
+      group: ""
+      kind: Secret
+      name: opencode-oidc
+    clientSecret:
+      group: ""
+      kind: Secret
+      name: opencode-oidc
+    redirectURL: https://tavern.jory.dev/oauth2/callback
+    logoutPath: /logout
+    scopes: ["openid", "email", "profile"]
