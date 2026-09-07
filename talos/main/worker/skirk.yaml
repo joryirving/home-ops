@@ -1,19 +1,25 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.12/website/content/v1.12/schemas/config.schema.json
-machine:
-  install:
-    diskSelector:
-      model: "WDS500G3X0C-00SJG0"
-  nodeLabels:
-    topology.kubernetes.io/gpus: amd
-    node-role.kubernetes.io/rocm-worker: "true"
-  kubelet:
-    extraArgs:
-      max-pods: "50"
-    extraConfig:
-      registerWithTaints:
-        - key: llm-workload
-          value: "true"
-          effect: NoSchedule
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siderolabs/talos/refs/heads/release-1.14/website/content/v1.14/schemas/config.schema.json
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+provisioning:
+  diskSelector:
+    match: disk.model == "WDS500G3X0C-00SJG0"
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  topology.kubernetes.io/gpus: amd
+  node-role.kubernetes.io/rocm-worker: "true"
+---
+apiVersion: v1alpha1
+kind: KubeletConfig
+extraArgs:
+  max-pods: "50"
+config:
+  registerWithTaints:
+    - key: llm-workload
+      value: "true"
+      effect: NoSchedule
 ---
 # OS disk - 500GB WD Black
 apiVersion: v1alpha1
