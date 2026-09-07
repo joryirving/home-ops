@@ -39,14 +39,10 @@ spec:
               # Two-tier flow: everything grooms into local; the bridge escalates
               # exhausted issues into frontier (cloud lane retired — no distinct
               # executor backed it, and upfront complexity triage was asking too
-              # much of the 4B groomer).
-              DISPATCH_LANES: local,frontier
-              # Bridge 0.4.0+: instead of tombstoning after RETRY_MAX_ATTEMPTS,
-              # re-lane the issue to frontier + unclaim; the next tick claims it
-              # there and builds the Workload with the coder-frontier Agent
-              # (cloud-proxy -> litellm -> MiniMax-M3). Ignored by older bridges.
-              ESCALATION_LANE: frontier
-              LANE_CODER_AGENTS: '{"*":["coder"],"frontier":["coder-frontier"]}'
+              # much of the 4B groomer). DISPATCH_LANES and ESCALATION_LANE are
+              # unset so the bridge reads both from Dispatch's own lane config
+              # (DISPATCH_LANE_CONFIG_JSON) instead of restating it here.
+              LANE_CODER_AGENTS: '{"*":["coder"],"escalation":["coder-frontier"]}'
               # coder is 1, not 2, deliberately. llama-nvidia runs
               # parallelSlots: 2, and admitting two local coders fills both,
               # so everything else on that backend queues behind runs that
