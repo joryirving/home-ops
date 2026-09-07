@@ -203,7 +203,13 @@ data:
         },
       },
       tools: {
-        media: { image: { timeoutSeconds: 180 } },
+        media: {
+          image: { timeoutSeconds: 180 },
+          audio: { enabled: true },
+          models: [
+            { type: "cli", command: "whisper-stt", args: ["{{AttachmentPath}}"], capabilities: ["audio"], timeoutSeconds: 120 },
+          ],
+        },
         sessions: { visibility: "all" },
         agentToAgent: { enabled: true },
         exec: { mode: "full", strictInlineEval: false },
@@ -295,6 +301,10 @@ data:
             moderation: false,
             emojiUploads: false,
             stickerUploads: false,
+          },
+          voice: {
+            enabled: true,
+            mode: "stt-tts",
           },
           streaming: { block: { enabled: false } },
           groupPolicy: "allowlist",
