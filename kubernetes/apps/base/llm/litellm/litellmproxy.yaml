@@ -96,10 +96,22 @@ spec:
     cooldown_time: 30
     enable_pre_call_checks: true
     fallbacks:
+    # The local llama.cpp servers run --jinja with the Qwen3.8 chat template,
+    # which hard-rejects system messages that are not first (llama.cpp returns
+    # "Jinja Exception: System message must be at the beginning"). Clients that
+    # send quiet/auxiliary prompts with a trailing system message — SillyTavern's
+    # SD prompt-text generation — 500 on both locals, so these groups fall back
+    # to the cloud chat door. Matches the existing auto-group pattern.
     - llama-strix:
       - llama-nvidia
+      - MiniMax-M3-chat
     - llama-nvidia:
       - llama-strix
+      - MiniMax-M3-chat
+    - local-pool:
+      - MiniMax-M3-chat
+    - local-pool-chat:
+      - MiniMax-M3-chat
     - llama-reviewer:
       - MiniMax-M3-chat
     - auto:
