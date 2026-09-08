@@ -33,7 +33,7 @@ tasks:
             exit 0
           fi
           node_file="$(find "${TALOS_DIR}" -name "${NODE}.yaml" -print -quit)"
-          yq --exit-status '.machine.nodeLabels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
+          yq --exit-status 'select(.kind == "KubeNodeConfig") | .labels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
             && echo true || echo false
       GPU_PATCH:
         sh: dirname "$(find "${TALOS_DIR}" -name "${NODE}.yaml" -exec dirname {} \;)/${NODE}.yaml" | xargs -I{} echo "{}/eGPU.yaml"
@@ -74,7 +74,7 @@ tasks:
       rendered_ca="$(
         CLUSTER={{.CLUSTER}} MACHINE_TYPE={{.MACHINE_TYPE}} SCHEMATIC={{.SCHEMATIC}} minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 \
           | op inject \
-          | yq --exit-status --no-doc '.machine.ca.crt'
+          | yq eval-all --exit-status --no-doc '[select(.machine.ca.crt != null) | .machine.ca.crt] | .[0]'
       )"
       live_ca="$(
         talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.CONTROL_PLANE}} get machineconfig --output yaml \
@@ -95,7 +95,7 @@ tasks:
             exit 0
           fi
           node_file="$(find "${TALOS_DIR}" -name "${NODE}.yaml" -print -quit)"
-          yq --exit-status '.machine.nodeLabels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
+          yq --exit-status 'select(.kind == "KubeNodeConfig") | .labels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
             && echo true || echo false
       MACHINE_TYPE:
         sh: |-
@@ -192,7 +192,7 @@ tasks:
       TALOS_IMAGE:
         sh: |-
           talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig --output=jsonpath='{.spec}' \
-            | yq eval-all --exit-status --no-doc '[select(.machine.install.image != null) | .machine.install.image] | .[0]'
+            | yq eval-all --exit-status --no-doc '[select(.kind == "UnattendedInstallConfig") | .installer.image] | .[0]'
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
@@ -320,7 +320,7 @@ tasks:
             exit 0
           fi
           node_file="$(find "${TALOS_DIR}" -name "${NODE}.yaml" -print -quit)"
-          yq --exit-status '.machine.nodeLabels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
+          yq --exit-status 'select(.kind == "KubeNodeConfig") | .labels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
             && echo true || echo false
     requires:
       vars: [VERSION, CLUSTER, NODE]
@@ -342,7 +342,7 @@ tasks:
             exit 0
           fi
           node_file="$(find "${TALOS_DIR}" -name "${NODE}.yaml" -print -quit)"
-          yq --exit-status '.machine.nodeLabels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
+          yq --exit-status 'select(.kind == "KubeNodeConfig") | .labels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
             && echo true || echo false
       MACHINE_TYPE:
         sh: basename "$(find "${TALOS_DIR}" -name "${NODE}.yaml" -exec dirname {} \;)"
