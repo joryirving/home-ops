@@ -50,7 +50,7 @@ per-Agent `execution.image`).
 | `coder` | `nvidia` (local) | free | InProcess (fleet) | polyglot `llmkube-coder` (Py+Node); generic/`*` + pr-fix fallback |
 | `coder-python` | `nvidia` (local) | free | **Job** | `ghcr.io/joryirving/llmkube-coder-python` |
 | `coder-node` | `nvidia` (local) | free | **Job** | `ghcr.io/joryirving/llmkube-coder-node` |
-| `coder-go` | `llama-nvidia` (local) | free | **Job** | `ghcr.io/defilantech/llmkube-foreman-agent-coder` |
+| `coder-go` | `qwen3.8-27b` (local) | free | **Job** | `ghcr.io/defilantech/llmkube-foreman-agent-coder` |
 | `coder-frontier` | `MiniMax-M3-chat` (cloud) | **$ — the only cloud spend** | InProcess (fleet) | polyglot |
 | `coder-revision` | `nvidia` (local) | free | InProcess (fleet) | polyglot (pr-fix / revision) |
 | `gate` | none (deterministic) | free | Job (per-task) | **idle in gateless mode** (`VERIFY_ENABLED=false`); was `GATEPROFILE_MAP.image` per language |

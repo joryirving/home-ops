@@ -20,7 +20,7 @@ Workload (this bridge) ──► AgenticTasks (foreman-operator)
     │
     ├─ code    coder Agent (Job, polyglot image) — clone, fix, SELF-GATE, push branch
     │          issues split deterministically: coder (nvidia) / coder-strix (self-hosted)
-    └─ review  reviewer Agent (Nemotron 3.5 Lightning, read-only) — diff review, verdict
+    └─ review  reviewer Agent (Gemma 4 12B-it QAT, read-only) — diff review, verdict
     │
     ▼ review GO
 foreman opens the PR (summary grounded against the diff)
@@ -52,7 +52,7 @@ survives retries (bridge 0.6.20; losing it once collided every third attempt ont
 **4. Execute.** The operator decomposes into `code → review` (verify Jobs are off:
 `VERIFY_ENABLED=false`, repo CI is the verifier). The coder runs as its own Job on the
 polyglot image, runs the `gateProfile` commands as a **self-gate** before submitting, and
-pushes `foreman/<workload>/issue-<n>`. The reviewer (Nemotron 3.5 Lightning via `llama-reviewer`)
+pushes `foreman/<workload>/issue-<n>`. The reviewer (Gemma 4 12B-it QAT via `gemma-4-12b-it-qat`)
 reads the diff and issues a verdict; deterministic rails ground its claims (filesTouched,
 issueAsk, findings, and — since 0.9.15 — the PR-body summary against the diff).
 
