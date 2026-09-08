@@ -11,13 +11,70 @@ spec:
   interval: 15m
   dependsOn: []
   values:
+    operatorConfig:
+      driverSpecDefaults:
+        controllerPlugin:
+          resources:
+            attacher:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+            omapGenerator:
+              requests:
+                cpu: 250m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+            plugin:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+            provisioner:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+            resizer:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+            snapshotter:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+        nodePlugin:
+          resources:
+            plugin:
+              requests:
+                cpu: 250m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+            registrar:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 256Mi
     drivers:
       cephfs:
         enabled: true
         name: rook-ceph.cephfs.csi.ceph.com
+        grpcTimeout: 150
         snapshotPolicy: volumeSnapshot
         kernelMountOptions:
           ms_mode: prefer-crc
+        controllerPlugin:
+          replicas: 2
         nodePlugin:
           tolerations: &pluginTolerations
             - key: llm-workload
@@ -30,6 +87,9 @@ spec:
       rbd:
         enabled: true
         name: rook-ceph.rbd.csi.ceph.com
+        grpcTimeout: 150
         snapshotPolicy: volumeSnapshot
+        controllerPlugin:
+          replicas: 2
         nodePlugin:
           tolerations: *pluginTolerations
