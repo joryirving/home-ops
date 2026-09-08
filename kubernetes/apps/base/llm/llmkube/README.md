@@ -20,9 +20,9 @@ memini/                     # Intel iGPU helpers, reconciled by the `memini` KS
   memini-embed.yaml  memini-rerank.yaml  memini-summary.yaml
 
 litellm/app/                # chat/vision models, reconciled by the `litellm` KS
-  llama-nvidia.yaml         # Qwen3.6-27B on RTX 3090
-  llama-strix.yaml          # Qwen3.6-35B-A3B Uncensored on Strix Halo (multimodal)
-  llama-reviewer.yaml       # Mellum2-12B-A2.5B on Strix Halo (foreman reviewer)
+  qwen3.8-27b.yaml         # Qwen3.6-27B on RTX 3090
+  qwen3.8-flash-next.yaml          # Qwen3.6-35B-A3B Uncensored on Strix Halo (multimodal)
+  gemma-4-12b-it-qat.yaml       # Mellum2-12B-A2.5B on Strix Halo (foreman reviewer)
 
 toolhive/config/            # per-app tenant model, reconciled by `toolhive-config`
   toolhive-embed.yaml       # Qwen3-Embedding-0.6B on Intel iGPU (was a TEI EmbeddingServer CRD)
@@ -66,11 +66,11 @@ GPU access depends on the target:
 
 ## The 3090: single always-on tenant
 
-The egpu / RTX 3090 runs one `InferenceService` permanently — `llama-nvidia`
+The egpu / RTX 3090 runs one `InferenceService` permanently — `qwen3.8-27b`
 (Qwen3.6-27B, `replicas: 1`). It serves the `nvidia` coding model and acts as a
 LiteLLM fallback for `self-hosted`.
 
-There's no burst-swap (the old `burst-watcher` + `llama-nvidia-gemma` were
+There's no burst-swap (the old `burst-watcher` + `qwen3.8-27b-gemma` were
 retired): the card holds one model, so spinning a second up meant tearing Qwen
 down — too slow, and it took `nvidia` offline for too long. The card stays warm
 for `nvidia` traffic throughout.
