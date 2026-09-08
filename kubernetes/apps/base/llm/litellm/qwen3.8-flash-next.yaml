@@ -2,7 +2,7 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: llama-strix
+  name: qwen3.8-flash-next
 spec:
   source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
   files:
@@ -28,11 +28,11 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: llama-strix
+  name: qwen3.8-flash-next
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: llama-strix
+  modelRef: qwen3.8-flash-next
   modelCache:
     claimName: llmkube-skirk-cache
   extraVolumes:
@@ -80,7 +80,7 @@ spec:
     type: ClusterIP
   extraArgs:
     - --alias
-    - llama-strix
+    - qwen3.8-flash-next
     - --image-min-tokens
     - "1024"
     - --cont-batching

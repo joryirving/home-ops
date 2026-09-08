@@ -1,14 +1,14 @@
 # Games-on-Whales (Wolf + Fenrir)
 
-GPU game streaming on ganyu's RTX 3090, sharing the GPU with `llama-nvidia`.
+GPU game streaming on ganyu's RTX 3090, sharing the GPU with `qwen3.8-27b`.
 
 ## What works
 
 - **GPU time-slicing** — the 3090 advertises `nvidia.com/gpu: 2`
   (`kube-system/nvidia-device-plugin`).
-- **PriorityClass preemption** — `llama-nvidia` runs at `gpu-preemptible`
+- **PriorityClass preemption** — `qwen3.8-27b` runs at `gpu-preemptible`
   (-100); launching a session preempts it to free the GPU, and it reloads when
-  the session ends. Validated live: a Steam session evicted `llama-nvidia`.
+  the session ends. Validated live: a Steam session evicted `qwen3.8-27b`.
 - Wolf starts, pairs over Moonlight, negotiates HEVC, and (once it has a render
   node) detects the NVIDIA GPU for its zero-copy pipeline.
 
