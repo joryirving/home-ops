@@ -147,9 +147,11 @@ spec:
             resources: ["agentictasks", "workloads", "fleetnodes"]
             verbs: ["list", "watch"]
       customResourceState:
-        enabled: true
-        # The foreman chart renders this ConfigMap into observability
-        # (foreman.crs.namespace); definitions update on foreman chart bumps.
+        # Only main runs foreman, which renders the foreman-crs ConfigMap into
+        # observability (foreman.crs.namespace); other clusters have no such
+        # ConfigMap, so gating keeps their kube-state-metrics from wedging on a
+        # missing mount. definitions update on foreman chart bumps.
+        enabled: ${KSM_FOREMAN_CRS:=false}
         create: false
         name: foreman-crs
         key: foreman-crs.yaml
