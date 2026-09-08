@@ -13,14 +13,14 @@ under `kubernetes/apps/base/llm/foreman/agents/`.
 GitHub issue
     │  dispatch scheduled sync (15m)
     ▼
-Dispatch cache ──► Groomer (self-hosted 35B, json_schema-constrained) ──► lane: local / backlog
+Dispatch cache ──► Groomer (qwen3.8-flash-next, json_schema-constrained) ──► lane: local / backlog
     │  bridge CronJob (*/15)
     ▼
 Workload (this bridge) ──► AgenticTasks (foreman-operator)
     │
     ├─ code    coder Agent (Job, polyglot image) — clone, fix, SELF-GATE, push branch
-    │          issues split deterministically: coder (nvidia) / coder-strix (self-hosted)
-    └─ review  reviewer Agent (Gemma 4 12B-it QAT, read-only) — diff review, verdict
+    │          base lane: coder (qwen3.8-27b, local); escalation: coder-frontier (MiniMax, cloud)
+    └─ review  reviewer Agent (gemma-4-12b-it-qat, read-only) — diff review, verdict
     │
     ▼ review GO
 foreman opens the PR (summary grounded against the diff)
@@ -35,12 +35,12 @@ foreman opens the PR (summary grounded against the diff)
 **1. Sync.** Dispatch's in-app scheduler syncs tracked repos every 15m. Closed issues are
 forced to `status/done` on GitHub itself; `renovate`-labeled issues are excluded.
 
-**2. Groom.** The hosted groomer runs on `self-hosted` (the strix/mac litellm pool). It
-sends a `json_schema` response_format — grammar-constrained decoding, with
-`validateGroomerOutput` as the net. Grooming is binary: ready → `local`, not → `backlog`.
-It never routes to `frontier`; tiering is decided by *failure*, not prediction. Both pool
-members must honour `response_format` — a member that strips it returns prose and the
-groomer fails validation (that was `additional_drop_params` on the mac, removed in #8898).
+**2. Groom.** The hosted groomer runs on `qwen3.8-flash-next` (Flash-Next 180B on the
+Strix box, 262k window). It sends a `json_schema` response_format — grammar-constrained
+decoding, with `validateGroomerOutput` as the net. Grooming is binary: ready → `local`,
+not → `backlog`. It never routes to `frontier`; tiering is decided by *failure*, not
+prediction. The backend must honour `response_format` — one that strips it returns prose
+and the groomer fails validation.
 
 **3. Claim → Workload.** This CronJob (`*/15`) retries failed Workloads first, then claims
 one `status/ready` issue per lane. The Workload carries the coder Agent (picked from the
