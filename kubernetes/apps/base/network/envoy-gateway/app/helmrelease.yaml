@@ -17,5 +17,16 @@ spec:
           kubernetes:
             deploy:
               type: GatewayNamespace
+    deployment:
+      replicas: ${REPLICAS:=1}
+      pod:
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+            matchLabelKeys: ["pod-template-hash"]
+            labelSelector:
+              matchLabels:
+                control-plane: envoy-gateway
     global:
       imageRegistry: mirror.gcr.io

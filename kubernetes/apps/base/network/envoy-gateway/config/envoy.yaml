@@ -19,6 +19,15 @@ spec:
               cpu: 100m
             limits:
               memory: 1Gi
+        pod:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              matchLabelKeys: ["pod-template-hash"]
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/managed-by: envoy-gateway
   shutdown:
     drainTimeout: 180s
   telemetry:

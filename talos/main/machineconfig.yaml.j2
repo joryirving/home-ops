@@ -208,6 +208,17 @@ extraArgs:
   feature-gates: HPAScaleToZero=true
 ---
 apiVersion: v1alpha1
+kind: KubeAuthenticationConfig
+configuration:
+  anonymous:
+    conditions:
+      - path: /livez
+      - path: /readyz
+      - path: /healthz
+    enabled: true
+  jwt: []
+---
+apiVersion: v1alpha1
 kind: KubeAuthorizerConfig
 name: node
 type: Node
