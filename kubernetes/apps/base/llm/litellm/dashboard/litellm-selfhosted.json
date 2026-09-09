@@ -1,0 +1,761 @@
+{
+  "title": "LiteLLM Self-Hosted Economics (CAD)",
+  "uid": "litellm-selfhosted",
+  "tags": [
+    "litellm",
+    "llm",
+    "self-hosted"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "5m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "datasource",
+        "query": "prometheus",
+        "current": {
+          "text": "prometheus-main",
+          "value": "prometheus-main"
+        }
+      },
+      {
+        "type": "textbox",
+        "name": "usd_cad",
+        "label": "USD\u2192CAD",
+        "query": "1.38",
+        "current": {
+          "text": "1.38",
+          "value": "1.38"
+        },
+        "hide": 0
+      },
+      {
+        "type": "textbox",
+        "name": "kwh_price",
+        "label": "$/kWh (CAD)",
+        "query": "0.13",
+        "current": {
+          "text": "0.13",
+          "value": "0.13"
+        },
+        "hide": 0
+      },
+      {
+        "type": "textbox",
+        "name": "days_in_month",
+        "label": "days/mo",
+        "query": "30",
+        "current": {
+          "text": "30",
+          "value": "30"
+        },
+        "hide": 0
+      },
+      {
+        "type": "textbox",
+        "name": "payg_gen_in",
+        "label": "PAYG generative input $/Mtok",
+        "query": "0.20",
+        "current": {
+          "text": "0.20",
+          "value": "0.20"
+        },
+        "hide": 0
+      },
+      {
+        "type": "textbox",
+        "name": "payg_gen_out",
+        "label": "PAYG generative output $/Mtok",
+        "query": "0.60",
+        "current": {
+          "text": "0.60",
+          "value": "0.60"
+        },
+        "hide": 0
+      },
+      {
+        "type": "textbox",
+        "name": "payg_embed",
+        "label": "PAYG embed $/Mtok",
+        "query": "0.02",
+        "current": {
+          "text": "0.02",
+          "value": "0.02"
+        },
+        "hide": 0
+      },
+      {
+        "type": "textbox",
+        "name": "payg_rerank",
+        "label": "PAYG rerank $/Mtok",
+        "query": "0.02",
+        "current": {
+          "text": "0.02",
+          "value": "0.02"
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Self-hosting value \u2014 what paying PAYG for tokens would have cost ($__range)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Local tokens served",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 0,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "PAYG-equivalent value (CAD)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 5,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "$usd_cad * ((sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_in + (sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_out + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range])) or vector(0))/1e6*$payg_embed + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range])) or vector(0))/1e6*$payg_rerank)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Power cost (CAD)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 10,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($__range_s/3600) * $kwh_price",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Net saved by self-hosting (CAD)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 14,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "($usd_cad * ((sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_in + (sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_out + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range])) or vector(0))/1e6*$payg_embed + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range])) or vector(0))/1e6*$payg_rerank)) - ((sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($__range_s/3600) * $kwh_price)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Effective cost / Mtok (CAD)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 19,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(((sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($__range_s/3600) * $kwh_price) / ((sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range])))/1e6))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Where the local tokens go",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Per local model \u2014 tokens & PAYG value (CAD)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 14,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (model) (increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {}
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Token volume: generative vs embed vs rerank",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 14,
+        "y": 8
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "values": [
+            "value",
+            "percent"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range]))",
+          "legendFormat": "generative",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range]))",
+          "legendFormat": "embeddings",
+          "instant": true,
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range]))",
+          "legendFormat": "rerank",
+          "instant": true,
+          "range": false,
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Performance (local lanes)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Time to first token (p50, s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.5, sum by (model,le) (rate(litellm_llm_api_time_to_first_token_metric_bucket{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__rate_interval])))",
+          "legendFormat": "{{model}} p50",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Output throughput (tok/s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (model) (rate(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__rate_interval]))",
+          "legendFormat": "{{model}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Power draw (Strix + 3090; 9070XT desktop not PDU-metered)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Current draw (W)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 26
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range]))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Projected power cost / mo (CAD)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 26
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($days_in_month*24) * $kwh_price",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Power draw by outlet",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "unpoller_device_outlet_outlet_power{outlet_index=\"13\"}",
+          "legendFormat": "Strix (13)",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "unpoller_device_outlet_outlet_power{outlet_index=\"14\"}",
+          "legendFormat": "3090 (14)",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
