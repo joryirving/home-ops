@@ -59,45 +59,12 @@
       },
       {
         "type": "textbox",
-        "name": "payg_gen_in",
-        "label": "PAYG generative input $/Mtok",
-        "query": "0.20",
+        "name": "ref_model",
+        "label": "PAYG model to price against (litellm model label)",
+        "query": "deepseek-v4-flash",
         "current": {
-          "text": "0.20",
-          "value": "0.20"
-        },
-        "hide": 0
-      },
-      {
-        "type": "textbox",
-        "name": "payg_gen_out",
-        "label": "PAYG generative output $/Mtok",
-        "query": "0.60",
-        "current": {
-          "text": "0.60",
-          "value": "0.60"
-        },
-        "hide": 0
-      },
-      {
-        "type": "textbox",
-        "name": "payg_embed",
-        "label": "PAYG embed $/Mtok",
-        "query": "0.02",
-        "current": {
-          "text": "0.02",
-          "value": "0.02"
-        },
-        "hide": 0
-      },
-      {
-        "type": "textbox",
-        "name": "payg_rerank",
-        "label": "PAYG rerank $/Mtok",
-        "query": "0.02",
-        "current": {
-          "text": "0.02",
-          "value": "0.02"
+          "text": "deepseek-v4-flash",
+          "value": "deepseek-v4-flash"
         },
         "hide": 0
       }
@@ -115,6 +82,20 @@
       },
       "collapsed": false,
       "panels": []
+    },
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**PAYG value** prices your **generative** local tokens at what LiteLLM actually charges for `$ref_model` (its spend \u00f7 tokens). Embeds/reranks are shown by volume but excluded from the $ figure \u2014 they're near-free and have no PAYG reference in litellm. Set `ref_model` to the model you'd realistically pay for instead."
+      }
     },
     {
       "type": "stat",
@@ -168,7 +149,7 @@
     },
     {
       "type": "stat",
-      "title": "PAYG-equivalent value (CAD)",
+      "title": "PAYG value of generative tokens (CAD, litellm-derived)",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -208,7 +189,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "$usd_cad * ((sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_in + (sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_out + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range])) or vector(0))/1e6*$payg_embed + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range])) or vector(0))/1e6*$payg_rerank)",
+          "expr": "$usd_cad * (sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0)) * ((sum(increase(litellm_spend_metric_total{model=~\"$ref_model\"}[$__range])) or vector(0)) / (sum(increase(litellm_total_tokens_metric_total{model=~\"$ref_model\"}[$__range])) > 0))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -308,7 +289,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "($usd_cad * ((sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_in + (sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6*$payg_gen_out + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range])) or vector(0))/1e6*$payg_embed + (sum(increase(litellm_total_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range])) or vector(0))/1e6*$payg_rerank)) - ((sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($__range_s/3600) * $kwh_price)",
+          "expr": "($usd_cad * (sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0)) * ((sum(increase(litellm_spend_metric_total{model=~\"$ref_model\"}[$__range])) or vector(0)) / (sum(increase(litellm_total_tokens_metric_total{model=~\"$ref_model\"}[$__range])) > 0))) - ((sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($__range_s/3600) * $kwh_price)",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -318,7 +299,7 @@
     },
     {
       "type": "stat",
-      "title": "Effective cost / Mtok (CAD)",
+      "title": "Real cost / Mtok generative (CAD)",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -358,7 +339,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(((sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($__range_s/3600) * $kwh_price) / ((sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range])))/1e6))",
+          "expr": "(((sum(avg_over_time(unpoller_device_outlet_outlet_power{outlet_index=~\"13|14\"}[$__range])))/1000 * ($__range_s/3600) * $kwh_price) / ((sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local\"}[$__range])) or vector(0))/1e6))",
           "legendFormat": "",
           "instant": true,
           "range": false,
