@@ -37,6 +37,10 @@ cluster:
   {% endif %}
 ---
 apiVersion: v1alpha1
+kind: SecurityProfileConfig
+workloadIsolation: true
+---
+apiVersion: v1alpha1
 kind: ResolverConfig
 searchDomains:
   domains: []
@@ -64,6 +68,10 @@ provisioning:
 ---
 apiVersion: v1alpha1
 kind: FilesystemTrimConfig
+interval: 168h0m0s
+---
+apiVersion: v1alpha1
+kind: FilesystemScrubConfig
 interval: 168h0m0s
 ---
 apiVersion: v1alpha1
@@ -140,7 +148,7 @@ labels:
 ---
 apiVersion: v1alpha1
 kind: KubeletConfig
-image: ghcr.io/siderolabs/kubelet:v1.36.2
+image: ghcr.io/siderolabs/kubelet:v1.37.0
 defaultRuntimeSeccompProfileEnabled: true
 extraArgs:
   max-pods: "200"
@@ -166,7 +174,7 @@ allowedKubernetesNamespaces: ["actions-runner-system", "kube-tools"]
 ---
 apiVersion: v1alpha1
 kind: KubeAPIServerConfig
-image: registry.k8s.io/kube-apiserver:v1.36.2
+image: registry.k8s.io/kube-apiserver:v1.37.0
 certExtraSANs: ["k8s.test.internal", "127.0.0.1"]
 extraArgs:
   enable-aggregator-routing: "true"
@@ -195,13 +203,13 @@ type: RBAC
 ---
 apiVersion: v1alpha1
 kind: KubeControllerManagerConfig
-image: registry.k8s.io/kube-controller-manager:v1.36.2
+image: registry.k8s.io/kube-controller-manager:v1.37.0
 extraArgs:
   bind-address: 0.0.0.0
 ---
 apiVersion: v1alpha1
 kind: KubeSchedulerConfig
-image: registry.k8s.io/kube-scheduler:v1.36.2
+image: registry.k8s.io/kube-scheduler:v1.37.0
 extraArgs:
   bind-address: 0.0.0.0
 config:
@@ -223,7 +231,7 @@ config:
 apiVersion: v1alpha1
 kind: KubeProxyConfig
 enabled: false
-image: registry.k8s.io/kube-proxy:v1.36.2
+image: registry.k8s.io/kube-proxy:v1.37.0
 ---
 apiVersion: v1alpha1
 kind: KubeCoreDNSConfig
