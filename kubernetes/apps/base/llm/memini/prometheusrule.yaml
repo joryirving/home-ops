@@ -36,3 +36,46 @@ spec:
               not keeping up with recall volume
           labels:
             severity: warning
+        - alert: MeminiFactMintingHigh
+          expr: |-
+            sum(increase(memini_store_upserts_total{op="insert",tier="semantic"}[1d])) > 30
+          for: 2h
+          annotations:
+            summary: >-
+              Memini minted {{ $value | printf "%.0f" }} durable facts in 24h — the distiller is
+              over-extracting (healthy baseline is 6-13/day)
+          labels:
+            severity: warning
+        - alert: MeminiLifecycleStalled
+          expr: |-
+            sum(increase(memini_store_upserts_total{op="insert",tier=~"semantic|procedural"}[7d])) > 100
+            and
+            sum(increase(memini_demoted_total[7d]) + increase(memini_dedup_tombstoned_total[7d])) < 5
+          for: 6h
+          annotations:
+            summary: >-
+              Memini is accumulating durable facts with almost no demotion or dedup — debris is
+              piling up in recall
+          labels:
+            severity: warning
+        - alert: MeminiDistillStalled
+          expr: |-
+            sum(increase(memini_store_upserts_total{op="insert",tier="episodic"}[6h])) > 10
+            and
+            sum(increase(memini_store_upserts_total{op="insert",tier="semantic"}[6h])) == 0
+          for: 1h
+          annotations:
+            summary: >-
+              Memini is capturing turns but distilling no facts — the distill LLM is likely
+              returning empty or unparseable output
+          labels:
+            severity: warning
+        - alert: MeminiConsolidateErrors
+          expr: |-
+            sum(increase(memini_consolidate_results_total{result="error"}[1h])) > 3
+          for: 30m
+          annotations:
+            summary: >-
+              Memini consolidation LLM calls are failing ({{ $value | printf "%.0f" }} errors/h)
+          labels:
+            severity: warning
