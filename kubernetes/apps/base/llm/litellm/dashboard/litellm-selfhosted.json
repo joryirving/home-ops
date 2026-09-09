@@ -71,7 +71,7 @@
    },
    "options": {
     "mode": "markdown",
-    "content": "**Cost** prices every self-hosted token at the modeled CAD rate baked into each model (amortized hardware + power for the GPU lanes; extra-watts-only for gemma/embeds/reranks). **Power cost** is the measured PDU draw for the Strix + 3090 over the range. The two are separate lenses on the same spend, not additive."
+    "content": "**Cost** is modeled from each model's historical input/output token counts times the CAD rate baked into that model (amortized hardware + power for the GPU lanes; extra-watts-only for gemma/embeds/reranks), so it backfills the full range. **Power cost** is the measured PDU draw for the Strix + 3090. The two are separate lenses on the same spend, not additive."
    }
   },
   {
@@ -165,7 +165,7 @@
       "type": "prometheus",
       "uid": "${datasource}"
      },
-     "expr": "sum(increase(litellm_spend_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))",
+     "expr": "(sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-27b.*\"}[$__range]))*6.2e-08 + sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*\"}[$__range]))*1.35e-06 + sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-flash-next.*\"}[$__range]))*2.09e-07 + sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-flash-next.*\"}[$__range]))*2.97e-06 + sum(increase(litellm_input_tokens_metric_total{model=~\"gemma-4-12b-it-qat.*\"}[$__range]))*2.23e-08 + sum(increase(litellm_output_tokens_metric_total{model=~\"gemma-4-12b-it-qat.*\"}[$__range]))*4.83e-07 + sum(increase(litellm_input_tokens_metric_total{model=~\"dsv4f-local\"}[$__range]))*1.25e-07 + sum(increase(litellm_output_tokens_metric_total{model=~\"dsv4f-local\"}[$__range]))*4.999e-07 + sum(increase(litellm_input_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range]))*1e-08 + sum(increase(litellm_input_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range]))*1e-10)",
      "instant": true,
      "range": false,
      "refId": "A"
@@ -263,7 +263,7 @@
       "type": "prometheus",
       "uid": "${datasource}"
      },
-     "expr": "(sum(increase(litellm_spend_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range])) or vector(0)) / (sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))/1e6 > 0)",
+     "expr": "(sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-27b.*\"}[$__range]))*6.2e-08 + sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*\"}[$__range]))*1.35e-06 + sum(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-flash-next.*\"}[$__range]))*2.09e-07 + sum(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-flash-next.*\"}[$__range]))*2.97e-06 + sum(increase(litellm_input_tokens_metric_total{model=~\"gemma-4-12b-it-qat.*\"}[$__range]))*2.23e-08 + sum(increase(litellm_output_tokens_metric_total{model=~\"gemma-4-12b-it-qat.*\"}[$__range]))*4.83e-07 + sum(increase(litellm_input_tokens_metric_total{model=~\"dsv4f-local\"}[$__range]))*1.25e-07 + sum(increase(litellm_output_tokens_metric_total{model=~\"dsv4f-local\"}[$__range]))*4.999e-07 + sum(increase(litellm_input_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range]))*1e-08 + sum(increase(litellm_input_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range]))*1e-10) / (sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))/1e6 > 0)",
      "instant": true,
      "range": false,
      "refId": "A"
@@ -305,7 +305,7 @@
      "instant": true,
      "range": false,
      "format": "table",
-     "expr": "sum by (model) (increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))"
+     "expr": "sum by (model)(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))"
     },
     {
      "datasource": {
@@ -316,7 +316,7 @@
      "instant": true,
      "range": false,
      "format": "table",
-     "expr": "sum by (model) (increase(litellm_spend_metric_total{model=~\"qwen3.8-27b.*|qwen3.8-flash-next.*|gemma-4-12b-it-qat.*|muse-glimmer|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))"
+     "expr": "((sum by (model)(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-27b.*\"}[$__range]))*6.2e-08) + (sum by (model)(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-27b.*\"}[$__range]))*1.35e-06)) or ((sum by (model)(increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-flash-next.*\"}[$__range]))*2.09e-07) + (sum by (model)(increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-flash-next.*\"}[$__range]))*2.97e-06)) or ((sum by (model)(increase(litellm_input_tokens_metric_total{model=~\"gemma-4-12b-it-qat.*\"}[$__range]))*2.23e-08) + (sum by (model)(increase(litellm_output_tokens_metric_total{model=~\"gemma-4-12b-it-qat.*\"}[$__range]))*4.83e-07)) or ((sum by (model)(increase(litellm_input_tokens_metric_total{model=~\"dsv4f-local\"}[$__range]))*1.25e-07) + (sum by (model)(increase(litellm_output_tokens_metric_total{model=~\"dsv4f-local\"}[$__range]))*4.999e-07)) or (sum by (model)(increase(litellm_input_tokens_metric_total{model=~\"memini-rerank|rerank\"}[$__range]))*1e-08) or (sum by (model)(increase(litellm_input_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range]))*1e-10)"
     }
    ],
    "transformations": [
