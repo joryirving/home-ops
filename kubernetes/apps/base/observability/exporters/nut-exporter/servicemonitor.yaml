@@ -78,22 +78,3 @@ spec:
           targetLabel: server
         - action: labeldrop
           regex: pod
-    - interval: 30s
-      path: /ups_metrics
-      port: metrics
-      scheme: http
-      scrapeTimeout: 30s
-      params:
-        server: ["venti.internal"]
-        ups: ["ecoflow_ups"]
-      metricRelabelings:
-        - action: replace
-          replacement: ecoflow_ups
-          sourceLabels: [instance]
-          targetLabel: instance
-        - action: replace
-          replacement: venti.internal
-          sourceLabels: [server]
-          targetLabel: server
-        - action: labeldrop
-          regex: pod
