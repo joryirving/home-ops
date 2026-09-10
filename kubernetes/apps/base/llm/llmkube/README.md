@@ -115,8 +115,10 @@ cached file is kept forever. Changing the `source` URL forces a fresh download
 
 **Caveats**
 
-- **No HF token** in this path — works for public GGUFs (unsloth, mradermacher).
-  Gated/private repos must be pre-staged (Option B).
+- Set `spec.sourceSecretRef: {name: huggingface}` so the downloader sends the
+  `HF_TOKEN` from the `huggingface` Secret (litellm ExternalSecret) as a bearer
+  on huggingface.co requests: gated repos work and authenticated pulls skip the
+  anonymous rate limits. The token is never forwarded off huggingface.co.
 - **Single file only.** Multimodal models needing a separate `mmproj-*.gguf`
   can't be expressed as one `source` — pre-stage them (Option B).
 
