@@ -57,7 +57,7 @@ spec:
 
         - title: Power
           id: cluster_power_usage
-          query: round((network_ups_tools_ups_load{instance="server_ups"} * 0.01 * 900) + ignoring(server, instance) (network_ups_tools_ups_load{instance="network_ups"} * 0.01 * 330)) # Server Rack Load % * 900W + Network Load % * 330W
+          query: round((sum(network_ups_tools_ups_realpower{instance="server_ups"}) or vector(0)) + (sum(network_ups_tools_ups_load{instance="network_ups"} * 0.01 * network_ups_tools_ups_realpower_nominal{instance="network_ups"}) or vector(0))) # EcoFlow server output power + network UPS load * nominal power
           valueExpr: humanizeCommas(math.round(result)) + "w"
           colorExpr: 'colorScale(result, [400.0, 750.0], ["green", "orange", "red"])'
 
