@@ -35,9 +35,9 @@ spec:
         matchLabels:
           cpu-inference: "true"
   contextSize: 32768
-  parallelSlots: 2
-  batchSize: 16384
-  uBatchSize: 16384
+  parallelSlots: 32
+  batchSize: 2048
+  uBatchSize: 2048
   env:
     - name: GOMP_CPU_AFFINITY
       value: "0-11"
@@ -51,6 +51,7 @@ spec:
     - --alias
     - memini-embed
     - --cont-batching
+    - --kv-unified
     - --threads
     - "6"
     - --threads-batch
