@@ -16,6 +16,11 @@ spec:
   postBuild:
     substitute:
       APP: *app
+    substituteFrom:
+      # The ExternalSecret is created by this Kustomization; allow it to bootstrap.
+      - kind: Secret
+        name: searxng
+        optional: true
   wait: false
   prune: true
   sourceRef:
