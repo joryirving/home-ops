@@ -1,0 +1,38 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: ModelPool
+metadata:
+  name: nvidia
+spec:
+  nodeSelector:
+    topology.kubernetes.io: egpu
+  gpu: 1
+  swapPolicy: sticky
+  swapBudget: 600s
+  default: qwen3.8-27b
+  members:
+    - inferenceServiceRef:
+        name: qwen3.8-27b
+    - inferenceServiceRef:
+        name: muse-glimmer
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: ModelRouter
+metadata:
+  name: nvidia
+spec:
+  defaultRouteStrategy: BackendNameMatch
+  defaultRoute: qwen38-27b
+  backends:
+    - name: qwen38-27b
+      displayName: qwen3.8-27b
+      inferenceServiceRef:
+        name: qwen3.8-27b
+      capabilities: ["tools", "vision"]
+    - name: muse-glimmer
+      inferenceServiceRef:
+        name: muse-glimmer
+      capabilities: ["tools", "vision"]
+  proxy:
+    replicas: 1
+    responseHeaderTimeout: 600s
