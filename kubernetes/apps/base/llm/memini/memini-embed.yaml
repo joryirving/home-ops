@@ -35,9 +35,10 @@ spec:
         matchLabels:
           cpu-inference: "true"
   contextSize: 32768
-  parallelSlots: 2
-  batchSize: 16384
-  uBatchSize: 16384
+  parallelSlots: 32
+  flashAttention: true
+  batchSize: 2048
+  uBatchSize: 2048
   env:
     - name: GOMP_CPU_AFFINITY
       value: "0-11"
@@ -45,12 +46,15 @@ spec:
       value: "granularity=fine,proc_list=[0-11],explicit"
   resources:
     cpu: "2"
-    memory: 8Gi
+    memory: 6Gi
   mode: embedding
   extraArgs:
     - --alias
     - memini-embed
     - --cont-batching
+    - --cache-ram
+    - "0"
+    - --kv-unified
     - --threads
     - "6"
     - --threads-batch
