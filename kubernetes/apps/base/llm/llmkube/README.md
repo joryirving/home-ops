@@ -64,16 +64,29 @@ GPU access depends on the target:
   (`llmkube/resourceclaim.yaml`).
 - **NVIDIA** — no claim; request `gpu: { count: 1 }` on the hardware block.
 
-## The 3090: single always-on tenant
+## The 3090: a ModelPool
 
-The egpu / RTX 3090 runs one `InferenceService` permanently — `qwen3.8-27b`
-(Qwen3.6-27B, `replicas: 1`). It serves the `nvidia` coding model and acts as a
-LiteLLM fallback for `self-hosted`.
+The egpu / RTX 3090 is one exclusive slot shared by a `ModelPool`
+(`litellm/nvidia-pool.yaml`): `qwen3.8-27b` (default resident) and
+`muse-glimmer`. At most one member is `Ready`; the operator holds the other at
+`replicas: 0` / `Stopped` — that is the normal held state, not a failure. Do
+not set `replicas` on a pooled InferenceService in git; the pool controller and
+the router own that field.
 
-There's no burst-swap (the old `burst-watcher` + `qwen3.8-27b-gemma` were
-retired): the card holds one model, so spinning a second up meant tearing Qwen
-down — too slow, and it took `nvidia` offline for too long. The card stays warm
-for `nvidia` traffic throughout.
+Swaps are demand-driven through the `nvidia` `ModelRouter` (service
+`nvidia-router-proxy.llm:8080`, `BackendNameMatch` on the request's `model`).
+A request for the stopped member is held open while the incumbent drains
+(`/slots` idle check, fail-closed) and unloads, then the target cold-loads
+(`swapBudget: 600s`, then 503 + Retry-After). Sticky policy: the resident stays
+until the *other* model is asked for. LiteLLM therefore points every 3090-backed
+model at the router, never at a member's own Service, and both members have
+explicit `LiteLLMModel` CRs in `litellm/models/` because the litellm-operator's
+auto-projection drops a model when its InferenceService goes `Stopped`. Those CRs
+carry `litellm.home-operations.com/managed-by: flux` so the projection sees a
+model it does not own and leaves it alone.
+
+The device plugin no longer time-slices the card (`nvidia.com/gpu: 1`), so a
+displaced member cannot co-schedule onto a busy card.
 
 ### Option A — let the operator download it (preferred for new models)
 
@@ -102,8 +115,10 @@ cached file is kept forever. Changing the `source` URL forces a fresh download
 
 **Caveats**
 
-- **No HF token** in this path — works for public GGUFs (unsloth, mradermacher).
-  Gated/private repos must be pre-staged (Option B).
+- Set `spec.sourceSecretRef: {name: huggingface}` so the downloader sends the
+  `HF_TOKEN` from the `huggingface` Secret (litellm ExternalSecret) as a bearer
+  on huggingface.co requests: gated repos work and authenticated pulls skip the
+  anonymous rate limits. The token is never forwarded off huggingface.co.
 - **Single file only.** Multimodal models needing a separate `mmproj-*.gguf`
   can't be expressed as one `source` — pre-stage them (Option B).
 

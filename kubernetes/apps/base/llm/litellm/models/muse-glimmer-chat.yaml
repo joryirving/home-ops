@@ -2,27 +2,26 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: local-pool-chat-1
+  name: muse-glimmer-chat
 spec:
-  modelName: local-pool-chat
+  modelName: muse-glimmer-chat
   proxyRef: litellm
   params:
-    model: openai/qwen3.8-27b
+    model: openai/muse-glimmer
     apiBase: http://nvidia-router-proxy.llm.svc.cluster.local:8080/v1
     apiKey: sk-llmkube-noauth
     additional:
-      temperature: 0.7
-      top_p: 0.8
-      presence_penalty: 1.5
-      reasoning_effort: none
-      order: 1
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 64
+      extra_body:
+        chat_template_kwargs:
+          reasoning_strength: low
       max_parallel_requests: 2
-      allowed_openai_params:
-        - reasoning_effort
   info:
     mode: chat
     maxInputTokens: 131072
-    maxOutputTokens: 40960
+    maxOutputTokens: 20480
     supportsFunctionCalling: true
     supportsVision: true
     extra:

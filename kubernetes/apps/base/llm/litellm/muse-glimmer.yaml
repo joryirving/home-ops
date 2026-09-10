@@ -2,17 +2,18 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: qwen3.8-27b
+  name: muse-glimmer
 spec:
-  source: hf://unsloth/Qwen3.8-27B-GGUF
+  source: hf://meta-models/Muse-Glimmer-30B-GGUF
   sourceSecretRef:
     name: huggingface
   files:
-    - Qwen3.8-27B-UD-Q4_K_XL.gguf
-    - mmproj-F16.gguf
-  mmproj: mmproj-F16.gguf
+    - Muse-Glimmer-30B-KQuant-17GB-Q4_K_M.gguf
+    - dflash-Muse-Glimmer-30B-Q4_K_M.gguf
+    - mmproj-Muse-Glimmer-30B-Q4_K_M.gguf
+  mmproj: mmproj-Muse-Glimmer-30B-Q4_K_M.gguf
   format: gguf
-  quantization: UD-Q4_K_XL
+  quantization: Q4_K_M
   hardware:
     accelerator: cuda
     gpu:
@@ -24,11 +25,11 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: qwen3.8-27b
+  name: muse-glimmer
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: qwen3.8-27b
+  modelRef: muse-glimmer
   runtime: llamacpp
   image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:5ebb7a55e3d38e5fe185346fcd908033e69c035ad49b33df0066eb7cf4f7b06b
   rolloutPolicy:
@@ -41,29 +42,28 @@ spec:
   env:
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
-  # contextSize: 140000
   contextSize: 131072
   flashAttention: true
   jinja: true
-  # parallelSlots: 1
   parallelSlots: 2
   batchSize: 4096
   uBatchSize: 1024
-  cacheTypeK: q8_0
-  cacheTypeV: q8_0
-  reasoningBudget: 32768
+  cacheTypeK: f16
+  cacheTypeV: f16
+  reasoningBudget: 16384
   reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
   resources:
     gpu: 1
     cpu: "500m"
     memory: 48Gi
   speculativeDecoding:
-    type: draft-mtp
-    nDraftMax: 2
+    type: draft-dflash
+    draftModel: dflash-Muse-Glimmer-30B-Q4_K_M.gguf
+    nDraftMax: 15
     pMin: 0.75
   extraArgs:
     - --alias
-    - qwen3.8-27b
+    - muse-glimmer
     - --no-mmproj-offload
     - --image-min-tokens
     - "1024"
@@ -72,35 +72,23 @@ spec:
     - q8_0
     - --spec-draft-type-v
     - q8_0
-    - -sps
-    - "0.75"
     - --cache-prompt
     - --cache-ram
     - "40960"
     - --kv-unified
     - --temp
-    - "1"
+    - "1.0"
     - --top-p
     - "0.95"
     - --top-k
-    - "20"
-    - --min-p
-    - "0"
-    - --presence-penalty
-    - "0"
-    - --repeat-penalty
-    - "1"
+    - "64"
+    - --reasoning-preserve
     - --threads
     - "6"
     - --threads-batch
     - "12"
     - --load-mode
     - none
-    - --chat-template-kwargs
-    - '{"reasoning_effort":"medium"}'
-    - --reasoning-preserve
-    - --n-predict
-    - "40960"
   endpoint:
     port: 8080
     type: ClusterIP

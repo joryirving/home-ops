@@ -4,8 +4,11 @@ GPU game streaming on ganyu's RTX 3090, sharing the GPU with `qwen3.8-27b`.
 
 ## What works
 
-- **GPU time-slicing** — the 3090 advertises `nvidia.com/gpu: 2`
-  (`kube-system/nvidia-device-plugin`).
+- ~~GPU time-slicing~~ — REMOVED. The 3090 now advertises `nvidia.com/gpu: 1`
+  so the LLM `ModelPool` (`llm/nvidia`) can gate its members on the device. A
+  Wolf session needs two grants (the `wolf` pod plus the app pod), so sessions
+  will sit `Pending` until this is re-thought (one grant per session, or a
+  DRA-style shared claim).
 - **PriorityClass preemption** — `qwen3.8-27b` runs at `gpu-preemptible`
   (-100); launching a session preempts it to free the GPU, and it reloads when
   the session ends. Validated live: a Steam session evicted `qwen3.8-27b`.
