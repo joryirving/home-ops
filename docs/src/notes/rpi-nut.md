@@ -48,6 +48,59 @@ sudo systemctl restart nut-monitor
 
 You should now have a working PiNUT config that will also shutdown talos/the NAS when on battery power.
 
+## Rebuilding NUT for EcoFlow support
+
+The Debian package on Raspberry Pi OS is currently too old for the EcoFlow CDC
+support we use. Sayu is temporarily running the already-built binaries copied
+from Venti; rebuild both Pis from the same pinned NUT source revision before
+that install needs maintenance.
+
+The current Venti build identifies as NUT `2.8.5.1168` from source commit
+`2caa3c875`; treat that as the baseline for the next rebuild.
+
+### Rebuild checklist
+
+1. Record the NUT source tag or commit used on Venti. Do not build from an
+   unpinned checkout.
+2. Back up `/etc/nut`, the installed NUT binaries, the systemd driver unit,
+   and `/usr/lib/tmpfiles.d/nut-common-tmpfiles.conf`.
+3. Stop `nut-monitor`, `nut-server`, and the relevant `nut-driver@*.service`.
+4. Build on the Pi (aarch64) with the EcoFlow driver enabled:
+
+   ```sh
+   ./configure \
+       --prefix=/usr \
+       --sysconfdir=/etc/nut \
+       --with-systemdsystemunitdir=/etc/systemd/system \
+       --with-udev-dir=/etc/udev \
+       --with-openssl \
+       --with-usb \
+       --with-serial \
+       --with-user=nut \
+       --with-group=nut \
+       --sbindir=/usr/sbin \
+       --bindir=/usr/bin \
+       --with-drvpath=/usr/bin \
+       --datadir=/usr/share/nut \
+       --libdir=/lib \
+       --with-libsystemd \
+       --disable-inplace-runtime \
+       --with-drivers=usbhid-ups
+   make -j"$(nproc)"
+   sudo make install
+   ```
+
+5. Recreate `/var/state/ups`, reload systemd, and start the services.
+6. Verify the driver, server, and monitor versions, then check `upsc` output,
+   service health, and the journal before changing the UPS configuration.
+7. Keep the old binaries and configuration until the new install has survived
+   a full restart. If it fails, stop the services, restore the backup, reload
+   systemd, and start the packaged install.
+
+Do not preconfigure the future EcoFlow UPS. Once the River 3 Plus is connected,
+discover its USB identity and CDC serial path first, then update `ups.conf` and
+the exporter configuration together.
+
 ## Docker Compose for node_exporter/smartlctl_exporter
 
 ```yaml
