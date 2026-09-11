@@ -24,6 +24,11 @@ spec:
               tag: 0.10.2@sha256:0f5c180cca0317475a7fd3b199054abb64b98845b3a29c74fb1dcdf2a1257835
             env:
               TZ: America/Edmonton
+              LITELLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-ai-marketplace-monitor
+                    key: api-key
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}"
