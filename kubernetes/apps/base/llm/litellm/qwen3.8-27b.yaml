@@ -4,22 +4,17 @@ kind: Model
 metadata:
   name: qwen3.8-27b
 spec:
-  source: hf://unsloth/Qwen3.8-27B-GGUF
+  source: "dbirks/Qwen3.8-27B-W4A16-AutoRound"
   sourceSecretRef:
     name: huggingface
-  files:
-    - Qwen3.8-27B-UD-Q4_K_XL.gguf
-    - mmproj-F16.gguf
-  mmproj: mmproj-F16.gguf
-  format: gguf
-  quantization: UD-Q4_K_XL
+  format: safetensors
+  quantization: compressed-tensors
   hardware:
     accelerator: cuda
     gpu:
       enabled: true
       vendor: nvidia
       count: 1
-      layers: 99
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -27,10 +22,13 @@ metadata:
   name: qwen3.8-27b
   labels:
     krr/ignore: "true"
+  annotations:
+    inference.llmkube.dev/idle-endpoint: /health
 spec:
   modelRef: qwen3.8-27b
-  runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:82de60bb2ba6e66d750f4b7db8752bc3071a2ed3999700d0b21c8b5c709b5513
+  runtime: generic
+  image: ghcr.io/syv-ai/qwen38-27b-rtx3090@sha256:8382b69916f413a8580f3117b6dc353bba6fb3ace94810c91c945ba7bdee8096
+  skipModelInit: true
   rolloutPolicy:
     waitForIdle: false #https://github.com/defilantech/LLMKube/pull/1794
     idleTimeoutSeconds: 86400
@@ -39,89 +37,56 @@ spec:
   nodeSelector:
     topology.kubernetes.io: egpu
   env:
+    - name: SPEC
+      value: dflash2
+    - name: PREFIX_CACHE
+      value: "1"
+    - name: CTX
+      value: long
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
-  # contextSize: 140000
-  contextSize: 131072
-  flashAttention: true
-  jinja: true
-  # parallelSlots: 1
-  parallelSlots: 2
-  batchSize: 4096
-  uBatchSize: 1024
-  cacheTypeK: q8_0
-  cacheTypeV: q8_0
-  reasoningBudget: 32768
-  reasoningBudgetMessage: "Stop reasoning and produce the implementation, tool call, or final answer."
+    - name: HF_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: huggingface
+          key: HF_TOKEN
   resources:
     gpu: 1
-    cpu: "500m"
-    memory: 64Gi
-  speculativeDecoding:
-    type: draft-mtp
-    nDraftMax: 2
-    pMin: 0.75
-  extraArgs:
-    - --alias
-    - qwen3.8-27b
-    - --no-mmproj-offload
-    - --image-min-tokens
-    - "1024"
-    - --cont-batching
-    - --spec-draft-type-k
-    - q8_0
-    - --spec-draft-type-v
-    - q8_0
-    - -sps
-    - "0.75"
-    - --cache-prompt
-    - --cache-ram
-    - "40960"
-    - --kv-unified
-    - --temp
-    - "1"
-    - --top-p
-    - "0.95"
-    - --top-k
-    - "20"
-    - --min-p
-    - "0"
-    - --presence-penalty
-    - "0"
-    - --repeat-penalty
-    - "1"
-    - --threads
-    - "6"
-    - --threads-batch
-    - "12"
-    - --load-mode
-    - none
-    - --chat-template-kwargs
-    - '{"reasoning_effort":"medium"}'
-    - --reasoning-preserve
-    - --n-predict
-    - "40960"
+    cpu: "2"
+    memory: 24Gi
+  extraVolumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llmkube-model-cache
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 8Gi
+  extraVolumeMounts:
+    - name: models
+      mountPath: /app/models
+      subPath: vllm-27b
+    - name: shm
+      mountPath: /dev/shm
   endpoint:
-    port: 8080
+    port: 18020
     type: ClusterIP
   probeOverrides:
     startup:
-      httpGet:
-        path: /health
-        port: 8080
+      tcpSocket:
+        port: 18020
       periodSeconds: 10
       failureThreshold: 360
     liveness:
-      httpGet:
-        path: /health
-        port: 8080
-      initialDelaySeconds: 30
+      tcpSocket:
+        port: 18020
+      initialDelaySeconds: 60
       periodSeconds: 30
       failureThreshold: 6
     readiness:
       httpGet:
         path: /health
-        port: 8080
-      initialDelaySeconds: 20
+        port: 18020
+      initialDelaySeconds: 30
       periodSeconds: 10
       failureThreshold: 6
