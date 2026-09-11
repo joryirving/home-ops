@@ -1,0 +1,30 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: ai-marketplace-monitor
+spec:
+  proxyRef: litellm
+  keyAlias: AI Marketplace Monitor
+  secretName: litellm-key-ai-marketplace-monitor
+  secretKey: api-key
+  models:
+    - qwen3.8-flash-next-chat
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: ai-marketplace-monitor
+spec:
+  secretStoreRefs:
+    - name: onepassword
+      kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-ai-marketplace-monitor
+  data:
+    - match:
+        secretKey: api-key
+        remoteRef:
+          remoteKey: litellm
+          property: LITELLM_AI_MARKETPLACE_MONITOR_API_KEY

@@ -1,0 +1,83 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ai-marketplace-monitor
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: ai-marketplace-monitor
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+    controllers:
+      ai-marketplace-monitor:
+        annotations:
+          secret.reloader.stakater.com/reload: ai-marketplace-monitor
+        containers:
+          app:
+            image:
+              repository: ghcr.io/bopeng/ai-marketplace-monitor
+              tag: 0.10.2@sha256:0f5c180cca0317475a7fd3b199054abb64b98845b3a29c74fb1dcdf2a1257835
+            env:
+              FACEBOOK_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: ai-marketplace-monitor
+                    key: FACEBOOK_PASSWORD
+              FACEBOOK_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: ai-marketplace-monitor
+                    key: FACEBOOK_USERNAME
+              LITELLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: ai-marketplace-monitor
+                    key: LITELLM_API_KEY
+              TZ: America/Edmonton
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+                  tcpSocket:
+                    port: 8467
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  initialDelaySeconds: 30
+                  periodSeconds: 15
+                  tcpSocket:
+                    port: 8467
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 2Gi
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        advancedMounts:
+          ai-marketplace-monitor:
+            app:
+              - path: /root/.ai-marketplace-monitor
+    route:
+      app:
+        hostnames: ["scraper.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    service:
+      app:
+        controller: ai-marketplace-monitor
+        ports:
+          http:
+            port: 8467
