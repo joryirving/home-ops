@@ -4,16 +4,16 @@ kind: Model
 metadata:
   name: muse-glimmer
 spec:
-  source: hf://meta-models/Muse-Glimmer-30B-GGUF
+  source: hf://unsloth/Muse-Glimmer-30B-GGUF
   sourceSecretRef:
     name: huggingface
   files:
-    - Muse-Glimmer-30B-KQuant-17GB-Q4_K_M.gguf
-    - dflash-Muse-Glimmer-30B-Q4_K_M.gguf
-    - mmproj-Muse-Glimmer-30B-Q4_K_M.gguf
-  mmproj: mmproj-Muse-Glimmer-30B-Q4_K_M.gguf
+    - Muse-Glimmer-30B-UD-Q5_K_M.gguf
+    - dflash-kquant.gguf
+    - mmproj-kquant.gguf
+  mmproj: mmproj-kquant.gguf
   format: gguf
-  quantization: Q4_K_M
+  quantization: Q5_K_M
   hardware:
     accelerator: cuda
     gpu:
@@ -58,12 +58,13 @@ spec:
     memory: 64Gi
   speculativeDecoding:
     type: draft-dflash
-    draftModel: dflash-Muse-Glimmer-30B-Q4_K_M.gguf
+    draftModel: dflash-kquant.gguf
     nDraftMax: 15
     pMin: 0.75
   extraArgs:
     - --alias
     - muse-glimmer
+    - --no-mmproj-offload
     - --image-min-tokens
     - "1024"
     - --cont-batching
