@@ -23,6 +23,7 @@ spec:
               repository: ghcr.io/bopeng/ai-marketplace-monitor
               tag: 0.10.2@sha256:0f5c180cca0317475a7fd3b199054abb64b98845b3a29c74fb1dcdf2a1257835
             env:
+              AIMM_WEBUI_HOST: 127.0.0.1
               TZ: America/Edmonton
               LITELLM_API_KEY:
                 valueFrom:
@@ -39,16 +40,28 @@ spec:
                 spec:
                   initialDelaySeconds: 60
                   periodSeconds: 30
-                  tcpSocket:
-                    port: 8467
+                  exec:
+                    command:
+                      - /usr/bin/curl
+                      - --fail
+                      - --silent
+                      - --output
+                      - /dev/null
+                      - http://127.0.0.1:8467/
               readiness:
                 enabled: true
                 custom: true
                 spec:
                   initialDelaySeconds: 30
                   periodSeconds: 15
-                  tcpSocket:
-                    port: 8467
+                  exec:
+                    command:
+                      - /usr/bin/curl
+                      - --fail
+                      - --silent
+                      - --output
+                      - /dev/null
+                      - http://127.0.0.1:8467/
             resources:
               requests:
                 cpu: 100m
@@ -64,6 +77,7 @@ spec:
               - path: /root/.ai-marketplace-monitor
     route:
       app:
+        enabled: false
         hostnames: ["scraper.jory.dev"]
         parentRefs:
           - name: envoy-internal
