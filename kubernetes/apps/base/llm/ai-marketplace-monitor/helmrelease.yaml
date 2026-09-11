@@ -23,22 +23,10 @@ spec:
               repository: ghcr.io/bopeng/ai-marketplace-monitor
               tag: 0.10.2@sha256:0f5c180cca0317475a7fd3b199054abb64b98845b3a29c74fb1dcdf2a1257835
             env:
-              FACEBOOK_PASSWORD:
-                valueFrom:
-                  secretKeyRef:
-                    name: ai-marketplace-monitor
-                    key: FACEBOOK_PASSWORD
-              FACEBOOK_USERNAME:
-                valueFrom:
-                  secretKeyRef:
-                    name: ai-marketplace-monitor
-                    key: FACEBOOK_USERNAME
-              LITELLM_API_KEY:
-                valueFrom:
-                  secretKeyRef:
-                    name: ai-marketplace-monitor
-                    key: LITELLM_API_KEY
               TZ: America/Edmonton
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}"
             probes:
               liveness:
                 enabled: true
