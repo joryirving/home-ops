@@ -1,0 +1,59 @@
+{
+  "id": null,
+  "uid": "llm-routing",
+  "title": "LLM Routing (Consumer -> Model)",
+  "tags": ["llm", "litellm", "routing"],
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus", "current": {}, "hide": 0, "label": "Datasource" }
+    ]
+  },
+  "panels": [
+    {
+      "type": "table",
+      "title": "Consumer -> Model (requests over range)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 12, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (api_key_alias, requested_model) (increase(litellm_requests_metric_total[$__range]))",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "api_key_alias": "Consumer", "requested_model": "Model", "Value": "Requests" } } },
+        { "id": "sortBy", "options": { "fields": "", "sort": [ { "field": "Requests", "desc": true } ] } }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "filterable": true }, "decimals": 0 }, "overrides": [] },
+      "options": { "showHeader": true, "footer": { "show": false } }
+    },
+    {
+      "type": "table",
+      "title": "Live (req/min, last 5m)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 12, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (api_key_alias, requested_model) (rate(litellm_requests_metric_total[5m])) * 60 > 0",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "api_key_alias": "Consumer", "requested_model": "Model", "Value": "req/min" } } },
+        { "id": "sortBy", "options": { "fields": "", "sort": [ { "field": "req/min", "desc": true } ] } }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "filterable": true }, "decimals": 1 }, "overrides": [] },
+      "options": { "showHeader": true, "footer": { "show": false } }
+    }
+  ]
+}
