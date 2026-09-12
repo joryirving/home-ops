@@ -26,7 +26,6 @@
       "type": "row",
       "title": "Overview",
       "collapsed": false,
-      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -38,6 +37,91 @@
     },
     {
       "type": "stat",
+      "title": "27B pool state",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Swapped out",
+                  "color": "orange"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 9999,
+                "result": {
+                  "text": "Loaded",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "count(vllm:num_requests_running{service=~\"$service\"}) or vector(0)",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
       "title": "Running",
       "datasource": {
         "type": "prometheus",
@@ -45,11 +129,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 0,
+        "w": 5,
+        "x": 5,
         "y": 1
       },
-      "id": 2,
+      "id": 3,
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -97,18 +181,18 @@
     },
     {
       "type": "stat",
-      "title": "Waiting (queue)",
+      "title": "Waiting",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 10,
         "y": 1
       },
-      "id": 3,
+      "id": 4,
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -163,11 +247,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 12,
+        "w": 5,
+        "x": 14,
         "y": 1
       },
-      "id": 4,
+      "id": 5,
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
@@ -223,11 +307,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
+        "w": 5,
+        "x": 19,
         "y": 1
       },
-      "id": 5,
+      "id": 6,
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -278,14 +362,13 @@
       "type": "row",
       "title": "Load & Throughput",
       "collapsed": false,
-      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 5
       },
-      "id": 6,
+      "id": 7,
       "panels": []
     },
     {
@@ -301,7 +384,7 @@
         "x": 0,
         "y": 6
       },
-      "id": 7,
+      "id": 8,
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -310,12 +393,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -355,7 +438,7 @@
           "expr": "sum(vllm:num_requests_waiting{service=~\"$service\"})",
           "legendFormat": "waiting",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         }
       ]
     },
@@ -372,7 +455,7 @@
         "x": 12,
         "y": 6
       },
-      "id": 8,
+      "id": 9,
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
@@ -381,12 +464,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -432,7 +515,7 @@
         "x": 0,
         "y": 14
       },
-      "id": 9,
+      "id": 10,
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -441,12 +524,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -486,7 +569,7 @@
           "expr": "sum(rate(vllm:generation_tokens_total{service=~\"$service\"}[$__rate_interval]))",
           "legendFormat": "decode (generation)",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         }
       ]
     },
@@ -503,7 +586,7 @@
         "x": 12,
         "y": 14
       },
-      "id": 10,
+      "id": 11,
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
@@ -512,12 +595,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -554,14 +637,13 @@
       "type": "row",
       "title": "Latency",
       "collapsed": false,
-      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 22
       },
-      "id": 11,
+      "id": 12,
       "panels": []
     },
     {
@@ -577,7 +659,7 @@
         "x": 0,
         "y": 23
       },
-      "id": 12,
+      "id": 13,
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -586,12 +668,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -631,7 +713,7 @@
           "expr": "histogram_quantile(0.95, sum(rate(vllm:time_to_first_token_seconds_bucket{service=~\"$service\"}[$__rate_interval])) by (le))",
           "legendFormat": "p95",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         },
         {
           "datasource": {
@@ -642,7 +724,7 @@
           "expr": "histogram_quantile(0.99, sum(rate(vllm:time_to_first_token_seconds_bucket{service=~\"$service\"}[$__rate_interval])) by (le))",
           "legendFormat": "p99",
           "range": true,
-          "refId": "A"
+          "refId": "C"
         }
       ]
     },
@@ -659,7 +741,7 @@
         "x": 12,
         "y": 23
       },
-      "id": 13,
+      "id": 14,
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -668,12 +750,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -713,7 +795,7 @@
           "expr": "histogram_quantile(0.95, sum(rate(vllm:request_time_per_output_token_seconds_bucket{service=~\"$service\"}[$__rate_interval])) by (le))",
           "legendFormat": "p95",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         },
         {
           "datasource": {
@@ -724,7 +806,7 @@
           "expr": "histogram_quantile(0.99, sum(rate(vllm:request_time_per_output_token_seconds_bucket{service=~\"$service\"}[$__rate_interval])) by (le))",
           "legendFormat": "p99",
           "range": true,
-          "refId": "A"
+          "refId": "C"
         }
       ]
     },
@@ -741,7 +823,7 @@
         "x": 0,
         "y": 31
       },
-      "id": 14,
+      "id": 15,
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -750,12 +832,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -795,7 +877,7 @@
           "expr": "histogram_quantile(0.95, sum(rate(vllm:e2e_request_latency_seconds_bucket{service=~\"$service\"}[$__rate_interval])) by (le))",
           "legendFormat": "p95",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         },
         {
           "datasource": {
@@ -806,7 +888,7 @@
           "expr": "histogram_quantile(0.99, sum(rate(vllm:e2e_request_latency_seconds_bucket{service=~\"$service\"}[$__rate_interval])) by (le))",
           "legendFormat": "p99",
           "range": true,
-          "refId": "A"
+          "refId": "C"
         }
       ]
     },
@@ -823,7 +905,7 @@
         "x": 12,
         "y": 31
       },
-      "id": 15,
+      "id": 16,
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -832,12 +914,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -877,7 +959,7 @@
           "expr": "histogram_quantile(0.95, sum(rate(vllm:request_queue_time_seconds_bucket{service=~\"$service\"}[$__rate_interval])) by (le))",
           "legendFormat": "p95",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         }
       ]
     },
@@ -885,14 +967,13 @@
       "type": "row",
       "title": "Efficiency \u2014 DFlash2 & caching",
       "collapsed": false,
-      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 39
       },
-      "id": 16,
+      "id": 17,
       "panels": []
     },
     {
@@ -908,7 +989,7 @@
         "x": 0,
         "y": 40
       },
-      "id": 17,
+      "id": 18,
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -917,12 +998,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -968,7 +1049,7 @@
         "x": 8,
         "y": 40
       },
-      "id": 18,
+      "id": 19,
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -977,12 +1058,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -1028,7 +1109,7 @@
         "x": 16,
         "y": 40
       },
-      "id": 19,
+      "id": 20,
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -1037,12 +1118,12 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 10,
             "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
             "stacking": {
               "mode": "none",
               "group": "A"
-            },
-            "axisCenteredZero": false,
-            "spanNulls": false
+            }
           }
         },
         "overrides": []
@@ -1098,7 +1179,11 @@
         "type": "datasource"
       },
       {
-        "current": {},
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
@@ -1106,6 +1191,7 @@
         "definition": "label_values(vllm:num_requests_running, service)",
         "hide": 0,
         "includeAll": true,
+        "allValue": ".*",
         "label": "Service",
         "multi": true,
         "name": "service",
