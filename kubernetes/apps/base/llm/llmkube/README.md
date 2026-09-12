@@ -17,7 +17,7 @@ llmkube/                    # the operator + shared cluster infra only
   servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
 
 memini/                     # Intel iGPU helpers, reconciled by the `memini` KS
-  memini-embed.yaml  memini-rerank.yaml  memini-summary.yaml
+  memini-rerank.yaml  memini-summary.yaml
 
 litellm/app/                # chat/vision models, reconciled by the `litellm` KS
   qwen3.8-27b.yaml         # Qwen3.6-27B on RTX 3090
@@ -25,7 +25,7 @@ litellm/app/                # chat/vision models, reconciled by the `litellm` KS
   gemma-4-12b-it-qat.yaml       # Mellum2-12B-A2.5B on Strix Halo (foreman reviewer)
 
 toolhive/config/            # per-app tenant model, reconciled by `toolhive-config`
-  toolhive-embed.yaml       # Qwen3-Embedding-0.6B on Intel iGPU (was a TEI EmbeddingServer CRD)
+
 ```
 
 Each consuming app's own Flux Kustomization reconciles its models (`memini`,
@@ -163,8 +163,13 @@ For Ceph PVC sources, remember `--load-mode none` (cold-fault rule) in the
 
 ## Continuity notes
 
-- Name each `InferenceService` after its **consumer** (e.g. `memini-embed` for
-  memini, `toolhive-embed` for toolhive-config). The `service` label on
+- Name each `InferenceService` after its **consumer** where it is single-tenant;
+  a model shared across consumers (e.g. `embed`) gets one neutral `embed` app
+  (`apps/base/llm/embed`, 3 replicas) that both memini and toolhive-config depend
+  on. HAZARD: memini runs `MEMINI_REEMBED_ON_MODEL_CHANGE: false` against `embed`,
+  so if you ever change the shared `embed` Model source (different model or
+  embedding dim), flip that flag true (or re-embed manually) in the same change —
+  otherwise every stored memini vector is silently stranded. The `service` label on
   `llamacpp:*` metrics is the pod's `inference.llmkube.dev/service`, relabeled on
   by the PodMonitor, so renaming a service means updating any `service=~`/
   `service!~` filters in the dashboards. Litellm routes follow `api_base` in the
