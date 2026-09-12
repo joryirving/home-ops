@@ -166,10 +166,12 @@ For Ceph PVC sources, remember `--load-mode none` (cold-fault rule) in the
 - Name each `InferenceService` after its **consumer** where it is single-tenant;
   a model shared across consumers (e.g. `embed`) gets one neutral `embed` app
   (`apps/base/llm/embed`, 3 replicas) that both memini and toolhive-config depend
-  on. HAZARD: memini runs `MEMINI_REEMBED_ON_MODEL_CHANGE: false` against `embed`,
-  so if you ever change the shared `embed` Model source (different model or
-  embedding dim), flip that flag true (or re-embed manually) in the same change —
-  otherwise every stored memini vector is silently stranded. The `service` label on
+  on. HAZARD: memini gates embedding compatibility on the `MEMINI_EMBED_MODEL`
+  name and FATALS at startup if it differs from the name the store was created
+  under — even when the model and dims are identical (it does not compare vectors).
+  So ANY change to that value (a rename, or a real model/dim swap) requires
+  `MEMINI_REEMBED_ON_MODEL_CHANGE: true`, which re-embeds the store at startup;
+  it is set true. Upstream fix requested: `eleboucher/memini#99`. The `service` label on
   `llamacpp:*` metrics is the pod's `inference.llmkube.dev/service`, relabeled on
   by the PodMonitor, so renaming a service means updating any `service=~`/
   `service!~` filters in the dashboards. Litellm routes follow `api_base` in the
