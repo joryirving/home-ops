@@ -2,7 +2,7 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: memini-embed
+  name: embed
 spec:
   source: https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf
   format: gguf
@@ -13,17 +13,17 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: memini-embed
+  name: embed
   labels:
     krr/ignore: "true"
 spec:
-  modelRef: memini-embed
+  modelRef: embed
   runtime: llamacpp
   image: ghcr.io/ggml-org/llama.cpp:server@sha256:cbcdcb52d484e08e23bfc0135afa5beadd2d540513bbb7c65b233231fa033ff4
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  replicas: 1
+  replicas: 3
   priority: normal
   podLabels:
     cpu-inference: "true"
@@ -33,7 +33,7 @@ spec:
       whenUnsatisfiable: ScheduleAnyway
       labelSelector:
         matchLabels:
-          cpu-inference: "true"
+          app: embed
   contextSize: 32768
   parallelSlots: 32
   flashAttention: true
@@ -50,7 +50,7 @@ spec:
   mode: embedding
   extraArgs:
     - --alias
-    - memini-embed
+    - embed
     - --cont-batching
     - --cache-ram
     - "0"
