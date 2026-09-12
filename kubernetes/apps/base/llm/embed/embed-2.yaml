@@ -1,19 +1,8 @@
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
-kind: Model
-metadata:
-  name: embed
-spec:
-  source: https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf
-  format: gguf
-  quantization: Q8_0
-  hardware:
-    accelerator: cpu
----
-apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: embed
+  name: embed-2
   labels:
     krr/ignore: "true"
 spec:
@@ -23,17 +12,18 @@ spec:
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  replicas: 3
+  replicas: 1
   priority: normal
   podLabels:
     cpu-inference: "true"
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          app: embed
+    embed-pool: "true"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              embed-pool: "true"
+          topologyKey: kubernetes.io/hostname
   contextSize: 32768
   parallelSlots: 32
   flashAttention: true
