@@ -1,0 +1,74 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: memini-rerank-1
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: memini-rerank
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server@sha256:cbcdcb52d484e08e23bfc0135afa5beadd2d540513bbb7c65b233231fa033ff4
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
+  replicas: 1
+  priority: normal
+  podLabels:
+    cpu-inference: "true"
+    rerank-pool: "true"
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              rerank-pool: "true"
+          topologyKey: kubernetes.io/hostname
+  contextSize: 8096
+  parallelSlots: 4
+  batchSize: 8192
+  uBatchSize: 8192
+  env:
+    - name: GOMP_CPU_AFFINITY
+      value: "0-11"
+    - name: KMP_AFFINITY
+      value: "granularity=fine,proc_list=[0-11],explicit"
+  resources:
+    cpu: "2"
+    memory: 8Gi
+  mode: rerank
+  extraArgs:
+    - --alias
+    - memini-rerank
+    - --cont-batching
+    - --kv-unified
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    - --load-mode
+    - mmap
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
