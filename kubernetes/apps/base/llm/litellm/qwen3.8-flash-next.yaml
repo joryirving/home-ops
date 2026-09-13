@@ -5,19 +5,6 @@ metadata:
   name: qwen3.8-flash-next
 spec:
   source: pvc://llmkube-skirk-cache/staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00001-of-00009.gguf
-  files:
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00001-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00002-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00003-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00004-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00005-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00006-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00007-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00008-of-00009.gguf
-    - staged/flash-next-hip/Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00009-of-00009.gguf
-    - staged/flash-next-hip/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
-    - staged/flash-next-hip/mmproj-F16.gguf
-  mmproj: staged/flash-next-hip/mmproj-F16.gguf
   format: gguf
   quantization: IQ4_NL
   hardware:
@@ -54,14 +41,18 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
+  extraVolumes:
+    - name: staged
+      persistentVolumeClaim:
+        claimName: llmkube-skirk-cache
+  extraVolumeMounts:
+    - name: staged
+      mountPath: /extra
+      readOnly: true
   contextSize: 262144
   parallelSlots: 1
   flashAttention: true
   jinja: true
-  speculativeDecoding:
-    type: draft-mtp
-    draftModel: staged/flash-next-hip/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
-    nDraftMax: 2
   cacheTypeK: f16
   cacheTypeV: f16
   batchSize: 16384
@@ -99,12 +90,18 @@ spec:
   extraArgs:
     - --alias
     - qwen3.8-flash-next
+    - --mmproj
+    - /extra/staged/flash-next-hip/mmproj-F16.gguf
+    - --spec-draft-model
+    - /extra/staged/flash-next-hip/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
+    - --spec-draft-ngl
+    - "99"
+    - --spec-draft-n-max
+    - "2"
     - --load-mode
     - none
     - --lazy-mode
     - on-direct
-    - --spec-draft-ngl
-    - "99"
     - --temp
     - "1.0"
     - --top-p
