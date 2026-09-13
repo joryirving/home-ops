@@ -77,7 +77,9 @@ spec:
       value: "11.5.1"
     - name: GGML_HIP_ENABLE_UNIFIED_MEMORY
       value: "1"
-    - name: GGML_CUDA_DISABLE_GRAPHS
+    - name: ENABLE_RETAINED_PM4
+      value: "1"
+    - name: DEBUG_HIP_GRAPH_PM4
       value: "1"
     - name: LLAMA_MMB
       value: "1"
@@ -99,6 +101,58 @@ spec:
       value: "2"
     - name: LLAMA_MMB_DOWN16
       value: "1"
+    - name: LLAMA_HC_CN_SHAPE
+      value: "1"
+    - name: LLAMA_HC_GATEMIX
+      value: "1"
+    - name: LLAMA_HC_MIX_FUSE
+      value: "1"
+    - name: LLAMA_HC_BLK16
+      value: "1"
+    - name: LLAMA_HC_RES16
+      value: "1"
+    - name: LLAMA_HC_PACK_DI
+      value: "1"
+    - name: LLAMA_NORM_GATED
+      value: "1"
+    - name: LLAMA_NORM_ROWS
+      value: "1"
+    - name: LLAMA_IDX_RELU_SUM
+      value: "1"
+    - name: LLAMA_PLE_CONV
+      value: "1"
+    - name: LLAMA_GDN_CONV
+      value: "1"
+    - name: LLAMA_QSA_SPARSE
+      value: "1"
+    - name: LLAMA_QSA_WHOLE_ATTN
+      value: "1"
+    - name: LLAMA_QSA_BLOCK_SELECTION
+      value: "1"
+    - name: LLAMA_QSA_COMPACT_METADATA
+      value: "1"
+    - name: LLAMA_QSA_DENSE_SHORTCUT
+      value: "1"
+    - name: LLAMA_QSA_DIRECT_INDICES
+      value: "1"
+    - name: LLAMA_QSA_PACK_KEYS
+      value: "1"
+    - name: LLAMA_QSA_PACK_VALUES
+      value: "1"
+    - name: LLAMA_QSA_QUERY_STRIP
+      value: "512"
+    - name: LLAMA_QSA_SCORE_BOUNDS
+      value: "1"
+    - name: LLAMA_QSA_NO_DENSE_MASK
+      value: "1"
+    - name: LLAMA_QSA_FA_V3
+      value: "1"
+    - name: LLAMA_QSA_FUSE_EXPAND
+      value: "1"
+    - name: LLAMA_MTP_QSA
+      value: "1"
+    - name: LLAMA_MTP_QSA_MIN_T
+      value: "128"
   resources:
     cpu: "500m"
     memory: 30Gi
@@ -109,6 +163,8 @@ spec:
     - none
     - --lazy-mode
     - on-direct
+    - -fit
+    - "off"
     - --temp
     - "1.0"
     - --top-p
