@@ -43,17 +43,19 @@ spec:
   maxRetries: 3
   maxOutputTokens: 20480
   contextStrategy: session
-  contextWindowTokens: 80000
+  contextWindowTokens: 100000
   stuckLoopDetection:
     # The edit-free limit exists to break loops, not to bound investigation. A
     # coder reconstructing branch state does dozens of distinct reads before it
     # can edit anything; at 40 that work was aborted mid-way while maxTurns 160
-    # sat unused. Context is capped just under the model's 131k window (the
-    # default hard cap of 140k sat above it).
+    # sat unused. Context uses the model's full 131k served window: the 108k
+    # hard cap plus the 20k maxOutputTokens is 128k, under 131072. The prior
+    # 80k/98k left ~33k of the served window unused and compacted task state
+    # away mid-run (the default 140k hard cap sat above the window).
     repeatedToolThreshold: 5
     editFreeTurnsLimit: 90
-    contextSoftCap: 85000
-    contextHardCap: 98000
+    contextSoftCap: 104000
+    contextHardCap: 108000
   requestTurnTimeoutSeconds: 1800
   # Must stay below execution.activeDeadlineSeconds. When they were equal (both
   # 7200) the Job deadline won the race, the pod took SIGTERM mid-request, and
