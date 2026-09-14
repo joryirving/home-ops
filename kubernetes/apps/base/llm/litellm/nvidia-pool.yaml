@@ -7,9 +7,11 @@ spec:
   nodeSelector:
     topology.kubernetes.io: egpu
   gpu: 1
-  swapPolicy: sticky
+  swapPolicy: reclaim
   swapBudget: 600s
   default: qwen3.8-27b
+  # muse (non-default) reclaims back to 27B after 15m idle; must exceed Sage's active-conversation gap.
+  reclaimAfter: 15m
   members:
     - inferenceServiceRef:
         name: qwen3.8-27b
@@ -33,6 +35,17 @@ spec:
       inferenceServiceRef:
         name: muse-glimmer
       capabilities: ["tools", "vision"]
+  rules:
+    # Sage prefers muse-glimmer but should not force a swap+hold when the 27B
+    # incumbent is busy: IfIdle skips the busy incumbent and falls through to
+    # 27B instead (#1787). Foreman's pinned qwen3.8-27b traffic stays on the
+    # default route (Wait), so a caller that needs 27B still holds through a swap.
+    - name: sage-prefer-muse-ifidle
+      match:
+        models: ["muse-glimmer"]
+      route:
+        backends: ["muse-glimmer", "qwen38-27b"]
+        poolActivation: IfIdle
   proxy:
     replicas: 1
     responseHeaderTimeout: 600s
