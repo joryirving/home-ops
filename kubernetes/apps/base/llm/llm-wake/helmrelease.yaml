@@ -3,22 +3,14 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: comfy-wake
+  name: llm-wake
 spec:
   chartRef:
     kind: OCIRepository
-    name: comfy-wake
+    name: llm-wake
   interval: 15m
-  dependsOn: []
   values:
     defaultPodOptions:
-      annotations:
-        k8s.v1.cni.cncf.io/networks: |
-          [{
-            "name": "multus-iot",
-            "namespace": "network",
-            "ips": ["192.168.10.8/24"]
-          }]
       automountServiceAccountToken: false
       securityContext:
         fsGroup: 65532
@@ -26,7 +18,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 65532
     controllers:
-      comfy-wake:
+      llm-wake:
         annotations:
           reloader.stakater.com/auto: "true"
         strategy: Recreate
@@ -41,7 +33,7 @@ spec:
                 custom: true
                 spec:
                   tcpSocket:
-                    port: 8090
+                    port: 8080
                   initialDelaySeconds: 10
                   periodSeconds: 30
                   failureThreshold: 3
@@ -50,7 +42,7 @@ spec:
                 custom: true
                 spec:
                   tcpSocket:
-                    port: 8090
+                    port: 8080
                   initialDelaySeconds: 5
                   periodSeconds: 10
                   failureThreshold: 6
@@ -63,26 +55,20 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               capabilities:
-                add:
-                  - NET_BIND_SERVICE
                 drop:
                   - ALL
               readOnlyRootFilesystem: true
     persistence:
       config:
         type: configMap
-        name: comfy-wake-config
+        name: llm-wake-config
         globalMounts:
           - path: /app/config.toml
             subPath: config.toml
             readOnly: true
     service:
       app:
-        controller: comfy-wake
-        type: LoadBalancer
-        annotations:
-          external-dns.kubernetes.io/hostname: comfy-wake.jory.dev
-        externalTrafficPolicy: Local
+        controller: llm-wake
         ports:
           http:
-            port: 8090
+            port: 8080
