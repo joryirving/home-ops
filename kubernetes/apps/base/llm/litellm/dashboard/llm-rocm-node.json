@@ -559,6 +559,118 @@
       ],
       "title": "Context window",
       "type": "bargauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 52 },
+      "id": 23,
+      "panels": [],
+      "title": "Per-consumer AMDGPU memory",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Resident GTT attributed to ComfyUI's DRM client. The exporter reads host DRM fdinfo and the pod name is joined through kube_pod_info.uid.",
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 53 },
+      "id": 24,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (pod, process) (amdgpu_drm_client_memory_bytes{node=~\"$node\", card=~\"$gpu\", region=\"gtt\", state=\"resident\"} * on (pod_uid) group_left(namespace, pod) label_replace(kube_pod_info{namespace=\"llm\", node=~\"$node\", pod=~\"comfyui-.*\"}, \"pod_uid\", \"$1\", \"uid\", \"(.+)\"))",
+          "legendFormat": "{{pod}} / {{process}}",
+          "refId": "A"
+        }
+      ],
+      "title": "ComfyUI resident GTT",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Resident CPU-domain, GTT, and VRAM bytes by Kubernetes pod and process. Host processes without a pod UID are intentionally excluded from this joined view.",
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 53 },
+      "id": 25,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (namespace, pod, process, region) (amdgpu_drm_client_memory_bytes{node=~\"$node\", card=~\"$gpu\", region=~\"cpu|gtt|vram\", state=\"resident\"} * on (pod_uid) group_left(namespace, pod) label_replace(kube_pod_info{node=~\"$node\"}, \"pod_uid\", \"$1\", \"uid\", \"(.+)\"))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{namespace}}/{{pod}} {{process}} {{region}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Resident memory by consumer",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Device GTT used minus the resident GTT reported by all discovered DRM clients. A positive value is kernel or otherwise unattributed GTT, not ComfyUI.",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1073741824 },
+              { "color": "red", "value": 4294967296 }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 60 },
+      "id": 26,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "clamp_min(sum(amdgpu_gtt_used_bytes{node=~\"$node\", card=~\"$gpu\"}) - sum(amdgpu_drm_client_memory_bytes{node=~\"$node\", card=~\"$gpu\", region=\"gtt\", state=\"resident\"}), 0)",
+          "legendFormat": "unattributed GTT",
+          "refId": "A"
+        }
+      ],
+      "title": "Unattributed GTT",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Kubernetes cgroup working-set RAM by pod and container. This is host RAM accounting and is separate from DRM GTT; do not add the two without considering shared pages.",
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 60 },
+      "id": 27,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (namespace, pod, container) (container_memory_working_set_bytes{pod!=\"\", container!=\"POD\"} * on (namespace, pod) group_left(node) kube_pod_info{node=~\"$node\"})",
+          "legendFormat": "{{namespace}}/{{pod}} {{container}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Cgroup RAM by container",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
@@ -631,5 +743,5 @@
   "timezone": "browser",
   "title": "LLM / ROCm Node",
   "uid": "llm-rocm-node",
-  "version": 3
+  "version": 4
 }

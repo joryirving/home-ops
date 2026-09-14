@@ -12,12 +12,13 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      hostPID: true
       nodeSelector:
         topology.kubernetes.io/gpus: amd
       securityContext:
-        runAsGroup: 65534
-        runAsNonRoot: true
-        runAsUser: 65534
+        runAsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0
       tolerations:
         - key: llm-workload
           operator: Exists
@@ -32,6 +33,7 @@ spec:
               repository: ghcr.io/joryirving/amdgpu-exporter
               tag: 0.2.0@sha256:9c04b6f979c50a91ce05f37c1403bd4b8423bc6be1f737332a499af8344692bd
             env:
+              PROC_ROOT: /host/proc
               SYSFS_ROOT: /host/sys
               TZ: America/Edmonton
             probes:
@@ -56,6 +58,12 @@ spec:
               capabilities: { drop: ["ALL"] }
               readOnlyRootFilesystem: true
     persistence:
+      proc:
+        type: hostPath
+        hostPath: /proc
+        globalMounts:
+          - path: /host/proc
+            readOnly: true
       sys:
         type: hostPath
         hostPath: /sys
