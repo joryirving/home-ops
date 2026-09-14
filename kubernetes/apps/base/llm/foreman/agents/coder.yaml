@@ -48,9 +48,10 @@ spec:
     # The edit-free limit exists to break loops, not to bound investigation. A
     # coder reconstructing branch state does dozens of distinct reads before it
     # can edit anything; at 40 that work was aborted mid-way while maxTurns 160
-    # sat unused. Context uses the model's full 150k served window: the 128k
-    # hard cap plus the 20k maxOutputTokens is 148k, under 150000. The prior
-    # 108k/128k left ~22k of the served window unused and compacted task state
+    # sat unused. Context is sized to the 27B's served window: the 128k hard
+    # cap sits just under the 131072 input limit, and 128k + the 20k
+    # maxOutputTokens is 148k, under the 172032 max_model_len. The prior
+    # 108k/128k left ~22k of the input window unused and compacted task state
     # away mid-run (the default 140k hard cap sat above the window).
     repeatedToolThreshold: 5
     editFreeTurnsLimit: 90
