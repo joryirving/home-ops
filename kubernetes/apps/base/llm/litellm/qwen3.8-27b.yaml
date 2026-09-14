@@ -22,12 +22,13 @@ metadata:
   name: qwen3.8-27b
   labels:
     krr/ignore: "true"
-  annotations:
-    inference.llmkube.dev/idle-endpoint: /health
 spec:
   modelRef: qwen3.8-27b
-  runtime: generic
+  runtime: vllm
   image: ghcr.io/syv-ai/qwen38-27b-rtx3090@sha256:b8630c137ad3f64364c391f0a9b2f2f2269dff864d159d458c2d06a2189d9d37
+  command:
+    - bash
+    - docker/entrypoint.sh
   args:
     - batch
   skipModelInit: true
