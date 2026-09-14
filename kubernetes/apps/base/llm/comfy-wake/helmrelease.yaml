@@ -15,9 +15,9 @@ spec:
       annotations:
         k8s.v1.cni.cncf.io/networks: |
           [{
-            "name": "multus-lan",
+            "name": "multus-iot",
             "namespace": "network",
-            "ips": ["10.69.1.26/24"]
+            "ips": ["192.168.10.8/24"]
           }]
       automountServiceAccountToken: false
       securityContext:
@@ -79,6 +79,10 @@ spec:
     service:
       app:
         controller: comfy-wake
+        type: LoadBalancer
+        annotations:
+          external-dns.kubernetes.io/hostname: comfy-wake.jory.dev
+        externalTrafficPolicy: Local
         ports:
           http:
             port: 8090
