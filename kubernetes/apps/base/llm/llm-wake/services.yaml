@@ -1,0 +1,32 @@
+---
+# Host-routed aliases -> the single doormouse pod. doormouse picks the machine
+# from the Host header, so each consumer endpoint needs its own Service name.
+apiVersion: v1
+kind: Service
+metadata:
+  name: comfy-wake
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: llm-wake
+    app.kubernetes.io/instance: llm-wake
+    app.kubernetes.io/controller: llm-wake
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gemma-wake
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: llm-wake
+    app.kubernetes.io/instance: llm-wake
+    app.kubernetes.io/controller: llm-wake
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

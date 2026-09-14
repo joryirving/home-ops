@@ -57,24 +57,31 @@ kvmd:
             wol_server0:
                 type: wol
                 mac: 58:47:ca:7d:3c:88
+                ip: 10.69.2.21
             wol_server1:
                 type: wol
                 mac: 58:47:ca:7d:3d:b0
+                ip: 10.69.2.22
             wol_server2:
                 type: wol
                 mac: 58:47:ca:7d:41:48
+                ip: 10.69.2.23
             wol_server3:
                 type: wol
                 mac: 58:47:ca:7a:dc:b5
+                ip: 10.69.2.101
             wol_server4:
                 type: wol
                 mac: 7c:83:34:b6:6a:2a
+                ip: 10.69.1.221
             wol_server5:
                 type: wol
                 mac: b4:2e:99:3e:2c:f3
+                ip: 192.168.30.114
             wol_server6:
                 type: wol
                 mac: 84:47:09:77:79:61
+                ip: 10.69.1.24
             reboot:
                 type: cmd
                 cmd: ["/usr/bin/sudo", "reboot"]
@@ -224,6 +231,31 @@ kvmd:
 ```sh
 systemctl restart kvmd.service
 ```
+
+### Wake-on-LAN across VLANs (unicast)
+
+The PiKVM sits on the Default VLAN (1); most targets it wakes — the k8s nodes and
+skirk — are on the Servers VLAN (69, `10.69.1.x`). UniFi does **not** forward
+inbound broadcast into VLAN 69, so a `wol` driver left at its default (broadcast to
+`255.255.255.255`) fires a packet that never crosses into Servers, and the node
+never wakes even though its NIC is armed. (Trusted, VLAN 30, *does* receive the
+broadcast, which is why the Smurf PC wakes fine.)
+
+The fix is to send the magic packet **unicast** to each node's own IP. A unicast
+routes cross-VLAN like any other packet, and still reaches a powered-off NIC
+because the DHCP reservation keeps the gateway's IP->MAC binding — verified waking
+a fully powered-off (S5) host in ~70s. Give every `wol` driver an `ip` pointing at
+that host's reserved address:
+
+```yaml
+            wol_server0:
+                type: wol
+                mac: 58:47:ca:7d:3c:88
+                ip: 10.69.1.21   # the node's own reserved IP, NOT a broadcast
+```
+
+Keep the reservations in place (a lapsed one drops the binding); a static IP->MAC
+binding on the UDM per node makes off-state delivery bulletproof.
 
 ## Monitoring
 
