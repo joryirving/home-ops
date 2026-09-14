@@ -1,0 +1,29 @@
+---
+# yaml-language-server: $schema=https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#configmap-v1-core
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comfy-wake-config
+data:
+  config.toml: |
+    port = ":8080"
+    # The Z820 cold-boots from S5 in ~4 minutes, so hold the first request long
+    # enough for POST + ComfyUI to come up before giving up.
+    timeout = "10m"
+    response_header_timeout = "20m"
+    poll_interval = "5s"
+    health_check_interval = "30s"
+    health_cache_duration = "10s"
+
+    [[machines]]
+    name = "shenhe"
+    mac_address = "d8:9d:67:f4:2b:03"
+    broadcast_ip = "10.69.1.255"
+    wol_port = 9
+    health_check = "tcp://shenhe.internal:8188"
+
+    [[routes]]
+    machine = "shenhe"
+    hostname = "comfy-wake.llm"
+    destination = "http://shenhe.internal:8188"
+    health_check = "tcp://shenhe.internal:8188"
