@@ -12,9 +12,14 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{
+            "name": "multus-iot",
+            "namespace": "network",
+            "ips": ["192.168.10.9/24"]
+          }]
       automountServiceAccountToken: false
-      dnsPolicy: ClusterFirstWithHostNet
-      hostNetwork: true
       securityContext:
         fsGroup: 65532
         runAsGroup: 65532
@@ -74,6 +79,10 @@ spec:
     service:
       app:
         controller: gemma-wake
+        type: LoadBalancer
+        annotations:
+          external-dns.kubernetes.io/hostname: gemma-wake.jory.dev
+        externalTrafficPolicy: Local
         ports:
           http:
             port: 8080

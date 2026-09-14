@@ -1,23 +1,21 @@
 # Gemma wake proxy
 
-This app fronts the Windows `smurf-pc` LM Studio server with a Wake-on-LAN
-reverse proxy. It is intentionally limited to the Gemma LiteLLM routes; the
-ComfyUI `:8188` endpoints remain direct.
+Fronts the Windows `smurf-pc` LM Studio server with a Wake-on-LAN reverse proxy,
+limited to the Gemma LiteLLM routes. Runs in the utility cluster's `network`
+namespace alongside `comfy-wake`, attached to `multus-iot` (VLAN 10) so it has an
+L2 presence off host networking.
 
-The proxy runs with host networking because Wake-on-LAN packets must leave on
-the cluster node's LAN interface. Keep the service internal and do not add an
-external route.
+The magic packet is broadcast on the IoT segment (`192.168.10.255`) and the
+network relays it cross-VLAN to the target, the same way Home Assistant wakes
+hosts. Liveness/readiness work because the macvlan subnet differs from the
+utility nodes' primary subnet.
 
-The target values below were observed on 2026-09-01 and must remain aligned
-with the Windows PC's DHCP reservation:
+Target values (must stay aligned with the Windows PC's DHCP reservation):
 
-- 10G SFP traffic address: `192.168.30.14`
-- built-in 1G WoL MAC: `b4:2e:99:3e:2c:f3`
-- 1G WoL broadcast: `192.168.30.255`
+- WoL MAC (built-in 1G NIC): `b4:2e:99:3e:2c:f3`
+- WoL broadcast: `192.168.10.255`
+- health + proxy target (10G SFP NIC): `smurf-pc.internal:8889`
 
-The MAC and address intentionally belong to different NICs: WoL targets the
-built-in 1G adapter, while liveness checks and LM Studio requests use the 10G
-SFP adapter.
-
-The proxy only wakes the PC. Windows power management remains responsible for
-putting it to sleep; no shutdown command is configured.
+Exposed to the main-cluster consumers over internal DNS via a LoadBalancer:
+`http://gemma-wake.jory.dev:8080` (litellm's gemma models point here). The proxy
+only wakes the PC; Windows power management handles sleep.
