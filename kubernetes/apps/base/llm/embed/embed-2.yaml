@@ -19,11 +19,13 @@ spec:
     embed-pool: "true"
   affinity:
     podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchLabels:
-              embed-pool: "true"
-          topologyKey: kubernetes.io/hostname
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                embed-pool: "true"
+            topologyKey: kubernetes.io/hostname
   contextSize: 32768
   parallelSlots: 32
   flashAttention: true
