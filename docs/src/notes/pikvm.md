@@ -57,24 +57,31 @@ kvmd:
             wol_server0:
                 type: wol
                 mac: 58:47:ca:7d:3c:88
+                ip: 10.69.2.21
             wol_server1:
                 type: wol
                 mac: 58:47:ca:7d:3d:b0
+                ip: 10.69.2.22
             wol_server2:
                 type: wol
                 mac: 58:47:ca:7d:41:48
+                ip: 10.69.2.23
             wol_server3:
                 type: wol
                 mac: 58:47:ca:7a:dc:b5
+                ip: 10.69.2.101
             wol_server4:
                 type: wol
                 mac: 7c:83:34:b6:6a:2a
+                ip: 10.69.1.221
             wol_server5:
                 type: wol
                 mac: b4:2e:99:3e:2c:f3
+                ip: 192.168.30.114
             wol_server6:
                 type: wol
                 mac: 84:47:09:77:79:61
+                ip: 10.69.1.24
             reboot:
                 type: cmd
                 cmd: ["/usr/bin/sudo", "reboot"]
