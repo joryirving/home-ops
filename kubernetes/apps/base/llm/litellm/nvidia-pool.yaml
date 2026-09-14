@@ -9,8 +9,9 @@ spec:
   gpu: 1
   swapPolicy: reclaim
   swapBudget: 600s
-  default: qwen3.8-27b
-  # muse (non-default) reclaims back to 27B after 15m idle; must exceed Sage's active-conversation gap.
+  default: muse-glimmer
+  # 27B (non-default) reclaims back to muse after 15m idle: when foreman goes quiet the slot
+  # re-warms muse so Sage stays hot. Must exceed foreman's ~2min inter-burst gap to avoid thrash.
   reclaimAfter: 15m
   members:
     - inferenceServiceRef:
