@@ -4,24 +4,13 @@ kind: Model
 metadata:
   name: qwen3.8-flash-next
 spec:
-  source: hf://ilintar/qwen3.8-flash-next-gguf-strix-halo
+  source: hf://antirez/glm-5.3-flash-gguf
   sourceSecretRef:
     name: huggingface
   files:
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00001-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00002-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00003-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00004-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00005-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00006-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00007-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00008-of-00009.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL-PROJFIX-00009-of-00009.gguf
-    - mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
-    - mmproj-F16.gguf
-  mmproj: mmproj-F16.gguf
+    - GLM-5.3-Flash-Q2.gguf
   format: gguf
-  quantization: IQ4_NL
+  quantization: Q2_K
   hardware:
     accelerator: rocm
     gpu:
@@ -40,18 +29,24 @@ metadata:
   labels:
     krr/ignore: "true"
   annotations:
-    inference.llmkube.dev/idle-endpoint: /health
+    inference.llmkube.dev/idle-endpoint: /v1/models
 spec:
   modelRef: qwen3.8-flash-next
-  modelCache:
-    claimName: llmkube-skirk-cache
-  runtime: llamacpp
-  image: ghcr.io/joryirving/llama-qwen4exp:d67d5883-rocm-custom@sha256:b5d44349dc2aba0f442fbfc876e8a915e838840312e928dfa39e3dbf29b5a65d
+  runtime: generic
+  image: docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0
+  command:
+    - ds4-server
+  args:
+    - --host
+    - 0.0.0.0
+    - -m
+    - /models/glm/GLM-5.3-Flash-Q2.gguf
+    - --ctx
+    - "32768"
+  skipModelInit: true
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  command:
-    - /app/llama-server
   replicas: 1
   priority: high
   nodeSelector:
@@ -60,150 +55,48 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  contextSize: 262144
-  parallelSlots: 1
-  flashAttention: true
-  jinja: true
-  speculativeDecoding:
-    type: draft-mtp
-    draftModel: mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
-    nDraftMax: 2
-  cacheTypeK: f16
-  cacheTypeV: f16
-  batchSize: 16384
-  uBatchSize: 16384
   env:
     - name: HSA_OVERRIDE_GFX_VERSION
       value: "11.5.1"
     - name: GGML_HIP_ENABLE_UNIFIED_MEMORY
       value: "1"
-    - name: ENABLE_RETAINED_PM4
-      value: "1"
-    - name: DEBUG_HIP_GRAPH_PM4
-      value: "1"
-    - name: LLAMA_MMB
-      value: "1"
-    - name: LLAMA_MMB_MIN_T
-      value: "512"
-    - name: LLAMA_MMB_BF16W
-      value: "1"
-    - name: LLAMA_MMB_GLU
-      value: "1"
-    - name: LLAMA_MMB_TALL
-      value: "2"
-    - name: LLAMA_MMB_CACHE
-      value: "4"
-    - name: LLAMA_MMB_F32SPLIT
-      value: "2"
-    - name: LLAMA_MMB_HC16
-      value: "2"
-    - name: LLAMA_MMB_SHADOW
-      value: "2"
-    - name: LLAMA_MMB_DOWN16
-      value: "1"
-    - name: LLAMA_HC_CN_SHAPE
-      value: "1"
-    - name: LLAMA_HC_GATEMIX
-      value: "1"
-    - name: LLAMA_HC_MIX_FUSE
-      value: "1"
-    - name: LLAMA_HC_BLK16
-      value: "1"
-    - name: LLAMA_HC_RES16
-      value: "1"
-    - name: LLAMA_HC_PACK_DI
-      value: "1"
-    - name: LLAMA_NORM_GATED
-      value: "1"
-    - name: LLAMA_NORM_ROWS
-      value: "1"
-    - name: LLAMA_IDX_RELU_SUM
-      value: "1"
-    - name: LLAMA_PLE_CONV
-      value: "1"
-    - name: LLAMA_GDN_CONV
-      value: "1"
-    - name: LLAMA_QSA_SPARSE
-      value: "1"
-    - name: LLAMA_QSA_WHOLE_ATTN
-      value: "1"
-    - name: LLAMA_QSA_BLOCK_SELECTION
-      value: "1"
-    - name: LLAMA_QSA_COMPACT_METADATA
-      value: "1"
-    - name: LLAMA_QSA_DENSE_SHORTCUT
-      value: "1"
-    - name: LLAMA_QSA_DIRECT_INDICES
-      value: "1"
-    - name: LLAMA_QSA_PACK_KEYS
-      value: "1"
-    - name: LLAMA_QSA_PACK_VALUES
-      value: "1"
-    - name: LLAMA_QSA_QUERY_STRIP
-      value: "512"
-    - name: LLAMA_QSA_SCORE_BOUNDS
-      value: "1"
-    - name: LLAMA_QSA_NO_DENSE_MASK
-      value: "1"
-    - name: LLAMA_QSA_FA_V3
-      value: "1"
-    - name: LLAMA_QSA_FUSE_EXPAND
-      value: "1"
-    - name: LLAMA_MTP_QSA
-      value: "1"
-    - name: LLAMA_MTP_QSA_MIN_T
-      value: "128"
   resources:
-    cpu: "500m"
-    memory: 30Gi
-  extraArgs:
-    - --alias
-    - qwen3.8-flash-next
-    - --load-mode
-    - none
-    - --lazy-mode
-    - on-direct
-    - -fit
-    - "off"
-    - --cache-ram
-    - "12228"
-    - --temp
-    - "1.0"
-    - --top-p
-    - "0.95"
-    - --top-k
-    - "20"
-    - --min-p
-    - "0"
-    - --presence-penalty
-    - "0.0"
-    - --repeat-penalty
-    - "1.0"
-    - --chat-template-kwargs
-    - '{"reasoning_effort":"low"}'
-    - --image-min-tokens
-    - "1024"
+    cpu: "1"
+    memory: 40Gi
+  extraVolumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llmkube-skirk-cache
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 8Gi
+  extraVolumeMounts:
+    - name: models
+      mountPath: /models
+      readOnly: true
+    - name: shm
+      mountPath: /dev/shm
+  containerPort: 8000
   endpoint:
-    port: 8080
+    port: 8000
     type: ClusterIP
   probeOverrides:
     startup:
-      httpGet:
-        path: /health
-        port: 8080
+      tcpSocket:
+        port: 8000
       periodSeconds: 10
       failureThreshold: 720
     liveness:
-      httpGet:
-        path: /health
-        port: 8080
-      initialDelaySeconds: 30
+      tcpSocket:
+        port: 8000
+      initialDelaySeconds: 60
       periodSeconds: 30
       failureThreshold: 6
     readiness:
       httpGet:
-        path: /health
-        port: 8080
-      initialDelaySeconds: 20
+        path: /v1/models
+        port: 8000
+      initialDelaySeconds: 30
       periodSeconds: 10
       failureThreshold: 6
