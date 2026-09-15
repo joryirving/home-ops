@@ -42,10 +42,14 @@ spec:
     - -m
     - /models/glm/GLM-5.3-Flash-Q2.gguf
     - --ctx
-    - "32768"
+    - "262144"
+    - --kv-disk-dir
+    - /cache
+    - --kv-disk-space-mb
+    - "100000"
   skipModelInit: true
   rolloutPolicy:
-    waitForIdle: true
+    waitForIdle: false
     idleTimeoutSeconds: 86400
   replicas: 1
   priority: high
@@ -75,6 +79,9 @@ spec:
     - name: models
       mountPath: /models
       readOnly: true
+    - name: models
+      mountPath: /cache
+      subPath: ds4-kv-cache
     - name: shm
       mountPath: /dev/shm
   containerPort: 8000
