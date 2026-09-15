@@ -10,8 +10,10 @@ spec:
   swapPolicy: reclaim
   swapBudget: 600s
   default: qwen3.8-27b
-  # 27B (non-default) reclaims back to muse after 15m idle: when foreman goes quiet the slot
-  # re-warms muse so Sage stays hot. Must exceed foreman's ~2min inter-burst gap to avoid thrash.
+  # muse (non-default, borrowed by Sage) reclaims back to 27B after the idle window so
+  # foreman's model stays home and coder tasks never need a swap. Reverted from muse-home
+  # until the upstream activator wedge is fixed (swaps were hanging the foreman coder).
+  # reclaimAfter must exceed Sage's active-conversation gap to avoid mid-chat thrash.
   reclaimAfter: 5m
   members:
     - inferenceServiceRef:
