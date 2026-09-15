@@ -24,13 +24,13 @@ data:
           model: {
             primary: "minimax/MiniMax-M3",
             fallbacks: [
-              "litellm/qwen3.8-flash-next",
+              "litellm/glm-5.3-flash-local",
               "litellm/qwen3.8-27b",
               "litellm/dsv4f",
             ]
           },
           imageModel: {
-            primary: "litellm/qwen3.8-flash-next-chat",
+            primary: "litellm/glm-5.3-flash-local-chat",
             fallbacks: [
               "litellm/muse-glimmer",
               "litellm/glm-5.3-flash",
@@ -47,8 +47,8 @@ data:
             "litellm/kimi-k3": { alias: "kimi", params: { cache_prompt: true } },
             "minimax/MiniMax-M3": { alias: "minimax", params: { cacheRetention: "short" } },
             "minimax/MiniMax-M2.7": { alias: "minimax-old", params: { cacheRetention: "short" } },
-            "litellm/qwen3.8-flash-next": { alias: "skirk", params: { cache_prompt: true, extra_body: { return_progress: true } } },
-            "litellm/qwen3.8-flash-next-chat": { alias: "skirk-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/glm-5.3-flash-local": { alias: "skirk", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/glm-5.3-flash-local-chat": { alias: "skirk-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
             "litellm/gemma-4-12b-it-qat": { alias: "reviewer", params: { cache_prompt: true, extra_body: { return_progress: true } } },
             "litellm/gemma-4-12b-it-qat-chat": { alias: "reviewer-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
             "litellm/local-pool": { alias: "local", params: { cache_prompt: true, extra_body: { return_progress: true } } },
@@ -73,8 +73,8 @@ data:
               "litellm/kimi-k3",
               "minimax/MiniMax-M3",
               "minimax/MiniMax-M2.7",
-              "litellm/qwen3.8-flash-next",
-              "litellm/qwen3.8-flash-next-chat",
+              "litellm/glm-5.3-flash-local",
+              "litellm/glm-5.3-flash-local-chat",
               "litellm/gemma-4-12b-it-qat",
               "litellm/gemma-4-12b-it-qat-chat",
               "litellm/local-pool",
@@ -107,7 +107,7 @@ data:
           },
           heartbeat: {
             every: "60m",
-            model: "litellm/qwen3.8-flash-next-chat",
+            model: "litellm/glm-5.3-flash-local-chat",
             directPolicy: "allow",
             lightContext: true,
             isolatedSession: true,
@@ -131,7 +131,7 @@ data:
                 "litellm/kimi-k3",
                 "minimax/MiniMax-M3",
                 "litellm/muse-glimmer",
-                "litellm/qwen3.8-flash-next",
+                "litellm/glm-5.3-flash-local",
                 "litellm/dsv4f",
               ]
             },
@@ -153,7 +153,7 @@ data:
               primary: "minimax/MiniMax-M3",
               fallbacks: [
                 "litellm/muse-glimmer",
-                "litellm/qwen3.8-flash-next",
+                "litellm/glm-5.3-flash-local",
               ]
             },
             identity: {
@@ -172,7 +172,7 @@ data:
               fallbacks: [
                 "litellm/dsv4f",
                 "litellm/muse-glimmer",
-                "litellm/qwen3.8-flash-next",
+                "litellm/glm-5.3-flash-local",
               ]
             },
             identity: {
@@ -190,7 +190,7 @@ data:
               primary: "litellm/muse-glimmer",
               fallbacks: [
                 "litellm/qwen3.8-27b-chat",
-                "litellm/qwen3.8-flash-next-chat",
+                "litellm/glm-5.3-flash-local-chat",
               ],
             },
             identity: {
@@ -264,8 +264,8 @@ data:
             models: [
               { id: "kimi-k2.7", name: "Kimi K2.7 Code", reasoning: true, input: ["text", "image"], cost: { input: 0.95, output: 4, cacheRead: 0.19, cacheWrite: 0.95 }, contextWindow: 262144, maxTokens: 32768, compat: { supportsUsageInStreaming: true } },
               { id: "kimi-k3", name: "Kimi K3", reasoning: true, input: ["text", "image"], cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3 }, contextWindow: 262144, maxTokens: 131072, compat: { supportsUsageInStreaming: true } },
-              { id: "qwen3.8-flash-next", name: "Qwen3.8-Flash-Next IQ4_NL (Strix ROCm)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384, compat: { supportsUsageInStreaming: true } },
-              { id: "qwen3.8-flash-next-chat", name: "Qwen3.8-Flash-Next non-thinking (Strix ROCm)", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384, compat: { supportsUsageInStreaming: true } },
+              { id: "glm-5.3-flash-local", name: "GLM-5.3-Flash Q2 (Strix ds4)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384, compat: { supportsUsageInStreaming: true } },
+              { id: "glm-5.3-flash-local-chat", name: "GLM-5.3-Flash non-thinking (Strix ds4)", reasoning: false, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384, compat: { supportsUsageInStreaming: true } },
               { id: "gemma-4-12b-it-qat", name: "Gemma-4-12B-it-QAT (9070XT)", reasoning: true, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384, compat: { supportsUsageInStreaming: true } },
               { id: "gemma-4-12b-it-qat-chat", name: "Gemma-4-12B non-thinking (9070XT)", reasoning: false, input: ["text", "image"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 262144, maxTokens: 16384, compat: { supportsUsageInStreaming: true } },
               { id: "local-pool", name: "Local pool (nvidia/gemma/strix, thinking)", reasoning: true, input: ["text"], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 131072, maxTokens: 16384, compat: { supportsUsageInStreaming: true } },
@@ -417,13 +417,13 @@ data:
               contextThreshold: 0.75,
               contextThresholdOverrides: [
                 {
-                  name: "qwen3.8-flash-next-family-safe",
-                  match: { model: "litellm/qwen3.8-flash-next" },
+                  name: "glm-5.3-flash-local-family-safe",
+                  match: { model: "litellm/glm-5.3-flash-local" },
                   contextThreshold: 0.50,
                 },
                 {
-                  name: "qwen3.8-flash-next-chat-family-safe",
-                  match: { model: "litellm/qwen3.8-flash-next-chat" },
+                  name: "glm-5.3-flash-local-chat-family-safe",
+                  match: { model: "litellm/glm-5.3-flash-local-chat" },
                   contextThreshold: 0.50,
                 },
                 {
