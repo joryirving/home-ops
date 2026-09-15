@@ -2,7 +2,7 @@
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: qwen3.8-flash-next
+  name: glm-5.3-flash-local
 spec:
   source: hf://antirez/glm-5.3-flash-gguf
   sourceSecretRef:
@@ -25,13 +25,13 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: qwen3.8-flash-next
+  name: glm-5.3-flash-local
   labels:
     krr/ignore: "true"
   annotations:
     inference.llmkube.dev/idle-endpoint: /v1/models
 spec:
-  modelRef: qwen3.8-flash-next
+  modelRef: glm-5.3-flash-local
   runtime: generic
   image: docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0
   command:
