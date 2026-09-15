@@ -37,15 +37,20 @@ spec:
         name: muse-glimmer
       capabilities: ["tools", "vision"]
   rules:
-    # Sage prefers muse-glimmer but should not force a swap+hold when the 27B
-    # incumbent is busy: IfIdle skips the busy incumbent and falls through to
-    # 27B instead (#1787). Foreman's pinned qwen3.8-27b traffic stays on the
-    # default route (Wait), so a caller that needs 27B still holds through a swap.
+    # Both members prefer themselves but neither forces a swap+hold while the
+    # other is busy: IfIdle skips the busy incumbent and falls through to
+    # whichever model is warm (#1787). An idle incumbent still swaps.
     - name: sage-prefer-muse-ifidle
       match:
         models: ["muse-glimmer"]
       route:
         backends: ["muse-glimmer", "qwen38-27b"]
+        poolActivation: IfIdle
+    - name: foreman-prefer-27b-ifidle
+      match:
+        models: ["qwen3.8-27b"]
+      route:
+        backends: ["qwen38-27b", "muse-glimmer"]
         poolActivation: IfIdle
   proxy:
     replicas: 1
