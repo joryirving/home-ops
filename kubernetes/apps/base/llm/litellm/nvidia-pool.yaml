@@ -35,9 +35,8 @@ spec:
         name: muse-glimmer
       capabilities: ["tools", "vision"]
   rules:
-    # One-way fallthrough. Muse requests can hit Qwen3.8-27B, but Qwen requests
-    # cannot fall onto muse.
-    - name: sage-prefer-muse-ifidle
+    # One-way fallthrough. Muse requests can hit Qwen3.8-27B, but not the reverse.
+    - name: muse-fallthrough
       match:
         models: ["muse-glimmer"]
       route:
