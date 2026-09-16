@@ -42,19 +42,17 @@ spec:
     - name: MODEL
       value: /app/models/Swift-Qwen3.8-27b-W4A16-AWQ
     - name: SPEC
-      value: dflash2
+      value: mtp
     - name: CTX
       value: huge
     - name: MAX_SEQS
-      value: "2"
+      value: "8"
     - name: MAX_LEN
       value: "196608"
-    - name: KV_MEM
-      value: "4187593114"
     - name: PREFIX_CACHE
       value: "1"
     - name: EXTRA_ARGS
-      value: --served-model-name qwen3.8-27b muse-glimmer
+      value: --served-model-name qwen3.8-27b muse-glimmer --kv-cache-memory=5261334938 --kv-offloading-size 16
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
     - name: HF_TOKEN
@@ -65,7 +63,7 @@ spec:
   resources:
     gpu: 1
     cpu: "2"
-    memory: 32Gi
+    memory: 48Gi
   extraVolumes:
     - name: models
       persistentVolumeClaim:
@@ -73,7 +71,7 @@ spec:
     - name: shm
       emptyDir:
         medium: Memory
-        sizeLimit: 8Gi
+        sizeLimit: 24Gi
   extraVolumeMounts:
     - name: models
       mountPath: /app/models
