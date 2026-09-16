@@ -273,7 +273,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "network_ups_tools_battery_runtime{instance=\"$instance\"}",
+          "expr": "(clamp_max((network_ups_tools_ups_power_nominal{instance=\"$instance\"} and on(instance,server) network_ups_tools_device_info{instance=\"$instance\",mfr=\"EcoFlow\"}) * on(instance,server) network_ups_tools_battery_charge{instance=\"$instance\"} / 100 / clamp_min(network_ups_tools_ups_realpower{instance=\"$instance\"}, 1) * 3600, 604800)) or on(instance,server) network_ups_tools_battery_runtime{instance=\"$instance\"}",
           "interval": "",
           "legendFormat": "__auto",
           "range": true,
@@ -957,7 +957,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "network_ups_tools_battery_runtime{instance=~\"$instance\"}",
+          "expr": "(clamp_max((network_ups_tools_ups_power_nominal{instance=~\"$instance\"} and on(instance,server) network_ups_tools_device_info{instance=~\"$instance\",mfr=\"EcoFlow\"}) * on(instance,server) network_ups_tools_battery_charge{instance=~\"$instance\"} / 100 / clamp_min(network_ups_tools_ups_realpower{instance=~\"$instance\"}, 1) * 3600, 604800)) or on(instance,server) network_ups_tools_battery_runtime{instance=~\"$instance\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
