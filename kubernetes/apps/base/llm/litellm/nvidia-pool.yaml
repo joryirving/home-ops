@@ -35,9 +35,8 @@ spec:
         name: muse-glimmer
       capabilities: ["tools", "vision"]
   rules:
-    # One-way fallthrough. Sage may be answered by the 27B when muse is not the
-    # warm member, but foreman is never answered by muse: a qwen3.8-27b request
-    # takes the default route (Wait) and holds for a real 27B.
+    # One-way fallthrough. Muse requests can hit Qwen3.8-27B, but Qwen requests
+    # cannot fall onto muse.
     - name: sage-prefer-muse-ifidle
       match:
         models: ["muse-glimmer"]
