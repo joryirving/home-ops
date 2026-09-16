@@ -54,9 +54,9 @@ spec:
         # FleetNode was observed carrying two Job-mode coders and a review
         # concurrently. Concurrent coders are capped by the bridge's
         # CODER_AGENT_SLOTS instead. The only in-process consumer here is the
-        # reviewer, and its backend runs --parallel 2, so a third concurrent
-        # review would queue at the GPU regardless.
-        replicaCount: 2
+        # reviewer, so replicaCount is the concurrent-review cap; at 1 a second
+        # review queues until the first finishes.
+        replicaCount: 1
         roles:
           - worker
           - coder
