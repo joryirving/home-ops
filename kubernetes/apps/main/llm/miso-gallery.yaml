@@ -3,17 +3,15 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: &app comfyui
+  name: &app miso-gallery
 spec:
   components:
-    - ../../../../components/gpu
-    - ../../../../components/kopiur/backup
+    - ../../../../../components/zeroscaler
   interval: 1h
-  path: ./kubernetes/apps/base/llm/comfyui
+  path: ./kubernetes/apps/base/llm/comfyui/miso-gallery
   postBuild:
     substitute:
       APP: *app
-      KOPIUR_CAPACITY: 200Gi
   wait: false
   prune: true
   sourceRef:
