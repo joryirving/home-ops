@@ -50,6 +50,37 @@ data:
       reasoning_effort: medium
     streaming:
       enabled: false
+    delegation:
+      roles:
+        explorer:
+          provider: litellm-anthropic
+          model: MiniMax-M2.7
+          max_concurrent_children: 4
+        coder-local:
+          provider: litellm
+          model: qwen3.8-27b
+        agentic-local:
+          provider: litellm
+          model: qwen3.8-flash-next
+          max_concurrent_children: 1
+        implementer:
+          provider: litellm
+          model: implementation-pool
+        reviewer:
+          provider: litellm-anthropic
+          model: MiniMax-M3
+        local-reviewer:
+          provider: litellm
+          model: gemma-4-12b-it-qat
+          max_concurrent_children: 4
+        oracle:
+          provider: litellm
+          model: glm-5.3-flash
+        vision-local:
+          provider: litellm
+          model: qwen3.8-flash-next-chat
+          max_concurrent_children: 1
+      max_iterations: 250
     security:
       redact_secrets: true
     privacy:
