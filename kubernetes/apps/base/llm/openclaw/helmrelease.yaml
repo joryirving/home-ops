@@ -262,6 +262,15 @@ spec:
           - backendRefs:
               - name: "{{ .Release.Name }}"
                 port: &imageuiPort 8848
+      widgets:
+        hostnames: ["miso-widgets.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: &widgetPort 18790
     service:
       app:
         type: LoadBalancer
@@ -275,5 +284,7 @@ spec:
             port: *codeserverPort
           imageui:
             port: *imageuiPort
+          widgets:
+            port: *widgetPort
     serviceAccount:
       openclaw: {}
