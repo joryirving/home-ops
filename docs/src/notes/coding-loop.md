@@ -13,20 +13,20 @@ under `kubernetes/apps/base/llm/foreman/agents/`.
 GitHub issue
     │  dispatch scheduled sync (15m)
     ▼
-Dispatch cache ──► Groomer (qwen3.8-flash-next, json_schema-constrained) ──► lane: local / backlog
+Dispatch cache ──► Groomer (glm-5.3-flash-local, response_format-constrained) ──► lane: local / backlog
     │  bridge CronJob (*/15)
     ▼
 Workload (this bridge) ──► AgenticTasks (foreman-operator)
     │
     ├─ code    coder Agent (Job, polyglot image) — clone, fix, SELF-GATE, push branch
-    │          base lane: coder (qwen3.8-27b, local); escalation: coder-frontier (MiniMax, cloud)
+    │          local lane: coder (qwen3.8-27b, shared 3090); escalation: coder-frontier (MiniMax-M3, anthropic-native cloud)
     └─ review  reviewer Agent (gemma-4-12b-it-qat, read-only) — diff review, verdict
     │
     ▼ review GO
 foreman opens the PR (summary grounded against the diff)
     ──► repo CI + AI PR-review action ──► human merge ──► dispatch sync marks done
     │
-    ├─ 3 failed attempts in local ──► bridge re-lanes to frontier (MiniMax-M3-chat)
+    ├─ 3 failed attempts in local ──► bridge re-lanes to frontier (MiniMax-M3)
     └─ PR gets red CI / CHANGES_REQUESTED ──► pr-fix loop (below)
 ```
 
@@ -35,12 +35,17 @@ foreman opens the PR (summary grounded against the diff)
 **1. Sync.** Dispatch's in-app scheduler syncs tracked repos every 15m. Closed issues are
 forced to `status/done` on GitHub itself; `renovate`-labeled issues are excluded.
 
-**2. Groom.** The hosted groomer runs on `qwen3.8-flash-next` (Flash-Next 180B on the
-Strix box, 262k window). It sends a `json_schema` response_format — grammar-constrained
-decoding, with `validateGroomerOutput` as the net. Grooming is binary: ready → `local`,
-not → `backlog`. It never routes to `frontier`; tiering is decided by *failure*, not
-prediction. The backend must honour `response_format` — one that strips it returns prose
-and the groomer fails validation.
+**2. Groom.** The hosted groomer runs on `glm-5.3-flash-local` — a slower Q2 "smart" model
+(~140 t/s prefill) picked for judgment over throughput. It grooms one issue per run,
+`response_format`-constrained with `validateGroomerOutput` as the net. Grooming is binary:
+ready → `local`, not → `backlog`. It never routes to `frontier`; tiering is decided by
+*failure*, not prediction. The cost is prefill: the context is issue-guided (code searched
+per issue, not a stable repo map), so nothing amortizes across runs and each new issue is a
+~200s cold prefill. The backstops are `DISPATCH_GROOMER_TIMEOUT_MS=480000` (8m per call) and
+a `DISPATCH_GROOMER_INTERVAL_MS=900000` (15m) cadence. dispatch#1017 (a stable per-repo
+prefix so caching amortizes) was closed — it cannot help one-issue-per-run on a model shared
+with other consumers; dispatch#1018 (bound the exploration budget so a slow model prefills
+less) is the live lever.
 
 **3. Claim → Workload.** This CronJob (`*/15`) retries failed Workloads first, then claims
 one `status/ready` issue per lane. The Workload carries the coder Agent (picked from the
@@ -69,18 +74,22 @@ issue done.
 | `image: … / mode: Job` | one Job per task | survives `foreman-agent` restarts |
 | empty | in-process inside the `foreman-agent` pods | dies on any restart |
 
-All four coders (`coder`, `coder-strix`, `coder-frontier`, `coder-revision`) are Job-based
-on the polyglot image. Only the gates and reviewers are in-process — they need no language
-runtime, and their tasks are short enough that a restart losing one is cheap.
+All three coders (`coder`, `coder-frontier`, `coder-revision`) are Job-based on the polyglot
+image. Only the reviewers are in-process — they need no language runtime, and their tasks are
+short enough that a restart losing one is cheap.
 
 Coders differ **only by model**, not by runtime or language:
 
 | Agent | Model | Role |
 |---|---|---|
-| `coder` | `nvidia` (3090, 1 slot) | issue work, and every `NORMAL` pr-fix |
-| `coder-strix` | `self-hosted` (Strix + Mac pool) | issue work — the throughput half |
-| `coder-revision` | `self-hosted` | reworks a branch after reviewer findings |
-| `coder-frontier` | `MiniMax-M3-chat` | the `frontier` lane and escalated pr-fixes |
+| `coder` | `qwen3.8-27b` (shared 3090 `nvidia` pool, 1 slot, 120k ctx) | issue work in the `local` lane |
+| `coder-frontier` | `MiniMax-M3` (`provider: anthropic`) | the `frontier` lane and every pr-fix |
+| `coder-revision` | `MiniMax-M3` (`provider: anthropic`) | reworks a branch after reviewer findings |
+
+`coder-frontier` and `coder-revision` moved to `provider: anthropic` in 0.9.27 (#1811): they
+now dial MiniMax's Anthropic-native `/v1/messages` directly instead of the OpenAI-compat shim,
+which was leaking reasoning inline as `<think>…</think>` and mis-counting usage. The reviewers
+(`reviewer`, `reviewer-fork`) run `gemma-4-12b-it-qat`.
 
 The old per-language agents (`coder-python`, `coder-go`, `coder-godot`, `coder-node`) were
 deleted in 2026-08: once every runtime lived in one image, they differed only by a prompt
@@ -91,9 +100,27 @@ each repo's `AGENTS.md`, which every coder prompt now opens by reading.
 
 Routing collapsed with them. `LANE_CODER_AGENTS` is the only map: a lane's value may be a
 list, and the bridge picks `list[issue % len(list)]` — deterministic, so a retry lands on
-the backend that already holds that issue's prompt cache. `["coder","coder-strix","coder-strix"]`
-therefore gives Strix two of every three issues. `REPO_CODER_AGENTS` and `BASE_CODER_AGENTS`
-no longer exist.
+the backend that already holds that issue's prompt cache. Today it is
+`{"*":["coder"],"escalation":["coder-frontier"]}` — one local backend, one escalation; the
+list mechanism is still there for when a second throughput backend is added.
+`REPO_CODER_AGENTS` and `BASE_CODER_AGENTS` no longer exist.
+
+## The shared 3090
+
+The `coder` model (`qwen3.8-27b`) does not own the RTX 3090 — it shares it.
+`kubernetes/apps/base/llm/litellm/nvidia-pool.yaml` defines a `nvidia` `ModelPool` /
+`ModelRouter` that swaps the one card between `qwen3.8-27b` (foreman's coder, the pool
+`default` — "home") and `muse-glimmer` (Sage and the personal consumers, the borrower).
+`swapPolicy: reclaim`, `reclaimAfter: 5m`: an IfIdle router rule (#1787) lets a muse request
+fall through to 27B when the incumbent is busy instead of forcing a swap-and-hold, and
+reclaim (#1796) returns the slot to 27B once muse idles.
+
+**27B is home deliberately.** A muse-home trial was reverted, because the activator can wedge:
+the swap goroutine gets stuck, the pool stops reconciling (`context canceled`), muse requests
+503 `pool_incumbent_busy`, and 27B shows `Stopped` while a coder hangs waiting on a swap that
+never completes. Recovery is `kubectl rollout restart deploy/nvidia-router-proxy -n llm` (the
+state is in-memory). Keeping 27B home means foreman coder tasks never need a swap, so a wedge
+can only cost Sage borrowing muse — not the coding loop.
 
 ### One polyglot coder image
 
@@ -146,13 +173,22 @@ the real constraint at roughly 94% of pipeline wall clock.
 
 ## Gates: the coder verifies its own work
 
-The coder **self-gate runs the repo's `GATEPROFILE_MAP` commands** before submitting.
-With `VERIFY_ENABLED=false` (clean-room verify Jobs are off; repo CI is the verifier),
-the self-gate is the only pre-PR test execution — and it silently no-ops when the
-runtime is missing (`self-gate-deferred`, deferring to a backstop that is disabled).
-That is how misospace/windowstead#321 shipped a test file that did not parse: no Godot
-in the coder, no gate Job, reviewer GO'd anyway (LLMKube#1454). With the polyglot image
-the self-gate has every runtime, so the gate profiles do their job inside the coder.
+The coder's self-gate runs whatever the task's `GateProfile` declares. A Go repo gets the
+hardcoded gate (gofmt / vet / build / test); anything else gets the profile's `commands` —
+**but only if the `GATEPROFILE_MAP` entry actually sets `language` + `commands`.** Most
+entries carried only `sourceExtensions` / `testLayout` (which feed the reviewer's scope
+vouch, not a gate), so no gate ran at all for those repos: the coder self-reported and repo
+CI was the only real verifier. pr-reviewer-action now carries `language: python` +
+`pip install -r requirements.txt && pytest tests/`, so its in-loop gate genuinely runs — a
+failing gate is fed back to the coder and, left unresolved, blocks the GO.
+
+With `VERIFY_ENABLED=false` the clean-room verify Jobs are off, so the in-loop self-gate plus
+repo CI are the whole verification story. The generic gate runs inside the coder image (the
+`python:3.14` base ships ruff/black/flake8 but not pytest — the gate command installs it) and
+defers to a clean-room Job only when a runtime is missing (`self-gate-deferred`, deferring to
+a backstop that is disabled). That is how misospace/windowstead#321 shipped a test file that
+did not parse: no Godot in the coder, no gate Job, reviewer GO'd anyway (LLMKube#1454, now
+fixed).
 
 **A gate profile must mirror what CI actually runs — no more, no less.** A check CI runs
 but the gate does not is a blind failure the coder can only discover after pushing, which
@@ -175,14 +211,16 @@ and enqueues a `PrFixQueueItem` on real signals only:
   comment used to re-queue an item every sweep)
 
 The bridge drains `QUEUED` items into `prfix-<repo>-<pr>` Workloads: the coder checks out
-the existing `foreman/*` branch and amends it. `NORMAL` lane → `coder`; after
-`PR_FIX_MAX_ATTEMPTS` (3) → `ESCALATED` → `coder-frontier`; exhausted there → `BLOCKED`
-(a human). Guard rails, each earned by an outage:
+the existing `foreman/*` branch and amends it. Both lanes route to `coder-frontier`
+(`PR_FIX_LANE_AGENTS={"NORMAL":"coder-frontier","ESCALATED":"coder-frontier"}`); after
+`PR_FIX_MAX_ATTEMPTS` (4) distinct evidence keys, the item goes `BLOCKED` (a human) instead
+of looping. Guard rails, each earned by an outage:
 
 | Guard | Since | What it stops |
 |---|---|---|
 | No check runs ≠ passing CI | bridge 0.6.19 | GHA outages marked unverified fixes FIXED → force-push loops |
-| merged/closed PR → resolve, never retry | bridge 0.6.21 | 3 attempts + frontier escalation burned on already-merged PRs |
+| merged/closed PR stays reaped | dispatch#1003 (#1000) | STALE/IGNORED are now sticky, so a fresh review can't re-QUEUE a merged PR — the loop that re-fired a prfix Workload every tick against already-merged PRs |
+| attempt cap → needs-human | dispatch#1003 (#1001) | after `PR_FIX_MAX_ATTEMPTS` distinct evidence keys, an unconverging item routes to a human instead of churning the coder |
 | duplicate evidence keeps item status | dispatch 0.5.38 | an undismissed review resurrected resolved items every sweep |
 
 ## Failure & escalation semantics
@@ -192,7 +230,7 @@ the existing `foreman/*` branch and amends it. `NORMAL` lane → `coder`; after
 | Task flake | bridge retry pass | delete + recreate, ≤ 3 attempts, issue number preserved |
 | Closed issue mid-retry | closed-issue guard | skip, no attempt burned |
 | Coder declares a dead end | `DESIGN-DECISION` / `NO-TECHNICAL-FIX` | parked for a human without burning attempts |
-| Persistent failure in `local` | escalation | re-lane → `frontier` → MiniMax-M3-chat |
+| Persistent failure in `local` | escalation | re-lane → `frontier` → MiniMax-M3 (anthropic-native) |
 | Persistent failure in `frontier` | tombstone | Failed Workload kept for human triage |
 | Red CI / changes requested on a PR | pr-fix loop | see above |
 
@@ -224,11 +262,13 @@ Env on this HelmRelease unless noted:
 |---|---|
 | `DISPATCH_LANES` = `local,frontier` | lanes polled per tick |
 | `ESCALATION_LANE` = `frontier` | give-up target |
-| `LANE_CODER_AGENTS` | lane → Agent, or a **list** split by `issue % len`. `{"*":["coder","coder-strix","coder-strix"],"frontier":"coder-frontier"}` gives Strix two of every three issues. The only routing map — `REPO_CODER_AGENTS` / `BASE_CODER_AGENTS` were removed with the per-language coders |
-| `GATEPROFILE_MAP` | per-repo self-gate commands + gate image + `sourceExtensions` (feeds the reviewer's scope vouch). Digest pins inside this JSON are Renovate-managed via a custom regex manager |
+| `LANE_CODER_AGENTS` | lane → Agent, or a **list** split by `issue % len`. Live: `{"*":["coder"],"escalation":["coder-frontier"]}` — one local backend, one escalation. The only routing map — `REPO_CODER_AGENTS` / `BASE_CODER_AGENTS` were removed with the per-language coders |
+| `CODER_AGENT_SLOTS` = `{"coder":1,"coder-frontier":4}` | concurrent tasks per coder Agent — one local (single 3090 slot), four frontier |
+| `GATEPROFILE_MAP` | per-repo gate: `language` + `commands` + gate image + `sourceExtensions` (which also feed the reviewer's scope vouch). An entry with no `language`/`commands` runs no gate. Digest pins inside this JSON are Renovate-managed via a custom regex manager |
+| `DISPATCH_GROOMER_MODEL` / `_TIMEOUT_MS` / `_INTERVAL_MS` | groomer backend (`glm-5.3-flash-local`), per-call timeout (`480000` = 8m), cadence (`900000` = 15m) |
 | `VERIFY_ENABLED` = `false` | no clean-room verify Jobs; coder self-gate + repo CI verify |
-| `PR_FIX_ENABLED` / `PR_FIX_MAX_ATTEMPTS` / `PR_FIX_LANE_AGENTS` | the pr-fix loop above |
-| `MAX_IN_PROGRESS` = `7` | cap on concurrently-worked issues (0 = uncapped). Counts every non-terminal Workload, so one sitting in review or revision limbo holds a slot while using no backend; pr-fix Workloads consume backends but are **not** counted. It over- and under-counts at the same time |
+| `PR_FIX_ENABLED` / `PR_FIX_MAX_ATTEMPTS` (`4`) / `PR_FIX_LANE_AGENTS` | the pr-fix loop above; both lanes → `coder-frontier` |
+| `MAX_IN_PROGRESS` = `14` | cap on concurrently-worked issues (0 = uncapped). Counts every non-terminal Workload, so one sitting in review or revision limbo holds a slot while using no backend; pr-fix Workloads consume backends but are **not** counted. It over- and under-counts at the same time |
 
 ## Known upstream issues
 
@@ -238,6 +278,13 @@ Env on this HelmRelease unless noted:
 - [LLMKube#1447](https://github.com/defilantech/LLMKube/issues/1447) — reviewer
   scope-overlap can false-NO-GO test-coverage issues (diff touches `X.test.ts`, issue
   names `X.ts`).
+- [LLMKube#1839](https://github.com/defilantech/LLMKube/issues/1839) — a pr-fix / revision
+  whose branch conflicts on rebase is abandoned: `RebaseOntoBase` fails loud on any conflict
+  with no path for the coder to resolve it, so a batch of overlapping PRs that conflict-on-
+  rebase once one merges all get parked as needs-human. Fix in
+  [#1840](https://github.com/defilantech/LLMKube/pull/1840) — the coder resolves the conflict
+  in-loop, guarded by a deterministic check that a `git rebase --abort` (reverting merged
+  work) still lands as INCOMPLETE.
 - ~~[LLMKube#1496](https://github.com/defilantech/LLMKube/issues/1496)~~ — **resolved.**
   Job-mode tasks no longer reserve a FleetNode, so long coder Jobs cannot starve in-process
   reviewers. This is why `replicaCount` no longer bounds coders; see the fleet-capacity
@@ -255,5 +302,6 @@ Env on this HelmRelease unless noted:
   the re-dispatcher's summary rather than the actual output.
 - *(resolved)* LLMKube#1434 — `fetch_pull_request` shipped in 0.9.16, though the webhook
   catalog omitted it (#1482) until 0.9.17.
-- [LLMKube#1454](https://github.com/defilantech/LLMKube/issues/1454) — a reviewer that says
-  "cannot verify" can still return GO.
+- ~~[LLMKube#1454](https://github.com/defilantech/LLMKube/issues/1454)~~ — **resolved** in
+  0.9.27 (#1801, now deployed). A reviewer that admits "cannot verify" is demoted GO → NO-GO
+  instead of opening a PR.
