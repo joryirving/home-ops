@@ -83,7 +83,7 @@ EMBEDDED = [
     ("opencode", LLM / "opencode/configmap.yaml", r'"model":\s*"([^"]+)"'),
     # Model entries are single-line and carry contextWindow; agent definitions
     # spread `id:` over several lines and would otherwise match.
-    ("openclaw", LLM / "openclaw/app/configmap.yaml", r'^\s*\{ id: "([^"]+)".*contextWindow'),
+    ("openclaw", LLM / "openclaw/configmap.yaml", r'^\s*\{ id: "([^"]+)".*contextWindow'),
     ("hermes", LLM / "hermes/configmap.yaml", r"^\s*model:\s*(\S+)\s*$"),
 ]
 
