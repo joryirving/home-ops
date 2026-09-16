@@ -36,7 +36,10 @@
       customType: "regex",
       description: "Process OCI dependencies",
       managerFilePatterns: ["/\\.yaml(?:\\.j2)?$/"],
-      matchStrings: ["oci://(?<depName>[^:]+):(?<currentValue>\\S+)"],
+      matchStrings: [
+        "oci://(?<depName>[^:]+):(?<currentValue>\\S+)",
+        "ref:\\s+tag:\\s*(?<currentValue>\\S+)\\s+url:\\s*oci://(?<depName>[^\\s]+)",
+      ],
       datasourceTemplate: "docker",
     },
     {
