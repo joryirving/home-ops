@@ -159,6 +159,11 @@ locals {
           matching_mode     = "strict"
           redirect_uri_type = "authorization"
           url               = "https://tavern.${var.CLUSTER_DOMAIN}/oauth2/callback"
+        },
+        {
+          matching_mode     = "strict"
+          redirect_uri_type = "authorization"
+          url               = "https://miso-code.${var.CLUSTER_DOMAIN}/oauth2/callback"
         }
       ]
       property_mappings = local.default_property_mappings

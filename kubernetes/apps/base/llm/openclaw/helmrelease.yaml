@@ -12,9 +12,6 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
-      # OpenClaw puts its own hostname in the Runtime block near the end of the system
-      # prompt, so a pod name change rewrites the prompt ~30k tokens in and invalidates
-      # every cached token after it. Pin it so restarts keep the prefix.
       hostname: openclaw
       automountServiceAccountToken: true
       securityContext:
@@ -30,7 +27,7 @@ spec:
           init:
             image:
               repository: docker.io/library/alpine
-              tag: "3.24"
+              tag: 3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
             command:
               - sh
               - -c
@@ -50,24 +47,32 @@ spec:
               - /bin/sh
               - -c
               - |
-                # Install the memini memory plugin from ClawHub, version-guarded:
-                # only fetches when the pinned version differs from what's on the
-                # persistent volume, so normal restarts stay offline.
-                # ClawHub's latest published Memini artifact. Git tags can lead it.
+                PLUGIN_FLAGS="--accept-capabilities --acknowledge-install-policy-warning"
+                # Memini ships via ClawHub; pin to the latest published artifact, git tags can lead it.
                 MEMINI_PLUGIN_VERSION=0.7.29
                 if [ "$(cat "$HOME/.openclaw/extensions/memini/.clawver" 2>/dev/null)" != "$MEMINI_PLUGIN_VERSION" ]; then
-                  if node dist/index.js plugins install "clawhub:@eleboucher/memini@$MEMINI_PLUGIN_VERSION" --force --accept-capabilities --acknowledge-install-policy-warning; then
+                  if node dist/index.js plugins install "clawhub:@eleboucher/memini@$MEMINI_PLUGIN_VERSION" --force $PLUGIN_FLAGS; then
                     printf '%s' "$MEMINI_PLUGIN_VERSION" > "$HOME/.openclaw/extensions/memini/.clawver"
                   else
                     echo "WARN: memini plugin install failed; starting with whatever is present"
                   fi
                 fi
-                # Start image UI in background (lives in PVC, no redeploy needed)
+                # Official npm plugins (not bundled in the image) must track the gateway version.
+                OPENCLAW_VERSION="$(node dist/index.js --version | awk '{print $2}')"
+                OFFICIAL_MARKER="$HOME/.openclaw/extensions/.official-plugins-version"
+                if [ -n "$OPENCLAW_VERSION" ] && [ "$(cat "$OFFICIAL_MARKER" 2>/dev/null)" != "$OPENCLAW_VERSION" ]; then
+                  if node dist/index.js plugins update comfy $PLUGIN_FLAGS \
+                    && node dist/index.js plugins update "@openclaw/discord@$OPENCLAW_VERSION" $PLUGIN_FLAGS \
+                    && node dist/index.js plugins update searxng $PLUGIN_FLAGS; then
+                    printf '%s' "$OPENCLAW_VERSION" > "$OFFICIAL_MARKER"
+                  else
+                    echo "WARN: official plugin update failed; starting with installed versions"
+                  fi
+                fi
                 if [ -f "$HOME/.openclaw/workspace/image-ui/app.py" ]; then
                   cd "$HOME/.openclaw/workspace/image-ui" && python3 app.py &
                 fi
-                # Start gateway
-                exec node dist/index.js gateway --bind lan
+                exec node dist/index.js gateway
             env:
               OPENCLAW_LOG_LEVEL: debug
               MEMINI_INJECT_RECALL_MIN_SCORE: "0.85"
@@ -101,7 +106,7 @@ spec:
               repository: ghcr.io/coder/code-server
               tag: 4.137.0@sha256:57ac684d44deb6fa94317b3e8f3e128dd7fb897fffd95b4efcd16f56ce607971
             env:
-              TZ: America/Edmonton
+              TZ: *tz
             args:
               [
                 "--auth",
@@ -112,7 +117,7 @@ spec:
                 "/home/node/.vscode",
                 "--port",
                 "12321",
-                "/config",
+                "/home/node/.openclaw/workspace",
               ]
             resources:
               requests:
@@ -147,9 +152,34 @@ spec:
               redirectURL: https://generate.jory.dev/oauth2/callback
               logoutPath: /logout
               scopes: ["openid", "email", "profile"]
+      openclaw-codeserver-oidc:
+        enabled: true
+        forceRename: openclaw-codeserver-oidc
+        manifest:
+          apiVersion: gateway.envoyproxy.io/v1alpha1
+          kind: SecurityPolicy
+          metadata:
+            name: openclaw-codeserver-oidc
+          spec:
+            targetRefs:
+              - group: gateway.networking.k8s.io
+                kind: HTTPRoute
+                name: openclaw-codeserver
+            oidc:
+              provider:
+                issuer: https://sso.jory.dev/application/o/opencode/
+              clientIDRef:
+                group: ""
+                kind: Secret
+                name: opencode-oidc
+              clientSecret:
+                group: ""
+                kind: Secret
+                name: opencode-oidc
+              redirectURL: https://miso-code.jory.dev/oauth2/callback
+              logoutPath: /logout
+              scopes: ["openid", "email", "profile"]
     persistence:
-      openclaw-home:
-        type: emptyDir
       config:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
@@ -173,12 +203,6 @@ spec:
         path: /mnt/daena/comfyui/output
         globalMounts:
           - path: /home/node/.openclaw/workspace/images
-      # OpenClaw resolves ffmpeg/ffprobe only from /usr/bin, /bin, /usr/sbin, /sbin
-      # and /usr/local/bin (src/infra/resolve-system-bin.ts) and never consults PATH,
-      # so the static builds already on the volume are invisible to it. Mount them as
-      # individual files: mounting over /usr/local/bin itself would shadow node and the
-      # openclaw entrypoint that live there. Needed for Discord voice-message OGG/Opus
-      # plus waveform generation; TTS itself does not use ffmpeg.
       ffmpeg:
         existingClaim: "{{ .Release.Name }}"
         advancedMounts:
@@ -199,14 +223,12 @@ spec:
             subPath: openclaw.json
     rbac:
       roles:
-        # Cluster-wide pod delete — restart any pod in any namespace
         openclaw-pod-delete-cluster-wide:
           type: ClusterRole
           rules:
             - apiGroups: [""]
               resources: ["pods"]
               verbs: ["delete"]
-        # Namespace-scoped exec + deploy patch — llm namespace only
         openclaw-exec-deploy-llm:
           type: Role
           rules:
@@ -217,7 +239,6 @@ spec:
               resources: ["deployments"]
               verbs: ["patch", "update"]
       bindings:
-        # Cluster-wide binding for pod delete
         openclaw-pod-delete-cluster-wide:
           type: ClusterRoleBinding
           roleRef:
@@ -225,7 +246,6 @@ spec:
           subjects:
             - identifier: openclaw
               serviceAccount: openclaw
-        # Namespace-scoped binding for exec+deploy — llm namespace only
         openclaw-exec-deploy-llm:
           type: RoleBinding
           roleRef:
@@ -272,11 +292,8 @@ spec:
               - name: "{{ .Release.Name }}"
                 port: &widgetPort 18790
     service:
-      app:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.41
-        externalTrafficPolicy: Cluster
+      openclaw:
+        primary: true
         ports:
           http:
             port: *port
@@ -286,5 +303,13 @@ spec:
             port: *imageuiPort
           widgets:
             port: *widgetPort
+      lan:
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.41
+        externalTrafficPolicy: Cluster
+        ports:
+          http:
+            port: *port
     serviceAccount:
       openclaw: {}
