@@ -8,7 +8,7 @@ spec:
     topology.kubernetes.io: egpu
   gpu: 1
   swapPolicy: reclaim
-  swapBudget: 600s
+  swapBudget: 900s
   default: muse-glimmer
   reclaimAfter: 5m
   members:
@@ -35,20 +35,12 @@ spec:
         name: muse-glimmer
       capabilities: ["tools", "vision"]
   rules:
-    # Both members prefer themselves but neither forces a swap+hold while the
-    # other is busy: IfIdle skips the busy incumbent and falls through to
-    # whichever model is warm (#1787). An idle incumbent still swaps.
-    - name: sage-prefer-muse-ifidle
+    # One-way fallthrough. Muse requests can hit Qwen3.8-27B, but not the reverse.
+    - name: muse-fallthrough
       match:
         models: ["muse-glimmer"]
       route:
         backends: ["muse-glimmer", "qwen38-27b"]
-        poolActivation: IfIdle
-    - name: foreman-prefer-27b-ifidle
-      match:
-        models: ["qwen3.8-27b"]
-      route:
-        backends: ["qwen38-27b", "muse-glimmer"]
         poolActivation: IfIdle
   proxy:
     replicas: 1
