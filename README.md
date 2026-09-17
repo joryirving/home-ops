@@ -119,7 +119,7 @@ The one exception is status monitoring: the OVH VPS (Columbina) that fronts Towo
 
 ## 🌐 DNS
 
-In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs DNS records to their respective platforms accordingly.
+In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs the DNS records to their respective platforms accordingly.
 
 ---
 
@@ -129,13 +129,13 @@ In my cluster there are two instances of [ExternalDNS](https://github.com/kubern
 
 | Name  | Device                  | CPU               | OS Disk    | Local Disk | Rook Disk  | RAM   | OS    | Purpose           |
 | ----- | ----------------------- | ----------------- | ---------- | ---------- | ---------- | ----- | ----- | ----------------- |
-| Ayaka | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Eula  | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Ganyu | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD  | 2TB NVMe | -          | 128GB | Talos | k8s worker (LLM)  |
+| Ayaka | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Eula  | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Ganyu | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD  | 2TB NVMe   | -          | 128GB | Talos | k8s worker (LLM)  |
 
 Control Plane OS Disk: m.2 Samsung PM9A3 960GB
-Control Plane Local Disk: m.2 WD SN770 1TB NVMe
+Control Plane Local Disk: m.2 WD SN770 1TB
 Control Plane Rook Disk: u.2 Samsung PM9A3 1.92TB
 
 Total CPU: 58 Cores/92 Threads
@@ -145,10 +145,10 @@ Total RAM: 512GB
 
 | Name     | Device     | CPU           | OS Disk   | Local Disk | RAM  | OS    | Purpose           |
 | -------- | ---------- | ------------- | --------- | ---------- | ---- | ----- | ----------------- |
-| Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe | 64GB | Talos | k8s control-plane |
+| Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe   | 64GB | Talos | k8s control-plane |
 
 OS Disk: 2.5" Samsung 870 EVO SSD
-Local Disk: m.2 WD SN770 1TB NVMe
+Local Disk: m.2 WD SN770 1TB
 
 Total CPU: 8 Cores/16 Threads
 Total RAM: 64GB
@@ -170,13 +170,13 @@ Total RAM: 32GB
 | Name    | Device            | CPU        | OS Disk    | Data Disk     | RAM   | OS           | Purpose           |
 | ------- | ----------------- | ---------- | ---------- | ------------- | ----- | ------------ | ----------------- |
 | Voyager | MS-01             | i5-12600H  | 32GB USB   | -             | 96GB  | Unraid       | NAS/NFS/Backup    |
-| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2 | -     | ZFS               |
+| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2 | -     | -            | ZFS               |
 | Venti   | Raspberry Pi5     | Cortex A76 | 250GB NVMe | -             | 8GB   | Raspbian     | NUT/SSH (Main)    |
 | Sayu    | Raspberry Pi5     | Cortex A76 | 500GB NVMe | -             | 8GB   | Raspbian     | NUT/SSH (Utility) |
 | PiKVM   | Raspberry Pi4     | Cortex A72 | 64GB mSD   | -             | 4GB   | PiKVM (Arch) | KVM (Main)        |
 | JetKVM  | JetKVM            | RV1106G3   | 8GB EMMC   | -             | 256MB | Linux 5.10   | KVM (Utility)     |
-| PDU     | UniFi USP PDU Pro | -          | -          | -             | -     | PDU               |
-| TESmart | 8 port KVM        | -          | -          | -             | -     | KVM       |
+| PDU     | UniFi USP PDU Pro | -          | -          | -             | -     | -            | PDU               |
+| TESmart | 8 port KVM        | -          | -          | -             | -     | -            | Network KVM       |
 
 ### Networking/UPS Hardware
 
