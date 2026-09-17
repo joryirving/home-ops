@@ -57,22 +57,23 @@ home-ops/
 Git push → Flux source sync → Kustomization → HelmRelease → k8s resources
 ```
 
-Flux recursively searches `kubernetes/apps/${cluster}/` for `kustomization.yaml` files. Each must define a namespace and Flux kustomization (`ks.yaml`).
+Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `kubernetes/apps/base/<namespace>/<app>/`; each cluster overlay is a Flux `Kustomization` at `kubernetes/apps/<cluster>/<namespace>/<app>.yaml` pointing to that base directory. Namespace is declared once per namespace in `kubernetes/apps/<cluster>/<namespace>/kustomization.yaml`; `kubernetes/components/replacements/ks.yaml` copies it to each overlay's `spec.targetNamespace`. A change under `kubernetes/apps/base/` can affect every cluster that includes the app.
 
 ## Conventions
 
 - Component READMEs stay with components (e.g., `kubernetes/apps/base/cilium/README.md`)
 - Secrets stored in 1Password, referenced via `external-secrets`
-- SOPS used for encrypting sensitive values in Git
 - Apps use `HelmRelease` via Flux, rarely raw manifests
 - Clusters are mostly identical except for app selections and sizing
-- **AI instructions**: `.agents/instructions/pr-review.instructions.md` is the live system prompt for the AI PR reviewer. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). When editing YAML, follow the sorting instructions.
+- **AI instructions**: `.agents/instructions/pr-review.instructions.md` is the live system prompt for the AI PR reviewer. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). `.agents/instructions/foreman.instructions.md` documents the Foreman/LLMKube coding loop. When editing YAML, follow the sorting instructions; read the Foreman instructions before changing `kubernetes/apps/base/llm/foreman/`, LLMKube, or dispatch configuration.
 - **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource and alerting rules into every app via kustomize components. Helm chart sources are per-app: each app declares its own `OCIRepository` in `ocirepository.yaml`.
 - **Namespace replacement**: `kubernetes/components/replacements/ks.yaml` propagates `spec.targetNamespace` into Flux Kustomizations automatically.
+- **New apps**: Follow `.agents/skills/add-app/SKILL.md` for the complete workflow; create manifests in `base/` and an overlay in each requested cluster.
+- **Postgres**: `kubernetes/components/postgres/` is the CloudNativePG component. Its README defines recovery bootstrap and the `components.postgres/cnpg=init` label for net-new databases. Treat changes to CNPG `Cluster` resources or bootstrap labels as data-loss-relevant.
 
 ## Common Operations
 
-- **Add app**: Create in `kubernetes/apps/${cluster}/` with kustomization + HelmRelease
+- **Add app**: Create base manifests in `kubernetes/apps/base/<namespace>/<app>/`, then cluster overlay `Kustomization` files for the requested clusters
 - **Update app**: Merge renovate PR or manually edit and push
 - **Troubleshoot**: Check `flux get all -n <namespace>`, `kubectl get events --sort-by=.lastTimestamp`
 - **Scripts**: `hack/` contains operational scripts. See `hack/README.md` for the full list and usage.
@@ -81,12 +82,10 @@ Flux recursively searches `kubernetes/apps/${cluster}/` for `kustomization.yaml`
     - `task talos:upgrade-k8s CLUSTER=main VERSION=<ver>` — upgrade Kubernetes
     - `task kubernetes:reconcile CLUSTER=main` — force Flux reconciliation
     - `task kubernetes:hr-restart CLUSTER=main` — restart failed HelmReleases
-    - `task volsync:snapshot CLUSTER=main NS=<ns> APP=<app>` — trigger VolSync snapshot
-    - `task volsync:restore CLUSTER=main NS=<ns> APP=<app> PREVIOUS=<snap>` — restore from backup
     - `task bootstrap:talos CLUSTER=main` — bootstrap a fresh Talos cluster
     - `task op:push` / `task op:pull` — sync kubeconfig/talosconfig with 1Password
     - `task workstation:brew` — install local workstation tools
-- **Tool management**: `.mise.toml` manages required tools (e.g. `flate`, `minijinja-cli`). Run `mise install` to set up the environment.
+- **Tool management**: `.mise.toml` pins `flate`; run `mise install` to set it up. Other task preconditions identify their required tools.
 - **Validate locally**: Run `flate` before pushing GitOps changes:
 
     ```bash
@@ -124,7 +123,7 @@ When reviewing Renovate PRs, enforce these criteria. Reviews may include konflat
 ### HelmRelease Requirements
 
 - All applications MUST use `HelmRelease` via Flux, not raw manifests
-- HelmReleases MUST use `spec.chartRef` pointing to an `OCIRepository` with a pinned `ref.tag`. The only exception is `llmkube`, which uses the legacy `spec.chart` pattern.
+- HelmReleases MUST use `spec.chartRef` pointing to an `OCIRepository` with a pinned `ref.tag`.
 - Every app (including `app-template`-based apps) defines its own per-app `OCIRepository` in a dedicated `ocirepository.yaml` alongside the `HelmRelease`, named after the app, with `./ocirepository.yaml` listed in the app's `kustomization.yaml`. Do not put the `OCIRepository` inline in `helmrelease.yaml`, and do not rely on a shared/injected `OCIRepository`.
 - Must include `spec.interval` for reconciliation frequency
 - Resource limits (CPU/memory) SHOULD be specified for production workloads, but this is not a hard requirement
@@ -141,7 +140,6 @@ When reviewing Renovate PRs, enforce these criteria. Reviews may include konflat
 
 - **NEVER** commit plain-text secrets or credentials in Git
 - All secrets MUST use `external-secrets` with 1Password backend
-- SOPS encryption required for any sensitive values in Git
 - If a PR introduces a new secret, verify it's external-secrets backed
 - Talos machine configs (`talos/*/machineconfig.yaml.j2`) store `op://` references in Git that are resolved at runtime via `op inject`. This is the intended pattern for machine-level secrets; do not replace them with `external-secrets`
 
@@ -170,6 +168,7 @@ Always `request_changes` if:
 - Major version bumps without justification
 - CRD changes or custom resource modifications
 - Network policy or security context relaxations
+- A rendered diff introduces a `suspend` field or other Flux suspension artifact that was absent at merge-base
 
 ### Required Evidence for Approval
 
@@ -181,14 +180,14 @@ Before approving, verify:
 4. No breaking changes identified in release notes
 5. Security advisories don't apply to this version
 
-For Helm chart and container image upgrades, you **must** use tool requests (e.g., `gh_api`) to fetch release notes, changelogs, and upstream metadata from the source repository. Do not rely on the PR description alone — verify against the actual upstream release.
+For Helm chart and container image upgrades, you **must** use tool requests (e.g., `gh_api`) to fetch release notes, changelogs, and upstream metadata from the source repository. Do not rely on the PR description alone — verify against the actual upstream release. The AI review workflow also provides Konflate's rendered Flux diff and upgrade-impact evidence; use them to establish the real blast radius, but treat unavailable advisory evidence as Unknown rather than a clean result.
 
 ### Kubernetes ↔ Talos compatibility
 
-This cluster runs on **Talos Linux**, which pins the node OS and the kubelet together. The deployed Talos version is in `machine.install.image` inside `talos/main/machineconfig.yaml.j2` (format: `factory.talos.dev/metal-installer/<schematic>:<version>`). When a PR bumps the Kubernetes version (the kubelet image, a `KubernetesUpgrade` resource, or the `kubernetes` Renovate group), you MUST:
+This cluster runs on **Talos Linux**, which pins the node OS and the kubelet together. The deployed Talos version is in `machine.install.image` inside `talos/main/machineconfig.yaml.j2` (format: `factory.talos.dev/metal-installer/<schematic>:<version>`). Kubernetes/Talos upgrade PRs may touch `talos/*/machineconfig.yaml.j2` and `kubernetes/apps/*/kube-tools/upgrades/{talosupgrade,kubernetesupgrade}.yaml` across multiple clusters. When reviewing one, you MUST:
 
 1. Read the deployed Talos version from `talos/main/machineconfig.yaml.j2`.
-2. Confirm the new Kubernetes version is supported on that Talos release against Talos's published support matrix — search the web for "talos <version> kubernetes support matrix" (the docs live at `docs.siderolabs.com`; the old `talos.dev` matrix URLs 404) and fetch it.
+2. Confirm the new Kubernetes version is supported on that Talos release against Talos's published support matrix at `docs.siderolabs.com` or `www.talos.dev`.
 3. Cite the matrix in the review. Do not approve a Kubernetes bump on "patch release" reasoning without confirming Talos supports it — an unchecked matrix is an Unknown, not an approval.
 
 _Flux automatically reconciles changes once the PR is merged._
