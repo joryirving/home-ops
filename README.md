@@ -60,7 +60,7 @@ There is a template over at [onedr0p/cluster-template](https://github.com/onedr0
 ### Core Components
 
 - **Networking & Service Mesh**: [cilium](https://github.com/cilium/cilium) provides eBPF-based networking, while [envoy](https://gateway.envoyproxy.io/) powers service-to-service communication with L7 proxying and traffic management. [Towonel](https://github.com/eleboucher/towonel) fronts public ingress through a small OVH VPS, and [external-dns](https://github.com/kubernetes-sigs/external-dns) keeps DNS records in sync automatically.
-- **Security & Secrets**: [cert-manager](https://github.com/cert-manager/cert-manager) automates SSL/TLS certificate management. For secrets, I use [external-secrets](https://github.com/external-secrets/external-secrets) with [1Password Connect](https://github.com/1Password/connect) to inject secrets into Kubernetes, and [sops](https://github.com/getsops/sops) to store and manage encrypted secrets in Git.
+- **Security & Secrets**: [cert-manager](https://github.com/cert-manager/cert-manager) automates SSL/TLS certificate management. For secrets, I use [external-secrets](https://github.com/external-secrets/external-secrets) with [1Password Connect](https://github.com/1Password/connect) to inject secrets into Kubernetes.
 - **Storage & Data Protection**: [rook](https://github.com/rook/rook) provides distributed storage for persistent volumes, with [volsync](https://github.com/backube/volsync) handling backups and restores. [spegel](https://github.com/spegel-org/spegel) improves reliability by running a stateless, cluster-local OCI image mirror.
 - **Automation & CI/CD**: [actions-runner-controller](https://github.com/actions/actions-runner-controller) runs self-hosted GitHub Actions runners directly in the cluster for continuous integration workflows. For IaC, I use [tofu-controller](https://github.com/weaveworks/tf-controller) as additional Flux component used to run Terraform from within a Kubernetes cluster.
 
@@ -119,7 +119,7 @@ The one exception is status monitoring: the OVH VPS (Columbina) that fronts Towo
 
 ## 🌐 DNS
 
-In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs the DNS records to their respective platforms accordingly.
+In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs DNS records to their respective platforms accordingly.
 
 ---
 
@@ -129,13 +129,13 @@ In my cluster there are two instances of [ExternalDNS](https://github.com/kubern
 
 | Name  | Device                  | CPU               | OS Disk    | Local Disk | Rook Disk  | RAM   | OS    | Purpose           |
 | ----- | ----------------------- | ----------------- | ---------- | ---------- | ---------- | ----- | ----- | ----------------- |
-| Ayaka | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Eula  | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Ganyu | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD  | 2TB NVMe   | -          | 128GB | Talos | k8s worker (LLM)  |
+| Ayaka | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Eula  | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Ganyu | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
+| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD  | 2TB NVMe | -          | 128GB | Talos | k8s worker (LLM)  |
 
 Control Plane OS Disk: m.2 Samsung PM9A3 960GB
-Control Plane Local Disk: m.2 WD SN770 1TB
+Control Plane Local Disk: m.2 WD SN770 1TB NVMe
 Control Plane Rook Disk: u.2 Samsung PM9A3 1.92TB
 
 Total CPU: 58 Cores/92 Threads
@@ -145,10 +145,10 @@ Total RAM: 512GB
 
 | Name     | Device     | CPU           | OS Disk   | Local Disk | RAM  | OS    | Purpose           |
 | -------- | ---------- | ------------- | --------- | ---------- | ---- | ----- | ----------------- |
-| Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe   | 64GB | Talos | k8s control-plane |
+| Celestia | Bosgame P1 | Ryzen 7 5700U | 500GB SSD | 1TB NVMe | 64GB | Talos | k8s control-plane |
 
 OS Disk: 2.5" Samsung 870 EVO SSD
-Local Disk: m.2 WD SN770 1TB
+Local Disk: m.2 WD SN770 1TB NVMe
 
 Total CPU: 8 Cores/16 Threads
 Total RAM: 64GB
@@ -170,13 +170,13 @@ Total RAM: 32GB
 | Name    | Device            | CPU        | OS Disk    | Data Disk     | RAM   | OS           | Purpose           |
 | ------- | ----------------- | ---------- | ---------- | ------------- | ----- | ------------ | ----------------- |
 | Voyager | MS-01             | i5-12600H  | 32GB USB   | -             | 96GB  | Unraid       | NAS/NFS/Backup    |
-| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2 | -     | -            | ZFS               |
+| DAS     | Lenovo SA120      | -          | -          | 6x14TB Raidz2 | -     | ZFS               |
 | Venti   | Raspberry Pi5     | Cortex A76 | 250GB NVMe | -             | 8GB   | Raspbian     | NUT/SSH (Main)    |
 | Sayu    | Raspberry Pi5     | Cortex A76 | 500GB NVMe | -             | 8GB   | Raspbian     | NUT/SSH (Utility) |
 | PiKVM   | Raspberry Pi4     | Cortex A72 | 64GB mSD   | -             | 4GB   | PiKVM (Arch) | KVM (Main)        |
 | JetKVM  | JetKVM            | RV1106G3   | 8GB EMMC   | -             | 256MB | Linux 5.10   | KVM (Utility)     |
-| PDU     | UniFi USP PDU Pro | -          | -          | -             | -     | -            | PDU               |
-| TESmart | 8 port KVM        | -          | -          | -             | -     | -            | Network KVM       |
+| PDU     | UniFi USP PDU Pro | -          | -          | -             | -     | PDU               |
+| TESmart | 8 port KVM        | -          | -          | -             | -     | KVM       |
 
 ### Networking/UPS Hardware
 
