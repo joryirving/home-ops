@@ -184,7 +184,7 @@ For Helm chart and container image upgrades, you **must** use tool requests (e.g
 
 ### Kubernetes ↔ Talos compatibility
 
-This cluster runs on **Talos Linux**, which pins the node OS and the kubelet together. Kubernetes/Talos upgrade PRs may touch `talos/*/machineconfig.yaml.j2` and `kubernetes/apps/*/kube-tools/upgrades/{talosupgrade,kubernetesupgrade}.yaml` across multiple clusters. For each affected cluster, read the Talos version from the `UnattendedInstallConfig.spec.installer.image` entry in `talos/<cluster>/machineconfig.yaml.j2` (format: `factory.talos.dev/metal-installer/<schematic>:<version>`). When reviewing one, you MUST:
+This cluster runs on **Talos Linux**, which pins the node OS and the kubelet together. Kubernetes/Talos upgrade PRs may touch `talos/*/machineconfig.yaml.j2` and `kubernetes/apps/*/kube-tools/upgrades/{talosupgrade,kubernetesupgrade}.yaml` across multiple clusters. For each affected cluster, read the Talos version from the `installer.image` entry in the `UnattendedInstallConfig` document in `talos/<cluster>/machineconfig.yaml.j2` (format: `factory.talos.dev/metal-installer/<schematic>:<version>`). When reviewing one, you MUST:
 
 1. Identify every affected cluster and its Talos installer image.
 2. Confirm that cluster's new Kubernetes version is supported by its Talos release against Talos's published support matrix at `docs.siderolabs.com` or `www.talos.dev`.
