@@ -1,38 +1,5 @@
 ---
 # yaml-language-server: $schema=https://github.com/games-on-whales/fenrir/raw/refs/heads/main/schemas/direwolf.games-on-whales.github.io/app_v1alpha1.json
-# Adapted from upstream examples/testball.yaml; same placeholder poster as
-# above. Synthetic GStreamer test source -- no app container, useful for
-# verifying the streaming pipeline (wolf compositor + NVENC) end-to-end.
-apiVersion: direwolf.games-on-whales.github.io/v1alpha1
-kind: App
-metadata:
-  name: testball
-spec:
-  appAssetWebP: UklGRhwBAABXRUJQVlA4IBABAADQHACdASosAZABPm02mUmkIqKhICgAgA2JaW7hd2EbQAnsA99snIe+2Yy09snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPekAAD+/9O4f/1K366KRn9B8NO3tyIAAAAAAAAAAAAAAAAAA
-  id: 3
-  isHDRSupported: true
-  title: Test Ball
-  # No volumeClaimTemplate -> the operator uses an ephemeral emptyDir.
-  wolfConfig:
-    runtimeVariables:
-      renderNode: /dev/dri/renderD128
-    startAudioServer: false
-    startVirtualCompositor: false
-    audio:
-      source: "audiotestsrc wave=ticks is-live=true"
-    video:
-      source: |
-        videotestsrc pattern=ball flip=true is-live=true !
-        video/x-raw, framerate={fps}/1
-  template:
-    spec:
-      nodeSelector:
-        topology.kubernetes.io/gpus: amd
-      tolerations:
-        - key: llm-workload
-          operator: Exists
----
-# yaml-language-server: $schema=https://github.com/games-on-whales/fenrir/raw/refs/heads/main/schemas/direwolf.games-on-whales.github.io/app_v1alpha1.json
 apiVersion: direwolf.games-on-whales.github.io/v1alpha1
 kind: App
 metadata:
