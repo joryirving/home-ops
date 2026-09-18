@@ -29,14 +29,26 @@ spec:
     # app container (reader). The agent plays wolf's fake-udev role.
     - name: udev-data
       emptyDir: {}
+    - name: dri
+      hostPath:
+        path: /dev/dri
+        type: Directory
+    - name: kfd
+      hostPath:
+        path: /dev/kfd
+        type: CharDevice
   sidecarPolicies:
     wolf:
       volumeMounts:
         - name: wolf-root-entrypoint
           mountPath: /entrypoint.sh
           subPath: entrypoint.sh
-      # The claim is declared pod-level in each App template; requesting it here
-      # is also what pins every session pod to skirk (sole gpu.amd.com node).
+        - name: dri
+          mountPath: /dev/dri
+        - name: kfd
+          mountPath: /dev/kfd
+      securityContext:
+        privileged: true
       resources:
         claims:
           - name: gpu
