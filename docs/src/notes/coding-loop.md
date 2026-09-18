@@ -107,20 +107,34 @@ list mechanism is still there for when a second throughput backend is added.
 
 ## The shared 3090
 
-The `coder` model (`qwen3.8-27b`) does not own the RTX 3090 — it shares it.
-`kubernetes/apps/base/llm/litellm/nvidia-pool.yaml` defines a `nvidia` `ModelPool` /
-`ModelRouter` that swaps the one card between `qwen3.8-27b` (foreman's coder, the pool
-`default` — "home") and `muse-glimmer` (Sage and the personal consumers, the borrower).
-`swapPolicy: reclaim`, `reclaimAfter: 5m`: an IfIdle router rule (#1787) lets a muse request
-fall through to 27B when the incumbent is busy instead of forcing a swap-and-hold, and
-reclaim (#1796) returns the slot to 27B once muse idles.
+Neither `qwen3.8-27b` (foreman's coder) nor `muse-glimmer` (Sage and the personal consumers)
+owns the RTX 3090 — they share it. `kubernetes/apps/base/llm/litellm/nvidia-pool.yaml`
+defines a `nvidia` `ModelPool` / `ModelRouter` that swaps the one card between them
+(`swapPolicy: reclaim`, `reclaimAfter: 5m`, `swapBudget: 900s`).
 
-**27B is home deliberately.** A muse-home trial was reverted, because the activator can wedge:
-the swap goroutine gets stuck, the pool stops reconciling (`context canceled`), muse requests
-503 `pool_incumbent_busy`, and 27B shows `Stopped` while a coder hangs waiting on a swap that
-never completes. Recovery is `kubectl rollout restart deploy/nvidia-router-proxy -n llm` (the
-state is in-memory). Keeping 27B home means foreman coder tasks never need a swap, so a wedge
-can only cost Sage borrowing muse — not the coding loop.
+**Muse-glimmer is the pool default.** 27B moved onto the native vLLM runtime and muse became
+resident by default (#10210), made safe by the upstream router fix in
+[LLMKube#1838](https://github.com/defilantech/LLMKube/pull/1838), which bounds pool swaps and
+stops a stale deactivate racing a new activation — the exact failure that killed the first
+muse-home trial (wedge history below). The fall-through is deliberately one-way (#10211):
+
+- **Coding requests never fall through to muse.** Muse is excellent at agentic tasks but a
+  weaker coder, so a 27B request always queues for 27B — a late right answer beats a fast
+  wrong-model one.
+- **Muse requests may be served by 27B.** An IfIdle rule (#1787) lets a muse request fall
+  through to 27B when muse is busy instead of forcing a swap-and-hold; reclaim (#1796)
+  returns the slot to muse (the default) once 27B idles.
+
+The consequences: a heavy coding week starves muse consumers (they wait or ride the
+fall-through) but never degrades coding correctness; and with muse as default, a stuck swap
+costs muse latency — not the coding loop.
+
+**Wedge history.** The first muse-home trial was reverted because the activator could wedge:
+the swap goroutine got stuck, the pool stopped reconciling (`context canceled`), muse requests
+503'd `pool_incumbent_busy`, and 27B showed `Stopped` while a coder hung waiting on a swap
+that never completes. Recovery is still `kubectl rollout restart deploy/nvidia-router-proxy
+-n llm` (the state is in-memory), but #1838 removes the race that caused it, which is what
+made muse-home safe to adopt.
 
 ### One polyglot coder image
 
