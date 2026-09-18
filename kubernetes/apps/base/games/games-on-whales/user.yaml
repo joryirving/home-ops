@@ -8,10 +8,8 @@ metadata:
 spec:
   resources:
     limits:
-      nvidia.com/gpu: "1"
       memory: 8G
     requests:
-      nvidia.com/gpu: "1"
       memory: 8G
   # wolf:stable must start as root: its supervisord.conf has user=root and
   # drops privileges per-program itself, but the operator hardcodes
@@ -31,33 +29,26 @@ spec:
     # app container (reader). The agent plays wolf's fake-udev role.
     - name: udev-data
       emptyDir: {}
+    - name: dri
+      hostPath:
+        path: /dev/dri
+        type: Directory
+    - name: kfd
+      hostPath:
+        path: /dev/kfd
+        type: CharDevice
   sidecarPolicies:
     wolf:
-      env:
-        - name: NVIDIA_DRIVER_CAPABILITIES
-          value: all
-        - name: NVIDIA_VISIBLE_DEVICES
-          value: all
-        # The gpu-operator (CDI mode) injects the driver under /usr/local/lib
-        # and creates the GBM backend symlink at /usr/local/lib/gbm/, but the
-        # image's Mesa libgbm only searches /usr/lib/x86_64-linux-gnu/gbm.
-        # Without the nvidia backend, waylanddisplaysrc cannot allocate
-        # DMA-BUFs ("Failed to create GsCUDABuf" panic -> no video stream).
-        - name: GBM_BACKENDS_PATH
-          value: /usr/local/lib/gbm:/usr/lib/x86_64-linux-gnu/gbm
       volumeMounts:
         - name: wolf-root-entrypoint
           mountPath: /entrypoint.sh
           subPath: entrypoint.sh
-      # NOTE: unlike shrinedogg's cluster this does not request squat.ai/uinput
-      # (no generic-device-plugin here). Wolf still encodes video without it;
-      # virtual-input/controller hotplug needs /dev/uinput on the node (uinput
-      # kernel module + device access) -- a follow-up, see README.
-      resources:
-        requests:
-          nvidia.com/gpu: "1"
-        limits:
-          nvidia.com/gpu: "1"
+        - name: dri
+          mountPath: /dev/dri
+        - name: kfd
+          mountPath: /dev/kfd
+      securityContext:
+        privileged: true
     wolfAgent:
       volumeMounts:
         - name: udev-data
