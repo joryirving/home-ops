@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: courier
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: courier
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            args:
+              - --leader-elect
+              - --git-remote-template=https://github.com/%s.git
+              - --git-credential-secret=courier-github
+              - --executor-environment-secret=courier-executor
+    # Courier core has no Dispatch dependency. This home-ops deployment keeps
+    # the optional Dispatch adapter configured but disabled for first reconcile.
+    dispatch:
+      enabled: false
+      agentName: courier
+      baseURL: http://dispatch.llm.svc.cluster.local:3000
+      laneProfile: local
+      pollInterval: 30s
+      queueLane: local
+      tokenSecret:
+        key: token
+        name: courier-dispatch
+    executor:
+      mcp:
+        githubURL: http://mcp-github-proxy.llm.svc.cluster.local:8080/mcp

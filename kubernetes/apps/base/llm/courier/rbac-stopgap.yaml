@@ -1,0 +1,22 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: courier-coderruns-stopgap
+rules:
+  - apiGroups: ["courier.misospace.dev"]
+    resources: ["coderruns", "coderruns/status", "coderruns/finalizers"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: courier-coderruns-stopgap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: courier-coderruns-stopgap
+subjects:
+  - kind: ServiceAccount
+    name: courier
+    namespace: llm
