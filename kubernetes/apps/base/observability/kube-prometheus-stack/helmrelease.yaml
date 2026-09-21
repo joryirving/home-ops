@@ -141,20 +141,6 @@ spec:
         - pods=[*]
         - deployments=[*]
         - persistentvolumeclaims=[*]
-      rbac:
-        extraRules:
-          - apiGroups: ["foreman.llmkube.dev"]
-            resources: ["agentictasks", "workloads", "fleetnodes"]
-            verbs: ["list", "watch"]
-      customResourceState:
-        # Only main runs foreman, which renders the foreman-crs ConfigMap into
-        # observability (foreman.crs.namespace); other clusters have no such
-        # ConfigMap, so gating keeps their kube-state-metrics from wedging on a
-        # missing mount. definitions update on foreman chart bumps.
-        enabled: ${KSM_FOREMAN_CRS:=false}
-        create: false
-        name: foreman-crs
-        key: foreman-crs.yaml
     kubeEtcd:
       service:
         selector:
