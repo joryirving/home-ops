@@ -1,0 +1,39 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: courier-coordinator-runasuser
+spec:
+  failurePolicy: Ignore
+  reinvocationPolicy: Never
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+  matchConditions:
+    - name: is-courier-coordinator
+      expression: >-
+        has(object.metadata.labels)
+        && 'courier.misospace.dev/component' in object.metadata.labels
+        && object.metadata.labels['courier.misospace.dev/component'] == 'coordinator'
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: >-
+          [
+            JSONPatch{op: "add", path: "/spec/securityContext/runAsUser", value: 65532},
+            JSONPatch{op: "add", path: "/spec/securityContext/runAsGroup", value: 65532}
+          ]
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: courier-coordinator-runasuser
+spec:
+  policyName: courier-coordinator-runasuser
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: llm
