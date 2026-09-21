@@ -49,14 +49,18 @@ spec:
           spec:
             concurrency: 1
             framing: >-
-              Plan and delegate instead of doing all implementation yourself.
-              Send small, scoped implementation work to coder-local; use
-              agentic-local for broader local exploration when useful; use
-              reviewer for an independent quality pass. Push and update the
-              feature branch, get CI healthy, never merge, and leave the pull
-              request open and ready for human review.
+              You are a local coordinator: plan, delegate, integrate, and
+              verify. Do not implement yourself. Send small, file-scoped work to
+              coder-local, and keep at most TWO coder-local in flight — the 3090
+              handles about two full-context requests at once, so a third only
+              queues and steals throughput. Use explorer-local for recon and
+              "where/how is X" scouting before you plan. After a substantive
+              change, dispatch agentic-local for an independent review pass over
+              the diff, then act on what it finds. Push and update the feature
+              branch, get CI healthy, never merge, and leave the pull request
+              open and ready for human review.
             roles:
               agentic-local: litellm/qwen3.8-flash-next
               coder-local: litellm/qwen3.8-27b
-              coordinator: litellm/reasoning-pool
-              reviewer: litellm/MiniMax-M3-chat
+              coordinator: litellm/qwen3.8-flash-next
+              explorer-local: litellm/gemma-4-12b-it-qat
