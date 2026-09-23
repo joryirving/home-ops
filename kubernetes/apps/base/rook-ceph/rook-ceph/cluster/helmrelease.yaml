@@ -95,10 +95,17 @@ spec:
       security:
         cephx:
           csi:
-            keyType: aes
+            keepPriorKeyCountMax: 1
+            keyGeneration: 2
+            keyRotationPolicy: KeyGeneration
+            keyType: aes256k
           daemon:
             keyGeneration: 2
             keyRotationPolicy: KeyGeneration
+          rbdMirrorPeer:
+            keyGeneration: 2
+            keyRotationPolicy: KeyGeneration
+            keyType: aes256k
       network:
         provider: host
         addressRanges:
