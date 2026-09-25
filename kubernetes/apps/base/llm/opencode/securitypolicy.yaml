@@ -10,6 +10,10 @@ spec:
       kind: HTTPRoute
       name: opencode
   oidc:
+    denyRedirect:
+      headers:
+        - name: Sec-Fetch-Mode
+          value: cors
     provider:
       issuer: https://sso.jory.dev/application/o/opencode/
     clientIDRef:
@@ -22,7 +26,7 @@ spec:
       name: opencode-oidc
     redirectURL: https://opencode.jory.dev/oauth2/callback
     logoutPath: /logout
-    scopes: ["openid", "email", "profile"]
+    scopes: ["openid", "email", "profile", "offline_access"]
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1
