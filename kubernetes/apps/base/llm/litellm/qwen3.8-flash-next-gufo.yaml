@@ -1,0 +1,151 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: qwen3.8-flash-next
+spec:
+  source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
+  sourceSecretRef:
+    name: huggingface
+  files:
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00002-of-00004.gguf
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00003-of-00004.gguf
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00004-of-00004.gguf
+    - MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
+    - mmproj-BF16.gguf
+  mmproj: mmproj-BF16.gguf
+  format: gguf
+  quantization: UD-Q4_K_XL
+  hardware:
+    accelerator: rocm
+    gpu:
+      enabled: true
+      vendor: amd
+      runtime: rocm
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-strix-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: qwen3.8-flash-next
+  labels:
+    krr/ignore: "true"
+  annotations:
+    inference.llmkube.dev/idle-endpoint: /health
+spec:
+  modelRef: qwen3.8-flash-next
+  runtime: generic
+  image: ghcr.io/gufo-org/toolboxes/gufo-runtime:20260924T104050@sha256:989ab52a190244f08511a3ad0fd46546f2144220c37e6c808ad8008a934ebab5
+  command:
+    - gufo
+  args:
+    - serve
+    - --host
+    - 0.0.0.0
+    - --port
+    - "8080"
+    - --sessions
+    - "2"
+    - --max-pending
+    - "32"
+    - --max-pending-per-client
+    - "16"
+    - --max-request-bytes
+    - "67108864"
+    - llm
+    - --model
+    - /models/f869f01c859f8577/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
+    - --mmproj
+    - /models/f869f01c859f8577/mmproj-BF16.gguf
+    - --served-model-name
+    - qwen3.8-flash-next
+    - --context
+    - "262144"
+    - --max-tokens
+    - "32768"
+    - --speculative
+    - mtp
+    - --mtp-model
+    - /models/f869f01c859f8577/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
+    - --temperature
+    - "1.0"
+    - --top-p
+    - "0.95"
+    - --top-k
+    - "20"
+    - --min-p
+    - "0"
+    - --presence-penalty
+    - "0.0"
+    - --repeat-penalty
+    - "1.0"
+    - --reasoning-effort
+    - low
+    - --preserve-thinking
+    - "off"
+    - --cache-disk
+    - /cache
+    - --cache-disk-bytes
+    - "68719476736"
+  skipModelInit: true
+  contextSize: 262144
+  rolloutPolicy:
+    waitForIdle: false
+    idleTimeoutSeconds: 86400
+  replicas: 1
+  priority: high
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  podSecurityContext:
+    fsGroup: 102
+    fsGroupChangePolicy: OnRootMismatch
+  env:
+    - name: HSA_OVERRIDE_GFX_VERSION
+      value: "11.5.1"
+  resources:
+    cpu: "1"
+    memory: 108Gi
+  extraVolumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llmkube-skirk-cache
+  extraVolumeMounts:
+    - name: models
+      mountPath: /models
+      readOnly: true
+    - name: models
+      mountPath: /cache
+      subPath: gufo-cache
+  containerPort: 8080
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 720
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
