@@ -1,0 +1,69 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flash-next-gufo-prestage
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 102
+        fsGroup: 102
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: download
+          image: docker.io/curlimages/curl:8.18.0
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              find "$CACHE_DIR" -name '*.tmp' -delete
+              for rel in $MODEL_FILES; do
+                dest="$CACHE_DIR/$rel"
+                if [ -f "$dest" ]; then echo "cached: $rel"; continue; fi
+                mkdir -p "$(dirname "$dest")"
+                echo "downloading: $rel"
+                curl -fL --retry 5 --retry-delay 10 -o "$dest.tmp" "$SOURCE/$rel"
+                mv "$dest.tmp" "$dest"
+              done
+              mkdir -p /models/gufo-cache
+          env:
+            - name: CACHE_DIR
+              value: /models/f869f01c859f8577
+            - name: SOURCE
+              value: https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF/resolve/main
+            - name: MODEL_FILES
+              value: >-
+                UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
+                UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00002-of-00004.gguf
+                UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00003-of-00004.gguf
+                UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00004-of-00004.gguf
+                mmproj-BF16.gguf
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: llmkube-skirk-cache
