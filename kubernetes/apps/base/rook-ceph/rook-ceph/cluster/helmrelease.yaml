@@ -68,13 +68,13 @@ spec:
       healthCheck:
         muteHealthWarning:
           AUTH_INSECURE_ROTATING_SERVICE_KEY_TYPE:
-            policy: mute
+            policy: unmute
           AUTH_INSECURE_CLIENT_KEY_TYPE:
-            policy: mute
+            policy: unmute
           AUTH_INSECURE_KEYS_ALLOWED:
-            policy: mute
+            policy: unmute
           AUTH_INSECURE_KEYS_CREATABLE:
-            policy: mute
+            policy: unmute
       mgr:
         modules:
           - name: diskprediction_local
@@ -94,6 +94,7 @@ spec:
             memory: 2Gi
       security:
         cephx:
+          allowedCiphers: ["aes256k"]
           csi:
             keepPriorKeyCountMax: 0
             keyGeneration: 2
