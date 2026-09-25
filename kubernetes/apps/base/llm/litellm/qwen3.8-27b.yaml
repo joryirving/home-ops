@@ -4,7 +4,7 @@ kind: Model
 metadata:
   name: qwen3.8-27b
 spec:
-  source: "dbirks/Qwen3.8-27B-W4A16-AutoRound"
+  source: "ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ"
   sourceSecretRef:
     name: huggingface
   format: safetensors
@@ -41,7 +41,13 @@ spec:
     topology.kubernetes.io: egpu
   env:
     - name: MODEL
-      value: /app/models/Swift-Qwen3.8-27b-W4A16-AWQ
+      value: /app/models/Swift-1.5-Qwen3.8-27b-W4A16-AWQ
+    - name: BASE_MODEL_DIR
+      value: /app/models/Swift-1.5-Qwen3.8-27b-W4A16-AWQ
+    - name: HF_REPO
+      value: ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ
+    - name: FAST_VARIANT
+      value: "0"
     - name: SPEC
       value: mtp
     - name: CTX
