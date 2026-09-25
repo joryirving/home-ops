@@ -38,3 +38,35 @@ spec:
       remoteRef:
         remoteKey: litellm
         property: LITELLM_PR_REVIEW_API_KEY
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: pr-review-fork
+spec:
+  proxyRef: litellm
+  keyAlias: Github Actions PR Reviewer
+  secretName: litellm-key-pr-review-fork
+  secretKey: api-key
+  models:
+  - muse-glimmer
+  - qwen3.8-flash-next
+  - qwen3.8-flash-next-chat
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: pr-review-fork
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-pr-review-fork
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_PR_REVIEW_FORK_API_KEY
