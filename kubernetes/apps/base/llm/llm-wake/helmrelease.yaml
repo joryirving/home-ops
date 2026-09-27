@@ -53,7 +53,11 @@ spec:
                 cpu: 10m
                 memory: 32Mi
               limits:
-                memory: 512Mi
+                # 2026-09-27: stopgap for the per-request transport leak in
+                # upstream doormouse — under the render pipeline's /history
+                # poll flood the heap hits 512Mi in ~6 min (OOMKilled x5).
+                # Real fix staged in doormouse fix/shared-transport.
+                memory: 2Gi
             securityContext:
               allowPrivilegeEscalation: false
               capabilities:
