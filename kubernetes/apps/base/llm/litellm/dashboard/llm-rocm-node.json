@@ -11,7 +11,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Current llama.cpp prompt/prefill and token-generation throughput. Compare drops here with GPU memory busy, clocks, power, and host memory pressure below.",
+      "description": "Current prompt/prefill and token-generation throughput. Compare drops here with GPU memory busy, clocks, power, and host memory pressure below.",
       "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
       "gridPos": { "h": 7, "w": 12, "x": 0, "y": 1 },
       "id": 2,
@@ -22,18 +22,18 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum by (service)(rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m]))",
+          "expr": "sum by (service)(rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m]) or rate(vllm:request_prefill_kv_computed_tokens_sum{service=~\"$service\"}[5m]))",
           "legendFormat": "PP {{service}}",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum by (service)(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]))",
+          "expr": "sum by (service)(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]) or rate(vllm:generation_tokens_total{service=~\"$service\"}[5m]))",
           "legendFormat": "TG {{service}}",
           "refId": "B"
         }
       ],
-      "title": "llama.cpp throughput (wall-clock avg)",
+      "title": "Model throughput (wall-clock avg)",
       "type": "timeseries"
     },
     {
@@ -248,7 +248,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
+          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_generation_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_decode_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
           "legendFormat": "TG tok/s",
           "refId": "A"
         }
@@ -258,7 +258,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Inflight and queued llama.cpp work. Rising deferred requests with flat GPU busy often indicates scheduler or context pressure rather than raw GPU saturation.",
+      "description": "Inflight and queued work (llama.cpp and vLLM; gufo does not export it). Rising deferred requests with flat GPU busy often indicates scheduler or context pressure rather than raw GPU saturation.",
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 4, "x": 20, "y": 9 },
       "id": 10,
@@ -273,7 +273,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(llamacpp:requests_processing{service=~\"$service\"}) + sum(llamacpp:requests_deferred{service=~\"$service\"})",
+          "expr": "sum(llamacpp:requests_processing{service=~\"$service\"} or vllm:num_requests_running{service=~\"$service\"}) + sum(llamacpp:requests_deferred{service=~\"$service\"} or vllm:num_requests_waiting{service=~\"$service\"})",
           "legendFormat": "requests",
           "refId": "A"
         }
@@ -506,7 +506,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max by (service)(max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
+          "expr": "max by (service)(max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_prefill_kv_computed_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_prefill_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -529,7 +529,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max by (service)(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
+          "expr": "max by (service)(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_generation_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_decode_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -552,7 +552,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max by (service)(llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"})",
+          "expr": "max by (service)(max_over_time(llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -671,6 +671,164 @@
       ],
       "title": "Cgroup RAM by container",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "id": 28,
+      "panels": [],
+      "title": "Serving state",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Running and queued requests per service (llama.cpp processing/deferred, vLLM running/waiting). gufo does not export these.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 45
+      },
+      "id": 29,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (service)(llamacpp:requests_processing{service=~\"$service\"} or vllm:num_requests_running{service=~\"$service\"})",
+          "legendFormat": "running {{service}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (service)(llamacpp:requests_deferred{service=~\"$service\"} or vllm:num_requests_waiting{service=~\"$service\"})",
+          "legendFormat": "queued {{service}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Active and queued requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Share of the KV pool in use (gufo/llama.cpp kv_cache_usage_ratio, vLLM kv_cache_usage_perc).",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 45
+      },
+      "id": 30,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (service)(llamacpp:kv_cache_usage_ratio{service=~\"$service\"} or vllm:kv_cache_usage_perc{service=~\"$service\"})",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "KV cache usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Accepted / drafted speculative tokens over 15m (llama.cpp and vLLM MTP/draft decoding). gufo does not export it.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 45
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (service)(rate(llamacpp:spec_decode_num_accepted_tokens_total{service=~\"$service\"}[15m]) or rate(vllm:spec_decode_num_accepted_tokens_total{service=~\"$service\"}[15m])) / (sum by (service)(rate(llamacpp:spec_decode_num_draft_tokens_total{service=~\"$service\"}[15m]) or rate(vllm:spec_decode_num_draft_tokens_total{service=~\"$service\"}[15m])) > 0)",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Speculative acceptance",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
@@ -689,18 +847,17 @@
         "type": "datasource"
       },
       {
-        "allValue": ".*",
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "${datasource}" },
-        "definition": "query_result(group by (service) (llamacpp:prompt_tokens_total{namespace=\"llm\", service!~\".*embed.*|.*rerank.*\"} * on(pod) group_left(node) kube_pod_info{node=~\"$node\"}))",
-        "refresh": 1,
+        "definition": "query_result(group by (service) (last_over_time({__name__=~\"llamacpp:prompt_tokens_total|vllm:generation_tokens_total\", namespace=\"llm\", service!~\".*embed.*|.*rerank.*\"}[$__range]) * on(pod) group_left(node) group by (pod, node) (last_over_time(kube_pod_info{node=~\"$node\"}[$__range]))))",
+        "refresh": 2,
         "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "service",
         "regex": "/service=\"([^\"]+)\"/",
         "query": {
-          "query": "query_result(group by (service) (llamacpp:prompt_tokens_total{namespace=\"llm\", service!~\".*embed.*|.*rerank.*\"} * on(pod) group_left(node) kube_pod_info{node=~\"$node\"}))",
+          "query": "query_result(group by (service) (last_over_time({__name__=~\"llamacpp:prompt_tokens_total|vllm:generation_tokens_total\", namespace=\"llm\", service!~\".*embed.*|.*rerank.*\"}[$__range]) * on(pod) group_left(node) group by (pod, node) (last_over_time(kube_pod_info{node=~\"$node\"}[$__range]))))",
           "refId": "StandardVariableQuery"
         },
         "sort": 1,
