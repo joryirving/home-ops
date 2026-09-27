@@ -1,0 +1,37 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: courier
+spec:
+  proxyRef: litellm
+  keyAlias: Courier
+  secretName: litellm-key-courier
+  secretKey: api-key
+  models: #All local models
+  - local-pool
+  - local-pool-chat
+  - qwen3.8-27b
+  - qwen3.8-27b-chat
+  - gemma-4-12b-it-qat
+  - gemma-4-12b-it-qat-chat
+  - qwen3.8-flash-next
+  - qwen3.8-flash-next-chat
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: courier
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-courier
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_COURIER_API_KEY
