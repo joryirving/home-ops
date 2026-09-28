@@ -22,29 +22,30 @@ spec:
               tag: master@sha256:ee924ca970450f59c89656953367c42c07327a7cdffc66f156be285dccae93c8
             env:
               ## Container Settings
-              TZ: America/Edmonton
               ALWAYS_UPDATE_ON_START: true
               BACKUP_ENABLED: false #volsync is backing up the PVC
-              RESTART_ENABLED: false #no one is playing right now.
-              RESTART_CRON_EXPRESSION: 0 5 * * * #5am daily
-              MULTITHREAD_ENABLED: false
               COMMUNITY_SERVER: false
-              SERVER_SETTINGS_MODE: auto
+              MULTITHREAD_ENABLED: false
               RESTAPI_ENABLED: true
+              RESTART_CRON_EXPRESSION: 0 5 * * * #5am daily
+              RESTART_ENABLED: false #no one is playing right now.
+              SERVER_SETTINGS_MODE: auto
+              TZ: America/Edmonton
               ## Server Gameplay Settings
+              BASE_CAMP_WORKER_MAXNUM: 20
               DEATH_PENALTY: None
               ENABLE_INVADER_ENEMY: false # Disable base raid events.
-              BASE_CAMP_WORKER_MAXNUM: 20
-              PAL_EGG_DEFAULT_HATCHING_TIME: "0" #Instant for breeding
               ENABLE_NON_LOGIN_PENALTY: false
+              EQUIPMENT_DURABILITY_DAMAGE_RATE: "0.0" # Durability is dumb
               IS_MULTIPLAY: true
+              PAL_EGG_DEFAULT_HATCHING_TIME: "0" #Instant for breeding
               ## Server Settings
-              SERVER_NAME: Platonically Pals
-              SERVER_DESCRIPTION: Smurf's Palworld. Come in, have a tako!
+              PUBLIC_IP: "{{ .Release.Name }}.jory.dev"
               PUBLIC_PORT: &port 8211
               RCON_ENABLED: true
               RCON_PORT: &rcon-port 25575
-              PUBLIC_IP: "{{ .Release.Name }}.jory.dev"
+              SERVER_DESCRIPTION: Smurf's Palworld. Come in, have a tako!
+              SERVER_NAME: Platonically Pals
               ## Webhook Settings
               WEBHOOK_ENABLED: true
             envFrom:
