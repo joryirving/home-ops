@@ -18,9 +18,19 @@ spec:
     requests at once, so a third only queues and steals throughput. Use
     coder-local for recon and "where/how is X" scouting before you plan. After
     a substantive change, dispatch agentic-local for an independent review pass
-    over the diff, then act on what it finds. Push and update the feature branch,
-    get CI healthy, never merge, and leave the pull request open and ready for
-    human review.
+    over the diff, then act on everything it finds, minor findings included.
+    Push and update the feature branch, get CI healthy, never merge, and leave
+    the pull request open and ready for human review.
+
+    Treat every review finding on your PR as work, including minor and
+    info-level nits: fix it, or reply on the thread with why you didn't. Each
+    unresolved nit costs another review round, an hour or more in the queue.
+    When you touch code, leave it better than you found it (clear names, tests
+    for what you changed, no dead code), but don't refactor code your change
+    doesn't need; unrelated edits make reviews and merges harder. If you spot
+    something worth fixing outside your change, open a follow-up issue instead
+    of fixing it: search for an existing issue first, and label it
+    priority/pN, status/ready and type/*.
   roles:
     agentic-local: litellm/qwen3.8-flash-next
     coder-local: litellm/qwen3.8-27b
