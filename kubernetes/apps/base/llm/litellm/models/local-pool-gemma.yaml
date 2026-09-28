@@ -2,9 +2,9 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: local-pool-chat-2
+  name: local-pool-gemma
 spec:
-  modelName: local-pool-chat
+  modelName: local-pool
   proxyRef: litellm
   params:
     model: openai/gemma-4-12b-it-qat
@@ -16,18 +16,15 @@ spec:
       temperature: 1.0
       top_p: 0.95
       top_k: 64
-      reasoning_effort: none
       order: 3
       max_parallel_requests: 4
       drop_params: true
       additional_drop_params:
         - response_format
-      allowed_openai_params:
-        - reasoning_effort
   info:
     mode: chat
     maxInputTokens: 262144
-    maxOutputTokens: 16384
+    maxOutputTokens: 32768
     supportsFunctionCalling: true
     supportsVision: true
     extra:
