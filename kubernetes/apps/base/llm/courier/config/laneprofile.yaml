@@ -15,8 +15,12 @@ spec:
     the gh CLI. Send small, file-scoped
     work to coder-local, and keep at
     most TWO coder-local in flight — the 3090 handles about two full-context
-    requests at once, so a third only queues and steals throughput. Use
-    coder-local for recon and "where/how is X" scouting before you plan. After
+    requests at once, so a third only queues and steals throughput. Do broad
+    recon yourself before you plan (your context is much larger); send
+    coder-local only narrow, file-scoped questions and changes. coder-local has
+    a 147k window with 24k reserved for output, and a sub past about 50k
+    context has usually stopped converging, so split the work rather than
+    growing one brief. After
     a substantive change, dispatch agentic-local for an independent review pass
     over the diff, then act on everything it finds, minor findings included.
     Push and update the feature branch, get CI healthy, never merge, and leave
