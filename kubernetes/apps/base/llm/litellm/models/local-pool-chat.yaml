@@ -1,0 +1,96 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: local-pool-chat-muse
+spec:
+  modelName: local-pool-chat
+  proxyRef: litellm
+  params:
+    model: openai/muse-glimmer
+    apiBase: http://nvidia-router-proxy.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 64
+      order: 1
+      max_parallel_requests: 2
+  info:
+    mode: chat
+    maxInputTokens: 131072
+    maxOutputTokens: 20480
+    supportsFunctionCalling: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 6.2e-08
+      output_cost_per_token: 1.35e-06
+      cache_read_input_token_cost: 0.0
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: local-pool-chat-flash-next
+spec:
+  modelName: local-pool-chat
+  proxyRef: litellm
+  params:
+    model: openai/qwen3.8-flash-next
+    apiBase: http://qwen3-8-flash-next.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 0.7
+      top_p: 0.8
+      presence_penalty: 1.5
+      repetition_penalty: 1.0
+      reasoning_effort: none
+      order: 2
+      max_parallel_requests: 1
+      allowed_openai_params:
+        - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 245760
+    maxOutputTokens: 16384
+    supportsFunctionCalling: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 2.09e-07
+      output_cost_per_token: 2.97e-06
+      cache_read_input_token_cost: 0.0
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: local-pool-chat-gemma
+spec:
+  modelName: local-pool-chat
+  proxyRef: litellm
+  params:
+    model: openai/gemma-4-12b-it-qat
+    apiBase: http://gemma-wake.llm:8080/v1
+    apiKey: sk-noauth
+    additional:
+      timeout: 300
+      num_retries: 3
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 64
+      reasoning_effort: none
+      order: 3
+      max_parallel_requests: 4
+      drop_params: true
+      additional_drop_params:
+        - response_format
+      allowed_openai_params:
+        - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 262144
+    maxOutputTokens: 16384
+    supportsFunctionCalling: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 2.23e-08
+      output_cost_per_token: 4.83e-07
+      cache_read_input_token_cost: 0.0
