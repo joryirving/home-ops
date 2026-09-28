@@ -27,3 +27,32 @@ spec:
       input_cost_per_token: 6.2e-08
       output_cost_per_token: 1.35e-06
       cache_read_input_token_cost: 0.0
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: qwen3.8-27b-chat
+spec:
+  modelName: qwen3.8-27b-chat
+  proxyRef: litellm
+  params:
+    model: openai/qwen3.8-27b
+    apiBase: http://nvidia-router-proxy.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 0.7
+      top_p: 0.8
+      presence_penalty: 1.5
+      reasoning_effort: none
+      allowed_openai_params:
+        - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 122880
+    maxOutputTokens: 16384
+    supportsFunctionCalling: true
+    supportsVision: false
+    extra:
+      input_cost_per_token: 6.2e-08
+      output_cost_per_token: 1.35e-06
+      cache_read_input_token_cost: 0.0
