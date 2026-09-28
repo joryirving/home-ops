@@ -15,8 +15,16 @@ spec:
     the gh CLI. Send small, file-scoped
     work to coder-local, and keep at
     most TWO coder-local in flight — the 3090 handles about two full-context
-    requests at once, so a third only queues and steals throughput. Use
-    coder-local for recon and "where/how is X" scouting before you plan. After
+    requests at once, so a third only queues and steals throughput. Send large
+    recon (surveying a subsystem, reading many files) to agentic-local, which
+    has a 262k window, and ask for a summary back so your own context stays
+    clean. Send coder-local only narrow, file-scoped questions and changes:
+    it has a 147k window with 24k reserved for output, and a sub past about
+    50k context has usually stopped converging, so split the work rather than
+    growing one brief. The two run on different machines, so mix them freely:
+    up to two coder-local and one agentic-local can all be in flight at the
+    same time. Keep agentic-local to one at a time, because a second would land
+    on your own model slot and evict your context. After
     a substantive change, dispatch agentic-local for an independent review pass
     over the diff, then act on everything it finds, minor findings included.
     Push and update the feature branch, get CI healthy, never merge, and leave
