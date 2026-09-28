@@ -74,7 +74,7 @@ weights, KV cache and slots, so the second door costs no memory.
 | `qwen3.8-flash-next-chat`   | same server                 | —                                                 | 262k     | Non-thinking door; memini scoring     |
 | `qwen3.8-27b`               | 3090 (time-sliced)          | Qwen3.8-27B unsloth UD-Q4_K_XL                    | 131k     | Coding lane; vision (CPU-offloaded)   |
 | `qwen3.8-27b-chat`          | same server                 | —                                                 | 131k     | Non-thinking door                     |
-| `gemma-4-12b-it-qat`        | 9070XT (Windows, LM Studio) | Gemma 4 12B-it QAT                                | —        | Foreman code review (`gemma-wake`)    |
+| `gemma-4-12b-it-qat`        | 9070XT (Windows, LM Studio) | Gemma 4 12B-it QAT                                | —        | Manual use only (`gemma-wake`)        |
 | `gemma-4-12b-it-qat-chat`   | same server                 | —                                                 | —        | Non-thinking door                     |
 | `memini-embed`              | Intel iGPU                  | Qwen3-Embedding-0.6B                              | —        | Embeddings (1024-dim)                 |
 | `memini-rerank`             | CPU (3 replicas)            | jina-reranker-v2-base-multilingual Q8_0           | —        | Reranking                             |
@@ -352,13 +352,10 @@ Reading it for routing:
   everywhere" to a 20-point AA-II spread (52 vs 32). `qwen3.8-flash-next` earns its place on the 262k window
   and vision, nothing else. The local box is now competitive with paid cheap-tier cloud, which is the
   single most decision-relevant change in this refresh.
-- **`gemma-4-12b-it-qat` is a deliberate family split, not a quality pick.** Foreman's coder runs
-  Qwen (`qwen3.8-27b`), so a Qwen reviewer inherits the coder's blind spots — it was Qwen
-  reviewing Qwen while `qwen3.8-flash-next` served review, since Ornith was itself a
-  Qwen3.6-35B-A3B post-tune. The lane went to JetBrains' Mellum2, then Nemotron 3.5 Lightning
-  30B-A3B, and now Gemma 4 12B-it QAT on the 9070XT — still a non-Qwen family, free.
-  It exists to disagree with the coder, so published coding scores
-  matter less here than independence and structured-output reliability.
+- **`gemma-4-12b-it-qat` is out of the coding process** (2026-09-27). It was kept as a non-Qwen
+  family split to review Qwen-authored code, but it missed the known defect in the 2026-09-22
+  adversarial review benchmark, and it depends on waking the gaming PC. It stays served (LiteLLM +
+  `gemma-wake`) for manual use; review now goes to MiniMax-M3 and `qwen3.8-flash-next`.
 - **MiniMax-M2.7 / MiMo** — agentic workhorses with thin published reasoning numbers; rank on
   coding/agentic axes, not GPQA/AIME.
 
@@ -438,10 +435,11 @@ permits. Wall power: skirk **48.7 W** serving three models plus an image generat
 
 | Consumer               | In repo?                                    | Points at                                                                                    |
 | ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **OpenClaw**           | yes (`.../llm/openclaw/app/configmap.yaml`) | Miso/main `glm-5.3-flash`; Matcha `dsv4f`; Saffron `reasoning-pool`; subagents `MiniMax-M3`; heartbeat `qwen3.8-27b`; image `llama-vision`; lossless-claw expansion/summary `qwen3.8-flash-next-chat` |
+| **OpenClaw**           | yes (`.../llm/openclaw/configmap.yaml`)     | Miso/main `glm-5.3-flash`; Matcha `dsv4.1f`; Saffron `reasoning-pool`; subagents `MiniMax-M3`; heartbeat `qwen3.8-27b`; image `llama-vision`; lossless-claw expansion/summary `qwen3.8-flash-next-chat` |
 | **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)       | default `MiniMax-M3`; compression/extract/approval/session-search `qwen3.8-flash-next`; vision `llama-vision` |
-| **Foreman**            | yes (`.../llm/foreman/agents/*.yaml`)       | `coder` → `qwen3.8-27b`; `coder-revision` + `coder-frontier` → `MiniMax-M3-chat`; `reviewer` + `reviewer-fork` → `gemma-4-12b-it-qat` |
-| **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)     | default `auto`; coordinator `reasoning-pool`; role subagents `MiniMax-M3`/`qwen3.8-27b`/`qwen3.8-flash-next`/`glm-5.3`/`gemma-4-12b-it-qat`, plus the workstation CLI on LiteLLM aliases directly |
+| **Courier**            | yes (`.../llm/courier/config/laneprofile.yaml`) | LaneProfile `local`: coordinator + `agentic-local` (adversarial reviewer) → `qwen3.8-flash-next`; `coder-local` (also recon) → `qwen3.8-27b`; concurrency 1 |
+| **Dispatch**           | yes (`.../llm/dispatch/helmrelease.yaml`)   | groomer → `qwen3.8-flash-next` (256k) |
+| **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)     | default `auto`; coordinator `reasoning-pool`; role subagents `MiniMax-M2.7`/`MiniMax-M3`/`implementation-pool`/`qwen3.8-27b`/`qwen3.8-flash-next`/`glm-5.3-flash`, plus the workstation CLI on LiteLLM aliases directly |
 | **Zed**                | no (workstation)                            | LiteLLM aliases directly                                                                     |
 
 ### OpenClaw cron fleet
@@ -568,12 +566,11 @@ aggregate tok/s improves with concurrent streams spread **across** resident mode
 than piled onto one — the useful range is roughly 6-8 streams for the whole box, not per
 model. The Mac LM Studio member was removed; `qwen3.8-flash-next` is now the single cluster server.
 
-Foreman's demand cannot currently be bounded per-Agent
-([LLMKube#1497](https://github.com/defilantech/LLMKube/issues/1497)), so the only levers on
-its share of `qwen3.8-flash-next` are the bridge's `MAX_IN_PROGRESS` and the `LANE_CODER_AGENTS`
-split ratio — both blunt. Measured `qwen3.8-flash-next` utilisation across *all* consumers
-(Foreman, home-ops PR reviews, groomer, repo-wiki) is ~15 busy-hours/day against 96
-slot-hours, so headroom is real and the risk is bursts, not steady state.
+Courier is the main automated consumer. It runs at concurrency 1, holds `qwen3.8-flash-next`
+slot 1 and shares slot 2; since 2026-09-27 its key is ~54% `qwen3.8-flash-next` prompt tokens
+(coordinator ~42%, reviewer ~12%) and ~39% `qwen3.8-27b`. The lever on its share is the LaneProfile
+concurrency. The last whole-box utilisation figure (~15 busy-hours/day against 96 slot-hours)
+predates Courier and has not been re-measured.
 
 ## Smart-routing: the `auto` alias
 
@@ -649,7 +646,7 @@ builds an encoder at startup (crashloop risk on the live gateway), so it's verif
 
 Still ahead:
 
-- Swap MEDIUM to `qwen3.8-27b` once Foreman's backlog drains — it's the better model and free, but was
+- Swap MEDIUM to `qwen3.8-27b` once the 3090 has headroom beyond Courier's `coder-local` — it's the better model and free, but was
   measured at 37–90s under contention, unusable for a tier that receives over-routed volume.
 - Re-measure against real opencode system prompts rather than bare user messages.
 - Auto Router v2 offers `keyword_tier_rules` (deterministic tier overrides, `cause=literal_keyword_match`)

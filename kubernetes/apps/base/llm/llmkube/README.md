@@ -16,13 +16,13 @@ llmkube/                    # the operator + shared cluster infra only
   resourceclaim.yaml        # llama-strix-gpu RCT, shared by the Strix models
   servicemonitor.yaml       # one SM scrapes every InferenceService (job = service name)
 
-memini/                     # Intel iGPU helpers, reconciled by the `memini` KS
-  memini-rerank.yaml  memini-summary.yaml
+memini/                     # CPU rerank models, reconciled by the `memini` KS
+  memini-rerank.yaml  memini-rerank-{1,2,3}.yaml
 
-litellm/app/                # chat/vision models, reconciled by the `litellm` KS
-  qwen3.8-27b.yaml         # Qwen3.6-27B on RTX 3090
-  qwen3.8-flash-next.yaml          # Qwen3.6-35B-A3B Uncensored on Strix Halo (multimodal)
-  gemma-4-12b-it-qat.yaml       # Mellum2-12B-A2.5B on Strix Halo (foreman reviewer)
+litellm/                    # chat/vision models, reconciled by the `litellm` KS
+  qwen3.8-27b.yaml                # Qwen3.8-27B (Swift 1.5 AWQ, vLLM) on the RTX 3090
+  muse-glimmer.yaml               # Muse Glimmer on the RTX 3090 (nvidia ModelPool)
+  qwen3.8-flash-next-gufo.yaml    # Qwen3.8-Flash-Next on Strix Halo (gufo, multimodal)
 
 toolhive/config/            # per-app tenant model, reconciled by `toolhive-config`
 
