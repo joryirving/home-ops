@@ -2,6 +2,10 @@
 
 ## UniFi BGP
 
+main (ASN 64514) and utility (ASN 64515) peer with the UDM-SE (ASN 64513) via `CiliumBGPClusterConfig` in `kubernetes/apps/<cluster>/kube-system/cilium/networking.yaml`. The test cluster doesn't use BGP; it announces LoadBalancer IPs with a `CiliumL2AnnouncementPolicy`.
+
+UDM-SE BGP config (the same snippet is kept in `docs/src/assets/bgp.conf`):
+
 ```sh
 router bgp 64513
   bgp router-id 192.168.1.1

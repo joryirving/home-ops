@@ -2,7 +2,7 @@
 
 ## Hardware notes
 
-Raspberry Pi 5 w/ 8GM RAM
+Raspberry Pi 5 w/ 8GB RAM
 PoE Hat
 NVMe Hat
 
@@ -32,11 +32,15 @@ or
 scp -r ./docs/src/assets/server-nut/* vetrius@venti:/etc/nut/
 ```
 
+Replace `<password>` in `upsd.users` and `upsmon.conf` with the same real
+password (keep it out of Git).
+
 Change the permissions back
 
 ```sh
 sudo chmod 755 -R /etc/nut
 sudo chmod 640 /etc/nut/*
+sudo chmod 750 /etc/nut/ups_shutdown.sh # venti only
 ```
 
 Restart the NUT service
@@ -46,13 +50,18 @@ sudo systemctl restart nut-server
 sudo systemctl restart nut-monitor
 ```
 
-You should now have a working PiNUT config that will also shutdown talos/the NAS when on battery power.
+On low battery, venti runs `ups_shutdown.sh`, which shuts down the main cluster
+and voyager, then the Pi. Sayu shuts down the utility cluster. upsmon runs
+`SHUTDOWNCMD` as root, so each Pi needs `talosctl` and a talosconfig with the
+`main`/`utility` context for root; venti also needs root SSH access to
+`root@voyager`.
 
-## Rebuilding NUT for EcoFlow support
+## Rebuilding NUT from source
 
-The Debian package on Raspberry Pi OS is currently too old for the EcoFlow CDC
-support we use. Sayu is temporarily running the already-built binaries copied
-from Venti; rebuild both Pis from the same pinned NUT source revision before
+The Debian package on Raspberry Pi OS is too old for EcoFlow CDC support, so
+Venti runs a source build. The current build only includes `usbhid-ups`, which
+both UPSes use; EcoFlow is not configured yet. Sayu is temporarily running the
+already-built binaries copied from Venti; rebuild both Pis from the same pinned NUT source revision before
 that install needs maintenance.
 
 The current Venti build identifies as NUT `2.8.5.1168` from source commit
@@ -65,7 +74,7 @@ The current Venti build identifies as NUT `2.8.5.1168` from source commit
 2. Back up `/etc/nut`, the installed NUT binaries, the systemd driver unit,
    and `/usr/lib/tmpfiles.d/nut-common-tmpfiles.conf`.
 3. Stop `nut-monitor`, `nut-server`, and the relevant `nut-driver@*.service`.
-4. Build on the Pi (aarch64) with the EcoFlow driver enabled:
+4. Build on the Pi (aarch64):
 
    ```sh
    ./configure \
@@ -98,10 +107,12 @@ The current Venti build identifies as NUT `2.8.5.1168` from source commit
    systemd, and start the packaged install.
 
 Do not preconfigure the future EcoFlow UPS. Once the River 3 Plus is connected,
-discover its USB identity and CDC serial path first, then update `ups.conf` and
-the exporter configuration together.
+discover its USB identity and CDC serial path first, then add its driver to the
+build and update together: `ups.conf`, the `MONITOR` line in `upsmon.conf`, and
+the `server`/`ups` params in
+`kubernetes/apps/base/observability/exporters/nut-exporter/servicemonitor.yaml`.
 
-## Docker Compose for node_exporter/smartlctl_exporter
+## Docker Compose for node_exporter/smartctl_exporter
 
 ```yaml
 services:

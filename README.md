@@ -44,8 +44,8 @@ _... managed with Flux, Renovate, and GitHub Actions_ <img src="https://fonts.gs
 
 ## Overview
 
-This is a monorepository is for my home kubernetes clusters.
-I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like [Terraform](https://www.terraform.io/), [Kubernetes](https://kubernetes.io/), [Flux](https://github.com/fluxcd/flux2), [Renovate](https://github.com/renovatebot/renovate), and [GitHub Actions](https://github.com/features/actions).
+This is a monorepository for my home Kubernetes clusters.
+I try to adhere to Infrastructure as Code (IaC) and GitOps practices using tools like [OpenTofu](https://opentofu.org/), [Kubernetes](https://kubernetes.io/), [Flux](https://github.com/fluxcd/flux2), [Renovate](https://github.com/renovatebot/renovate), and [GitHub Actions](https://github.com/features/actions).
 
 The purpose here is to learn k8s, while practicing Gitops.
 
@@ -59,16 +59,16 @@ There is a template over at [onedr0p/cluster-template](https://github.com/onedr0
 
 ### Core Components
 
-- **Networking & Service Mesh**: [cilium](https://github.com/cilium/cilium) provides eBPF-based networking, while [envoy](https://gateway.envoyproxy.io/) powers service-to-service communication with L7 proxying and traffic management. [Towonel](https://github.com/eleboucher/towonel) fronts public ingress through a small OVH VPS, and [external-dns](https://github.com/kubernetes-sigs/external-dns) keeps DNS records in sync automatically.
+- **Networking & Ingress**: [cilium](https://github.com/cilium/cilium) provides eBPF-based networking (kube-proxy replacement, BGP on main/utility, L2 announcements on test), and [multus](https://github.com/k8snetworkplumbingwg/multus-cni) adds secondary pod networks on main and utility. [Envoy Gateway](https://gateway.envoyproxy.io/) implements the Gateway API for L7 ingress through the `envoy-internal` and `envoy-external` Gateways. [Towonel](https://github.com/eleboucher/towonel) (via towonel-operator) fronts public ingress through a small OVH VPS, and [external-dns](https://github.com/kubernetes-sigs/external-dns) keeps DNS records in sync automatically.
 - **Security & Secrets**: [cert-manager](https://github.com/cert-manager/cert-manager) automates SSL/TLS certificate management. For secrets, I use [external-secrets](https://github.com/external-secrets/external-secrets) with [1Password Connect](https://github.com/1Password/connect) to inject secrets into Kubernetes.
-- **Storage & Data Protection**: [rook](https://github.com/rook/rook) provides distributed storage for persistent volumes, with [volsync](https://github.com/backube/volsync) handling backups and restores. [spegel](https://github.com/spegel-org/spegel) improves reliability by running a stateless, cluster-local OCI image mirror.
-- **Automation & CI/CD**: [actions-runner-controller](https://github.com/actions/actions-runner-controller) runs self-hosted GitHub Actions runners directly in the cluster for continuous integration workflows. For IaC, I use [tofu-controller](https://github.com/weaveworks/tf-controller) as additional Flux component used to run Terraform from within a Kubernetes cluster.
+- **Storage & Data Protection**: [rook](https://github.com/rook/rook) provides distributed Ceph storage on main. `local-hostpath` volumes come from [openebs](https://github.com/openebs/openebs) on main and [democratic-csi](https://github.com/democratic-csi/democratic-csi) on utility and test. kopiur takes [Kopia](https://kopia.io/) backups of PVCs into a repository on the NAS. [spegel](https://github.com/spegel-org/spegel) runs a stateless, cluster-local OCI image mirror on main.
+- **Automation & CI/CD**: [flux-operator](https://github.com/controlplaneio-fluxcd/flux-operator) manages each cluster's Flux install through a `FluxInstance`. [actions-runner-controller](https://github.com/actions/actions-runner-controller) runs self-hosted GitHub Actions runners directly in the cluster for continuous integration workflows. tuppr drives Talos and Kubernetes upgrades from `TalosUpgrade`/`KubernetesUpgrade` resources. For IaC, [tofu-controller](https://github.com/flux-iac/tofu-controller) runs OpenTofu from within the utility cluster.
 
 ### GitOps
 
 [Flux](https://github.com/fluxcd/flux2) watches the clusters in my [kubernetes](./kubernetes/) folder (see Directories below) and makes the changes to my clusters based on the state of my Git repository.
 
-The way Flux works for me here is it will recursively search the `kubernetes/${cluster}/apps` folder until it finds the most top level `kustomization.yaml` per directory and then apply all the resources listed in it. That aforementioned `kustomization.yaml` will generally only have a namespace resource and one or many Flux kustomizations (`ks.yaml`). Under the control of those Flux kustomizations there will be a `HelmRelease` or other resources related to the application which will be applied.
+The way Flux works for me here is it will apply the `kubernetes/apps/${cluster}` folder. Each namespace directory there has a `kustomization.yaml` that pulls in the `components/namespace` component (the Namespace resource and alerts) and lists one Flux Kustomization per app (`<app>.yaml`), each pointing at that app's manifests in `kubernetes/apps/base/<namespace>/<app>`. Under the control of those Flux Kustomizations there will be a `HelmRelease` or other resources related to the application which will be applied.
 
 [Renovate](https://github.com/renovatebot/renovate) watches my **entire** repository looking for dependency updates, when they are found a PR is automatically created. When some PRs are merged Flux applies the changes to my cluster.
 
@@ -82,9 +82,11 @@ This Git repository contains the following directories under [Kubernetes](./kube
 │   ├── 📁 base          # base app configuration
 │   ├── 📁 main          # cluster specific overlay
 │   ├── 📁 utility
+│   ├── 📁 test
 ├── 📁 clusters          # Cluster flux configurations
 │   ├── 📁 main
 │   ├── 📁 utility
+│   ├── 📁 test
 ├── 📁 components        # re-useable components
 ```
 
@@ -104,22 +106,23 @@ While most of my infrastructure and workloads are self-hosted I do rely upon the
 
 The alternative solution to these two problems would be to host a Kubernetes cluster in the cloud and deploy applications like [HCVault](https://www.vaultproject.io/), [Vaultwarden](https://github.com/dani-garcia/vaultwarden), and [ntfy](https://ntfy.sh/). However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort than I am willing to put in.
 
-The one exception is status monitoring: the OVH VPS (Columbina) that fronts Towonel also runs a standalone [Gatus](https://gatus.io/) as a buddy monitor. It watches the clusters' status pages and receives Alertmanager heartbeats from both clusters, alerting to Discord if a cluster goes dark, while the main cluster's Gatus watches Columbina in return.
+The one exception is status monitoring: the OVH VPS (Columbina) that fronts Towonel also runs a standalone [Gatus](https://gatus.io/) as a buddy monitor. It watches the clusters' status pages and receives Alertmanager heartbeats from the main and utility clusters, alerting to Discord if a cluster goes dark, while the main cluster's Gatus watches Columbina in return.
 
 | Service                                     | Use                                                               | Cost           |
 | ------------------------------------------- | ----------------------------------------------------------------- | -------------- |
-| [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$80/yr$       |
+| [1Password](https://1Password.com/)         | Secrets with [External Secrets](https://external-secrets.io/)     | ~$80/yr        |
 | [Cloudflare](https://www.cloudflare.com/)   | Domain, DNS, WAF and R2 bucket (S3 Compatible endpoint)           | ~$40/yr        |
 | [GitHub](https://github.com/)               | Hosting this repository and continuous integration/deployments    | Free           |
 | [Healthchecks.io](https://healthchecks.io/) | Monitoring internet connectivity and external facing applications | Free           |
 | [OVHcloud](https://www.ovhcloud.com/)       | VPS edge for Towonel and out-of-cluster status monitoring         | ~$6/mo         |
+| [UptimeRobot](https://uptimerobot.com/)     | External uptime monitors (managed in `terraform/uptimerobot`)     | Free           |
 |                                             |                                                                   | Total: ~$16/mo |
 
 ---
 
 ## 🌐 DNS
 
-In my cluster there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. One for syncing private DNS records to my `UDM-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), while another instance syncs public DNS to `Cloudflare`. This setup is managed by creating ingresses with two specific classes: `internal` for private DNS and `external` for public DNS. The `external-dns` instances then syncs the DNS records to their respective platforms accordingly.
+In my clusters there are two instances of [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) running. `unifi-dns` syncs private DNS records to my `UDM-SE` using [ExternalDNS webhook provider for UniFi](https://github.com/kashalls/external-dns-unifi-webhook), from every `HTTPRoute` and from `Service`s with an `external-dns.kubernetes.io/hostname` annotation. `cloudflare-dns` syncs public DNS to `Cloudflare` from `HTTPRoute`s attached to the `envoy-external` Gateway and from `DNSEndpoint` resources. There are no `Ingress` objects: an app attaches its `HTTPRoute` to `envoy-internal` for private access or `envoy-external` for public access.
 
 ---
 
@@ -132,11 +135,13 @@ In my cluster there are two instances of [ExternalDNS](https://github.com/kubern
 | Ayaka | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
 | Eula  | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
 | Ganyu | MS-01                   | i9-13900H         | 960GB NVMe | 1TB NVMe   | 1.92TB U.2 | 128GB | Talos | k8s control-plane |
-| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB SSD  | 2TB NVMe   | -          | 128GB | Talos | k8s worker (LLM)  |
+| Skirk | Bosgame M5 (Halo Strix) | Ryzen AI Max+ 395 | 500GB NVMe | 2TB NVMe   | -          | 128GB | Talos | k8s worker (LLM)  |
 
 Control Plane OS Disk: m.2 Samsung PM9A3 960GB
 Control Plane Local Disk: m.2 WD SN770 1TB
 Control Plane Rook Disk: u.2 Samsung PM9A3 1.92TB
+Ganyu GPU: NVIDIA RTX 3090 24GB (OCuLink eGPU)
+Skirk GPU: Strix Halo iGPU
 
 Total CPU: 58 Cores/92 Threads
 Total RAM: 512GB
@@ -155,12 +160,12 @@ Total RAM: 64GB
 
 ### Test Kubernetes Cluster
 
-| Name    | Device         | CPU           | OS Disk   | Local Disk   | RAM  | OS    | Purpose           |
-| ------- | -------------- | ------------- | --------- | ------------ | ---- | ----- | ----------------- |
-| Citlali | Beelink Mini-S | Celeron N5095 | 480GB SSD | 1TB M.2 SATA | 32GB | Talos | k8s control-plane |
+| Name    | Device         | CPU           | OS Disk      | Local Disk | RAM  | OS    | Purpose           |
+| ------- | -------------- | ------------- | ------------ | ---------- | ---- | ----- | ----------------- |
+| Citlali | Beelink Mini-S | Celeron N5095 | 1TB M.2 SATA | 480GB SSD  | 32GB | Talos | k8s control-plane |
 
-OS Disk: 2.5" Kingston SA400 SSD
-Local Disk: m.2 Timetec SATA SSD
+OS Disk: m.2 Timetec SATA SSD
+Local Disk: 2.5" Kingston SA400 SSD
 
 Total CPU: 4 Cores/4 Threads
 Total RAM: 32GB

@@ -7,7 +7,15 @@ CloudNativePG-backed Postgres component. Default Postgres for all apps in this r
 | Variable            | Default      | Notes                                                               |
 | ------------------- | ------------ | ------------------------------------------------------------------- |
 | `APP`               | _(required)_ | Name of the consuming app — used for cluster, secret, backup paths. |
-| `POSTGRES_USERNAME` | `${APP}`     | App-level role / database name created on initial bootstrap.        |
+| `POSTGRES_USERNAME` | `${APP}`     | Role / database name for the `cnpg=init` path only.                 |
+
+The default recovery path always uses `${APP}` for the database and owner.
+
+## Requirements
+
+- Main cluster only: it needs the `cloudnative-pg` operator in the `database` namespace, which only main runs.
+- The consuming `HelmRelease` must declare `spec.dependsOn` (at least `dependsOn: []`). The component JSON-patches `/spec/dependsOn/-` to add `cloudnative-pg`, and that patch fails if the field is missing.
+- Barman credentials come from the `${APP}-postgres` ExternalSecret (1Password item `postgresql-bucket`).
 
 ## Bootstrap behavior
 
@@ -53,7 +61,7 @@ spec:
 
 What the label does (via the patch in [`clusters/main/apps.yaml`](../../clusters/main/apps.yaml)): strips `spec.bootstrap.recovery` and `spec.externalClusters`, replacing `bootstrap` with a plain `initdb` that creates a database + owner role named `${POSTGRES_USERNAME:=${APP}}`. CNPG generates the role's password into the `${APP}-app` Secret as usual.
 
-**After the first scheduled backup lands** (Sunday 01:30 cron, or after manually creating a one-shot `Backup` CR), **remove the `cnpg: init` label**. Future cluster rebuilds will then follow the default `recovery` path. Keeping the label after a backup exists is harmless during normal operation (bootstrap is only consulted at cluster creation), but it would prevent a rebuild from restoring data if you ever destroy and recreate the cluster.
+**After the first scheduled backup lands** (daily at 04:40, or after manually creating a one-shot `Backup` CR), **remove the `cnpg: init` label**. Future cluster rebuilds will then follow the default `recovery` path. Keeping the label after a backup exists is harmless during normal operation (bootstrap is only consulted at cluster creation), but it would prevent a rebuild from restoring data if you ever destroy and recreate the cluster.
 
 To force an immediate backup so you can drop the label sooner:
 
@@ -68,11 +76,11 @@ EOF
 
 ## Backups
 
-Weekly full backups via the `ScheduledBackup` resource (Sunday 01:30, see `scheduledbackup.yaml`). Continuous WAL archiving to the same `s3://postgresql/${APP}/${APP}/` prefix. `retentionPolicy: 7d`.
+Daily base backups via the `ScheduledBackup` `${APP}-daily` (04:40, see `scheduledbackup.yaml`). Continuous WAL archiving to the same `s3://postgresql/${APP}/${APP}/` prefix. `retentionPolicy: 7d`.
 
 ## Connecting from an app
 
-CNPG generates a `${APP}-app` Secret with these keys: `uri`, `jdbc-uri`, `username`, `password`, `host`, `port`, `dbname`, `pgpass`.
+CNPG generates a `${APP}-app` Secret with these keys: `uri`, `jdbc-uri`, `username`, `password`, `host`, `port`, `dbname`, `pgpass`. `enableSuperuserAccess: true` also creates `${APP}-superuser`.
 
 Standard app-template pattern:
 

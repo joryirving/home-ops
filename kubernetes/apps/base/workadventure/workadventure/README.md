@@ -25,8 +25,8 @@ the permission check, and is silently dropped — allocations succeed, media
 never flows. Game servers tolerate the SNAT (they just reply to whatever
 source they see); TURN is the one protocol that authenticates source IPs.
 
-Running coturn on the VPS puts it directly on the public IP (`turn.jory.dev`,
-3478/tcp+udp, relay range 49160-49179/udp — already open in ufw) and keeps
+Running coturn on the VPS puts it directly on the public IP (`turn.jory.dev`, a
+CNAME to `towonel.jory.dev`, which is an A record for the VPS; 3478/tcp+udp, relay range 49160-49179/udp — already open in ufw) and keeps
 WebRTC relay traffic off the tunnel entirely. It needs no cluster access: the
 only shared piece is the TURN auth secret (1Password `workadventure` item,
 `WORKADVENTURE_TURN_AUTH_SECRET`), templated onto the host by

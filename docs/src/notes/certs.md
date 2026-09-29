@@ -1,12 +1,12 @@
-# NAS
+# Certs
 
 ## Hardware notes
 
-MS-01, i5-12500H, 96GB DDR5. Dell LSI 9300-e. Lenovo SA120. ZFS Raidz2.
+MS-01, i5-12600H, 96GB DDR5. Dell LSI 9300-e. Lenovo SA120. ZFS Raidz2.
 
 ## Caddyfile
 
-```yaml
+```caddyfile
 garage-api.jory.dev {
 reverse_proxy voyager.internal:3903
 tls /data/certificates/wildcard.crt /data/certificates/wildcard.key
@@ -33,8 +33,18 @@ tls /data/certificates/wildcard.crt /data/certificates/wildcard.key
 }
 ```
 
-## Script to copy certs:
+## Cert sync
+
+The `caddy-cert-sync` CronJob (`kubernetes/apps/main/network/cert-sync.yaml`)
+copies the `jory-dev-tls` wildcard cert to voyager daily and restarts CaddyV2.
+Trigger it manually:
 
 ```sh
-./home-ops/hack/cert-extract.sh main caddy
+kubectl --context main -n network create job --from=cronjob/caddy-cert-sync caddy-cert-sync-manual
+```
+
+Fallback from a workstation:
+
+```sh
+./hack/cert-extract.sh main caddy && ssh root@voyager docker restart CaddyV2
 ```

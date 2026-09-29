@@ -15,12 +15,14 @@ This skill scaffolds a new application for this repository's Flux layout.
 - The Namespace and alerting rules come from `kubernetes/components/namespace`
 - Every app declares its own per-app `OCIRepository` in `ocirepository.yaml`; `app-template` apps point `spec.chartRef.name` at that per-app repo (named after the app)
 - Secrets use `external-secrets` with the `onepassword` `ClusterSecretStore`
+- Repo YAML uses 2-space indentation (`.editorconfig`); re-indent the 4-space templates below when writing files
+- Order fields per `.agents/instructions/sorting.instructions.md`
 
 ## Workflow
 
 ### Step 1: Collect application details
 
-Use the `question` tool to gather:
+Ask the user for:
 
 1. App name
 2. Namespace/category, such as `downloads`, `media`, or `self-hosted`
@@ -89,9 +91,16 @@ spec:
     chartRef:
         kind: OCIRepository
         name: <app>
-    dependsOn: []
     interval: 15m
+    dependsOn: []
     values:
+        defaultPodOptions:
+            securityContext:
+                fsGroup: 1000
+                fsGroupChangePolicy: OnRootMismatch
+                runAsGroup: 1000
+                runAsNonRoot: true
+                runAsUser: 1000
         controllers:
             <app>:
                 containers:
@@ -113,13 +122,6 @@ spec:
                                 drop:
                                     - ALL
                             readOnlyRootFilesystem: true
-        defaultPodOptions:
-            securityContext:
-                fsGroup: 1000
-                fsGroupChangePolicy: OnRootMismatch
-                runAsGroup: 1000
-                runAsNonRoot: true
-                runAsUser: 1000
         service:
             app:
                 ports:
@@ -127,7 +129,7 @@ spec:
                         port: <port>
 ```
 
-Adjust the template to match local patterns in the same namespace. Add `route`, `persistence`, `env`, `envFrom`, or extra manifests only when needed.
+Keep `dependsOn: []` even when empty: components such as `components/postgres` append to it. Adjust the template to match local patterns in the same namespace. Add `route`, `persistence`, `env`, `envFrom`, or extra manifests only when needed.
 
 #### `kubernetes/apps/base/<namespace>/<app>/ocirepository.yaml`
 
@@ -146,9 +148,11 @@ spec:
         mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
         operation: copy
     ref:
-        tag: 5.0.1
+        tag: <app-template-tag>
     url: oci://ghcr.io/bjw-s-labs/helm/app-template
 ```
+
+Copy the current `ref.tag` from a neighbouring app's `ocirepository.yaml`; Renovate bumps it.
 
 For a non-`app-template` chart, set `url` and `ref.tag` to that chart's OCI source instead. `spec.chartRef.name` in the `HelmRelease` must match this `metadata.name`.
 
@@ -196,7 +200,6 @@ spec:
     postBuild:
         substitute:
             APP: *app
-            CLUSTER: ${CLUSTER}
     prune: true
     sourceRef:
         kind: GitRepository
@@ -205,7 +208,7 @@ spec:
     wait: false
 ```
 
-Only include `components` or `dependsOn` when the app needs them. Follow nearby overlay manifests in the same namespace for exact patterns.
+`CLUSTER` and the storage variables are injected by the cluster's `cluster-apps` Kustomization, so don't repeat them here. Only include `components` or `dependsOn` when the app needs them. Follow nearby overlay manifests in the same namespace for exact patterns.
 
 ### Step 6: Update overlay kustomizations
 

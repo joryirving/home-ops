@@ -21,8 +21,8 @@ Dispatch cache ──► hosted groomer (qwen3.8-flash-next) ──► lane: loc
     │  Courier polls next-task (30s, lane local)
     ▼
 CoderRun ──► coordinator pod (OpenCode, qwen3.8-flash-next)
-    │          ├─ coder-local   (qwen3.8-27b)        recon + file-scoped implementation
-    │          └─ agentic-local (qwen3.8-flash-next) adversarial review of the diff
+    │          ├─ coder-local   (qwen3.8-27b)        narrow, file-scoped questions and changes
+    │          └─ agentic-local (qwen3.8-flash-next) large recon (summaries) + adversarial review
     ▼
 push courier/<owner>/<repo>/issue-<n>, open/update the PR, never merge
     ──► repo CI + AI PR-review action ──► human merge ──► Dispatch sync marks done
@@ -31,7 +31,7 @@ push courier/<owner>/<repo>/issue-<n>, open/update the PR, never merge
 ```
 
 This replaced LLMKube Foreman and the `foreman-dispatch-bridge` CronJob in 2026-09. Git
-history has the old version of this page.
+history has the old version of this page. Dates on this page are UTC.
 
 ## Stage by stage
 
@@ -54,10 +54,12 @@ same attempt never runs twice.
 **4. Run.** The operator admits the run when the lane has capacity and isn't suspended, and
 starts one coordinator pod. The executor provisions the workspace (base-synced; merge
 conflicts are handed to the coordinator to resolve), writes an OpenCode config from the
-LaneProfile's roles, and runs the coordinator. The coordinator plans and delegates: recon and
-file-scoped implementation go to `coder-local`, and after a substantive change
-`agentic-local` does an independent review pass over the diff. The coordinator does all
-forge work itself (subagents have no GitHub MCP tools).
+LaneProfile's roles, and runs the coordinator. The coordinator plans and delegates: large
+recon (surveying a subsystem, reading many files) goes to `agentic-local`, which returns a
+summary so the coordinator's own context stays clean; narrow, file-scoped questions and
+changes go to `coder-local`; and after a substantive change `agentic-local` does an
+independent review pass over the diff. The coordinator does all forge work itself (subagents
+have no GitHub MCP tools).
 
 **5. Publish and verify.** The coordinator pushes the run branch and opens or updates the
 PR, then the run moves to `Verifying`. The controller watches the PR's checks. All green
@@ -71,17 +73,22 @@ One `LaneProfile`, `local`, with `concurrency: 1`:
 
 | Role | Model | Where | Job |
 |---|---|---|---|
-| `coordinator` | `qwen3.8-flash-next` | Strix Halo | plans, delegates, integrates, does all forge work |
-| `agentic-local` | `qwen3.8-flash-next` | Strix Halo | adversarial reviewer of the diff (flash-next is the better bug-finder) |
-| `coder-local` | `qwen3.8-27b` | ganyu's 3090 | recon and file-scoped implementation (the faster coder); at most two in flight |
+| `coordinator` | `qwen3.8-flash-next` | Strix Halo | plans, delegates, integrates, verifies, does all forge work; never implements |
+| `agentic-local` | `qwen3.8-flash-next` | Strix Halo | large recon (262k window, returns a summary) and the adversarial review of the diff; one at a time |
+| `coder-local` | `qwen3.8-27b` | ganyu's 3090 | narrow, file-scoped questions and changes (147k window, 24k reserved for output; split work before a sub passes ~50k); at most two in flight |
 
-The coder and the reviewer are deliberately different models. `gemma-4-12b-it-qat` (the
-gaming PC, behind llm-wake) stays deployed but is no longer part of coding.
+The two subagent models run on different machines, so up to two `coder-local` and one
+`agentic-local` can be in flight at once. The coder and the reviewer are deliberately
+different models. `gemma-4-12b-it-qat` (the gaming PC, behind llm-wake) stays deployed but is
+no longer part of coding; the Courier LiteLLM key still allows `local-pool` /
+`local-pool-chat` (whose third rung is gemma), though no role uses them.
 
 `qwen3.8-flash-next` serves two slots: **slot 1 is Courier's coordinator; slot 2 is shared**
-with the home-ops PR reviewer and every other in-cluster consumer. The coordinator's context
-reaches 180k+ tokens, so work that lands on its slot evicts that cached prompt and costs a
-full re-prefill on the Strix Halo.
+with `agentic-local`, the home-ops PR reviewer and every other in-cluster consumer. Work that
+lands on the coordinator's slot evicts its cached prompt and costs a full re-prefill on the
+Strix Halo, which is why the coordinator keeps `agentic-local` to one at a time. OpenCode
+auto-compaction is on in the executor config, so the coordinator's session is compacted
+rather than growing without bound.
 
 ### Pausing the lane
 
@@ -117,10 +124,10 @@ PR or a draft PR.
 
 None of those `NeedsHuman` endings is a decision: the coordinator's own route to a human
 (OpenCode exit 2) had never fired as of 2026-09-28. The goal is that only real design
-decisions and loops come back to a human. The work is tracked in misospace/courier#169
-(a coordinator-declared outcome), #170 (resume the session on recoverable endings; NeedsHuman
-only on `looping`), #171 (adopt existing PRs, hand red CI back to the fix loop), and
-misospace/dispatch#1121 (an explicit `already_addressed` settlement).
+decisions and loops come back to a human. The work is tracked in the Courier issue tracker
+(a coordinator-declared outcome; resuming the session on recoverable endings, with NeedsHuman
+only on `looping`; adopting existing PRs and handing red CI back to the fix loop) and the
+Dispatch issue tracker (an explicit `already_addressed` settlement).
 
 ## The PR-fix loop
 
@@ -140,7 +147,7 @@ against the existing branch. The rules, as of Dispatch 0.5.66:
 | Item URL is the PR | write-once; CI job links are evidence, never the item's identity |
 
 Known gap: evidence that lands **while an attempt is in flight** is folded into that
-attempt, and nothing delivers it to the worker (misospace/dispatch#1119). A review posted
+attempt, and nothing delivers it to the worker (tracked in the Dispatch issue tracker). A review posted
 mid-run can be stranded behind a `BLOCKED` item until it's requeued.
 
 ## The frontier lane has no worker
@@ -152,20 +159,22 @@ worker is pointed at that lane or they're re-laned.
 
 ## The shared 3090
 
-`qwen3.8-27b` (Courier's `coder-local`) and `muse-glimmer` (Sage and the personal consumers)
-share ganyu's RTX 3090. `kubernetes/apps/base/llm/litellm/nvidia-pool.yaml` defines a
-`nvidia` `ModelPool` / `ModelRouter` that swaps the card between them (`swapPolicy: reclaim`,
-`reclaimAfter: 5m`, `swapBudget: 900s`).
+`qwen3.8-27b` (Courier's `coder-local`) and `muse-glimmer` (Sage in openclaw, memini,
+hermes, and rung 1 of `local-pool` / `local-pool-chat`) share ganyu's RTX 3090.
+`kubernetes/apps/base/llm/litellm/nvidia-pool.yaml` defines a `nvidia` `ModelPool` /
+`ModelRouter` that swaps the card between them (`swapPolicy: reclaim`, `reclaimAfter: 5m`,
+`swapBudget: 900s`).
 
-**Muse-glimmer is the pool default** (#10210), made safe by
-[LLMKube#1838](https://github.com/defilantech/LLMKube/pull/1838), which bounds pool swaps and
-stops a stale deactivate racing a new activation. The fall-through is deliberately one-way
-(#10211):
+**Muse-glimmer is the pool default** (#10210), made safe by an upstream LLMKube fix that
+bounds pool swaps and stops a stale deactivate racing a new activation. Requests whose `model`
+matches no backend go to the router's `defaultRoute`, `qwen38-27b`. The fall-through is
+deliberately one-way (#10211):
 
 - **Coding requests never fall through to muse.** Muse is a weaker coder, so a 27B request
   always queues for 27B: a late right answer beats a fast wrong-model one.
-- **Muse requests may be served by 27B.** An IfIdle rule (#1787) lets a muse request fall
-  through to 27B when muse is busy; reclaim (#1796) returns the card to muse once 27B idles.
+- **Muse requests may be served by 27B.** The `muse-fallthrough` rule
+  (`poolActivation: IfIdle`) lets a muse request fall through to 27B when muse is busy;
+  reclaim returns the card to muse once 27B idles. Both came in #10129.
 
 So a heavy coding week starves muse consumers but never degrades coding, and a stuck swap
 costs muse latency, not the coding loop. If the activator ever wedges again (pool stops
@@ -189,7 +198,7 @@ reconciling, muse 503s `pool_incumbent_busy`, 27B shows `Stopped`), recovery is
     and `part.state.time.{start,end}`
 - **Tokens by model:** LiteLLM spend logs for the `Courier` virtual key, grouped by
   `model_group` (the key exists from 2026-09-27; before that Courier shared another key).
-  Courier doesn't export its own run metrics yet (misospace/courier#167, #168, #172).
+  Courier doesn't export its own run metrics yet (tracked in the Courier issue tracker).
 
 ## What an issue must contain
 
@@ -210,6 +219,8 @@ reconciling, muse 503s `pool_incumbent_busy`, 27B shows `Stopped`), recovery is
 | LaneProfile `local` | `runtimeImage` | the coordinator image (`ghcr.io/misospace/courier-go`) |
 | LaneProfile `local` | `concurrency` | `1`: one run at a time (Courier's flash-next slot) |
 | LaneProfile `local` | `roles` / `framing` | the models above, and the coordinator's standing instructions |
+| Courier ExternalSecret | `courier-executor` `OPENCODE_CONFIG_CONTENT` | the coordinator's OpenCode config: LiteLLM provider at `http://litellm.llm:4000/v1` (30m timeout); per-model limits `qwen3.8-27b` 147456 context / 24576 output, `qwen3.8-flash-next` 262144 / 16384; `compaction` auto (keep 20k tokens, 16k buffer); `tool_output` capped at 800 lines / 16 KiB |
 | Dispatch env | `DISPATCH_GROOMER_MODEL` / `_TIMEOUT_MS` / `_INTERVAL_MS` | `qwen3.8-flash-next` / `480000` / `900000` |
-| Dispatch env | `DISPATCH_LANE_CONFIG_JSON` | lanes `local` (default), `frontier` (escalation), `backlog`, plus aliases |
+| Dispatch env | `DISPATCH_GROOMER_MODEL_CONTEXT_TOKENS` / `DISPATCH_GROOMER_REPO_CONTEXT_ENABLED` | `262144` / `true` |
+| Dispatch env | `DISPATCH_LANE_CONFIG_JSON` | lanes `local` (default), `frontier` (escalation), `backlog`; aliases `normal` and `cloud` → `local`, `escalated` → `frontier` |
 | Dispatch env | `PR_FIX_MAX_ATTEMPTS` | unset, so the default `5` |

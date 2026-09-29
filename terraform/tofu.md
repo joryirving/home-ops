@@ -4,13 +4,13 @@ This repository contains OpenTofu configurations for managing infrastructure res
 
 ### File Organization
 
-| File             | Purpose                                     |
-| ---------------- | ------------------------------------------- |
-| `main.tofu`      | Provider and resource configuration         |
-| `variables.tofu` | Input variable declarations                 |
-| `outputs.tofu`   | Output value declarations                   |
-| `backend.tofu`   | Backend configuration                       |
-| `*.tofu`         | Additional resources (buckets, flows, etc.) |
+| File             | Purpose                                      |
+| ---------------- | -------------------------------------------- |
+| `main.tofu`      | Provider and resource configuration          |
+| `variables.tofu` | Input variable declarations                  |
+| `outputs.tofu`   | Output value declarations (where applicable) |
+| `backend.tofu`   | Backend configuration                        |
+| `*.tofu`         | Additional resources (buckets, flows, etc.)  |
 
 ### Style Conventions
 
@@ -21,26 +21,37 @@ When modifying Terraform code, follow these conventions:
 - **Resource names**: Use descriptive nouns, singular form (e.g., `aws_vpc.main` not `aws_vpc.vpcs`)
 - **Variables**: Must include `type` and `description`
 - **Outputs**: Must include `description`, mark sensitive values with `sensitive = true`
-- **Version pinning**: Use `~>` for minor version flexibility (e.g., `~> 3.0`)
+- **Version pinning**: Pin providers to exact versions (e.g., `version = "3.3.1"`); Renovate bumps them
 
 ### Example Resource
 
+From `garage/modules/garage/`:
+
 ```hcl
-resource "garage_bucket" "data" {
-  name = var.bucket_name
-  tags = var.common_tags
+resource "garage_bucket" "bucket" {
+  global_alias = var.bucket_name
 }
 
-variable "bucket_name" {
-  description = "Name of the Garage S3 bucket"
-  type       = string
+resource "garage_key" "access_key" {
+  name = "${var.bucket_name}-key"
 }
 
-output "bucket_id" {
-  description = "ID of the created bucket"
-  value       = garage_bucket.data.id
+resource "garage_bucket_key" "bucket_key" {
+  access_key_id = garage_key.access_key.id
+  bucket_id     = garage_bucket.bucket.id
+  owner         = true
+  read          = true
+  write         = true
 }
 ```
+
+### How changes are applied
+
+1. **PR**: the `Terraform Diff` workflow (`.github/workflows/terraform-diff.yaml`) runs `tofu fmt -check`, `tofu init`, `tofu validate` and `tofu plan` for each changed module on the utility runner and posts the plan as a PR comment.
+2. **Merge**: the `Publish Terraform` workflow (`.github/workflows/terraform-publish.yaml`) pushes `terraform/` as an OCI artifact to `ghcr.io/joryirving/manifests/terraform`, tagged `main`.
+3. **Apply**: tofu-controller on the utility cluster reconciles the `Terraform` resources in `kubernetes/apps/utility/flux-system/terraform/` (one per module) from that artifact (polled every 1m) with `approvePlan: auto` and `interval: 12h`.
+
+The commands below are for local runs and assume a local `backend.tfvars` and `op.tfvars`.
 
 ### Initialization
 
@@ -90,6 +101,7 @@ tofu validate
 📁 terraform/
 ├── 📁 authentik/         # Identity management configuration
 ├── 📁 garage/            # S3-compatible storage configuration
+│   └── 📁 modules/       # garage (bucket + key) and create-secret (1Password item)
 ├── 📁 uptimerobot/       # Monitoring service configuration
 ├── backend.tfvars        # Backend configuration (ignored)
 └── op.tfvars             # Variables file (ignored)
@@ -101,8 +113,8 @@ tofu validate
 2. **Use version control**: Track all `.tofu` files in Git
 3. **Secure variable files**: Keep sensitive data in `.tfvars` files which are gitignored
 4. **State management**: Ensure backend is properly configured for remote state
-5. **Lock files**: Commit `tofu.lock.hcl` to ensure consistent provider versions
-6. **Never commit**: `.terraform/`, `terraform.tfstate*`, `*.tfvars`, `*.tfplan`
+5. **Lock files**: `.terraform.lock.hcl` is gitignored; exact provider pins in `main.tofu` keep versions consistent
+6. **Never commit**: `.terraform/`, `.terraform.lock.hcl`, `terraform.tfstate*`, `*.tfvars`, `*.tfplan`
 
 ### Troubleshooting
 

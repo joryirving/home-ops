@@ -3,23 +3,22 @@
 This guide walks through installing OpenSurv on a Raspberry Pi from a fresh SD card using Raspberry Pi OS (Raspbian).
 It includes flashing the OS, updating the system, installing OpenSurv, and configuring a single RTSP camera.
 
-## 📦 Requirements
+## Requirements
 
-Raspberry Pi 4/5 (recommended)
-
+- Raspberry Pi 4/5 (recommended)
 - SD card (16GB+)
 - A monitor connected to the Pi
 - Network connection (wired recommended)
 - An RTSP-capable camera
 
-### 📝 1. Flash Raspberry Pi OS
+### 1. Flash Raspberry Pi OS
 
 - Download Raspberry Pi Imager
 - Select Raspberry Pi OS (64-bit)
 - Flash it onto the SD card
 - Insert SD card into the Pi and boot up
 
-### 🔧 2. Update the System
+### 2. Update the System
 
 After first boot, open a terminal and run:
 
@@ -30,14 +29,14 @@ sudo apt autoremove -y
 sudo apt autoclean
 ```
 
-### ⬇️ 3. Clone the OpenSurv Repository
+### 3. Clone the OpenSurv Repository
 
 ```bash
 git clone https://github.com/OpenSurv/OpenSurv.git
 cd OpenSurv
 ```
 
-### ⚙️ 4. Install OpenSurv
+### 4. Install OpenSurv
 
 Run the installer:
 
@@ -49,43 +48,41 @@ This will:
 
 - Install dependencies
 - Create the opensurv system user
-- Create /home/opensurv/etc/ configuration directory
+- Create the /etc/opensurv/ configuration directory
 - Enable autostart services
 
-### 📝 5. Configure OpenSurv (Single Camera)
+### 5. Configure OpenSurv (Single Camera)
 
 Edit the main monitor configuration:
 
 ```bash
-sudo nano /home/opensurv/etc/monitor1.yml
+sudo nano /etc/opensurv/monitor1.yml
 ```
 
 Replace the contents with:
 
 ```yaml
 essentials:
-  screens:
-    - streams:
-        - url: "rtsp://<ip>:8553/rtsp-high?video=all&audio=all
+    screens:
+        - streams:
+              - url: "rtsp://<ip>:8553/rtsp-high?video=all&audio=all"
 ```
 
 This will show the single camera full-screen.
 
-Check the service status:
+Restart the display:
 
 ```bash
-systemctl restart lightdm.service
+sudo systemctl restart lightdm.service
 ```
 
-###🔁 6. Reboot to Confirm
+### 6. Reboot to Confirm
 
 ```bash
 sudo reboot
 ```
 
 OpenSurv should auto-start and display the RTSP stream from your camera.
-
-🎉 Done!
 
 Your Raspberry Pi is now configured as a dedicated OpenSurv RTSP viewer that automatically starts on boot.
 
@@ -94,7 +91,7 @@ Your Raspberry Pi is now configured as a dedicated OpenSurv RTSP viewer that aut
 - `cd OpenSurv; git pull`
 - OPTIONAL: checkout a specific branch, for example `git checkout v1_latest`, if you want to override the default version
 - Run `sudo ./install.sh` (The installer will ask if you want to preserve your current config file)
-- `systemctl restart lightdm.service`
+- `sudo systemctl restart lightdm.service`
 
 ## Troubleshooting <a name = "troubleshooting"></a>
 

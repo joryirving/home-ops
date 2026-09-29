@@ -22,7 +22,7 @@ Git Repository → Flux (GitOps Operator) → Kubernetes Clusters
 2. **Renovate** scans for dependency updates, creates PRs
 3. **PRs merged** to main branch
 4. **Flux** detects changes via Git source
-5. **Flux** recursively searches `kubernetes/apps/${cluster}` for kustomizations
+5. **Flux** applies `kubernetes/apps/${cluster}`: one Flux `Kustomization` per app, each pointing at `kubernetes/apps/base/<namespace>/<app>`
 6. **Flux** applies `HelmRelease` and other resources to the cluster
 
 ### Directory Structure (Apps)
@@ -35,19 +35,17 @@ kubernetes/apps/
 └── test/           # Test cluster overlay
 ```
 
-Each app directory contains a `kustomization.yaml` that references Flux kustomizations (`ks.yaml`), which in turn contain `HelmRelease` resources.
+Each namespace directory in a cluster overlay (`kubernetes/apps/<cluster>/<namespace>/`) has a `kustomization.yaml` that pulls in `kubernetes/components/namespace` and lists one Flux `Kustomization` per app (`<app>.yaml`). Each of those points at `kubernetes/apps/base/<namespace>/<app>/`, which holds the app's `HelmRelease`, its `OCIRepository` (`ocirepository.yaml`) and any other manifests.
 
 ### Flux Reconciliation Chain
 
 ```
-Git Repository
-    ↓ (source.toolkit.fluxcd.io)
-HelmRepository / GitRepository
+GitRepository flux-system (kubernetes/clusters/<cluster>)
     ↓ (kustomize.toolkit.fluxcd.io)
-Kustomization (ks.yaml)
+Kustomization kubernetes/apps/<cluster>/<namespace>/<app>.yaml
+    ↓ applies kubernetes/apps/base/<namespace>/<app>/
+OCIRepository (source.toolkit.fluxcd.io) ← HelmRelease spec.chartRef
     ↓ (helm.toolkit.fluxcd.io)
-HelmRelease
-    ↓
 Kubernetes Resources (Deployment, Service, etc.)
 ```
 
@@ -59,45 +57,50 @@ Kubernetes Resources (Deployment, Service, etc.)
 
 - **cilium** provides eBPF-based CNI networking
 - Replaces kube-proxy for service load balancing
-- BGP peering with UniFi UDM-SE for external access
+- LoadBalancer IPs: BGP peering with the UniFi UDM-SE on main and utility; L2 announcements on test
+- **multus** adds secondary pod networks on main and utility
 - Hubble for observability
 
 ### Ingress & DNS
 
 ```
-Internet → Cloudflare → cloudflared (tunnel) → Ingress Controllers
-                                                    ↓
-                              external-dns (public) → Cloudflare
-                              external-dns (internal) → UniFi UDMP
+Internet → Cloudflare → Columbina (OVH VPS, Towonel edge) → Towonel tunnel → envoy-external Gateway
+LAN      → UDM-SE DNS → envoy-internal / envoy-external Gateway
+
+cloudflare-dns (external-dns): envoy-external HTTPRoutes + DNSEndpoints → Cloudflare
+unifi-dns (external-dns):      HTTPRoutes + Services                   → UniFi UDM-SE
 ```
 
-- **Envoy Gateway** handles L7 proxying and ingress
-- **external-dns** syncs ingress annotations to DNS providers
-- Two DNS classes: `internal` (private) and `external` (public)
+- **Envoy Gateway** implements the Gateway API for L7 ingress via the `envoy-internal` and `envoy-external` Gateways; there are no `Ingress` objects
+- Apps attach an `HTTPRoute` to `envoy-internal` (private) or `envoy-external` (public)
+- **towonel-operator** creates the cluster's Towonel tunnel and routes `envoy-external` traffic through it
 
 ### Secrets Management
 
 ```
 1Password → external-secrets → Kubernetes Secrets
                    ↑
-            1Password Connect (onepassword-sync)
+            1Password Connect (onepassword-connect)
 ```
 
 - **external-secrets** fetches secrets from 1Password via Connect
-- **SOPS** encrypts sensitive config values stored in Git
+- No encrypted secrets live in Git: Talos machine configs hold `op://` references resolved with `op inject`, and bootstrap secrets come from `bootstrap/kustomize/secrets.yaml.tpl` the same way
 - **cert-manager** handles automatic TLS certificates
 
 ### Storage
 
-- **Rook/Ceph** provides distributed block storage (RBD)
-- **volsync** handles persistent volume backups
-- **spegel** provides local OCI image mirror for reliability
+- **Rook/Ceph** provides distributed block storage (RBD) on main
+- **openebs** (main) and **democratic-csi** (utility, test) provide the `local-hostpath` storage class
+- **kopiur** backs up PVCs with Kopia into a filesystem repository on an NFS share from Voyager
+- **spegel** provides a local OCI image mirror on main
 - Voyager NAS serves NFS/SMB shares via Unraid
 
 ### CI/CD
 
+- **flux-operator** manages each cluster's Flux install through a `FluxInstance`
 - **actions-runner-controller** runs self-hosted GitHub Actions runners
-- **tofu-controller** runs Terraform from within Kubernetes (IaC)
+- **tuppr** runs Talos and Kubernetes upgrades from `TalosUpgrade`/`KubernetesUpgrade` resources
+- **tofu-controller** runs OpenTofu from within the utility cluster (IaC)
 
 ---
 
@@ -111,54 +114,56 @@ Internet → Cloudflare → cloudflared (tunnel) → Ingress Controllers
                     ┌─────▼─────┐
                     │ Cloudflare│ (WAF, DNS, R2)
                     └─────┬─────┘
-                          │ Tunnel (cloudflared)
+                          │
+                    ┌─────▼─────┐
+                    │ Columbina │ (OVH VPS, Towonel edge)
+                    └─────┬─────┘
+                          │ Towonel tunnel (towonel-operator)
           ┌───────────────┼───────────────┐
           │               │               │
     ┌─────▼─────┐   ┌─────▼─────┐   ┌─────▼─────┐
     │   Main    │   │  Utility  │   │   Test    │
     │  Cluster  │   │  Cluster  │   │  Cluster  │
-    └─────┬─────┘   └───────────┘   └───────────┘
-          │
-    ┌─────▼─────┐
-    │  Cilium   │ (eBPF CNI)
-    │   BGP     │
-    └─────┬─────┘
-          │
-    ┌─────▼─────┐
-    │  UniFi    │ (Router/DHCP/DNS)
-    │  UDMP-SE  │
-    └───────────┘
+    └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+          │ Cilium BGP    │ Cilium BGP    │ Cilium L2
+    ┌─────▼───────────────▼───────────────▼─────┐
+    │     UniFi UDM-SE (Router/DHCP/DNS)        │
+    └───────────────────────────────────────────┘
 ```
 
 ---
 
 ## Cluster Bootstrap
 
-1. **Talos Linux** installed on bare metal via talosctl
-2. **Flux** bootstrapped via `flux bootstrap`
-3. **Apps** deployed via Flux kustomizations
+`task bootstrap:cluster CLUSTER=<cluster>` runs the whole sequence (`.taskfiles/bootstrap/Taskfile.yaml`):
 
-The `bootstrap/` directory contains helmfile templates used during initialization.
+1. Applies Talos configs to the nodes and bootstraps etcd via `talosctl`
+2. Fetches the kubeconfig
+3. Applies namespaces and secrets (`bootstrap/kustomize/secrets.yaml.tpl`, rendered with `minijinja-cli` and piped through `op inject`) and the CRDs from `bootstrap/helmfile/crds.yaml`
+4. Syncs the core apps in `bootstrap/helmfile/apps.yaml`: cilium, coredns, cert-manager, external-secrets, onepassword-connect, flux-operator and flux-instance
+5. The `FluxInstance` syncs `kubernetes/clusters/<cluster>` and Flux takes over
 
 ---
 
 ## Terraform/OpenTofu
 
-Infrastructure-as-code for cloud resources:
+External and infrastructure services managed with OpenTofu:
 
-- `terraform/authentik/` - Identity provider infra
-- `terraform/garage/` - S3 storage infra (R2 clone)
-- `terraform/uptimerobot/` - Monitoring infra
+- `terraform/authentik/` - Identity provider config
+- `terraform/garage/` - S3 buckets and keys (R2 clone)
+- `terraform/uptimerobot/` - External monitors
 
-See [tofu.md](../../tofu.md) for usage.
+tofu-controller on the utility cluster applies these from an OCI artifact published whenever `terraform/` changes on `main`. See [tofu.md](../../terraform/tofu.md) for usage.
 
 ---
 
 ## Adding a New Application
 
-1. Create app config in `kubernetes/apps/${cluster}/`
-2. Add `kustomization.yaml` with namespace + Flux kustomization reference
-3. Create `ks.yaml` referencing `HelmRelease`
+Follow `.agents/skills/add-app/SKILL.md`. In short:
+
+1. Create `kubernetes/apps/base/<namespace>/<app>/` with `kustomization.yaml`, `helmrelease.yaml` and `ocirepository.yaml`
+2. Add a Flux `Kustomization` at `kubernetes/apps/<cluster>/<namespace>/<app>.yaml` pointing at that directory, for each target cluster
+3. List `./<app>.yaml` in `kubernetes/apps/<cluster>/<namespace>/kustomization.yaml`
 4. Add any secrets to 1Password, reference via `external-secrets`
 5. Commit and push - Flux will auto-apply
 
@@ -174,3 +179,7 @@ See [tofu.md](../../tofu.md) for usage.
 | `talos/`                 | Talos machine configurations  |
 | `bootstrap/`             | Bootstrap templates           |
 | `hack/`                  | Operational scripts           |
+| `terraform/`             | OpenTofu configurations       |
+| `.taskfiles/`            | Task (taskfile.dev) commands  |
+| `.agents/`               | AI instructions and skills    |
+| `docs/`                  | Documentation                 |
