@@ -32,11 +32,16 @@ spec:
                 set -euo pipefail
                 apk add --no-cache gettext >/dev/null
                 cp /tmp/config.yaml /opt/data/config.yaml
-                # Expand ${VAR} references from the pod env before hermes reads
-                # the config. v0.21.5 stopped expanding ${LITELLM_API_KEY} in
-                # provider values at config-load time, which broke model calls
-                # with 401s from LiteLLM. envsubst has access to the same env
-                # (LITELLM_API_KEY is injected via the hermes secret envFrom).
+                # Expand env-var references from the pod env before hermes
+                # reads the config. v0.21.5 stopped expanding LITELLM_API_KEY
+                # in provider values at config-load time, which broke model
+                # calls with 401s from LiteLLM. envsubst has access to the
+                # same env (LITELLM_API_KEY is injected via the hermes secret
+                # envFrom). No dollar-brace literals in this script on
+                # purpose: the hermes kustomization runs strict flux postBuild
+                # substitution and any unescaped one fails the whole build
+                # (configmap.yaml shows the double-dollar escape convention
+                # for values that must survive it).
                 envsubst < /opt/data/config.yaml > /opt/data/config.yaml.tmp
                 mv /opt/data/config.yaml.tmp /opt/data/config.yaml
                 chown 10000:10000 /opt/data/config.yaml
