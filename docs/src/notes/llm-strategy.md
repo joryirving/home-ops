@@ -120,7 +120,7 @@ variant was deleted (FP8 doesn't work on gfx1151).
 | `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model    |
 | `glm-5.3-flash`       | Charm Hyper, then GLM Coding Lite | glm-5.3-flash (order 1 Hyper, order 2 Z.AI) | 1M       | OpenClaw Miso/main primary; `oracle` role                                                     |
 | `chatgpt/gpt-6-astra` | ChatGPT Plus                      | gpt-6-astra (Codex/OAuth)                   | 272k*    | Direct alias; `frontier-pool` rung 2                                                          |
-| `chatgpt/gpt-6-sol`   | ChatGPT Plus                      | gpt-6-sol (Codex/OAuth)                     | 272k     | Direct alias; `reasoning-pool` rung 2                                                         |
+| `chatgpt/gpt-6.1-sol` | ChatGPT Plus                      | gpt-6.1-sol (Codex/OAuth)                   | 272k     | Direct alias; `reasoning-pool` rung 2                                                         |
 | `chatgpt/gpt-6-luna`  | ChatGPT Plus                      | gpt-6-luna (Codex/OAuth)                    | 272k     | Direct alias (effort pinned `max`); `implementation-pool` lead                                |
 | `kimi-k2.7`           | Kimi Coding                       | kimi-for-coding                             | 262k     | Coding subscription; `reasoning-pool` rung 1 is a separate deployment                         |
 | `kimi-k3`             | Kimi Coding                       | k3                                          | 1M       | Frontier Kimi lane; `frontier-pool` rung 1 is a separate deployment                           |
@@ -169,7 +169,7 @@ One file per pool in `models/` (`frontier-pool.yaml`, `reasoning-pool.yaml`, `im
 | Pool                  | Order  | Members                                                                                                            | Effort pins                                   | Policy                                                             |
 | --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------ |
 | `frontier-pool`       | 1 -> 4 | Kimi K3 (Kimi Coding) -> GPT-6 Astra (ChatGPT) -> GLM-5.3 (Z.AI) -> DSV4.1F (Hyper)                                | none                                          | Frontier escalation; no MiniMax floor                              |
-| `reasoning-pool`      | 1 -> 5 | Kimi K2.7 (Kimi Coding) -> GPT-6 Sol (ChatGPT) -> GLM-5.3-Flash (Z.AI) -> MiniMax-M3 (`/v1`) -> qwen3.8-flash-next | none; K2.7 drops `reasoning_effort`           | Planning lane; M3 is the flat-plan floor, flash-next the local one |
+| `reasoning-pool`      | 1 -> 5 | Kimi K2.7 (Kimi Coding) -> GPT-6.1 Sol (ChatGPT) -> GLM-5.3-Flash (Z.AI) -> MiniMax-M3 (`/v1`) -> qwen3.8-flash-next | none; K2.7 drops `reasoning_effort`         | Planning lane; M3 is the flat-plan floor, flash-next the local one |
 | `implementation-pool` | 1 -> 3 | GPT-6 Luna (ChatGPT) -> qwen3.8-27b (3090) -> MiniMax-M2.7                                                         | Luna `max` (`extra_body`); 27b `xhigh`        | Implementation lane, deliberately below the planning lane          |
 | `local-pool`          | 1 -> 3 | muse-glimmer (3090) -> qwen3.8-flash-next (skirk) -> gemma-4-12b-it-qat (9070XT)                                   | none                                          | Local-only, $0 marginal                                            |
 | `local-pool-chat`     | 1 -> 3 | same members, non-thinking samplers                                                                                | flash-next and gemma `reasoning_effort: none` | OpenClaw lossless-claw; AI PR review primary                       |
@@ -394,7 +394,7 @@ Reading it for routing:
 - **Reasoning tier** (`gpt-5.6-luna`, `MiniMax-M3`; historical, GPT-5.6 retired 2026-09-23) — Luna
   was the weakest GPT tier here at AA-II 51 and its long-context recall collapsed (vendor MRCR 41.3
   against Sol's 91.5), so the pool's nominal 1M context was not usable depth on that rung. Current
-  `reasoning-pool` is K2.7 -> `gpt-6-sol` -> GLM-5.3-Flash -> MiniMax-M3 -> `qwen3.8-flash-next`; Luna
+  `reasoning-pool` is K2.7 -> `gpt-6.1-sol` -> GLM-5.3-Flash -> MiniMax-M3 -> `qwen3.8-flash-next`; Luna
   now leads `implementation-pool`.
 - **Local** — `qwen3.8-27b` is now Qwen3.8-27B and the gap to `qwen3.8-flash-next` widened from "trails it
   everywhere" to a 20-point AA-II spread (52 vs 32). `qwen3.8-flash-next` earns its place on the 262k window
@@ -669,7 +669,7 @@ every request's path. Session affinity is on (`session_affinity: true`, 3600s TT
 alias classified until 2026-08-22, then `qwen3.8-flash-next`.
 
 `frontier-pool` is deliberately **not** a tier target, but `auto` is not insulated from the weekly
-caps: COMPLEX reaches Kimi K2.7 and GPT-6 Sol as `reasoning-pool` rungs 1 and 2, ahead of
+caps: COMPLEX reaches Kimi K2.7 and GPT-6.1 Sol as `reasoning-pool` rungs 1 and 2, ahead of
 GLM-5.3-Flash, MiniMax-M3 and flash-next. Kimi K3 stays in `frontier-pool` or explicit selection.
 
 ### Measured (2026-08-07, LiteLLM 1.95.0)
@@ -749,7 +749,7 @@ a strict `order:` chain (429/403 -> cooldown -> next). Subscriptions first, Deep
 3. `glm-5.3` @ Z.AI — GLM Coding Lite sub
 4. `dsv4.1f` @ Charm Hyper — DeepSeek V4.1 Flash
 
-`gpt-6-sol` is not a rung. It draws the same ChatGPT rolling window as Astra, so pairing the two would
+`gpt-6.1-sol` is not a rung. It draws the same ChatGPT rolling window as Astra, so pairing the two would
 give a second rung with no headroom of its own; it is `reasoning-pool` rung 2 and a direct alias.
 Rung 1 (K3) is 1M; opencode declares the pool at 272k, the smallest rung (Astra, rung 2).
 
