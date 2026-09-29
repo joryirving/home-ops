@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/litellm.home-operations.com/litellmguardrail_v1alpha1.json
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMGuardrail
+metadata:
+  name: headroom-compression
+spec:
+  apiBase: http://headroom.llm.svc.cluster.local:8787
+  defaultOn: false
+  guardrail: headroom
+  guardrailName: headroom-compression
+  mode: pre_call
+  params:
+    timeout: 10
+    unreachable_fallback: fail_open
+  proxyRef: litellm
