@@ -34,7 +34,7 @@ For the usual 1Password-backed secret:
 
 ## HelmRelease rules for app-template
 
-This section gives instructions specifically for HelmReleases that are based on the `app-template` chart. In this repository, that is typically identified by `spec.chartRef.name: app-template`.
+This section gives instructions specifically for HelmReleases that are based on the `app-template` chart. In this repository every app has its own `OCIRepository` (named after the app), so identify app-template by the `OCIRepository` that `spec.chartRef.name` points at: its `spec.url` is `oci://ghcr.io/bjw-s-labs/helm/app-template`. The app-template schema comment at the top of the HelmRelease is only a hint; a few non-app-template HelmReleases carry it too.
 
 ### Sorting rules
 
@@ -104,7 +104,7 @@ Unless a more specific rule applies, keys within any section should be ordered a
 
 **Before sorting, verify the chart is app-template based:**
 
-1. Check for `spec.chartRef.name: app-template`.
+1. Check that the app's `ocirepository.yaml` has `url: oci://ghcr.io/bjw-s-labs/helm/app-template`.
 2. If not app-template, do not apply these sorting rules
 
 **Decision tree for sorting HelmRelease fields:**

@@ -12,8 +12,10 @@ home-ops/
 ├── .github/             # GitHub Actions workflows & evidence providers
 ├── .renovate/           # Local Renovate config presets
 ├── .taskfiles/          # Task (taskfile.dev) operational commands
+├── ansible/             # Ansible for the Columbina VPS
 ├── bootstrap/           # Bootstrap templates (helmfile, minijinja)
-├── docs/                # mdBook documentation
+├── docker/              # Compose apps on the Columbina VPS (towonel, gatus, ...)
+├── docs/                # Markdown docs (mdBook-style SUMMARY.md)
 ├── hack/                # Operational scripts (see hack/README.md)
 ├── kubernetes/          # Kubernetes configurations (Flux-managed)
 │   ├── apps/            # Application configs
@@ -23,8 +25,9 @@ home-ops/
 │   │   └── test/        # Test cluster overlay
 │   ├── clusters/        # Flux cluster definitions
 │   └── components/      # Reusable k8s components
+├── scripts/             # CI check scripts
 ├── talos/               # Talos Linux machine configs
-└── terraform/           # OpenTofu/Terraform IaC (cloud infra)
+└── terraform/           # OpenTofu IaC (external/infra services)
 ```
 
 ## Cluster Architecture
@@ -35,21 +38,26 @@ home-ops/
 
 ## Key Technologies
 
-| Category   | Tool                         | Purpose                                                                         |
-| ---------- | ---------------------------- | ------------------------------------------------------------------------------- |
-| GitOps     | Flux + flux-operator         | Deploys configs from Git to k8s; flux-operator manages the Flux instance itself |
-| CI         | Renovate + GitHub Actions    | Dependency updates, automation                                                  |
-| Networking | cilium (eBPF)                | CNI, BGP, service mesh                                                          |
-| Ingress    | Envoy Gateway                | L7 proxy, ingress controller                                                    |
-| DNS        | external-dns                 | Syncs ingress to Cloudflare/UniFi                                               |
-| TLS        | cert-manager                 | TLS certificate automation                                                      |
-| Secrets    | external-secrets + 1Password | Secret management                                                               |
-| Storage    | Rook/Ceph + volsync          | Distributed storage + backups                                                   |
-| Images     | spegel                       | Local OCI mirror                                                                |
-| IaC        | tofu-controller              | Terraform on k8s                                                                |
-| Charts     | app-template (bjw-s)         | Common Helm chart used by most apps                                             |
-| Sources    | OCIRepository                | Flux source for OCI Helm charts (preferred)                                     |
-| Reviews    | konflate                     | Rendered-diff evidence provider for PR reviews                                  |
+| Category   | Tool                         | Purpose                                                                           |
+| ---------- | ---------------------------- | --------------------------------------------------------------------------------- |
+| GitOps     | Flux + flux-operator         | Deploys configs from Git to k8s; flux-operator manages the Flux instance itself   |
+| CI         | Renovate + GitHub Actions    | Dependency updates, automation                                                    |
+| Networking | cilium (eBPF)                | CNI, kube-proxy replacement, LB IPs via BGP (main, utility) or L2 (test)          |
+| Networking | multus                       | Secondary pod networks (main, utility)                                            |
+| Ingress    | Envoy Gateway                | Gateway API L7 ingress via `envoy-internal` / `envoy-external` (HTTPRoutes)       |
+| Tunnel     | towonel-operator             | Public ingress via the Towonel edge on the Columbina VPS                          |
+| DNS        | external-dns                 | Syncs HTTPRoutes to UniFi (`unifi-dns`) and Cloudflare (`cloudflare-dns`)         |
+| TLS        | cert-manager                 | TLS certificate automation                                                        |
+| Secrets    | external-secrets + 1Password | Secret management                                                                 |
+| Storage    | Rook/Ceph (main)             | Distributed block storage                                                         |
+| Storage    | openebs / democratic-csi     | `local-hostpath` storage class (openebs on main; democratic-csi on utility, test) |
+| Backups    | kopiur                       | Kopia PVC backups to a filesystem repository on NFS (Voyager)                     |
+| Images     | spegel (main)                | Local OCI mirror                                                                  |
+| Upgrades   | tuppr                        | Talos and Kubernetes upgrades from `TalosUpgrade`/`KubernetesUpgrade` CRs         |
+| IaC        | tofu-controller (utility)    | Runs the OpenTofu in `terraform/` on k8s                                          |
+| Charts     | app-template (bjw-s)         | Common Helm chart used by most apps                                               |
+| Sources    | OCIRepository                | Flux source for OCI Helm charts (preferred)                                       |
+| Reviews    | konflate                     | Rendered-diff evidence provider for PR reviews                                    |
 
 ## GitOps Flow
 
@@ -61,12 +69,12 @@ Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `k
 
 ## Conventions
 
-- Component READMEs stay with components (e.g., `kubernetes/apps/base/cilium/README.md`)
+- Component READMEs stay with components (e.g., `kubernetes/apps/base/kube-system/cilium/README.md`)
 - Secrets stored in 1Password, referenced via `external-secrets`
 - Apps use `HelmRelease` via Flux, rarely raw manifests
 - Clusters are mostly identical except for app selections and sizing
 - **AI instructions**: `.agents/instructions/pr-review.instructions.md` is the live system prompt for the AI PR reviewer. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). When editing YAML, follow the sorting instructions. `docs/src/notes/coding-loop.md` documents the coding loop (Dispatch + Courier); read it before changing `kubernetes/apps/base/llm/courier/` or Dispatch configuration.
-- **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource and alerting rules into every app via kustomize components. Helm chart sources are per-app: each app declares its own `OCIRepository` in `ocirepository.yaml`.
+- **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource and alerting rules; each namespace overlay (`kubernetes/apps/<cluster>/<namespace>/kustomization.yaml`) includes it once for all apps it lists. Helm chart sources are per-app: each app declares its own `OCIRepository` in `ocirepository.yaml`.
 - **Namespace replacement**: `kubernetes/components/replacements/ks.yaml` propagates `spec.targetNamespace` into Flux Kustomizations automatically.
 - **New apps**: Follow `.agents/skills/add-app/SKILL.md` for the complete workflow; create manifests in `base/` and an overlay in each requested cluster.
 - **Postgres**: `kubernetes/components/postgres/` is the CloudNativePG component. Its README defines recovery bootstrap and the `components.postgres/cnpg=init` label for net-new databases. Treat changes to CNPG `Cluster` resources or bootstrap labels as data-loss-relevant.
@@ -82,7 +90,7 @@ Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `k
     - `task talos:upgrade-k8s CLUSTER=main VERSION=<ver>` — upgrade Kubernetes
     - `task kubernetes:reconcile CLUSTER=main` — force Flux reconciliation
     - `task kubernetes:hr-restart CLUSTER=main` — restart failed HelmReleases
-    - `task bootstrap:talos CLUSTER=main` — bootstrap a fresh Talos cluster
+    - `task bootstrap:cluster CLUSTER=main` — bootstrap a fresh Talos cluster end to end
     - `task op:push` / `task op:pull` — sync kubeconfig/talosconfig with 1Password
     - `task workstation:brew` — install local workstation tools
 - **Tool management**: `.mise.toml` pins `flate`; run `mise install` to set it up. Other task preconditions identify their required tools.
@@ -92,18 +100,15 @@ Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `k
     # Test Kustomizations + HelmReleases for a cluster
     flate test all --path ./kubernetes/clusters/main
 
-    # Diff against a baseline (e.g., main branch)
-    git worktree add --detach /tmp/baseline origin/main
-    flate diff ks --path ./kubernetes/clusters/main --path-orig /tmp/baseline/kubernetes/clusters/main
-    flate diff hr --path ./kubernetes/clusters/main --path-orig /tmp/baseline/kubernetes/clusters/main
-    git worktree remove /tmp/baseline --force
+    # Diff Kustomizations + HelmReleases against a baseline rev (changed-only)
+    flate diff all --path ./kubernetes/clusters/main --base origin/main
     ```
 
 - **Gateway policy namespace rule**: `ClientTrafficPolicy` and `EnvoyPatchPolicy` that target a `Gateway` must live in the same namespace as that `Gateway`. For `envoy-internal`, put those resources in `kubernetes/apps/base/network/envoy-gateway/config/` with namespace `network`. See that directory for examples.
 
 ## Documentation
 
-- Main docs: `/docs/src/` (mdBook)
+- Main docs: `/docs/src/` (Markdown, mdBook-style `SUMMARY.md`)
 - Component docs: README files co-located with components
 - Terraform docs: `/terraform/tofu.md`
 - Personal notes: `/docs/src/notes/`
@@ -122,18 +127,18 @@ When reviewing Renovate PRs, enforce these criteria. Reviews may include konflat
 
 ### HelmRelease Requirements
 
-- All applications MUST use `HelmRelease` via Flux, not raw manifests
+- New application workloads MUST use `HelmRelease` via Flux, not raw `Deployment`/`StatefulSet` manifests. Existing raw-manifest directories are intentional and not violations: config-only or operator-CR apps such as `kubernetes/apps/base/network/certificates/`, `kubernetes/apps/base/flux-system/addons/`, and `kubernetes/apps/base/llm/litellm/` / `kubernetes/apps/base/llm/embed/`.
 - HelmReleases MUST use `spec.chartRef` pointing to an `OCIRepository` with a pinned `ref.tag`.
-- Every app (including `app-template`-based apps) defines its own per-app `OCIRepository` in a dedicated `ocirepository.yaml` alongside the `HelmRelease`, named after the app, with `./ocirepository.yaml` listed in the app's `kustomization.yaml`. Do not put the `OCIRepository` inline in `helmrelease.yaml`, and do not rely on a shared/injected `OCIRepository`.
+- Every app (including `app-template`-based apps) defines its own per-app `OCIRepository` in a dedicated `ocirepository.yaml` alongside the `HelmRelease`, named after the app, with `./ocirepository.yaml` listed in the app's `kustomization.yaml`. Do not put the `OCIRepository` inline in `helmrelease.yaml`, and do not rely on a shared/injected `OCIRepository`. Known exceptions, not to be flagged or copied: `kubernetes/clusters/*/flux-instance/helmrelease.yaml` defines its `OCIRepository` inline, and `blackbox-exporter-vpn` reuses `blackbox-exporter`'s `OCIRepository`.
 - Must include `spec.interval` for reconciliation frequency
 - Resource limits (CPU/memory) SHOULD be specified for production workloads, but this is not a hard requirement
-- `valuesFrom` should reference ConfigMaps/Secrets, not inline values
+- Inline `spec.values` is the norm. Use `valuesFrom` only when values must come from a ConfigMap/Secret; secret values still MUST come from `external-secrets`, never inline
 
 ### Namespace Convention
 
-- `metadata.namespace` is **never** set inline on `HelmRelease` or `Kustomization` resources — this is intentional, not a violation
-- The namespace is injected at build time by kustomize's `namespace:` directive in the per-app `kustomization.yaml` (e.g., `namespace: llm`)
-- For Flux `Kustomization` resources, `spec.targetNamespace` is propagated automatically via the replacement component at `kubernetes/components/replacements/ks.yaml`
+- `metadata.namespace` should not be set inline on `HelmRelease` or Flux `Kustomization` resources; its absence is intentional, not a violation
+- Each namespace overlay `kubernetes/apps/<cluster>/<namespace>/kustomization.yaml` sets kustomize's `namespace:` (e.g., `namespace: llm`) for the Flux `Kustomization`s it lists
+- The replacement component at `kubernetes/components/replacements/ks.yaml` copies that namespace into each Flux `Kustomization`'s `spec.targetNamespace`, which places the app's `HelmRelease` and other resources in it
 - Reviewers MUST NOT flag missing `metadata.namespace` on these resources as an issue
 
 ### Secret Management Rules

@@ -14,7 +14,7 @@
 - [Certs](./notes/certs.md)
 - [Coding loop](./notes/coding-loop.md)
 - [LLM strategy](./notes/llm-strategy.md)
-- [Tool servers](./notes/tool-servers.md)
+- [Tool servers (ToolHive)](./notes/tool-servers.md)
 - [PiKVM](./notes/pikvm.md)
 - [Planned cluster shutdown](./notes/planned-cluster-shutdown.md)
 - [rclone](./notes/rclone.md)

@@ -21,7 +21,6 @@ Since I'm using a DiY PiKVM V2, there's a few notes:
     ```sh
     rw
     passwd root
-    ro
     ```
 
 2. Add or replace the file `/etc/kvmd/override.yaml`
@@ -183,7 +182,7 @@ kvmd:
                 mode: output
                 switch: false
             server6_wol:
-                driver: wol_server5
+                driver: wol_server6
                 pin: 0
                 mode: output
                 switch: false
@@ -212,7 +211,6 @@ kvmd:
             table:
                 - [
                       "#pikvm",
-                      "pikvm_led|green",
                       "restart_service_button|confirm|Service",
                       "reboot_button|confirm|Reboot",
                   ]
@@ -226,20 +224,25 @@ kvmd:
                 - ["#8", "server7_led", "server7_btn | KVM"]
 ```
 
-3. Restart kvmd
+3. Remount read-only and restart kvmd
 
 ```sh
+ro
 systemctl restart kvmd.service
 ```
 
 ### Wake-on-LAN across VLANs (unicast)
 
-The PiKVM sits on the Default VLAN (1); most targets it wakes — the k8s nodes and
-skirk — are on the Servers VLAN (69, `10.69.1.x`). UniFi does **not** forward
-inbound broadcast into VLAN 69, so a `wol` driver left at its default (broadcast to
+The PiKVM sits on the Default VLAN (1); most targets it wakes — the k8s nodes
+(including skirk) and citlali — are on the Servers VLAN (69, `10.69.1.x`). UniFi
+does **not** forward inbound broadcast into VLAN 69, so a `wol` driver left at its default (broadcast to
 `255.255.255.255`) fires a packet that never crosses into Servers, and the node
 never wakes even though its NIC is armed. (Trusted, VLAN 30, *does* receive the
 broadcast, which is why the Smurf PC wakes fine.)
+
+The MS-01s (ayaka, eula, ganyu, voyager) wake through a secondary NIC with its
+own `10.69.2.x` reservation; Talos ignores that NIC, so it only ever carries
+WoL. skirk and citlali wake on their `10.69.1.x` address.
 
 The fix is to send the magic packet **unicast** to each node's own IP. A unicast
 routes cross-VLAN like any other packet, and still reaches a powered-off NIC
@@ -251,7 +254,7 @@ that host's reserved address:
             wol_server0:
                 type: wol
                 mac: 58:47:ca:7d:3c:88
-                ip: 10.69.1.21   # the node's own reserved IP, NOT a broadcast
+                ip: 10.69.2.21   # the node's own reserved WoL IP, NOT a broadcast
 ```
 
 Keep the reservations in place (a lapsed one drops the binding); a static IP->MAC
@@ -263,6 +266,8 @@ binding on the UDM per node makes off-state delivery bulletproof.
 
 ```sh
 pikvm-update
+rw
 pacman -S prometheus-node-exporter
 systemctl enable --now prometheus-node-exporter
+ro
 ```

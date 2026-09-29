@@ -1,158 +1,60 @@
-# Tool Servers (Kubernetes plan)
+# Tool servers (ToolHive)
 
-## Goal
+MCP tool servers run under the ToolHive operator in the `llm` namespace on `main`, behind one
+aggregating gateway. The earlier `mcpo` tool-server bundle this page used to describe (added
+in #6609) was removed on 2026-04-13; git history has that version.
 
-Add a small set of **self-hosted, Open WebUI-compatible tool servers** that fit the current GitOps layout and are safe to run inside the cluster.
-
-This cluster-hosted Open WebUI deployment should prefer **global/shared tool servers** that are reachable from the backend over workstation-local tools.
-
-## Current topology decision
-
-For Home Assistant specifically, the cleanest split is:
-
-- **Home Assistant stays in `utility`** where it already lives
-- the **Open WebUI-facing tool servers live in `main`** next to the LLM apps that consume them
-
-That keeps the Open WebUI-facing proxy private to the LLM cluster while still allowing it to talk upstream to the services it wraps.
-
-## First implementation included in this PR
-
-This PR adds a deployable **tool-server bundle** in `main` using [`mcpo`](https://github.com/open-webui/mcpo) to expose existing MCP endpoints as OpenAPI-compatible HTTP services for Open WebUI.
-
-### Included upstreams
-
-- Home Assistant MCP via `https://hass.jory.dev/api/mcp`
-- Grafana MCP via `http://mcp-grafana.observability:8000/sse`
-
-### Shape
-
-- namespace: `llm`
-- cluster: `main`
-- exposure: `ClusterIP` only
-- implementation: one `mcpo` container with multiple mounted upstream MCP servers
-- auth to Home Assistant upstream: Home Assistant token from the existing `openclaw` 1Password item
-
-### Intended Open WebUI registrations
-
-After deployment, register these in Open WebUI as **global tool servers**:
+## Layout
 
 ```text
-http://tool-servers.llm.svc.cluster.local:8000/homeassistant
-http://tool-servers.llm.svc.cluster.local:8000/grafana
+kubernetes/apps/base/llm/toolhive/
+├── crds/          # toolhive-crds KS
+├── app/           # the operator (toolhive KS)
+├── config/        # the gateway (toolhive-config KS)
+└── mcp-servers/   # one folder per server, one KS each
+
+kubernetes/apps/main/llm/toolhive.yaml   # every Flux Kustomization above
 ```
 
-No public route is created in this first pass.
+## The gateway
 
-## Recommended next wave
+- **`VirtualMCPServer` `mcp-gateway-internal`** aggregates every server in the `MCPGroup`
+  `mcp-tools`. Tool name conflicts are resolved by a `{workload}_` prefix. Sessions are kept
+  in the `toolhive-config` Dragonfly.
+- **In-cluster**: `vmcp-mcp-gateway-internal.llm:4483`, anonymous (no key).
+- **Public**: `mcp.jory.dev` through `envoy-external`. An Envoy `SecurityPolicy` enforces
+  `apiKeyAuth` on the `x-api-key` header, with keys from the `mcp-gateway-api-keys` Secret
+  (1Password `toolhive` item). Gatus expects a 401 without a key.
+- **Optimizer**: tool embeddings come from the LiteLLM `embed` model
+  (`http://litellm.llm:4000/v1`, 180s timeout).
 
-### 1. Ops / status server
+## Servers
 
-**Value:** Highest
+| Folder | Resource | Kind | Upstream |
+|---|---|---|---|
+| `arr-mcp` | `arr` | `MCPServer` (stdio) | Sonarr, Radarr, Prowlarr |
+| `dispatch-mcp` | `dispatch-mcp` | `MCPServer` (stdio) | Dispatch |
+| `flux-mcp` | `flux` | `MCPServer` (streamable-http) | flux-operator MCP, read-only RBAC |
+| `github-mcp` | `github` | `MCPServer` (stdio) | GitHub |
+| `grafana-mcp` | `grafana` | `MCPServerEntry` (sse) | `mcp-grafana.observability:8000` |
+| `ha-mcp` | `ha-mcp` | `MCPServer` (streamable-http) | Home Assistant |
+| `kubectl-mcp` | `kubectl` | `MCPServer` (streamable-http) | Kubernetes API, read-only RBAC |
+| `plan-shop-eat-mcp` | `plan-shop-eat` | `MCPServerEntry` (streamable-http) | hosted remote |
+| `seerr-mcp` | `seerr-mcp` | `MCPServer` (stdio) | Seerr |
+| `talos-mcp` | `talos-mcp` | `MCPServer` (streamable-http) | Talos API |
+| `unifi-network-mcp` | `unifi-network-mcp` | `MCPServer` (streamable-http) | UniFi Network |
 
-Expose read-only endpoints for:
+`MCPServer` runs the server in-cluster; `MCPServerEntry` registers a remote endpoint.
 
-- pod / deployment status
-- recent failing workloads
-- storage pressure summaries
-- backup health
-- app health rollups
+## Adding a server
 
-**Why first:** Highest practical value with the lowest blast radius. It answers "what is broken?" without handing raw shell access to the model.
+1. Create `kubernetes/apps/base/llm/toolhive/mcp-servers/<name>-mcp/` with a
+   `kustomization.yaml`, the `MCPServer` (or `MCPServerEntry`) with
+   `groupRef: {name: mcp-tools}`, and an `ExternalSecret` when it needs credentials.
+2. Add a Flux `Kustomization` block for it to `kubernetes/apps/main/llm/toolhive.yaml`, with
+   `dependsOn: toolhive` plus the app it wraps (e.g. `grafana` in `observability`).
 
-**Deployment shape:**
-
-- namespace: `llm`
-- exposure: `ClusterIP` only
-- auth: API key or forward-auth if a route is later added
-
----
-
-### 2. Read-only Postgres/query server
-
-**Value:** High
-
-Expose:
-
-- approved read-only queries
-- job / queue inspection
-- migration state
-- app diagnostics
-
-**Why:** Great debugging leverage, but should stay read-only and schema-scoped.
-
-**Deployment shape:**
-
-- namespace: `llm`
-- exposure: `ClusterIP` only
-- auth: API key
-- connectivity: dedicated read-only database user
-
----
-
-### 3. GitHub helper server
-
-**Value:** Medium-high
-
-Expose:
-
-- PR / issue status
-- CI run status
-- labels / reviewers / mergeability
-
-**Why:** Useful for workflow-heavy chat sessions, but lower priority than internal ops visibility.
-
-**Deployment shape:**
-
-- namespace: `llm`
-- exposure: `ClusterIP` only
-- secrets: GitHub token or GitHub App credentials via `ExternalSecret`
-
-## What not to start with
-
-- workstation-local filesystem tools
-- broad shell wrappers
-- arbitrary SQL execution
-- unauthenticated public tool routes
-- SearXNG through this proxy layer when Open WebUI already supports it natively
-
-Those are great ways to turn "helpful assistant" into "incident retrospective material."
-
-## Repo structure to follow
-
-For each tool-server bundle or standalone tool server, follow the existing app pattern:
-
-```text
-kubernetes/apps/base/llm/<tool-server>/
-├── kustomization.yaml
-├── helmrelease.yaml
-└── externalsecret.yaml   # only when credentials are needed
-
-kubernetes/apps/main/llm/<tool-server>.yaml
-```
-
-And wire the app into:
-
-- `kubernetes/apps/main/llm/kustomization.yaml`
-- optionally later into `utility` / `test` if it makes sense there
-
-Use:
-
-- `HelmRelease` with `app-template`
-- `ExternalSecret` for credentials
-- `ClusterIP` service by default
-- no public route unless there is a clear backend/browser requirement
-
-## Suggested rollout order
-
-### Phase 1
-
-1. Home Assistant + Grafana bundle
-2. ops-status server
-
-### Phase 2
-
-3. read-only Postgres/query server
-4. GitHub helper server
+The gateway picks the new server up through the group; nothing else changes.
 
 ## Deployment guardrails
 
@@ -165,20 +67,3 @@ Before merging a real tool server manifest, require:
 - resource requests/limits
 - health probes
 - no host mounts unless explicitly justified
-
-## Proposed next implementation
-
-The next actual deployment after this bundle should be an **ops-status server** because it is:
-
-- the most broadly useful to Open WebUI
-- safer than shell access
-- easy to keep read-only
-- easy to expose over a narrow OpenAPI surface
-
-A minimal first API should answer:
-
-- `GET /healthz`
-- `GET /services`
-- `GET /services/{name}`
-- `GET /alerts`
-- `GET /backups`
