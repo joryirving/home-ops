@@ -31,6 +31,11 @@ spec:
                   secretKeyRef:
                     name: hermes
                     key: LITELLM_API_KEY
+              - name: TELEGRAM_ALLOWED_USERS
+                valueFrom:
+                  secretKeyRef:
+                    name: hermes
+                    key: TELEGRAM_ALLOWED_USERS
             command:
               - sh
               - -c
@@ -51,6 +56,17 @@ spec:
                 envsubst < /opt/data/config.yaml > /opt/data/config.yaml.tmp
                 mv /opt/data/config.yaml.tmp /opt/data/config.yaml
                 chown 10000:10000 /opt/data/config.yaml
+                # Multiplexed authorization reads the profile's .env, not pod env.
+                # Mirror only this allowlist from the existing ExternalSecret.
+                test -n "$TELEGRAM_ALLOWED_USERS"
+                umask 077
+                ENV_TMP=$(mktemp /opt/data/.env.XXXXXX)
+                if [ -f /opt/data/.env ]; then
+                  grep -v '^TELEGRAM_ALLOWED_USERS=' /opt/data/.env > "$ENV_TMP" || [ "$?" -eq 1 ]
+                fi
+                printf 'TELEGRAM_ALLOWED_USERS=%s\n' "$TELEGRAM_ALLOWED_USERS" >> "$ENV_TMP"
+                chown 10000:10000 "$ENV_TMP"
+                mv "$ENV_TMP" /opt/data/.env
                 # Install the memini memory-provider plugin from the upstream
                 # standalone mirror eleboucher/memini-hermes (a release-synced
                 # copy of integrations/hermes/plugin/memini — the blessed
