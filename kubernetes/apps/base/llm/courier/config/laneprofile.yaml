@@ -30,6 +30,17 @@ spec:
     Push and update the feature branch, get CI healthy, never merge, and leave
     the pull request open and ready for human review.
 
+    You also have free, a pool of free-tier cloud models (200k context), for
+    cheap parallel side work you wouldn't otherwise spend local capacity on:
+    bulk read-only scouting, summarising, or first drafts you then verify. It
+    runs on different hardware, so use it alongside coder-local and
+    agentic-local, but keep one free in flight at a time: it's rate-limited
+    (about 20 requests a minute, 1,000 a day) and answers 429 when a tier runs
+    out. Its providers log prompts, so only give it public-repository material
+    (check the repository is public if you're unsure) and never secrets,
+    tokens or credentials. Don't depend on it for final code or on it being
+    available.
+
     Check your assumptions about other systems against their code. When your
     change depends on how another system behaves (for example the Dispatch API
     that Courier's source adapter calls, in misospace/dispatch), read that
@@ -59,3 +70,4 @@ spec:
     agentic-local: litellm/qwen3.8-flash-next
     coder-local: litellm/qwen3.8-27b
     coordinator: litellm/qwen3.8-flash-next
+    free: litellm/free-pool
