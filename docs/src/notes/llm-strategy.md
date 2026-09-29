@@ -514,7 +514,7 @@ already encodes an intent-lane pattern by hand.
 | Evening Email/Finance Check     | Miso    | MiniMax-M2.7       | 9pm daily       | End-of-day email + finance summary             |
 | Nightly Audit Decomposer        | Saffron | qwen3.8-flash-next | 2am daily       | Decompose audit umbrellas into child issues    |
 | Nightly Tech Sweep              | Saffron | MiniMax-M3-chat    | 6:20am daily    | Overnight health check + low-risk fixes        |
-| Unified Morning Brief           | Miso    | qwen3.8-flash-next | 8:00am daily    | Weather, calendar, inbox, IG pool, news, radon |
+| Morning Brief                   | Miso    | qwen3.8-flash-next | 8:00am daily    | Weather, calendar, inbox, IG pool, news, radon |
 | Daily LLM + HN Digest           | Miso    | qwen3.8-flash-next | 8:30am daily    | r/LocalLLaMA etc. + HN top stories             |
 | Daily Home-Ops Updates          | Saffron | MiniMax-M2.7       | 9am daily       | Commit watch on homelab k8s repos              |
 | Daily Image (Miso)              | Miso    | qwen3.8-flash-next | 9:15am daily    | Character image generation                     |
