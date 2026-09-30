@@ -1,0 +1,21 @@
+---
+# Temporary overlay of the operator-owned Deployment; not a standalone workload.
+# The operator must create the Deployment first; Flux retries until it exists.
+# Merge preserves operator fields; disabled pruning protects the Deployment.
+# After #71 is released, enable spec.workload.disableUDPGSO and verify the
+# operator-owned env before removing this overlay. Removal alone is not rollback.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${TOWONEL_AGENT_NAME}
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: Merge
+spec:
+  template:
+    spec:
+      containers:
+        - name: towonel-agent
+          env:
+            - name: TOWONEL_DISABLE_UDP_GSO
+              value: "true"
