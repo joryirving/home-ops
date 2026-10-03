@@ -1,0 +1,32 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: jj
+spec:
+  keyAlias: JJ
+  maxParallelRequests: 1
+  models:
+    - qwen3.8-27b
+    - qwen3.8-27b-chat
+  proxyRef: litellm
+  secretKey: api-key
+  secretName: litellm-key-jj
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: jj
+spec:
+  data:
+    - match:
+        remoteRef:
+          property: LITELLM_JJ_API_KEY
+          remoteKey: litellm
+        secretKey: api-key
+  selector:
+    secret:
+      name: litellm-key-jj
+  secretStoreRefs:
+    - kind: ClusterSecretStore
+      name: onepassword
