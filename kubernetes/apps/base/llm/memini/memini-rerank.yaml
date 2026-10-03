@@ -9,3 +9,231 @@ spec:
   quantization: Q8_0
   hardware:
     accelerator: cpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: memini-rerank-1
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: memini-rerank
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server@sha256:970168341efef973da5666ea5c362fa428ee66ba0dfa621b0f69bf3feb3320f7
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
+  replicas: 1
+  priority: normal
+  podLabels:
+    cpu-inference: "true"
+    rerank-pool: "true"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                rerank-pool: "true"
+            topologyKey: kubernetes.io/hostname
+  contextSize: 8096
+  parallelSlots: 4
+  batchSize: 8192
+  uBatchSize: 8192
+  env:
+    - name: GOMP_CPU_AFFINITY
+      value: "0-11"
+    - name: KMP_AFFINITY
+      value: "granularity=fine,proc_list=[0-11],explicit"
+  resources:
+    cpu: "2"
+    memory: 9Gi
+  mode: rerank
+  extraArgs:
+    - --cont-batching
+    - --kv-unified
+    - --flash-attn
+    - "on"
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    - --load-mode
+    - mmap
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: memini-rerank-2
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: memini-rerank
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server@sha256:970168341efef973da5666ea5c362fa428ee66ba0dfa621b0f69bf3feb3320f7
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
+  replicas: 1
+  priority: normal
+  podLabels:
+    cpu-inference: "true"
+    rerank-pool: "true"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                rerank-pool: "true"
+            topologyKey: kubernetes.io/hostname
+  contextSize: 8096
+  parallelSlots: 4
+  batchSize: 8192
+  uBatchSize: 8192
+  env:
+    - name: GOMP_CPU_AFFINITY
+      value: "0-11"
+    - name: KMP_AFFINITY
+      value: "granularity=fine,proc_list=[0-11],explicit"
+  resources:
+    cpu: "2"
+    memory: 9Gi
+  mode: rerank
+  extraArgs:
+    - --cont-batching
+    - --kv-unified
+    - --flash-attn
+    - "on"
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    - --load-mode
+    - mmap
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: memini-rerank-3
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: memini-rerank
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server@sha256:970168341efef973da5666ea5c362fa428ee66ba0dfa621b0f69bf3feb3320f7
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
+  replicas: 1
+  priority: normal
+  podLabels:
+    cpu-inference: "true"
+    rerank-pool: "true"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                rerank-pool: "true"
+            topologyKey: kubernetes.io/hostname
+  contextSize: 8096
+  parallelSlots: 4
+  batchSize: 8192
+  uBatchSize: 8192
+  env:
+    - name: GOMP_CPU_AFFINITY
+      value: "0-11"
+    - name: KMP_AFFINITY
+      value: "granularity=fine,proc_list=[0-11],explicit"
+  resources:
+    cpu: "2"
+    memory: 9Gi
+  mode: rerank
+  extraArgs:
+    - --cont-batching
+    - --kv-unified
+    - --flash-attn
+    - "on"
+    - --threads
+    - "6"
+    - --threads-batch
+    - "12"
+    - --load-mode
+    - mmap
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /health
+        port: 8080
+      periodSeconds: 10
+      failureThreshold: 360
+    liveness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 6
+    readiness:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      failureThreshold: 6
