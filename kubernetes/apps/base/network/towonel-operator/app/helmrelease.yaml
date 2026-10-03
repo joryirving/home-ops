@@ -16,5 +16,17 @@ spec:
       tokenKey: TOWONEL_API_KEY
     gatewayAPI:
       enabled: true
+    observability:
+      dashboards:
+        enabled: ${TOWONEL_DASHBOARD_ENABLED:=false}
+        grafanaOperator:
+          enabled: ${TOWONEL_DASHBOARD_ENABLED:=false}
+          matchLabels:
+            dashboards: grafana
+      metrics:
+        agentPodMonitor:
+          enabled: ${TOWONEL_METRICS_ENABLED:=false}
+        serviceMonitor:
+          enabled: ${TOWONEL_METRICS_ENABLED:=false}
     towonel:
       apiURL: https://towonel.jory.dev

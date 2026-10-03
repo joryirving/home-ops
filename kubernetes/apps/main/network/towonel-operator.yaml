@@ -5,8 +5,17 @@ kind: Kustomization
 metadata:
   name: towonel-operator
 spec:
+  dependsOn:
+    - name: grafana
+      namespace: observability
+    - name: kube-prometheus-stack
+      namespace: observability
   interval: 1h
   path: ./kubernetes/apps/base/network/towonel-operator/app
+  postBuild:
+    substitute:
+      TOWONEL_DASHBOARD_ENABLED: "true"
+      TOWONEL_METRICS_ENABLED: "true"
   wait: true
   prune: true
   sourceRef:
