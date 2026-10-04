@@ -1,0 +1,21 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/renovate-operator.mogenius.com/renovatejobtemplate_v1alpha1.json
+apiVersion: renovate-operator.mogenius.com/v1alpha1
+kind: RenovateJobTemplate
+metadata:
+  name: shared-settings
+  namespace: renovate
+spec:
+  image: ghcr.io/renovatebot/renovate:44.132.6
+  parallelism: 3
+  provider:
+    name: github
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  schedule: "20 * * * *"
+  webhook:
+    enabled: true
+    authentication:
+      enabled: false
