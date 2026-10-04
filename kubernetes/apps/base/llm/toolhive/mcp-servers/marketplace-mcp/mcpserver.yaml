@@ -1,0 +1,58 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/toolhive.stacklok.dev/mcpserver_v1alpha1.json
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: marketplace-mcp
+spec:
+  image: ghcr.io/misospace/marketplace:main@sha256:f1a45d95c7129e5be189bdcb329ed5ba551af4cefa5290c54f4d0297a0591d7f
+  transport: streamable-http
+  mcpPort: 8080
+  env:
+    - name: MARKETPLACE_BACKEND
+      value: facebook
+    - name: HOST
+      value: 0.0.0.0
+    - name: PORT
+      value: "8080"
+    - name: BROWSER_PROFILE_DIR
+      value: /home/node/.marketplace/browser-profile
+    - name: MARKETPLACE_MARKETS_FILE
+      value: /etc/marketplace/markets.json
+    - name: REAUTH_ADMIN_PORT
+      value: "8787"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+  podTemplateSpec:
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: mcp
+          volumeMounts:
+            - name: browser-profile
+              mountPath: /home/node/.marketplace/browser-profile
+            - name: markets
+              mountPath: /etc/marketplace
+              readOnly: true
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: browser-profile
+          persistentVolumeClaim:
+            claimName: marketplace-browser-profile
+        - name: markets
+          configMap:
+            name: marketplace-markets
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
+  groupRef:
+    name: mcp-tools
