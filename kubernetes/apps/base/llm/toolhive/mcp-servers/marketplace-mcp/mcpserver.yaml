@@ -17,7 +17,7 @@ spec:
       value: "8080"
     - name: BROWSER_PROFILE_DIR
       value: /home/node/.marketplace/browser-profile
-    - name: MARKETPLACE_MARKETS_FILE
+    - name: FACEBOOK_MARKETS_FILE
       value: /etc/marketplace/markets.json
     - name: REAUTH_ADMIN_PORT
       value: "8787"
@@ -35,6 +35,20 @@ spec:
         fsGroup: 1000
       containers:
         - name: mcp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 3
           volumeMounts:
             - name: browser-profile
               mountPath: /home/node/.marketplace/browser-profile
