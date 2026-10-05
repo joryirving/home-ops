@@ -5,7 +5,7 @@ kind: MCPServer
 metadata:
   name: marketplace-mcp
 spec:
-  image: ghcr.io/misospace/marketplace:main@sha256:f1a45d95c7129e5be189bdcb329ed5ba551af4cefa5290c54f4d0297a0591d7f
+  image: ghcr.io/misospace/marketplace:main@sha256:14f7fdabca9d63c00c34b7302be74c6b4d5c8c542620a8453695287b9d0fd763
   transport: streamable-http
   mcpPort: 8080
   env:
@@ -17,7 +17,7 @@ spec:
       value: "8080"
     - name: BROWSER_PROFILE_DIR
       value: /home/node/.marketplace/browser-profile
-    - name: MARKETPLACE_MARKETS_FILE
+    - name: FACEBOOK_MARKETS_FILE
       value: /etc/marketplace/markets.json
     - name: REAUTH_ADMIN_PORT
       value: "8787"
@@ -35,6 +35,20 @@ spec:
         fsGroup: 1000
       containers:
         - name: mcp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 3
           volumeMounts:
             - name: browser-profile
               mountPath: /home/node/.marketplace/browser-profile
