@@ -13,6 +13,8 @@ spec:
       value: facebook
     - name: HOST
       value: 0.0.0.0
+    - name: HOME
+      value: /tmp
     - name: PORT
       value: "8080"
     - name: BROWSER_PROFILE_DIR
@@ -57,6 +59,8 @@ spec:
               readOnly: true
             - name: shm
               mountPath: /dev/shm
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: browser-profile
           persistentVolumeClaim:
@@ -68,5 +72,9 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 512Mi
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
   groupRef:
     name: mcp-tools
