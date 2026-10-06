@@ -4,7 +4,7 @@ kind: Model
 metadata:
   name: qwen3.8-27b
 spec:
-  source: "ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ"
+  source: "dbirks/Qwen3.8-27B-W4A16-AutoRound"
   sourceSecretRef:
     name: huggingface
   format: safetensors
@@ -41,11 +41,11 @@ spec:
     topology.kubernetes.io: egpu
   env:
     - name: MODEL
-      value: /app/models/Swift-1.5-Qwen3.8-27b-W4A16-AWQ
+      value: /app/models/Qwen3.8-27b-W4A16-AutoRound
     - name: BASE_MODEL_DIR
-      value: /app/models/Swift-1.5-Qwen3.8-27b-W4A16-AWQ
+      value: /app/models/Qwen3.8-27B-W4A16-AutoRound
     - name: HF_REPO
-      value: ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ
+      value: dbirks/Qwen3.8-27B-W4A16-AutoRound
     - name: FAST_VARIANT
       value: "0"
     - name: SPEC
@@ -61,7 +61,7 @@ spec:
     - name: VERIFY
       value: "0"
     - name: EXTRA_ARGS
-      value: --kv-cache-memory=5462661530 --kv-offloading-size 16
+      value: --kv-cache-memory=5462661530 --kv-offloading-size 16 --chat-template-kwargs '{"reasoning_effort":"medium"}'
     - name: NVIDIA_DRIVER_CAPABILITIES
       value: compute,utility
     - name: HF_TOKEN
