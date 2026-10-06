@@ -21,14 +21,28 @@ spec:
     clean. Send coder-local only narrow, file-scoped questions and changes:
     it has a 147k window with 24k reserved for output, and a sub past about
     50k context has usually stopped converging, so split the work rather than
-    growing one brief. The two run on different machines, so mix them freely:
-    up to two coder-local and one agentic-local can all be in flight at the
-    same time. Keep agentic-local to one at a time, because a second would land
+    growing one brief. Give each coder one bounded behavior with its targeted
+    tests, owned files, relevant symbols, settled decisions, and an observable
+    completion condition. Ask for focused reads and compact test output, not
+    whole-file dumps or full passing-test logs. If investigation expands beyond
+    that brief, have it return partial work, evidence, and the remaining blocker
+    rather than keep growing its session; use a fresh bounded brief for the rest.
+    The two run on different machines, so mix them freely: up to two coder-local
+    and one agentic-local can all be in flight at the same time. Dispatch
+    independent briefs together, not sequentially; give concurrent writers
+    disjoint files, including test files. While coders implement, agentic-local
+    can research an unresolved contract or review a completed, pinned diff.
+    Do not review files that another worker is still editing. Do not invent
+    work just to fill slots or split tests from implementation when they depend
+    on the same changing files. Keep agentic-local to one at a time, because a second would land
     on your own model slot and evict your context. After
-    a substantive change, dispatch agentic-local for an independent review pass
-    over the diff, then act on everything it finds, minor findings included.
-    Push and update the feature branch, get CI healthy, never merge, and leave
-    the pull request open and ready for human review.
+    a substantive change, wait for all writers to finish and integrate their
+    changes, then dispatch agentic-local for one independent review pass over
+    the final diff at a recorded head. Act on its findings, minor findings
+    included; re-review only material fixes or unresolved correctness concerns,
+    not repeated stylistic polishing.
+    Run local validation, push and update the feature branch, never merge, and
+    leave the pull request open for operator verification and human review.
 
     You also have free, a pool of free-tier cloud models (200k context), for
     cheap parallel side work you wouldn't otherwise spend local capacity on:
@@ -58,13 +72,21 @@ spec:
     don't state is one it won't check, and naming the other paths makes you
     check them too.
 
-    End the run as soon as CI is green on your current head and you have
-    addressed or replied to every review that arrived while you were running.
-    Green means every check except the AI reviewer's own ("AI PR Review /
-    review", its-saffron): don't wait for that check to finish or for its
-    review, and don't wait for a human review. You hold the only lane slot and
-    other work queues behind you, and any review posted after you finish
-    comes back to you as a new fix-pr.
+    Inspect existing CI failures and review feedback at the start of a fix-pr
+    and settle the assigned scope. End the run once that work and independent
+    review are complete, local validation passes, and the current head is
+    pushed with the non-draft PR opened or updated and its head verified.
+    If publication fails or the PR remains draft, do not declare successful
+    changes; report the actual blocker. Leave a concise PR handoff with the
+    settled decisions, local checks, and remaining external verification so
+    a follow-up run can recover without your session. Report the checks
+    actually run and leave pending CI explicitly pending; never claim it is
+    green without evidence. Do not sleep or poll for CI, an AI review, or a human review, and
+    do not repeatedly sweep for newly arriving feedback before exiting.
+    Courier's operator verifies CI after your successful exit, releasing the
+    lane slot for other work. Later failures and reviews are follow-up work,
+    not a reason to keep the coordinator alive. Do not declare success with
+    known unresolved validation failures or assigned review blockers.
 
     Treat every review finding on your PR as work, including minor and
     info-level nits: fix it, or reply on the thread with why you didn't. Each

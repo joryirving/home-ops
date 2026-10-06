@@ -62,8 +62,13 @@ independent review pass over the diff. The coordinator does all forge work itsel
 have no GitHub MCP tools).
 
 **5. Publish and verify.** The coordinator pushes the run branch and opens or updates the
-PR, then the run moves to `Verifying`. The controller watches the PR's checks. All green
-settles `AwaitingReview`; a merge settles `Done`. It never merges.
+PR after local validation and independent review, then exits without waiting for CI or
+new review feedback. The run moves to `Verifying`, which does not reserve lane capacity.
+The controller watches the PR's checks. Two consecutive all-green observations with
+the same check fingerprint settle `AwaitingReview`; a merge settles `Done`. It never merges.
+Publication must be verified on a non-draft PR before successful coordinator exit.
+The PR handoff records decisions, local checks, and pending external verification for
+follow-up runs, which cannot recover the exited coordinator's session.
 
 **6. Merge.** A human merges. The next Dispatch sync marks the issue done.
 
@@ -78,7 +83,11 @@ One `LaneProfile`, `local`, with `concurrency: 1`:
 | `coder-local` | `qwen3.8-27b` | ganyu's 3090 | narrow, file-scoped questions and changes (147k window, 24k reserved for output; split work before a sub passes ~50k); at most two in flight |
 
 The two subagent models run on different machines, so up to two `coder-local` and one
-`agentic-local` can be in flight at once. The coder and the reviewer are deliberately
+`agentic-local` can be in flight at once. Independent briefs start together with disjoint
+file ownership; each coder owns a bounded behavior and its targeted tests. Workers return
+partial progress when scope expands instead of accumulating an unbounded transcript.
+Agentic research or review can overlap implementation when it reads a stable snapshot,
+not files being edited. The coder and the reviewer are deliberately
 different models. `gemma-4-12b-it-qat` (the gaming PC, behind llm-wake) stays deployed but is
 no longer part of coding; the Courier LiteLLM key still allows `local-pool` /
 `local-pool-chat` (whose third rung is gemma), though no role uses them.
