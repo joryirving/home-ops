@@ -5,7 +5,7 @@ kind: MCPServer
 metadata:
   name: marketplace-mcp
 spec:
-  image: ghcr.io/misospace/marketplace:main@sha256:002ee9dc8c9b65608934a0a3a9c647ba7176ae60eec3a4918196a86d9b738762
+  image: ghcr.io/misospace/marketplace:main@sha256:d31e5047a490f57f6e00bac08778fb3d34d0cd09de5a5092e38b407d7aa09b17
   transport: streamable-http
   mcpPort: 8080
   env:
@@ -23,6 +23,11 @@ spec:
       value: /etc/marketplace/markets.json
     - name: REAUTH_ADMIN_PORT
       value: "8787"
+  secrets:
+    - name: FACEBOOK_USERNAME
+      key: FACEBOOK_USERNAME
+    - name: FACEBOOK_PASSWORD
+      key: FACEBOOK_PASSWORD
   resources:
     requests:
       cpu: 100m
