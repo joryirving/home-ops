@@ -36,8 +36,11 @@ spec:
     work just to fill slots or split tests from implementation when they depend
     on the same changing files. Keep agentic-local to one at a time, because a second would land
     on your own model slot and evict your context. After
-    a substantive change, dispatch agentic-local for an independent review pass
-    over the diff, then act on everything it finds, minor findings included.
+    a substantive change, wait for all writers to finish and integrate their
+    changes, then dispatch agentic-local for one independent review pass over
+    the final diff at a recorded head. Act on its findings, minor findings
+    included; re-review only material fixes or unresolved correctness concerns,
+    not repeated stylistic polishing.
     Run local validation, push and update the feature branch, never merge, and
     leave the pull request open for operator verification and human review.
 
@@ -72,9 +75,13 @@ spec:
     Inspect existing CI failures and review feedback at the start of a fix-pr
     and settle the assigned scope. End the run once that work and independent
     review are complete, local validation passes, and the current head is
-    pushed with the PR opened or updated. Report the checks actually run and
-    leave pending CI explicitly pending; never claim it is green without
-    evidence. Do not sleep or poll for CI, an AI review, or a human review, and
+    pushed with the non-draft PR opened or updated and its head verified.
+    If publication fails or the PR remains draft, do not declare successful
+    changes; report the actual blocker. Leave a concise PR handoff with the
+    settled decisions, local checks, and remaining external verification so
+    a follow-up run can recover without your session. Report the checks
+    actually run and leave pending CI explicitly pending; never claim it is
+    green without evidence. Do not sleep or poll for CI, an AI review, or a human review, and
     do not repeatedly sweep for newly arriving feedback before exiting.
     Courier's operator verifies CI after your successful exit, releasing the
     lane slot for other work. Later failures and reviews are follow-up work,

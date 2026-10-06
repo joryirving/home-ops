@@ -64,8 +64,11 @@ have no GitHub MCP tools).
 **5. Publish and verify.** The coordinator pushes the run branch and opens or updates the
 PR after local validation and independent review, then exits without waiting for CI or
 new review feedback. The run moves to `Verifying`, which does not reserve lane capacity.
-The controller watches the PR's checks. All green
-settles `AwaitingReview`; a merge settles `Done`. It never merges.
+The controller watches the PR's checks. Two consecutive all-green observations with
+the same check fingerprint settle `AwaitingReview`; a merge settles `Done`. It never merges.
+Publication must be verified on a non-draft PR before successful coordinator exit.
+The PR handoff records decisions, local checks, and pending external verification for
+follow-up runs, which cannot recover the exited coordinator's session.
 
 **6. Merge.** A human merges. The next Dispatch sync marks the issue done.
 
