@@ -135,3 +135,20 @@ spec:
   configMapRef:
     name: vllm
     key: vllm.json
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadashboard_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: vllm-public
+spec:
+  allowCrossNamespaceImport: true
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  publicSharing:
+    enabled: true
+    timeSelectionEnabled: true
+  configMapRef:
+    name: vllm-public
+    key: vllm-public.json

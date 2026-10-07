@@ -77,3 +77,19 @@ spec:
     name: prometheus
     access: proxy
     url: http://promxy.observability.svc.cluster.local:8082
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/grafana.integreatly.org/grafanadatasource_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: prometheus-public
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  uid: prometheus-public
+  datasource:
+    type: prometheus
+    name: prometheus-public
+    access: proxy
+    url: http://prometheus-operated.observability.svc.cluster.local:9090
