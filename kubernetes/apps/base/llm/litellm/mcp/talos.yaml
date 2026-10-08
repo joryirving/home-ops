@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/litellm.home-operations.com_litellmmcpserver_v1alpha1.json
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMMCPServer
+metadata:
+  name: talos
+spec:
+  alias: talos
+  params:
+    allow_all_keys: false
+    server_id: talos
+  proxyRef: litellm
+  proxyNamespace: llm
+  transport: http
+  workload:
+    automountServiceAccountToken: false
+    env:
+      - name: TALOS_MCP_TRANSPORT
+        value: http
+      - name: TALOS_MCP_HTTP_ADDR
+        value: ":8080"
+    image: registry.erwanleboucher.dev/eleboucher/talos-mcp:0.0.2
+    port: 8080
+    volumeMounts:
+      - mountPath: /var/run/secrets/talos.dev
+        name: talosconfig
+        readOnly: true
+    volumes:
+      - name: talosconfig
+        secret:
+          defaultMode: 256
+          secretName: talos-mcp-talosconfig

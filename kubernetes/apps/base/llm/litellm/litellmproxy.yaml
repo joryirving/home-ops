@@ -5,8 +5,23 @@ metadata:
   name: litellm
 spec:
   applyMode: file
-  image: ghcr.io/berriai/litellm-database:v1.104.0@sha256:fbe28229d2d02181c0a7d9df9599de614b491f3d897d2d7da18404f088310218
+  # Draft blocker: publish the runtime image and pin its verified digest before merge.
+  image: ghcr.io/joryirving/litellm-mcp:1.104.0-mcp1
   replicas: 3
+  automountServiceAccountToken: false
+  podSecurityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+    runAsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
   service:
     port: 4000
     type: ClusterIP
@@ -43,6 +58,8 @@ spec:
     value: https://sso.jory.dev/application/o/userinfo/
   - name: GENERIC_USER_ROLE_ATTRIBUTE
     value: litellm_role
+  - name: LITELLM_ENABLE_MCP_STDIO
+    value: 'true'
   - name: LITELLM_LOG
     value: INFO
   - name: LITELLM_MODE
@@ -79,12 +96,64 @@ spec:
     periodSeconds: 10
     failureThreshold: 3
   volumes:
+  - name: mcp-arr-credentials
+    projected:
+      defaultMode: 0440
+      sources:
+      - secret:
+          name: litellm-mcp-sonarr
+          items:
+          - key: SONARR_API_KEY
+            path: SONARR_API_KEY
+      - secret:
+          name: litellm-mcp-radarr
+          items:
+          - key: RADARR_API_KEY
+            path: RADARR_API_KEY
+      - secret:
+          name: litellm-mcp-prowlarr
+          items:
+          - key: PROWLARR_API_KEY
+            path: PROWLARR_API_KEY
+  - name: mcp-seerr-credentials
+    secret:
+      defaultMode: 0440
+      secretName: litellm-mcp-seerr
+      items:
+      - key: SEERR_API_KEY
+        path: SEERR_API_KEY
+  - name: mcp-github-credentials
+    secret:
+      defaultMode: 0440
+      secretName: litellm-mcp-github
+      items:
+      - key: token
+        path: token
+  - name: mcp-dispatch-credentials
+    secret:
+      defaultMode: 0440
+      secretName: litellm-mcp-dispatch
+      items:
+      - key: token
+        path: token
   - name: cache
     emptyDir: {}
   - name: ui
     persistentVolumeClaim:
       claimName: litellm
   volumeMounts:
+  - name: mcp-arr-credentials
+    mountPath: /var/run/litellm-mcp/arr
+    readOnly: true
+  - name: mcp-seerr-credentials
+    mountPath: /var/run/litellm-mcp/seerr
+    readOnly: true
+  - name: mcp-github-credentials
+    mountPath: /var/run/litellm-mcp/github
+    readOnly: true
+  - name: mcp-dispatch-credentials
+    mountPath: /var/run/litellm-mcp/dispatch
+    readOnly: true
   - name: cache
     mountPath: /app/cache
   - name: ui
@@ -112,6 +181,9 @@ spec:
     - qwen3.8-27b:
       - qwen3.8-flash-next
   litellmSettings:
+    default_key_generate_params:
+      object_permission:
+        mcp_tool_search_enabled: true
     success_callback:
     - prometheus
     failure_callback:
@@ -132,6 +204,7 @@ spec:
     retry_after: 5
     set_verbose: false
   generalSettings:
+    mcp_allow_all_keys_respects_mcp_scope: true
     health_check_endpoint: /v1/health
     store_model_in_db: false
   extraConfig:

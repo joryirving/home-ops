@@ -1,0 +1,38 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/litellm.home-operations.com_litellmmcpserver_v1alpha1.json
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMMCPServer
+metadata:
+  name: home-assistant
+spec:
+  alias: ha
+  params:
+    allow_all_keys: false
+    server_id: ha
+  proxyNamespace: llm
+  proxyRef: litellm
+  transport: http
+  workload:
+    command:
+      - ha-mcp-web
+    env:
+      - name: MCP_HOST
+        value: 0.0.0.0
+      - name: MCP_PORT
+        value: "8086"
+      - name: HOMEASSISTANT_URL
+        value: https://hass.jory.dev
+      - name: HOMEASSISTANT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            key: HOMEASSISTANT_TOKEN
+            name: litellm-mcp-home-assistant
+    image: ghcr.io/homeassistant-ai/ha-mcp:8.6.0@sha256:760d7149cdea93c2037f6d3267ce4c9954a8e763a4e745388b6c44604f94562e
+    path: /mcp
+    port: 8086
+    volumes:
+      - emptyDir: {}
+        name: tmp
+    volumeMounts:
+      - mountPath: /tmp
+        name: tmp

@@ -1,0 +1,38 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/litellm.home-operations.com_litellmmcpserver_v1alpha1.json
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMMCPServer
+metadata:
+  name: kubectl
+spec:
+  alias: kubectl
+  params:
+    allow_all_keys: false
+    server_id: kubectl
+  proxyRef: litellm
+  proxyNamespace: llm
+  transport: http
+  workload:
+    args:
+      - --transport
+      - streamable-http
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --read-only
+    env:
+      - name: MCP_K8S_PROVIDER
+        value: in-cluster
+      - name: PYTHONUNBUFFERED
+        value: "1"
+    image: docker.io/rohitghumare64/kubectl-mcp-server:1.24.0@sha256:17134e36a3e1d3a5e457c12d61e8c7f7c52a7927c6ae4250131dfd95a74a2331
+    port: 8000
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    serviceAccountName: kubectl-mcp-readonly

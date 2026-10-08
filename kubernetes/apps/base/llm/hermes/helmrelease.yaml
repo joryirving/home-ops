@@ -31,6 +31,11 @@ spec:
                   secretKeyRef:
                     name: hermes
                     key: LITELLM_API_KEY
+              - name: LITELLM_MCP_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-mcp-key-hermes
+                    key: api-key
             command:
               - sh
               - -c
@@ -86,6 +91,11 @@ spec:
               MEMINI_NAMESPACE: sake
               HERMES_HOME: /opt/data
               HOME: /opt/data
+              LITELLM_MCP_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-mcp-key-hermes
+                    key: api-key
               TZ: America/Edmonton
             envFrom:
               - secretRef:

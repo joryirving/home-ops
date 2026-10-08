@@ -74,8 +74,8 @@ Hardware access depends on the target:
   `podAntiAffinity` on a pool label (see `embed/`, `memini/`).
 - **Intel iGPU** — the consuming KS must pull in `components/gpu`, which
   generates a `${APP}-gpu` ResourceClaimTemplate to reference as the model's
-  `resourceClaimTemplateName`. The `memini` and `toolhive-config` KSs still
-  include the component, but no model uses it today.
+  `resourceClaimTemplateName`. The `memini` KS still includes the component,
+  but no model uses it today.
 - **AMD Strix** — reference the shared `llama-strix-gpu` template
   (`llmkube/resourceclaim.yaml`). Skirk models set
   `spec.modelCache.claimName: llmkube-skirk-cache` on the InferenceService to
@@ -174,8 +174,8 @@ displaced member cannot co-schedule onto a busy card.
 - Name each `InferenceService` after its **consumer** where it is single-tenant;
   a model shared across consumers gets a neutral app instead: `embed`
   (`apps/base/llm/embed`, three single-replica InferenceServices `embed-1/2/3`
-  pooled in LiteLLM as `embed`) that both memini and toolhive-config depend
-  on. `memini-rerank-1/2/3` has the same shape, pooled as `rerank`. HAZARD:
+  pooled in LiteLLM as `embed`) that memini uses. `memini-rerank-1/2/3` has
+  the same shape, pooled as `rerank`. HAZARD:
   memini gates embedding compatibility on the `MEMINI_EMBED_MODEL`
   name and FATALS at startup if it differs from the name the store was created
   under — even when the model and dims are identical (it does not compare vectors).
