@@ -22,20 +22,21 @@ spec:
               - --git-remote-template=https://github.com/%s.git
               - --git-credential-secret=courier-github
               - --executor-environment-secret=courier-executor
-    # Courier core has no Dispatch dependency. This home-ops deployment keeps
-    # the optional Dispatch adapter configured but disabled for first reconcile.
     dispatch:
-      enabled: true
       agentName: courier
       baseURL: http://dispatch.llm.svc.cluster.local:3000
-      pollInterval: 30s
+      enabled: true
       lanes:
-        - queueLane: local
+        - agentName: courier-local
           laneProfile: local
-        - queueLane: minimax
+          queueLane: local
+        - agentName: courier-cloud
           laneProfile: minimax
-        - queueLane: escalated
+          queueLane: local
+        - agentName: courier-frontier
           laneProfile: frontier
+          queueLane: escalated
+      pollInterval: 30s
       tokenSecret:
         key: token
         name: courier-dispatch
