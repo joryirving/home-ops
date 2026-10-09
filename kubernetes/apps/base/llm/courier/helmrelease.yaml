@@ -28,12 +28,18 @@ spec:
       enabled: true
       agentName: courier
       baseURL: http://dispatch.llm.svc.cluster.local:3000
-      laneProfile: local
       pollInterval: 30s
-      queueLane: normal
+      lanes:
+        - queueLane: local
+          laneProfile: local
+        - queueLane: minimax
+          laneProfile: minimax
+        - queueLane: escalated
+          laneProfile: frontier
       tokenSecret:
         key: token
         name: courier-dispatch
     executor:
       mcp:
         githubURL: https://api.githubcopilot.com/mcp/
+        context7URL: https://mcp.context7.com/mcp
