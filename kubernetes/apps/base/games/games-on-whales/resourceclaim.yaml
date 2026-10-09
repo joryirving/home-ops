@@ -1,14 +1,15 @@
 ---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/resource.k8s.io/resourceclaim_v1.json
 apiVersion: resource.k8s.io/v1
-kind: ResourceClaimTemplate
+kind: ResourceClaim
 metadata:
   name: gow-amd-gpu
 spec:
-  spec:
-    devices:
-      requests:
-        - name: gpu
-          exactly:
-            adminAccess: true
-            allocationMode: All
-            deviceClassName: gpu.amd.com
+  devices:
+    requests:
+      - exactly:
+          adminAccess: true
+          allocationMode: ExactCount
+          count: 1
+          deviceClassName: gpu.amd.com
+        name: gpu
