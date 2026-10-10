@@ -39,15 +39,16 @@ Talos's `/run/cdi` and mounts kubelet plugin/registration directories.
 Both agent containers claim the GPU because the agent also checks render-node
 paths when processing lobby configuration.
 
-Wolf runs privileged with `/dev/uinput` and `/dev/input` mounted for virtual
-gamepads and fallback input emulation. In the pinned Wolf build, lobby keyboard
-and mouse input go directly through `WaylandKeyboard` and `WaylandMouse`; they
-do not require uinput. The current manifest still requires the extension because
-its `/dev/uinput` hostPath mount is mandatory. A keyboard/mouse-only trial can
-omit that mount and the extension/module configuration. Firefox has an ephemeral home directory; this trial creates no
-application PVCs and includes no Steam installation. The old `User`, sidecar
-policies, and root-entrypoint workaround are removed. The selected Wolf image
-already starts as root.
+Wolf runs privileged for this trial, but mounts neither `/dev/uinput` nor
+`/dev/input`. In the pinned Wolf build, lobby keyboard and mouse input go
+through `WaylandKeyboard` and `WaylandMouse`, so this keyboard/mouse-only trial
+needs no uinput extension or Talos configuration change. Virtual gamepads and
+fallback input emulation are outside the trial's scope.
+
+Firefox has an ephemeral home directory; this trial creates no application PVCs
+and includes no Steam installation. The old `User`, sidecar policies, and
+root-entrypoint workaround are removed. The selected Wolf image already starts
+as root.
 
 cert-manager generates the RSA serving key into `games-on-whales-tls`; no key
 is committed. An init container copies the upstream streaming configuration
@@ -58,26 +59,17 @@ so its copied certificate matches the proxy; Moonlight may require re-pairing.
 
 ## Before enabling
 
-1. For the manifests as written, install Sidero's official `uinput` extension on Skirk. Its current image has
-   neither the module nor `/dev/uinput`. This change adds `siderolabs/uinput` to
-   `talos/main/worker/schematic.yaml` and a `KernelModuleConfig` to `skirk.yaml`.
-   The extension contains the matching kernel module; its build copies it and
-   runs `depmod`, with no runtime install script. Factory lists it for Talos
-   `v1.14.2`. See the [extension instructions](https://github.com/siderolabs/extensions/tree/main/drivers/uinput).
-   Applying configuration alone cannot install an extension: regenerate/apply
-   Skirk's installer schematic, then perform a controlled Talos upgrade at the
-   existing version. The repository's `talos:upgrade-node` task uses the
-   installer image from the live node configuration. This drains/reboots Skirk
-   and interrupts its workloads; schedule it separately from enabling GoW.
-2. Verify `uinput` appears in `/proc/modules` and `/dev/uinput` exists. Confirm
-   the AMD DRA driver still publishes Skirk's `gpu-1-128` device. Kubernetes is
-   currently `1.37.0`; the fork uses consumable lobby capacity. No API-server or
-   kubelet feature-gate change is proposed.
-3. Review Skirk's current memory/load before the trial. Earlier GoW attempts
+1. Confirm the AMD DRA driver still publishes Skirk's `gpu-1-128` device.
+   Kubernetes is currently `1.37.0`; the fork uses consumable lobby capacity.
+   No API-server, kubelet feature-gate, or Talos image/configuration change is
+   proposed for this keyboard/mouse-only trial.
+2. Review Skirk's current memory/load before the trial. Earlier GoW attempts
    never streamed successfully on this GPU. Leave the trial disabled until the
-   extension and capacity checks pass; decide separately whether to stop an LLM
-   workload for an uncontended test.
-4. Enable `./games-on-whales.yaml` in the main games overlay. Check the CRD and
+   capacity checks pass. For an uncontended test, pause the `litellm` Flux
+   Kustomization and suspend the `qwen3.8-flash-next` InferenceService, then
+   verify its pod has stopped. Unsuspend it and resume Flux after testing.
+   These are temporary live operations; this change does not stop flash-next.
+3. Enable `./games-on-whales.yaml` in the main games overlay. Check the CRD and
    app Kustomizations, HelmRelease, and all three Deployments. Verify the two
    Services receive the same address, `10.69.10.43`, and the Wolf driver publishes
    a ResourceSlice for Skirk with two lobby slots. Readiness probes check socket
@@ -125,13 +117,10 @@ Prepared on 2026-10-09:
   StatefulSet also passed.
 - App and Profile validated against the pinned fork's CRD schemas offline;
   live custom-resource admission awaits CRD installation.
-- The Skirk patch validated with a synthetic Talos worker configuration. The
-  synthetic generator's automatic hostname was removed to match the node's
-  explicitly configured hostname. No live machine configuration was applied.
 
 Useful upstream install feedback: the chart is stale, the example assumes a
-`devic.es/uinput` device plugin, Talos needs the uinput extension, the agent
-setting is `MAX_LOBBIES` (the example says `MAX_WAYLAND_SOCKETS`), and example
+`devic.es/uinput` device plugin even though Wayland keyboard/mouse input does
+not need it, the agent setting is `MAX_LOBBIES` (the example says `MAX_WAYLAND_SOCKETS`), and example
 certificates should be replaced with generated credentials. No message has been
 sent upstream.
 
