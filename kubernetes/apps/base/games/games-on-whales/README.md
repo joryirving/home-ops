@@ -1,6 +1,7 @@
 # Games-on-Whales DRA trial
 
-A single-node Firefox streaming trial on Skirk's Strix Halo GPU, using
+A single-node streaming trial for Firefox, Steam, and Test Ball on Skirk's
+Strix Halo GPU, using
 [axolotlite's installation examples](https://github.com/axolotlite/fenrir/tree/3f75c1aa5e69f2370ea31b6e2cf10c406ad97abb/examples).
 [Upstream PR #49](https://github.com/games-on-whales/fenrir/pull/49) is still a draft.
 
@@ -26,7 +27,7 @@ Published example artifacts were checked for anonymous pull access and amd64:
 | Moonlight proxy | `ec705eade00c898f53aef9394a621715d6a3eea8` | `d749125271e5a6fb69cb39e23c39e5367c31f5e46dea397e64a1fe103341ad73` |
 | Wolf | `d6d41dec9cf758b086768e19a7dc02c20ffce22c` | `ff82c125c9b79b2e9443de2b0eaec40c904edb03291680d408cccd57c1d59c76` |
 
-The Wolf agent, Wolf, and Firefox all reference one `gow-amd-gpu` ResourceClaim
+The Wolf agent, Wolf, and all three apps reference one `gow-amd-gpu` ResourceClaim
 with administrative access. This avoids competing exclusive allocations with
 existing GPU consumers. The `games` namespace already permits administrative
 DRA claims. This provides shared device access, **not** memory or compute
@@ -45,10 +46,31 @@ through `WaylandKeyboard` and `WaylandMouse`, so this keyboard/mouse-only trial
 needs no uinput extension or Talos configuration change. Virtual gamepads and
 fallback input emulation are outside the trial's scope.
 
-Firefox has an ephemeral home directory; this trial creates no application PVCs
-and includes no Steam installation. The old `User`, sidecar policies, and
-root-entrypoint workaround are removed. The selected Wolf image already starts
-as root.
+The original three apps retain their names and IDs:
+
+| App | ID | State |
+| --- | --- | --- |
+| Firefox | 1 | Ephemeral home directory, as before |
+| Steam | 2 | `steam-data` StatefulSet claim template: 300 GiB, `ceph-block`, RWO; mounted at `/home/retro` |
+| Test Ball | 3 | Ephemeral bouncing-ball video and ticking audio |
+
+Steam keeps its existing digest-pinned image and adds the upstream example's
+memory-backed `/dev/shm` mount. The new `volumeClaimTemplates` API replaces the
+old singular `volumeClaimTemplate`; the operator creates Steam's PVC when its
+lobby launches. No existing Steam PVC was found in the live games namespace on
+2026-10-09. The default Profile has Flux pruning disabled because the fork gives
+application PVCs a Profile owner reference: deleting that Profile could cause
+Kubernetes to garbage-collect Steam data. Retain it when disabling the trial.
+
+The fork removed per-app `wolfConfig` pipeline settings. Test Ball now runs
+GStreamer's bouncing-ball video into `waylandsink` and ticking audio into the
+lobby's `pulsesink`, using the same pinned Wolf image for its installed tools.
+Resolution, refresh rate, and audio sink come from CDI. Its shell variables are
+excluded from Flux substitution. This tests the compositor/socket path as well
+as encoding; it is no longer a compositor-free pipeline inside Wolf.
+
+The old `User`, sidecar policies, and root-entrypoint workaround are removed.
+The selected Wolf image already starts as root.
 
 cert-manager generates the RSA serving key into `games-on-whales-tls`; no key
 is committed. An init container copies the upstream streaming configuration
@@ -86,19 +108,23 @@ kubectl --context main -n games get pairings
 ```
 
 Add that name under `spec.pairings` in `profile.yaml` and let Flux reconcile.
-The default profile starts with no devices authorized and exposes only Firefox.
+The default profile starts with no devices authorized and lists Firefox, Steam,
+and Test Ball. Once a Pairing is added, that client can select all three apps.
+The driver currently allows two active lobbies at a time.
 The former hardcoded `alex` User is no longer used.
 
-Launch Firefox and verify all of the following:
+Launch each app in turn and verify all of the following:
 
 - A lobby ResourceClaim allocates on Skirk and an application StatefulSet is
   created there with both GPU and lobby claims.
-- Wolf's Wayland and PulseAudio sockets arrive in Firefox through CDI, and the
+- Wolf's Wayland and PulseAudio sockets arrive in the app through CDI, and the
   Session acquires a stream URL.
 - Moonlight receives video and audio; keyboard/mouse input works. Test H.264
   first, then AV1. Actual encoder availability on this image/GPU remains unverified.
+- Test Ball displays a moving ball and ticking audio; Steam opens its client
+  and retains its home/library across lobby restarts.
 - Cancel/resume works, a second session can start, and lobby capacity/sockets
-  clean up when their claims are released.
+  clean up when their claims are released. Virtual gamepad testing is excluded.
 
 The two Services share a Cilium IP: proxy TCP 47984/47989, Wolf TCP/UDP 48010
 and UDP 48000/47999/48100/48200. Main uses BGP, so the upstream L2 lease advice
@@ -113,10 +139,14 @@ Prepared on 2026-10-09:
   `flate test all` checks in the games namespace, including the fork source,
   CRDs, app Kustomization, HelmRelease, and OCIRepository.
 - Server-side dry runs passed for the rendered Deployments/Services and base
-  resources whose APIs are installed. A simulated operator-generated Firefox
-  StatefulSet also passed.
-- App and Profile validated against the pinned fork's CRD schemas offline;
+  resources whose APIs are installed. Simulated operator-generated StatefulSets
+  for Firefox, Steam (including its 300 GiB PVC template), and Test Ball passed.
+- All three Apps and the Profile validated against the pinned fork's CRD schemas offline;
   live custom-resource admission awaits CRD installation.
+- The pinned Wolf image contains `gst-launch-1.0`, `videotestsrc`, `waylandsink`,
+  `audiotestsrc`, and `pulsesink`. A local container smoke test of Test Ball's
+  combined video/audio pipeline passed with finite sources and fake sinks;
+  actual Wayland/PulseAudio connection and streamed output remain unverified.
 
 Useful upstream install feedback: the chart is stale, the example assumes a
 `devic.es/uinput` device plugin even though Wayland keyboard/mouse input does
@@ -126,5 +156,7 @@ sent upstream.
 
 To stop a later trial, first cancel sessions and inspect remaining Lobbies,
 ResourceClaims and StatefulSets. Disabling the overlay prunes the app resources,
-but deliberately retains CRDs and their objects; inspect owner references before
-removing anything. Do not delete existing pairing/session state blindly.
+but deliberately retains CRDs and the default Profile. Steam's PVC is retained
+through that Profile ownership and the StatefulSet's default retention policy.
+Inspect owner references before removing anything; do not delete the Profile or
+existing pairing/session state blindly.

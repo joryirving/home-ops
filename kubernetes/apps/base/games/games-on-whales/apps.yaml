@@ -41,3 +41,106 @@ spec:
         - emptyDir: {}
           name: home
   title: Firefox
+---
+apiVersion: direwolf.games-on-whales.github.io/v1alpha1
+kind: App
+metadata:
+  name: testball
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+spec:
+  appAssetWebP: UklGRhwBAABXRUJQVlA4IBABAADQHACdASosAZABPm02mUmkIqKhICgAgA2JaW7hd2EbQAnsA99snIe+2Yy09snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPekAAD+/9O4f/1K366KRn9B8NO3tyIAAAAAAAAAAAAAAAAAA
+  deviceClassName: gow-wolf
+  id: 3
+  isHDRSupported: false
+  template:
+    spec:
+      containers:
+        - command:
+            - /bin/bash
+            - -ec
+            - |
+              exec gst-launch-1.0 -e \
+                videotestsrc pattern=ball flip=true is-live=true ! \
+                "video/x-raw,format=BGRx,width=${GAMESCOPE_WIDTH},height=${GAMESCOPE_HEIGHT},framerate=${GAMESCOPE_REFRESH}/1" ! \
+                waylandsink fullscreen=true \
+                audiotestsrc wave=ticks is-live=true ! audioconvert ! audioresample ! \
+                pulsesink device="${PULSE_SINK}"
+          image: ghcr.io/games-on-whales/wolf:sha-d6d41de@sha256:ff82c125c9b79b2e9443de2b0eaec40c904edb03291680d408cccd57c1d59c76
+          name: app
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: '2'
+              memory: 1Gi
+            claims:
+              - name: amd-gpu
+      nodeSelector:
+        kubernetes.io/hostname: skirk
+      resourceClaims:
+        - name: amd-gpu
+          resourceClaimName: gow-amd-gpu
+      tolerations:
+        - effect: NoSchedule
+          key: llm-workload
+          operator: Exists
+  title: Test Ball
+---
+apiVersion: direwolf.games-on-whales.github.io/v1alpha1
+kind: App
+metadata:
+  name: steam
+spec:
+  appAssetWebP: UklGRhwBAABXRUJQVlA4IBABAADQHACdASosAZABPm02mUmkIqKhICgAgA2JaW7hd2EbQAnsA99snIe+2Yy09snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPekAAD+/9O4f/1K366KRn9B8NO3tyIAAAAAAAAAAAAAAAAAA
+  deviceClassName: gow-wolf
+  id: 2
+  isHDRSupported: false
+  template:
+    spec:
+      containers:
+        - env:
+            - name: RUN_SWAY
+              value: '1'
+          image: ghcr.io/games-on-whales/steam:edge@sha256:ded0b1b47acd9adb8af9f068342f26ac31008904d9bbb91045d1a04e7d66a632
+          name: app
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: '8'
+              memory: 8Gi
+            claims:
+              - name: amd-gpu
+          volumeMounts:
+            - mountPath: /home/retro
+              name: steam-data
+            - mountPath: /dev/shm
+              name: dshm
+      nodeSelector:
+        kubernetes.io/hostname: skirk
+      resourceClaims:
+        - name: amd-gpu
+          resourceClaimName: gow-amd-gpu
+      tolerations:
+        - effect: NoSchedule
+          key: llm-workload
+          operator: Exists
+      volumes:
+        - emptyDir:
+            medium: Memory
+            sizeLimit: 4Gi
+          name: dshm
+  title: Steam
+  volumeClaimTemplates:
+    - metadata:
+        name: steam-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 300Gi
+        storageClassName: ceph-block
