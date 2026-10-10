@@ -1,40 +1,326 @@
 ---
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/app-template-5.2.1/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: games-on-whales
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
 spec:
   chartRef:
     kind: OCIRepository
-    name: direwolf-operator
+    name: games-on-whales
   interval: 1h
-  dependsOn: []
   values:
+    # Unreleased fork artifacts selected for this opt-in DRA trial; all pinned by digest.
     controllers:
-      direwolf_operator:
+      moonlight-proxy:
+        type: deployment
+        serviceAccount:
+          identifier: moonlight-proxy
+        strategy: Recreate
+        containers:
+          moonlight-proxy:
+            image:
+              digest: sha256:d749125271e5a6fb69cb39e23c39e5367c31f5e46dea397e64a1fe103341ad73
+              repository: ghcr.io/axolotlite/fenrir/moonlight-proxy
+              tag: main
+            command:
+              - /app/moonlight-proxy
+            env:
+              ALLOWED_HOSTS: 10.69.10.43
+              POD_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              POD_NAMESPACE:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              SERVER_CERT: /etc/certs/tls.crt
+              SERVER_KEY: /etc/certs/tls.key
+            probes:
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  tcpSocket:
+                    port: 47989
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+      operator:
+        type: deployment
+        serviceAccount:
+          identifier: operator
+        strategy: Recreate
         containers:
           operator:
             image:
-              repository: docker.io/shrinedogg/direwolf-operator
-              tag: v0.1.0
-              digest: sha256:398681deb415a4220fd3c68c6c500dbd2f5251f458be716e8663dd5152516df6
+              digest: sha256:c7adba8ba7d8143221b7f57fcd8bedb77d74ee592f17a007a7a30273dfc540a6
+              repository: ghcr.io/axolotlite/fenrir/direwolf-operator
+              tag: main
             args:
-              - "--lb-sharing-key=direwolf"
+              - --lb-sharing-key=direwolf
+            command:
+              - /app/operator
             env:
-              AGENT_IMAGE: docker.io/shrinedogg/wolf-agent:v0.1.3@sha256:f51e52cee40645dd6a4cb8d216dcf94f9c35257e2a884be35eaceccc2bb966bc
-              WOLF_IMAGE: docker.io/shrinedogg/wolf:v0.2.0@sha256:0d9f16d00552928f639e4f000c4ff6efc40b915ac41018514964acb640ce6574
-      moonlight_proxy:
-        containers:
-          proxy:
+              POD_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              POD_NAMESPACE:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+      wolf-agent:
+        type: deployment
+        pod:
+          nodeSelector:
+            kubernetes.io/hostname: skirk
+          resourceClaims:
+            - name: amd-gpu
+              resourceClaimName: gow-amd-gpu
+          tolerations:
+            - effect: NoSchedule
+              key: llm-workload
+              operator: Exists
+        serviceAccount:
+          identifier: wolf-agent
+        strategy: Recreate
+        initContainers:
+          config:
             image:
-              repository: docker.io/shrinedogg/moonlight-proxy
-              tag: v0.1.2
-              digest: sha256:e8b7cf17ea1bab75c1cec1889a1166ebb3da4c5f0972ae8a7d7cc8dc2571fef0
+              digest: sha256:ff82c125c9b79b2e9443de2b0eaec40c904edb03291680d408cccd57c1d59c76
+              repository: ghcr.io/games-on-whales/wolf
+              tag: sha-d6d41de
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                mkdir -p /etc/wolf/cfg
+                cp /config/config.toml /etc/wolf/cfg/config.toml
+                cp /etc/certs/tls.crt /etc/wolf/cfg/cert.pem
+                cp /etc/certs/tls.key /etc/wolf/cfg/key.pem
+        containers:
+          agent:
+            image:
+              digest: sha256:a4f3056abea36c185ec6a5320ce880e6dc4a57a6dd1b64181008bb5048154553
+              repository: ghcr.io/axolotlite/fenrir/wolf-agent
+              tag: main
+            command:
+              - /app/wolf-agent
+            env:
+              CDI_DIR: /run/cdi
+              DRIVER_NAME: wolf.dra.io
+              LOG_LEVEL: '2'
+              MAX_LOBBIES: '2'
+              NODE_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+              POD_NAME:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              POD_NAMESPACE:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              POD_UID:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.uid
+              QUEUE_TIMEOUT_SECONDS: '30'
+              SOCKETS_DIR: /run/wolf-sockets
+              TLS_CERT: /etc/certs/tls.crt
+              TLS_KEY: /etc/certs/tls.key
+              WOLF_SOCKET_PATH: /etc/wolf/wolf.sock
+            probes:
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - /bin/sh
+                      - -ec
+                      - test -S /var/lib/kubelet/plugins/wolf.dra.io/dra-${POD_UID}.sock
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+              claims:
+                - name: amd-gpu
+          wolf:
+            image:
+              digest: sha256:ff82c125c9b79b2e9443de2b0eaec40c904edb03291680d408cccd57c1d59c76
+              repository: ghcr.io/games-on-whales/wolf
+              tag: sha-d6d41de
+            env:
+              TZ: America/Edmonton
+              WOLF_RENDER_NODE: /dev/dri/renderD128
+              WOLF_SOCKET_PATH: /etc/wolf/wolf.sock
+              XDG_RUNTIME_DIR: /run/wolf-sockets
+            probes:
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - /bin/sh
+                      - -ec
+                      - test -S /etc/wolf/wolf.sock && test -S /run/wolf-sockets/pulse-socket
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 250m
+                memory: 512Mi
+              limits:
+                cpu: '4'
+                memory: 4Gi
+              claims:
+                - name: amd-gpu
+            securityContext:
+              privileged: true
+    persistence:
+      cdi:
+        type: hostPath
+        hostPath: /run/cdi
+        hostPathType: DirectoryOrCreate
+        advancedMounts:
+          wolf-agent:
+            agent:
+              - path: /run/cdi
+      certs:
+        type: secret
+        defaultMode: 256
+        name: games-on-whales-tls
+        advancedMounts:
+          moonlight-proxy:
+            moonlight-proxy:
+              - path: /etc/certs
+                readOnly: true
+          wolf-agent:
+            agent:
+              - path: /etc/certs
+                readOnly: true
+            config:
+              - path: /etc/certs
+                readOnly: true
+      plugins:
+        type: hostPath
+        hostPath: /var/lib/kubelet/plugins
+        hostPathType: DirectoryOrCreate
+        advancedMounts:
+          wolf-agent:
+            agent:
+              - path: /var/lib/kubelet/plugins
+      registration:
+        type: hostPath
+        hostPath: /var/lib/kubelet/plugins_registry
+        hostPathType: DirectoryOrCreate
+        advancedMounts:
+          wolf-agent:
+            agent:
+              - path: /var/lib/kubelet/plugins_registry
+      sockets:
+        type: hostPath
+        hostPath: /run/wolf-sockets
+        hostPathType: DirectoryOrCreate
+        advancedMounts:
+          wolf-agent:
+            agent:
+              - path: /run/wolf-sockets
+            wolf:
+              - path: /run/wolf-sockets
+      wolf-config:
+        type: configMap
+        name: games-on-whales-wolf-config
+        advancedMounts:
+          wolf-agent:
+            config:
+              - path: /config
+                readOnly: true
+      wolf-state:
+        type: emptyDir
+        advancedMounts:
+          wolf-agent:
+            agent:
+              - path: /etc/wolf
+            config:
+              - path: /etc/wolf
+            wolf:
+              - path: /etc/wolf
     service:
-      app:
+      moonlight:
+        type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.43
           lbipam.cilium.io/sharing-key: direwolf
+        controller: moonlight-proxy
+        ports:
+          http:
+            port: 47989
+            protocol: TCP
+          https:
+            port: 47984
+            protocol: TCP
+      stream:
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: 10.69.10.43
+          lbipam.cilium.io/sharing-key: direwolf
+        controller: wolf-agent
+        ports:
+          audio:
+            port: 48200
+            protocol: UDP
+          control:
+            port: 47999
+            protocol: UDP
+          input:
+            port: 48000
+            protocol: UDP
+          rtsp:
+            port: 48010
+            protocol: TCP
+          rtsp-udp:
+            port: 48010
+            protocol: UDP
+          video:
+            port: 48100
+            protocol: UDP
     serviceAccount:
-      games-on-whales: {}
+      moonlight-proxy: {}
+      operator: {}
+      wolf-agent: {}

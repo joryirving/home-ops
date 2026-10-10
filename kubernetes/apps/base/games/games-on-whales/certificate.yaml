@@ -1,0 +1,30 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: games-on-whales-selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: games-on-whales
+spec:
+  dnsNames:
+    - games-on-whales
+    - games-on-whales.games.svc
+  ipAddresses:
+    - 10.69.10.43
+  issuerRef:
+    kind: Issuer
+    name: games-on-whales-selfsigned
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    rotationPolicy: Never
+    size: 2048
+  secretName: games-on-whales-tls
+  usages:
+    - server auth
+    - client auth

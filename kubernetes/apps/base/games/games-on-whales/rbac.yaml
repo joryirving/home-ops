@@ -1,0 +1,123 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: games-on-whales-wolf-agent
+rules:
+  - apiGroups: [resource.k8s.io]
+    resources: [resourceslices]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [resource.k8s.io]
+    resources: [resourceclaims]
+    verbs: [get, list, watch]
+  - apiGroups: [resource.k8s.io]
+    resources: [resourceclaims/status]
+    verbs: [patch, update]
+  - apiGroups: [resource.k8s.io]
+    resources: [deviceclasses]
+    verbs: [get]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [sessions]
+    verbs: [get, list, watch]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [sessions/status]
+    verbs: [update, patch]
+  - apiGroups: ['']
+    resources: [nodes]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: games-on-whales-wolf-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: games-on-whales-wolf-agent
+subjects:
+  - kind: ServiceAccount
+    name: games-on-whales-wolf-agent
+    namespace: games
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: games-on-whales-operator
+rules:
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [sessions]
+    verbs: [get, list, watch, update, patch, delete]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [sessions/status]
+    verbs: [update, patch]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [lobbies]
+    verbs: [get, list, watch]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [lobbies/status]
+    verbs: [update, patch]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [apps, profiles]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [get, list, watch, create, update, patch]
+  - apiGroups: ['']
+    resources: [pods]
+    verbs: [get]
+  - apiGroups: [resource.k8s.io]
+    resources: [resourceclaims]
+    verbs: [create, update, patch]
+  - apiGroups: [resource.k8s.io]
+    resources: [resourceslices]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: games-on-whales-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: games-on-whales-operator
+subjects:
+  - kind: ServiceAccount
+    name: games-on-whales-operator
+    namespace: games
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: games-on-whales-moonlight-proxy
+rules:
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [pairings, profiles, apps, sessions]
+    verbs: [get, list, watch]
+  - apiGroups: ['']
+    resources: [pods]
+    verbs: [get, list, watch]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [pairings]
+    verbs: [create, patch]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [sessions]
+    verbs: [create, delete, get]
+  - apiGroups: [direwolf.games-on-whales.github.io]
+    resources: [lobbies]
+    verbs: [create, delete, get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: games-on-whales-moonlight-proxy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: games-on-whales-moonlight-proxy
+subjects:
+  - kind: ServiceAccount
+    name: games-on-whales-moonlight-proxy
+    namespace: games

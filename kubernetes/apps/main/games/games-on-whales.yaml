@@ -7,8 +7,8 @@ metadata:
 spec:
   interval: 1h
   ref:
-    commit: 9501ab4a58c31575cdc5e6c7b6d87d0124352c47
-  url: https://github.com/shrinedogg/fenrir
+    commit: 3f75c1aa5e69f2370ea31b6e2cf10c406ad97abb
+  url: https://github.com/axolotlite/fenrir
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -16,10 +16,9 @@ kind: Kustomization
 metadata:
   name: fenrir-crds
 spec:
-  force: true
   interval: 1h
   path: ./crds
-  prune: true
+  prune: false
   sourceRef:
     kind: GitRepository
     name: fenrir
@@ -33,6 +32,8 @@ metadata:
 spec:
   dependsOn:
     - name: fenrir-crds
+    - name: k8s-gpu-dra-driver
+      namespace: kube-system
   interval: 1h
   path: ./kubernetes/apps/base/games/games-on-whales
   postBuild:
