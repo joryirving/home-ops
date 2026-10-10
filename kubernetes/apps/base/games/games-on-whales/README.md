@@ -39,8 +39,12 @@ Talos's `/run/cdi` and mounts kubelet plugin/registration directories.
 Both agent containers claim the GPU because the agent also checks render-node
 paths when processing lobby configuration.
 
-Wolf runs privileged with `/dev/uinput` and `/dev/input` mounted for input
-emulation. Firefox has an ephemeral home directory; this trial creates no
+Wolf runs privileged with `/dev/uinput` and `/dev/input` mounted for virtual
+gamepads and fallback input emulation. In the pinned Wolf build, lobby keyboard
+and mouse input go directly through `WaylandKeyboard` and `WaylandMouse`; they
+do not require uinput. The current manifest still requires the extension because
+its `/dev/uinput` hostPath mount is mandatory. A keyboard/mouse-only trial can
+omit that mount and the extension/module configuration. Firefox has an ephemeral home directory; this trial creates no
 application PVCs and includes no Steam installation. The old `User`, sidecar
 policies, and root-entrypoint workaround are removed. The selected Wolf image
 already starts as root.
@@ -54,7 +58,7 @@ so its copied certificate matches the proxy; Moonlight may require re-pairing.
 
 ## Before enabling
 
-1. Install Sidero's official `uinput` extension on Skirk. Its current image has
+1. For the manifests as written, install Sidero's official `uinput` extension on Skirk. Its current image has
    neither the module nor `/dev/uinput`. This change adds `siderolabs/uinput` to
    `talos/main/worker/schematic.yaml` and a `KernelModuleConfig` to `skirk.yaml`.
    The extension contains the matching kernel module; its build copies it and
