@@ -51,7 +51,7 @@ The original three apps retain their names and IDs:
 | App | ID | State |
 | --- | --- | --- |
 | Firefox | 1 | Ephemeral home directory, as before |
-| Steam | 2 | `steam-data` StatefulSet claim template: 300 GiB, `ceph-block`, RWO; mounted at `/home/retro` |
+| Steam | 2 | `steam-data` StatefulSet claim template: 600 GiB, `ceph-block`, RWO; mounted at `/home/retro` |
 | Test Ball | 3 | Ephemeral bouncing-ball video and ticking audio |
 
 Steam keeps its existing digest-pinned image and adds the upstream example's
