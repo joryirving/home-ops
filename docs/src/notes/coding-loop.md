@@ -54,7 +54,7 @@ same attempt never runs twice.
 **4. Run.** The operator admits the run when the lane has capacity and isn't suspended, and
 starts one coordinator pod. The executor provisions the workspace (base-synced; merge
 conflicts are handed to the coordinator to resolve), writes an OpenCode config from the
-LaneProfile's roles, and runs the coordinator. The coordinator plans and delegates: large
+LaneProfile's roles, and runs the coordinator. The coordinator plans and selectively delegates: large
 recon (surveying a subsystem, reading many files) goes to `agentic-local`, which returns a
 summary so the coordinator's own context stays clean; narrow, file-scoped questions and
 changes go to `coder-local`; and after a substantive change `agentic-local` does an
@@ -78,17 +78,33 @@ One `LaneProfile`, `local`, with `concurrency: 1`:
 
 | Role | Model | Where | Job |
 |---|---|---|---|
-| `coordinator` | `qwen3.8-flash-next` | Strix Halo | plans, delegates, integrates, verifies, does all forge work; never implements |
+| `coordinator` | `qwen3.8-flash-next` | Strix Halo | plans, makes small low-risk changes directly, delegates substantial work selectively, integrates, verifies, does all forge work |
 | `agentic-local` | `qwen3.8-flash-next` | Strix Halo | large recon (262k window, returns a summary) and the adversarial review of the diff; one at a time |
 | `coder-local` | `qwen3.8-27b` | ganyu's 3090 | narrow, file-scoped questions and changes (147k window, 24k reserved for output; split work before a sub passes ~50k); at most two in flight |
 
+Use direct edits for small, understood, low-risk changes; don't delegate by default, create
+fan-out, or fill available slots. Use `agentic-local` for substantial or uncertain
+reconnaissance and independent adversarial review for substantive or high-risk changes,
+including a single-line change affecting security, storage, or authority. Skip review only
+for low-risk trivial or read-only work. A minimax solo coordinator must follow the same
+quota and evidence discipline, but must not present its own work as an independent review.
+
+Run each relevant check once per relevant change state and record a receipt containing the
+command, cwd, revision or identifiable worktree state, result, compact output, and limitations.
+Reuse the receipt across implementer, coordinator, and reviewer until relevant edits,
+dependencies, configuration, or environment invalidate it, or a concrete concern or coverage
+gap makes it stale. Reviewers independently assess coverage and failure modes without
+automatically rerunning checks. After a material fix, re-review only the fix delta or an
+unresolved concern; do not repeat review for unsolicited polishing. Fixed-price cloud
+capacity is still quota-limited; do not call it free capacity or assume it is unlimited.
+
 The two subagent models run on different machines, so up to two `coder-local` and one
-`agentic-local` can be in flight at once. Independent briefs start together with disjoint
-file ownership; each coder owns a bounded behavior and its targeted tests. Workers return
-partial progress when scope expands instead of accumulating an unbounded transcript.
-Agentic research or review can overlap implementation when it reads a stable snapshot,
-not files being edited. The coder and the reviewer are deliberately
-different models. `gemma-4-12b-it-qat` (the gaming PC, behind llm-wake) stays deployed but is
+`agentic-local` can be in flight at once when genuinely independent work warrants it.
+Give concurrent writers disjoint files, including test files; each coder owns a bounded
+behavior and its targeted tests. Workers return partial progress when scope expands instead
+of accumulating an unbounded transcript. Agentic research or review can overlap implementation
+when it reads a stable snapshot, not files being edited. The coder and the reviewer are
+deliberately different models. `gemma-4-12b-it-qat` (the gaming PC, behind llm-wake) stays deployed but is
 no longer part of coding; the Courier LiteLLM key still allows `local-pool` /
 `local-pool-chat` (whose third rung is gemma), though no role uses them.
 
