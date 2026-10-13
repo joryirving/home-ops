@@ -41,8 +41,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ inputs.pr_number }}
         run: |
-          sha="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
-          echo "head_sha=$sha" >> "$GITHUB_OUTPUT"
+          # Resolve both values from the API, never from a PR-controlled
+          # shell expansion. The boolean also covers manual Renovate re-reviews.
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --jq '"head_sha=\(.head.sha)\nis_renovate=\(.head.ref | startswith("renovate/"))"' \
+            >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -88,7 +91,10 @@ jobs:
           search-url: "https://search.jory.dev/search"
           tool-allowed-gh-api-repos: "*"
           tool-mcp-servers: "konflate=https://konflate.jory.dev/mcp"
-          system-prompt-file: .agents/instructions/pr-review.instructions.md
+          # Before native repo skills (#1043) are available, select the
+          # Renovate SKILL.md using the action's trusted-base prompt loader.
+          # Other PRs keep the normal prompt, including manual re-reviews.
+          system-prompt-file: ${{ ((github.event_name == 'pull_request' && startsWith(github.head_ref, 'renovate/')) || steps.prctx.outputs.is_renovate == 'true') && '.agents/skills/renovate-review/SKILL.md' || '.agents/instructions/pr-review.instructions.md' }}
           system-prompt-mode: append
           standards-file-candidates: "AGENTS.md"
           evidence-providers-file: .github/konflate-evidence-providers.json
