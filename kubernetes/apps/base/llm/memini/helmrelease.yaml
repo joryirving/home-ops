@@ -60,6 +60,10 @@ spec:
               MEMINI_DEMOTE_AFTER: 72h
               MEMINI_RERANK_POOL: "5"
               MEMINI_RERANK_MAX_DOC_CHARS: "4096"
+              # Must stay >= POOL * MAX_DOC_CHARS + query + envelope, else memini
+              # shards one recall into N *serial* requests and pays the query N times.
+              # 5 * 4096 + 512 + 44 = 21036. Paired with rerank contextSize 16384.
+              MEMINI_RERANK_MAX_BATCH_CHARS: "24000"
               MEMINI_TIMEOUT_MS: "55000"
             envFrom:
               - secretRef:
