@@ -1,3 +1,4 @@
+
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
@@ -61,14 +62,14 @@ spec:
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: reasoning-pool-zai
+  name: reasoning-pool-hyper
 spec:
   modelName: reasoning-pool
   proxyRef: litellm
   params:
-    model: openai/glm-5.3-flash
-    apiBase: https://api.z.ai/api/coding/paas/v4
-    apiKey: os.environ/ZAI_API_KEY
+    model: openai/deepseek-v4.1-flash
+    apiBase: https://hyper.charm.land/v1
+    apiKey: os.environ/HYPER_API_KEY
     additional:
       order: 3
       allowed_openai_params:
@@ -81,32 +82,10 @@ spec:
     supportsPromptCaching: true
     supportsVision: true
     extra:
-      input_cost_per_token: 1.5e-07
-      cache_creation_input_token_cost: 1.5e-07
-      cache_read_input_token_cost: 3.0e-08
-      output_cost_per_token: 5.0e-07
----
-apiVersion: litellm.home-operations.com/v1alpha1
-kind: LiteLLMModel
-metadata:
-  name: reasoning-pool-minimax
-spec:
-  modelName: reasoning-pool
-  proxyRef: litellm
-  params:
-    model: openai/MiniMax-M3
-    apiBase: https://api.minimax.io/v1
-    apiKey: os.environ/MINIMAX_API_KEY
-    additional:
-      order: 4
-  info:
-    mode: chat
-    maxInputTokens: 1000000
-    maxOutputTokens: 131072
-    supportsFunctionCalling: true
-    extra:
-      input_cost_per_token: 3.0e-07
-      output_cost_per_token: 1.2e-06
+      input_cost_per_token: 3.2664e-07
+      cache_creation_input_token_cost: 0
+      cache_read_input_token_cost: 3.2664e-08
+      output_cost_per_token: 1.30656e-06
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel

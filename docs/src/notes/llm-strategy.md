@@ -10,7 +10,8 @@ reference for keeping those aliases meaningful and for designing intent-based ro
 **Reconciled again 2026-09-28.** GPT-5.6 aliases were replaced by GPT-6 Astra/Sol/Luna (2026-09-23),
 `dsv4f` by `dsv4.1f` on Charm Hyper with a capped Neuralwatt rung (2026-09-26), Flash-Next moved to gufo
 on ROCm (2026-09-24), `qwen3.8-27b` became Swift 1.5 on vLLM (2026-09-25), `muse-glimmer` is the default
-resident of the 3090 pool, Kimi leads `frontier-pool` and `reasoning-pool` (2026-09-27), and
+resident of the 3090 pool, Kimi leads `frontier-pool` and `reasoning-pool` (2026-09-27), MiniMax
+consumers moved to `MiniMax-M3.1-Flash-Preview` with the pool rungs reworked (2026-10-13), and
 `gemma-4-12b-it-qat` is out of the coding roles. The **Model inventory**, pool, consumer and routing
 sections below reflect this; the **capability ranking** and **v2 bench** sections still measure older
 models (see the notes there).
@@ -45,10 +46,10 @@ Neuralwatt supplies energy-metered PAYG as `dsv4.1f` rung 2 behind Charm Hyper, 
 | Plan                | Price                                        | Cap                                                          | Reset                              | Models                                                | Primary use                                                                                               |
 | ------------------- | -------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage | rolling (3h chat) + weekly (Codex) | GPT-6 Astra, Sol, Luna                                | Astra `frontier-pool` rung 2; Sol `reasoning-pool` rung 2; Luna `implementation-pool` lead                |
-| **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | 300 prompts / 5h                                             | rolling 5h                         | M3 and M2.7, via the Anthropic endpoint               | Agentic reasoning workhorse                                                                               |
-| **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                             | rolling 5h                         | GLM-5.3 and GLM-5.3-Flash on the Z.AI coding endpoint | `frontier-pool` rung 3 (GLM-5.3); `reasoning-pool` rung 3 and `glm-5.3-flash` rung 2 behind Hyper (Flash) |
+| **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | legacy Token Plan: grandfathered unlimited limits            | rolling 5h                         | M3.1 Flash Preview (primary), M3, M2.7 (retires 2026-11-18) — Anthropic endpoint | Agentic reasoning workhorse (`MiniMax-M3.1-Flash-Preview`); M2.7 auto-reroutes to M3.1 from 2026-10-19     |
+| **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                             | rolling 5h                         | GLM-5.3 and GLM-5.3-Flash on the Z.AI coding endpoint | `frontier-pool` rung 3 (GLM-5.3); `glm-5.3-flash` rung 2 behind Hyper (Flash)                             |
 | **Kimi Coding**     | ~$180 USD/yr ($15/mo; ~$261 CAD/12mo)        | plan allowance                                               | plan-defined                       | Kimi K2.7 Code, Kimi K3                               | `frontier-pool` lead (K3); `reasoning-pool` lead (K2.7)                                                   |
-| **Charm Hyper**     | $20 USD/mo                                   | $12.50 of usage per 24h                                      | every 24h                          | GLM-5.3-Flash, DeepSeek V4.1 Flash (`HYPER_API_KEY`)  | `glm-5.3-flash` order 1; `dsv4.1f` order 1; `frontier-pool` rung 4                                        |
+| **Charm Hyper**     | $20 USD/mo                                   | $12.50 of usage per 24h                                      | every 24h                          | GLM-5.3-Flash, DeepSeek V4.1 Flash (`HYPER_API_KEY`)  | `glm-5.3-flash` order 1; `dsv4.1f` order 1; `implementation-pool` rung 2; `reasoning-pool` rung 3         |
 | **Neuralwatt**      | pay-per-use ($5/kWh energy billing)          | account credit; LiteLLM `max_budget` $1/day on its rung      | n/a                                | DeepSeek V4.1 Flash                                   | `dsv4.1f` rung 2, behind Hyper                                                                            |
 
 Retired 2026-08-25: **Opencode Go** ($10 USD/mo gateway; DeepSeek V4 Flash/Pro, MiMo v2.5/Pro,
@@ -59,7 +60,10 @@ Caveats worth remembering:
 - **MiniMax M3 and M2.7 use the flat plan**, via configured endpoints, but flat pricing is not unlimited
   availability. A 2026-10-12 HTTP 429 with code 2056 reported token-plan usage reached; LiteLLM spend
   is not the provider's quota meter, and prefix-cached input may still consume plan allocation. Do not
-  assume capacity based on the price or treat every provider rejection as a transient error.
+  assume capacity based on the price or treat every provider rejection as a transient error. The
+  account keeps its grandfathered unlimited-limits Token Plan benefit; migrating to the new M Plan
+  (Go/Explore/Build) would forfeit it, so the legacy plan is retained. Upstream doubles M3 list
+  pricing past 512k input tokens — input, output, and cache read all double.
 - **ChatGPT** was direct-through-Codex until recently; LiteLLM token history is light, but the
   weekly Codex cap is hit every week. OpenAI does not publish the exact weekly number. In the GPT-5.6
   generation (retired 2026-09-23) Luna consumed 80% fewer subscription credits and Terra 20% fewer;
@@ -124,9 +128,9 @@ variant was deleted (FP8 doesn't work on gfx1151).
 
 | Alias                 | Subscription                      | Upstream model                              | Ctx (in) | Role                                                                                          |
 | --------------------- | --------------------------------- | ------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
-| `MiniMax-M3`          | MiniMax Plus                      | MiniMax-M3 (Anthropic endpoint)             | 1M       | OpenClaw default + Matcha primary; `auto` MEDIUM and miss default; Hermes/opencode `reviewer` |
-| `MiniMax-M3-chat`     | MiniMax Plus                      | MiniMax-M3 (OpenAI endpoint)                | 1M       | Router fallback for `gemma-4-12b-it-qat` and `auto`                                           |
-| `MiniMax-M2.7`        | MiniMax Plus                      | MiniMax-M2.7                                | 204.8k   | Agentic workhorse; `explorer` role; `implementation-pool` rung 3                              |
+| `MiniMax-M3.1-Flash-Preview` | MiniMax Plus               | MiniMax-M3.1-Flash-Preview (Anthropic endpoint) | 1M   | OpenClaw default + Matcha primary; `auto` MEDIUM and miss default; Hermes/opencode `reviewer` + `explorer`. Thinking always on; `reasoning_effort` low/medium/high/xhigh/max (default max). No published upstream benchmarks; config assumes M3 pricing provisionally |
+| `MiniMax-M3`          | MiniMax Plus                      | MiniMax-M3 (Anthropic endpoint)             | 1M       | Retained standalone for rollback and manual use; no pool rungs                                 |
+| `MiniMax-M2.7`        | MiniMax Plus                      | MiniMax-M2.7                                | 204.8k   | Standalone only; upstream retires it 2026-11-18, and M-Plan keys auto-reroute to M3.1 from 2026-10-19 |
 | `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model    |
 | `glm-5.3-flash`       | Charm Hyper, then GLM Coding Lite | glm-5.3-flash (order 1 Hyper, order 2 Z.AI) | 1M       | OpenClaw Miso/main primary; `oracle` role                                                     |
 | `chatgpt/gpt-6-astra` | ChatGPT Plus                      | gpt-6-astra (Codex/OAuth)                   | 272k*    | Direct alias; `frontier-pool` rung 2                                                          |
@@ -154,7 +158,7 @@ it (see **Frontier pool**); a direct `kimi-*` call fails.
 
 `dsv4.1f` replaced `dsv4f` on 2026-09-26 (#10533); the Neuralwatt rung was capped at $1/day on
 2026-09-27 (#10557). Consumers: OpenClaw and Hermes fallback chains, and the `auto` router fallback.
-`frontier-pool` rung 4 is its own Hyper deployment; Neuralwatt is not in any pool.
+`reasoning-pool` rung 3 is its own Hyper deployment; Neuralwatt is not in any pool.
 
 Neuralwatt charges for measured GPU energy rather than tokens. PAYG is $5/kWh; prefix-cache hits
 avoid prefill work and therefore reduce the charged energy. Use Neuralwatt's usage API/dashboard for
@@ -178,9 +182,9 @@ One file per pool in `models/` (`frontier-pool.yaml`, `reasoning-pool.yaml`, `im
 
 | Pool                  | Order  | Members                                                                                                            | Effort pins                                   | Policy                                                             |
 | --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------ |
-| `frontier-pool`       | 1 -> 4 | Kimi K3 (Kimi Coding) -> GPT-6 Astra (ChatGPT) -> GLM-5.3 (Z.AI) -> DSV4.1F (Hyper)                                | none                                          | Frontier escalation; no MiniMax floor                              |
-| `reasoning-pool`      | 1 -> 5 | Kimi K2.7 (Kimi Coding) -> GPT-6.1 Sol (ChatGPT) -> GLM-5.3-Flash (Z.AI) -> MiniMax-M3 (`/v1`) -> qwen3.8-flash-next | none; K2.7 drops `reasoning_effort`         | Planning lane; M3 is the flat-plan floor, flash-next the local one |
-| `implementation-pool` | 1 -> 3 | GPT-6 Luna (ChatGPT) -> qwen3.8-27b (3090) -> MiniMax-M2.7                                                         | Luna `max` (`extra_body`); 27b `xhigh`        | Implementation lane, deliberately below the planning lane          |
+| `frontier-pool`       | 1 -> 3 | Kimi K3 (Kimi Coding) -> GPT-6 Astra (ChatGPT) -> GLM-5.3 (Z.AI)                                                    | none                                          | Frontier escalation; dsv4.1f moved to reasoning (2026-10-13)       |
+| `reasoning-pool`      | 1 -> 4 | Kimi K2.7 (Kimi Coding) -> GPT-6.1 Sol (ChatGPT) -> DSV4.1F (Hyper) -> qwen3.8-flash-next                            | none; K2.7 drops `reasoning_effort`         | Planning lane; dsv4.1f is the flat-rate floor, flash-next the local one |
+| `implementation-pool` | 1 -> 3 | GPT-6 Luna (ChatGPT) -> GLM-5.3-Flash (Hyper) -> qwen3.8-27b (3090)                                                 | Luna `max` (`extra_body`); 27b `xhigh`        | Implementation lane, deliberately below the planning lane          |
 | `local-pool`          | 1 -> 3 | muse-glimmer (3090) -> qwen3.8-flash-next (skirk) -> gemma-4-12b-it-qat (9070XT)                                   | none                                          | Local-only, $0 marginal                                            |
 | `local-pool-chat`     | 1 -> 3 | same members, non-thinking samplers                                                                                | flash-next and gemma `reasoning_effort: none` | OpenClaw lossless-claw; AI PR review primary                       |
 
@@ -204,20 +208,20 @@ not been re-measured on GPT-6.
 
 LiteLLM has no group-level window: each rung declares its own `maxInputTokens`, and with
 `enable_pre_call_checks` a request too large for a rung is filtered off it. Clients declare their own
-ceiling per group; opencode declares `implementation-pool` 147456 (the 27B's MAX_LEN, rung 2),
+ceiling per group; opencode declares `implementation-pool` 147456 (the 27B's MAX_LEN, rung 3),
 `frontier-pool` 272000 (Astra, rung 2) and `reasoning-pool` 1000000. In `reasoning-pool`, rung 1 (K2.7)
-takes 262144 and rung 5 (flash-next) 245760, so a request past those only lands on Sol (272k),
-GLM-5.3-Flash (1M) or M3 (1M).
+takes 262144 and rung 4 (flash-next) 245760, so a request past those only lands on Sol (272k) or
+dsv4.1f (1M).
 
 **Provider failover** (LiteLLM `order:`, transparent to callers) reacts when an upstream rejects a
 request; it cannot detect that an unpublished rolling allowance is merely _close_ to exhausted.
 
-`glm-5.3-flash` (rung 3, Z.AI) sits between Sol and the M3 floor. It accepts `reasoning_effort`
-(`allowed_openai_params`) but the rung pins none, so it takes the caller's. It is a stronger rung than
-dropping straight to M3, but it spends GLM Coding Lite quota — the same subscription behind
-`frontier-pool` rung 3 — so sustained reasoning overflow can leave frontier escalation a rung
-shorter. M3 remains the configured floor, but the flat plan can still throttle or reject requests
-when its usage limit is reached.
+`glm-5.3-flash` moved to `implementation-pool` rung 2 (2026-10-13), sourced from Charm Hyper only —
+the pool rung does not fall through to Z.AI, unlike the direct `glm-5.3-flash` alias (Hyper then
+GLM Coding Lite). It accepts `reasoning_effort` but the rung pins none, so it takes the caller's.
+`reasoning-pool`'s MiniMax floor was dropped at the same time (Courier regularly caps the MiniMax
+allowance and the OpenAI-to-Messages route risked pool thinking), so reasoning's flat-rate floor is
+now dsv4.1f. The MiniMax plan can still throttle or reject requests when its usage limit is reached.
 
 Kimi-for-Coding was once removed from `reasoning-pool` because its 262k context capped the pool's
 declared window. It returned as rung 1 on 2026-09-27 (#10571); requests past 262k skip it.

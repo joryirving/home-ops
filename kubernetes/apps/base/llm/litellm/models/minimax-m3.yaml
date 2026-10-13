@@ -2,6 +2,40 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
+  name: minimax-m3.1-flash-preview
+spec:
+  modelName: MiniMax-M3.1-Flash-Preview
+  proxyRef: litellm
+  params:
+    model: minimax/MiniMax-M3.1-Flash-Preview
+    apiBase: https://api.minimax.io/anthropic/v1/messages
+    apiKey: os.environ/MINIMAX_API_KEY
+    additional:
+      cache_control_injection_points:
+      - location: message
+        role: system
+      - location: message
+        index: -1
+  info:
+    mode: messages
+    maxInputTokens: 1000000
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    supportsPromptCaching: true
+    supportsVision: true
+    # Provisional: M3 list pricing assumed until MiniMax publishes M3.1 rates.
+    extra:
+      input_cost_per_token: 3.0e-07
+      output_cost_per_token: 1.2e-06
+      cache_read_input_token_cost: 6.0e-08
+      cache_creation_input_token_cost: 3.0e-07
+      input_cost_per_token_above_512k_tokens: 6.0e-07
+      output_cost_per_token_above_512k_tokens: 2.4e-06
+      cache_read_input_token_cost_above_512k_tokens: 1.2e-07
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
   name: minimax-m3
 spec:
   modelName: MiniMax-M3
@@ -27,24 +61,4 @@ spec:
       input_cost_per_token: 3.0e-07
       cache_creation_input_token_cost: 3.0e-07
       cache_read_input_token_cost: 6.0e-08
-      output_cost_per_token: 1.2e-06
----
-apiVersion: litellm.home-operations.com/v1alpha1
-kind: LiteLLMModel
-metadata:
-  name: minimax-m3-chat
-spec:
-  modelName: MiniMax-M3-chat
-  proxyRef: litellm
-  params:
-    model: openai/MiniMax-M3
-    apiBase: https://api.minimax.io/v1
-    apiKey: os.environ/MINIMAX_API_KEY
-  info:
-    mode: chat
-    maxInputTokens: 1000000
-    maxOutputTokens: 131072
-    supportsFunctionCalling: true
-    extra:
-      input_cost_per_token: 3.0e-07
       output_cost_per_token: 1.2e-06
