@@ -8,21 +8,25 @@ Two systems, each with one job:
 - **Courier** is the execution layer: a Kubernetes operator that runs one coordinator pod
   (OpenCode on a local model) per unit of work.
 
-Courier core has no Dispatch dependency; the Dispatch source adapter is optional and enabled
-here. The durable configuration is Courier's HelmRelease, its `LaneProfile`
-(`kubernetes/apps/base/llm/courier/config/laneprofile.yaml`), and Dispatch's HelmRelease env.
-`CoderRun`s are runtime state and are never committed.
+Courier core has no Dispatch dependency; the Dispatch source adapter is an optional integration
+and is enabled here. Neither system inherently requires the other. The durable configuration is
+Courier's HelmRelease, its `LaneProfile` (`kubernetes/apps/base/llm/courier/config/laneprofile.yaml`),
+and Dispatch's HelmRelease env. `CoderRun`s are runtime state and are never committed. At the
+2026-10-13 repository snapshot, the Courier chart source is pinned to 0.1.8 and Dispatch
+to 0.5.69. The chart version is a desired source pin, not independent proof of a running pod image;
+check runtime state when that distinction matters.
 
 ```
 GitHub issue
     │  Dispatch scheduled sync (15m)
     ▼
 Dispatch cache ──► hosted groomer (qwen3.8-flash-next) ──► lane: local / frontier / backlog
-    │  Courier polls next-task (30s, lane local)
+    │  Courier consumers poll shared queue (30s; local or escalated alias)
     ▼
-CoderRun ──► coordinator pod (OpenCode, qwen3.8-flash-next)
-    │          ├─ coder-local   (qwen3.8-27b)        narrow, file-scoped questions and changes
-    │          └─ agentic-local (qwen3.8-flash-next) large recon (summaries) + adversarial review
+CoderRun ──► coordinator pod (profile-dependent)
+    │          ├─ local profile: qwen3.8-flash-next + qwen3.8-27b roles
+    │          ├─ minimax profile: MiniMax-M3 solo
+    │          └─ frontier profile: dsv4.1f coordinator + role-specific cloud models
     ▼
 push courier/<owner>/<repo>/issue-<n>, open/update the PR, never merge
     ──► repo CI + AI PR-review action ──► human merge ──► Dispatch sync marks done
@@ -46,10 +50,12 @@ moves. The groomer closes an issue on its own only as `already_done`, and only w
 acceptance criterion is grounded in repository content read at a pinned SHA; duplicate and
 superseded stay recommendations. Dispatch's `docs/groomer-close-policy.md` is the policy.
 
-**3. Claim.** Courier's Dispatch adapter polls `next-task` every 30s for lane `local`. It gets
-either an issue (`resolve-issue`) or a queued PR-fix item (`fix-pr`), and creates a
-`CoderRun`. Follow-ups are deduplicated on the PR-fix item's id and generation, so the
-same attempt never runs twice.
+**3. Claim.** Courier polls `next-task` every 30s for configured queue lanes. Current bindings are
+`courier-local` -> `local`, `courier-cloud` -> `local` (MiniMax-M3 solo profile), and
+`courier-frontier` -> `escalated` (frontier profile). These consumers share Dispatch's queue; their
+bindings do not partition or reserve work. A claim returns either an issue (`resolve-issue`) or a
+queued PR-fix item (`fix-pr`), and creates a `CoderRun`. Follow-ups are deduplicated on the PR-fix
+item id and generation, so the same attempt never runs twice.
 
 **4. Run.** The operator admits the run when the lane has capacity and isn't suspended, and
 starts one coordinator pod. The executor provisions the workspace (base-synced; merge
@@ -62,7 +68,7 @@ independent review pass over the diff. The coordinator does all forge work itsel
 have no GitHub MCP tools).
 
 **5. Publish and verify.** The coordinator pushes the run branch and opens or updates the
-PR after local validation and independent review, then exits without waiting for CI or
+PR after local validation and any warranted independent review, then exits without waiting for CI or
 new review feedback. The run moves to `Verifying`, which does not reserve lane capacity.
 The controller watches the PR's checks. Two consecutive all-green observations with
 the same check fingerprint settle `AwaitingReview`; a merge settles `Done`. It never merges.
@@ -74,7 +80,9 @@ follow-up runs, which cannot recover the exited coordinator's session.
 
 ## The Courier lane
 
-One `LaneProfile`, `local`, with `concurrency: 1`:
+The default `local` LaneProfile has `concurrency: 1` and the roles below. The configured `minimax` and
+`frontier` profiles are solo/cloud lanes with their own model and instruction bindings; do not assume
+they inherit the local roles or have independent queue capacity.
 
 | Role | Model | Where | Job |
 |---|---|---|---|
@@ -98,15 +106,12 @@ automatically rerunning checks. After a material fix, re-review only the fix del
 unresolved concern; do not repeat review for unsolicited polishing. Fixed-price cloud
 capacity is still quota-limited; do not call it free capacity or assume it is unlimited.
 
-The two subagent models run on different machines, so up to two `coder-local` and one
-`agentic-local` can be in flight at once when genuinely independent work warrants it.
-Give concurrent writers disjoint files, including test files; each coder owns a bounded
-behavior and its targeted tests. Workers return partial progress when scope expands instead
-of accumulating an unbounded transcript. Agentic research or review can overlap implementation
-when it reads a stable snapshot, not files being edited. The coder and the reviewer are
-deliberately different models. `gemma-4-12b-it-qat` (the gaming PC, behind llm-wake) stays deployed but is
-no longer part of coding; the Courier LiteLLM key still allows `local-pool` /
-`local-pool-chat` (whose third rung is gemma), though no role uses them.
+`coder-local` is the 3090 lane, not a promise of spare capacity: the GPU is shared with the
+automated pipeline and requests contend for the same hardware. Keep coding work bounded and avoid
+extra fan-out unless independent work justifies its latency and context cost. The `agentic-local`
+role is available in the Courier profile for substantial recon or review, but is not the default
+choice for small, understood tasks. `gemma-4-12b-it-qat` stays deployed for other uses; it is not
+a Courier coding role.
 
 `qwen3.8-flash-next` serves two slots: **slot 1 is Courier's coordinator; slot 2 is shared**
 with `agentic-local`, the home-ops PR reviewer and every other in-cluster consumer. Work that
@@ -159,28 +164,38 @@ Dispatch issue tracker (an explicit `already_addressed` settlement).
 Dispatch's pr-followup sync (15m) watches bot-authored PRs and queues a `PrFixQueueItem`
 on real signals only: a `CHANGES_REQUESTED` review, failing check runs, and comments with
 actionable signal or an @-mention of the bot. Courier picks items up as `fix-pr` runs
-against the existing branch. The rules, as of Dispatch 0.5.66:
+against the existing branch. The rules below describe behavior to confirm against the current
+Dispatch release when operationally important; they are not a claim that an older version remains
+deployed:
 
 | Rule | What it does |
 |---|---|
-| Attempts, not evidence | `PR_FIX_MAX_ATTEMPTS` (default 5) bounds dispatched fix attempts (`fixAttempts`). All the inline comments of one review are one attempt. Past the cap the item goes `BLOCKED` (needs a human) |
+| Attempts, not evidence | In Dispatch v0.5.69, `PR_FIX_MAX_ATTEMPTS` defaults to 5 dispatched fix attempts (`fixAttempts`); inline comments from one review form one attempt. Reaching the cap parks the item as `PARKED` with reason `no_progress` (exhausted), not `BLOCKED`/needs-human |
 | No-push guard | a FIXED report is refused when the PR head hasn't moved since the attempt's baseline (`attemptHeadSha`). Every new attempt records the newest head Dispatch has seen, so a sync that sees the worker's push first can't turn a real fix into a refusal |
 | Sticky terminal states | a merged or closed PR's item stays `STALE`; a new review can't resurrect it |
 | Known evidence doesn't churn | re-observing the same review never flips an item's status |
 | `needs-human` is two-way | entering `BLOCKED` labels the PR and posts a marker; every exit from `BLOCKED` removes the label and folds the marker to "requeued" or "resolved" |
 | Archived repos | their items are reaped `STALE` and can't be requeued |
 | Item URL is the PR | write-once; CI job links are evidence, never the item's identity |
+| Generation-aware dedupe | a new generation is a distinct follow-up; don't mistake terminal history for a duplicate of current work |
+| Overflow exclusion | the configured exclusion cap applies to deduplicated PR-fix descriptors, not a total count of coder runs; accepted newer generations can coexist with retained terminal history |
 
 Known gap: evidence that lands **while an attempt is in flight** is folded into that
 attempt, and nothing delivers it to the worker (tracked in the Dispatch issue tracker). A review posted
-mid-run can be stranded behind a `BLOCKED` item until it's requeued.
+mid-run can be stranded behind a `BLOCKED` item until it's requeued. Don't blanket-requeue queue items:
+first distinguish actionable current work, terminal history, and genuinely blocked work.
 
-## The frontier lane has no worker
+## Configured queue consumers
 
-Dispatch still defines a claimable `frontier` escalation lane (MiniMax-M3, for work that
-needs a judgement call), and the groomer can route there. Courier polls only `local`, and
-Foreman, which used to work `frontier`, is gone. Issues groomed to `frontier` sit until a
-worker is pointed at that lane or they're re-laned.
+The manifest maps `local` -> `local` profile -> `courier-local`, `local` -> `minimax` profile ->
+`courier-cloud`, and `escalated` -> `frontier` profile -> `courier-frontier`. Dispatch aliases
+`normal` to `local`, `escalated` to `frontier`, and `cloud` to `local`. These consumers draw from the
+shared queue; the bindings do not partition or reserve work. A configured consumer is not proof that a
+particular item was claimed or completed; use Dispatch and CoderRun state for that. Recheck manifests
+before relying on this snapshot. For authorization incidents, compare the authenticated worker
+identity with this queue/profile/agent binding and use the maintainer reference for identity mapping;
+inspect secret references and access metadata, never secret values. The chart's `prFixExclusions: true`
+setting is required for this PR-fix exclusion behavior; verify it remains enabled after chart changes.
 
 ## The shared 3090
 
@@ -208,13 +223,14 @@ reconciling, muse 503s `pool_incumbent_busy`, 27B shows `Stopped`), recovery is
 
 ## Operating it
 
-- **Requeue a blocked PR-fix item:** the Dispatch MCP `requeue_pr_fix` tool (or
-  `POST /api/pr-fix-queue/requeue`). It resets the attempt count and baselines from the
-  current head; it refuses merged, closed or archived PRs.
+- **Requeue a blocked PR-fix item:** first inspect its current status, generation, PR state, and evidence. Use the Dispatch MCP `requeue_pr_fix` tool (or `POST /api/pr-fix-queue/requeue`) only for a known actionable item; it resets attempt accounting and baselines from the current head. Do not treat unknown or terminal state as a blanket requeue request.
 - **Stop a run:** delete its `CoderRun`. Settle or close the Dispatch side first, or the next
   poll hands the same work out again.
-- **Why did a run end the way it did:** the coordinator's logs outlive its pod in
-  VictoriaLogs (`observability/victoria-logs-server`, port 9428). Useful LogsQL:
+- **Why did a run end the way it did:** query coordinator logs in
+  VictoriaLogs (`observability/victoria-logs-server`, port 9428). Pod logs are not automatically
+  archived, so inspect and preserve needed lifecycle diagnostics, unresolved decisions, and
+  dedupe/claim evidence before cleanup; don't delete logs on the assumption they are recoverable.
+  Useful LogsQL:
   - `kubernetes.pod_namespace:llm "COURIER_TERMINATION"`: every run's ending and reason
   - `kubernetes.container_name:coordinator type:step_finish`: model calls, with
     `part.tokens.{input,output,reasoning,cache.read,cache.write}` per step
@@ -235,17 +251,31 @@ reconciling, muse 503s `pool_incumbent_busy`, 27B shows `Stopped`), recovery is
   and a groomer `already_done` close needs files to ground in. Name none rather than guess:
   a wrong path sends recon the wrong way.
 
+## Observability direction (design only)
+
+Keep the Courier core portable and its telemetry backend-neutral. Define useful run/queue lifecycle
+signals and operator views first; Prometheus, VictoriaMetrics, or OpenTelemetry can be transport or
+storage choices, not assumptions baked into the worker contract. A dashboard is a view over those
+signals, not an evaluator or a reason to couple upstream Courier to this home's observability stack.
+
+This is a design direction, not an implemented dashboard or metric contract. Related tracking includes
+Courier #289 (umbrella), #290 (core), #291 (connector), and #292 (portable dashboard/alert
+specifications), plus Dispatch #1237 and documentation PRs #301, #302, #303, and #1239. Verify current
+issue/PR state before treating any proposal as accepted or shipped. Keep run outcomes,
+claims/deduplication, and diagnostic logs available long enough to explain failures; do not infer
+missing data is healthy or declare a reported `<pending>` symptom fixed without reproducing and
+checking it.
+
 ## Config quick reference
 
 | Where | Setting | Value / meaning |
 |---|---|---|
-| Courier HelmRelease | `dispatch.enabled` / `laneProfile` / `queueLane` / `pollInterval` | `true` / `local` / `normal` (an alias of `local`) / `30s` |
+| Courier HelmRelease | `dispatch.enabled` / queue:profile:agent / `pollInterval` | `true` / `local:local:courier-local`, `local:minimax:courier-cloud`, `escalated:frontier:courier-frontier` / `30s` |
 | Courier HelmRelease | `executor.mcp.githubURL` | GitHub's hosted MCP (`https://api.githubcopilot.com/mcp/`) |
-| LaneProfile `local` | `runtimeImage` | the coordinator image (`ghcr.io/misospace/courier-go`) |
 | LaneProfile `local` | `concurrency` | `1`: one run at a time (Courier's flash-next slot) |
 | LaneProfile `local` | `roles` / `framing` | the models above, and the coordinator's standing instructions |
 | Courier ExternalSecret | `courier-executor` `OPENCODE_CONFIG_CONTENT` | the coordinator's OpenCode config: LiteLLM provider at `http://litellm.llm:4000/v1` (30m timeout); per-model limits `qwen3.8-27b` 147456 context / 24576 output, `qwen3.8-flash-next` 262144 / 16384; `compaction` auto (keep 20k tokens, 16k buffer); `tool_output` capped at 800 lines / 16 KiB |
 | Dispatch env | `DISPATCH_GROOMER_MODEL` / `_TIMEOUT_MS` / `_INTERVAL_MS` | `qwen3.8-flash-next` / `480000` / `900000` |
 | Dispatch env | `DISPATCH_GROOMER_MODEL_CONTEXT_TOKENS` / `DISPATCH_GROOMER_REPO_CONTEXT_ENABLED` | `262144` / `true` |
-| Dispatch env | `DISPATCH_LANE_CONFIG_JSON` | lanes `local` (default), `frontier` (escalation), `backlog`; aliases `normal` and `cloud` → `local`, `escalated` → `frontier` |
-| Dispatch env | `PR_FIX_MAX_ATTEMPTS` | unset, so the default `5` |
+| Dispatch env | `DISPATCH_LANE_CONFIG_JSON` | lanes `local` (default), `frontier` (escalation), `backlog`; aliases `normal` and `cloud` -> `local`, `escalated` -> `frontier` |
+| Dispatch env | `PR_FIX_MAX_ATTEMPTS` | unset in the manifest; behavior defaults may vary by deployed Dispatch version |

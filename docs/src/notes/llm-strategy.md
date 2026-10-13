@@ -30,8 +30,17 @@ Prometheus counters are perishable; dated observations below are labeled as such
 
 ## Subscriptions
 
-Subscriptions remain the primary capacity. Neuralwatt supplies energy-metered PAYG as `dsv4.1f` rung 2
-behind Charm Hyper, capped at $1/day.
+Subscriptions remain the primary capacity. They are not unlimited: fixed-price cloud plans still have
+rolling or shared usage limits, and temporary provider throttles can affect them before a published
+allowance is clear. In particular, MiniMax Plus is not an inexhaustible work queue: on 2026-10-12,
+MiniMax M3/M2.7 requests returned HTTP 429 (code 2056, token-plan usage reached). Interactive Opencode,
+Pi, Courier, and review traffic can draw on the same plan; leave headroom and avoid speculative fan-out.
+Do not infer provider quota units from LiteLLM token counters or add cached input a second time. A
+2026-10-12 LiteLLM view attributed 53.8% of labeled MiniMax tokens to Pi and 35.7% to Courier between
+13:04 and 18:04; this is observed proxy traffic, not a complete consumer ledger or provider quota
+accounting.
+
+Neuralwatt supplies energy-metered PAYG as `dsv4.1f` rung 2 behind Charm Hyper, capped at $1/day.
 
 | Plan                | Price                                        | Cap                                                          | Reset                              | Models                                                | Primary use                                                                                               |
 | ------------------- | -------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -47,9 +56,10 @@ Qwen3.8-Max) and **Moonshot** (pay-per-use Kimi fallback behind Kimi Coding).
 
 Caveats worth remembering:
 
-- **MiniMax M3 is covered by the flat plan** (both M3 and M2.7), reached via the direct Anthropic
-  endpoint. LiteLLM still logs ~$239/30d "phantom" spend against it — the plan is flat, the metric is
-  not, so don't chase that number.
+- **MiniMax M3 and M2.7 use the flat plan**, via configured endpoints, but flat pricing is not unlimited
+  availability. A 2026-10-12 HTTP 429 with code 2056 reported token-plan usage reached; LiteLLM spend
+  is not the provider's quota meter, and prefix-cached input may still consume plan allocation. Do not
+  assume capacity based on the price or treat every provider rejection as a transient error.
 - **ChatGPT** was direct-through-Codex until recently; LiteLLM token history is light, but the
   weekly Codex cap is hit every week. OpenAI does not publish the exact weekly number. In the GPT-5.6
   generation (retired 2026-09-23) Luna consumed 80% fewer subscription credits and Terra 20% fewer;
@@ -206,7 +216,8 @@ request; it cannot detect that an unpublished rolling allowance is merely _close
 (`allowed_openai_params`) but the rung pins none, so it takes the caller's. It is a stronger rung than
 dropping straight to M3, but it spends GLM Coding Lite quota — the same subscription behind
 `frontier-pool` rung 3 — so sustained reasoning overflow can leave frontier escalation a rung
-shorter. M3 remains the floor precisely because the flat plan cannot be exhausted this way.
+shorter. M3 remains the configured floor, but the flat plan can still throttle or reject requests
+when its usage limit is reached.
 
 Kimi-for-Coding was once removed from `reasoning-pool` because its 262k context capped the pool's
 declared window. It returned as rung 1 on 2026-09-27 (#10571); requests past 262k skip it.
@@ -476,7 +487,13 @@ As of 2026-08: **Strix runs A3B-class MoE and small dense vision models; the 309
 where 900+ GB/s of VRAM gives it 44 t/s on weights that would crawl on the APU. A dense model on Strix
 is slow no matter how good it scores, and Flash-Next is slow *and* needs 101 GiB — it evicts the whole
 rest of the resident set to hold a tie on quality (see the v2 bench section). Since 2026-09-24 skirk
-runs Flash-Next alone (gufo); the 3090 pool holds `muse-glimmer` (default) or the 27B.
+runs Flash-Next alone (gufo); the 3090 pool holds `muse-glimmer` (default) or the 27B. A later
+gufo streaming change removed the 4 GiB staging allocation in favor of a 1 MiB default; that setting
+is a streaming buffer, not a model checkpoint-size limit. In a reported synthetic 4,171-token probe,
+TTFT moved from 5.80s to 74ms, then 107ms; an observational sample of 98 requests reported 96.9%
+prefix reuse and 1.18s TTFT versus a different earlier sample's 95.3% and 1.95s. These measurements
+are encouraging but not controlled comparisons and do not establish a single root cause or faster
+model inference.
 
 Historical (2026-08-27; ComfyUI is now disabled in `kubernetes/apps/main/llm/kustomization.yaml`):
 measured footprint of the resident set, mid-generate: GTT **76.8 GiB of 124**, ~47 GiB free, with
@@ -490,8 +507,8 @@ power: skirk **48.7 W** serving three models plus an image generation; the 3090 
 | ---------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **OpenClaw**           | yes (`.../llm/openclaw/configmap.yaml`)                                            | defaults `minimax/MiniMax-M3` (fallbacks `qwen3.8-flash-next`, `qwen3.8-27b`, `dsv4.1f`); Miso/main `glm-5.3-flash`; Matcha `MiniMax-M3`; Saffron `reasoning-pool`; Sage `muse-glimmer`; subagents `muse-glimmer`; heartbeat `qwen3.8-flash-next-chat`; image `qwen3.8-flash-next-chat`; lossless-claw summary/expansion `local-pool-chat`                                                                                                                                              |
 | **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)                                              | default `reasoning-pool` (fallbacks `kimi-k3` -> `muse-glimmer` -> `qwen3.8-flash-next` -> `glm-5.3` -> `dsv4.1f`); compression/web-extract/approval/session-search `qwen3.8-flash-next`; vision `qwen3.8-flash-next-chat`; roles explorer `MiniMax-M2.7`, coder-local `qwen3.8-27b`, agentic-local `qwen3.8-flash-next`, implementer `implementation-pool`, reviewer `MiniMax-M3`, local-reviewer `gemma-4-12b-it-qat`, oracle `glm-5.3-flash`, vision-local `qwen3.8-flash-next-chat` |
-| **Courier**            | yes (`.../llm/courier/config/laneprofile.yaml`)                                    | LaneProfile `local`, concurrency 1: coordinator + `agentic-local` (large recon, adversarial review) -> `qwen3.8-flash-next`; `coder-local` (narrow file-scoped work, at most two in flight) -> `qwen3.8-27b`                                                                                                                                                                                                                                                                            |
-| **Dispatch**           | yes (`.../llm/dispatch/helmrelease.yaml`)                                          | groomer -> `qwen3.8-flash-next` (262144); lanes `local` (default, worked by Courier) and `frontier` (escalation, MiniMax-M3, no worker); aliases `normal` -> `local`, `escalated` -> `frontier`, `cloud` -> `local`                                                                                                                                                                                                                                                                     |
+| **Courier**            | yes (`.../llm/courier/config/laneprofile.yaml`)                                    | Configured consumers: `courier-local` -> `local`, `courier-cloud` -> `local` with MiniMax solo profile, `courier-frontier` -> `escalated` with frontier profile. Queue is shared, not partitioned; models are in the LaneProfiles. |
+| **Dispatch**           | yes (`.../llm/dispatch/helmrelease.yaml`)                                          | groomer -> `qwen3.8-flash-next` (262144); lanes `local`, `frontier`, and `backlog`; aliases `normal` -> `local`, `escalated` -> `frontier`, `cloud` -> `local`. Manifest/configuration does not establish runtime claim or completion state.                                                                                                                                                                                                                                                                     |
 | **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)                                            | default `auto`; coordinator `reasoning-pool`; coordinator-local `qwen3.8-flash-next`; role subagents `MiniMax-M2.7`/`MiniMax-M3`/`implementation-pool`/`qwen3.8-27b`/`qwen3.8-flash-next`/`glm-5.3-flash`, plus the workstation CLI on LiteLLM aliases directly                                                                                                                                                                                                                         |
 | **memini**             | yes (`.../llm/memini/helmrelease.yaml`)                                            | LLM `muse-glimmer`; `embed`; `rerank`                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **toolhive vMCP**      | yes (`.../llm/toolhive/config/virtualmcpserver.yaml`)                              | `embed` (optimizer)                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -642,11 +659,11 @@ spread **across** resident models rather than piled onto one (roughly 6-8 stream
 Skirk now serves Flash-Next alone. The Mac LM Studio member was removed; `qwen3.8-flash-next` is the
 single cluster server (one gufo process, 2 sessions).
 
-Courier is the main automated consumer. It runs at concurrency 1; the coordinator holds one of the
-two `qwen3.8-flash-next` sessions and `agentic-local` uses the other. Since 2026-09-27 its key is ~54%
-`qwen3.8-flash-next` prompt tokens (coordinator ~42%, reviewer ~12%) and ~39% `qwen3.8-27b`. The
-lever on its share is the LaneProfile concurrency. The last whole-box utilisation figure (~15 busy-hours/day against 96 slot-hours)
-predates Courier and has not been re-measured.
+Courier and other in-cluster consumers share local hardware; the 3090 also serves an automated pipeline.
+Treat it as a contended resource, not dedicated agent capacity. The coordinator and `agentic-local` can
+compete for Flash-Next's two sessions, while `coder-local` competes on the 3090. Prefer targeted reads,
+small direct changes when the work is understood, and bounded delegation only when independent work
+justifies its context and scheduling cost. Do not increase fan-out just to fill nominal role slots.
 
 ## Smart-routing: the `auto` alias
 
