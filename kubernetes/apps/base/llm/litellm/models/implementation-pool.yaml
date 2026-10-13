@@ -43,7 +43,7 @@ spec:
       top_p: 0.95
       top_k: 20
       min_p: 0
-      order: 2
+      order: 3
       max_parallel_requests: 2
       reasoning_effort: xhigh
       allowed_openai_params:
@@ -58,3 +58,31 @@ spec:
       input_cost_per_token: 6.2e-08
       output_cost_per_token: 1.35e-06
       cache_read_input_token_cost: 0.0
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: implementation-pool-glm-flash-hyper
+spec:
+  modelName: implementation-pool
+  proxyRef: litellm
+  params:
+    model: openai/glm-5.3-flash
+    apiBase: https://hyper.charm.land/v1
+    apiKey: os.environ/HYPER_API_KEY
+    additional:
+      order: 2
+      allowed_openai_params:
+      - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 1000000
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    supportsPromptCaching: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 1.6e-07
+      cache_creation_input_token_cost: 0
+      cache_read_input_token_cost: 3.0e-08
+      output_cost_per_token: 5.4e-07
