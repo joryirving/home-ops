@@ -58,25 +58,3 @@ spec:
       input_cost_per_token: 6.2e-08
       output_cost_per_token: 1.35e-06
       cache_read_input_token_cost: 0.0
----
-apiVersion: litellm.home-operations.com/v1alpha1
-kind: LiteLLMModel
-metadata:
-  name: implementation-pool-minimax-m3.1
-spec:
-  modelName: implementation-pool
-  proxyRef: litellm
-  params:
-    model: minimax/MiniMax-M3.1-Flash-Preview
-    apiBase: https://api.minimax.io/anthropic/v1/messages
-    apiKey: os.environ/MINIMAX_API_KEY
-    additional:
-      order: 3
-      output_config:
-        effort: medium
-  info:
-    mode: messages
-    maxInputTokens: 204800
-    maxOutputTokens: 32768
-    supportsFunctionCalling: true
-    extra: {}
