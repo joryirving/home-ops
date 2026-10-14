@@ -65,8 +65,9 @@ spec:
           volumeMounts:
             - name: browser-profile
               mountPath: /home/node/.marketplace/browser-profile
-            - name: browser-profile-messenger
+            - name: browser-profile
               mountPath: /home/node/.marketplace/browser-profile-messenger
+              subPath: messenger
             - name: markets
               mountPath: /etc/marketplace
               readOnly: true
@@ -76,9 +77,6 @@ spec:
               mountPath: /tmp
       volumes:
         - name: browser-profile
-          persistentVolumeClaim:
-            claimName: marketplace-browser-profile
-        - name: browser-profile-messenger
           persistentVolumeClaim:
             claimName: marketplace-browser-profile
         - name: markets
