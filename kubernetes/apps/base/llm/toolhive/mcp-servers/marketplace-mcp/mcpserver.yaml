@@ -23,6 +23,10 @@ spec:
       value: /home/node/.marketplace/browser-profile
     - name: FACEBOOK_MARKETS_FILE
       value: /etc/marketplace/markets.json
+    - name: MESSENGER_PROFILE_DIR
+      value: /home/node/.marketplace/browser-profile-messenger
+    - name: FACEBOOK_MESSENGER_PROBE_ONLY
+      value: "1"
     - name: REAUTH_ADMIN_PORT
       value: "8787"
   secrets:
@@ -61,6 +65,8 @@ spec:
           volumeMounts:
             - name: browser-profile
               mountPath: /home/node/.marketplace/browser-profile
+            - name: browser-profile-messenger
+              mountPath: /home/node/.marketplace/browser-profile-messenger
             - name: markets
               mountPath: /etc/marketplace
               readOnly: true
@@ -70,6 +76,9 @@ spec:
               mountPath: /tmp
       volumes:
         - name: browser-profile
+          persistentVolumeClaim:
+            claimName: marketplace-browser-profile
+        - name: browser-profile-messenger
           persistentVolumeClaim:
             claimName: marketplace-browser-profile
         - name: markets
