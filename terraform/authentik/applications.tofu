@@ -23,6 +23,13 @@ locals {
   ]
 
   default_property_mappings = data.authentik_property_mapping_provider_scope.oauth2.ids
+
+  # Replaces the built-in 'email' mapping (which asserts email_verified=False and
+  # overrides Email Verified Scope) for apps that only trust a verified email
+  default_property_mappings_verified_email = [
+    for id in local.default_property_mappings :
+    id if id != data.authentik_property_mapping_provider_scope.email_builtin.id
+  ]
 }
 
 module "onepassword_application" {
@@ -212,7 +219,7 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/sonarr.png"
       redirect_uri      = "https://sonarr.${var.CLUSTER_DOMAIN}/signin-oidc"
       launch_url        = "https://sonarr.${var.CLUSTER_DOMAIN}"
-      property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.email_verified.id])
+      property_mappings = concat(local.default_property_mappings_verified_email, [authentik_property_mapping_provider_scope.email_verified.id])
     },
     Waypoint = {
       client_id         = module.onepassword_application["Waypoint"].fields["WAYPOINT_CLIENT_ID"]

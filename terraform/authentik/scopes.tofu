@@ -8,6 +8,12 @@ data "authentik_property_mapping_provider_scope" "oauth2" {
   ]
 }
 
+# The built-in OpenID 'email' mapping hardcodes email_verified=False; consumers
+# that require a verified email exclude it and use Email Verified Scope instead
+data "authentik_property_mapping_provider_scope" "email_builtin" {
+  managed = "goauthentik.io/providers/oauth2/scope-email"
+}
+
 resource "authentik_property_mapping_provider_scope" "email_verified" {
   name       = "Email Verified Scope"
   scope_name = "email"
