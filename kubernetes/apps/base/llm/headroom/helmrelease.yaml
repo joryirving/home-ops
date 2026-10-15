@@ -18,9 +18,20 @@ spec:
         runAsGroup: 65532
         runAsNonRoot: true
         runAsUser: 65532
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values: ["headroom"]
     controllers:
       headroom:
-        replicas: 2
+        replicas: 3
         strategy: RollingUpdate
         containers:
           main:
