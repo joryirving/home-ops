@@ -18,9 +18,20 @@ spec:
         runAsGroup: 65532
         runAsNonRoot: true
         runAsUser: 65532
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values: ["headroom"]
     controllers:
       headroom:
-        replicas: 2
+        replicas: 3
         strategy: RollingUpdate
         containers:
           main:
@@ -28,6 +39,13 @@ spec:
               repository: ghcr.io/headroomlabs-ai/headroom
               tag: 0.41.0-slim-nonroot@sha256:686a86ad0f7dba60816b5d3d6f6438a02323d256d70491c6448526212c6c08b3
             env:
+              # Headroom 0.41.0 refuses to bind 0.0.0.0 without either a proxy
+              # token or an explicit acknowledgement. The guardrail CRD has no
+              # field to carry a bearer token to headroom, so acknowledge the
+              # open bind instead: this Service is ClusterIP-only on the private
+              # cluster network with no ingress, and the guardrail is the sole
+              # client. Revisit if headroom is ever exposed beyond the cluster.
+              HEADROOM_ALLOW_UNAUTHENTICATED_BIND: "1"
               HEADROOM_COMPRESS_ALLOW_REMOTE: "1"
               HEADROOM_HOST: 0.0.0.0
               HEADROOM_MODE: cache
