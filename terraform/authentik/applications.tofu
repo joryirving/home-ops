@@ -17,6 +17,7 @@ locals {
     "Paperless",
     "Portainer",
     "RomM",
+    "Sonarr",
     "Waypoint",
     "WorkAdventure",
   ]
@@ -202,6 +203,15 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/romm.png"
       redirect_uri      = "https://romm.${var.CLUSTER_DOMAIN}/api/oauth/openid"
       launch_url        = "https://romm.${var.CLUSTER_DOMAIN}"
+      property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.email_verified.id])
+    },
+    Sonarr = {
+      client_id         = module.onepassword_application["Sonarr"].fields["SONARR_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Sonarr"].fields["SONARR_CLIENT_SECRET"]
+      group             = "media"
+      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/sonarr.png"
+      redirect_uri      = "https://sonarr.${var.CLUSTER_DOMAIN}/signin-oidc"
+      launch_url        = "https://sonarr.${var.CLUSTER_DOMAIN}"
       property_mappings = concat(local.default_property_mappings, [authentik_property_mapping_provider_scope.email_verified.id])
     },
     Waypoint = {
