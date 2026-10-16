@@ -3,31 +3,62 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "panels": [],
       "title": "Throughput vs GPU pressure",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Current prompt/prefill and token-generation throughput. Compare drops here with GPU memory busy, clocks, power, and host memory pressure below.",
-      "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "tok/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
       "id": 2,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "sum by (service)(rate(llamacpp:prompt_tokens_total{service=~\"$service\"}[5m]) or rate(vllm:request_prefill_kv_computed_tokens_sum{service=~\"$service\"}[5m]))",
           "legendFormat": "PP {{service}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "sum by (service)(rate(llamacpp:tokens_predicted_total{service=~\"$service\"}[5m]) or rate(vllm:generation_tokens_total{service=~\"$service\"}[5m]))",
           "legendFormat": "TG {{service}}",
           "refId": "B"
@@ -37,24 +68,52 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "GPU engine busy from amdgpu-exporter, with memory pressure falling back to GTT allocation percentage when mem_busy_percent is not exposed by the kernel.",
-      "fieldConfig": { "defaults": { "max": 100, "min": 0, "unit": "percent" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
       "id": 3,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_gpu_busy_percent{card=~\"$gpu\"}",
           "legendFormat": "gpu busy {{card}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1))",
           "legendFormat": "memory pressure {{card}}",
           "refId": "B"
@@ -65,14 +124,22 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 8 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
       "id": 4,
       "panels": [],
       "title": "Fast bottleneck read",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Last observed GPU busy percent.",
       "fieldConfig": {
         "defaults": {
@@ -81,28 +148,51 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 60 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           },
           "unit": "percent"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 9 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 9
+      },
       "id": 5,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "max(amdgpu_gpu_busy_percent{card=~\"$gpu\"})",
           "legendFormat": "GPU busy",
           "refId": "A"
@@ -112,7 +202,10 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Last observed memory pressure. Uses amdgpu_memory_busy_percent when present, otherwise falls back to GTT allocation percentage because Strix Halo does not currently expose mem_busy_percent here.",
       "fieldConfig": {
         "defaults": {
@@ -121,28 +214,51 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 60 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           },
           "unit": "percent"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 9 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 9
+      },
       "id": 6,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "max(amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1)))",
           "legendFormat": "memory pressure",
           "refId": "A"
@@ -152,7 +268,10 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "GPU-visible memory allocation pressure from ROCm exporter.",
       "fieldConfig": {
         "defaults": {
@@ -161,28 +280,51 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 75 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           },
           "unit": "percent"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 9 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 9
+      },
       "id": 7,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "100 * sum(amdgpu_vram_used_bytes{card=~\"$gpu\"}) / clamp_min(sum(amdgpu_vram_total_bytes{card=~\"$gpu\"}), 1)",
           "legendFormat": "VRAM used",
           "refId": "A"
@@ -192,7 +334,10 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Host memory usage on the selected node, excluding cache/reclaimable memory.",
       "fieldConfig": {
         "defaults": {
@@ -201,29 +346,52 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 75 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           },
           "unit": "percent"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 9 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 9
+      },
       "id": 8,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "100 * ((node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}) / clamp_min(node_memory_MemTotal_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}, 1)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "100 * ((node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) max by (instance, nodename) (node_uname_info{job=\"node-exporter\", nodename=~\"$node\"})) / clamp_min(node_memory_MemTotal_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) max by (instance, nodename) (node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}), 1)",
           "legendFormat": "{{nodename}}",
           "refId": "A"
         }
@@ -232,22 +400,44 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Current generation throughput across selected llama.cpp services.",
-      "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 9 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "tok/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 9
+      },
       "id": 9,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_generation_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_decode_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
           "legendFormat": "TG tok/s",
           "refId": "A"
@@ -257,22 +447,44 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Inflight and queued work (llama.cpp and vLLM; gufo does not export it). Rising deferred requests with flat GPU busy often indicates scheduler or context pressure rather than raw GPU saturation.",
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 9 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 9
+      },
       "id": 10,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "sum(llamacpp:requests_processing{service=~\"$service\"} or vllm:num_requests_running{service=~\"$service\"}) + sum(llamacpp:requests_deferred{service=~\"$service\"} or vllm:num_requests_waiting{service=~\"$service\"})",
           "legendFormat": "requests",
           "refId": "A"
@@ -283,25 +495,53 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
       "id": 11,
       "panels": [],
       "title": "ROCm device telemetry",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "GPU and memory clocks from hwmon. Clock drops while busy remains high can indicate power/thermal limits or firmware policy changes.",
-      "fieldConfig": { "defaults": { "unit": "hertz" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "hertz"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
       "id": 12,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_clock_hertz{card=~\"$gpu\"}",
           "legendFormat": "{{sensor}} {{card}}",
           "refId": "A"
@@ -311,36 +551,75 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Power and temperature from hwmon. Sustained high temperature or power with falling clocks is a throttling signal.",
       "fieldConfig": {
-        "defaults": { "unit": "short" },
+        "defaults": {
+          "unit": "short"
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "power" },
-            "properties": [{ "id": "unit", "value": "watt" }]
+            "matcher": {
+              "id": "byName",
+              "options": "power"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "temperature" },
-            "properties": [{ "id": "unit", "value": "celsius" }]
+            "matcher": {
+              "id": "byName",
+              "options": "temperature"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
       "id": 13,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_power_watts{card=~\"$gpu\", type=\"average\"}",
           "legendFormat": "power {{card}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_temperature_celsius{card=~\"$gpu\"}",
           "legendFormat": "temp {{sensor}} {{card}}",
           "refId": "B"
@@ -350,30 +629,59 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "VRAM and GTT allocation pressure from AMDGPU sysfs. On Strix Halo, GTT pressure is often relevant because GPU memory is carved from system memory.",
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 21 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
       "id": 14,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_vram_used_bytes{card=~\"$gpu\"}",
           "legendFormat": "vram used {{card}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_gtt_used_bytes{card=~\"$gpu\"}",
           "legendFormat": "gtt used {{card}}",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_visible_vram_used_bytes{card=~\"$gpu\"}",
           "legendFormat": "visible vram used {{card}}",
           "refId": "C"
@@ -383,30 +691,59 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "GPU busy and memory pressure. Memory pressure uses mem_busy_percent when present, otherwise GTT allocation percentage as a Strix Halo UMA pressure proxy.",
-      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 21 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
       "id": 15,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_gpu_busy_percent{card=~\"$gpu\"}",
           "legendFormat": "gpu busy {{card}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1))",
           "legendFormat": "memory pressure {{card}}",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "(amdgpu_memory_busy_percent{card=~\"$gpu\"} or (100 * amdgpu_gtt_used_bytes{card=~\"$gpu\"} / clamp_min(amdgpu_gtt_total_bytes{card=~\"$gpu\"}, 1))) - amdgpu_gpu_busy_percent{card=~\"$gpu\"}",
           "legendFormat": "memory pressure minus gpu {{card}}",
           "refId": "C"
@@ -417,32 +754,63 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 28 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
       "id": 16,
       "panels": [],
       "title": "Host node pressure",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "CPU busy and iowait on the selected node from node-exporter.",
-      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 29 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
       "id": 17,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "100 * (1 - avg by (instance, nodename) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "100 * (1 - avg by (instance, nodename) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]) * on(instance) group_left(nodename) max by (instance, nodename) (node_uname_info{job=\"node-exporter\", nodename=~\"$node\"})))",
           "legendFormat": "cpu busy {{nodename}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "100 * avg by (instance, nodename) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"iowait\"}[5m]) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "100 * avg by (instance, nodename) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"iowait\"}[5m]) * on(instance) group_left(nodename) max by (instance, nodename) (node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}))",
           "legendFormat": "iowait {{nodename}}",
           "refId": "B"
         }
@@ -451,31 +819,60 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Used, cache/reclaimable, and free host memory for the selected node.",
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 29 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
       "id": 18,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) max by (instance, nodename) (node_uname_info{job=\"node-exporter\", nodename=~\"$node\"})",
           "legendFormat": "used {{nodename}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "(node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) max by (instance, nodename) (node_uname_info{job=\"node-exporter\", nodename=~\"$node\"})",
           "legendFormat": "cache/reclaimable {{nodename}}",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "node_memory_MemFree_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\", nodename=~\"$node\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "node_memory_MemFree_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) max by (instance, nodename) (node_uname_info{job=\"node-exporter\", nodename=~\"$node\"})",
           "legendFormat": "free {{nodename}}",
           "refId": "C"
         }
@@ -485,27 +882,54 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
       "id": 19,
       "panels": [],
       "title": "Model speed (per request) & context",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Peak prefill speed (tok/s) per service over the selected window, from llama.cpp's per-request gauge — real model speed, not diluted by idle time.",
-      "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 37 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Peak prefill speed (tok/s) per service over the selected window, from llama.cpp's per-request gauge \u2014 real model speed, not diluted by idle time.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "tok/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 37
+      },
       "id": 20,
       "options": {
         "displayMode": "gradient",
         "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "showUnfilled": true
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "max by (service)(max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_prefill_kv_computed_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_prefill_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
           "legendFormat": "{{service}}",
           "refId": "A"
@@ -515,20 +939,42 @@
       "type": "bargauge"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "description": "Peak generation speed (tok/s) per service over the selected window — real model speed, not diluted by idle time.",
-      "fieldConfig": { "defaults": { "unit": "tok/s" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 37 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Peak generation speed (tok/s) per service over the selected window \u2014 real model speed, not diluted by idle time.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "tok/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 37
+      },
       "id": 21,
       "options": {
         "displayMode": "gradient",
         "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "showUnfilled": true
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "max by (service)(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_generation_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_decode_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
           "legendFormat": "{{service}}",
           "refId": "A"
@@ -538,20 +984,42 @@
       "type": "bargauge"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Configured context window (n_tokens_max) per service. Note: a service that reports 0 has not advertised a max yet.",
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 37 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 37
+      },
       "id": 22,
       "options": {
         "displayMode": "gradient",
         "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "showUnfilled": true
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "max by (service)(max_over_time(llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]))",
           "legendFormat": "{{service}}",
           "refId": "A"
@@ -562,25 +1030,53 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 52 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
       "id": 23,
       "panels": [],
       "title": "Per-consumer AMDGPU memory",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Resident GTT attributed to ComfyUI's DRM client. The exporter reads host DRM fdinfo and the pod name is joined through kube_pod_info.uid.",
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 53 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 53
+      },
       "id": 24,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "sum by (pod, process) (amdgpu_drm_client_memory_bytes{node=~\"$node\", card=~\"$gpu\", region=\"gtt\", state=\"resident\"} * on (pod_uid) group_left(namespace, pod) label_replace(kube_pod_info{namespace=\"llm\", node=~\"$node\", pod=~\"comfyui-.*\"}, \"pod_uid\", \"$1\", \"uid\", \"(.+)\"))",
           "legendFormat": "{{pod}} / {{process}}",
           "refId": "A"
@@ -590,19 +1086,37 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Resident CPU-domain, GTT, and VRAM bytes by Kubernetes pod and process. Host processes without a pod UID are intentionally excluded from this joined view.",
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 53 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 53
+      },
       "id": 25,
       "options": {
         "cellHeight": "sm",
-        "footer": { "show": false },
+        "footer": {
+          "show": false
+        },
         "showHeader": true
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "sum by (namespace, pod, process, region) (amdgpu_drm_client_memory_bytes{node=~\"$node\", card=~\"$gpu\", region=~\"cpu|gtt|vram\", state=\"resident\"} * on (pod_uid) group_left(namespace, pod) label_replace(kube_pod_info{node=~\"$node\"}, \"pod_uid\", \"$1\", \"uid\", \"(.+)\"))",
           "format": "table",
           "instant": true,
@@ -614,35 +1128,61 @@
       "type": "table"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Device GTT used minus the resident GTT reported by all discovered DRM clients. A positive value is kernel or otherwise unattributed GTT, not ComfyUI.",
       "fieldConfig": {
         "defaults": {
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1073741824 },
-              { "color": "red", "value": 4294967296 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1073741824
+              },
+              {
+                "color": "red",
+                "value": 4294967296
+              }
             ]
           },
           "unit": "bytes"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 60 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 60
+      },
       "id": 26,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "clamp_min(sum(amdgpu_gtt_used_bytes{node=~\"$node\", card=~\"$gpu\"}) - sum(amdgpu_drm_client_memory_bytes{node=~\"$node\", card=~\"$gpu\", region=\"gtt\", state=\"resident\"}), 0)",
           "legendFormat": "unattributed GTT",
           "refId": "A"
@@ -652,18 +1192,41 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "description": "Kubernetes cgroup working-set RAM by pod and container. This is host RAM accounting and is separate from DRM GTT; do not add the two without considering shared pages.",
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 60 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 60
+      },
       "id": 27,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "expr": "sum by (namespace, pod, container) (container_memory_working_set_bytes{pod!=\"\", container!=\"POD\"} * on (namespace, pod) group_left(node) kube_pod_info{node=~\"$node\"})",
           "legendFormat": "{{namespace}}/{{pod}} {{container}}",
           "refId": "A"
@@ -834,11 +1397,19 @@
   "refresh": "10s",
   "schemaVersion": 39,
   "style": "dark",
-  "tags": ["llm", "rocm", "strix-halo", "node-exporter"],
+  "tags": [
+    "llm",
+    "rocm",
+    "strix-halo",
+    "node-exporter"
+  ],
   "templating": {
     "list": [
       {
-        "current": { "text": "Prometheus", "value": "prometheus" },
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
         "hide": 0,
         "includeAll": false,
         "multi": false,
@@ -847,8 +1418,15 @@
         "type": "datasource"
       },
       {
-        "current": { "selected": true, "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
         "definition": "query_result(group by (service) (last_over_time({__name__=~\"llamacpp:prompt_tokens_total|vllm:generation_tokens_total\", namespace=\"llm\", service!~\".*embed.*|.*rerank.*\"}[$__range]) * on(pod) group_left(node) group by (pod, node) (last_over_time(kube_pod_info{node=~\"$node\"}[$__range]))))",
         "refresh": 2,
         "hide": 0,
@@ -865,8 +1443,15 @@
       },
       {
         "allValue": ".*",
-        "current": { "selected": true, "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
         "definition": "label_values(amdgpu_gpu_info, card)",
         "hide": 0,
         "includeAll": true,
@@ -880,8 +1465,15 @@
         "type": "query"
       },
       {
-        "current": { "selected": true, "text": "skirk", "value": "skirk" },
-        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "current": {
+          "selected": true,
+          "text": "skirk",
+          "value": "skirk"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
         "definition": "label_values(node_uname_info{job=\"node-exporter\"}, nodename)",
         "hide": 0,
         "includeAll": false,
@@ -896,7 +1488,10 @@
       }
     ]
   },
-  "time": { "from": "now-1h", "to": "now" },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "timezone": "browser",
   "title": "LLM / ROCm Node",
   "uid": "llm-rocm-node",
