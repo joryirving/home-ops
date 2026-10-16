@@ -25,8 +25,9 @@ Dispatch cache ──► hosted groomer (qwen3.8-flash-next) ──► lane: loc
     ▼
 CoderRun ──► coordinator pod (profile-dependent)
     │          ├─ local profile: qwen3.8-flash-next + qwen3.8-27b roles
-    │          ├─ minimax profile: MiniMax-M3 solo
-    │          └─ frontier profile: dsv4.1f coordinator + role-specific cloud models
+    │          ├─ minimax profile: MiniMax-M3.1-Flash-Preview solo
+    │          ├─ deepseek profile: dsv4.1f solo (same `local` queue)
+    │          └─ frontier profile: glm-5.3-flash coordinator + role-specific cloud models
     ▼
 push courier/<owner>/<repo>/issue-<n>, open/update the PR, never merge
     ──► repo CI + AI PR-review action ──► human merge ──► Dispatch sync marks done
@@ -51,7 +52,7 @@ acceptance criterion is grounded in repository content read at a pinned SHA; dup
 superseded stay recommendations. Dispatch's `docs/groomer-close-policy.md` is the policy.
 
 **3. Claim.** Courier polls `next-task` every 30s for configured queue lanes. Current bindings are
-`courier-local` -> `local`, `courier-cloud` -> `local` (MiniMax-M3 solo profile), and
+`courier-local` -> `local`, `courier-cloud` -> `local` (MiniMax-M3.1-Flash-Preview solo profile), `courier-deepseek` -> `local` (all-`dsv4.1f` deepseek profile), and
 `courier-frontier` -> `escalated` (frontier profile). These consumers share Dispatch's queue; their
 bindings do not partition or reserve work. A claim returns either an issue (`resolve-issue`) or a
 queued PR-fix item (`fix-pr`), and creates a `CoderRun`. Follow-ups are deduplicated on the PR-fix
@@ -270,7 +271,7 @@ checking it.
 
 | Where | Setting | Value / meaning |
 |---|---|---|
-| Courier HelmRelease | `dispatch.enabled` / queue:profile:agent / `pollInterval` | `true` / `local:local:courier-local`, `local:minimax:courier-cloud`, `escalated:frontier:courier-frontier` / `30s` |
+| Courier HelmRelease | `dispatch.enabled` / queue:profile:agent / `pollInterval` | `true` / `local:local:courier-local`, `local:minimax:courier-cloud`, `local:deepseek:courier-deepseek`, `escalated:frontier:courier-frontier` / `30s` |
 | Courier HelmRelease | `executor.mcp.githubURL` | GitHub's hosted MCP (`https://api.githubcopilot.com/mcp/`) |
 | LaneProfile `local` | `concurrency` | `1`: one run at a time (Courier's flash-next slot) |
 | LaneProfile `local` | `roles` / `framing` | the models above, and the coordinator's standing instructions |
