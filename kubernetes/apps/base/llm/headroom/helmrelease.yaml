@@ -39,23 +39,16 @@ spec:
               repository: ghcr.io/headroomlabs-ai/headroom
               tag: 0.41.0-slim-nonroot@sha256:686a86ad0f7dba60816b5d3d6f6438a02323d256d70491c6448526212c6c08b3
             env:
-              # Headroom requires inbound auth for non-loopback binds. The
-              # token gates /v1/* for the guardrail and /metrics for the
-              # scraper; /livez and /readyz are token-exempt so the kubelet
-              # probes keep working. HEADROOM_COMPRESS_ALLOW_REMOTE remains
-              # required for the guardrail to reach /v1/compress at all.
               HEADROOM_COMPRESS_ALLOW_REMOTE: "1"
               HEADROOM_HOST: 0.0.0.0
               HEADROOM_MODE: cache
               HEADROOM_PORT: &port 8787
-              HEADROOM_PROXY_TOKEN:
-                valueFrom:
-                  secretKeyRef:
-                    key: HEADROOM_PROXY_TOKEN
-                    name: headroom
               HEADROOM_TELEMETRY: "off"
               HEADROOM_WORKSPACE_DIR: /data/headroom
               HF_HOME: /data/huggingface
+            envFrom:
+              - secretRef:
+                  name: headroom
             probes:
               liveness:
                 enabled: true
