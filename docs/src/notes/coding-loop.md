@@ -20,7 +20,7 @@ check runtime state when that distinction matters.
 GitHub issue
     │  Dispatch scheduled sync (15m)
     ▼
-Dispatch cache ──► hosted groomer (qwen3.8-flash-next) ──► lane: local / frontier / backlog
+Dispatch cache ──► hosted groomer (`grooming-pool`) ──► lane: local / frontier / backlog
     │  Courier consumers poll shared queue (30s; local or escalated alias)
     ▼
 CoderRun ──► coordinator pod (profile-dependent)
@@ -43,7 +43,7 @@ history has the old version of this page. Dates on this page are UTC.
 **1. Sync.** Dispatch's in-app scheduler syncs tracked repos every 15m. Closed issues are
 forced to `status/done` on GitHub itself, and `renovate`-labelled issues are excluded.
 
-**2. Groom.** The hosted groomer grooms one issue every 15m on `qwen3.8-flash-next`
+**2. Groom.** The hosted groomer grooms one issue every 15m on `grooming-pool` (`qwen3.8-flash-next` primary, `glm-5.3-flash` and `gpt-6.1-sol` rungs)
 (256k context, repository context enabled, 8m per-call timeout). A run produces a validated
 grooming plan: labels, lane, readiness, and optionally a close. The plan is applied
 idempotently. Readiness is derived and re-checked for freshness when the default branch
