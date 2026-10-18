@@ -43,7 +43,7 @@ history has the old version of this page. Dates on this page are UTC.
 **1. Sync.** Dispatch's in-app scheduler syncs tracked repos every 15m. Closed issues are
 forced to `status/done` on GitHub itself, and `renovate`-labelled issues are excluded.
 
-**2. Groom.** The hosted groomer grooms one issue every 15m on `grooming-pool` (`qwen3.8-flash-next` primary, `glm-5.3-flash` and `gpt-6.1-sol` rungs)
+**2. Groom.** The hosted groomer grooms one issue every 15m on `grooming-pool` (`qwen3.8-flash-next` primary, `glm-5.3-flash` (Hyper, then Z.AI) and `gpt-6.1-sol` rungs)
 (256k context, repository context enabled, 8m per-call timeout). A run produces a validated
 grooming plan: labels, lane, readiness, and optionally a close. The plan is applied
 idempotently. Readiness is derived and re-checked for freshness when the default branch

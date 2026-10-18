@@ -61,6 +61,35 @@ spec:
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
+  name: grooming-pool-glm-flash-zai
+spec:
+  modelName: grooming-pool
+  proxyRef: litellm
+  params:
+    model: openai/glm-5.3-flash
+    apiBase: https://api.z.ai/api/coding/paas/v4
+    apiKey: os.environ/ZAI_API_KEY
+    additional:
+      order: 3
+      allowed_openai_params:
+      - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 1000000
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    supportsPromptCaching: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 1.5e-07
+      cache_creation_input_token_cost: 1.5e-07
+      cache_read_input_token_cost: 3.0e-08
+      output_cost_per_token: 5.0e-07
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/litellm.home-operations.com/litellmmodel_v1alpha1.json
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
   name: grooming-pool-gpt-6.1-sol
 spec:
   modelName: grooming-pool
