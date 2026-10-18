@@ -41,10 +41,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ inputs.pr_number }}
         run: |
-          # Resolve both values from the API, never from a PR-controlled
-          # shell expansion. The boolean also covers manual Renovate re-reviews.
+          # Resolve the head from the API, never from PR-controlled shell text.
           gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '"head_sha=\(.head.sha)\nis_renovate=\(.head.ref | startswith("renovate/"))"' \
+            --jq '"head_sha=\(.head.sha)"' \
             >> "$GITHUB_OUTPUT"
 
       - name: Checkout
@@ -62,7 +61,7 @@ jobs:
 
       - name: Analyze PR with reusable AI reviewer
         id: analyze
-        uses: misospace/pr-reviewer-action@593f1b7b41bb05aa18d1f9278205e7204b1505ab # v3.5.0
+        uses: misospace/pr-reviewer-action@e207a7d11d2ee41f77493b2314e30e7ca694da50 # v3.6.0
         env:
           KONFLATE_MCP_URL: https://konflate.jory.dev/mcp
         with:
@@ -81,6 +80,7 @@ jobs:
           fallback-model-context-tokens: ${{ vars.FALLBACK_CONTEXT_TOKENS }}
           ai-fallback-api-key: ${{ secrets.LITELLM_API_KEY }}
           review-routing-mode: auto
+          repository-skills: "true"
           ai-smart-base-url: ${{ vars.LITELLM_URL }}
           ai-smart-api-format: ${{ vars.SMART_FORMAT }}
           ai-smart-model: ${{ vars.SMART_MODEL }}
@@ -91,10 +91,9 @@ jobs:
           search-url: "https://search.jory.dev/search"
           tool-allowed-gh-api-repos: "*"
           tool-mcp-servers: "konflate=https://konflate.jory.dev/mcp"
-          # Before native repo skills (#1043) are available, select the
-          # Renovate SKILL.md using the action's trusted-base prompt loader.
-          # Other PRs keep the normal prompt, including manual re-reviews.
-          system-prompt-file: ${{ ((github.event_name == 'pull_request' && startsWith(github.head_ref, 'renovate/')) || steps.prctx.outputs.is_renovate == 'true') && '.agents/skills/renovate-review/SKILL.md' || '.agents/instructions/pr-review.instructions.md' }}
+          # General conventions stay appended; focused Renovate/GitOps guidance
+          # is discovered through the trusted-base repository-skill catalog.
+          system-prompt-file: .agents/instructions/pr-review.instructions.md
           system-prompt-mode: append
           standards-file-candidates: "AGENTS.md"
           evidence-providers-file: .github/konflate-evidence-providers.json
