@@ -5,7 +5,7 @@ description: Review Renovate dependency updates in this Flux/GitOps home-ops rep
 
 # Review a Renovate PR in home-ops
 
-Determine **what changes on deployment and whether this repository relies on the old behavior**. Flux can reconcile `kubernetes/` changes soon after merge. This skill is loaded by the AI PR Review workflow for `renovate/*` branches; it adds repository-specific investigation steps to the bundled reviewer. The repository's **trusted `AGENTS.md` standards remain authoritative**.
+Determine **what changes on deployment and whether this repository relies on the old behavior**. Flux can reconcile `kubernetes/` changes soon after merge. The native reviewer catalogs this skill from the trusted base. Read it for Renovate PRs; it adds repository-specific investigation steps to the bundled reviewer. The repository's trusted AGENTS.md standards and home-ops-gitops-review skill remain authoritative.
 
 ## 1. Establish the update and deployment footprint
 

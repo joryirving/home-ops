@@ -1,11 +1,6 @@
 # Home-ops PR review conventions
 
-This file is the `system_prompt_file` for the AI PR Review workflow
-(`.github/workflows/ai-pr-review.yaml`), used with `system_prompt_mode: append`:
-the action keeps its (conditionally-assembled) bundled default system prompt and
-appends this file as a repo-specific addendum. Only home-ops conventions live
-here — the base review instructions, output schema, and host-platform / digest
-guidance come from the action and no longer need to be copied or kept in sync.
+This file is appended by the AI PR Review workflow as general home-ops review context. The action owns its default review instructions and output schema. Detailed GitOps policy lives in the home-ops-gitops-review skill; upstream-investigation steps for Renovate PRs live in the renovate-review skill and are loaded on demand by the native repository-skill loader.
 
 ## Home-ops conventions
 
@@ -15,9 +10,7 @@ If a pattern is explicitly documented as intentional in `AGENTS.md` (or in the c
 
 ### Documented conventions to honour without flagging
 
-- **`metadata.namespace` is intentionally absent on `HelmRelease` and `Kustomization` resources.** Each namespace overlay `kubernetes/apps/<cluster>/<namespace>/kustomization.yaml` sets kustomize's `namespace:` (e.g., `namespace: llm`) for the Flux `Kustomization`s it lists, and the replacement component at `kubernetes/components/replacements/ks.yaml` copies it into each one's `spec.targetNamespace`, which places the app's `HelmRelease` and other resources in that namespace. Do not flag the absence of `metadata.namespace` on these resources as an issue.
-
-- **OCI artifacts are pinned by tag/version, not by SHA digest.** The "Prefer `@sha256:` digests" policy in `AGENTS.md` applies to container images only. OCI artifacts pulled via `OCIRepository` (Helm charts in OCI registries) are pinned by tag or version, since OCI artifacts do not support SHA-tag references the same way container images do. Do not flag the absence of `@sha256:` on OCI artifact references.
+Load the home-ops-gitops-review skill for HelmRelease, namespace propagation, OCI artifact pinning, secret management, image digests, and cluster-specific policy. Do not duplicate its rules here; keep that skill as the single detailed source of truth.
 
 ### Compact Renovate digest-only reviews
 
