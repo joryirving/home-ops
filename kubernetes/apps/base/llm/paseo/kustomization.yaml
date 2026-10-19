@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./externalsecret.yaml
+  - ./helmrelease.yaml
+  - ./httproute.yaml
+  - ./ocirepository.yaml
+configMapGenerator:
+  - name: paseo-config
+    files:
+      - opencode.json=./config/opencode.json
+      - paseo.json=./config/paseo.json
+generatorOptions:
+  disableNameSuffixHash: true

@@ -4,17 +4,19 @@ kind: Model
 metadata:
   name: qwen3.8-flash-next
 spec:
-  source: hf://bartowski/Qwen3.8-Flash-Next-GGUF
+  source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
   sourceSecretRef:
     name: huggingface
   files:
-    - Qwen3.8-Flash-Next-IQ4_NL/Qwen3.8-Flash-Next-IQ4_NL-00001-of-00003.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL/Qwen3.8-Flash-Next-IQ4_NL-00002-of-00003.gguf
-    - Qwen3.8-Flash-Next-IQ4_NL/Qwen3.8-Flash-Next-IQ4_NL-00003-of-00003.gguf
-    - mmproj-Qwen3.8-Flash-Next-f16.gguf
-  mmproj: mmproj-Qwen3.8-Flash-Next-f16.gguf
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00002-of-00004.gguf
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00003-of-00004.gguf
+    - UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00004-of-00004.gguf
+    - MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
+    - mmproj-BF16.gguf
+  mmproj: mmproj-BF16.gguf
   format: gguf
-  quantization: IQ4_NL
+  quantization: UD-Q4_K_XL
   hardware:
     accelerator: rocm
     gpu:
@@ -27,18 +29,6 @@ spec:
           resourceClaimTemplateName: llama-strix-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
-kind: Model
-metadata:
-  name: qwen3.8-flash-next-mtp
-spec:
-  source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
-  sourceSecretRef:
-    name: huggingface
-  files:
-    - MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
-  format: gguf
----
-apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
   name: qwen3.8-flash-next
@@ -48,51 +38,41 @@ metadata:
     inference.llmkube.dev/idle-endpoint: /health
 spec:
   modelRef: qwen3.8-flash-next
-  modelCache:
-    claimName: llmkube-skirk-cache
-  runtime: llamacpp
-  image: ghcr.io/joryirving/llama-qwen4exp:b0f31f58-rocm-custom@sha256:e9f705a606a147836fab6667199e1443943542026b4091e3110bdfacdbac5048
-  rolloutPolicy:
-    waitForIdle: false
-    idleTimeoutSeconds: 86400
-  replicas: 1
-  priority: high
-  nodeSelector:
-    topology.kubernetes.io/gpus: amd
-  tolerations:
-    - key: llm-workload
-      operator: Exists
-      effect: NoSchedule
-  contextSize: 262144
-  parallelSlots: 1
-  flashAttention: true
-  jinja: true
-  speculativeDecoding:
-    type: draft-mtp
-    draftModelRef: qwen3.8-flash-next-mtp
-    nDraftMax: 2
-  cacheTypeK: f16
-  cacheTypeV: f16
-  batchSize: 16384
-  uBatchSize: 16384
-  env:
-    - name: HSA_OVERRIDE_GFX_VERSION
-      value: "11.5.1"
-    - name: GGML_HIP_ENABLE_UNIFIED_MEMORY
-      value: "1"
-  resources:
-    cpu: "500m"
-    memory: 30Gi
-  extraArgs:
-    - --load-mode
-    - none
-    - --lazy-mode
-    - on-direct
-    - -fit
-    - "off"
-    - --cache-ram
-    - "12228"
-    - --temp
+  runtime: generic
+  image: ghcr.io/gufo-org/toolboxes/gufo-runtime:0.18.0@sha256:4d784ef0043efe8ca07b8e7d519903a14345b068be2b4762c4896eb449704e81
+  # image: ghcr.io/joryirving/toolboxes/gufo-runtime:sha-24965a7493acb54508e5b110d862bd87d5a910ea@sha256:fec70b8ab2035ce13206a3d6b5444de04a9f578a10b44314091d0f9b9727968b
+  command:
+    - gufo
+  args:
+    - serve
+    - llm
+    - --host
+    - 0.0.0.0
+    - --port
+    - "8080"
+    - --sessions
+    - "2"
+    - --max-pending
+    - "32"
+    - --max-pending-per-client
+    - "16"
+    - --max-request-bytes
+    - "67108864"
+    - --model
+    - /models/f869f01c859f8577/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
+    - --mmproj
+    - /models/f869f01c859f8577/mmproj-BF16.gguf
+    - --served-model-name
+    - qwen3.8-flash-next
+    - --context
+    - "262144"
+    - --max-tokens
+    - "65536"
+    - --speculative
+    - mtp
+    - --mtp-model
+    - /models/f869f01c859f8577/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
+    - --temperature
     - "1.0"
     - --top-p
     - "0.95"
@@ -104,11 +84,48 @@ spec:
     - "0.0"
     - --repeat-penalty
     - "1.0"
-    - --chat-template-kwargs
-    - '{"reasoning_effort":"low"}'
-    - --no-reasoning-preserve
-    - --image-min-tokens
-    - "1024"
+    - --reasoning-effort
+    - medium
+    - --preserve-thinking
+    - "off"
+    - --cache-disk
+    - /cache/continuation
+    - --cache-disk-bytes
+    - "68719476736"
+  skipModelInit: true
+  contextSize: 262144
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
+  replicas: 1
+  priority: high
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  podSecurityContext:
+    fsGroup: 102
+    fsGroupChangePolicy: OnRootMismatch
+  env:
+    - name: HSA_OVERRIDE_GFX_VERSION
+      value: "11.5.1"
+  resources:
+    cpu: "1"
+    memory: 108Gi
+  extraVolumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llmkube-skirk-cache
+  extraVolumeMounts:
+    - name: models
+      mountPath: /models
+      readOnly: true
+    - name: models
+      mountPath: /cache
+      subPath: gufo-cache
+  containerPort: 8080
   endpoint:
     port: 8080
     type: ClusterIP
