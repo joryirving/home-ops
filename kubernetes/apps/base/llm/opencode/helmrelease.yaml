@@ -65,12 +65,30 @@ spec:
         ports:
           http:
             port: *port
+          api:
+            port: *port
     route:
       app:
         hostnames: ["opencode.jory.dev"]
         parentRefs:
           - name: envoy-external
             namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *port
+      api:
+        hostnames: ["opencode-api.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        annotations:
+          gatus.home-operations.com/endpoint: |
+            conditions: ["len([BODY]) == 0"]
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *port
     persistence:
       home:
         existingClaim: *app
