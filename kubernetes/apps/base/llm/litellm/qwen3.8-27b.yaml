@@ -56,6 +56,14 @@ spec:
       value: "8"
     - name: MAX_LEN
       value: "147456"
+    # Trial: 4-bit TurboQuant KV pool (~2.4x tokens vs fp8) to stop the
+    # capacity preemption thrash under 2+ deep concurrent requests.
+    # EXTRA_ARGS lands after CTX=long's ATTN_ARGS, so this shadows
+    # --kv-cache-dtype fp8. Known upstream risk: vLLM 0.28's chunked-prefill
+    # scratch OOMed at 32k+ prompts on this card; 0.31 boot is the test.
+    # Rollback: delete this env.
+    - name: EXTRA_ARGS
+      value: "--kv-cache-dtype turboquant_4bit_nc"
     - name: PREFIX_CACHE
       value: "1"
     - name: VERIFY
