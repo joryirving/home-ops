@@ -41,6 +41,11 @@ spec:
               PASEO_WEB_UI_ENABLED: "true"
               PASEO_RELAY_ENABLED: "false"
               PASEO_LOG_FILE_LEVEL: info
+              CONTEXT7_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: opencode
+                    key: CONTEXT7_API_KEY
               LITELLM_API_KEY:
                 valueFrom:
                   secretKeyRef:
@@ -107,6 +112,14 @@ spec:
           paseo:
             app:
               - path: /etc/paseo
+      opencode-config:
+        type: configMap
+        name: opencode-config
+        advancedMounts:
+          paseo:
+            app:
+              - path: /etc/paseo/opencode.json
+                subPath: opencode.json
       tmp:
         type: emptyDir
         advancedMounts:
