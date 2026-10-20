@@ -46,6 +46,12 @@ spec:
                   secretKeyRef:
                     name: opencode
                     key: CONTEXT7_API_KEY
+              GIT_CONFIG_GLOBAL: /etc/paseo/.gitconfig
+              GH_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: opencode
+                    key: GH_TOKEN
               LITELLM_API_KEY:
                 valueFrom:
                   secretKeyRef:
@@ -124,6 +130,11 @@ spec:
               items:
                 - key: paseo.json
                   path: paseo.json
+          - secret:
+              name: paseo
+              items:
+                - key: gitconfig
+                  path: .gitconfig
           - configMap:
               name: opencode-config
               items:
