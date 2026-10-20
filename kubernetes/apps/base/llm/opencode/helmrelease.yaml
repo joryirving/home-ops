@@ -26,7 +26,7 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/opencode
-              tag: 2.0.32@sha256:03f9865cf81b0f4d062b1c7556c9af14acbb1a6efc40b48a7efb67df1b9657c5
+              tag: 2.1.1@sha256:c59b0528d4fc7c3be0e2eb77b00ff05c24db11c5e439cc306cfebb0beb0578a3
             command: ["/etc/opencode/entrypoint.sh"]
             env:
               HOME: &homepath /home/opencode
@@ -71,6 +71,22 @@ spec:
         parentRefs:
           - name: envoy-external
             namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *port
+      api:
+        hostnames: ["opencode-api.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        annotations:
+          gatus.home-operations.com/endpoint: |
+            conditions: ["len([BODY]) == 0"]
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: *port
     persistence:
       home:
         existingClaim: *app

@@ -25,7 +25,7 @@ Dispatch cache ──► hosted groomer (`grooming-pool`) ──► lane: local 
     ▼
 CoderRun ──► coordinator pod (profile-dependent)
     │          ├─ local profile: qwen3.8-flash-next + qwen3.8-27b roles
-    │          ├─ minimax profile: MiniMax-M3.1-Flash-Preview solo
+    │          ├─ minimax profile: MiniMax-M3.1-Flash solo
     │          ├─ hyper profile: glm-5.3-flash-hyper solo (same `local` queue)
     │          └─ frontier profile: glm-5.3-flash coordinator + role-specific cloud models
     ▼
@@ -52,7 +52,7 @@ acceptance criterion is grounded in repository content read at a pinned SHA; dup
 superseded stay recommendations. Dispatch's `docs/groomer-close-policy.md` is the policy.
 
 **3. Claim.** Courier polls `next-task` every 30s for configured queue lanes. Current bindings are
-`courier-local` -> `local`, `courier-cloud` -> `local` (MiniMax-M3.1-Flash-Preview solo profile), `courier-hyper` -> `local` (Hyper-only `glm-5.3-flash-hyper` hyper profile), and
+`courier-local` -> `local`, `courier-cloud` -> `local` (MiniMax-M3.1-Flash solo profile), `courier-hyper` -> `local` (Hyper-only `glm-5.3-flash-hyper` hyper profile), and
 `courier-frontier` -> `escalated` (frontier profile). These consumers share Dispatch's queue; their
 bindings do not partition or reserve work. A claim returns either an issue (`resolve-issue`) or a
 queued PR-fix item (`fix-pr`), and creates a `CoderRun`. Follow-ups are deduplicated on the PR-fix
@@ -111,8 +111,7 @@ capacity is still quota-limited; do not call it free capacity or assume it is un
 automated pipeline and requests contend for the same hardware. Keep coding work bounded and avoid
 extra fan-out unless independent work justifies its latency and context cost. The `agentic-local`
 role is available in the Courier profile for substantial recon or review, but is not the default
-choice for small, understood tasks. `gemma-4-12b-it-qat` stays deployed for other uses; it is not
-a Courier coding role.
+choice for small, understood tasks. The former 9070XT reviewer is permanently retired.
 
 `qwen3.8-flash-next` serves two slots: **slot 1 is Courier's coordinator; slot 2 is shared**
 with `agentic-local`, the home-ops PR reviewer and every other in-cluster consumer. Work that

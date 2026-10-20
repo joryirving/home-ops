@@ -6,6 +6,8 @@ on:
     # `labeled` enables the one-click re-review: add the `ai-review` label to
     # force a fresh review (only write/triage can label — self-authorizing).
     types: [opened, reopened, synchronize, ready_for_review, labeled]
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -16,7 +18,7 @@ concurrency:
   # `labeled` events each get their own group: net-new PRs are auto-labeled
   # (Renovate adds several at creation), and with a shared group +
   # cancel-in-progress those label runs would cancel the real opened review.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}${{ github.event.action == 'labeled' && format('-label-{0}', github.run_id) || '' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number || github.ref }}${{ github.event.action == 'labeled' && format('-label-{0}', github.run_id) || '' }}${{ github.event_name == 'issue_comment' && '-comment' || '' }}
   cancel-in-progress: true
 
 permissions:
@@ -29,30 +31,46 @@ jobs:
     # pull_request is the normal path; adding the `ai-review` label is the
     # normal re-review trigger (handled natively by the action). workflow_dispatch
     # remains as a manual force-review path.
-    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.id == github.repository_id && !github.event.pull_request.draft) || github.event_name == 'workflow_dispatch' }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.id == github.repository_id && !github.event.pull_request.draft) || github.event_name == 'workflow_dispatch' || (github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.comment.body == '/ai-review') }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
     steps:
       - name: Resolve PR head for re-review
         id: prctx
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'issue_comment'
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ inputs.pr_number }}
+          PR_NUMBER: ${{ github.event.issue.number || inputs.pr_number }}
+          REPOSITORY_ID: ${{ github.repository_id }}
         run: |
-          # Resolve the head from the API, never from PR-controlled shell text.
-          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '"head_sha=\(.head.sha)"' \
-            >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          # Only numeric PR IDs reach the API; no PR-authored text reaches the shell.
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo "::error::Invalid PR number"; exit 1; }
+          pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
+          # A PR-comment workflow runs with base-repository credentials. Never
+          # check out a fork/draft/closed PR's head under those privileges.
+          if [[ "$GITHUB_EVENT_NAME" == "issue_comment" ]] && \
+             [[ "$(jq -r '.state' <<< "$pr_json")" != "open" || \
+                "$(jq -r '.draft' <<< "$pr_json")" != "false" || \
+                "$(jq -r '.head.repo.id // empty' <<< "$pr_json")" != "$REPOSITORY_ID" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping comment review: closed, draft, or fork PR." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          head_sha="$(jq -r '.head.sha // empty' <<< "$pr_json")"
+          [[ "$head_sha" =~ ^[[:xdigit:]]{40}$ ]] || { echo "::error::Invalid PR head SHA"; exit 1; }
+          printf "eligible=true\nhead_sha=%s\n" "$head_sha" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
+        if: github.event_name != 'issue_comment' || steps.prctx.outputs.eligible == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || steps.prctx.outputs.head_sha }}
 
       - name: Generate bot token
+        if: github.event_name != 'issue_comment' || steps.prctx.outputs.eligible == 'true'
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
@@ -60,13 +78,15 @@ jobs:
           private-key: ${{ secrets.SAFFRON_APP_PRIVATE_KEY }}
 
       - name: Analyze PR with reusable AI reviewer
+        if: github.event_name != 'issue_comment' || steps.prctx.outputs.eligible == 'true'
         id: analyze
-        uses: misospace/pr-reviewer-action@e207a7d11d2ee41f77493b2314e30e7ca694da50 # v3.6.0
+        uses: misospace/pr-reviewer-action@5b1839535748f3afd1bd3ef04e8009302cba9aa6 # v3.7.0
         env:
           KONFLATE_MCP_URL: https://konflate.jory.dev/mcp
+          PR_REVIEWER_GATE_HEAD_SHA: ${{ steps.prctx.outputs.head_sha }}
         with:
           github-token: ${{ steps.app-token.outputs.token }}
-          pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
+          pr-number: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
           force-review: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
           ai-base-url: ${{ vars.LITELLM_URL }}
           ai-api-format: ${{ vars.PRIMARY_FORMAT }}

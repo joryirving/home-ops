@@ -11,19 +11,19 @@ reference for keeping those aliases meaningful and for designing intent-based ro
 `dsv4f` by `dsv4.1f` on Charm Hyper with a capped Neuralwatt rung (2026-09-26), Flash-Next moved to gufo
 on ROCm (2026-09-24), `qwen3.8-27b` became Swift 1.5 on vLLM (2026-09-25), `muse-glimmer` is the default
 resident of the 3090 pool, Kimi leads `frontier-pool` and `reasoning-pool` (2026-09-27), MiniMax
-consumers moved to `MiniMax-M3.1-Flash-Preview` with the pool rungs reworked (2026-10-13), `glm-5.3-flash` prefers Charm Hyper over Z.AI, Courier gains a Hyper-only `glm-5.3-flash-hyper` `hyper` lane on the `local` queue, and the frontier coordinator moves to `glm-5.3-flash` (2026-10-15), and
-`gemma-4-12b-it-qat` is out of the coding roles. The **Model inventory**, pool, consumer and routing
+consumers moved to `MiniMax-M3.1-Flash` with the pool rungs reworked (2026-10-13), `glm-5.3-flash` prefers Charm Hyper over Z.AI, Courier gains a Hyper-only `glm-5.3-flash-hyper` `hyper` lane on the `local` queue, and the frontier coordinator moves to `glm-5.3-flash` (2026-10-15), and
+retired reviewer is out of the coding roles. The **Model inventory**, pool, consumer and routing
 sections below reflect this; the **capability ranking** and **v2 bench** sections still measure older
 models (see the notes there).
 
 The 2026-09-08 pass renamed the local aliases to model-specific names (`llama-nvidia`→`qwen3.8-27b`,
-`llama-strix`→`qwen3.8-flash-next`, `llama-reviewer`→`gemma-4-12b-it-qat`, plus `-chat` twins), swapped
-the Strix box from Qwen3.6-35B-A3B to Qwen3.8-Flash-Next, moved the reviewer lane to Gemma 4 12B-it QAT
-on the 9070XT (LM Studio `gemma-wake`), removed the short-lived `llama-vision`, and swapped the reranker
+`llama-strix`→`qwen3.8-flash-next`, `llama-reviewer`→retired reviewer, plus `-chat` twins), swapped
+the Strix box from Qwen3.6-35B-A3B to Qwen3.8-Flash-Next, moved the reviewer lane to retired 9070XT reviewer
+on the 9070XT (LM Studio retired wake endpoint), removed the short-lived `llama-vision`, and swapped the reranker
 to jina on CPU (since replaced by bge-reranker-v2-m3).
 
 The prior pass (2026-08-25) retired Opencode Go and Moonshot, removed `glm-5.2`, renamed
-`llama-strix-nemotron` to `llama-reviewer` (now `gemma-4-12b-it-qat`), moved the local models to
+`llama-strix-nemotron` to `llama-reviewer` (now retired reviewer), moved the local models to
 unsloth builds, and added a non-thinking `-chat` door beside each one.
 
 This is a strategy snapshot, not a live quota ledger. Provider pricing, rolling allowances, and
@@ -46,7 +46,7 @@ Neuralwatt supplies energy-metered PAYG as `dsv4.1f` rung 2 behind Charm Hyper, 
 | Plan                | Price                                        | Cap                                                          | Reset                              | Models                                                | Primary use                                                                                               |
 | ------------------- | -------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage | rolling (3h chat) + weekly (Codex) | GPT-6 Astra, Sol, Luna                                | Astra `frontier-pool` rung 2; Sol `reasoning-pool` rung 2; Luna `implementation-pool` lead                |
-| **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | legacy Token Plan: grandfathered unlimited limits            | rolling 5h                         | M3.1 Flash Preview (primary), M3, M2.7 (retires 2026-11-18) — Anthropic endpoint | Agentic reasoning workhorse (`MiniMax-M3.1-Flash-Preview`); M2.7 auto-reroutes to M3.1 from 2026-10-19     |
+| **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | legacy Token Plan: grandfathered unlimited limits            | rolling 5h                         | M3.1 Flash (primary), M3, M2.7 (retires 2026-11-18) — Anthropic endpoint | Agentic reasoning workhorse (`MiniMax-M3.1-Flash`); M2.7 auto-reroutes to M3.1 from 2026-10-19     |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                             | rolling 5h                         | GLM-5.3 and GLM-5.3-Flash on the Z.AI coding endpoint | `frontier-pool` rung 3 (GLM-5.3); `glm-5.3-flash` rung 2, behind Hyper rung 1 (Flash)                             |
 | **Kimi Coding**     | ~$180 USD/yr ($15/mo; ~$261 CAD/12mo)        | plan allowance                                               | plan-defined                       | Kimi K2.7 Code, Kimi K3                               | `frontier-pool` lead (K3); `reasoning-pool` lead (K2.7)                                                   |
 | **Charm Hyper**     | $20 USD/mo                                   | $12.50 of usage per 24h                                      | every 24h                          | GLM-5.3-Flash, DeepSeek V4.1 Flash (`HYPER_API_KEY`)  | `glm-5.3-flash` order 1; Hyper-only `glm-5.3-flash-hyper` for the whole `hyper` lane; `grooming-pool` rung 2; `dsv4.1f` order 1; `implementation-pool` rung 2; `reasoning-pool` rung 3         |
@@ -102,8 +102,6 @@ has no `-chat` twin.
 | `muse-glimmer`            | 3090, ModelPool `nvidia` default resident          | Muse-Glimmer-30B UD-Q5_K_M, llama.cpp CUDA, DFlash draft, mmproj, 2 slots | 131k                                        | OpenClaw subagents + Sage, memini LLM, `local-pool` rung 1, vision fallback             |
 | `qwen3.8-27b`             | 3090, ModelPool `nvidia` via `nvidia-router-proxy` | Swift 1.5 (`ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ`), vLLM, MTP           | 144k total (MAX_LEN 147456; LiteLLM 122880) | Coding lane (Courier `coder-local`, `implementation-pool` rung 2); text-only            |
 | `qwen3.8-27b-chat`        | same server                                        | —                                                                         | same                                        | Non-thinking door; `auto` classifier                                                    |
-| `gemma-4-12b-it-qat`      | 9070XT (Windows, LM Studio)                        | Gemma 4 12B-it QAT                                                        | 262144                                      | Manual use (`gemma-wake`); `local-pool` rung 3; Hermes `local-reviewer`                 |
-| `gemma-4-12b-it-qat-chat` | same server                                        | —                                                                         | 262144                                      | Non-thinking door; `local-pool-chat` rung 3                                             |
 | `embed`                   | CPU (3 replicas)                                   | Qwen3-Embedding-0.6B Q8_0                                                 | 32k                                         | Embeddings (1024-dim) for memini + toolhive vMCP                                        |
 | `rerank`                  | CPU (3 replicas)                                   | bge-reranker-v2-m3 Q8_0                                                   | —                                           | memini reranking                                                                        |
 
@@ -126,9 +124,22 @@ variant was deleted (FP8 doesn't work on gfx1151).
 
 ### Cloud (flat-rate subscriptions)
 
+MiniMax pricing source (checked 2026-10-19):
+[official pricing](https://platform.minimax.io/docs/pricing/overview).
+M3.1 Flash is $0.15/$0.60/$0.015 per million input/output/cache-read tokens,
+flat across the listed context range. New tokens use the standard input rate;
+there is no separate Flash cache-write surcharge listed. M3 Standard remains
+$0.30/$1.20/$0.06 at <=512k input, and $0.60/$2.40/$0.12 above 512k.
+M3 Priority is 1.5x Standard; no priority tier is configured here.
+These are list-price accounting values, not a promise of subscription quota equivalence.
+After this change deploys, update the repository GitHub Actions `FALLBACK_MODEL`
+variable to `MiniMax-M3.1-Flash`; temporary failures during that interval are accepted.
+
+
+
 | Alias                 | Subscription                      | Upstream model                              | Ctx (in) | Role                                                                                          |
 | --------------------- | --------------------------------- | ------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
-| `MiniMax-M3.1-Flash-Preview` | MiniMax Plus               | MiniMax-M3.1-Flash-Preview (Anthropic endpoint) | 1M   | OpenClaw default + Matcha primary; `auto` MEDIUM and miss default; Hermes/opencode `reviewer` + `explorer`. Thinking always on; `reasoning_effort` low/medium/high/xhigh/max (default max). No published upstream benchmarks; config assumes M3 pricing provisionally |
+| `MiniMax-M3.1-Flash` | MiniMax Plus               | MiniMax-M3.1-Flash (Anthropic endpoint) | 1M   | OpenClaw default + Matcha primary; `auto` MEDIUM and miss default; Hermes/opencode `reviewer` + `explorer`. Thinking always on; `reasoning_effort` low/medium/high/xhigh/max (default max). Published list pricing: $0.15/M input, $0.60/M output, $0.015/M cache reads; no long-context tier listed |
 | `MiniMax-M3`          | MiniMax Plus                      | MiniMax-M3 (Anthropic endpoint)             | 1M       | Retained standalone for rollback and manual use; no pool rungs                                 |
 | `MiniMax-M2.7`        | MiniMax Plus                      | MiniMax-M2.7                                | 204.8k   | Standalone only; upstream retires it 2026-11-18, and M-Plan keys auto-reroute to M3.1 from 2026-10-19 |
 | `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model    |
@@ -185,8 +196,8 @@ One file per pool in `models/` (`frontier-pool.yaml`, `reasoning-pool.yaml`, `im
 | `frontier-pool`       | 1 -> 3 | Kimi K3 (Kimi Coding) -> GPT-6 Astra (ChatGPT) -> GLM-5.3 (Z.AI)                                                    | none                                          | Frontier escalation; dsv4.1f moved to reasoning (2026-10-13)       |
 | `reasoning-pool`      | 1 -> 4 | Kimi K2.7 (Kimi Coding) -> GPT-6.1 Sol (ChatGPT) -> DSV4.1F (Hyper) -> qwen3.8-flash-next                            | none; K2.7 drops `reasoning_effort`         | Planning lane; dsv4.1f is the flat-rate floor, flash-next the local one |
 | `implementation-pool` | 1 -> 3 | GPT-6 Luna (ChatGPT) -> GLM-5.3-Flash (Hyper) -> qwen3.8-27b (3090)                                                 | Luna `max` (`extra_body`); 27b `xhigh`        | Implementation lane, deliberately below the planning lane          |
-| `local-pool`          | 1 -> 3 | muse-glimmer (3090) -> qwen3.8-flash-next (skirk) -> gemma-4-12b-it-qat (9070XT)                                   | none                                          | Local-only, $0 marginal                                            |
-| `local-pool-chat`     | 1 -> 3 | same members, non-thinking samplers                                                                                | flash-next and gemma `reasoning_effort: none` | OpenClaw lossless-claw; AI PR review primary                       |
+| `local-pool`          | 1 -> 3 | muse-glimmer (3090) -> qwen3.8-flash-next (skirk)                                   | none                                          | Local-only, $0 marginal                                            |
+| `local-pool-chat`     | 1 -> 2 | same members, non-thinking samplers                                                                                | flash-next `reasoning_effort: none` | OpenClaw lossless-claw; AI PR review primary                       |
 
 The three cloud-led pools are a capability ladder, not three copies of the same idea: `frontier-pool` for
 actual problems, `reasoning-pool` for planning, `implementation-pool` for carrying out a plan already
@@ -196,8 +207,8 @@ ChatGPT cap-out touches all three pools at once, so ChatGPT is still the most wi
 
 `local-pool` and `local-pool-chat` are the local-only ladder. The Courier, Dispatch and PR-review keys
 are allowed `local-pool`; OpenClaw's lossless-claw summary/expansion and the AI PR review workflow's
-primary model use `local-pool-chat`. Rung 3 is gemma, so those consumers still land on it when rungs 1
-and 2 fail, even though gemma is out of the coding roles.
+primary model use `local-pool-chat`. Both pools now contain only muse and Flash-Next;
+the former third reviewer rung is permanently retired.
 
 Reasoning effort is **passed through**, not pinned, on every ChatGPT rung except Luna, which is pinned
 to `max` via `extra_body: {reasoning: {effort: max}}` both in `implementation-pool` and in
@@ -227,7 +238,7 @@ declared window. It returned as rung 1 on 2026-09-27 (#10571); requests past 262
 
 ## Model capability ranking
 
-> **Stale as of the 2026-09-08 rename.** The scores and analysis below were measured against the previous local models — Qwen3.6-35B-A3B on the Strix box (now Qwen3.8-Flash-Next) and Nemotron 3.5 Lightning as the reviewer (now Gemma 4 12B-it QAT). The aliases have been renamed to match the current names, but the numbers have **not** been re-run; treat them as historical until re-benchmarked. Since then: the GPT-5.6 aliases were retired 2026-09-23 (GPT-6 Astra/Sol/Luna replaced them), `dsv4f` was retired 2026-09-26 (`dsv4.1f` replaced it), and `qwen3.8-27b` has served Swift 1.5 since 2026-09-25. Rows naming those aliases describe the models of the snapshot date.
+> **Stale as of the 2026-09-08 rename.** The scores and analysis below were measured against the previous local models — Qwen3.6-35B-A3B on the Strix box (now Qwen3.8-Flash-Next) and Nemotron 3.5 Lightning as the reviewer (now retired 9070XT reviewer). The aliases have been renamed to match the current names, but the numbers have **not** been re-run; treat them as historical until re-benchmarked. Since then: the GPT-5.6 aliases were retired 2026-09-23 (GPT-6 Astra/Sol/Luna replaced them), `dsv4f` was retired 2026-09-26 (`dsv4.1f` replaced it), and `qwen3.8-27b` has served Swift 1.5 since 2026-09-25. Rows naming those aliases describe the models of the snapshot date.
 
 Benchmark snapshot as of **2026-08-23** — perishable. Numbers remain largely **vendor
 self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Terminal-Bench
@@ -237,9 +248,8 @@ table as a statement about pricing, cache behaviour, or quota consumption.
 
 Rows for `dsv4p`, `glm-5.2`, `mimo-v2.5` and `mimo-v2.5-pro` are kept for reference only — those
 aliases were retired on 2026-08-25 and are no longer served. The Mellum2 row is likewise
-historical: in that snapshot the then-reviewer alias (later renamed `gemma-4-12b-it-qat`) served
-Nemotron 3.5 Lightning 30B-A3B; it now runs Gemma 4 12B-it QAT on the 9070XT (LM Studio `gemma-wake`)
-and is out of the coding process.
+historical: in that snapshot the then-reviewer alias served Nemotron 3.5 Lightning
+30B-A3B. The later 9070XT reviewer and its wake endpoint are now permanently retired.
 
 Rows are ordered by **AA-II**, the [Artificial Analysis Intelligence Index](https://artificialanalysis.ai/leaderboards/models)
 (v4.1.1) — the only axis in this table measured on one harness across every model here, and therefore
@@ -345,6 +355,16 @@ context is 262k; the 24GB 3090 runs `MAX_LEN` 147456 (~144k). There is no Qwen3.
 2026-09-25 the alias serves Swift 1.5 (`ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ`, #10496), so the vendor
 numbers in this row describe the base model, not the deployed one.
 
+⁸a **KV-history correction (2026-10-20).** From 2026-09-15 (`505ac596b`) to 2026-10-18 (`eedbe8a96`) the
+27B ran `CTX=huge` (KVarN k4v2, 4.9 GiB GPU pool ≈ 314k tokens) **plus a 16 GiB host CPU KV offload tier**
+(`--kv-offloading-size 16`). The large room figures quoted from that era were therefore not fully on-card,
+and its ~32 tok/s decode was suppressed by offload I/O over the Oculink x4 link — KVarN-native decode was
+never measured clean. Treat every cross-era room/speed comparison that touches those dates as confounded.
+Current baseline (2026-10-20, `31b5d20f0`): fp8 KV + MTP, ~174k pool (~1.18 full-depth 147k slots), ~64 tok/s
+request-derived p50. The 2026-10-20 TurboQuant trial (`turboquant_4bit_nc`, 253k pool) is **closed**: TQ+MTP
+corrupts output (repetition loops; matches syv-ai/HyperQwen#323, GSM8K 191→0) and TQ without MTP decodes at
+~21.5 tok/s solo — 3× down on fp8+MTP. Revisit only if upstream fixes the TQ×MTP interaction.
+
 ⁹ Terminal-Bench 2.0-only rows, shown as `n/p` in the 2.1 column to keep it comparable: MiniMax-M2.7
 **57.0**, MiMo-V2.5 **65.8**, MiMo-V2.5-Pro **68.4**, Qwen3.6-35B-A3B **51.5**. Separately, the
 MiMo-Pro LiveCodeBench 39.6 / GPQA 66.7 / AIME 37.3 the previous snapshot carried are
@@ -360,8 +380,7 @@ Qwen3.6 in the 2026-08-25 unsloth move). Since 2026-09-24 (#10479) it runs on gu
 UD-Q4_K_XL with the MTP head. Image analysis goes through `qwen3.8-flash-next-chat`, with `muse-glimmer`
 as router fallback, rather than a dedicated `llama-vision`, which was removed.
 
-Mellum2 (historical reviewer lane; this paragraph previously carried the retro-renamed alias
-`gemma-4-12b-it-qat`) publishes more than the previous snapshot credited it with — the
+Mellum2 (historical reviewer lane, now retired) publishes more than the previous snapshot credited it with — the
 [Mellum2 Instruct card](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) carries
 LiveCodeBench v6 37.2, EvalPlus 78.4, MultiPL-E 67.1, GPQA 40.9 and AIME 41.7, all self-reported. What
 it genuinely does not publish is any *agentic* coding bench: no SWE-bench of any slice, no
@@ -414,12 +433,10 @@ Reading it for routing:
   everywhere" to a 20-point AA-II spread (52 vs 32). `qwen3.8-flash-next` earns its place on the 262k window
   and vision, nothing else. The local box is now competitive with paid cheap-tier cloud, which is the
   single most decision-relevant change in this refresh.
-- **`gemma-4-12b-it-qat` is out of the coding process** (2026-09-27). It was kept as a non-Qwen
-  family split to review Qwen-authored code, but it missed the known defect in the 2026-09-22
-  adversarial review benchmark, and it depends on waking the gaming PC. It stays served (LiteLLM +
-  `gemma-wake`) for manual use; review now goes to MiniMax-M3 and `qwen3.8-flash-next`. It still
-  backs Hermes `local-reviewer` and is rung 3 of `local-pool`/`local-pool-chat`, so the AI PR review
-  workflow (primary `local-pool-chat`) can still land on it.
+- **Former 9070XT reviewer is permanently retired** (2026-10-19). It missed the
+  known defect in the 2026-09-22 adversarial review benchmark and depended on waking
+  the gaming PC. Its model aliases, wake route, Hermes role and commented pool
+  entries are removed; review uses MiniMax-M3.1-Flash and `qwen3.8-flash-next`.
 - **MiniMax-M2.7 / MiMo** — agentic workhorses with thin published reasoning numbers; rank on
   coding/agentic axes, not GPQA/AIME.
 
@@ -508,11 +525,11 @@ power: skirk **48.7 W** serving three models plus an image generation; the 3090 
 
 | Consumer               | In repo?                                                                           | Points at                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **OpenClaw**           | yes (`.../llm/openclaw/configmap.yaml`)                                            | defaults `minimax/MiniMax-M3` (fallbacks `qwen3.8-flash-next`, `qwen3.8-27b`, `dsv4.1f`); Miso/main `glm-5.3-flash`; Matcha `MiniMax-M3`; Saffron `reasoning-pool`; Sage `muse-glimmer`; subagents `muse-glimmer`; heartbeat `qwen3.8-flash-next-chat`; image `qwen3.8-flash-next-chat`; lossless-claw summary/expansion `local-pool-chat`                                                                                                                                              |
-| **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)                                              | default `reasoning-pool` (fallbacks `kimi-k3` -> `muse-glimmer` -> `qwen3.8-flash-next` -> `glm-5.3` -> `dsv4.1f`); compression/web-extract/approval/session-search `qwen3.8-flash-next`; vision `qwen3.8-flash-next-chat`; roles explorer `MiniMax-M2.7`, coder-local `qwen3.8-27b`, agentic-local `qwen3.8-flash-next`, implementer `implementation-pool`, reviewer `MiniMax-M3`, local-reviewer `gemma-4-12b-it-qat`, oracle `glm-5.3-flash`, vision-local `qwen3.8-flash-next-chat` |
-| **Courier**            | yes (`.../llm/courier/config/laneprofile.yaml`)                                    | Configured consumers: `courier-local` -> `local`, `courier-cloud` -> `local` with the MiniMax-M3.1-Flash-Preview solo profile, `courier-hyper` -> `local` with the Hyper-only `glm-5.3-flash-hyper` hyper profile, `courier-frontier` -> `escalated` with the frontier profile (`glm-5.3-flash` coordinator). Queue is shared, not partitioned; models are in the LaneProfiles. |
+| **OpenClaw**           | yes (`.../llm/openclaw/configmap.yaml`)                                            | defaults `minimax/MiniMax-M3.1-Flash` (fallbacks `qwen3.8-flash-next`, `qwen3.8-27b`, `dsv4.1f`); Miso/main `glm-5.3-flash`; Matcha `MiniMax-M3.1-Flash`; Saffron `reasoning-pool`; Sage `muse-glimmer`; subagents `muse-glimmer`; heartbeat `qwen3.8-flash-next-chat`; image `qwen3.8-flash-next-chat`; lossless-claw summary/expansion `local-pool-chat`                                                                                                                                              |
+| **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)                                              | default `reasoning-pool` (fallbacks `kimi-k3` -> `muse-glimmer` -> `qwen3.8-flash-next` -> `glm-5.3` -> `dsv4.1f`); compression/web-extract/approval/session-search `qwen3.8-flash-next`; vision `qwen3.8-flash-next-chat`; roles explorer `MiniMax-M3.1-Flash`, coder-local `qwen3.8-27b`, agentic-local `qwen3.8-flash-next`, implementer `implementation-pool`, reviewer `MiniMax-M3.1-Flash`, oracle `glm-5.3-flash`, vision-local `qwen3.8-flash-next-chat` |
+| **Courier**            | yes (`.../llm/courier/config/laneprofile.yaml`)                                    | Configured consumers: `courier-local` -> `local`, `courier-cloud` -> `local` with the MiniMax-M3.1-Flash solo profile, `courier-hyper` -> `local` with the Hyper-only `glm-5.3-flash-hyper` hyper profile, `courier-frontier` -> `escalated` with the frontier profile (`glm-5.3-flash` coordinator). Queue is shared, not partitioned; models are in the LaneProfiles. |
 | **Dispatch**           | yes (`.../llm/dispatch/helmrelease.yaml`)                                          | groomer -> `grooming-pool` (`qwen3.8-flash-next` primary; rungs `glm-5.3-flash` on Hyper then Z.AI then `gpt-6.1-sol`; 245760); lanes `local`, `frontier`, and `backlog`; aliases `normal` -> `local`, `escalated` -> `frontier`, `cloud` -> `local`. Manifest/configuration does not establish runtime claim or completion state.                                                                                                                                                                                                                                                                     |
-| **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)                                            | default `auto`; coordinator `reasoning-pool`; coordinator-local `qwen3.8-flash-next`; role subagents `MiniMax-M2.7`/`MiniMax-M3`/`implementation-pool`/`qwen3.8-27b`/`qwen3.8-flash-next`/`glm-5.3-flash`, plus the workstation CLI on LiteLLM aliases directly                                                                                                                                                                                                                         |
+| **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)                                            | default `auto`; coordinator `reasoning-pool`; coordinator-local `qwen3.8-flash-next`; role subagents `MiniMax-M3.1-Flash`/`implementation-pool`/`qwen3.8-27b`/`qwen3.8-flash-next`/`glm-5.3-flash`, plus the workstation CLI on LiteLLM aliases directly                                                                                                                                                                                                                         |
 | **memini**             | yes (`.../llm/memini/helmrelease.yaml`)                                            | LLM `muse-glimmer`; `embed`; `rerank`                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **toolhive vMCP**      | yes (`.../llm/toolhive/config/virtualmcpserver.yaml`)                              | `embed` (optimizer)                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **alert-triage**       | yes (`.../observability/alert-triage/helmrelease.yaml`)                            | `qwen3.8-flash-next`                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -546,7 +563,7 @@ already encodes an intent-lane pattern by hand.
 | Weekly Prompt Hygiene           | Saffron | MiniMax-M3-chat    | 10:45am Wed     | Audit prompt files for bloat/contradictions    |
 
 Issue work (picking up issues and opening PRs) runs through Dispatch lanes rather than OpenClaw:
-`local` is worked by Courier on local models, the MiniMax-M3.1-Flash-Preview profile and the Hyper-only `glm-5.3-flash-hyper` hyper profile; `frontier` is worked by `courier-frontier`. See [The coding loop](coding-loop.md).
+`local` is worked by Courier on local models, the MiniMax-M3.1-Flash profile and the Hyper-only `glm-5.3-flash-hyper` hyper profile; `frontier` is worked by `courier-frontier`. See [The coding loop](coding-loop.md).
 
 ## Current routing + observed usage
 
@@ -565,7 +582,6 @@ fallbacks:
     - qwen3.8-flash-next: [qwen3.8-27b]
     - qwen3.8-flash-next-chat: [muse-glimmer, MiniMax-M2.7]
     - qwen3.8-27b: [qwen3.8-flash-next]
-    - gemma-4-12b-it-qat: [MiniMax-M3-chat]
     - auto: [dsv4.1f, MiniMax-M3-chat]
 context_window_fallbacks:
     - qwen3.8-27b: [qwen3.8-flash-next]
@@ -581,7 +597,6 @@ included; all consumers combined). Alias names were retro-renamed; rows reflect 
 | qwen3.8-27b                 |               219.8M |
 | deepseek-v4-flash (`dsv4f`) |               203.7M |
 | glm-5.3                     |                74.5M |
-| gemma-4-12b-it-qat          |                45.0M |
 | MiniMax-M3-chat             |                22.8M |
 | MiniMax-M2.7                |                13.7M |
 | k3                          |                 7.4M |
@@ -599,7 +614,7 @@ There are two different caches in this stack:
   provider prefix caching.
 - OpenClaw model entries set `cache_prompt: true` for `kimi-k2.7`, `kimi-k3`, `glm-5.3`,
   `glm-5.3-flash`, `dsv4.1f` and the local aliases (`qwen3.8-flash-next`, `qwen3.8-27b`,
-  `gemma-4-12b-it-qat`, `muse-glimmer`, `local-pool`, plus their `-chat` twins); the native MiniMax
+  `muse-glimmer`, `local-pool`, plus their `-chat` twins); the native MiniMax
   entries set `cacheRetention: "short"` instead. Providers may report prefix-cache reads in response
   usage, but they do not all expose that usage consistently.
 
@@ -641,8 +656,7 @@ because the two failure modes are asymmetric:
 - **Cap above the backend** and requests queue *inside* the server, invisible to the router.
   In 2026-08 `qwen3.8-27b` (then llama.cpp) sat at 2 against a single slot; the queueing surfaced as
   a 53 s average time-to-first-token on the alias while the model itself was fine (fixed 2026-08).
-- **Cap below the backend** and provisioned VRAM goes unused. The reviewer alias (now
-  `gemma-4-12b-it-qat`) served 3 slots while LiteLLM dispatched into 2 — a third of the model
+- **Cap below the backend** and provisioned VRAM goes unused. The historical reviewer alias (now retired) served 3 slots while LiteLLM dispatched into 2 — a third of the model
   unreachable (fixed 2026-08).
 
 Current caps (`models/*.yaml`):
@@ -653,8 +667,8 @@ Current caps (`models/*.yaml`):
 - `muse-glimmer` 2, matching its 2 llama.cpp slots; its `local-pool`/`local-pool-chat` rungs are 2.
 - `qwen3.8-flash-next` rungs: `reasoning-pool` 2, `local-pool` 1, `local-pool-chat` 1, against gufo
   `--sessions 2`. The bare alias is auto-projected, so its cap is not in `models/`.
-- gemma `local-pool`/`local-pool-chat` rungs 4. `qwen3.8-27b-chat`, `qwen3.8-flash-next-chat` and the
-  bare gemma aliases set no cap.
+- The former third reviewer rung has been removed from both local pools.
+  `qwen3.8-27b-chat` and `qwen3.8-flash-next-chat` set no cap.
 
 As of 2026-08, with several models resident on skirk, aggregate tok/s improved with concurrent streams
 spread **across** resident models rather than piled onto one (roughly 6-8 streams for the whole box).

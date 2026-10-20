@@ -25,7 +25,7 @@ metadata:
 spec:
   modelRef: qwen3.8-27b
   runtime: vllm
-  image: ghcr.io/syv-ai/hyperqwen@sha256:cc4709e6b127673c536c97c28ed58897717137614818542ab003e9a7de172aa3
+  image: ghcr.io/syv-ai/hyperqwen@sha256:c696d22e80b459db9469e6b6de81ab669db34a578eede7d3e5a017615253dfc4
   command:
     - bash
     - docker/entrypoint.sh
@@ -56,6 +56,10 @@ spec:
       value: "8"
     - name: MAX_LEN
       value: "147456"
+    # Trial rolled back 2026-10-20: TurboQuant KV (4-bit) worked capacity-wise
+    # (253k pool, 0 preemptions) but forced SPEC=off after MTP output loops
+    # (matches syv-ai/HyperQwen#323: TQ+MTP quality collapse), and solo decode
+    # dropped to ~21.5 tok/s vs ~64 on fp8+MTP. Reverting to fp8+MTP baseline.
     - name: PREFIX_CACHE
       value: "1"
     - name: VERIFY
