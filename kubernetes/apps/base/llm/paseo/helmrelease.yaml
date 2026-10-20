@@ -60,14 +60,21 @@ spec:
               - secretRef:
                   name: *app
             probes:
-              startup: &health
+              startup:
                 enabled: true
                 custom: true
                 spec:
                   httpGet:
                     path: /api/health
                     port: &port 6767
-              readiness: *health
+                  failureThreshold: 60
+              readiness: &health
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/health
+                    port: *port
               liveness: *health
             securityContext:
               allowPrivilegeEscalation: false
@@ -110,21 +117,23 @@ spec:
               - path: /workspace
                 subPath: workspace
       config:
-        type: configMap
-        name: paseo-config
-        defaultMode: 0755
+        type: projected
+        sources:
+          - configMap:
+              name: paseo-config
+              items:
+                - key: paseo.json
+                  path: paseo.json
+          - configMap:
+              name: opencode-config
+              items:
+                - key: opencode.json
+                  path: opencode.json
         advancedMounts:
           paseo:
             app:
               - path: /etc/paseo
-      opencode-config:
-        type: configMap
-        name: opencode-config
-        advancedMounts:
-          paseo:
-            app:
-              - path: /etc/paseo/opencode.json
-                subPath: opencode.json
+                readOnly: true
       tmp:
         type: emptyDir
         advancedMounts:
