@@ -355,6 +355,16 @@ context is 262k; the 24GB 3090 runs `MAX_LEN` 147456 (~144k). There is no Qwen3.
 2026-09-25 the alias serves Swift 1.5 (`ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ`, #10496), so the vendor
 numbers in this row describe the base model, not the deployed one.
 
+⁸a **KV-history correction (2026-10-20).** From 2026-09-15 (`505ac596b`) to 2026-10-18 (`eedbe8a96`) the
+27B ran `CTX=huge` (KVarN k4v2, 4.9 GiB GPU pool ≈ 314k tokens) **plus a 16 GiB host CPU KV offload tier**
+(`--kv-offloading-size 16`). The large room figures quoted from that era were therefore not fully on-card,
+and its ~32 tok/s decode was suppressed by offload I/O over the Oculink x4 link — KVarN-native decode was
+never measured clean. Treat every cross-era room/speed comparison that touches those dates as confounded.
+Current baseline (2026-10-20, `31b5d20f0`): fp8 KV + MTP, ~174k pool (~1.18 full-depth 147k slots), ~64 tok/s
+request-derived p50. The 2026-10-20 TurboQuant trial (`turboquant_4bit_nc`, 253k pool) is **closed**: TQ+MTP
+corrupts output (repetition loops; matches syv-ai/HyperQwen#323, GSM8K 191→0) and TQ without MTP decodes at
+~21.5 tok/s solo — 3× down on fp8+MTP. Revisit only if upstream fixes the TQ×MTP interaction.
+
 ⁹ Terminal-Bench 2.0-only rows, shown as `n/p` in the 2.1 column to keep it comparable: MiniMax-M2.7
 **57.0**, MiMo-V2.5 **65.8**, MiMo-V2.5-Pro **68.4**, Qwen3.6-35B-A3B **51.5**. Separately, the
 MiMo-Pro LiveCodeBench 39.6 / GPQA 66.7 / AIME 37.3 the previous snapshot carried are
