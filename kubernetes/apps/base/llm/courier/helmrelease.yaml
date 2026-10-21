@@ -44,6 +44,12 @@ spec:
       tokenSecret:
         key: token
         name: courier-dispatch
+    # Reap Failed CoderRuns after 6h: infra-crash corpses block their work
+    # item from rediscovery for as long as they are retained, which turned
+    # into a recurring manual unstrand. NeedsHuman stays at the default
+    # because those are deliberate holds.
+    retention:
+      failed: 6h
     executor:
       mcp:
         githubURL: https://api.githubcopilot.com/mcp/
