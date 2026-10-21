@@ -8,38 +8,58 @@ data:
   config.yaml: |
     # Shadow of the litellm pools for the agentgateway trial.
     # Pool compositions mirror kubernetes/apps/base/llm/litellm/models/.
+    # Providers are custom+completions: none of the upstreams serve /v1/responses, and
+    # the openAI provider would prefer Responses conversion, which drops thinking history.
     # The chatgpt rungs (sol, luna) have no agentgateway provider equivalent -
     # litellm owns the subscription OAuth tokens - so they route through
     # litellm as an OpenAI-compatible upstream.
     llm:
       providers:
         - name: kimi
-          provider: openAI
+          provider:
+            custom:
+              formats:
+                - type: completions
           params:
             apiKey: "$KIMI_CODE_API_KEY"
             baseUrl: https://api.kimi.com/coding/v1
         - name: chatgpt-via-litellm
-          provider: openAI
+          provider:
+            custom:
+              formats:
+                - type: completions
           params:
             apiKey: "$LITELLM_MASTER_KEY"
             baseUrl: http://litellm.llm:4000/v1
         - name: glm-hyper
-          provider: openAI
+          provider:
+            custom:
+              formats:
+                - type: completions
           params:
             apiKey: "$HYPER_API_KEY"
             baseUrl: https://hyper.charm.land/v1
         - name: glm-zai
-          provider: openAI
+          provider:
+            custom:
+              formats:
+                - type: completions
           params:
             apiKey: "$ZAI_API_KEY"
             baseUrl: https://api.z.ai/api/coding/paas/v4
         - name: flash-next
-          provider: openAI
+          provider:
+            custom:
+              formats:
+                - type: completions
           params:
             apiKey: sk-llmkube-noauth
             baseUrl: http://qwen3-8-flash-next.llm.svc.cluster.local:8080/v1
         - name: qwen-27b
-          provider: openAI
+          provider:
+            custom:
+              formats:
+                - type: completions
           params:
             apiKey: sk-llmkube-noauth
             baseUrl: http://nvidia-router-proxy.llm.svc.cluster.local:8080/v1
