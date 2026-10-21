@@ -74,3 +74,13 @@ spec:
         ports:
           http:
             port: 4000
+    route:
+      app:
+        hostnames: ["agentgateway.jory.dev"]
+        parentRefs:
+          - name: envoy-external
+            namespace: network
+        rules:
+          - backendRefs:
+              - name: "{{ .Release.Name }}"
+                port: 4000
