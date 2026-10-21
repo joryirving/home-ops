@@ -65,6 +65,11 @@ spec:
             command: ["python3", "/config/generate.py"]
             env:
               OPENAI_BASE_URL: http://litellm.llm:4000/v1
+              OPENAI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-repo-wiki
+                    key: api-key
               WIKI_MODEL: local-strix
               MAX_REPOS_PER_RUN: "1"
               MAX_PAGES_PER_REPO: "20"
