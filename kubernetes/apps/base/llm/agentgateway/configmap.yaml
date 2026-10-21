@@ -1,0 +1,133 @@
+---
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentgateway-config
+data:
+  config.yaml: |
+    # Shadow of the litellm pools for the agentgateway trial.
+    # Pool compositions mirror kubernetes/apps/base/llm/litellm/models/.
+    # The chatgpt rungs (sol, luna) have no agentgateway provider equivalent -
+    # litellm owns the subscription OAuth tokens - so they route through
+    # litellm as an OpenAI-compatible upstream.
+    llm:
+      providers:
+        - name: kimi
+          provider: openAI
+          params:
+            apiKey: "$KIMI_CODE_API_KEY"
+            baseUrl: https://api.kimi.com/coding/v1
+        - name: chatgpt-via-litellm
+          provider: openAI
+          params:
+            apiKey: "$LITELLM_MASTER_KEY"
+            baseUrl: http://litellm.llm:4000/v1
+        - name: glm-hyper
+          provider: openAI
+          params:
+            apiKey: "$HYPER_API_KEY"
+            baseUrl: https://hyper.charm.land/v1
+        - name: glm-zai
+          provider: openAI
+          params:
+            apiKey: "$ZAI_API_KEY"
+            baseUrl: https://api.z.ai/api/coding/paas/v4
+        - name: flash-next
+          provider: openAI
+          params:
+            apiKey: sk-llmkube-noauth
+            baseUrl: http://qwen3-8-flash-next.llm.svc.cluster.local:8080/v1
+        - name: qwen-27b
+          provider: openAI
+          params:
+            apiKey: sk-llmkube-noauth
+            baseUrl: http://nvidia-router-proxy.llm.svc.cluster.local:8080/v1
+      models:
+        # reasoning-pool rungs, ordered per litellm spec.additional.order
+        - name: rp-kimi
+          visibility: internal
+          provider:
+            reference: kimi
+          params:
+            model: kimi-for-coding
+        - name: rp-sol
+          visibility: internal
+          provider:
+            reference: chatgpt-via-litellm
+          params:
+            model: chatgpt/gpt-6.1-sol
+        - name: rp-glm-hyper
+          visibility: internal
+          provider:
+            reference: glm-hyper
+          params:
+            model: glm-5.3-flash
+        - name: rp-glm-zai
+          visibility: internal
+          provider:
+            reference: glm-zai
+          params:
+            model: glm-5.3-flash
+        - name: rp-flash-next
+          visibility: internal
+          provider:
+            reference: flash-next
+          params:
+            model: qwen3.8-flash-next
+        # implementation-pool rungs, ordered per litellm spec.additional.order
+        - name: ip-luna
+          visibility: internal
+          provider:
+            reference: chatgpt-via-litellm
+          params:
+            model: chatgpt/gpt-6-luna
+        - name: ip-glm-hyper
+          visibility: internal
+          provider:
+            reference: glm-hyper
+          params:
+            model: glm-5.3-flash
+        - name: ip-qwen-27b
+          visibility: internal
+          provider:
+            reference: qwen-27b
+          params:
+            model: qwen3.8-27b
+      virtualModels:
+        - name: reasoning-pool
+          routing:
+            failover:
+              targets:
+                - model: rp-kimi
+                  priority: 0
+                - model: rp-sol
+                  priority: 1
+                - model: rp-glm-hyper
+                  priority: 2
+                - model: rp-glm-zai
+                  priority: 2
+                - model: rp-flash-next
+                  priority: 3
+        - name: implementation-pool
+          routing:
+            failover:
+              targets:
+                - model: ip-luna
+                  priority: 0
+                - model: ip-glm-hyper
+                  priority: 1
+                - model: ip-qwen-27b
+                  priority: 2
+      policies:
+        apiKey:
+          mode: strict
+          keys:
+            # Only the SHA-256 hash is stored; the raw key was handed to the
+            # opencode consumer out of band. Rotate by regenerating both.
+            - keyHash: "sha256:a94e3115324758059b22549bdf78f814f14d22fcce2406b40b3ded15f6939be9"
+              metadata:
+                user: opencode-shadow
+              allowedModels:
+                - reasoning-pool
+                - implementation-pool
