@@ -1,0 +1,148 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &app paseo
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: *app
+  interval: 15m
+  dependsOn: []
+  values:
+    controllers:
+      paseo:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        type: deployment
+        strategy: Recreate
+        pod:
+          automountServiceAccountToken: false
+          terminationGracePeriodSeconds: 3600
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+            seccompProfile:
+              type: RuntimeDefault
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/paseo
+              tag: 0.12.0@sha256:0cd50ac56eb1a85a138871b88d0d837d2215079153d8483ae6e4e9506ef48511
+            env:
+              TZ: America/Edmonton
+              PASEO_LISTEN: 0.0.0.0:6767
+              PASEO_HOSTNAMES: paseo.jory.dev
+              PASEO_TRUSTED_PROXIES: 10.42.0.0/16
+              PASEO_WEB_UI_ENABLED: "true"
+              PASEO_RELAY_ENABLED: "true"
+              PASEO_LOG_FILE_LEVEL: info
+              CONTEXT7_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: opencode
+                    key: CONTEXT7_API_KEY
+              GIT_CONFIG_GLOBAL: /etc/paseo/.gitconfig
+              GH_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: opencode
+                    key: GH_TOKEN
+              LITELLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-opencode
+                    key: api-key
+              MEMINI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: opencode
+                    key: MEMINI_API_KEY
+            envFrom:
+              - secretRef:
+                  name: *app
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/health
+                    port: &port 6767
+                  failureThreshold: 60
+              readiness: &health
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/health
+                    port: *port
+              liveness: *health
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop: ["ALL"]
+            resources:
+              requests:
+                cpu: 250m
+                memory: 1Gi
+              limits:
+                memory: 8Gi
+    service:
+      app:
+        ports:
+          http:
+            port: *port
+    route:
+      app:
+        annotations:
+          gatus.home-operations.com/endpoint: |-
+            conditions: ["[STATUS] == 200"]
+        hostnames:
+          - paseo.jory.dev
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: http
+    persistence:
+      data:
+        existingClaim: *app
+        advancedMounts:
+          paseo:
+            app:
+              - path: /home/paseo
+                subPath: home
+              - path: /workspace
+                subPath: workspace
+      config:
+        type: projected
+        sources:
+          - configMap:
+              name: paseo-config
+              items:
+                - key: paseo.json
+                  path: paseo.json
+          - configMap:
+              name: opencode-config
+              items:
+                - key: opencode.json
+                  path: opencode.json
+        advancedMounts:
+          paseo:
+            app:
+              - path: /etc/paseo
+                readOnly: true
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          paseo:
+            app:
+              - path: /tmp
