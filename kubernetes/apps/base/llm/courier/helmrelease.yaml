@@ -44,6 +44,18 @@ spec:
       tokenSecret:
         key: token
         name: courier-dispatch
+    # Reap terminal CoderRuns after 3h: retained runs block their work item
+    # from rediscovery for as long as they exist, which turned into a
+    # recurring manual unstrand. NeedsHuman blocks identically to Failed
+    # (the discovery barrier has no release path except deletion), and its
+    # reason is preserved in VictoriaLogs and the Dispatch item history
+    # after the run is reaped. auditKeep -1 disables the most-recent-five
+    # floor so the windows are real for quiet repositories too.
+    retention:
+      done: 5m
+      failed: 3h
+      needsHuman: 3h
+      auditKeep: -1
     executor:
       mcp:
         githubURL: https://api.githubcopilot.com/mcp/
