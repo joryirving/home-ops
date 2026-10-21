@@ -29,8 +29,8 @@ spec:
               - name: LITELLM_API_KEY
                 valueFrom:
                   secretKeyRef:
-                    name: hermes
-                    key: LITELLM_API_KEY
+                    name: litellm-key-hermes
+                    key: api-key
             command:
               - sh
               - -c
@@ -42,8 +42,8 @@ spec:
                 # reads the config. v0.21.5 stopped expanding LITELLM_API_KEY
                 # in provider values at config-load time, which broke model
                 # calls with 401s from LiteLLM. envsubst has access to the
-                # same env (LITELLM_API_KEY is injected via the hermes secret
-                # envFrom). No dollar-brace literals in this script on
+                # same env (LITELLM_API_KEY is injected directly from the
+                # operator-managed litellm-key-hermes secret). No dollar-brace literals in this script on
                 # purpose: the hermes kustomization runs strict flux postBuild
                 # substitution and any unescaped one fails the whole build
                 # (configmap.yaml shows the double-dollar escape convention

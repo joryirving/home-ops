@@ -30,6 +30,11 @@ spec:
             command: ["/etc/opencode/entrypoint.sh"]
             env:
               HOME: &homepath /home/opencode
+              LITELLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-opencode
+                    key: api-key
               OPENCODE_CONFIG: /etc/opencode/opencode.json
               TZ: America/Edmonton
             envFrom:

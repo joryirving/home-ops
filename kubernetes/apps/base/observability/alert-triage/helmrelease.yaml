@@ -36,6 +36,11 @@ spec:
               tag: 0.2.0@sha256:a593e09492e25ff217d8a99348d0f80063ec7e69ef1b72aff3846afab09c87a3
             env:
               CLUSTER: ${CLUSTER}
+              LITELLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-alert-triage
+                    key: api-key
               LITELLM_URL: ${LITELLM_URL:=http://litellm.llm:4000/v1}
               MODEL: qwen3.8-flash-next
               HISTORY_PATH: /data/history.jsonl

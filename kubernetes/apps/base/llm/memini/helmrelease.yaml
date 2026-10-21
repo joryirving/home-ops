@@ -64,6 +64,21 @@ spec:
               # shards one recall into N *serial* requests and pays the query N times.
               # 5 * 4096 + 512 + 44 = 21036. Paired with rerank contextSize 16384.
               MEMINI_RERANK_MAX_BATCH_CHARS: "24000"
+              MEMINI_EMBED_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-memini
+                    key: api-key
+              MEMINI_LLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-memini
+                    key: api-key
+              MEMINI_RERANK_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-memini
+                    key: api-key
               MEMINI_TIMEOUT_MS: "55000"
             envFrom:
               - secretRef:
