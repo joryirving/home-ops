@@ -16,6 +16,7 @@ locals {
     "OpenCode",
     "Paperless",
     "Portainer",
+    "Radarr",
     "RomM",
     "Sonarr",
     "Waypoint",
@@ -202,6 +203,15 @@ locals {
       redirect_uri      = "https://portainer.${var.CLUSTER_DOMAIN}/"
       launch_url        = "https://portainer.${var.CLUSTER_DOMAIN}/"
       property_mappings = local.default_property_mappings
+    },
+    Radarr = {
+      client_id         = module.onepassword_application["Radarr"].fields["RADARR_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Radarr"].fields["RADARR_CLIENT_SECRET"]
+      group             = "media"
+      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/radarr.png"
+      redirect_uri      = "https://radarr.${var.CLUSTER_DOMAIN}/signin-oidc"
+      launch_url        = "https://radarr.${var.CLUSTER_DOMAIN}"
+      property_mappings = concat(local.default_property_mappings_verified_email, [authentik_property_mapping_provider_scope.email_verified.id])
     },
     RomM = {
       client_id         = module.onepassword_application["RomM"].fields["ROMM_OIDC_CLIENT_ID"]
