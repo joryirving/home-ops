@@ -30,7 +30,10 @@ spec:
             env:
               RADARR__APP__INSTANCENAME: Radarr
               RADARR__APP__THEME: dark
-              RADARR__AUTH__METHOD: External
+              RADARR__AUTH__METHOD: Oidc
+              RADARR__AUTH__OIDCAUTHORITY: https://sso.jory.dev/application/o/radarr/
+              RADARR__AUTH__OIDCSCOPES: "openid profile email"
+              RADARR__AUTH__OIDCUSERIDENTIFIER: jory@jory.dev
               RADARR__AUTH__REQUIRED: Enabled
               RADARR__LOG__DBENABLED: "False"
               RADARR__LOG__LEVEL: info
@@ -44,6 +47,7 @@ spec:
               RADARR__POSTGRES__PORT: "5432"
               RADARR__POSTGRES__USER: "{{ .Release.Name }}"
               RADARR__SERVER__PORT: &port 80
+              RADARR__SERVER__TRUSTEDNETWORKS: 10.42.0.0/16
               RADARR__UPDATE__BRANCH: develop
               TZ: America/Edmonton
             envFrom:
@@ -57,6 +61,9 @@ spec:
                   httpGet:
                     path: /ping
                     port: *port
+                    httpHeaders:
+                      - name: Host
+                        value: localhost
                   initialDelaySeconds: 0
                   periodSeconds: 10
                   timeoutSeconds: 1
