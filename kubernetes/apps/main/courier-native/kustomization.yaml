@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: courier-native
+components:
+  - ../../../components/namespace
+patches:
+  - target:
+      kind: Namespace
+    patch: |-
+      - op: add
+        path: /metadata/labels/pod-security.kubernetes.io~1enforce
+        value: restricted
+replacements:
+  - path: ../../../components/replacements/ks.yaml
+resources:
+  - ./courier-native.yaml
