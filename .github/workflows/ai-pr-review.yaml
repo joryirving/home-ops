@@ -23,6 +23,7 @@ concurrency:
 
 permissions:
   contents: read
+  checks: read
   pull-requests: write
 
 jobs:
@@ -101,22 +102,21 @@ jobs:
           fallback-model-context-tokens: ${{ vars.FALLBACK_CONTEXT_TOKENS }}
           ai-fallback-api-key: ${{ secrets.LITELLM_API_KEY }}
           review-routing-mode: auto
+          deep-review: auto # selective, advisory specialists; not every Renovate patch needs adversarial review
           repository-skills: "true"
           review-verbosity: concise
+          upstream-link-mode: togithub # clickable upstream evidence without GitHub cross-repo mentions
           ai-smart-base-url: ${{ vars.LITELLM_URL }}
           ai-smart-api-format: ${{ vars.SMART_FORMAT }}
           ai-smart-model: ${{ vars.SMART_MODEL }}
           smart-model-context-tokens: ${{ vars.SMART_CONTEXT_TOKENS }}
           ai-smart-api-key: ${{ secrets.LITELLM_API_KEY }}
-          allowed-source-hosts: "github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net,talos.dev,www.talos.dev,docs.siderolabs.com,search.jory.dev"
+          allowed-source-hosts: "github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net,talos.dev,www.talos.dev,docs.siderolabs.com,search.jory.dev,api.osv.dev,osv.dev,nvd.nist.gov,www.cve.org"
           ci-timeout-sec: "600"
           search-url: "https://search.jory.dev/search"
           tool-allowed-gh-api-repos: "*"
           tool-mcp-servers: "konflate=https://konflate.jory.dev/mcp"
-          # General conventions stay appended; focused Renovate/GitOps guidance
-          # is discovered through the trusted-base repository-skill catalog.
-          system-prompt-file: .agents/instructions/pr-review.instructions.md
-          system-prompt-mode: append
+          # Repository-specific guidance comes from AGENTS.md and trusted-base skills.
           standards-file-candidates: "AGENTS.md"
           evidence-providers-file: .github/konflate-evidence-providers.json
           claim-falsification: "true"
