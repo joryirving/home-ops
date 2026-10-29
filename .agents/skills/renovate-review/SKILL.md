@@ -5,7 +5,7 @@ description: Review Renovate dependency updates in this Flux/GitOps home-ops rep
 
 # Review a Renovate PR in home-ops
 
-Determine **what changes on deployment and whether this repository relies on the old behavior**. Flux can reconcile `kubernetes/` changes soon after merge. The native reviewer catalogs this skill from the trusted base. Read it for Renovate PRs; it adds repository-specific investigation steps to the bundled reviewer. The repository's trusted AGENTS.md standards and home-ops-gitops-review skill remain authoritative.
+Determine **what changes on deployment and whether this repository relies on the old behavior**. Flux can reconcile `kubernetes/` changes soon after merge. The native reviewer catalogs this skill from the trusted base. Read it for Renovate PRs; it adds repository-specific investigation steps to the bundled reviewer. Use `AGENTS.md` for repository conventions and `home-ops-gitops-review` for general GitOps policy; this skill owns Renovate-specific investigation.
 
 ## 1. Establish the update and deployment footprint
 
@@ -24,8 +24,6 @@ The reviewer is configured with the **Konflate evidence provider and read-only M
 
 Pay special attention to changes in resource names, label **values** as well as keys, selectors, ports, services, RBAC, storage classes, CRDs, probes, immutable fields and persistent-volume behavior. Konflate may omit CRDs/Secret data; their absence from a render is not evidence of no change. One unrelated rendering failure is not proof that the upgraded chart fails.
 
-For a digest-only container refresh with unchanged repository/tag, still verify upstream provenance and security; keep the final assessment short when the evidence is consistent. Don't invent Kubernetes breaking changes.
-
 ## 3. Verify upstream changes and security for EVERY update
 
 **Mandatory, including patch and digest-only updates:** Independently identify the upstream project and inspect the actual upstream release or compare for the exact old → new range. Renovate's changelog, update-type label, package link, and a passing image-pull job are leads, not proof of safety. Scale the *depth and length* of the review to risk, not whether the checks happen.
@@ -38,13 +36,13 @@ For a digest-only container refresh with unchanged repository/tag, still verify 
 
 **Decision policy:** A confirmed, applicable high-severity regression, exploitable security issue, malicious/untrusted artifact, or serious compatibility break is a blocker. Missing release notes alone are **not** a blocker if upstream commits provide adequate evidence. Unresolved provenance for a security-sensitive artifact, credible material security uncertainty, or inability to establish what code is being deployed requires **manual verification before approval**, not a fabricated clean verdict. Routine evidence gaps without a concrete risk should be explained briefly and proportionately. Do not invent findings to fill a quota.
 
-- **OCI chart:** Find its source in the app's `ocirepository.yaml`, follow the publisher's chart releases/templates and compare versions. For mirrored `ghcr.io/home-operations/charts-mirror/<chart>`, use `home-operations/charts-mirror` metadata to locate the real chart source. When the chart's `appVersion` changes, inspect the underlying application's release notes too.
-- **Container image:** Resolve upstream from the image owner or `org.opencontainers.image.source` metadata. For `ghcr.io/home-operations/*`, also inspect `home-operations/containers` build definitions/history for digest-only changes. Check image revision/source/created metadata when available.
+- **OCI chart:** Find its source in the app's `ocirepository.yaml`, follow the publisher's chart releases/templates and compare versions. For mirrored `ghcr.io/home-operations/charts-mirror/<chart>`, use `home-operations/charts-mirror` metadata to locate the real chart source. Check the chart and underlying application's changes as required above.
+- **Container image:** For `ghcr.io/home-operations/*`, inspect `home-operations/containers` build definitions/history in addition to the canonical application's releases.
 - **Talos / Kubernetes:** Check each affected cluster's `talos/<cluster>/machineconfig.yaml.j2` installer image and the `TalosUpgrade`/`KubernetesUpgrade` resources managed by tuppr. Verify the **specific Talos release supports the target Kubernetes version** against the published Sidero/Talos compatibility matrix before concluding compatibility. A patch bump alone is not proof.
 - **GitHub Action / Renovate preset / OpenTofu:** Read the upstream release/compare, then verify this repository's `.github/workflows/` inputs/outputs, `.renovate/` rules, `terraform/` constraints/state/migrations, or `docker/` runtime configuration as applicable.
 - Follow referenced upstream issues/PRs when a changelog only says "See #123". Don't infer changed defaults or a migration solely from a release-note headline.
 
-Check raised minimum versions, removed APIs or fields, changed auth/storage/network defaults, one-way migrations, and security advisories relevant to the deployed configuration. If an upstream source cannot be verified, label the evidence gap honestly.
+Check raised minimum versions, removed APIs or fields, changed auth/storage/network defaults, and one-way migrations. If an upstream source cannot be verified, label the evidence gap honestly.
 
 ## 4. Search for repository-specific exposure
 
@@ -62,5 +60,5 @@ A documented home-ops convention is **not** a finding. In particular, `metadata.
 - Respect `AGENTS.md` and the reviewer's deterministic `must_check` requirements. Do not replace or weaken review gates. A breaking change with **no affected consumer in this repository** is a brief observation, not an invented blocker.
 - A finding must identify the **changed line**, the **affected consumer/path**, the concrete failure mode, and supporting rendered or upstream evidence. Confirm a replacement name/value from upstream manifests rather than guessing an auto-fix.
 - Escalate documented risks: unsupported Talos/Kubernetes pairings, CRD/schema incompatibilities, data-loss/storage mutations, new security relaxations, unexpected suspend/prune, and resource/selector renames that break live consumers. For uncertain evidence, report **Unknown / needs verification** instead of asserting a failure or successful test.
-- For an ordinary same-tag digest refresh, perform the required upstream/security checks but keep the review **compact**: recommendation, what changed, and any meaningful caveat. Skip empty Standards Compliance, Linked Issue Fit, Tool Harness or evidence sections, and don't dump internal planner diagnostics.
+- For routine Renovate reviews, including same-tag digest refreshes, perform the required upstream/security checks but keep the final review **compact**: recommendation, what changed, and meaningful caveats. Skip empty Standards Compliance, Linked Issue Fit, Tool Harness or evidence sections; don't dump internal planner diagnostics. Missing OCI revision/source labels alone are non-blocking for consistent same-tag digest updates unless they create a material provenance concern.
 - No fabricated Konflate results, upstream comparisons, tool calls or post-merge checks. A skill describes how to review; **only configured tools may be used**, and nothing here authorizes shell commands or writes.
