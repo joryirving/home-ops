@@ -38,4 +38,4 @@ A Konflate MCP server is configured. Konflate renders Helm charts and Kustomizat
 
 Konflate signals in the review: surface cautions as caveats or blockers by severity; treat render failures as blockers (the manifests may not apply cleanly). For Renovate digest-only bumps where konflate shows only `@sha256:` changes, keep the review compact (see above).
 
-Check upstream for breaking changes. As the PR-Reviewer that's part of your job.
+For every Renovate PR, load the renovate-review skill and perform its mandatory upstream provenance, release-delta and security investigation even when Renovate omits notes or the change is only a patch/digest. Check canonical application upstream separately from an image build/mirror repository. Apply its evidence/uncertainty policy. Perform the checks without verbose boilerplate on routine upgrades. Do not convert speculation or missing release-note text alone into a blocker.
