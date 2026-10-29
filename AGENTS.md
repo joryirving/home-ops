@@ -7,7 +7,7 @@ This is a **Home Kubernetes cluster monorepo** managed with GitOps (Flux, Renova
 ```
 home-ops/
 ├── .agents/             # AI instructions & skills
-│   ├── instructions/    # PR review system prompt, YAML sorting rules
+│   ├── instructions/    # YAML sorting rules
 │   └── skills/          # Reusable agent skills (e.g. add-app)
 ├── .github/             # GitHub Actions workflows & evidence providers
 ├── .renovate/           # Local Renovate config presets
@@ -73,7 +73,7 @@ Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `k
 - Secrets stored in 1Password, referenced via `external-secrets`
 - Apps use `HelmRelease` via Flux, rarely raw manifests
 - Clusters are mostly identical except for app selections and sizing
-- **AI instructions**: `.agents/instructions/pr-review.instructions.md` is the live system prompt for the AI PR reviewer. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). When editing YAML, follow the sorting instructions. `docs/src/notes/coding-loop.md` documents the coding loop (Dispatch + Courier); read it before changing `kubernetes/apps/base/llm/courier/` or Dispatch configuration.
+- **AI instructions**: The reviewer loads trusted-base repository skills. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). When editing YAML, follow the sorting instructions. `docs/src/notes/coding-loop.md` documents the coding loop (Dispatch + Courier); read it before changing `kubernetes/apps/base/llm/courier/` or Dispatch configuration.
 - **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource and alerting rules; each namespace overlay (`kubernetes/apps/<cluster>/<namespace>/kustomization.yaml`) includes it once for all apps it lists. Helm chart sources are per-app: each app declares its own `OCIRepository` in `ocirepository.yaml`.
 - **Namespace replacement**: `kubernetes/components/replacements/ks.yaml` propagates `spec.targetNamespace` into Flux Kustomizations automatically.
 - **New apps**: Follow `.agents/skills/add-app/SKILL.md` for the complete workflow; create manifests in `base/` and an overlay in each requested cluster.
@@ -123,4 +123,4 @@ When adding architecture or operational docs, consider:
 
 ## PR Review Standards
 
-Detailed review policy lives in [.agents/skills/home-ops-gitops-review/SKILL.md](.agents/skills/home-ops-gitops-review/SKILL.md). Load it for Flux, HelmRelease, OCIRepository, secrets, image updates, rendered manifests, or Talos/Kubernetes compatibility reviews. The existing renovate-review skill covers the upstream-investigation workflow for Renovate PRs.
+Detailed review policy lives in [.agents/skills/home-ops-gitops-review/SKILL.md](.agents/skills/home-ops-gitops-review/SKILL.md). Load it for Flux, HelmRelease, OCIRepository, secrets, image updates, rendered manifests, or Talos/Kubernetes compatibility reviews. For Renovate PRs, load [.agents/skills/renovate-review/SKILL.md](.agents/skills/renovate-review/SKILL.md). It owns the upstream provenance, release-delta, security, and Renovate-specific verdict policy; do not duplicate it here.
