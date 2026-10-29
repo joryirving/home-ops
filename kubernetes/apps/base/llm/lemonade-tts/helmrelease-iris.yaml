@@ -1,0 +1,117 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lemonade-tts-iris
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: lemonade-tts
+  interval: 15m
+  values:
+    controllers:
+      lemonade-tts-iris:
+        replicas: 1
+        initContainers:
+          # config.json sparse override file; only keys set differ
+          # from Lemonade's built-in defaults. Written by init container
+          # mounted from ConfigMap because same directory
+          # persistent volume Lemonade also writes its own state into.
+          config:
+            image:
+              repository: ghcr.io/lemonade-sdk/lemonade-server
+              tag: latest@sha256:4602f637446980aeb25c3b6350d4fe414770f10f8372b459d7ba32b577347185
+            command:
+              - sh
+              - -c
+              - |
+                set -eu
+                mkdir -p /opt/lemonade/.config/lemonade
+                cat > /opt/lemonade/.config/lemonade/config.json <<'JSON'
+                {
+                  "openmoss": {
+                    "backend": "vulkan"
+                  }
+                }
+                JSON
+                cat /opt/lemonade/.config/lemonade/config.json
+            resources:
+              requests:
+                cpu: 100m
+                memory: 64Mi
+              limits:
+                cpu: 100m
+                memory: 64Mi
+        containers:
+          app:
+            image:
+              repository: ghcr.io/lemonade-sdk/lemonade-server
+              tag: latest@sha256:4602f637446980aeb25c3b6350d4fe414770f10f8372b459d7ba32b577347185
+            securityContext:
+              privileged: true
+            command:
+              - ./lemond
+            args:
+              - --host
+              - 0.0.0.0
+              - --port
+              - "13305"
+            resources:
+              requests:
+                cpu: "2"
+                memory: 4Gi
+              limits:
+                cpu: "2"
+                memory: 4Gi
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /api/v1/health, port: 13305 }
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /api/v1/health, port: 13305 }
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                  failureThreshold: 12
+    defaultPodOptions:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: lemonade-tts-iris
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      cache:
+        existingClaim: lemonade-tts-iris-cache
+        advancedMounts:
+          lemonade-tts-iris:
+            config:
+              - path: /opt/lemonade/.config/lemonade
+                subPath: config
+            app:
+              - path: /opt/lemonade/.cache/huggingface
+                subPath: huggingface
+              - path: /opt/lemonade/.cache/lemonade
+                subPath: lemonade
+              - path: /opt/lemonade/.config/lemonade
+                subPath: config
+              - path: /opt/lemonade/llama
+                subPath: llama
+    service:
+      app:
+        controller: lemonade-tts-iris
+        ports:
+          http:
+            port: 13305
