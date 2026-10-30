@@ -1,0 +1,63 @@
+---
+name: Courier SimpleEnglish Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/images/courier-simple-english/**"
+      - ".github/workflows/courier-simple-english.yaml"
+      - "kubernetes/apps/base/llm/opencode/skills/simple-english/**"
+  pull_request:
+    paths:
+      - ".github/images/courier-simple-english/**"
+      - ".github/workflows/courier-simple-english.yaml"
+      - "kubernetes/apps/base/llm/opencode/skills/simple-english/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Build ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: legacy
+            base: ghcr.io/misospace/courier-opencode:0.1.12
+            image: ghcr.io/joryirving/courier-opencode-simple-english
+          - variant: native
+            base: ghcr.io/misospace/courier-harness-go:0.1.12
+            image: ghcr.io/joryirving/courier-harness-go-simple-english
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: .github/images/courier-simple-english/Dockerfile
+          platforms: linux/amd64
+          build-args: |
+            COURIER_BASE=${{ matrix.base }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ matrix.image }}:0.1.12-ste2.1.1
+          provenance: true
