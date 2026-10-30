@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: llm
+configMapGenerator:
+  - name: simple-english-skill
+    files:
+      - SKILL.md=./skill/SKILL.md
+      - rule-catalog.md=./skill/references/rule-catalog.md
+      - strict-vocabulary.md=./skill/references/strict-vocabulary.md
+      - use-cases.md=./skill/references/use-cases.md
+      - word-swaps.md=./skill/references/word-swaps.md
+      - LICENSE=./skill/LICENSE
+generatorOptions:
+  disableNameSuffixHash: true
