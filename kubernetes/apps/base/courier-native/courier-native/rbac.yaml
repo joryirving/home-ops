@@ -28,3 +28,39 @@ subjects:
   - kind: ServiceAccount
     name: courier-native
     namespace: courier-native
+---
+# Temporary lazy-cache workaround for misospace/courier#641.
+# Existing chart RBAC already grants cluster-wide Secret get/list.
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/rbac.authorization.k8s.io/clusterrole_v1.json
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: courier-native-cache-read
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - watch
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/rbac.authorization.k8s.io/clusterrolebinding_v1.json
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: courier-native-cache-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: courier-native-cache-read
+subjects:
+  - kind: ServiceAccount
+    name: courier-native
+    namespace: courier-native
