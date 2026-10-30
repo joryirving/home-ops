@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -11,63 +11,26 @@ spec:
   interval: 15m
   dependsOn: []
   values:
-    defaultPodOptions:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 100
-        fsGroup: 100
-        fsGroupChangePolicy: OnRootMismatch
-    controllers:
-      brrpolice:
-        annotations:
-          reloader.stakater.com/auto: "true"
-        containers:
-          app:
-            image:
-              repository: ghcr.io/zariel/brrpolice
-              tag: v0.16.4@sha256:6397a1b16bfc941842f46f0c383e8d2d0fa22397feae4aa65f7765480556c0b9
-            env:
-              BRRPOLICE_HTTP__PORT: &port 80
-              BRRPOLICE_LOGGING__LEVEL: info
-              BRRPOLICE_QBITTORRENT__BASE_URL: http://qbittorrent.downloads.svc.cluster.local
-              TZ: America/Edmonton
-            probes:
-              liveness:
-                enabled: true
-                spec:
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
-              readiness:
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /readyz
-                    port: *port
-                  initialDelaySeconds: 0
-                  periodSeconds: 10
-                  timeoutSeconds: 5
-                  failureThreshold: 3
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
-            resources:
-              requests:
-                cpu: 10m
-              limits:
-                memory: 128Mi
+    config:
+      qbittorrent:
+        base_url: http://qbittorrent.downloads.svc.cluster.local
+    extraEnv:
+      - name: TZ
+        value: America/Edmonton
+    monitoring:
+      dashboards:
+        enabled: true
+        grafanaOperator:
+          enabled: true
+          matchLabels:
+            dashboards: grafana
+      serviceMonitor:
+        enabled: true
     persistence:
-      data:
-        existingClaim: "{{ .Release.Name }}"
-    service:
-      app:
-        ports:
-          http:
-            port: *port
-    serviceMonitor:
-      app:
-        endpoints:
-          - port: http
+      existingClaim: brrpolice
+    podSecurityContext:
+      fsGroup: 100
+      fsGroupChangePolicy: OnRootMismatch
+      runAsGroup: 100
+      runAsNonRoot: true
+      runAsUser: 1000
