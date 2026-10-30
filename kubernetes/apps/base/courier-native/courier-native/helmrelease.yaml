@@ -1,0 +1,73 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: courier-native
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: courier-native
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      main:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          main:
+            args:
+              - --leader-elect
+              - --git-remote-template=https://github.com/%s.git
+              - --git-credential-secret=
+              - --github-credential-secret=courier-native-observer
+    crds:
+      enabled: false
+    dispatch:
+      enabled: false
+      agentName: courier-native-minimax
+      baseURL: http://dispatch.llm.svc.cluster.local:3000
+      laneProfile: minimax
+      queueLane: local
+    laneProfiles:
+      minimax:
+        concurrency: 1
+        framing: >-
+          Production native canary. Work only on the assigned task; use bounded
+          investigations and compact check receipts. Never merge. Report only
+          observed validation and publication results, and leave external checks
+          explicitly pending. Do not poll for CI or human review before exiting.
+        roles:
+          coordinator: MiniMax-M3.1-Flash
+          reviewer: MiniMax-M3.1-Flash
+        runtimeImage: ghcr.io/misospace/courier-harness-go:0.1.12
+    ownership:
+      namespaces:
+        - courier-native
+    secure:
+      enabled: true
+      brokerTokenReviewClusterRole: courier-native-broker-tokenreview
+      harnessImage:
+        repository: ghcr.io/misospace/courier-harness
+        tag: 0.1.12
+      modelGateway:
+        keySecret: courier-native/courier-native-model
+        keySecretKey: api-key
+        url: http://litellm.llm.svc.cluster.local:4000/v1
+      providers:
+        - name: github
+          type: github
+          endpoint: https://api.github.com/
+          credentials:
+            forge-api:
+              secretName: courier-native-github
+              key: token
+            git:
+              secretName: courier-native-github
+              key: token
+          gitEndpoint: https://github.com/%s.git
+          gitUsername: x-access-token
+          serves:
+            - misospace/courier
+      runNamespace: courier-native
