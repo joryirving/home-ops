@@ -15,6 +15,9 @@ Before admitting a manually selected real task:
 - This canary permits forge operations only for `misospace/courier`. Forge and
   model secrets are separate from the v1 executor secret, but reuse the existing
   operator-managed upstream credentials; they are not newly issued credentials.
+  Courier v0.1.12 temporarily needs `courier-native-observer` as a second
+  Kubernetes Secret object containing the same GitHub token as
+  `courier-native-github`; remove that alias when Courier #638 lands.
 - Control egress to LiteLLM uses namespace/pod selectors rather than a transient
   Service IP pin. Workers have no outbound network access; dependency downloads
   require a separately approved read-only cache before tasks that need them.
