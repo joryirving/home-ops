@@ -9,6 +9,6 @@ install -m 0644 /etc/agent-skills/simple-english/SKILL.md "$HOME/.agents/skills/
 for ref in rule-catalog strict-vocabulary use-cases word-swaps; do
   install -m 0644 "/etc/agent-skills/simple-english/$ref.md" "$HOME/.agents/skills/simple-english/references/$ref.md"
 done
-install -m 0644 /etc/agent-skills/simple-english/LICENSE "${HOME}/.agents/skills/simple-english/LICENSE"
+install -m 0644 /etc/agent-skills/simple-english/LICENSE "$HOME/.agents/skills/simple-english/LICENSE"
 
 exec /usr/local/bin/paseo-start
