@@ -19,13 +19,15 @@ data:
     umask 022
 
     # Copy the ConfigMap skill into the persistent home before starting OpenCode.
-    mkdir -p "${HOME}/.agents/skills/simple-english/references"
-    install -m 0644 /etc/agent-skills/simple-english/SKILL.md "${HOME}/.agents/skills/simple-english/SKILL.md"
+    mkdir -p "$HOME/.agents/skills/simple-english/references"
+    install -m 0644 /etc/agent-skills/simple-english/SKILL.md "$HOME/.agents/skills/simple-english/SKILL.md"
     for ref in rule-catalog strict-vocabulary use-cases word-swaps; do
-      install -m 0644 "/etc/agent-skills/simple-english/${ref}.md" "${HOME}/.agents/skills/simple-english/references/${ref}.md"
+      install -m 0644 "/etc/agent-skills/simple-english/$ref.md" "$HOME/.agents/skills/simple-english/references/$ref.md"
     done
 
-    mkdir -p "${HOME}/projects"
+    install -m 0644 /etc/agent-skills/simple-english/LICENSE "$HOME/.agents/skills/simple-english/LICENSE"
+
+    mkdir -p "$HOME/projects"
     if [[ ! -d "$${HOME}/projects/home-ops/.git" ]]; then
       git clone --filter=blob:none https://github.com/joryirving/home-ops.git "$${HOME}/projects/home-ops" \
         || echo "WARN: home-ops clone failed; clone it from a session instead"
