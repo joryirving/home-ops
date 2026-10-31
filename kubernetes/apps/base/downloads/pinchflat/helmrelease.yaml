@@ -25,12 +25,12 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/misospace/pinchflat
-              tag: 1.4.6@sha256:1d2bee93879db55df8162177cb4052ed41484bb0e81ece3b455e4c9402e27494
+              repository: ghcr.io/thebadfella/pinchflat-ngx
+              tag: 2026.10.20@sha256:4d3f7450a8bcbf21ae5ddad353891381c8e62824930fb716cd7166864409eb96
             env:
-              TZ: America/Edmonton
-              TZ_DATA_DIR: /tmp/elixir_tz_data
               PORT: &port 80
+              TZ: America/Edmonton
+              TZ_DATA_PATH: /tmp/elixir_tz_data
             probes:
               liveness: &probes
                 enabled: true
@@ -44,16 +44,16 @@ spec:
                   timeoutSeconds: 1
                   failureThreshold: 3
               readiness: *probes
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: { drop: ["ALL"] }
             resources:
               requests:
                 cpu: 100m
                 memory: 1Gi
               limits:
                 memory: 2Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
