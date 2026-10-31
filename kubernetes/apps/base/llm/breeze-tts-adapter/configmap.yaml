@@ -1,0 +1,179 @@
+---
+# yaml-language-server: $schema=https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#configmap-v1-core
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: breeze-tts-adapter-script
+data:
+  adapter.py: |
+    #!/usr/bin/env python3
+    """breeze-tts-adapter: OpenAI-dialect shim in front of Breeze-TTS-2.
+    
+    Breeze-TTS-2 (smurf-pc.internal:8187) speaks only multipart/form-data
+    (text + ref_audio + ref_text, mandatory pair) and returns raw 24 kHz
+    s16le PCM with no container. The OpenClaw gateway speech client speaks
+    OpenAI JSON ({model, input, response_format} + extraBody
+    reference_wav_b64) and expects framed audio. This adapter translates:
+      JSON in  -> multipart out -> Breeze
+      PCM back -> WAV-wrapped -> audio/wav back
+    
+    ref_text is REQUIRED whenever ref_audio is present (Breeze 400s the
+    pair mismatch). The gateway never sends a transcript, so transcripts
+    are keyed by sha256 of the decoded reference wav; unknown references
+    get a clear 422 instead of a silently wrong clone.
+    
+    Single-concurrency upstream: Breeze serializes renders, so requests
+    hold a process-wide lock.
+    """
+    import base64
+    import hashlib
+    import json
+    import os
+    import sys
+    import threading
+    import urllib.error
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    
+    BREEZE = os.environ.get("BREEZE_URL", "http://smurf-pc.internal:8187")
+    PORT = int(os.environ.get("PORT", "13306"))
+    BREEZE_TIMEOUT = int(os.environ.get("BREEZE_TIMEOUT", "600"))
+    SAMPLE_RATE = 24000
+    
+    # digest of decoded reference wav -> its transcript
+    REF_TEXTS = {
+        "78ac848ea8e3393d8452f9047a8a1d88cefa2d3325b62700f36db8381e999887":
+            "Just because you want hear it, then I'm not. You have prove it "
+            "to me, okay? I want seeing you've eaten three meals day. "
+            "You've taken care of height.",
+    }
+    
+    LOCK = threading.Lock()
+    
+    
+    def wav_wrap(pcm: bytes) -> bytes:
+        data_size = len(pcm)
+        byte_rate = SAMPLE_RATE * 2  # mono s16le
+        hdr = b"RIFF" + (36 + data_size).to_bytes(4, "little") + b"WAVE"
+        hdr += b"fmt " + (16).to_bytes(4, "little")
+        hdr += (1).to_bytes(2, "little")          # PCM
+        hdr += (1).to_bytes(2, "little")          # mono
+        hdr += SAMPLE_RATE.to_bytes(4, "little")
+        hdr += byte_rate.to_bytes(4, "little")
+        hdr += (2).to_bytes(2, "little")          # block align
+        hdr += (16).to_bytes(2, "little")         # bits
+        hdr += b"data" + data_size.to_bytes(4, "little")
+        return hdr + pcm
+    
+    
+    def multipart(fields: dict) -> tuple[bytes, str]:
+        boundary = "----breezeadapter" + os.urandom(8).hex()
+        body = b""
+        for name, val in fields.items():
+            blob, filename, ctype = val
+            body += f"--{boundary}\r\n".encode()
+            if filename is None:
+                body += (f'Content-Disposition: form-data; name="{name}"'
+                         f"\r\n\r\n{val[2]}\r\n").encode()
+            else:
+                body += (f'Content-Disposition: form-data; name="{name}"; '
+                         f'filename="{filename}"\r\n'
+                         f"Content-Type: {ctype}\r\n\r\n").encode()
+                body += blob + b"\r\n"
+        body += f"--{boundary}--\r\n".encode()
+        return body, boundary
+    
+    
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+    
+        def log_message(self, fmt, *args):
+            sys.stdout.write("%s - %s\n" % (self.address_string(), fmt % args))
+            sys.stdout.flush()
+    
+        def _send(self, code: int, ctype: str, body: bytes):
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+    
+        def do_GET(self):
+            if self.path in ("/health", "/healthz", "/health"):
+                self._send(200, "application/json", b'{"ok":true}')
+            elif self.path == "/v1/models":
+                self._send(200, "application/json",
+                           json.dumps({"object": "list", "data": [
+                               {"id": "Breeze-TTS-2", "object": "model"}]}).encode())
+            else:
+                self._send(404, "application/json", b'{"error":{"message":"not found"}}')
+    
+        def do_POST(self):
+            if self.path != "/v1/audio/speech":
+                self._send(404, "application/json", b'{"error":{"message":"not found"}}')
+                return
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                payload = json.loads(self.rfile.read(length) or b"{}")
+            except Exception as exc:
+                self._send(400, "application/json",
+                           json.dumps({"error": {"message": f"bad JSON body: {exc}"}}).encode())
+                return
+    
+            text = payload.get("input") or payload.get("text")
+            if not text:
+                self._send(400, "application/json",
+                           json.dumps({"error": {"message": "missing 'input'"}}).encode())
+                return
+    
+            fields = {"text": (None, None, str(text))}
+            ref_b64 = payload.get("reference_wav_b64")
+            if ref_b64:
+                try:
+                    wav = base64.b64decode(ref_b64)
+                except Exception as exc:
+                    self._send(400, "application/json",
+                               json.dumps({"error": {"message": f"bad reference_wav_b64: {exc}"}}).encode())
+                    return
+                digest = hashlib.sha256(wav).hexdigest()
+                reftext = REF_TEXTS.get(digest)
+                if reftext is None:
+                    self._send(422, "application/json",
+                               json.dumps({"error": {"message": (
+                                   f"unknown reference digest {digest[:12]}...; Breeze requires "
+                                   "ref_audio and ref_text together and no transcript is "
+                                   "registered for this reference")}}).encode())
+                    return
+                fields["ref_audio"] = (wav, "ref.wav", "audio/wav")
+                fields["ref_text"] = (None, None, reftext)
+    
+            # best-effort steering: OpenAI voice_design_description maps to
+            # Breeze's instruction field when present
+            vdd = payload.get("voice_design_description")
+            if vdd:
+                fields["instruction"] = (None, None, str(vdd))
+    
+            body, boundary = multipart(fields)
+            req = urllib.request.Request(
+                f"{BREEZE}/v1/audio/speech", data=body, method="POST",
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+            try:
+                with LOCK:
+                    with urllib.request.urlopen(req, timeout=BREEZE_TIMEOUT) as resp:
+                        pcm = resp.read()
+            except urllib.error.HTTPError as exc:
+                self._send(exc.code, "application/json", exc.read() or
+                           json.dumps({"error": {"message": f"breeze {exc.code}"}}).encode())
+                return
+            except Exception as exc:
+                self._send(502, "application/json",
+                           json.dumps({"error": {"message": f"breeze unreachable: {exc}"}}).encode())
+                return
+    
+            self._send(200, "audio/wav", wav_wrap(pcm))
+    
+    
+    if __name__ == "__main__":
+        server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+        print(f"breeze-tts-adapter listening on :{PORT} -> {BREEZE}", flush=True)
+        server.serve_forever()
