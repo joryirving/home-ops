@@ -1,0 +1,81 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: breeze-tts-adapter
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: breeze-tts-adapter
+  interval: 15m
+  values:
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+    controllers:
+      breeze-tts-adapter:
+        strategy: Recreate
+        containers:
+          app:
+            image:
+              repository: index.docker.io/library/python
+              tag: 3.12-alpine@sha256:e6dae589c1c05976188fd3bd019afd091445fc533ed2ea29001beddc7368a9c8
+            command:
+              - python3
+              - /app/adapter.py
+            env:
+              PYTHONUNBUFFERED: "1"
+              BREEZE_URL: http://smurf-pc.internal:8187
+              PORT: "13306"
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 13306
+                  initialDelaySeconds: 5
+                  periodSeconds: 15
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 13306
+                  initialDelaySeconds: 3
+                  periodSeconds: 10
+                  failureThreshold: 6
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+    persistence:
+      script:
+        type: configMap
+        name: breeze-tts-adapter-script
+        globalMounts:
+          - path: /app/adapter.py
+            subPath: adapter.py
+            readOnly: true
+    service:
+      app:
+        controller: breeze-tts-adapter
+        ports:
+          http:
+            port: 13306
