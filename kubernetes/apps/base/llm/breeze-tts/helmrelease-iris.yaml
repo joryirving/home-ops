@@ -1,0 +1,129 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: breeze-tts-iris
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: breeze-tts
+  interval: 15m
+  values:
+    controllers:
+      breeze-tts-iris:
+        replicas: 1
+        initContainers:
+          # Idempotent fetch of the HoppouAI Breeze-TTS-2.cpp Vulkan
+          # release binary + Q8_0 GGUF into the cache PVC, whisper-iris
+          # style. Uses the public lemonade-server image (kyuz0 strix-halo
+          # toolboxes went anonymous-pull-403 on GHCR) because it already
+          # ships the Vulkan RADV stack MOSS runs on. Downloads go through
+          # python3 urllib; no shell ${} substitution anywhere (Flux-safe).
+          fetch:
+            image:
+              repository: ghcr.io/lemonade-sdk/lemonade-server
+              tag: latest@sha256:4602f637446980aeb25c3b6350d4fe414770f10f8372b459d7ba32b577347185
+            command:
+              - sh
+              - -c
+              - |
+                set -eu
+                cd /cache
+                if [ ! -x "bin/v0.1.5/breeze-server" ]; then
+                  python3 -c "import os,tarfile,urllib.request,shutil,glob; v='v0.1.5'; urllib.request.urlretrieve('https://github.com/HoppouAI/Breeze-TTS-2.cpp/releases/download/%s/breeze-tts-2-%s-linux-x64-vulkan.tar.gz' % (v,v), 'b.tgz'); tarfile.open('b.tgz').extractall('x'); os.makedirs('bin/' + v, exist_ok=True); src=glob.glob('x/breeze-tts-2-*-linux-x64-vulkan')[0]; [shutil.move(os.path.join(src, f), os.path.join('bin', v, f)) for f in os.listdir(src)]; shutil.rmtree('x'); os.remove('b.tgz')"
+                fi
+                if [ ! -s "models/breeze-tts-2-q8_0.gguf" ]; then
+                  mkdir -p models
+                  python3 -c "import os,urllib.request; f='breeze-tts-2-q8_0.gguf'; urllib.request.urlretrieve('https://huggingface.co/HoppouAI/Breeze-TTS-2.cpp/resolve/main/' + f, 'models/' + f + '.part'); os.replace('models/' + f + '.part', 'models/' + f)"
+                fi
+                ls -l "bin/v0.1.5/breeze-server" "models/breeze-tts-2-q8_0.gguf"
+            resources:
+              requests:
+                cpu: 250m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+        containers:
+          app:
+            image:
+              repository: ghcr.io/lemonade-sdk/lemonade-server
+              tag: latest@sha256:4602f637446980aeb25c3b6350d4fe414770f10f8372b459d7ba32b577347185
+            securityContext:
+              privileged: true
+            command:
+              - /cache/bin/v0.1.5/breeze-tts-2-v0.1.5-linux-x64-vulkan/breeze-server
+            args:
+              - --model
+              - /cache/models/breeze-tts-2-q8_0.gguf
+              - --host
+              - 0.0.0.0
+              - --port
+              - "8080"
+              - --voices-dir
+              - /cache/voices
+              - --webui
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /health, port: 8080 }
+                  initialDelaySeconds: 60
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /health, port: 8080 }
+                  initialDelaySeconds: 20
+                  periodSeconds: 10
+                  failureThreshold: 12
+            resources:
+              requests:
+                cpu: "2"
+                memory: 4Gi
+              limits:
+                cpu: "4"
+                memory: 8Gi
+    defaultPodOptions:
+      nodeSelector:
+        topology.kubernetes.io/gpus: amd
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: breeze-tts-iris
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+    persistence:
+      cache:
+        existingClaim: breeze-tts-iris-cache
+        advancedMounts:
+          breeze-tts-iris:
+            fetch:
+              - path: /cache
+            app:
+              - path: /cache/bin
+                subPath: bin
+              - path: /cache/models
+                subPath: models
+              - path: /cache/voices
+                subPath: voices
+    service:
+      app:
+        controller: breeze-tts-iris
+        ports:
+          http:
+            port: 8080
+          ws:
+            port: 8081
