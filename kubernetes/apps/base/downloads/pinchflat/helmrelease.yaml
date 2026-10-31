@@ -22,12 +22,30 @@ spec:
       pinchflat:
         annotations:
           reloader.stakater.com/auto: "true"
+        # NGX's yt-dlp update worker rewrites the binary in place (copy, --update-to,
+        # rename). A PATH-prepended copy in an emptyDir keeps that working under
+        # readOnlyRootFilesystem; the initContainer re-baselines it to the image
+        # version on every pod start.
+        initContainers:
+          yt-dlp:
+            image:
+              repository: ghcr.io/thebadfella/pinchflat-ngx
+              tag: 2026.10.20@sha256:4d3f7450a8bcbf21ae5ddad353891381c8e62824930fb716cd7166864409eb96
+            command:
+              - sh
+              - -c
+              - cp /usr/local/bin/yt-dlp /yt-dlp-bin/yt-dlp && chmod 0755 /yt-dlp-bin/yt-dlp
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
         containers:
           app:
             image:
               repository: ghcr.io/thebadfella/pinchflat-ngx
               tag: 2026.10.20@sha256:4d3f7450a8bcbf21ae5ddad353891381c8e62824930fb716cd7166864409eb96
             env:
+              PATH: /yt-dlp-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               PORT: &port 80
               TZ: America/Edmonton
               TZ_DATA_PATH: /tmp/elixir_tz_data
@@ -61,6 +79,14 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /etc/yt-dlp
+      yt-dlp-bin:
+        type: emptyDir
+        advancedMounts:
+          pinchflat:
+            yt-dlp:
+              - path: /yt-dlp-bin
+            app:
+              - path: /yt-dlp-bin
       media:
         type: nfs
         server: voyager.internal
