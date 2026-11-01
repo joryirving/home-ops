@@ -4,10 +4,20 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: &app pinchflat
+  labels:
+    # Net-new database: bootstrap with plain initdb instead of Barman recovery.
+    # Remove after the first CNPG backup lands so future rebuilds restore data.
+    components.postgres/cnpg: init
 spec:
   components:
-    - ../../../../components/zeroscaler
     - ../../../../components/kopiur/backup
+    - ../../../../components/postgres
+    - ../../../../components/zeroscaler
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      failed: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'False')
+      current: status.conditions.filter(e, e.type == 'Ready').all(e, e.status == 'True')
   interval: 1h
   path: ./kubernetes/apps/base/downloads/pinchflat
   postBuild:
