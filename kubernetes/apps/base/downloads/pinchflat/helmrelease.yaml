@@ -45,7 +45,9 @@ spec:
               repository: ghcr.io/thebadfella/pinchflat-ngx
               tag: 2026.10.20@sha256:4d3f7450a8bcbf21ae5ddad353891381c8e62824930fb716cd7166864409eb96
             env:
+              DOWNLOAD_STAGING_PATH: /downloads-staging
               PATH: /yt-dlp-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              POT_PROVIDER_URL: http://localhost:4416
               PORT: &port 80
               TZ: America/Edmonton
               TZ_DATA_PATH: /tmp/elixir_tz_data
@@ -72,6 +74,23 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: { drop: ["ALL"] }
+          # bgutil PO-token provider server. NGX enables its in-image yt-dlp
+          # plugin only when POT_PROVIDER_URL is set; same pod keeps the
+          # unauthenticated provider on localhost.
+          pot-provider:
+            image:
+              repository: docker.io/brainicism/bgutil-ytdlp-pot-provider
+              tag: 2.0.2@sha256:d7d34108b76e52c7d3b575fe9e797e4bf41c1b2a08f80c5292eff6f851ce8472
+            resources:
+              requests:
+                cpu: 20m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
     persistence:
       config:
         existingClaim: "{{ .Release.Name }}"
@@ -87,6 +106,13 @@ spec:
               - path: /yt-dlp-bin
             app:
               - path: /yt-dlp-bin
+      staging:
+        type: emptyDir
+        sizeLimit: 25Gi
+        advancedMounts:
+          pinchflat:
+            app:
+              - path: /downloads-staging
       media:
         type: nfs
         server: voyager.internal
