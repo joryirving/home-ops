@@ -30,7 +30,7 @@ spec:
           yt-dlp:
             image:
               repository: ghcr.io/thebadfella/pinchflat-ngx
-              tag: 2026.10.20@sha256:4d3f7450a8bcbf21ae5ddad353891381c8e62824930fb716cd7166864409eb96
+              tag: 2026.10.20-postgres@sha256:5f4631f433805fd8e83b354a266284880fa15de8b81c8fd3228171fc21943207
             command:
               - sh
               - -c
@@ -43,7 +43,7 @@ spec:
           app:
             image:
               repository: ghcr.io/thebadfella/pinchflat-ngx
-              tag: 2026.10.20@sha256:4d3f7450a8bcbf21ae5ddad353891381c8e62824930fb716cd7166864409eb96
+              tag: 2026.10.20-postgres@sha256:5f4631f433805fd8e83b354a266284880fa15de8b81c8fd3228171fc21943207
             env:
               BASIC_AUTH_PASSWORD:
                 valueFrom:
@@ -55,6 +55,11 @@ spec:
                   secretKeyRef:
                     name: pinchflat
                     key: BASIC_AUTH_USERNAME
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: pinchflat-app
+                    key: uri
               DOWNLOAD_STAGING_PATH: /downloads-staging
               OIDC_CLIENT_ID:
                 valueFrom:
@@ -79,6 +84,7 @@ spec:
               PATH: /yt-dlp-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               POT_PROVIDER_URL: http://localhost:4416
               PORT: &port 80
+              SQLITE_MIGRATION_SOURCE: /config/db/pinchflat.db
               TZ: America/Edmonton
               TZ_DATA_PATH: /tmp/elixir_tz_data
             probes:
