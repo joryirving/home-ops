@@ -45,7 +45,37 @@ spec:
               repository: ghcr.io/thebadfella/pinchflat-ngx
               tag: 2026.10.20@sha256:4d3f7450a8bcbf21ae5ddad353891381c8e62824930fb716cd7166864409eb96
             env:
+              BASIC_AUTH_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: pinchflat
+                    key: BASIC_AUTH_PASSWORD
+              BASIC_AUTH_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: pinchflat
+                    key: BASIC_AUTH_USERNAME
               DOWNLOAD_STAGING_PATH: /downloads-staging
+              OIDC_CLIENT_ID:
+                valueFrom:
+                  secretKeyRef:
+                    name: pinchflat
+                    key: OIDC_CLIENT_ID
+              OIDC_CLIENT_SECRET:
+                valueFrom:
+                  secretKeyRef:
+                    name: pinchflat
+                    key: OIDC_CLIENT_SECRET
+              OIDC_ISSUER:
+                valueFrom:
+                  secretKeyRef:
+                    name: pinchflat
+                    key: OIDC_ISSUER
+              OIDC_REDIRECT_URI:
+                valueFrom:
+                  secretKeyRef:
+                    name: pinchflat
+                    key: OIDC_REDIRECT_URI
               PATH: /yt-dlp-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
               POT_PROVIDER_URL: http://localhost:4416
               PORT: &port 80

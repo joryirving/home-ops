@@ -15,6 +15,7 @@ locals {
     "Open-WebUI",
     "OpenCode",
     "Paperless",
+    "Pinchflat",
     "Portainer",
     "Radarr",
     "RomM",
@@ -193,6 +194,15 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/paperless.png"
       redirect_uri      = "https://paperless.${var.CLUSTER_DOMAIN}/accounts/oidc/authentik/login/callback/"
       launch_url        = "https://paperless.${var.CLUSTER_DOMAIN}/"
+      property_mappings = local.default_property_mappings
+    },
+    Pinchflat = {
+      client_id         = module.onepassword_application["Pinchflat"].fields["PINCHFLAT_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Pinchflat"].fields["PINCHFLAT_CLIENT_SECRET"]
+      group             = "media"
+      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/pinchflat.png"
+      redirect_uri      = "https://pinchflat.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
+      launch_url        = "https://pinchflat.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     Portainer = {
