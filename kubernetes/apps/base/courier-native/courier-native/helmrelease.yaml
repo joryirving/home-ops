@@ -39,8 +39,13 @@ spec:
           observed validation and publication results, and leave external checks
           explicitly pending. Do not poll for CI or human review before exiting.
         roles:
-          coordinator: MiniMax-M3.1-Flash
-          reviewer: MiniMax-M3.1-Flash
+          # LiteLLM routes are prefixed; a bare model name 404s at the
+          # capability gate ("model or route not found") and every run dies
+          # needs-human before any work streams (courier#102 exercise,
+          # 2026-11-02). litellm-anthropic/MiniMax-M3.1-Flash is the route the
+          # v1 frontier lane already uses.
+          coordinator: litellm-anthropic/MiniMax-M3.1-Flash
+          reviewer: litellm-anthropic/MiniMax-M3.1-Flash
         runtimeImage: ghcr.io/misospace/courier-harness-go:0.1.15
     ownership:
       namespaces:
