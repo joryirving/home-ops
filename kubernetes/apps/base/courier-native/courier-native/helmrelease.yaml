@@ -41,12 +41,14 @@ spec:
         roles:
           # The native harness posts the role name verbatim to the gateway's
           # OpenAI surface (no prefix stripping), and LiteLLM serves bare
-          # model names only — keep the bare name. Round-2 404s were the
-          # upstream MiniMax API 404ing into a router cooldown, not a naming
-          # problem; the remaining gate is key authorization in LiteLLM
-          # (courier#102 exercise, 2026-11-02).
-          coordinator: MiniMax-M3.1-Flash
-          reviewer: MiniMax-M3.1-Flash
+          # model names only — always keep bare model_name values here.
+          # 2026-11-02: temporarily on glm-5.3-flash to collect the
+          # courier#102 acceptance evidence — the MiniMax upstream was
+          # rate-limited all evening (429s from api.minimax.io, no fallbacks
+          # for its model group), which is an upstream-quota condition, not a
+          # courier defect. Restore MiniMax-M3.1-Flash when quota clears.
+          coordinator: glm-5.3-flash
+          reviewer: glm-5.3-flash
         runtimeImage: ghcr.io/misospace/courier-harness-go:0.1.15
     ownership:
       namespaces:
