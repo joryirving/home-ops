@@ -21,6 +21,11 @@ Before admitting a manually selected real task:
 - Control egress to LiteLLM uses namespace/pod selectors rather than a transient
   Service IP pin. Workers have no outbound network access; dependency downloads
   require a separately approved read-only cache before tasks that need them.
+- Broker egress to the kube-apiserver is granted by `ciliumnetworkpolicy.yaml`
+  (`courier-broker-apiserver`): under Cilium the API server carries a reserved
+  identity that the per-run ipBlock rules cannot match, so every secure run
+  would die on the broker's `read own pod` without it (misospace/courier#680;
+  #685 adds the preflight proof).
 - Stop/finish v1 MiniMax work before admitting native MiniMax work if total
   MiniMax concurrency must remain one. This PR does not change v1 intake.
 
