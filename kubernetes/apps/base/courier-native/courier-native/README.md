@@ -21,6 +21,10 @@ Before admitting a manually selected real task:
 - Control egress to LiteLLM uses namespace/pod selectors rather than a transient
   Service IP pin. Workers have no outbound network access; dependency downloads
   require a separately approved read-only cache before tasks that need them.
+- 2026-11-02: the lane roles are temporarily `glm-5.3-flash` — the MiniMax
+  upstream was rate-limited all evening (api.minimax.io 429s), blocking the
+  courier#102 acceptance exercise on an upstream-quota condition. Restore
+  `MiniMax-M3.1-Flash` when quota clears.
 - Broker egress to the kube-apiserver is granted by `ciliumnetworkpolicy.yaml`
   (`courier-broker-apiserver`): under Cilium the API server carries a reserved
   identity that the per-run ipBlock rules cannot match, so every secure run
