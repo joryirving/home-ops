@@ -5,6 +5,15 @@ kind: CiliumNetworkPolicy
 metadata:
   name: courier-broker-apiserver
 spec:
+  # Purely additive: without enableDefaultDeny:false, this CNP imposes
+  # ingress default-deny on every broker pod in this Cilium version and the
+  # control's connections are dropped alongside the vanilla policies
+  # (observed live 2026-11-02 during the courier#102 exercise). The per-run
+  # vanilla policies already own default-deny; this CNP only adds the
+  # reserved-identity allow.
+  enableDefaultDeny:
+    ingress: false
+    egress: false
   endpointSelector:
     matchLabels:
       courier.misospace.dev/component: broker
