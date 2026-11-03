@@ -38,16 +38,18 @@ spec:
           investigations and compact check receipts. Never merge. Report only
           observed validation and publication results, and leave external checks
           explicitly pending. Do not poll for CI or human review before exiting.
+        # The lane speaks litellm's Anthropic Messages surface natively
+        # (#716): MiniMax reasoning/thinking blocks only survive their own
+        # protocol, and the OpenAI-compatible surface 404s on the shim's
+        # anthropic apiBase. Model names stay bare — the harness posts them
+        # verbatim and LiteLLM serves bare model_name values.
+        transport: anthropic
         roles:
-          # The native harness posts the role name verbatim to the gateway's
-          # OpenAI surface (no prefix stripping), and LiteLLM serves bare
-          # model names only — always keep bare model_name values here.
           # 2026-11-02 night ran glm-5.3-flash while the MiniMax upstream was
           # rate-limited (an upstream-quota condition, not a courier defect);
           # restored 2026-11-03 with the refreshed quota.
           coordinator: MiniMax-M3.1-Flash
           reviewer: MiniMax-M3.1-Flash
-        runtimeImage: ghcr.io/misospace/courier-harness-go:0.1.17
     ownership:
       namespaces:
         - courier-native
@@ -55,8 +57,9 @@ spec:
       enabled: true
       brokerTokenReviewClusterRole: courier-native-broker-tokenreview
       harnessImage:
+        # The tag tracks the chart's AppVersion — dropping the pin makes the
+        # harness image follow every chart bump (#717).
         repository: ghcr.io/misospace/courier-harness
-        tag: 0.1.17
       modelGateway:
         keySecret: courier-native/courier-native-model
         keySecretKey: api-key

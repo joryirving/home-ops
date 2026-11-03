@@ -25,6 +25,11 @@ Before admitting a manually selected real task:
   rate-limited (api.minimax.io 429s), blocking the courier#102 acceptance
   exercise on an upstream-quota condition; restored to `MiniMax-M3.1-Flash`
   on 2026-11-03 with the refreshed quota.
+- The lane declares `transport: anthropic` (courier 0.1.18, #716): the
+  harness speaks LiteLLM's Anthropic Messages surface natively, because
+  MiniMax reasoning blocks only survive their own protocol. The lane's
+  `runtimeImage` and `harnessImage.tag` pins are gone — both images track
+  the chart version (#717).
 - Broker egress to the kube-apiserver is granted by `ciliumnetworkpolicy.yaml`
   (`courier-broker-apiserver`): under Cilium the API server carries a reserved
   identity that the per-run ipBlock rules cannot match, so every secure run
