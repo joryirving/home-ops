@@ -1,33 +1,13 @@
 # LLM Strategy
 
-How the LLM fleet is subscribed, wired, and used — and where smart-routing is headed.
+This document describes the configured LLM fleet, subscriptions, and routing policy.
+Clients use stable aliases through LiteLLM at `http://litellm.llm:4000`.
+The source of truth is `kubernetes/apps/base/llm/litellm/`, including `models/` and `litellmproxy.yaml`.
 
-Everything funnels through **LiteLLM** (`kubernetes/apps/base/llm/litellm/litellmproxy.yaml` and
-`kubernetes/apps/base/llm/litellm/models/*.yaml`) at `http://litellm.llm:4000`. Clients address stable
-aliases; LiteLLM forwards to the upstream a given subscription or local server expects. This doc is the
-reference for keeping those aliases meaningful and for designing intent-based routing on top of them.
-
-**Reconciled again 2026-09-28.** GPT-5.6 aliases were replaced by GPT-6 Astra/Sol/Luna (2026-09-23),
-`dsv4f` by `dsv4.1f` on Charm Hyper with a capped Neuralwatt rung (2026-09-26), Flash-Next moved to gufo
-on ROCm (2026-09-24), `qwen3.8-27b` became Swift 1.5 on vLLM (2026-09-25), `muse-glimmer` is the default
-resident of the 3090 pool, Kimi leads `frontier-pool` and `reasoning-pool` (2026-09-27), MiniMax
-consumers moved to `MiniMax-M3.1-Flash` with the pool rungs reworked (2026-10-13), `glm-5.3-flash` prefers Charm Hyper over Z.AI, Courier gains a Hyper-only `glm-5.3-flash-hyper` `hyper` lane on the `local` queue, and the frontier coordinator moves to `glm-5.3-flash` (2026-10-15), and
-retired reviewer is out of the coding roles. The **Model inventory**, pool, consumer and routing
-sections below reflect this; the **capability ranking** and **v2 bench** sections still measure older
-models (see the notes there).
-
-The 2026-09-08 pass renamed the local aliases to model-specific names (`llama-nvidia`→`qwen3.8-27b`,
-`llama-strix`→`qwen3.8-flash-next`, `llama-reviewer`→retired reviewer, plus `-chat` twins), swapped
-the Strix box from Qwen3.6-35B-A3B to Qwen3.8-Flash-Next, moved the reviewer lane to retired 9070XT reviewer
-on the 9070XT (LM Studio retired wake endpoint), removed the short-lived `llama-vision`, and swapped the reranker
-to jina on CPU (since replaced by bge-reranker-v2-m3).
-
-The prior pass (2026-08-25) retired Opencode Go and Moonshot, removed `glm-5.2`, renamed
-`llama-strix-nemotron` to `llama-reviewer` (now retired reviewer), moved the local models to
-unsloth builds, and added a non-thinking `-chat` door beside each one.
-
-This is a strategy snapshot, not a live quota ledger. Provider pricing, rolling allowances, and
-Prometheus counters are perishable; dated observations below are labeled as such.
+Reconciled against repository configuration on 2026-11-03. Repository configuration describes intended state, not proof of deployment or available quota.
+The local inventory, ordered pools, and consumer tables describe current configuration.
+Capability rankings, repo-bench results, and dated traffic measurements remain historical evidence, not current model comparisons.
+Subscription prices and allowances are recorded account observations, not a fresh verification of provider terms.
 
 ## Subscriptions
 
@@ -46,10 +26,10 @@ Neuralwatt supplies energy-metered PAYG as `dsv4.1f` rung 2 behind Charm Hyper, 
 | Plan                | Price                                        | Cap                                                          | Reset                              | Models                                                | Primary use                                                                                               |
 | ------------------- | -------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage | rolling (3h chat) + weekly (Codex) | GPT-6 Astra, Sol, Luna                                | Astra `frontier-pool` rung 2; Sol `reasoning-pool` rung 2; Luna `implementation-pool` lead                |
-| **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | legacy Token Plan: grandfathered unlimited limits            | rolling 5h                         | M3.1 Flash (primary), M3, M2.7 (retires 2026-11-18) — Anthropic endpoint | Agentic reasoning workhorse (`MiniMax-M3.1-Flash`); M2.7 auto-reroutes to M3.1 from 2026-10-19     |
+| **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | legacy Token Plan; observed quota rejections despite grandfathered benefit            | rolling 5h                         | M3.1 Flash (primary), M3, M2.7 (retires 2026-11-18) — Anthropic endpoint | Agentic reasoning workhorse (`MiniMax-M3.1-Flash`); M2.7 auto-reroutes to M3.1 from 2026-10-19     |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                             | rolling 5h                         | GLM-5.3 and GLM-5.3-Flash on the Z.AI coding endpoint | `frontier-pool` rung 3 (GLM-5.3); `glm-5.3-flash` rung 2, behind Hyper rung 1 (Flash)                             |
 | **Kimi Coding**     | ~$180 USD/yr ($15/mo; ~$261 CAD/12mo)        | plan allowance                                               | plan-defined                       | Kimi K2.7 Code, Kimi K3                               | `frontier-pool` lead (K3); `reasoning-pool` lead (K2.7)                                                   |
-| **Charm Hyper**     | $20 USD/mo                                   | $12.50 of usage per 24h                                      | every 24h                          | GLM-5.3-Flash, DeepSeek V4.1 Flash (`HYPER_API_KEY`)  | `glm-5.3-flash` order 1; Hyper-only `glm-5.3-flash-hyper` for the whole `hyper` lane; `grooming-pool` rung 2; `dsv4.1f` order 1; `implementation-pool` rung 2; `reasoning-pool` rung 3         |
+| **Charm Hyper**     | $20 USD/mo                                   | $12.50 of usage per 24h                                      | every 24h                          | GLM-5.3-Flash, DeepSeek V4.1 Flash (`HYPER_API_KEY`)  | `glm-5.3-flash` order 1; Hyper-only `glm-5.3-flash-hyper` for the whole `hyper` lane; `grooming-pool` rung 3; `dsv4.1f` order 1; `implementation-pool` rung 2; `reasoning-pool` rung 3         |
 | **Neuralwatt**      | pay-per-use ($5/kWh energy billing)          | account credit; LiteLLM `max_budget` $1/day on its rung      | n/a                                | DeepSeek V4.1 Flash                                   | `dsv4.1f` rung 2, behind Hyper                                                                            |
 
 Retired 2026-08-25: **Opencode Go** ($10 USD/mo gateway; DeepSeek V4 Flash/Pro, MiMo v2.5/Pro,
@@ -57,7 +37,7 @@ Qwen3.8-Max) and **Moonshot** (pay-per-use Kimi fallback behind Kimi Coding).
 
 Caveats worth remembering:
 
-- **MiniMax M3 and M2.7 use the flat plan**, via configured endpoints, but flat pricing is not unlimited
+- **MiniMax M3.1 Flash and M3 use the flat plan**, via configured endpoints, but flat pricing is not unlimited
   availability. A 2026-10-12 HTTP 429 with code 2056 reported token-plan usage reached; LiteLLM spend
   is not the provider's quota meter, and prefix-cached input may still consume plan allocation. Do not
   assume capacity based on the price or treat every provider rejection as a transient error. The
@@ -69,7 +49,7 @@ Caveats worth remembering:
   generation (retired 2026-09-23) Luna consumed 80% fewer subscription credits and Terra 20% fewer;
   whether GPT-6 tiers carry the same weighting is not recorded here.
 - **GLM Lite's** annual USD price is promotional and not cleanly published.
-- **Charm Hyper's** price and cap are not recorded here.
+- Charm Hyper is recorded at $20 USD/month with $12.50 of usage per 24 hours. Current account terms remain authoritative.
 - All 5h caps are **rolling windows** (oldest usage falls off continuously), not calendar resets.
 - Kimi subscription traffic uses equivalent Moonshot list prices for cost comparison: K2.7 Code is
   $0.19 cached input / $0.95 cache miss / $4 output per MTok; K3 is $0.30 / $3 / $15.
@@ -93,34 +73,44 @@ vendor's thinking recipe, and the `-chat` suffix runs the non-thinking (instruct
 weights, KV cache and slots, so the second door costs no memory. `muse-glimmer` is the exception: it
 has no `-chat` twin.
 
-### Local (self-hosted, $0 marginal)
+### Local (self-hosted)
 
-| Alias                     | Backend                                            | Model                                                                     | Ctx (in)                                    | Role                                                                                    |
-| ------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `qwen3.8-flash-next`      | skirk (Strix Halo), gufo ROCm (2 sessions)         | Qwen3.8-Flash-Next 180B-e51B-A6B UD-Q4_K_XL, MTP (Q8_0 head), mmproj BF16 | 262k (LiteLLM 245760)                       | General local brain; vision + tools; Courier coordinator                                |
-| `qwen3.8-flash-next-chat` | same server                                        | —                                                                         | 262k (LiteLLM 245760)                       | Non-thinking door (`enable_thinking: false`); OpenClaw image + heartbeat, Hermes vision |
-| `muse-glimmer`            | 3090, ModelPool `nvidia` default resident          | Muse-Glimmer-30B UD-Q5_K_M, llama.cpp CUDA, DFlash draft, mmproj, 2 slots | 131k                                        | OpenClaw subagents + Sage, memini LLM, `local-pool` rung 1, vision fallback             |
-| `qwen3.8-27b`             | 3090, ModelPool `nvidia` via `nvidia-router-proxy` | Swift 1.5 (`ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ`), vLLM, MTP           | 144k total (MAX_LEN 147456; LiteLLM 122880) | Coding lane (Courier `coder-local`, `implementation-pool` rung 2); text-only            |
-| `qwen3.8-27b-chat`        | same server                                        | —                                                                         | same                                        | Non-thinking door; `auto` classifier                                                    |
-| `embed`                   | CPU (3 replicas)                                   | Qwen3-Embedding-0.6B Q8_0                                                 | 32k                                         | Embeddings (1024-dim) for memini + toolhive vMCP                                        |
-| `rerank`                  | CPU (3 replicas)                                   | bge-reranker-v2-m3 Q8_0                                                   | —                                           | memini reranking                                                                        |
+Local inference has no per-token provider charge, but consumes electricity and shared hardware capacity.
+A KV cache stores attention keys and values. A context limit covers input and generated output together.
+MTP proposes several tokens before the main model verifies them.
 
-**The 3090 is a ModelPool.** `nvidia` (`kubernetes/apps/base/llm/litellm/nvidia-pool.yaml`) swaps the
-card between `muse-glimmer` (the default) and `qwen3.8-27b` (`swapPolicy: reclaim`, `reclaimAfter: 5m`,
-`swapBudget: 900s`). The one-way `muse-fallthrough` rule (`poolActivation: IfIdle`) lets muse requests
-be served by the 27B; 27B requests never fall through to muse. Rationale is in
-[The shared 3090](coding-loop.md#the-shared-3090).
+| Alias | Backend | Model | Context | Role |
+| --- | --- | --- | --- | --- |
+| `qwen3.8-flash-next` | Strix Halo, Gufo 0.28.1 ROCm, two sessions | Qwen3.8-Flash-Next UD-Q4_K_XL, shared Q8_0 MTP head, BF16 vision projector | 262144 total; LiteLLM pool input 245760 | Larger-context local reasoning, vision, tools, Courier coordinator |
+| `qwen3.8-flash-next-chat` | Same server | Same weights, thinking disabled | Same | Non-thinking vision and heartbeat requests |
+| `qwen3.8-27b` | 3090, HyperQwen/vLLM through `nvidia-router-proxy` | `dbirks/Qwen3.8-27B-W4A16-AutoRound`, MTP | 147456 total; direct LiteLLM input 122880 + output 24576 | Local coding, text-only; implementation pool rung 3 |
+| `qwen3.8-27b-chat` | Same server | Same weights, non-thinking | Same total; input 122880 + output 16384 | Non-thinking requests and `auto` classifier |
+| `muse-glimmer` | 3090 alternate, llama.cpp CUDA, two slots | Muse-Glimmer-30B UD-Q5_K_M, DFlash draft, vision projector | 131072 per slot | OpenClaw subagents and Sage, memini, local pool lead, vision fallback |
+| `embed` | CPU, three replicas | Qwen3-Embedding-0.6B Q8_0 | 32768 | 1024-dimension embeddings for memini and toolhive |
+| `rerank` | CPU, three replicas | bge-reranker-v2-m3 Q8_0 | Not declared | memini reranking |
 
-Vision no longer has a dedicated model — the old `llama-vision` (CPU Gemma 4 E4B, briefly) was removed;
-image analysis goes through `qwen3.8-flash-next-chat`, whose router fallback is `muse-glimmer` then
-`MiniMax-M2.7`. `qwen3.8-27b` is text-only. Commented-out manifests kept as named fallback references
-in `kubernetes/apps/base/llm/litellm/kustomization.yaml`: `qwen3.6-35b-a3b`,
-`nemotron-3.5-lightning-30b-a3b`, `glm-5.3-flash-local`, the llama.cpp ROCm and Vulkan Flash-Next
-variants, and the `gemma-4-e4b` vision sidecar.
+The `nvidia` ModelPool defaults to 27B, not Muse. Its configuration sets `swapPolicy: reclaim`, `reclaimAfter: 5m`, and `swapBudget: 240s`.
+The one-way `muse-fallthrough` rule (`poolActivation: IfIdle`) permits Muse requests on 27B. Coding requests never fall through to Muse.
+Both aliases share one card, not two independent servers. See [Shared local inference](coding-loop.md#shared-local-inference) for operations.
 
-`dsv4f-local` (DeepSeek-V4-Flash UD-IQ2_M) is still registered as a LiteLLM alias
-(`models/dsv4f-local.yaml`), but no backend InferenceService exists for it, so it cannot serve. The FP8
-variant was deleted (FP8 doesn't work on gfx1151).
+The 27B server keeps MTP, eight active sequences, prefix caching, and `GPU_UTIL=0.985`.
+Startup logs read on 2026-11-03 confirm `int8_per_token_head` KV and three speculative tokens.
+On 2026-10-31, the measured shared cache pool held 208,216 tokens in 7.6 GiB, up from 172,649.
+The pool is not the per-request limit or eight separate context allocations. Fixed per-sequence state also consumes cache capacity.
+The 0.99 trial failed its startup free-memory requirement. The 0.985 deployment started, but sustained load stability remains a separate observation.
+Keep the request cap at 147456. If memory failures appear under load, the agreed fallback is 0.98.
+The TurboQuant trial remains closed because MTP produced repetition loops. Do not retry without evidence that upstream fixes the quality failure.
+
+Flash-Next uses two Gufo sessions and a 64 GiB disk continuation cache.
+Gufo 0.28.1 fixes prefill differences across pass sizes, including short tails after cache restores.
+Its published MTP gains use greedy decoding, not our sampled temperature 1.0 configuration. Upstream also measured slower short replies in some cases.
+No matched local sampled before/after result is recorded here.
+Both local services use idle-aware rollouts (`waitForIdle: true`, `idleTimeoutSeconds: 86400`). Do not restart or wake models to inspect capacity.
+
+Vision requests use Flash-Next or Muse. The proxy fallback for `qwen3.8-flash-next-chat` tries Muse, then MiniMax-M3.1-Flash.
+The gaming PC with a 9070 XT is not configured inference capacity. Radiance and a dual-boot Talos worker remain experiments.
+The `dsv4f-local` alias remains registered, but has no configured InferenceService and cannot serve through that missing backend.
+Commented manifests in `litellm/kustomization.yaml` are references, not active capacity.
 
 ### Cloud (flat-rate subscriptions)
 
@@ -131,9 +121,8 @@ flat across the listed context range. New tokens use the standard input rate;
 there is no separate Flash cache-write surcharge listed. M3 Standard remains
 $0.30/$1.20/$0.06 at <=512k input, and $0.60/$2.40/$0.12 above 512k.
 M3 Priority is 1.5x Standard; no priority tier is configured here.
-These are list-price accounting values, not a promise of subscription quota equivalence.
-After this change deploys, update the repository GitHub Actions `FALLBACK_MODEL`
-variable to `MiniMax-M3.1-Flash`; temporary failures during that interval are accepted.
+These are recorded list-price accounting values, not a promise of subscription quota equivalence. Current provider terms were not rechecked in this pass.
+The repository Actions variable `FALLBACK_MODEL` is `MiniMax-M3.1-Flash` (read 2026-11-03).
 
 
 
@@ -141,12 +130,12 @@ variable to `MiniMax-M3.1-Flash`; temporary failures during that interval are ac
 | --------------------- | --------------------------------- | ------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
 | `MiniMax-M3.1-Flash` | MiniMax Plus               | MiniMax-M3.1-Flash (Anthropic endpoint) | 1M   | OpenClaw default + Matcha primary; `auto` MEDIUM and miss default; Hermes/opencode `reviewer` + `explorer`. Thinking always on; `reasoning_effort` low/medium/high/xhigh/max (default max). Published list pricing: $0.15/M input, $0.60/M output, $0.015/M cache reads; no long-context tier listed |
 | `MiniMax-M3`          | MiniMax Plus                      | MiniMax-M3 (Anthropic endpoint)             | 1M       | Retained standalone for rollback and manual use; no pool rungs                                 |
-| `MiniMax-M2.7`        | MiniMax Plus                      | MiniMax-M2.7                                | 204.8k   | Standalone only; upstream retires it 2026-11-18, and M-Plan keys auto-reroute to M3.1 from 2026-10-19 |
+| `MiniMax-M2.7` | Legacy client entry | No active LiteLLMModel CR | 204800 declared by client | Not a configured proxy backend. Old cron entries require separate verification |
 | `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model    |
-| `glm-5.3-flash`       | GLM Coding Lite, then Charm Hyper | glm-5.3-flash (order 1 Z.AI, order 2 Hyper) | 1M       | OpenClaw Miso/main primary; `oracle` role; Courier `frontier` coordinator                                                     |
+| `glm-5.3-flash`       | Charm Hyper, then GLM Coding Lite | glm-5.3-flash (order 1 Hyper, order 2 Z.AI) | 1M       | OpenClaw Miso/main primary; `oracle` role; Courier `frontier` coordinator                                                     |
 | `chatgpt/gpt-6-astra` | ChatGPT Plus                      | gpt-6-astra (Codex/OAuth)                   | 272k*    | Direct alias; `frontier-pool` rung 2                                                          |
 | `chatgpt/gpt-6.1-sol` | ChatGPT Plus                      | gpt-6.1-sol (Codex/OAuth)                   | 272k     | Direct alias; `reasoning-pool` rung 2                                                         |
-| `chatgpt/gpt-6-luna`  | ChatGPT Plus                      | gpt-6-luna (Codex/OAuth)                    | 272k     | Direct alias (effort pinned `max`); `implementation-pool` lead                                |
+| `chatgpt/gpt-6-luna`  | ChatGPT Plus                      | gpt-6-luna (Codex/OAuth)                    | 272k     | Direct alias defaults to `max`; implementation lead defaults to `high`                                |
 | `kimi-k2.7`           | Kimi Coding                       | kimi-for-coding                             | 262k     | Coding subscription; `reasoning-pool` rung 1 is a separate deployment                         |
 | `kimi-k3`             | Kimi Coding                       | k3                                          | 1M       | Frontier Kimi lane; `frontier-pool` rung 1 is a separate deployment                           |
 
@@ -169,7 +158,7 @@ it (see **Frontier pool**); a direct `kimi-*` call fails.
 
 `dsv4.1f` replaced `dsv4f` on 2026-09-26 (#10533); the Neuralwatt rung was capped at $1/day on
 2026-09-27 (#10557). Consumers: OpenClaw and Hermes fallback chains, and the `auto` router fallback.
-`reasoning-pool` rung 3 is its own Hyper deployment; Neuralwatt is not in any pool.
+Neither DeepSeek provider is in `reasoning-pool`. Neuralwatt is not in an ordered pool.
 
 Neuralwatt charges for measured GPU energy rather than tokens. PAYG is $5/kWh; prefix-cache hits
 avoid prefill work and therefore reduce the charged energy. Use Neuralwatt's usage API/dashboard for
@@ -188,57 +177,43 @@ rest were deleted along with the `OPENCODE_API_KEY` wiring.
 
 ### Ordered pools
 
-One file per pool in `models/` (`frontier-pool.yaml`, `reasoning-pool.yaml`, `implementation-pool.yaml`,
-`local-pool.yaml`).
+Pool definitions live in `models/`. Each rung declares its own context and output metadata.
+Clients also declare limits, so a standalone model window does not establish a pool-wide window.
+Leave output room inside the backend total context, even when metadata lists separate input and output maxima.
 
-| Pool                  | Order  | Members                                                                                                            | Effort pins                                   | Policy                                                             |
-| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------ |
-| `frontier-pool`       | 1 -> 3 | Kimi K3 (Kimi Coding) -> GPT-6 Astra (ChatGPT) -> GLM-5.3 (Z.AI)                                                    | none                                          | Frontier escalation; dsv4.1f moved to reasoning (2026-10-13)       |
-| `reasoning-pool`      | 1 -> 4 | Kimi K2.7 (Kimi Coding) -> GPT-6.1 Sol (ChatGPT) -> DSV4.1F (Hyper) -> qwen3.8-flash-next                            | none; K2.7 drops `reasoning_effort`         | Planning lane; dsv4.1f is the flat-rate floor, flash-next the local one |
-| `implementation-pool` | 1 -> 3 | GPT-6 Luna (ChatGPT) -> GLM-5.3-Flash (Hyper) -> qwen3.8-27b (3090)                                                 | Luna `max` (`extra_body`); 27b `xhigh`        | Implementation lane, deliberately below the planning lane          |
-| `local-pool`          | 1 -> 3 | muse-glimmer (3090) -> qwen3.8-flash-next (skirk)                                   | none                                          | Local-only, $0 marginal                                            |
-| `local-pool-chat`     | 1 -> 2 | same members, non-thinking samplers                                                                                | flash-next `reasoning_effort: none` | OpenClaw lossless-claw; AI PR review primary                       |
+| Pool | Ordered members | Effort defaults | Policy |
+| --- | --- | --- | --- |
+| `frontier-pool` | Kimi K3 -> GPT-6 Astra -> GLM-5.3 (Z.AI) | No effort pin | Frontier escalation; three rungs, no DeepSeek floor |
+| `reasoning-pool` | Kimi K2.7 -> GPT-6.1 Sol -> GLM Flash (Hyper) -> GLM Flash (Z.AI) -> Flash-Next | K2.7 drops `reasoning_effort` | Planning and hard debugging, then local fallback |
+| `implementation-pool` | GPT-6 Luna -> GLM Flash (Hyper) -> 27B | Luna `high`; 27B `xhigh` | Implementation after the approach is settled |
+| `local-pool` | Muse -> Flash-Next | Thinking recipe | Local-only provider selection, shared hardware |
+| `local-pool-chat` | Muse -> Flash-Next | Flash-Next `reasoning_effort: none` | Non-thinking local requests and AI PR review |
+| `grooming-pool` | Flash-Next -> Muse -> GLM Flash (Hyper) -> GPT-6 Luna -> GLM Flash (Z.AI) | No effort pin | Dispatch issue grooming |
+| `free-pool` | Eight OpenRouter deployments, listed below | No effort pin | Optional work on public material only |
 
-The three cloud-led pools are a capability ladder, not three copies of the same idea: `frontier-pool` for
-actual problems, `reasoning-pool` for planning, `implementation-pool` for carrying out a plan already
-made. Kimi leads `frontier-pool` (K3) and `reasoning-pool` (K2.7); ChatGPT is rung 2 in both and rung 1
-in `implementation-pool` (Luna). A Kimi cap-out drops frontier and reasoning to their ChatGPT rungs; a
-ChatGPT cap-out touches all three pools at once, so ChatGPT is still the most widely shared dependency.
+Opencode declares `implementation-pool` at 147456 tokens, `frontier-pool` at 272000, and `reasoning-pool` at 262144.
+Reasoning rungs declare input limits of 262144 (K2.7), 272000 (Sol), 262144 (both GLM Flash deployments), and 245760 (Flash-Next).
+The 1M standalone GLM alias does not give the reasoning pool a 1M window.
+Implementation's 27B rung declares 131072 input and 40960 output, which exceed its 147456 total when combined. This remains a configuration discrepancy.
 
-`local-pool` and `local-pool-chat` are the local-only ladder. The Courier, Dispatch and PR-review keys
-are allowed `local-pool`; OpenClaw's lossless-claw summary/expansion and the AI PR review workflow's
-primary model use `local-pool-chat`. Both pools now contain only muse and Flash-Next;
-the former third reviewer rung is permanently retired.
+The direct `glm-5.3-flash` alias tries Hyper before Z.AI. The implementation pool has a Hyper-only GLM rung.
+The reasoning pool has separate Hyper and Z.AI rungs. Neither pool includes MiniMax or DeepSeek.
+The direct Luna alias defaults to `max`, while its implementation rung defaults to `high`.
+Both use nested `extra_body.reasoning.effort`. These are defaults, not enforced overrides of client requests.
 
-Reasoning effort is **passed through**, not pinned, on every ChatGPT rung except Luna, which is pinned
-to `max` via `extra_body: {reasoning: {effort: max}}` both in `implementation-pool` and in
-`chatgpt-gpt-6-luna.yaml` (2026-09-28). The pin is a default rather than a hard override (see
-**Reasoning-effort and thinking-mode pinning**). The earlier `high` pin was chosen because GPT-5.6 Luna's
-TTFT measured ~60s at `xhigh` against ~10s at `high`; the move to `max` reverses that trade and has
-not been re-measured on GPT-6.
+Kimi leads frontier and reasoning. ChatGPT is rung 2 in those pools and rung 1 in implementation.
+These shared subscriptions do not create independent quota for each pool. Provider failover responds to request failures, not an unpublished allowance almost exhausted.
+Direct Kimi aliases have no PAYG fallback. The ordered pools provide alternatives when a Kimi request fails.
 
-LiteLLM has no group-level window: each rung declares its own `maxInputTokens`, and with
-`enable_pre_call_checks` a request too large for a rung is filtered off it. Clients declare their own
-ceiling per group; opencode declares `implementation-pool` 147456 (the 27B's MAX_LEN, rung 3),
-`frontier-pool` 272000 (Astra, rung 2) and `reasoning-pool` 1000000. In `reasoning-pool`, rung 1 (K2.7)
-takes 262144 and rung 4 (flash-next) 245760, so a request past those only lands on Sol (272k) or
-dsv4.1f (1M).
-
-**Provider failover** (LiteLLM `order:`, transparent to callers) reacts when an upstream rejects a
-request; it cannot detect that an unpublished rolling allowance is merely _close_ to exhausted.
-
-`glm-5.3-flash` moved to `implementation-pool` rung 2 (2026-10-13), sourced from Charm Hyper only —
-the pool rung does not fall through to Z.AI, unlike the direct `glm-5.3-flash` alias (Z.AI then Hyper). It accepts `reasoning_effort` but the rung pins none, so it takes the caller's.
-`reasoning-pool`'s MiniMax floor was dropped at the same time (Courier regularly caps the MiniMax
-allowance and the OpenAI-to-Messages route risked pool thinking), so reasoning's flat-rate floor is
-now dsv4.1f. The MiniMax plan can still throttle or reject requests when its usage limit is reached.
-
-Kimi-for-Coding was once removed from `reasoning-pool` because its 262k context capped the pool's
-declared window. It returned as rung 1 on 2026-09-27 (#10571); requests past 262k skip it.
+`free-pool` tries Nemotron 3.5 Super VL, Nemotron 3.5 Lightning, Nemotron 3 Ultra, Gemma 4 31B,
+Nemotron 3 Super, Cohere North Mini Code, Dots 3 Note Preview, then `openrouter/free`.
+Opencode declares a 200000-token context. Availability is not reserved capacity, and providers can log prompts.
+Use only public-repository material. Never send private code, credentials, or secrets.
+Courier exposes this as an optional `free` role, not a replacement for final verification.
 
 ## Model capability ranking
 
-> **Stale as of the 2026-09-08 rename.** The scores and analysis below were measured against the previous local models — Qwen3.6-35B-A3B on the Strix box (now Qwen3.8-Flash-Next) and Nemotron 3.5 Lightning as the reviewer (now retired 9070XT reviewer). The aliases have been renamed to match the current names, but the numbers have **not** been re-run; treat them as historical until re-benchmarked. Since then: the GPT-5.6 aliases were retired 2026-09-23 (GPT-6 Astra/Sol/Luna replaced them), `dsv4f` was retired 2026-09-26 (`dsv4.1f` replaced it), and `qwen3.8-27b` has served Swift 1.5 since 2026-09-25. Rows naming those aliases describe the models of the snapshot date.
+> Historical benchmark snapshot, primarily 2026-08-23. Alias names changed afterward. Scores do not describe the current local engines or cloud pool selection. No benchmarks were rerun for this pass.
 
 Benchmark snapshot as of **2026-08-23** — perishable. Numbers remain largely **vendor
 self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Terminal-Bench
@@ -351,16 +326,15 @@ for it (the nearest vendor substitute, QwenSWEBench 79.0, is Qwen's own harness)
 generational SWE-V and AIME comparisons against Qwen3.6-27B cannot be made. Terminal-Bench also
 switched versions between generations: 3.6-27B's 59.3 was 2.0, 3.8-27B's 73.0 is 2.1, so the +13.7
 arithmetic is cross-version and wrong — the vendor states the real delta as **+9.6 on 2.1**. Native
-context is 262k; the 24GB 3090 runs `MAX_LEN` 147456 (~144k). There is no Qwen3.8-35B-A3B. Since
-2026-09-25 the alias serves Swift 1.5 (`ukisai/Swift-1.5-Qwen3.8-27b-W4A16-AWQ`, #10496), so the vendor
-numbers in this row describe the base model, not the deployed one.
+context is 262k. The 24 GB 3090 limits requests to 147456 tokens.
+The alias previously served Swift 1.5 and now serves base Qwen AutoRound. Vendor scores do not measure this quantized serving configuration.
 
 ⁸a **KV-history correction (2026-10-20).** From 2026-09-15 (`505ac596b`) to 2026-10-18 (`eedbe8a96`) the
 27B ran `CTX=huge` (KVarN k4v2, 4.9 GiB GPU pool ≈ 314k tokens) **plus a 16 GiB host CPU KV offload tier**
 (`--kv-offloading-size 16`). The large room figures quoted from that era were therefore not fully on-card,
 and its ~32 tok/s decode was suppressed by offload I/O over the Oculink x4 link — KVarN-native decode was
 never measured clean. Treat every cross-era room/speed comparison that touches those dates as confounded.
-Current baseline (2026-10-20, `31b5d20f0`): fp8 KV + MTP, ~174k pool (~1.18 full-depth 147k slots), ~64 tok/s
+Historical baseline (2026-10-20, `31b5d20f0`): fp8 KV + MTP, ~174k pool (~1.18 full-depth 147k slots), ~64 tok/s
 request-derived p50. The 2026-10-20 TurboQuant trial (`turboquant_4bit_nc`, 253k pool) is **closed**: TQ+MTP
 corrupts output (repetition loops; matches syv-ai/HyperQwen#323, GSM8K 191→0) and TQ without MTP decodes at
 ~21.5 tok/s solo — 3× down on fp8+MTP. Revisit only if upstream fixes the TQ×MTP interaction.
@@ -391,54 +365,17 @@ how good the judgement was. Newer numbers exist that the row does not use — BF
 **Thinking** variant at BFCL v3 69.4 / LiveCodeBench v6 69.9, nearly double the Instruct build. Rank it
 on independence and format reliability, not on a coding leaderboard.
 
-Reading it for routing:
+Current interpretation:
 
-- **The independent numbers narrowed the frontier, they did not reorder it.** On AA's single harness
-  the top of this table is Sol 61, GLM-5.3 60, Qwen3.8-Max 58, K3 57 — a four-point spread across four
-  different subscriptions. Treating any of them as decisively better than the others is not supported.
-- **Frontier tier** (`gpt-5.6-sol`, `kimi-k3`, `glm-5.3`; 2026-08-23 analysis, current `frontier-pool`
-  is K3 -> `gpt-6-astra` -> GLM-5.3 -> `dsv4.1f`) — unchanged, and now better evidenced. Sol
-  is the ceiling on the strength of an independent SWE-V 96.2 that OpenAI never claimed itself; K3 is
-  the independent coding lane at SWE-V 93.4; GLM-5.3 is the long-horizon fallback but is the *least*
-  independently verified model in the tier — its entire benchmark table is one vendor blog, its weights
-  are unreleased, and the only official-board GLM datapoint runs 10pts under the vendor's own claim.
-- **What dropping Opencode Go cost.** *(Executed 2026-08-25.)* Go supplied `dsv4p`, `dsv4f`,
-  `mimo-v2.5(-pro)` and `qwen3.8-max`. The reasoning at the time, which held:
-  - `dsv4p` is the real loss and it is narrow: **SWE-bench Verified 96.4, the second-best score on
-    Vals' board**. But Sol sits at 96.2 on that *same* harness. The capability is duplicated by a
-    subscription that is staying, at a 0.2pt difference — inside anyone's error bar.
-  - `dsv4f` is the volume workhorse, and its replacement is already racked. Flash and the local
-    Qwen3.8-27B on the 3090 **both score AA-II 52**. For OpenClaw subagent and heartbeat traffic,
-    which is what Flash actually serves, the local box is a like-for-like substitute at zero marginal
-    cost. Flash's genuine edge over local is the 1M context and the throughput, not the intelligence.
-  - `qwen3.8-max` posts the highest AA-II of the Go set at 58, but it is also the row whose vendor
-    claims collapse hardest under independent testing (Term-B 86.6 → 67.4). GLM-5.3 at 60 and K3 at 57
-    bracket it on a harness that measured all three the same way.
-  - `mimo-v2.5` (38) and `mimo-v2.5-pro` (43) are beaten by MiniMax-M3 (45) on the flat plan, and by
-    the local Qwen3.8-27B (52). Nothing is lost.
-  - **Net: the frontier ceiling is unaffected and the cheap lane moves to hardware already owned.** The
-    exposure is operational rather than qualitative — losing 1M-context cheap throughput, and losing
-    `dsv4f` as the third reasoning-pool rung, which would need repointing at local or MiniMax
-    (historical, `dsv4f` retired 2026-09-26).
-- **DeepSeek V4 Flash is still genuinely strong and the refresh made it stronger** — AA lifted it 40 →
-  52 on the 0731 build, its independently-measured GPQA is 91, and repo-bench previously re-scored it
-  0.895 → 0.957 while V4 Pro stayed at 0.864. The argument for dropping it is that the capability is
-  now duplicated locally and by flat-rate plans, not that the model is weak.
-- **Reasoning tier** (`gpt-5.6-luna`, `MiniMax-M3`; historical, GPT-5.6 retired 2026-09-23) — Luna
-  was the weakest GPT tier here at AA-II 51 and its long-context recall collapsed (vendor MRCR 41.3
-  against Sol's 91.5), so the pool's nominal 1M context was not usable depth on that rung. Current
-  `reasoning-pool` is K2.7 -> `gpt-6.1-sol` -> GLM-5.3-Flash -> MiniMax-M3 -> `qwen3.8-flash-next`; Luna
-  now leads `implementation-pool`.
-- **Local** — `qwen3.8-27b` is now Qwen3.8-27B and the gap to `qwen3.8-flash-next` widened from "trails it
-  everywhere" to a 20-point AA-II spread (52 vs 32). `qwen3.8-flash-next` earns its place on the 262k window
-  and vision, nothing else. The local box is now competitive with paid cheap-tier cloud, which is the
-  single most decision-relevant change in this refresh.
-- **Former 9070XT reviewer is permanently retired** (2026-10-19). It missed the
-  known defect in the 2026-09-22 adversarial review benchmark and depended on waking
-  the gaming PC. Its model aliases, wake route, Hermes role and commented pool
-  entries are removed; review uses MiniMax-M3.1-Flash and `qwen3.8-flash-next`.
-- **MiniMax-M2.7 / MiMo** — agentic workhorses with thin published reasoning numbers; rank on
-  coding/agentic axes, not GPQA/AIME.
+The historical Qwen3.6-35B-A3B scores do not describe the current Flash-Next model.
+Do not use the 52-versus-32 AA-II comparison to rank 27B against Flash-Next.
+The current division of work follows hardware, context requirements, vision support, and operational experience, not that obsolete comparison.
+27B provides local coding. Flash-Next provides the larger-context and vision lane.
+No current fleet-wide ranking is established by this documentation pass.
+
+The former 9070 XT reviewer and its wake endpoint remain retired.
+Current review roles use MiniMax-M3.1-Flash or the local Flash-Next lane as configured by the consumer.
+The benchmark tables retain their dates and model identities.
 
 Sources: [Artificial Analysis](https://artificialanalysis.ai/leaderboards/models) ·
 [AA Terminal-Bench v2.1](https://artificialanalysis.ai/evaluations/terminalbench-v2-1) ·
@@ -456,9 +393,11 @@ Sources: [Artificial Analysis](https://artificialanalysis.ai/leaderboards/models
 [Mellum2-12B-A2.5B](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) ·
 [GPT-5.6 models](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
 
-## v2 bench: the local models are within noise of each other
+## Historical repo-bench results
 
-> **Same caveat as the capability ranking:** measured against the pre-2026-09-08 local models, aliases renamed but scores not re-run.
+These results describe the listed checkpoints and test configurations, not current aliases.
+The old blanket pre-September date conflicts with rows naming Flash-Next. Exact run dates need the original receipts.
+Do not use this table to rank the currently deployed Gufo and HyperQwen configurations.
 
 Four suites from `repo-bench` v2, scored on this repo's own material. Error rows (transport
 failures) are dropped rather than counted as zeros — the `tally` subcommand does this.
@@ -484,14 +423,14 @@ Reviewing is Flash-Next's worst suite and both 27Bs' best; agentic is the revers
 score is broken, which is fine for a review-only lane and disqualifying for a coder.
 
 Caveat on luna: it ran GPT-5.6 Luna at `effort=medium`. The deployed path is now GPT-6 Luna through
-`implementation-pool` (and the direct alias), both pinned to `effort: max`. That row is not evidence
+`implementation-pool` (and the direct alias), with `high` on the pool and `max` on the direct alias. That row is not evidence
 about the deployed path.
 
 Methodology trap: candidate names are not stable across time. `qwen3.8-flash-next` meant Ornith in August
 and Flash-Next later, and `tally` merges by candidate name — check what the alias pointed at before
 comparing rows.
 
-## Where a model runs is decided by memory bandwidth
+## Hardware placement and historical measurements
 
 Strix Halo has ~256 GB/s theoretical and ~200-220 GB/s real. Decode is bandwidth-bound, so what
 matters is **active** parameters per token, not total parameters:
@@ -503,11 +442,10 @@ matters is **active** parameters per token, not total parameters:
 | Qwen3.8-27B ROCmFP8           | dense 27B      | 26.3 GiB  | 26.3 GiB        | ~8-10 t/s   |
 | Qwen3.8-Flash-Next UD-Q3_K_XL | MoE 180B-A6B   | 101.3 GiB | ~4 GiB + engram | 11 t/s      |
 
-As of 2026-08: **Strix runs A3B-class MoE and small dense vision models; the 3090 runs the dense 27B**,
-where 900+ GB/s of VRAM gives it 44 t/s on weights that would crawl on the APU. A dense model on Strix
-is slow no matter how good it scores, and Flash-Next is slow *and* needs 101 GiB — it evicts the whole
-rest of the resident set to hold a tie on quality (see the v2 bench section). Since 2026-09-24 skirk
-runs Flash-Next alone (gufo); the 3090 pool holds `muse-glimmer` (default) or the 27B. A later
+The table records older engine and quantization configurations. Its 11 tok/s Flash-Next row is not a current Gufo measurement.
+Strix now serves Flash-Next alone. The 3090 defaults to dense 27B and can swap to Muse.
+Do not compare the historical 44 tok/s 3090 result with current HyperQwen throughput without matched requests.
+A later
 gufo streaming change removed the 4 GiB staging allocation in favor of a 1 MiB default; that setting
 is a streaming buffer, not a model checkpoint-size limit. In a reported synthetic 4,171-token probe,
 TTFT moved from 5.80s to 74ms, then 107ms; an observational sample of 98 requests reported 96.9%
@@ -528,18 +466,18 @@ power: skirk **48.7 W** serving three models plus an image generation; the 3090 
 | **OpenClaw**           | yes (`.../llm/openclaw/configmap.yaml`)                                            | defaults `minimax/MiniMax-M3.1-Flash` (fallbacks `qwen3.8-flash-next`, `qwen3.8-27b`, `dsv4.1f`); Miso/main `glm-5.3-flash`; Matcha `MiniMax-M3.1-Flash`; Saffron `reasoning-pool`; Sage `muse-glimmer`; subagents `muse-glimmer`; heartbeat `qwen3.8-flash-next-chat`; image `qwen3.8-flash-next-chat`; lossless-claw summary/expansion `local-pool-chat`                                                                                                                                              |
 | **Hermes**             | yes (`.../llm/hermes/configmap.yaml`)                                              | default `reasoning-pool` (fallbacks `kimi-k3` -> `muse-glimmer` -> `qwen3.8-flash-next` -> `glm-5.3` -> `dsv4.1f`); compression/web-extract/approval/session-search `qwen3.8-flash-next`; vision `qwen3.8-flash-next-chat`; roles explorer `MiniMax-M3.1-Flash`, coder-local `qwen3.8-27b`, agentic-local `qwen3.8-flash-next`, implementer `implementation-pool`, reviewer `MiniMax-M3.1-Flash`, oracle `glm-5.3-flash`, vision-local `qwen3.8-flash-next-chat` |
 | **Courier**            | yes (`.../llm/courier/config/laneprofile.yaml`)                                    | Configured consumers: `courier-local` -> `local`, `courier-cloud` -> `local` with the MiniMax-M3.1-Flash solo profile, `courier-hyper` -> `local` with the Hyper-only `glm-5.3-flash-hyper` hyper profile, `courier-frontier` -> `escalated` with the frontier profile (`glm-5.3-flash` coordinator). Queue is shared, not partitioned; models are in the LaneProfiles. |
-| **Dispatch**           | yes (`.../llm/dispatch/helmrelease.yaml`)                                          | groomer -> `grooming-pool` (`qwen3.8-flash-next` primary; rungs `glm-5.3-flash` on Hyper then Z.AI then `gpt-6.1-sol`; 245760); lanes `local`, `frontier`, and `backlog`; aliases `normal` -> `local`, `escalated` -> `frontier`, `cloud` -> `local`. Manifest/configuration does not establish runtime claim or completion state.                                                                                                                                                                                                                                                                     |
+| **Dispatch**           | yes (`.../llm/dispatch/helmrelease.yaml`)                                          | groomer -> `grooming-pool` (`qwen3.8-flash-next` primary; rungs Muse, GLM Flash on Hyper, GPT-6 Luna, then GLM Flash on Z.AI; 245760); lanes `local`, `frontier`, and `backlog`; aliases `normal` -> `local`, `escalated` -> `frontier`, `cloud` -> `local`. Manifest/configuration does not establish runtime claim or completion state.                                                                                                                                                                                                                                                                     |
 | **Opencode** (CLI/Zen) | yes (`.../llm/opencode/configmap.yaml`)                                            | default `auto`; coordinator `reasoning-pool`; coordinator-local `qwen3.8-flash-next`; role subagents `MiniMax-M3.1-Flash`/`implementation-pool`/`qwen3.8-27b`/`qwen3.8-flash-next`/`glm-5.3-flash`, plus the workstation CLI on LiteLLM aliases directly                                                                                                                                                                                                                         |
 | **memini**             | yes (`.../llm/memini/helmrelease.yaml`)                                            | LLM `muse-glimmer`; `embed`; `rerank`                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **toolhive vMCP**      | yes (`.../llm/toolhive/config/virtualmcpserver.yaml`)                              | `embed` (optimizer)                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **alert-triage**       | yes (`.../observability/alert-triage/helmrelease.yaml`)                            | `qwen3.8-flash-next`                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **repo-wiki**          | yes (`.../llm/repo-wiki/helmrelease.yaml`)                                         | `WIKI_MODEL: local-strix`, which is not a LiteLLM alias; its key allows `local-pool-chat`, `qwen3.8-flash-next-chat`, `qwen3.8-27b-chat`                                                                                                                                                                                                                                                                                                                                                |
-| **AI PR review**       | workflow yes (`.github/workflows/ai-pr-review.yaml`); models are repo Actions vars | primary `local-pool-chat`; fallback `GLM-5.3-flash-local` (not a LiteLLM alias); smart `MiniMax-M3` (vars read 2026-09-28)                                                                                                                                                                                                                                                                                                                                                              |
+| **AI PR review**       | workflow yes (`.github/workflows/ai-pr-review.yaml`); models are repo Actions vars | primary `local-pool-chat`; fallback `MiniMax-M3.1-Flash`; smart `glm-5.3-flash` (vars read 2026-11-03)                                                                                                                                                                                                                                                                                                                                                              |
 | **Zed**                | key only (`.../litellm/virtualkeys/zed.yaml`)                                      | LiteLLM aliases directly                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
-### OpenClaw cron fleet
+### OpenClaw cron fleet (unverified historical snapshot)
 
-OpenClaw has four agents (Miso, Matcha, Saffron, Sage). The cron jobs are not in git; the table below
+The repository configures four OpenClaw agents (Miso, Matcha, Saffron, Sage). The cron jobs are not in git; the table below
 is a snapshot of Miso's and Saffron's 16 jobs and has not been re-verified. The model choice per job
 already encodes an intent-lane pattern by hand.
 
@@ -580,9 +518,9 @@ cooldown_time: 30
 enable_pre_call_checks: true
 fallbacks:
     - qwen3.8-flash-next: [qwen3.8-27b]
-    - qwen3.8-flash-next-chat: [muse-glimmer, MiniMax-M2.7]
+    - qwen3.8-flash-next-chat: [muse-glimmer, MiniMax-M3.1-Flash]
     - qwen3.8-27b: [qwen3.8-flash-next]
-    - auto: [dsv4.1f, MiniMax-M3-chat]
+    - auto: [dsv4.1f, MiniMax-M3.1-Flash]
 context_window_fallbacks:
     - qwen3.8-27b: [qwen3.8-flash-next]
 ```
@@ -627,7 +565,7 @@ away from GLM based on that counter alone.
 
 ### Context economics and guardrails
 
-OpenClaw main (Miso) intentionally stays on GLM, now `glm-5.3-flash` (Z.AI first, Hyper second).
+OpenClaw main (Miso) intentionally stays on GLM, now `glm-5.3-flash` (Hyper first, Z.AI second).
 Saffron uses `reasoning-pool`; subagents use `muse-glimmer` and heartbeats use
 `qwen3.8-flash-next-chat`. This preserves the quality lanes instead of routing main away from GLM
 merely because one provider's streaming usage telemetry is incomplete.
@@ -636,6 +574,7 @@ The OpenClaw ConfigMap's lossless-claw settings are now tuned for the actual fai
 
 - `proactiveThresholdCompactionMode: inline`, `contextThreshold: 0.75`, `freshTailCount: 64`, and
   `freshTailMaxTokens: 24000` keep compaction work on the active turn and retain a bounded tail.
+  Local Qwen aliases and both local pools override `contextThreshold` to 0.50.
 - `leafChunkTokens: 20000`, `sweepDeadlineMs: 300000`, and `compactUntilUnderDeadlineMs: 600000` give
   leaf summarization enough time without allowing an unbounded sweep.
 - `largeFileThresholdTokens: 6000` externalizes oversized tool results at ingest, before a diagnostic
@@ -648,38 +587,24 @@ The operational rule is simple: cap log/tool output, avoid replaying giant diagn
 turn, and start a fresh session after a context incident. A single turn can exceed a model window before
 `afterTurn()` compaction gets a chance to run.
 
-### Slot accounting on the local pools
+### Slot accounting on local pools
 
-`max_parallel_requests` per LiteLLM member should match the backend's real concurrency,
-because the two failure modes are asymmetric:
+Alias limits do not reserve hardware. Requests through different aliases and pools share the same backend sessions and cache.
+The 3090 also serves automated work, so interactive requests compete with that workload.
 
-- **Cap above the backend** and requests queue *inside* the server, invisible to the router.
-  In 2026-08 `qwen3.8-27b` (then llama.cpp) sat at 2 against a single slot; the queueing surfaced as
-  a 53 s average time-to-first-token on the alias while the model itself was fine (fixed 2026-08).
-- **Cap below the backend** and provisioned VRAM goes unused. The historical reviewer alias (now retired) served 3 slots while LiteLLM dispatched into 2 — a third of the model
-  unreachable (fixed 2026-08).
+Current declared limits:
 
-Current caps (`models/*.yaml`):
+- The direct 27B alias permits ten parallel requests against eight vLLM sequences. Its chat alias declares no parallel cap.
+- The implementation pool caps its 27B rung at two requests. Its input/output metadata exceeds the backend total context when combined.
+- Muse and both local-pool Muse rungs permit two requests, matching two llama.cpp slots.
+- Flash-Next permits two sessions. Reasoning and both local pools cap their Flash-Next rungs at two, while grooming caps its rung at one.
+- The bare Flash-Next alias is projected from the InferenceService. Its chat CR declares no parallel cap.
+- The implementation pool marks its 27B rung vision-capable, but the direct alias and running text-only launcher do not support images.
 
-- `qwen3.8-27b` 10 against vLLM `MAX_SEQS` 8 (`litellm/qwen3.8-27b.yaml`) — a known discrepancy. The
-  `implementation-pool` 27b rung caps at 2, and Courier's LaneProfile keeps `coder-local` to two in
-  flight. That rung also declares 131072 in + 40960 out, more than the 147456 `MAX_LEN`.
-- `muse-glimmer` 2, matching its 2 llama.cpp slots; its `local-pool`/`local-pool-chat` rungs are 2.
-- `qwen3.8-flash-next` rungs: `reasoning-pool` 2, `local-pool` 1, `local-pool-chat` 1, against gufo
-  `--sessions 2`. The bare alias is auto-projected, so its cap is not in `models/`.
-- The former third reviewer rung has been removed from both local pools.
-  `qwen3.8-27b-chat` and `qwen3.8-flash-next-chat` set no cap.
-
-As of 2026-08, with several models resident on skirk, aggregate tok/s improved with concurrent streams
-spread **across** resident models rather than piled onto one (roughly 6-8 streams for the whole box).
-Skirk now serves Flash-Next alone. The Mac LM Studio member was removed; `qwen3.8-flash-next` is the
-single cluster server (one gufo process, 2 sessions).
-
-Courier and other in-cluster consumers share local hardware; the 3090 also serves an automated pipeline.
-Treat it as a contended resource, not dedicated agent capacity. The coordinator and `agentic-local` can
-compete for Flash-Next's two sessions, while `coder-local` competes on the 3090. Prefer targeted reads,
-small direct changes when the work is understood, and bounded delegation only when independent work
-justifies its context and scheduling cost. Do not increase fan-out just to fill nominal role slots.
+These discrepancies are documented, not repaired by this pass. Do not infer ten simultaneous long-context requests from the direct alias cap.
+The shared KV pool and fixed sequence state constrain actual concurrency.
+Prefer targeted reads and direct changes for understood work. Delegate only when independent work justifies context, scheduling, and verification costs.
+Agent names are not extra capacity. Flash-Next coordinator, agentic, and vision work share one engine.
 
 ## Smart-routing: the `auto` alias
 
@@ -691,19 +616,19 @@ Tiers (three effective tiers; REASONING is folded into COMPLEX):
 
 | Tier           | Target                         | Why                                                      |
 | -------------- | ------------------------------ | -------------------------------------------------------- |
-| SIMPLE         | `qwen3.8-27b` (3090 Swift 1.5) | Trivia — local, free                                     |
-| MEDIUM         | `MiniMax-M3`                   | Flat sub, no weekly quota to burn                        |
-| COMPLEX        | `reasoning-pool`               | K2.7 -> Sol -> GLM-5.3-Flash -> MiniMax-M3 -> flash-next |
+| SIMPLE         | `qwen3.8-27b` (3090 AutoRound) | Small requests; local, shared capacity                                     |
+| MEDIUM         | `MiniMax-M3.1-Flash`                   | Subscription capacity; still quota-limited                        |
+| COMPLEX        | `reasoning-pool`               | K2.7 -> Sol -> GLM Flash (Hyper) -> GLM Flash (Z.AI) -> Flash-Next |
 | REASONING      | `reasoning-pool`               | Folded — no classifier could separate it                 |
-| default (miss) | `MiniMax-M3`                   | `classifier_fallback: default_model`                     |
+| default (miss) | `MiniMax-M3.1-Flash`                   | `classifier_fallback: default_model`                     |
 
-Classifier is `qwen3.8-27b-chat` (`classifier_llm_config`, 20s timeout) — local and free to sit in
+Classifier is `qwen3.8-27b-chat` (`classifier_llm_config`, 20s timeout) — local but contended, and sits in
 every request's path. Session affinity is on (`session_affinity: true`, 3600s TTL). The reviewer
 alias classified until 2026-08-22, then `qwen3.8-flash-next`.
 
 `frontier-pool` is deliberately **not** a tier target, but `auto` is not insulated from the weekly
 caps: COMPLEX reaches Kimi K2.7 and GPT-6.1 Sol as `reasoning-pool` rungs 1 and 2, ahead of
-GLM-5.3-Flash, MiniMax-M3 and flash-next. Kimi K3 stays in `frontier-pool` or explicit selection.
+GLM Flash on Hyper, GLM Flash on Z.AI, and Flash-Next. Kimi K3 stays in `frontier-pool` or explicit selection.
 
 ### Measured (2026-08-07, LiteLLM 1.95.0)
 
@@ -744,21 +669,17 @@ Mechanics (verified against LiteLLM source):
   so semantic can't sit "in front of" complexity. A model _group_ as a tier target works.
 - Local context is guarded by `context_window_fallbacks` (only `qwen3.8-27b` -> `qwen3.8-flash-next`)
   plus `enable_pre_call_checks`, not by any router setting; nothing routes past flash-next's 262k.
-- `reasoning-pool`'s M3 rung uses MiniMax's OpenAI-compatible `/v1` endpoint, so it may expose
-  thinking in content; acceptable for this lane. OpenClaw's native `MiniMax-M3` alias uses the
-  Anthropic `/messages` endpoint and its think-tag stripping shim.
+The reasoning pool has no MiniMax rung. The direct MiniMax aliases use the Anthropic Messages endpoint.
+The `auto` MEDIUM tier and classifier-miss default use `MiniMax-M3.1-Flash`.
+Direct ChatGPT aliases are not tier targets, but Sol is reachable through reasoning.
 
-Excluded from `auto` by design: the direct `chatgpt/*` aliases are not tier targets (Sol is reachable
-only as `reasoning-pool` rung 2). The native `MiniMax-M3` messages alias is the MEDIUM tier and the
-classifier-miss default.
-A **semantic router** (`auto-semantic` + `router.json`) was once scaffolded but is no longer in the
+**semantic router** (`auto-semantic` + `router.json`) was once scaffolded but is no longer in the
 repo: `from_json` builds an encoder at startup (crashloop risk on the live gateway), so it would need
 verify-then-enable if revived.
 
 Still ahead:
 
-- Swap MEDIUM to `qwen3.8-27b` once the 3090 has headroom beyond Courier's `coder-local` — it's the better model and free, but was
-  measured at 37–90s under contention, unusable for a tier that receives over-routed volume.
+- Evaluate a local MEDIUM tier only after measuring quality and latency under current contention. Historical 37–90s observations do not establish current latency.
 - Re-measure against real opencode system prompts rather than bare user messages.
 - Auto Router v2 offers `keyword_tier_rules` (deterministic tier overrides, `cause=literal_keyword_match`)
   if specific terms should force a tier regardless of classification.
@@ -773,62 +694,27 @@ References: LiteLLM [Auto Routing](https://docs.litellm.ai/docs/proxy/auto_routi
 
 ## Frontier pool
 
-The `frontier-pool` alias is the "grab the smartest model with room left" lane for opencode/Zed — pick
-it and ask it to do things; LiteLLM routes to the best-available frontier model and falls down the chain
-a strict `order:` chain (429/403 -> cooldown -> next). Subscriptions first, DeepSeek last:
+`frontier-pool` is the explicit frontier escalation alias. Its strict order is Kimi K3, GPT-6 Astra, then GLM-5.3 on Z.AI.
+It has no MiniMax, DeepSeek, or local floor. If all three rungs fail, the request fails instead of degrading to the reasoning lane.
+Sol is in the reasoning pool and a direct alias, not another independent ChatGPT allowance.
+Opencode declares a 272000-token ceiling for frontier, matching Astra's declared input ceiling.
 
-1. `kimi-k3` @ Kimi Coding — dedicated Kimi sub (flat), 1M
-2. `gpt-6-astra` @ ChatGPT Plus — flagship frontier, capped at 272k (see the Astra footnote)
-3. `glm-5.3` @ Z.AI — GLM Coding Lite sub
-4. `dsv4.1f` @ Charm Hyper — DeepSeek V4.1 Flash
-
-`gpt-6.1-sol` is not a rung. It draws the same ChatGPT rolling window as Astra, so pairing the two would
-give a second rung with no headroom of its own; it is `reasoning-pool` rung 2 and a direct alias.
-Rung 1 (K3) is 1M; opencode declares the pool at 272k, the smallest rung (Astra, rung 2).
-
-Implemented as one **self-contained `order:` group**, not router fallbacks referencing the shared
-groups. It intentionally has no MiniMax floor: a frontier request fails rather than silently degrading
-to the reasoning lane.
-
-Caveats:
-
-- **Know which model answered.** Failover is silent — read the `x-litellm-model-id` response header (or
-  the LiteLLM logs) to see whether you're on K3, Astra, GLM or Hyper DSV4.1F.
-- **No silent quality downgrade.** Once all four rungs reject a request, the request fails. Use
-  `reasoning-pool` when MiniMax M3 is an acceptable final fallback.
-- **Cap signals are not all 429s.** Kimi Coding announces exhaustion with a **403**, not a 429. A 403
-  is retried but never cools the deployment down, so retries re-hit the capped rung; what actually
-  advances the chain is LiteLLM's automatic **order-based fallback**, which synthesises fallback
-  entries for the higher `order:` rungs of the same group once retries are exhausted. No separate
-  model_name or `fallbacks:` entry is needed for that, and none should be added.
-- **Fallbacks fire on any exception, including 400s.** `run_async_fallback` filters nothing by type or
-  status, so a hard `BadRequestError` walks the chain rather than failing the caller. That is what
-  makes thinking-mode-vs-forced-tool-choice (below) a graceful degradation instead of an outage.
-- **Diagnose rungs from metrics, not guesses.** `litellm_deployment_failure_responses_total`
-  (labelled by `exception_status` / `api_base`) plus
-  `litellm_deployment_{successful,failed}_fallbacks_total` show exactly which rung answered and why
-  the previous one didn't.
+Failover can change which model answers. Inspect LiteLLM deployment logs or response model identifiers rather than assume the first rung served the request.
+Kimi historically signals exhaustion with HTTP 403, not only 429. The historical source investigation found ordered fallback after retries, without cooldown for 403.
+That observation is not a fresh failure-injection test of the current LiteLLM version.
+Use `litellm_deployment_failure_responses_total` and deployment fallback counters to diagnose actual failures.
+Configuration establishes order and intent, not evidence that every upstream error path works.
 
 ## Reasoning-effort and thinking-mode pinning
 
-Per-deployment behaviours are pinned in the model CRs without inline comment; the reasoning lives
-here.
+Luna defaults to `high` on implementation and `max` on its direct alias.
+Both use nested `extra_body: {reasoning: {effort: ...}}`, rather than a bare `reasoning_effort` default.
+A historical LiteLLM investigation found that the provider transform dropped the bare form. Reinspect the outgoing request after relevant provider changes.
+Client arguments can override these defaults. An enforced override requires separate proxy behavior, not documentation.
+Effort consumes subscription allowance, so defaults are a quota/quality decision.
 
-**Luna is configured with `max` reasoning effort** via `extra_body: {reasoning: {effort: max}}` on the
-`implementation-pool` rung (order 1) and on the direct `chatgpt/gpt-6-luna` alias (2026-09-28). The
-nested `extra_body` form is deliberate:
-
-- `extra_body` is merged onto the wire *after* the provider transform, so it survives the `chatgpt/`
-  provider's strict allow-list (which permits nested `reasoning` but strips `reasoning_effort`).
-- A prior LiteLLM 1.94 test found that a bare `reasoning_effort: "max"` could be dropped by the
-  provider mapper. Keep the nested `extra_body` form and re-check the wire request after provider or
-  LiteLLM upgrades rather than assuming the requested effort was applied.
-- This is a default, not an override: client kwargs are merged last and win. A true hard override
-  would need a proxy `async_pre_call_hook`.
-- Effort costs subscription quota. The ChatGPT plan meters reasoning work, and Luna leads
-  `implementation-pool` at `order: 1`, so it fronts every implementation-pool request (opencode and
-  Hermes `implementer`). COMPLEX-classified `auto` traffic is fronted by K2.7, not Luna. Lower it from
-  `max` only as an explicit quota/quality tradeoff.
+The remaining DeepSeek notes are historical. They describe retired `dsv4f` routes, not current fallback instructions.
+The active `dsv4.1f` alias has Hyper and Neuralwatt deployments, with no thinking override or alias-level router fallback.
 
 **DeepSeek V4 Flash runs with thinking default-on.** Historical (`dsv4f` retired 2026-09-26;
 `dsv4.1f` sets no thinking override and has no router fallback of its own). The
