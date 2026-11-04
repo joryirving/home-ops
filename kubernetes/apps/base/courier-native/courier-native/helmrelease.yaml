@@ -38,13 +38,30 @@ spec:
           investigations and compact check receipts. Never merge. Report only
           observed validation and publication results, and leave external checks
           explicitly pending. Do not poll for CI or human review before exiting.
-        # MiniMax window refreshed — the lane returns to its declared model
-        # on the native Anthropic Messages surface (#716), the protocol its
-        # thinking blocks survive.
-        transport: anthropic
+        # Production-blocking consumption finding: native canary runs
+        # amplified paid-model usage (unbounded transcript resend — no
+        # declared context policy means no compaction — plus per-role probe
+        # duplication and 429 burst retries). Until that is fixed and
+        # re-accepted, the canary runs exclusively on the LOCAL Qwen 27B:
+        # qwen3.8-27b -> nvidia-router-proxy (in-cluster RTX 3090); its
+        # configured fallback qwen3.8-flash-next is likewise in-cluster
+        # local. No MiniMax/Hyper/Z.ai model, pool, or endpoint is reachable
+        # from this profile. Transport matches the route's OpenAI-compatible
+        # surface. The context policy bounds the transcript so compaction
+        # actually fires; 122880 is the route's own authoritative
+        # max_input_tokens (prefer the lower safe value).
+        transport: openai
+        context:
+          compactAtPercent: 60
+          outputReservation: 8192
+          roles:
+            coordinator:
+              maxInputTokens: 122880
+            reviewer:
+              maxInputTokens: 122880
         roles:
-          coordinator: MiniMax-M3.1-Flash
-          reviewer: MiniMax-M3.1-Flash
+          coordinator: qwen3.8-27b
+          reviewer: qwen3.8-27b
     ownership:
       namespaces:
         - courier-native
