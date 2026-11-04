@@ -38,18 +38,20 @@ spec:
           investigations and compact check receipts. Never merge. Report only
           observed validation and publication results, and leave external checks
           explicitly pending. Do not poll for CI or human review before exiting.
-        # The lane speaks litellm's Anthropic Messages surface natively
-        # (#716): MiniMax reasoning/thinking blocks only survive their own
-        # protocol, and the OpenAI-compatible surface 404s on the shim's
-        # anthropic apiBase. Model names stay bare — the harness posts them
-        # verbatim and LiteLLM serves bare model_name values.
-        transport: anthropic
+        # The lane's transport must match its model's real surface (#716):
+        # glm routes are OpenAI-compatible — litellm's anthropic surface
+        # would translate them and lose the semantics the native transport
+        # exists to preserve. transport: openai for the hyper bridge; the
+        # native Anthropic Messages surface returns with MiniMax, whose
+        # thinking blocks only survive their own protocol. Model names stay
+        # bare — the harness posts them verbatim.
+        transport: openai
         roles:
           # 2026-11-04: temporarily glm-5.3-flash-hyper — the MiniMax 5h
           # window was drained by the 0.1.19 dogfood runs and the hyper pool
           # refreshes sooner. The #102 canary exercises the harness's status
-          # machinery, not the model; MiniMax-M3.1-Flash returns when the
-          # window resets. transport stays anthropic (native Messages surface).
+          # machinery, not the model; MiniMax-M3.1-Flash + transport:
+          # anthropic return when the window resets.
           coordinator: glm-5.3-flash-hyper
           reviewer: glm-5.3-flash-hyper
     ownership:
