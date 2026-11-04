@@ -45,11 +45,13 @@ spec:
         # verbatim and LiteLLM serves bare model_name values.
         transport: anthropic
         roles:
-          # 2026-11-02 night ran glm-5.3-flash while the MiniMax upstream was
-          # rate-limited (an upstream-quota condition, not a courier defect);
-          # restored 2026-11-03 with the refreshed quota.
-          coordinator: MiniMax-M3.1-Flash
-          reviewer: MiniMax-M3.1-Flash
+          # 2026-11-04: temporarily glm-5.3-flash-hyper — the MiniMax 5h
+          # window was drained by the 0.1.19 dogfood runs and the hyper pool
+          # refreshes sooner. The #102 canary exercises the harness's status
+          # machinery, not the model; MiniMax-M3.1-Flash returns when the
+          # window resets. transport stays anthropic (native Messages surface).
+          coordinator: glm-5.3-flash-hyper
+          reviewer: glm-5.3-flash-hyper
     ownership:
       namespaces:
         - courier-native
