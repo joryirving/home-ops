@@ -19,6 +19,7 @@ spec:
           main:
             args:
               - --leader-elect
+              - --dispatch-rebase-lane=normal
               - --git-remote-template=https://github.com/%s.git
               - --git-credential-secret=courier-github
               - --executor-environment-secret=courier-executor
@@ -36,6 +37,9 @@ spec:
         - agentName: courier-hyper
           laneProfile: hyper
           queueLane: local
+        - agentName: courier-rebase
+          laneProfile: rebase
+          queueLane: normal
         - agentName: courier-frontier
           laneProfile: frontier
           queueLane: escalated
