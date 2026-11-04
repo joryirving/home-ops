@@ -27,11 +27,11 @@ Before admitting a manually selected real task:
   on 2026-11-03 with the refreshed quota.
 - The lane's `runtimeImage` and `harnessImage.tag` pins are gone — both
   images track the chart version (#717). Transport follows the model:
-  2026-11-04 the lane bridges onto `glm-5.3-flash-hyper` with
-  `transport: openai` while the MiniMax window is drained; when MiniMax
-  returns, `MiniMax-M3.1-Flash` + `transport: anthropic` come back
-  together (#716) — MiniMax thinking blocks only survive the native
-  Anthropic Messages surface.
+  2026-11-04 the lane briefly bridged onto `glm-5.3-flash-hyper` with
+  `transport: openai` while the MiniMax window was drained; MiniMax
+  `MiniMax-M3.1-Flash` + `transport: anthropic` returned the same day
+  (#716) — MiniMax thinking blocks only survive the native Anthropic
+  Messages surface.
 - Broker egress to the kube-apiserver is granted by `ciliumnetworkpolicy.yaml`
   (`courier-broker-apiserver`): under Cilium the API server carries a reserved
   identity that the per-run ipBlock rules cannot match, so every secure run
