@@ -248,7 +248,7 @@ data:
           image: { timeoutSeconds: 180 },
           audio: { enabled: true },
           models: [
-            { provider: "mac-speech", model: "parakeet", capabilities: ["audio"], timeoutSeconds: 120 },
+            { provider: "openai", model: "parakeet", baseUrl: "http://macbookpro.internal:8765/v1", capabilities: ["audio"], timeoutSeconds: 120 }, // builtin openai transcription client; entry baseUrl overrides api.openai.com (custom provider ids ship no transcribeAudio impl)
           ],
         },
         sessions: { visibility: "all" },
@@ -291,15 +291,6 @@ data:
               { id: "chatgpt/gpt-6.1-sol", name: "ChatGPT GPT-6.1 Sol", reasoning: true, input: ["text"], cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5 }, contextWindow: 272000, maxTokens: 128000, compat: { supportsUsageInStreaming: true } },
               { id: "chatgpt/gpt-6-luna", name: "ChatGPT GPT-6 Luna", reasoning: true, input: ["text"], cost: { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 }, contextWindow: 272000, maxTokens: 128000, compat: { supportsUsageInStreaming: true } },
             ]
-          },
-          "mac-speech": {
-            baseUrl: "http://macbookpro.internal:8765/v1",
-            apiKey: "not-required",
-            api: "openai-completions",
-            timeoutSeconds: 120,
-            models: [
-              { id: "parakeet", name: "Parakeet STT (Mac MLX)", input: ["audio"], cost: { input: 0, output: 0 }, contextWindow: 8192 },
-            ],
           },
           "minimax": {
             baseUrl: "http://litellm.llm:4000",
