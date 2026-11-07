@@ -200,27 +200,20 @@ data:
         provider: "openai",
         timeoutMs: 120000, // schema max; see comment above
         providers: {
-          // Self-hosted Lemonade, OpenMOSS TTS on the Strix iGPU via Vulkan.
-          // Uses the openai provider because Lemonade serves an OpenAI-compatible
-          // /v1/audio/speech. extraBody carries the pinned voice reference, which
-          // OpenMOSS needs on every request because it has no saved-voice concept;
-          // it is also far faster than voice_design_description, which reinvents a
-          // reference each call. responseFormat is wav because OpenMOSS v0.3 encodes
-          // only wav or pcm, and ffmpeg in this pod converts to opus for Discord.
+          // Mac speech cutover (2026-11-06, Vet directive: no in-pod shims).
+          // Kokoro-mlx on the MacBook Pro M1 Max speaks the OpenAI
+          // /v1/audio/speech dialect natively: "input" required, voice falls
+          // back to af_heart, model/response_format/reference_wav_b64 and any
+          // unknown fields ignored (no 422s). Always WAV, 24kHz mono.
+          // extraBody still carries the pinned voice reference ONLY for
+          // one-line revert (the Mac accepts-and-ignores it; ~588KB/req).
           // Reference (2026-10-30 keeper cut): 9.2s 24kHz mono clip of the
           // target speaker from a YouTube short (2SEzD50ubv0), 50/50 blended
-          // raw + 1-pass RNNoise-denoised: full double-denoise deadened the
-          // voice, raw kept the short's music bleed. candC (the prior cut
-          // from bGB1W_q20xM) graded "too slow and low" at long form; the
-          // blend cut kept the energy and won Vet's long-form ear check.
-          // Long-form pacing is steered in-script: light ellipsis beats
-          // only, never a standalone "..." sentence (renders as ~5s dead
-          // air). tts.timeoutMs is the schema max (120s); iris long-form
-          // needs ~2.5-3.5 min, so long scripts render via the direct lane
-          // (automation/miso-v1/brief-voice.py), not the gateway tts
-          // client, which falls back to minimax mid-render.
+          // raw + 1-pass RNNoise-denoised. Revert: baseUrl back to
+          // http://lemonade-tts-iris.llm:13305/v1 (OpenMOSS on Strix iGPU;
+          // responseFormat wav because OpenMOSS v0.3 encodes only wav/pcm).
           openai: {
-            baseUrl: "http://lemonade-tts-iris.llm:13305/v1",
+            baseUrl: "http://macbookpro.internal:8766/v1",
             apiKey: "not-required",
             model: "MOSS-TTS-Local",
             responseFormat: "wav",
@@ -255,7 +248,7 @@ data:
           image: { timeoutSeconds: 180 },
           audio: { enabled: true },
           models: [
-            { type: "cli", command: "whisper-stt", args: ["{{AttachmentPath}}"], capabilities: ["audio"], timeoutSeconds: 120 },
+            { provider: "mac-speech", model: "parakeet", capabilities: ["audio"], timeoutSeconds: 120 },
           ],
         },
         sessions: { visibility: "all" },
@@ -298,6 +291,15 @@ data:
               { id: "chatgpt/gpt-6.1-sol", name: "ChatGPT GPT-6.1 Sol", reasoning: true, input: ["text"], cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5 }, contextWindow: 272000, maxTokens: 128000, compat: { supportsUsageInStreaming: true } },
               { id: "chatgpt/gpt-6-luna", name: "ChatGPT GPT-6 Luna", reasoning: true, input: ["text"], cost: { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 }, contextWindow: 272000, maxTokens: 128000, compat: { supportsUsageInStreaming: true } },
             ]
+          },
+          "mac-speech": {
+            baseUrl: "http://macbookpro.internal:8765/v1",
+            apiKey: "not-required",
+            api: "openai-completions",
+            timeoutSeconds: 120,
+            models: [
+              { id: "parakeet", name: "Parakeet STT (Mac MLX)", input: ["audio"], cost: { input: 0, output: 0 }, contextWindow: 8192 },
+            ],
           },
           "minimax": {
             baseUrl: "http://litellm.llm:4000",
