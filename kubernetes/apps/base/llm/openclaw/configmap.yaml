@@ -292,6 +292,13 @@ data:
               { id: "chatgpt/gpt-6-luna", name: "ChatGPT GPT-6 Luna", reasoning: true, input: ["text"], cost: { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 }, contextWindow: 272000, maxTokens: 128000, compat: { supportsUsageInStreaming: true } },
             ]
           },
+          "openai": {
+            // Speech pipeline (2026-11-06): satisfies the media-understanding
+            // auth assertion for the builtin openai transcription client
+            // (ProviderAuthError otherwise); the Mac ignores the auth header.
+            // No models list — chat model routing unaffected.
+            apiKey: "not-required",
+          },
           "minimax": {
             baseUrl: "http://litellm.llm:4000",
             apiKey: "$${LITELLM_API_KEY}",
