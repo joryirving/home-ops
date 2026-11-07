@@ -296,8 +296,13 @@ data:
             // Speech pipeline (2026-11-06): satisfies the media-understanding
             // auth assertion for the builtin openai transcription client
             // (ProviderAuthError otherwise); the Mac ignores the auth header.
-            // No models list — chat model routing unaffected.
+            // request.allowPrivateNetwork: the Mac is a LAN-private host; as a
+            // known cloud provider id, openai gets no configured-origin trust,
+            // so the SSRF guard blocks it without this opt-in
+            // (SsrFBlockedError). Operator-controlled self-hosted endpoint
+            // per docs guidance. No models list — chat routing unaffected.
             apiKey: "not-required",
+            request: { allowPrivateNetwork: true },
           },
           "minimax": {
             baseUrl: "http://litellm.llm:4000",
