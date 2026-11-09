@@ -145,7 +145,10 @@ Flash-Next is the only local model family. It runs on two independent lanes:
 - **ganyu (RTX 3090)** — `strata-fn` InferenceService (`litellm/strata-fn.yaml`),
   Strata engine, IQ3_S quant at 256K context, three litellm slots
   (`max_parallel_requests: 3`), served as `qwen3.8-flash-next-iq3_s` through an
-  explicit `LiteLLMModel` CR in the `qwen3.8-flash-next` group. The packs are
+  explicit `LiteLLMModel` CR in the `qwen3.8-flash-next` group. Both group
+  rungs sit at order 0 with per-rung caps (`max_parallel_requests: 2` on skirk,
+  `3` on strata-fn), so the router's simple-shuffle strategy load-shares across
+  the five sessions instead of failover. The packs are
   pre-staged on the `llmkube-ganyu-cache` PVC; cold start is 4-8 minutes and
   the prefix cache is RAM-only, so redeploys pay full prefill until warm.
 

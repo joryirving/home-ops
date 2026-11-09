@@ -83,7 +83,7 @@ MTP proposes several tokens before the main model verifies them.
 | --- | --- | --- | --- | --- |
 | `qwen3.8-flash-next` | Strix Halo (Gufo, two sessions) + 3090 (Strata, three slots) | Qwen3.8-Flash-Next UD-Q4_K_XL (Strix) and GSQ-RCO IQ3_S (3090), shared Q8_0 MTP head, BF16 vision projector | 262144 engine context; LiteLLM group input 245760 | Local reasoning, coding, vision, tools, Courier coordinator |
 | `qwen3.8-flash-next-chat` | Same deployments | Same weights, thinking disabled | Same | Non-thinking vision, heartbeat requests, `auto` classifier |
-| `qwen3.8-flash-next-iq3_s` | 3090, Strata engine 0.1.52 | Same weights, GSQ-RCO IQ3_S, MTP | 245760 LiteLLM input; 256K engine context | Internal rung inside the `qwen3.8-flash-next` group (order 2); three slots |
+| `qwen3.8-flash-next-iq3_s` | 3090, Strata engine 0.1.52 | Same weights, GSQ-RCO IQ3_S, MTP | 245760 LiteLLM input; 256K engine context | Internal rung inside the `qwen3.8-flash-next` group; three slots, capped `max_parallel_requests: 3` |
 | `embed` | CPU, three replicas | Qwen3-Embedding-0.6B Q8_0 | 32768 | 1024-dimension embeddings for memini and toolhive |
 | `rerank` | CPU, three replicas | bge-reranker-v2-m3 Q8_0 | Not declared | memini reranking |
 

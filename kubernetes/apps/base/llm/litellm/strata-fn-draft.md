@@ -32,9 +32,13 @@ Benchmarked 2026-11-08 on ganyu (engine 0.1.52, image 0.2.7-cuda13, driver
   256K, vision on, `replicas: 1`, auth-header probes, no memory limit — Strata
   plans KV from host RAM).
 - `litellm/models/strata-fn.yaml` — explicit `LiteLLMModel` joining the
-  `qwen3.8-flash-next` group as `order: 2`, `max_parallel_requests: 3`,
+  `qwen3.8-flash-next` group at order 0 (load-share), `max_parallel_requests: 3`,
   `maxInputTokens: 245760`, vision **false** until one real image request
   passes.
+- `litellm/models/qwen3.8-flash-next.yaml` — new explicit skirk rung for the
+  same group (`max_parallel_requests: 2`), pre-empting the operator's
+  auto-registered model so both lanes are capped and load-shared; see open
+  question 1.
 
 **Deleted**
 
@@ -72,12 +76,17 @@ litellm `qwen3.8-flash-next` group served by skirk throughout.
 
 ## Open questions for reviewers
 
-1. **autoRegister interplay.** `litellm-operator` has
-   `llmkube.autoRegister: true`, so the skirk IS auto-registers (no explicit
-   CR, presumably no `order`). An explicit `order: 2` CR for Strata may or may
-   not share load with an un-ordered auto deployment. Options: (a) verify
-   litellm behavior empirically after merge; (b) add an explicit skirk CR at
-   `order: 1`; (c) find an annotation to skip auto-registration.
+1. **autoRegister interplay — resolved by design change.** `order: 2` was
+   failover, not load-share: the auto-registered skirk deployment sits at
+   order 0, so Strata would only serve after skirk cools down. Fixed by
+   dropping `order` from the Strata CR and adding an explicit skirk CR
+   (`litellm/models/qwen3.8-flash-next.yaml`, `max_parallel_requests: 2`) that
+   pre-empts the auto-registered model — the litellm-operator skips
+   same-named models it does not own, so the Flux-managed CR takes over the
+   object and caps skirk at its two sessions. Both rungs now sit at order 0
+   and `simple-shuffle` load-shares across the five sessions. Residual note:
+   if the skirk IS ever reaches a terminal phase, the operator may remove the
+   model it thinks it manages; Flux re-creates ours on the next sync.
 2. **`modelRef` + `skipModelInit` with no downloader.** `modelRef` is required
    by the IS schema, so the manifest carries a `Model` stub. Confirm the Model
    controller stays quiet when `skipModelInit` is set and the named files are
