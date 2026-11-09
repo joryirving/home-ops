@@ -46,6 +46,15 @@ spec:
   extraEnv:
     - name: LOG_LEVEL
       value: debug
+    # Full renovate image defaults binarySource=global (tools must be baked
+    # into the image), but its pre-installed mise is not reachable from the
+    # job pod: dispatch #1577 (2026-11-09) failed `.mise/mise.lock` with
+    # `spawn mise ENOENT` despite the pinned full image shipping
+    # `install-tool mise`. With binarySource=install the mise manager's
+    # `mise` tool constraint installs it on demand into the sandbox cache
+    # (documented workaround, renovatebot/renovate discussion #43882).
+    - name: RENOVATE_BINARY_SOURCE
+      value: install
     - name: RENOVATE_ALLOWED_COMMANDS
       value: |-
         ["pnpm run bundle"]
