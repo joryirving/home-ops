@@ -32,9 +32,20 @@ metadata:
   name: strata-fn
   labels:
     krr/ignore: "true"
+  annotations:
+    # Idle-aware rollouts (same gate skirk uses): llmkube scrapes this gauge
+    # per-replica and defers pod-template changes (image bumps) until the
+    # engine reports zero running requests. Strata serves /metrics as JSON
+    # unless ?format=prometheus is set, so the path must carry the query.
+    # The probe sends no Accept header and reads baseURL+path verbatim.
+    inference.llmkube.dev/idle-metric: vllm:num_requests_running
+    inference.llmkube.dev/idle-metric-path: /metrics?format=prometheus
 spec:
   modelRef: strata-fn
   runtime: generic
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
   # 0.2.7-cuda13 @ sha256:db96cd9… is the amd64 manifest the benchmark ran.
   image: ghcr.io/niko1221/strata:0.2.13-cuda13@sha256:b6e1876515d5663047a7cd8dfee5223c8b2d117710eb2a9c285a433fb6e4a703
   command:
