@@ -47,10 +47,13 @@ spec:
     # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
     # in this group. litellm sends sk-llmkube-noauth, which a keyless engine
     # ignores. Kubelet probes hit /v1/models unauthenticated; a keyed engine
-    # 401s them and never becomes Ready. strata resurrects whatever key a
-    # previous launch saved in /data/state/strata/launch/<preset>.json even
-    # with --no-api-key (observed live), so the stale api_key must be stripped
-    # from that file when switching to keyless.
+    # 401s them and never becomes Ready. Gotchas observed live:
+    # - The key actually lives in /data/state/api-key on the PVC (NOT the
+    #   launch preset json); strata 401s every request until that file is
+    #   deleted once. --no-api-key does not remove it.
+    # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
+    #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
+    #   without it the engine 403s litellm's requests by Host header.
     strata launch --model iq3_s --data-dir /data/Strata-data --context 256k \
       --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key
     # `strata launch --no-tui` starts the engine and returns; supervise it.
@@ -77,6 +80,11 @@ spec:
   runtimeClassName: nvidia
   nodeSelector:
     topology.kubernetes.io: egpu
+  # Keyless engines enforce a DNS-rebinding Host allowlist (see command
+  # above); without the Service DNS names here litellm gets 403s.
+  env:
+  - name: STRATA_ALLOWED_HOSTS
+    value: strata-fn.llm.svc.cluster.local,strata-fn.llm.svc,strata-fn
   tolerations:
   - key: llm-workload
     operator: Exists
