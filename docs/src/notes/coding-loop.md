@@ -75,12 +75,12 @@ Current profile bindings are:
 
 | Profile | Coordinator | Other roles |
 |---|---|---|
-| `local` | `litellm/qwen3.8-flash-next` | `agentic-local` and `coder-local`: Flash-Next (Strix + Strata); `free`: `free-pool` |
+| `local` | `litellm/qwen3.8-flash-next` | `agentic-local`: Flash-Next (Strix + Strata); `free`: `free-pool` |
 | `minimax` | `litellm-anthropic/MiniMax-M3.1-Flash` | Explorer, implementer, oracle, and reviewer use the same model |
 | `hyper` | `litellm/glm-5.3-flash-hyper` | Explorer, implementer, oracle, and reviewer use the same model |
 | `frontier` | `litellm/glm-5.3-flash` | Explorer: Flash-Next; implementer: `implementation-pool`; reviewer: MiniMax; oracle: `reasoning-pool` |
 
-The local framing permits at most two `coder-local` workers and one `agentic-local` worker at once. These are ceilings, not targets. All local lanes share the Flash-Next capacity (skirk's two gufo sessions plus strata-fn's three slots on the 3090) with the coding pipeline and other consumers. Do not infer spare GPU capacity from a free Courier slot.
+The local framing sends all sub-agent work to `agentic-local`: at most two in flight for disjoint file-scoped work, one when a review pass is running, and never overlapping the coordinator's own turns. These are ceilings, not targets. All local lanes share the Flash-Next capacity (skirk's two gufo sessions plus strata-fn's three slots on the 3090) with the coding pipeline and other consumers. Do not infer spare GPU capacity from a free Courier slot.
 
 MiniMax framing serializes delegation to one worker. Its roles share provider allowance. A separate review session provides an independent assessment, but not model-family diversity.
 
