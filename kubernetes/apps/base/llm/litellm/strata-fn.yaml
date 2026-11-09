@@ -44,14 +44,18 @@ spec:
     # Launch IQ3_S at 256K (admission verified to 232K prompt tokens).
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
     # over CLI flags and silently reverts to the wrong pack (observed).
-    # --api-key-env pins the engine key to the pod env; without it strata keeps
-    # whatever key a previous launch saved in /data/state — observed live: it
-    # kept the benchmark-era key, which 401s both the litellm rung and probe.
+    # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
+    # in this group. litellm sends sk-llmkube-noauth, which a keyless engine
+    # ignores. Kubelet probes hit /v1/models unauthenticated; a keyed engine
+    # 401s them and never becomes Ready. strata resurrects whatever key a
+    # previous launch saved in /data/state/strata/launch/<preset>.json even
+    # with --no-api-key (observed live), so the stale api_key must be stripped
+    # from that file when switching to keyless.
     strata launch --model iq3_s --data-dir /data/Strata-data --context 256k \
-      --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --api-key-env API_KEY
+      --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key
     # `strata launch --no-tui` starts the engine and returns; supervise it.
-    # Any HTTP response (200 or 401) means the engine is alive; connection
-    # errors mean it died.
+    # Any HTTP response means the engine is alive; connection errors mean it
+    # died.
     PY=/opt/strata/terminal/python/bin/python3
     while $PY -c 'import urllib.request, urllib.error
     try:
@@ -77,9 +81,6 @@ spec:
   - key: llm-workload
     operator: Exists
     effect: NoSchedule
-  env:
-  - name: API_KEY
-    value: sk-llmkube-noauth
   resources:
     cpu: "8"
     memory: 64Gi
@@ -95,32 +96,7 @@ spec:
   endpoint:
     port: 8080
     type: ClusterIP
-  # Strata serves /v1/models behind the API key; k8s httpGet carries headers.
-  probeOverrides:
-    startup:
-      httpGet:
-        path: /v1/models
-        port: 8080
-        httpHeaders:
-        - name: Authorization
-          value: Bearer sk-llmkube-noauth
-      periodSeconds: 10
-      failureThreshold: 120 # cold start: hash (~84 GB) + load = 4-8 min
-    liveness:
-      httpGet:
-        path: /v1/models
-        port: 8080
-        httpHeaders:
-        - name: Authorization
-          value: Bearer sk-llmkube-noauth
-      periodSeconds: 60
-      failureThreshold: 3
-    readiness:
-      httpGet:
-        path: /v1/models
-        port: 8080
-        httpHeaders:
-        - name: Authorization
-          value: Bearer sk-llmkube-noauth
-      periodSeconds: 15
-      failureThreshold: 3
+  # Keyless engine (see command above): default unauthenticated probes
+  # pass. If the engine ever runs keyed again, restore probeOverrides
+  # with an Authorization httpHeader — a keyed engine 401s headerless
+  # probes and the pod never becomes Ready.
