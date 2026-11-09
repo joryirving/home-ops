@@ -90,22 +90,19 @@ litellm `qwen3.8-flash-next` group served by skirk throughout.
    possible driver paging, decode collapse) and suggested this flag, but
    `strata launch` does not expose it on the CLI. If needed, patch the
    generated run config in the wrapper command before the engine starts.
-5. **ISTA-DASLab repo slug.** `Model.spec.source` is a guess
-   (`ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF`); pack name on disk is
-   `Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-0000X-of-00002.gguf`. Cosmetic while
-   `skipModelInit` holds, but a wrong slug is a trap if the downloader ever
-   runs.
-6. **Image digest.** Pin `ghcr.io/niko1221/strata:0.2.7-cuda13` by digest
-   (renovate policy) — not done in this PR yet.
-7. **Vision.** `--vision gpu` + BF16 mmproj are served (`input_modalities:
+5. **Vision.** `--vision gpu` + BF16 mmproj are served (`input_modalities:
    ["text","image"]`) but no image was sent during the benchmark. Run one real
    image request through Strata before flipping `supportsVision: true` on the
    Strata CR (skirk's flash-next lane keeps vision in the group meanwhile).
-8. **Mac muse endpoint.** This PR drops the muse group entirely, including the
+6. **Mac muse endpoint.** This PR drops the muse group entirely, including the
    Mac LM Studio deployment in `models/muse-glimmer.yaml`. Confirm.
-9. **Engine log volume.** Strata writes its engine log to
+7. **Engine log volume.** Strata writes its engine log to
    `/data/state/strata/launch/*.engine.log` on the cache PVC; confirm rotation
    or log-noise growth over weeks.
+
+Resolved during review: the ISTA-DASLab slug was verified against HF (public,
+ungated, both shard paths present) and the image is now digest-pinned
+(`sha256:db96cd9b…`, the amd64 manifest the benchmark ran).
 
 ## Post-merge watch items (first week)
 
