@@ -1,0 +1,119 @@
+---
+# Strata Flash-Next (IQ3_S) on ganyu / RTX 3090.
+# Cutover with this PR: muse-glimmer and qwen3.8-27b retire; see strata-fn-draft.md.
+# Packs already live on llmkube-ganyu-cache at /data/Strata-data (downloaded 2026-11-08
+# during the benchmark); skipModelInit keeps the llmkube downloader out of the picture.
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: strata-fn
+spec:
+  # TODO(review): confirm the ISTA-DASLab repo slug. Pack on disk is
+  # Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S (2 shards, 83.6 GB). The MTP draft
+  # (~5 GB, /data/Strata-data/mtp/rt) is fetched by strata launch itself,
+  # not by this Model CR.
+  source: hf://ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF
+  sourceSecretRef:
+    name: huggingface
+  files:
+  - IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf
+  - IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+  format: gguf
+  quantization: IQ3_S
+  hardware:
+    accelerator: cuda
+    gpu:
+      count: 1
+      enabled: true
+      vendor: nvidia
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: strata-fn
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: strata-fn
+  runtime: generic
+  # TODO(review): pin the digest before merge (renovate tracks tags; digests
+  # pin supply chain). 0.2.7-cuda13 was benchmarked with engine 0.1.52.
+  image: ghcr.io/niko1221/strata:0.2.7-cuda13
+  command:
+  - /bin/sh
+  - -c
+  - |
+    # Launch IQ3_S at 256K (admission verified to 232K prompt tokens).
+    # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
+    # over CLI flags and silently reverts to the wrong pack (observed).
+    strata launch --model iq3_s --data-dir /data/Strata-data --context 256k \
+      --vision gpu --tune skip --access lan --port 8080 --yes --no-tui
+    # `strata launch --no-tui` starts the engine and returns; supervise it.
+    PY=/opt/strata/terminal/python/bin/python3
+    while $PY -c 'import urllib.request; r=urllib.request.Request("http://127.0.0.1:8080/v1/models", headers={"Authorization":"Bearer sk-llmkube-noauth"}); urllib.request.urlopen(r, timeout=5)' 2>/dev/null; do
+      sleep 15
+    done
+    echo "strata engine died; exiting so the pod restarts"
+    exit 1
+  # NOTE(review): the engine warned about low free VRAM (<512 MiB) and
+  # suggested --vram-reserve-mib 768 in the generated engine args. strata
+  # launch does not expose that flag on its CLI; if it matters, patch the
+  # generated run config in this wrapper before the engine starts.
+  skipModelInit: true
+  replicas: 1
+  priority: high
+  runtimeClassName: nvidia
+  nodeSelector:
+    topology.kubernetes.io: egpu
+  tolerations:
+  - key: llm-workload
+    operator: Exists
+    effect: NoSchedule
+  env:
+  - name: API_KEY
+    value: sk-llmkube-noauth
+  resources:
+    cpu: "8"
+    memory: 8Gi
+    gpu: 1
+  extraVolumes:
+  - name: models
+    persistentVolumeClaim:
+      claimName: llmkube-ganyu-cache
+  extraVolumeMounts:
+  - name: models
+    mountPath: /data
+  containerPort: 8080
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  # Strata serves /v1/models behind the API key; k8s httpGet carries headers.
+  # TODO(review): if the engine exposes an unauthenticated /health, prefer it.
+  probeOverrides:
+    startup:
+      httpGet:
+        path: /v1/models
+        port: 8080
+        httpHeaders:
+        - name: Authorization
+          value: Bearer sk-llmkube-noauth
+      periodSeconds: 10
+      failureThreshold: 120 # cold start: hash (~84 GB) + load = 4-8 min
+    liveness:
+      httpGet:
+        path: /v1/models
+        port: 8080
+        httpHeaders:
+        - name: Authorization
+          value: Bearer sk-llmkube-noauth
+      periodSeconds: 60
+      failureThreshold: 3
+    readiness:
+      httpGet:
+        path: /v1/models
+        port: 8080
+        httpHeaders:
+        - name: Authorization
+          value: Bearer sk-llmkube-noauth
+      periodSeconds: 15
+      failureThreshold: 3
