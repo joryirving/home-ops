@@ -20,6 +20,16 @@ spec:
             args:
               - --leader-elect
               - --dispatch-rebase-lane=normal
+              # Model-assisted rebase conflict resolution (courier #732): the
+              # deterministic engine may ask the lane model once per episode
+              # to resolve files its closed rules reject. URL is the
+              # in-cluster LiteLLM root; the key rides the existing
+              # courier-executor Secret, injected into rebase pods only
+              # (courier #750).
+              - --rebase-model-assist=true
+              - --rebase-model-gateway-url=http://litellm.llm:4000/v1
+              - --rebase-model-gateway-key-secret=courier-executor
+              - --rebase-model-gateway-key-name=LITELLM_API_KEY
               - --git-remote-template=https://github.com/%s.git
               - --git-credential-secret=courier-github
               - --executor-environment-secret=courier-executor

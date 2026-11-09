@@ -75,12 +75,12 @@ Current profile bindings are:
 
 | Profile | Coordinator | Other roles |
 |---|---|---|
-| `local` | `litellm/qwen3.8-flash-next` | `agentic-local`: Flash-Next; `coder-local`: 27B; `free`: `free-pool` |
+| `local` | `litellm/qwen3.8-flash-next` | `agentic-local`: Flash-Next (Strix + Strata); `free`: `free-pool` |
 | `minimax` | `litellm-anthropic/MiniMax-M3.1-Flash` | Explorer, implementer, oracle, and reviewer use the same model |
 | `hyper` | `litellm/glm-5.3-flash-hyper` | Explorer, implementer, oracle, and reviewer use the same model |
-| `frontier` | `litellm/glm-5.3-flash` | Explorer: 27B; implementer: `implementation-pool`; reviewer: MiniMax; oracle: `reasoning-pool` |
+| `frontier` | `litellm/glm-5.3-flash` | Explorer: Flash-Next; implementer: `implementation-pool`; reviewer: MiniMax; oracle: `reasoning-pool` |
 
-The local framing permits at most two `coder-local` workers and one `agentic-local` worker at once. These are ceilings, not targets. The 27B service is shared with other consumers. Do not infer spare GPU capacity from a free Courier slot.
+The local framing sends all sub-agent work to `agentic-local`: at most two in flight for disjoint file-scoped work, one when a review pass is running, and never overlapping the coordinator's own turns. These are ceilings, not targets. All local lanes share the Flash-Next capacity (skirk's two gufo sessions plus strata-fn's three slots on the 3090) with the coding pipeline and other consumers. Do not infer spare GPU capacity from a free Courier slot.
 
 MiniMax framing serializes delegation to one worker. Its roles share provider allowance. A separate review session provides an independent assessment, but not model-family diversity.
 
@@ -131,21 +131,31 @@ The contract uses `work_scope=rebase-only`, `work_scope_version=1`, and `capabil
 
 This does not establish production readiness by itself. During this refresh, Dispatch remained on 0.5.73 and the configured Courier consumers contained no rebase lane. Make sure that the deployed Dispatch release includes the paired contract before enabling a consumer.
 
-The intended profile has one `litellm/qwen3.8-27b` coordinator, concurrency one, and no delegation. Enablement also needs a dedicated binding, Courier's rebase declaration, and Dispatch's explicit agent allowlist. Neither a model profile nor allowlisting alone provides task isolation.
+The intended profile has one `litellm/qwen3.8-flash-next` coordinator, concurrency one, and no delegation. Enablement also needs a dedicated binding, Courier's rebase declaration, and Dispatch's explicit agent allowlist. Neither a model profile nor allowlisting alone provides task isolation.
 
 Never enable an old Courier consumer for REBASE work. Courier 0.1.16 maps that work to ordinary PR repair. Consult the current upstream compatibility matrix and test both release orders before changing production configuration.
 
 ## Shared local inference
 
-The 27B coder and Muse-glimmer share ganyu's RTX 3090 through the `nvidia` ModelPool. A ModelPool selects which model occupies the GPU.
+Flash-Next is the only local model family. It runs on two independent lanes:
 
-Current desired configuration sets `default: qwen3.8-27b`, `swapPolicy: reclaim`, `reclaimAfter: 5m`, and `swapBudget: 240s`. These replace the former Muse default and 900-second budget.
+- **skirk (Strix Halo)** — gufo engine, UD-Q4_K_XL quant, MTP, 262144-token
+  context, `--sessions 2`, and a 64 GB disk continuation cache that survives
+  restarts. Served as `qwen3.8-flash-next` / `qwen3.8-flash-next-chat`.
+- **ganyu (RTX 3090)** — `strata-fn` InferenceService (`litellm/strata-fn.yaml`),
+  Strata engine, IQ3_S quant at 256K context, three litellm slots
+  (`max_parallel_requests: 3`), served as `qwen3.8-flash-next-iq3_s` through an
+  explicit `LiteLLMModel` CR in the `qwen3.8-flash-next` group. Both group
+  rungs sit at order 0 with per-rung caps (`max_parallel_requests: 2` on skirk,
+  `3` on strata-fn), so the router's simple-shuffle strategy load-shares across
+  the five sessions instead of failover. The packs are
+  pre-staged on the `llmkube-ganyu-cache` PVC; cold start is 4-8 minutes and
+  the prefix cache is RAM-only, so redeploys pay full prefill until warm.
 
-The router defaults to `qwen38-27b`. Its one-way Muse fallback can serve a Muse request with 27B. A coding request does not fall back to Muse. Do not confuse the router's fallback with the pool's default model.
-
-The 27B deployment uses `dbirks/Qwen3.8-27B-W4A16-AutoRound` through HyperQwen. Manifest values are `MAX_LEN=147456`, `MAX_SEQS=8`, `GPU_UTIL=0.985`, and `SPEC=mtp`. Eight server sequences do not authorize eight Courier workers.
-
-The Model Management session reported live startup evidence for `int8_per_token_head` KV cache and MTP3 on November 3. The manifest still contains an older fp8 rollback comment. Treat the startup evidence as a dated runtime observation, not a guarantee from that comment or a separately pinned cache setting.
+The former `nvidia` ModelPool (qwen3.8-27B + muse-glimmer swapping on the
+3090) and its `nvidia-router-proxy` service were retired when Flash-Next took
+over all local traffic. The 27B and muse manifests remain in git history for
+rollback.
 
 Flash-Next runs on Strix Halo. Its configured slots are shared with the coding pipeline and other consumers. Extra workers can displace cached prompts and increase prompt processing time. OpenCode auto-compaction limits session growth but does not eliminate that contention.
 
@@ -191,14 +201,13 @@ Name relevant file paths when known. Do not invent paths to make a brief look co
 | PR-fix exclusions | `prFixExclusions: true` |
 | Local profile concurrency | `1` |
 | OpenCode provider timeout | 1800000 ms |
-| 27B OpenCode limits | 147456 context, 24576 output |
-| Flash-Next OpenCode limits | 262144 context, 16384 output |
+| Flash-Next OpenCode limits | 262144 context, 16384 output (litellm proxy caps input at 245760) |
 | OpenCode compaction | Automatic, keep 20000 tokens, buffer 16384 |
 | Tool output cap | 800 lines, 16384 bytes |
 | Groomer model | `grooming-pool` |
 | Groomer context | 245760 tokens, repository context enabled |
 | Groomer rounds and exploration timeout | 18 rounds, 480000 ms |
 | Groomer model timeout and interval | 840000 ms, 900000 ms |
-| NVIDIA pool default and swap budget | `qwen3.8-27b`, 240 seconds |
+| Strata slots and context | 3 concurrent sessions, 245760-token litellm input cap |
 
 Pool routes and deployed versions change independently. Re-read their configuration when those details affect an operational decision.

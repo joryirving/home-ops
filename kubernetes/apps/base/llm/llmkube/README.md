@@ -13,7 +13,7 @@ the folder of the app that consumes it**, not under `llmkube/`:
 ```
 llmkube/                    # the operator + shared cluster infra only
   ocirepository.yaml  helmrelease.yaml  kustomization.yaml   # the operator
-  priorityclass.yaml        # gpu-preemptible (value -100), used by the 3090 pool members
+  priorityclass.yaml        # gpu-preemptible (value -100), used by GPU inference pods
   resourceclaim.yaml        # llama-strix-gpu RCT (Strix models); llama-intel-gpu RCT (unused)
 
 embed/                      # Qwen3-Embedding-0.6B on CPU, served to LiteLLM as `embed`
@@ -25,10 +25,8 @@ memini/                     # bge-reranker-v2-m3 on CPU, served to LiteLLM as `r
   memini-rerank-{1,2,3}.yaml  # three single-replica InferenceServices
 
 litellm/                    # chat/vision models, reconciled by the `litellm` KS
-  qwen3.8-27b.yaml                # Qwen3.8-27B (Swift 1.5 AWQ, vLLM) on the RTX 3090
-  muse-glimmer.yaml               # Muse Glimmer (llama.cpp) on the RTX 3090
-  nvidia-pool.yaml                # the nvidia ModelPool + ModelRouter
-  qwen3.8-flash-next-gufo.yaml    # Qwen3.8-Flash-Next on Strix Halo (gufo, multimodal)
+  strata-fn.yaml                  # Qwen3.8-Flash-Next IQ3_S (Strata engine) on the RTX 3090
+  qwen3.8-flash-next.yaml         # Qwen3.8-Flash-Next UD-Q4_K_XL on Strix Halo (gufo, multimodal)
   llmkube-skirk-cache.yaml        # local-hostpath model cache PVC on skirk
   models/                         # LiteLLMModel CRs, grouped by model name
   # plus commented-out variants in kustomization.yaml (Strix swap-backs, gemma-4-e4b, ...)
@@ -45,10 +43,10 @@ The `Model.spec.source` scheme decides what the operator does:
 
 | `source`                            | What happens                                                                                                                              | Persistence                   |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `hf://<org>/<repo>` + `spec.files`  | Downloads each listed file from the repo into the model cache; `spec.mmproj` names the projector among them (`muse-glimmer`, flash-next) | Persistent, survives restarts |
+| `hf://<org>/<repo>` + `spec.files`  | Downloads each listed file from the repo into the model cache; `spec.mmproj` names the projector among them (`strata-fn`, flash-next) | Persistent, survives restarts |
 | `https://…/<file>.gguf`             | Init container `curl`s one file into the **shared cache PVC** (`llmkube-model-cache`, CephFS RWX) on first start; skipped thereafter     | Persistent, survives restarts |
 | `pvc://<claim>/<path>.gguf`         | Mounts the claim **read-only**. No download. Not used today; the claim must exist first                                                   | You staged it                 |
-| `<org>/<repo>` (bare HF id)         | **vLLM runtime only.** `qwen3.8-27b` sets `skipModelInit: true`; its image entrypoint pulls `HF_REPO` into the shared cache (subPath `vllm-27b`) | Persistent, survives restarts |
+| `<org>/<repo>` (bare HF id)         | **vLLM runtime only.** the image entrypoint pulls `HF_REPO` into the shared cache (subPath per model). No vLLM model remains in the repo today; historical | Persistent, survives restarts |
 
 Single-file `https://` sources are still used by the CPU models
 (`embed/model.yaml`, `memini/memini-rerank.yaml`). The gufo flash-next
@@ -90,9 +88,8 @@ Runtime notes (LLMKube 0.9.30):
 - The operator adds `--alias <modelRef>` to llama.cpp automatically, so the
   served name is the `modelRef`. Don't add `--alias` to `extraArgs`.
   Non-llama.cpp runtimes set it themselves (e.g. gufo `--served-model-name`).
-- GPU llama.cpp models use `--load-mode none` (`muse-glimmer` on the CephFS
-  shared cache, the Strix ROCm variants on the skirk cache); CPU models use
-  `--load-mode mmap`.
+- GPU llama.cpp models use `--load-mode none`; CPU models use
+  `--load-mode mmap`. (No GPU llama.cpp model remains resident today.).
 
 ### Option A — let the operator download it (preferred)
 
@@ -131,43 +128,42 @@ anonymous rate limits. The token is never forwarded off huggingface.co.
 Together with `files:`, that covers gated and multi-file/vision models, so
 there is no pre-staging path.
 
-## The 3090: a ModelPool
+## The 3090: Strata (Flash-Next IQ3_S)
 
-The egpu / RTX 3090 (ganyu) is one exclusive slot shared by the `nvidia`
-`ModelPool` (`litellm/nvidia-pool.yaml`): `muse-glimmer` (llama.cpp, default
-resident) and `qwen3.8-27b` (vLLM). At most one member is `Ready`; the
-operator holds the other at `replicas: 0` / `Stopped` — the normal held state,
-not a failure. Do not set `replicas` on a pooled InferenceService in git; the
-pool controller and the router own that field.
+The egpu / RTX 3090 (ganyu) hosts a single resident service, `strata-fn`
+(`litellm/strata-fn.yaml`): the Strata engine (`ghcr.io/niko1221/strata`)
+running Qwen3.8-Flash-Next IQ3_S at 256K context with MTP and GPU vision. The
+former `nvidia` `ModelPool` + `ModelRouter` (muse-glimmer / qwen3.8-27b
+swapping) was retired when Flash-Next took over all 3090 traffic — no swapping
+happens any more; the card has one always-resident workload.
 
-Swaps are demand-driven through the `nvidia` `ModelRouter` (service
-`nvidia-router-proxy.llm:8080`, `BackendNameMatch` on the request's `model`;
-unmatched requests go to `qwen38-27b`). A request for the stopped member is
-held while the incumbent drains (fail-closed idle check) and unloads, then the
-target cold-loads (`swapBudget: 900s`, then 503 + Retry-After).
-`swapPolicy: reclaim`: once 27B has been idle for `reclaimAfter: 5m`, the card
-returns to `muse-glimmer`.
+Key properties:
 
-Fallthrough is one-way: the `muse-fallthrough` rule (`poolActivation: IfIdle`)
-lets a `muse-glimmer` request be served by 27B instead of forcing a swap; there
-is no reverse rule, so a `qwen3.8-27b` request always waits for 27B. Rationale:
-`docs/src/notes/coding-loop.md`, "The shared 3090".
+- `runtime: generic` + `skipModelInit: true`: the packs are pre-staged on the
+  `llmkube-ganyu-cache` PVC (`/data/Strata-data`, ~84 GB IQ3_S + ~5 GB MTP
+  draft) and the pod command is a `strata launch` wrapper that supervises the
+  engine and exits (pod restart) if it dies. Do not set `FAMILY`/`MODEL` env
+  vars on this pod — Strata lets env override CLI flags and silently reverts
+  to the wrong pack.
+- Cold start is 4-8 minutes (hashing + load); the startup probe budget reflects
+  that. The prefix cache is RAM-only: after any restart or redeploy, early
+  requests pay full prefill until it warms. Schedule redeploys off-peak.
+- The engine serves the model under the name `qwen3.8-flash-next-iq3_s`
+  (not CLI-renamable), so it cannot join the `qwen3.8-flash-next` group via
+  litellm-operator auto-registration; it has an explicit `LiteLLMModel` CR in
+  `litellm/models/` instead (same pattern as the old muse CRs), pointing at
+  `strata-fn.llm.svc.cluster.local` directly.
+- LiteLLM caps it at `max_parallel_requests: 3` (three concurrent sessions,
+  measured ~80 tok/s aggregate at saturation; ~1040 tok/s fresh prefill flat to
+  232K, cached-prefix TTFT 0.32-0.6 s at 16K).
+- The engine warned about low free VRAM (<512 MiB) and suggested
+  `--vram-reserve-mib 768`; `strata launch` does not expose that flag. If
+  decode throughput degrades, patch the generated run config in the wrapper
+  command before the engine starts.
 
-LiteLLM points every 3090-backed model (`qwen3.8-27b`, `qwen3.8-27b-chat`,
-`muse-glimmer`, the `local-pool` muse rungs, the `implementation-pool` 27B
-rung) at the router, never a member's own Service. Both members have explicit
-`LiteLLMModel` CRs in `litellm/models/` because the litellm-operator's
-auto-projection drops a model when its InferenceService goes `Stopped`; those
-CRs carry `litellm.home-operations.com/managed-by: flux` so the projection
-leaves them alone.
-
-If the activator wedges (pool stops reconciling, muse 503s
-`pool_incumbent_busy`, 27B shows `Stopped`):
-`kubectl -n llm rollout restart deploy/nvidia-router-proxy` (router state is
-in-memory).
-
-The device plugin no longer time-slices the card (`nvidia.com/gpu: 1`), so a
-displaced member cannot co-schedule onto a busy card.
+Rollback: the muse-glimmer and qwen3.8-27b packs and manifests live in git
+history; re-apply the manifests, set `strata-fn` `replicas: 0`, and the 24 GiB
+card frees up. The Strata packs stay on the PVC either way (~219 GB total).
 
 ## Continuity notes
 

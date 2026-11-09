@@ -1,0 +1,34 @@
+---
+# Draft: Strata IQ3_S Flash-Next as the 3090 FN deployment.
+# Explicit CR because Strata's served model name (`qwen3.8-flash-next-iq3_s`)
+# is not CLI-renamable, so litellm-operator's llmkube autoRegister cannot place
+# it in the `qwen3.8-flash-next` group.
+# No `order`: both group rungs sit at order 0, so simple-shuffle load-shares
+# across skirk (capped 2) and strata (capped 3) instead of failover.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: flash-next-strata
+spec:
+  modelName: qwen3.8-flash-next
+  proxyRef: litellm
+  params:
+    model: openai/qwen3.8-flash-next-iq3_s
+    apiBase: http://strata-fn.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 20
+      min_p: 0
+      max_parallel_requests: 3
+  info:
+    mode: chat
+    maxInputTokens: 245760
+    maxOutputTokens: 65536
+    supportsFunctionCalling: true
+    supportsVision: false # TODO(cutover): send one real image request, then flip to true
+    extra:
+      input_cost_per_token: 6.2e-08
+      output_cost_per_token: 1.35e-06
+      cache_read_input_token_cost: 0.0
