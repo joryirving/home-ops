@@ -44,11 +44,21 @@ spec:
     # Launch IQ3_S at 256K (admission verified to 232K prompt tokens).
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
     # over CLI flags and silently reverts to the wrong pack (observed).
+    # --api-key-env pins the engine key to the pod env; without it strata keeps
+    # whatever key a previous launch saved in /data/state — observed live: it
+    # kept the benchmark-era key, which 401s both the litellm rung and probe.
     strata launch --model iq3_s --data-dir /data/Strata-data --context 256k \
-      --vision gpu --tune skip --access lan --port 8080 --yes --no-tui
+      --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --api-key-env API_KEY
     # `strata launch --no-tui` starts the engine and returns; supervise it.
+    # Any HTTP response (200 or 401) means the engine is alive; connection
+    # errors mean it died.
     PY=/opt/strata/terminal/python/bin/python3
-    while $PY -c 'import urllib.request; r=urllib.request.Request("http://127.0.0.1:8080/v1/models", headers={"Authorization":"Bearer sk-llmkube-noauth"}); urllib.request.urlopen(r, timeout=5)' 2>/dev/null; do
+    while $PY -c 'import urllib.request, urllib.error
+    try:
+        urllib.request.urlopen("http://127.0.0.1:8080/v1/models", timeout=5)
+    except urllib.error.HTTPError:
+        pass
+    ' 2>/dev/null; do
       sleep 15
     done
     echo "strata engine died; exiting so the pod restarts"
