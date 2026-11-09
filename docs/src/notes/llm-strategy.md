@@ -70,8 +70,8 @@ InferenceService.
 
 Each local generative model exposes two aliases against **one** server: the bare name runs the
 vendor's thinking recipe, and the `-chat` suffix runs the non-thinking (instruct) one. They share
-weights, KV cache and slots, so the second door costs no memory. `muse-glimmer` is the exception: it
-has no `-chat` twin.
+weights, KV cache and slots, so the second door costs no memory. Flash-Next is now the only local
+model family: one alias group spreads across two machines (skirk and the 3090).
 
 ### Local (self-hosted)
 
@@ -81,19 +81,18 @@ MTP proposes several tokens before the main model verifies them.
 
 | Alias | Backend | Model | Context | Role |
 | --- | --- | --- | --- | --- |
-| `qwen3.8-flash-next` | Strix Halo, Gufo 0.28.1 ROCm, two sessions | Qwen3.8-Flash-Next UD-Q4_K_XL, shared Q8_0 MTP head, BF16 vision projector | 262144 total; LiteLLM pool input 245760 | Larger-context local reasoning, vision, tools, Courier coordinator |
-| `qwen3.8-flash-next-chat` | Same server | Same weights, thinking disabled | Same | Non-thinking vision and heartbeat requests |
-| `qwen3.8-27b` | 3090, HyperQwen/vLLM through `nvidia-router-proxy` | `dbirks/Qwen3.8-27B-W4A16-AutoRound`, MTP | 147456 total; direct LiteLLM input 122880 + output 24576 | Local coding, text-only; implementation pool rung 3 |
-| `qwen3.8-27b-chat` | Same server | Same weights, non-thinking | Same total; input 122880 + output 16384 | Non-thinking requests and `auto` classifier |
-| `muse-glimmer` | 3090 alternate, llama.cpp CUDA, two slots | Muse-Glimmer-30B UD-Q5_K_M, DFlash draft, vision projector | 131072 per slot | OpenClaw subagents and Sage, memini, local pool lead, vision fallback |
+| `qwen3.8-flash-next` | Strix Halo (Gufo, two sessions) + 3090 (Strata, three slots) | Qwen3.8-Flash-Next UD-Q4_K_XL (Strix) and GSQ-RCO IQ3_S (3090), shared Q8_0 MTP head, BF16 vision projector | 262144 engine context; LiteLLM group input 245760 | Local reasoning, coding, vision, tools, Courier coordinator |
+| `qwen3.8-flash-next-chat` | Same deployments | Same weights, thinking disabled | Same | Non-thinking vision, heartbeat requests, `auto` classifier |
+| `qwen3.8-flash-next-iq3_s` | 3090, Strata engine 0.1.52 | Same weights, GSQ-RCO IQ3_S, MTP | 245760 LiteLLM input; 256K engine context | Internal rung inside the `qwen3.8-flash-next` group; three slots, capped `max_parallel_requests: 3` |
 | `embed` | CPU, three replicas | Qwen3-Embedding-0.6B Q8_0 | 32768 | 1024-dimension embeddings for memini and toolhive |
 | `rerank` | CPU, three replicas | bge-reranker-v2-m3 Q8_0 | Not declared | memini reranking |
 
-The `nvidia` ModelPool defaults to 27B, not Muse. Its configuration sets `swapPolicy: reclaim`, `reclaimAfter: 5m`, and `swapBudget: 240s`.
-The one-way `muse-fallthrough` rule (`poolActivation: IfIdle`) permits Muse requests on 27B. Coding requests never fall through to Muse.
-Both aliases share one card, not two independent servers. See [Shared local inference](coding-loop.md#shared-local-inference) for operations.
+The 3090 hosts one always-resident service, `strata-fn` (Strata engine, IQ3_S at 256K context).
+The former `nvidia` ModelPool and ModelRouter — 27B/muse swapping through `nvidia-router-proxy` —
+were retired when Flash-Next took over all local traffic on 2026-11-08; no swapping happens any more.
+See [Shared local inference](coding-loop.md#shared-local-inference) for operations.
 
-The 27B server keeps MTP, eight active sequences, prefix caching, and `GPU_UTIL=0.985`.
+The retired 27B server ran MTP, eight active sequences, prefix caching, and `GPU_UTIL=0.985`; the manifest lives in git history for rollback.
 Startup logs read on 2026-11-03 confirm `int8_per_token_head` KV and three speculative tokens.
 On 2026-10-31, the measured shared cache pool held 208,216 tokens in 7.6 GiB, up from 172,649.
 The pool is not the per-request limit or eight separate context allocations. Fixed per-sequence state also consumes cache capacity.
@@ -107,7 +106,7 @@ Its published MTP gains use greedy decoding, not our sampled temperature 1.0 con
 No matched local sampled before/after result is recorded here.
 Both local services use idle-aware rollouts (`waitForIdle: true`, `idleTimeoutSeconds: 86400`). Do not restart or wake models to inspect capacity.
 
-Vision requests use Flash-Next or Muse. The proxy fallback for `qwen3.8-flash-next-chat` tries Muse, then MiniMax-M3.1-Flash.
+Vision requests use Flash-Next. The proxy fallback for `qwen3.8-flash-next-chat` tries MiniMax-M3.1-Flash. Strata's vision path is served but not yet exercised; that rung keeps `supportsVision: false` until one real image request passes.
 The gaming PC with a 9070 XT is not configured inference capacity. Radiance and a dual-boot Talos worker remain experiments.
 The `dsv4f-local` alias remains registered, but has no configured InferenceService and cannot serve through that missing backend.
 Commented manifests in `litellm/kustomization.yaml` are references, not active capacity.
@@ -185,16 +184,16 @@ Leave output room inside the backend total context, even when metadata lists sep
 | --- | --- | --- | --- |
 | `frontier-pool` | Kimi K3 -> GPT-6 Astra -> GLM-5.3 (Z.AI) | No effort pin | Frontier escalation; three rungs, no DeepSeek floor |
 | `reasoning-pool` | Kimi K2.7 -> GPT-6.1 Sol -> GLM Flash (Hyper) -> GLM Flash (Z.AI) -> Flash-Next | K2.7 drops `reasoning_effort` | Planning and hard debugging, then local fallback |
-| `implementation-pool` | GPT-6 Luna -> GLM Flash (Hyper) -> 27B | Luna `high`; 27B `xhigh` | Implementation after the approach is settled |
-| `local-pool` | Muse -> Flash-Next | Thinking recipe | Local-only provider selection, shared hardware |
-| `local-pool-chat` | Muse -> Flash-Next | Flash-Next `reasoning_effort: none` | Non-thinking local requests and AI PR review |
-| `grooming-pool` | Flash-Next -> Muse -> GLM Flash (Hyper) -> GPT-6 Luna -> GLM Flash (Z.AI) | No effort pin | Dispatch issue grooming |
+| `implementation-pool` | GPT-6 Luna -> GLM Flash (Hyper) -> Strata (Flash-Next IQ3_S) | Luna `high`; Strata `xhigh` | Implementation after the approach is settled |
+| `local-pool` | Flash-Next (skirk) | Thinking recipe | Local-only provider selection, shared hardware |
+| `local-pool-chat` | Flash-Next (skirk) | Flash-Next `reasoning_effort: none` | Non-thinking local requests and AI PR review |
+| `grooming-pool` | Flash-Next -> GLM Flash (Hyper) -> GPT-6 Luna -> GLM Flash (Z.AI) | No effort pin | Dispatch issue grooming |
 | `free-pool` | Eight OpenRouter deployments, listed below | No effort pin | Optional work on public material only |
 
 Opencode declares `implementation-pool` at 147456 tokens, `frontier-pool` at 272000, and `reasoning-pool` at 262144.
 Reasoning rungs declare input limits of 262144 (K2.7), 272000 (Sol), 262144 (both GLM Flash deployments), and 245760 (Flash-Next).
 The 1M standalone GLM alias does not give the reasoning pool a 1M window.
-Implementation's 27B rung declares 131072 input and 40960 output, which exceed its 147456 total when combined. This remains a configuration discrepancy.
+Implementation's Strata rung declares 245760 input and 40960 output, which exceed the engine's 262144 total when combined. This remains a configuration discrepancy.
 
 The direct `glm-5.3-flash` alias tries Hyper before Z.AI. The implementation pool has a Hyper-only GLM rung.
 The reasoning pool has separate Hyper and Z.AI rungs. Neither pool includes MiniMax or DeepSeek.
@@ -350,9 +349,10 @@ post-trained equivalents.
 `qwen3.8-flash-next` now runs Qwen3.8-Flash-Next (180B-e51B-A6B) with its mmproj loaded — swapped in
 on 2026-09-08 (then UD-IQ4_XS on Vulkan llama.cpp), replacing the Qwen3.6-35B-A3B this section's scores
 were measured against (which had itself replaced the HauhauCS and Ornith-1.0-35B post-tunes of the same
-Qwen3.6 in the 2026-08-25 unsloth move). Since 2026-09-24 (#10479) it runs on gufo (ROCm) at
-UD-Q4_K_XL with the MTP head. Image analysis goes through `qwen3.8-flash-next-chat`, with `muse-glimmer`
-as router fallback, rather than a dedicated `llama-vision`, which was removed.
+Qwen3.6 in the 2026-08-25 unsloth move). Since 2026-09-24 (#10479) the skirk deployment runs on gufo (ROCm) at
+UD-Q4_K_XL with the MTP head; since 2026-11-08 a second deployment (Strata engine,
+IQ3_S) serves the same group from the 3090. Image analysis goes through `qwen3.8-flash-next-chat` (skirk), with MiniMax-M3.1-Flash
+as proxy fallback, rather than a dedicated `llama-vision`, which was removed.
 
 Mellum2 (historical reviewer lane, now retired) publishes more than the previous snapshot credited it with — the
 [Mellum2 Instruct card](https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Instruct) carries

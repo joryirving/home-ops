@@ -29,8 +29,8 @@ Before admitting a manually selected real task:
   images track the chart version (#717). Transport follows the model:
   2026-11-04 the lane briefly bridged onto `glm-5.3-flash-hyper` /
   MiniMax while windows allowed; since the production-blocking
-  consumption finding, the canary runs exclusively on the LOCAL Qwen
-  27B (`qwen3.8-27b`, transport openai, both hops in-cluster local
+  consumption finding, the canary runs exclusively on LOCAL Flash-Next
+  (`qwen3.8-flash-next`, transport openai, both hops in-cluster local
   services — no paid provider reachable) with a declared context policy
   (compactAt 60%, reservation 8192, 122880 ceilings = the route's own
   authoritative limit) so compaction fires and the transcript stays

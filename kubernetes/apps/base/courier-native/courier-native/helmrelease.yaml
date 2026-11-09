@@ -42,10 +42,9 @@ spec:
         # amplified paid-model usage (unbounded transcript resend — no
         # declared context policy means no compaction — plus per-role probe
         # duplication and 429 burst retries). Until that is fixed and
-        # re-accepted, the canary runs exclusively on the LOCAL Qwen 27B:
-        # qwen3.8-27b -> nvidia-router-proxy (in-cluster RTX 3090); its
-        # configured fallback qwen3.8-flash-next is likewise in-cluster
-        # local. No MiniMax/Hyper/Z.ai model, pool, or endpoint is reachable
+        # re-accepted, the canary runs exclusively on the LOCAL Flash-Next:
+        # qwen3.8-flash-next -> skirk (Strix Halo) + strata-fn (RTX 3090),
+        # both in-cluster local. No MiniMax/Hyper/Z.ai model, pool, or endpoint is reachable
         # from this profile. Transport matches the route's OpenAI-compatible
         # surface. The context policy bounds the transcript so compaction
         # actually fires; 122880 is the route's own authoritative
@@ -60,8 +59,8 @@ spec:
             reviewer:
               maxInputTokens: 122880
         roles:
-          coordinator: qwen3.8-27b
-          reviewer: qwen3.8-27b
+          coordinator: qwen3.8-flash-next
+          reviewer: qwen3.8-flash-next
     ownership:
       namespaces:
         - courier-native

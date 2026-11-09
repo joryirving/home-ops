@@ -1,0 +1,38 @@
+---
+# Explicit skirk (Strix Halo) rung for the qwen3.8-flash-next group.
+# Pre-empts the litellm-operator llmkube auto-registration, which would create
+# an uncapped, unowned model with this exact name: the operator skips
+# same-named models it does not own, so this CR takes over the object and adds
+# max_parallel_requests. No `order` — both rungs of the group sit at order 0 so
+# the router's simple-shuffle strategy load-shares across skirk (2 sessions)
+# and strata-fn (3 slots) instead of serialising Strata behind Strix as a
+# failover tier.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: qwen3.8-flash-next
+  labels:
+    litellm.home-operations.com/managed-by: flux
+spec:
+  modelName: qwen3.8-flash-next
+  proxyRef: litellm
+  params:
+    model: openai/qwen3.8-flash-next
+    apiBase: http://qwen3-8-flash-next.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 20
+      min_p: 0
+      max_parallel_requests: 2
+  info:
+    mode: chat
+    maxInputTokens: 245760
+    maxOutputTokens: 65536
+    supportsFunctionCalling: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 2.09e-07
+      output_cost_per_token: 2.97e-06
+      cache_read_input_token_cost: 0.0
