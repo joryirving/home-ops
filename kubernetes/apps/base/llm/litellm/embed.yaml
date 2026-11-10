@@ -49,6 +49,10 @@ spec:
               matchLabels:
                 embed-pool: "true"
             topologyKey: kubernetes.io/hostname
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
   nodeSelector:
     kubernetes.io/hostname: skirk
   contextSize: 32768

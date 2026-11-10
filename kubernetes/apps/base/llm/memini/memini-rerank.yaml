@@ -49,6 +49,10 @@ spec:
               matchLabels:
                 rerank-pool: "true"
             topologyKey: kubernetes.io/hostname
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
   nodeSelector:
     kubernetes.io/hostname: skirk
   contextSize: 16384
