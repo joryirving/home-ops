@@ -28,10 +28,20 @@ spec:
   # OOM history (2026-11): skirk previously co-hosted embed/rerank/STT/TTS on
   # the iGPU and OOMed; whisper and TTS were the culprits (large transient
   # buffers colliding with gufo's growing KV/ngram state in the shared GTT).
-  # This pair is static (~1.5 GiB total) and is the ONLY co-tenant allowed on
-  # skirk. Do not add STT/TTS or any transient-buffer workload here — the NPU
-  # (amdxdna, kernel >=6.14) is the planned home for those.
-  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:73251ea4b7a9cabd9fb223109995e934ad9878acb8685d762a05667e48011750
+  # This pair is the ONLY co-tenant allowed on skirk. Do not add STT/TTS or
+  # any transient-buffer workload here — the NPU (amdxdna, kernel >=6.14) is
+  # the planned home for those.
+  # Image: kyuz0/amd-strix-halo-toolboxes vulkan-radv — prebuilt llama.cpp
+  # master with Strix Halo Vulkan mat-vec tuning; same digest the whisper
+  # HelmReleases pin. The toolbox has no entrypoint (CMD bash), so the
+  # llama-server path is set explicitly via spec.command.
+  # Memory: the request is a cgroup reservation, not the model size — it must
+  # cover mmap page cache, compute buffers, and GTT allocations charged to
+  # the process (same reason gufo requests 108Gi). Skirk budget: gufo 108Gi
+  # + these two must stay under allocatable (~125Gi), so 4Gi each.
+  image: docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv@sha256:2318b323ceffc68e4ceba1ce9e4fc5ead3f7bf03ea2a24ec8df5f43864f16587
+  command:
+    - /usr/local/bin/llama-server
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
@@ -61,7 +71,7 @@ spec:
   uBatchSize: 16384
   resources:
     cpu: 500m
-    memory: 9Gi
+    memory: 4Gi
   mode: rerank
   extraArgs:
     - --cont-batching
