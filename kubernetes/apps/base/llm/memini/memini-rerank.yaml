@@ -19,14 +19,26 @@ metadata:
 spec:
   modelRef: memini-rerank
   runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server@sha256:4d2de15a0ffbce704777c64026b40512a71e0bbc0b303a5fe5ea9bf71760dff9
+  # GPU replica on skirk (Strix Halo iGPU), Vulkan build. The DRA path is not
+  # usable for a second consumer: llama-strix-gpu is allocationMode All and
+  # exclusively held by the gufo claim, so a sibling claim would sit Pending
+  # forever. Instead the pod borrows the render node directly — renderD128 is
+  # mode 0666 on Talos, so a plain hostPath Device mount needs no claim, no
+  # group/uid work, and gufo is untouched.
+  # OOM history (2026-11): skirk previously co-hosted embed/rerank/STT/TTS on
+  # the iGPU and OOMed; whisper and TTS were the culprits (large transient
+  # buffers colliding with gufo's growing KV/ngram state in the shared GTT).
+  # This pair is static (~1.5 GiB total) and is the ONLY co-tenant allowed on
+  # skirk. Do not add STT/TTS or any transient-buffer workload here — the NPU
+  # (amdxdna, kernel >=6.14) is the planned home for those.
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:73251ea4b7a9cabd9fb223109995e934ad9878acb8685d762a05667e48011750
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
   replicas: 1
   priority: normal
   podLabels:
-    cpu-inference: "true"
+    cpu-inference: "false"
     rerank-pool: "true"
   affinity:
     podAntiAffinity:
@@ -37,30 +49,32 @@ spec:
               matchLabels:
                 rerank-pool: "true"
             topologyKey: kubernetes.io/hostname
+  nodeSelector:
+    kubernetes.io/hostname: skirk
   contextSize: 16384
   parallelSlots: 4
   batchSize: 16384
   uBatchSize: 16384
-  env:
-    - name: GOMP_CPU_AFFINITY
-      value: "0-11"
-    - name: KMP_AFFINITY
-      value: "granularity=fine,proc_list=[0-11],explicit"
   resources:
-    cpu: 250m
+    cpu: 500m
     memory: 9Gi
   mode: rerank
   extraArgs:
     - --cont-batching
-    - --kv-unified
     - --flash-attn
     - "on"
-    - --threads
-    - "6"
-    - --threads-batch
-    - "12"
+    - --n-gpu-layers
+    - "99"
     - --load-mode
     - mmap
+  extraVolumes:
+    - name: amd-render
+      hostPath:
+        path: /dev/dri/renderD128
+        type: Device
+  extraVolumeMounts:
+    - name: amd-render
+      mountPath: /dev/dri/renderD128
   endpoint:
     port: 8080
     type: ClusterIP
