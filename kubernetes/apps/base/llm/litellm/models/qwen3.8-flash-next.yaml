@@ -3,10 +3,9 @@
 # Pre-empts the litellm-operator llmkube auto-registration, which would create
 # an uncapped, unowned model with this exact name: the operator skips
 # same-named models it does not own, so this CR takes over the object and adds
-# max_parallel_requests. No `order` — both rungs of the group sit at order 0 so
-# the router's simple-shuffle strategy load-shares across skirk (2 sessions)
-# and strata-fn (3 slots) instead of serialising Strata behind Strix as a
-# failover tier.
+# max_parallel_requests. Skirk is order 1 (primary, fills its 2 sessions
+# first); strata-fn sits at order 2 and only serves on pick-time 429
+# (both skirk slots busy) or cooldown — no per-turn shuffling.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
@@ -25,6 +24,7 @@ spec:
       top_p: 0.95
       top_k: 20
       min_p: 0
+      order: 1
       max_parallel_requests: 2
   info:
     mode: chat
