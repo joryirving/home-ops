@@ -116,7 +116,7 @@
       "type": "prometheus",
       "uid": "${datasource}"
      },
-     "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))",
+     "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|embed|memini-rerank|rerank\"}[$__range]))",
      "instant": true,
      "range": false,
      "refId": "A"
@@ -165,7 +165,7 @@
       "type": "prometheus",
       "uid": "${datasource}"
      },
-     "expr": "sum(increase(litellm_spend_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))",
+     "expr": "sum(increase(litellm_spend_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|embed|memini-rerank|rerank\"}[$__range]))",
      "instant": true,
      "range": false,
      "refId": "A"
@@ -263,7 +263,7 @@
       "type": "prometheus",
       "uid": "${datasource}"
      },
-     "expr": "(sum(increase(litellm_spend_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range])) or vector(0)) / (sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))/1e6 > 0)",
+     "expr": "(sum(increase(litellm_spend_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|embed|memini-rerank|rerank\"}[$__range])) or vector(0)) / (sum(increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|embed|memini-rerank|rerank\"}[$__range]))/1e6 > 0)",
      "instant": true,
      "range": false,
      "refId": "A"
@@ -305,7 +305,7 @@
      "instant": true,
      "range": false,
      "format": "table",
-     "expr": "sum by (model) (increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))"
+     "expr": "sum by (model) (increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|embed|memini-rerank|rerank\"}[$__range]))"
     },
     {
      "datasource": {
@@ -316,7 +316,7 @@
      "instant": true,
      "range": false,
      "format": "table",
-     "expr": "sum by (model) (increase(litellm_spend_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|memini-rerank|rerank\"}[$__range]))"
+     "expr": "sum by (model) (increase(litellm_spend_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local|memini-embed|toolhive-embed|embed|memini-rerank|rerank\"}[$__range]))"
     }
    ],
    "transformations": [
@@ -412,7 +412,7 @@
       "type": "prometheus",
       "uid": "${datasource}"
      },
-     "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"memini-embed|toolhive-embed\"}[$__range]))",
+     "expr": "sum(increase(litellm_total_tokens_metric_total{model=~\"memini-embed|toolhive-embed|embed\"}[$__range]))",
      "legendFormat": "embeddings",
      "instant": true,
      "range": false,
@@ -432,13 +432,110 @@
    ]
   },
   {
+   "type": "barchart",
+   "title": "Input vs output tokens by model ($__range)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 16
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "fillOpacity": 80
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "lastNotNull"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    },
+    "stacking": "normal"
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${datasource}"
+     },
+     "expr": "sum by (model) (increase(litellm_input_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local\"}[$__range]))",
+     "legendFormat": "{{model}} in",
+     "instant": false,
+     "range": true,
+     "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${datasource}"
+     },
+     "expr": "sum by (model) (increase(litellm_output_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local\"}[$__range]))",
+     "legendFormat": "{{model}} out",
+     "instant": false,
+     "range": true,
+     "refId": "B"
+    }
+   ]
+  },
+  {
+   "type": "piechart",
+   "title": "Local tokens by consumer ($__range)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 16
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "values": [
+      "value",
+      "percent"
+     ]
+    }
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${datasource}"
+     },
+     "expr": "sum by (api_key_alias) (increase(litellm_total_tokens_metric_total{model=~\"qwen3.8-flash-next.*|dsv4f-local\"}[$__range]))",
+     "legendFormat": "{{api_key_alias}}",
+     "instant": true,
+     "range": false,
+     "refId": "A"
+    }
+   ]
+  },
+  {
    "type": "row",
    "title": "Performance (local lanes)",
    "gridPos": {
     "h": 1,
     "w": 24,
     "x": 0,
-    "y": 16
+    "y": 25
    },
    "collapsed": false,
    "panels": []
@@ -452,9 +549,9 @@
    },
    "gridPos": {
     "h": 8,
-    "w": 12,
+    "w": 8,
     "x": 0,
-    "y": 17
+    "y": 26
    },
    "fieldConfig": {
     "defaults": {
@@ -496,6 +593,57 @@
   },
   {
    "type": "timeseries",
+   "title": "Time to first token (p95, s)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 8,
+    "x": 8,
+    "y": 26
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "custom": {
+      "drawStyle": "line",
+      "fillOpacity": 10,
+      "showPoints": "never"
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "mean",
+      "lastNotNull"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   },
+   "targets": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "${datasource}"
+     },
+     "expr": "histogram_quantile(0.95, sum by (model,le) (rate(litellm_llm_api_time_to_first_token_metric_bucket{model=~\"qwen3.8-flash-next.*|dsv4f-local\"}[$__rate_interval])))",
+     "legendFormat": "{{model}} p95",
+     "instant": false,
+     "range": true,
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
    "title": "Output throughput (tok/s)",
    "datasource": {
     "type": "prometheus",
@@ -503,9 +651,9 @@
    },
    "gridPos": {
     "h": 8,
-    "w": 12,
-    "x": 12,
-    "y": 17
+    "w": 8,
+    "x": 16,
+    "y": 26
    },
    "fieldConfig": {
     "defaults": {
@@ -552,7 +700,7 @@
     "h": 1,
     "w": 24,
     "x": 0,
-    "y": 25
+    "y": 34
    },
    "collapsed": false,
    "panels": []
@@ -568,7 +716,7 @@
     "h": 6,
     "w": 6,
     "x": 0,
-    "y": 26
+    "y": 35
    },
    "fieldConfig": {
     "defaults": {
@@ -618,7 +766,7 @@
     "h": 6,
     "w": 6,
     "x": 6,
-    "y": 26
+    "y": 35
    },
    "fieldConfig": {
     "defaults": {
@@ -668,7 +816,7 @@
     "h": 6,
     "w": 12,
     "x": 12,
-    "y": 26
+    "y": 35
    },
    "fieldConfig": {
     "defaults": {
