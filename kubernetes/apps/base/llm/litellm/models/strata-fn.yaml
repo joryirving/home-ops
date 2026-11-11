@@ -3,8 +3,9 @@
 # Explicit CR because Strata's served model name (`qwen3.8-flash-next-iq3_s`)
 # is not CLI-renamable, so litellm-operator's llmkube autoRegister cannot place
 # it in the `qwen3.8-flash-next` group.
-# No `order`: both group rungs sit at order 0, so simple-shuffle load-shares
-# across skirk (capped 2) and strata (capped 3) instead of failover.
+# Order 2: overflow + failover rung. Skirk (order 1) fills its 2 sessions
+# first; strata only serves when both skirk slots are busy or skirk is
+# cooled down.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
@@ -21,6 +22,7 @@ spec:
       top_p: 0.95
       top_k: 20
       min_p: 0
+      order: 2
       max_parallel_requests: 3
   info:
     mode: chat
