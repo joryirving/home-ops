@@ -14,7 +14,7 @@ spec:
       top_p: 0.95
       top_k: 20
       min_p: 0
-      order: 2
+      order: 1
       max_parallel_requests: 2
   info:
     mode: chat
@@ -25,6 +25,39 @@ spec:
     extra:
       input_cost_per_token: 2.09e-07
       output_cost_per_token: 2.97e-06
+      cache_read_input_token_cost: 0.0
+---
+# Strata (3090) rung of the local-pool. Skirk's iGPU prefills giant agent
+# contexts at ~1.8K tok/s (TTFT p95 ~9s on cache misses); the 3090 does the
+# same work in <100ms. Both rungs at order 1 so simple-shuffle load-shares
+# and a cooldown failover survives losing either node.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: local-pool-strata
+spec:
+  modelName: local-pool
+  proxyRef: litellm
+  params:
+    model: openai/qwen3.8-flash-next-iq3_s
+    apiBase: http://strata-fn.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 20
+      min_p: 0
+      order: 1
+      max_parallel_requests: 3
+  info:
+    mode: chat
+    maxInputTokens: 245760
+    maxOutputTokens: 65536
+    supportsFunctionCalling: true
+    supportsVision: true # verified 2026-11-09 on strata-fn (flash-next-strata): data-URL image, 200 + correct description
+    extra:
+      input_cost_per_token: 6.2e-08
+      output_cost_per_token: 1.35e-06
       cache_read_input_token_cost: 0.0
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
@@ -44,7 +77,7 @@ spec:
       presence_penalty: 1.5
       repetition_penalty: 1.0
       reasoning_effort: none
-      order: 2
+      order: 1
       max_parallel_requests: 2
       allowed_openai_params:
         - reasoning_effort
@@ -57,4 +90,38 @@ spec:
     extra:
       input_cost_per_token: 2.09e-07
       output_cost_per_token: 2.97e-06
+      cache_read_input_token_cost: 0.0
+---
+# Non-thinking strata rung of local-pool-chat. Same shuffle rationale as
+# local-pool-strata above.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: local-pool-chat-strata
+spec:
+  modelName: local-pool-chat
+  proxyRef: litellm
+  params:
+    model: openai/qwen3.8-flash-next-iq3_s
+    apiBase: http://strata-fn.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 0.7
+      top_p: 0.8
+      presence_penalty: 1.5
+      repetition_penalty: 1.0
+      reasoning_effort: none
+      order: 1
+      max_parallel_requests: 3
+      allowed_openai_params:
+        - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 245760
+    maxOutputTokens: 65536
+    supportsFunctionCalling: true
+    supportsVision: true # verified 2026-11-09 on strata-fn (flash-next-strata): data-URL image, 200 + correct description
+    extra:
+      input_cost_per_token: 6.2e-08
+      output_cost_per_token: 1.35e-06
       cache_read_input_token_cost: 0.0
