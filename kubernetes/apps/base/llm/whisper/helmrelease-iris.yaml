@@ -10,68 +10,44 @@ spec:
     name: whisper
   interval: 15m
   values:
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
     controllers:
       whisper-iris:
         replicas: 1
         annotations:
           reloader.stakater.com/auto: "true"
-        initContainers:
-          fetch:
-            image:
-              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: vulkan-radv@sha256:2318b323ceffc68e4ceba1ce9e4fc5ead3f7bf03ea2a24ec8df5f43864f16587
-            command:
-              - bash
-              - -c
-              - |
-                set -euo pipefail
-                cd /cache
-                if [ ! -x "bin/$${WHISPER_VERSION}/whisper-server" ]; then
-                  curl -fsSL -o w.tgz "https://github.com/lemonade-sdk/whisper.cpp-rocm/releases/download/$${WHISPER_VERSION}/whisper-$${WHISPER_VERSION}-linux-vulkan-x86_64.tar.gz"
-                  python3 -c "import tarfile;tarfile.open('w.tgz').extractall('x')"
-                  mkdir -p "bin/$${WHISPER_VERSION}"
-                  mv x/whisper-*-linux-vulkan-x86_64/* "bin/$${WHISPER_VERSION}/"
-                  rm -rf x w.tgz
-                fi
-                if [ ! -s "$${WHISPER_MODEL_FILE}" ]; then
-                  curl -fsSL -o "$${WHISPER_MODEL_FILE}" "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$${WHISPER_MODEL_FILE}"
-                fi
-                ls -l "bin/$${WHISPER_VERSION}/whisper-server" "$${WHISPER_MODEL_FILE}"
-            env:
-              WHISPER_VERSION: v1.8.4
-              WHISPER_MODEL_FILE: ggml-large-v3-turbo-q8_0.bin
         containers:
           app:
             image:
-              repository: docker.io/kyuz0/amd-strix-halo-toolboxes
-              tag: vulkan-radv@sha256:2318b323ceffc68e4ceba1ce9e4fc5ead3f7bf03ea2a24ec8df5f43864f16587
-            securityContext:
-              privileged: true
-            command:
-              - /cache/bin/v1.8.4/whisper-server
-            args:
-              - --model
-              - /cache/ggml-large-v3-turbo-q8_0.bin
-              - --host
-              - 0.0.0.0
-              - --port
-              - "8080"
-              - --threads
-              - "4"
+              repository: ghcr.io/speaches-ai/speaches
+              tag: 0.8.3-cpu@sha256:21e3df06d842fb7802ab470dd77c25f0e8c0d22950e8d8c6ae886e851af53ef8
             env:
-              LD_LIBRARY_PATH: /cache/bin/v1.8.4
+              ENABLE_UI: "false"
+              HF_HOME: /cache/huggingface
+              PRELOAD_MODELS: '["Systran/faster-whisper-small.en"]'
+              STT_MODEL_TTL: "-1"
+              UVICORN_PORT: "8080"
+              WHISPER__COMPUTE_TYPE: int8
+              WHISPER__CPU_THREADS: "14"
+              WHISPER__INFERENCE_DEVICE: cpu
             resources:
               requests:
                 cpu: 500m
-                memory: 4Gi
+                memory: 2Gi
               limits:
-                memory: 8Gi
+                memory: 4Gi
             probes:
               liveness:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet: { path: /, port: 8080 }
+                  httpGet: { path: /health, port: 8080 }
                   initialDelaySeconds: 30
                   periodSeconds: 30
                   failureThreshold: 6
@@ -79,18 +55,10 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet: { path: /, port: 8080 }
+                  httpGet: { path: /health, port: 8080 }
                   initialDelaySeconds: 15
                   periodSeconds: 10
                   failureThreshold: 6
-    defaultPodOptions:
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: whisper-iris
     service:
       app:
         ports:

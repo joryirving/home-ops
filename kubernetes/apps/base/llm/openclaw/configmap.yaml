@@ -236,7 +236,15 @@ data:
           image: { timeoutSeconds: 180 },
           audio: { enabled: true },
           models: [
-            { provider: "openai", model: "parakeet", baseUrl: "http://macbookpro.internal:8765/v1", capabilities: ["audio"], timeoutSeconds: 120 }, // builtin openai transcription client; entry baseUrl overrides api.openai.com (custom provider ids ship no transcribeAudio impl)
+            # In-cluster STT cutover (2026-11-10): speaches (faster-whisper) on
+            # an MS-01 CPU replaces parakeet-mlx on the MacBook Pro. Builtin
+            # openai transcription client, so the endpoint speaks
+            # /v1/audio/transcriptions natively (JSON {text}, 16kHz-in
+            # resampled server-side). small.en int8, 14 threads: ~0.6-1.4s
+            # per turn vs 4.4s+ for the old whisper.cpp turbo variant.
+            # STT_MODEL_TTL=-1 keeps the model warm. Revert: point baseUrl back
+            # at http://macbookpro.internal:8765/v1 (parakeet).
+            { provider: "openai", model: "Systran/faster-whisper-small.en", baseUrl: "http://whisper-iris.llm:8080/v1", capabilities: ["audio"], timeoutSeconds: 120 }, // builtin openai transcription client; entry baseUrl overrides api.openai.com (custom provider ids ship no transcribeAudio impl)
           ],
         },
         sessions: { visibility: "all" },
@@ -278,14 +286,15 @@ data:
             ]
           },
           "openai": {
-            // Speech pipeline (2026-11-06): satisfies the media-understanding
+            // Speech pipeline (2026-11-10): satisfies the media-understanding
             // auth assertion for the builtin openai transcription client
-            // (ProviderAuthError otherwise); the Mac ignores the auth header.
-            // request.allowPrivateNetwork: the Mac is a LAN-private host; as a
-            // known cloud provider id, openai gets no configured-origin trust,
-            // so the SSRF guard blocks it without this opt-in
-            // (SsrFBlockedError). Operator-controlled self-hosted endpoint
-            // per docs guidance. No models list — chat routing unaffected.
+            // (ProviderAuthError otherwise); speaches accepts any auth header.
+            // request.allowPrivateNetwork: the endpoint is a cluster-internal
+            // service; as a known cloud provider id, openai gets no
+            // configured-origin trust, so the SSRF guard blocks it without
+            // this opt-in (SsrFBlockedError). Operator-controlled
+            // self-hosted endpoint per docs guidance. No models list — chat
+            // routing unaffected.
             apiKey: "not-required",
             request: { allowPrivateNetwork: true },
           },
