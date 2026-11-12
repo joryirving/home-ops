@@ -21,6 +21,17 @@
       ignoreUnstable: false,
       versioning: "regex:^(?<major>\\d{4})\\.(?<minor>\\d{1,2})\\.(?<patch>\\d{1,2})-(?<prerelease>[0-9a-f]+)$",
     },
+    // 2.0.0 crashloops in toolhive (upstream rohitg00/kubectl-mcp-server#93) and
+    // the 1.24.0 → 2.0.0 bump was already reverted once (#11375) only for
+    // renovate to re-bump it (#11378). Disabled entirely so the revert sticks;
+    // re-enable by deleting this rule and bumping the image in the kubectl-mcp
+    // MCPServer.
+    {
+      description: ["Hold kubectl-mcp-server at 1.24.0 (rohitg00#93 crashloop in toolhive)"],
+      matchDatasources: ["docker"],
+      matchPackageNames: ["docker.io/rohitghumare64/kubectl-mcp-server"],
+      enabled: false,
+    },
     // ocharted serves no org.opencontainers.image.source annotation, so release notes
     // need the upstream repo named explicitly.
     {
