@@ -67,8 +67,14 @@ spec:
       effect: NoSchedule
   nodeSelector:
     kubernetes.io/hostname: skirk
+  # llama.cpp divides contextSize across parallelSlots, so the per-request
+  # limit is contextSize / parallelSlots. 32 slots yielded 1024 tokens per
+  # slot, and the mcp-gateway-internal VirtualMCPServer optimizer embeds the
+  # whole aggregated tool catalog (~1.1k tokens and growing) in one request —
+  # once it crossed 1024 every gateway session was terminated on tools/list.
+  # 8 slots gives 4096 tokens per request without growing the KV cache.
   contextSize: 32768
-  parallelSlots: 32
+  parallelSlots: 8
   batchSize: 2048
   uBatchSize: 2048
   resources:
