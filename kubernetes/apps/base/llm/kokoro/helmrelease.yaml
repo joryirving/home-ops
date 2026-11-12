@@ -18,6 +18,14 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values: ["m"]
     controllers:
       kokoro:
         annotations:
@@ -47,10 +55,6 @@ spec:
                   - ALL
     service:
       app:
-        type: LoadBalancer
-        annotations:
-          lbipam.cilium.io/ips: 10.69.10.135
-        externalTrafficPolicy: Local
         ports:
           http:
             port: &port 8880
