@@ -24,22 +24,11 @@ spec:
           app:
             image:
               repository: mcp/grafana
-              tag: latest
-              pullPolicy: Always
+              tag: latest@sha256:9362bcf6aa0e44e61f645b905cec03fb346a946a34a4dafecd7f3e28d3724014
             args:
-              - "run"
-              - "--rm"
-              - "-i"
-              - "-e"
-              - "GRAFANA_URL"
-              - "-e"
-              - "GRAFANA_AUTH"
-              - "mcp/grafana"
-              - "-t"
-              - "sse"
-              - "--allowed-hosts"
-              - "mcp-grafana.observability:8000"
-              - "--allowed-origins"
+              - --allowed-hosts
+              - mcp-grafana.observability:8000,grafana-mcp.jory.dev
+              - --allowed-origins
               - "*"
             env:
               GRAFANA_URL: "http://grafana-service.observability:3000"
