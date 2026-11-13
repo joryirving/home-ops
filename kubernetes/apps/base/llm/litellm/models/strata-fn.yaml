@@ -1,11 +1,4 @@
 ---
-# Draft: Strata IQ3_S Flash-Next as the 3090 FN deployment.
-# Explicit CR because Strata's served model name (`qwen3.8-flash-next-iq3_s`)
-# is not CLI-renamable, so litellm-operator's llmkube autoRegister cannot place
-# it in the `qwen3.8-flash-next` group.
-# Order 2: overflow + failover rung. Skirk (order 1) fills its 2 sessions
-# first; strata only serves when both skirk slots are busy or skirk is
-# cooled down.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
@@ -22,7 +15,7 @@ spec:
       top_p: 0.95
       top_k: 20
       min_p: 0
-      order: 2
+      order: 1
       max_parallel_requests: 3
   info:
     mode: chat
