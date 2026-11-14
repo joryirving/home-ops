@@ -65,6 +65,12 @@ spec:
         ports:
           http:
             port: 8080
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
     persistence:
       cache:
         existingClaim: "{{ .Release.Name }}"
