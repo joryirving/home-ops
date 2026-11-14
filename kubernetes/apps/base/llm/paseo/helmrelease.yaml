@@ -100,10 +100,18 @@ spec:
             port: *port
     route:
       app:
-        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        annotations:
+          gatus.home-operations.com/endpoint: |-
+            conditions: ["[STATUS] == 200"]
+        hostnames:
+          - paseo.jory.dev
         parentRefs:
           - name: envoy-internal
             namespace: network
+        rules:
+          - backendRefs:
+              - identifier: app
+                port: http
     persistence:
       data:
         existingClaim: *app
