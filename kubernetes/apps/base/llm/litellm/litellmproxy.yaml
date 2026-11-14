@@ -93,11 +93,15 @@ spec:
     redis_host: os.environ/REDIS_HOST
     redis_port: os.environ/REDIS_PORT
     routing_strategy: simple-shuffle
+    routing_groups:
+    - group_name: fn-least-busy
+      models:
+      - qwen3.8-flash-next
+      - qwen3.8-flash-next-chat
+      routing_strategy: least-busy
     cooldown_time: 30
     enable_pre_call_checks: true
     fallbacks:
-    - qwen3.8-flash-next-chat:
-      - MiniMax-M3.1-Flash
     - auto:
       - dsv4.1f
       - MiniMax-M3.1-Flash
