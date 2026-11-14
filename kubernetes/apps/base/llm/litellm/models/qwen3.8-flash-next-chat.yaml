@@ -1,8 +1,4 @@
 ---
-# FN-chat skirk rung: failover only. Strata (order 1) is the chat primary —
-# non-thinking chat is the most TTFT-sensitive lane and strata prefills in
-# <100ms vs skirk's 7-9s cache-miss tail. Keeping chat off skirk's engine
-# also stops the chat lane queueing behind giant agent prefills.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
@@ -19,7 +15,7 @@ spec:
       top_p: 0.8
       presence_penalty: 1.5
       repetition_penalty: 1.0
-      order: 2
+      order: 1
       max_parallel_requests: 2
       extra_body:
         chat_template_kwargs:
@@ -35,9 +31,6 @@ spec:
       output_cost_per_token: 2.97e-06
       cache_read_input_token_cost: 0.0
 ---
-# FN-chat strata rung: primary (order 1). Same iq3_s deployment as the
-# thinking group's strata rung, non-thinking chat template + chat sampling
-# params. Skirk (order 2) takes over only if strata fills or cools down.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
