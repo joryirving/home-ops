@@ -46,14 +46,16 @@ spec:
   # budget is reserved for gufo + the embed/rerank pair. decision-1 stays
   # on the untainted CPU nodes.
   # Kev-4B's native decision window is 8192 total tokens (state + rubric);
-  # 16384/4 gives 4096 per request headroom without growing the KV cache.
+  # 16384 across 2 slots gives exactly 8192 per request — the advertised
+  # maxInputTokens — without growing the KV cache. Batch sizes are llama.cpp's
+  # conservative CPU defaults; decision prefill is a single pass per request.
   contextSize: 16384
-  parallelSlots: 4
-  batchSize: 8192
-  uBatchSize: 8192
+  parallelSlots: 2
+  batchSize: 2048
+  uBatchSize: 512
   resources:
     cpu: "4"
-    memory: 6Gi
+    memory: 8Gi
   extraArgs:
     - --cont-batching
     - --flash-attn
