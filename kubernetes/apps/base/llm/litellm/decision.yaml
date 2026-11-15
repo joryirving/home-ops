@@ -42,10 +42,10 @@ spec:
               matchLabels:
                 decision-pool: "true"
             topologyKey: kubernetes.io/hostname
-  tolerations:
-    - key: llm-workload
-      operator: Exists
-      effect: NoSchedule
+  # No llm-workload toleration on purpose: that taint marks skirk, whose
+  # budget is reserved for gufo + the embed/rerank pair. decision-1 stays
+  # on the untainted CPU nodes.
+  rolloutPolicy:
   # Kev-4B's native decision window is 8192 total tokens (state + rubric);
   # 16384/4 gives 4096 per request headroom without growing the KV cache.
   contextSize: 16384
