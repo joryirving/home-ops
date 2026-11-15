@@ -52,7 +52,7 @@ spec:
   contextSize: 16384
   parallelSlots: 2
   batchSize: 2048
-  uBatchSize: 512
+  uBatchSize: 2048
   resources:
     cpu: "4"
     memory: 8Gi
@@ -62,6 +62,13 @@ spec:
     - "on"
     - --load-mode
     - mmap
+    # llama.cpp sizes the threadpool from the host's cores (n_threads=6 on a
+    # 4-CPU quota) and spin-waits between passes; oversubscription made even
+    # a short decision take >1s. Pin to the cgroup quota.
+    - --threads
+    - "4"
+    - --threads-batch
+    - "4"
   endpoint:
     port: 8080
     type: ClusterIP
