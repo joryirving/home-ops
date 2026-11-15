@@ -102,6 +102,14 @@ spec:
       routing_strategy: least-busy
     cooldown_time: 30
     enable_pre_call_checks: true
+    # Gufo rejects a cache fork from a live session when the fork boundary
+    # misses an in-pass checkpoint position (400 "unsupported Flash-Next
+    # in-pass boundary"). The condition is transient — a single same-group
+    # retry lands after the live session's frontier moves. Scoped retries are
+    # not configurable per exception today, so accept one extra attempt on
+    # genuinely invalid requests.
+    retry_policy:
+      BadRequestErrorRetries: 1
     fallbacks:
     - auto:
       - dsv4.1f
