@@ -4,7 +4,7 @@ kind: Model
 metadata:
   name: decision
 spec:
-  source: https://huggingface.co/ggml-org/Kev-4B-GGUF/resolve/main/Kev-4B-Q8_0.gguf
+  source: https://huggingface.co/ggml-org/Julia-1-GGUF/resolve/main/Julia-1-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
@@ -23,8 +23,9 @@ spec:
   # /v1/systemone decision endpoint (PR #29818, 2026-10-02). The ggml-org
   # server image tracks master; digest-pinned from that tag.
   image: ghcr.io/ggml-org/llama.cpp:server@sha256:89fe93c2ef53ea2d09ca9f53db8878a8f57bb6b143eb63c76a9c218fb583b392
-  # Decision serving needs no chat/prompt flags: /v1/systemone scores the
-  # declared options in a single forward pass and never decodes text.
+  # Julia-1: 144M mmBERT (ModernBERT-small) decision encoder — small enough
+  # that CPU prefill lands in interactive territory (tens of ms), unlike the
+  # 4B dense models whose CPU prefill is seconds-slow. 8192 native context.
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
@@ -45,17 +46,17 @@ spec:
   # No llm-workload toleration on purpose: that taint marks skirk, whose
   # budget is reserved for gufo + the embed/rerank pair. decision-1 stays
   # on the untainted CPU nodes.
-  # Kev-4B's native decision window is 8192 total tokens (state + rubric);
+  # Julia's native window is 8192 total tokens (state + question + rubric);
   # 16384 across 2 slots gives exactly 8192 per request — the advertised
-  # maxInputTokens — without growing the KV cache. Batch sizes are llama.cpp's
-  # conservative CPU defaults; decision prefill is a single pass per request.
+  # maxInputTokens. Decision serving needs no chat/prompt flags: /v1/systemone
+  # scores the declared options in a single pass and never decodes text.
   contextSize: 16384
   parallelSlots: 2
   batchSize: 2048
   uBatchSize: 2048
   resources:
     cpu: "4"
-    memory: 8Gi
+    memory: 2Gi
   extraArgs:
     - --cont-batching
     - --flash-attn
