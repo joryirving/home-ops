@@ -4,7 +4,11 @@ kind: Model
 metadata:
   name: decision
 spec:
-  source: https://huggingface.co/ggml-org/Julia-1-GGUF/resolve/main/Julia-1-Q8_0.gguf
+  # Pinned to the 2026-10-19 revision: ggml-org's 2026-11-12 re-export
+  # declares a metaspace-always BPE vocabulary that llama.cpp's vocab loader
+  # rejects ("not supported for BPE vocab"), while this revision loads and
+  # serves correctly on the pinned image. Revisit if upstream re-exports.
+  source: https://huggingface.co/ggml-org/Julia-1-GGUF/resolve/1e6b48a6983d7467f8eedc2cb0d21267b5fc052d/Julia-1-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
