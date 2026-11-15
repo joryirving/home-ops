@@ -11,6 +11,11 @@ data:
       agents: {
         defaults: {
             voiceModel: "kokoro/af_heart",
+          // decisionModel: not wired yet. A decision model ("decision",
+          // Kev-4B GGUF on decision-1) already serves /v1/systemone through
+          // LiteLLM for LiteLLM-keyed consumers, but OpenClaw's TypeSafe
+          // decision plugin is not shipped in this build. Set
+          // agents.defaults.decisionModel here once the plugin lands.
           // continuation-skip: workspace files inject once per session, not on every
           // continuation turn; agents rely on lossless-claw summaries + memory_recall after.
           // If agents "forget their contract" deep into long sessions, flip back to "always".
@@ -304,6 +309,18 @@ data:
             models: [
               { id: "MiniMax-M3", name: "MiniMax M3", reasoning: true, input: ["text","image"], cost: { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0.3 }, contextWindow: 1000000, maxTokens: 131072, compat: { supportsUsageInStreaming: true } },
               { id: "MiniMax-M3.1-Flash", name: "MiniMax M3.1 Flash", reasoning: true, input: ["text","image"], cost: { input: 0.15, output: 0.6, cacheRead: 0.015, cacheWrite: 0.15 }, contextWindow: 1000000, maxTokens: 131072, compat: { supportsUsageInStreaming: true } },
+            ],
+          },
+          "rerank": {
+            // Bundled decision-model provider (rerank plugin): the memini
+            // bge-reranker-v2-m3 pool through LiteLLM's /rerank, so keys and
+            // usage stay tracked. Answers boolean/choice/sort Decision
+            // questions by relevance; never offered as a chat model. Score
+            // range unverified — run any consumer in shadow mode first.
+            baseUrl: "http://litellm.llm:4000",
+            apiKey: "$${LITELLM_API_KEY}",
+            models: [
+              { id: "rerank", name: "bge-reranker-v2-m3 (memini pool)" },
             ],
           },
         }

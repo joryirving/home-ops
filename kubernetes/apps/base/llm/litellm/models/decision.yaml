@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/litellm.home-operations.com/litellmmodel_v1alpha1.json
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: decision
+spec:
+  modelName: decision
+  proxyRef: litellm
+  params:
+    # hosted_vllm is LiteLLM's documented self-hosted provider for the
+    # /v1/systemone decision route; llama.cpp serves the identical wire
+    # format on the same path. Served model name is the operator's
+    # --alias <modelRef>, i.e. "decision".
+    model: hosted_vllm/decision
+    apiBase: http://decision-1.llm:8080
+    apiKey: sk-llmkube-noauth
+  info:
+    maxInputTokens: 8192
