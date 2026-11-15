@@ -32,35 +32,6 @@ spec:
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: grooming-pool-glm-flash-hyper
-spec:
-  modelName: grooming-pool
-  proxyRef: litellm
-  params:
-    model: openai/glm-5.3-flash
-    apiBase: https://hyper.charm.land/v1
-    apiKey: os.environ/HYPER_API_KEY
-    additional:
-      order: 3
-      allowed_openai_params:
-      - reasoning_effort
-  info:
-    mode: chat
-    maxInputTokens: 1000000
-    maxOutputTokens: 131072
-    supportsFunctionCalling: true
-    supportsPromptCaching: true
-    supportsVision: true
-    extra:
-      input_cost_per_token: 1.6e-7
-      cache_creation_input_token_cost: 0
-      cache_read_input_token_cost: 3.0e-08
-      output_cost_per_token: 5.4e-7
----
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/litellm.home-operations.com/litellmmodel_v1alpha1.json
-apiVersion: litellm.home-operations.com/v1alpha1
-kind: LiteLLMModel
-metadata:
   name: grooming-pool-gpt-6-luna
 spec:
   modelName: grooming-pool
@@ -111,3 +82,32 @@ spec:
       cache_creation_input_token_cost: 1.5e-07
       cache_read_input_token_cost: 3.0e-08
       output_cost_per_token: 5.0e-07
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: grooming-pool-strata
+spec:
+  modelName: grooming-pool
+  proxyRef: litellm
+  params:
+    model: openai/qwen3.8-flash-next-iq3_s
+    apiBase: http://strata-fn.llm.svc.cluster.local:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 20
+      min_p: 0
+      order: 1
+      max_parallel_requests: 3
+  info:
+    mode: chat
+    maxInputTokens: 245760
+    maxOutputTokens: 16384
+    supportsFunctionCalling: true
+    supportsVision: true # verified 2026-11-09: data-URL image request via strata-fn svc, 200 + correct description
+    extra:
+      input_cost_per_token: 6.2e-08
+      output_cost_per_token: 1.35e-06
+      cache_read_input_token_cost: 0.0

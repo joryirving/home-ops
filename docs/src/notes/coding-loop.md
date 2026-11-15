@@ -38,10 +38,9 @@ Courier polls Dispatch every 30 seconds. The configured bindings are:
 |---|---|---|
 | `local` | `local` | `courier-local` |
 | `local` | `minimax` | `courier-cloud` |
-| `local` | `hyper` | `courier-hyper` |
 | `escalated` | `frontier` | `courier-frontier` |
 
-Local, MiniMax, and Hyper share the normal queue. Frontier is the exclusive escalation lane. These bindings select consumers; they do not reserve normal work for a particular model.
+Local and MiniMax share the normal queue. Frontier is the exclusive escalation lane. These bindings select consumers; they do not reserve normal work for a particular model.
 
 Dispatch aliases `normal` and `cloud` to `local`, and `escalated` to `frontier`. Compare the authenticated identity with the configured binding during authorization investigations.
 
@@ -51,7 +50,7 @@ Discovery reservations and execution capacity are different. In Courier 0.1.18, 
 
 ### Execute
 
-Courier admits work when its profile has capacity and is not suspended. The current four profiles each have concurrency one. It starts a coordinator pod and builds the OpenCode role configuration from the profile.
+Courier admits work when its profile has capacity and is not suspended. The current remaining profiles each have concurrency one. It starts a coordinator pod and builds the OpenCode role configuration from the profile.
 
 The legacy OpenCode path first runs an independent workspace observer initializer. It records a trusted starting revision before the model starts. A missing work branch is normal for a new issue; the observer then fetches the base branch. Failure here can prevent all model execution.
 
@@ -77,7 +76,6 @@ Current profile bindings are:
 |---|---|---|
 | `local` | `litellm/qwen3.8-flash-next` | `agentic-local`: Flash-Next (Strix + Strata); `free`: `free-pool` |
 | `minimax` | `litellm-anthropic/MiniMax-M3.1-Flash` | Explorer, implementer, oracle, and reviewer use the same model |
-| `hyper` | `litellm/glm-5.3-flash-hyper` | Explorer, implementer, oracle, and reviewer use the same model |
 | `frontier` | `litellm/glm-5.3-flash` | Explorer: Flash-Next; implementer: `implementation-pool`; reviewer: MiniMax; oracle: `reasoning-pool` |
 
 The local framing sends all sub-agent work to `agentic-local`: at most two in flight for disjoint file-scoped work, one when a review pass is running, and never overlapping the coordinator's own turns. These are ceilings, not targets. All local lanes share the Flash-Next capacity (skirk's two gufo sessions plus strata-fn's three slots on the 3090) with the coding pipeline and other consumers. Do not infer spare GPU capacity from a free Courier slot.
@@ -88,7 +86,7 @@ Require one independent review for consequential behavior changes, including aut
 
 Record each relevant check once per change state: command, working directory, revision or identifiable state, result, compact output, and limitations. Reuse valid evidence across workers and review. Rerun only after relevant changes or for a specific coverage concern.
 
-Pool membership can change without a Courier profile change. The current reasoning order is K2.7, GPT-6.1 Sol, GLM-5.3-Flash Hyper, GLM-5.3-Flash Z.AI, then Flash-Next. The implementation pool configures Luna at effort `high`; that does not change the direct Luna alias. Read the pool manifests for the complete current routes.
+Pool membership can change without a Courier profile change. The current reasoning order is K2.8, GPT-6.1 Terra, GLM-5.3-Flash Z.AI, then Flash-Next. The implementation pool configures Luna at effort `high`; that does not change the direct Luna alias. Read the pool manifests for the complete current routes.
 
 ## How runs end
 
