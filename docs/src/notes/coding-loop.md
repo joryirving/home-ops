@@ -26,7 +26,7 @@ Inspect secret references and access metadata, never secret values.
 
 Dispatch's scheduler syncs tracked repositories every 15 minutes. The hosted groomer assesses one candidate per scheduled run. It proposes labels, a lane, readiness, and sometimes closure. Dispatch validates the plan before application.
 
-Current manifests select `grooming-pool`, a 245760-token context budget, repository context, and a maximum of 18 exploration rounds. The exploration timeout is 480000 ms. The model timeout is 840000 ms, and the scheduled interval is 900000 ms. These are separate limits, not one eight-minute run budget.
+Current manifests select `grooming-pool`, a 232448-token context budget, repository context, and a maximum of 18 exploration rounds. The exploration timeout is 480000 ms. The model timeout is 840000 ms, and the scheduled interval is 900000 ms. These are separate limits, not one eight-minute run budget.
 
 An `already_done` closure requires evidence for the issue's acceptance criteria at a pinned repository revision. Model confidence or a free-form success statement does not authorize closure. Dispatch's `docs/groomer-close-policy.md` describes the policy.
 
@@ -78,7 +78,7 @@ Current profile bindings are:
 | `minimax` | `litellm-anthropic/MiniMax-M3.1-Flash` | Explorer, implementer, oracle, and reviewer use the same model |
 | `frontier` | `litellm/glm-5.3-flash` | Explorer: Flash-Next; implementer: `implementation-pool`; reviewer: MiniMax; oracle: `reasoning-pool` |
 
-The local framing sends all sub-agent work to `agentic-local`: at most two in flight for disjoint file-scoped work, one when a review pass is running, and never overlapping the coordinator's own turns. These are ceilings, not targets. All local lanes share the Flash-Next capacity (skirk's two gufo sessions plus strata-fn's three slots on the 3090) with the coding pipeline and other consumers. Do not infer spare GPU capacity from a free Courier slot.
+The local framing sends all sub-agent work to `agentic-local`: at most two in flight for disjoint file-scoped work, one when a review pass is running, and never overlapping the coordinator's own turns. These are ceilings, not targets. All local lanes share the Flash-Next capacity (skirk's two gufo sessions plus the strata rung's three slots on the 3090) with the coding pipeline and other consumers. Do not infer spare GPU capacity from a free Courier slot.
 
 MiniMax framing serializes delegation to one worker. Its roles share provider allowance. A separate review session provides an independent assessment, but not model-family diversity.
 
@@ -140,12 +140,13 @@ Flash-Next is the only local model family. It runs on two independent lanes:
 - **skirk (Strix Halo)** — gufo engine, UD-Q4_K_XL quant, MTP, 262144-token
   context, `--sessions 2`, and a 64 GB disk continuation cache that survives
   restarts. Served as `qwen3.8-flash-next` / `qwen3.8-flash-next-chat`.
-- **ganyu (RTX 3090)** — `strata-fn` InferenceService (`litellm/strata-fn.yaml`),
+- **ganyu (RTX 3090)** — `qwen3-8-flash-next-strata` InferenceService
+  (`litellm/qwen3-8-flash-next-strata.yaml`),
   Strata engine, IQ3_S quant at 256K context, three litellm slots
   (`max_parallel_requests: 3`), served as `qwen3.8-flash-next-iq3_s` through an
   explicit `LiteLLMModel` CR in the `qwen3.8-flash-next` group. Both group
   rungs sit at order 0 with per-rung caps (`max_parallel_requests: 2` on skirk,
-  `3` on strata-fn), so the router's simple-shuffle strategy load-shares across
+  `3` on the strata rung), so the router's simple-shuffle strategy load-shares across
   the five sessions instead of failover. The packs are
   pre-staged on the `llmkube-ganyu-cache` PVC; cold start is 4-8 minutes and
   the prefix cache is RAM-only, so redeploys pay full prefill until warm.
@@ -199,13 +200,13 @@ Name relevant file paths when known. Do not invent paths to make a brief look co
 | PR-fix exclusions | `prFixExclusions: true` |
 | Local profile concurrency | `1` |
 | OpenCode provider timeout | 1800000 ms |
-| Flash-Next OpenCode limits | 262144 context, 16384 output (litellm proxy caps input at 245760) |
+| Flash-Next OpenCode limits | 232448 context, 16384 output (litellm caps input at 232448, output at 32768) |
 | OpenCode compaction | Automatic, keep 20000 tokens, buffer 16384 |
 | Tool output cap | 800 lines, 16384 bytes |
 | Groomer model | `grooming-pool` |
-| Groomer context | 245760 tokens, repository context enabled |
+| Groomer context | 232448 tokens, repository context enabled |
 | Groomer rounds and exploration timeout | 18 rounds, 480000 ms |
 | Groomer model timeout and interval | 840000 ms, 900000 ms |
-| Strata slots and context | 3 concurrent sessions, 245760-token litellm input cap |
+| Strata slots and context | 3 concurrent sessions, 232448-token litellm input cap |
 
 Pool routes and deployed versions change independently. Re-read their configuration when those details affect an operational decision.

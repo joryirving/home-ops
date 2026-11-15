@@ -1,14 +1,8 @@
 ---
-# Strata Flash-Next (IQ3_S) on ganyu / RTX 3090.
-# Cutover with this PR: muse-glimmer and qwen3.8-27b retire; see strata-fn-draft.md.
-# Packs already live on llmkube-ganyu-cache at /data/Strata-data (downloaded 2026-11-08
-# during the benchmark); skipModelInit keeps the llmkube downloader out of the picture.
-# The MTP draft (~5 GB, /data/Strata-data/mtp/rt) is fetched by strata launch itself,
-# not by this Model CR.
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
-  name: strata-fn
+  name: qwen3-8-flash-next-strata
 spec:
   # Verified against HF (public, ungated) and against the pack names on disk.
   source: hf://ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF
@@ -29,7 +23,7 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: strata-fn
+  name: qwen3-8-flash-next-strata
   labels:
     krr/ignore: "true"
   annotations:
@@ -41,7 +35,7 @@ metadata:
     inference.llmkube.dev/idle-metric: vllm:num_requests_running
     inference.llmkube.dev/idle-metric-path: /metrics?format=prometheus
 spec:
-  modelRef: strata-fn
+  modelRef: qwen3-8-flash-next-strata
   runtime: generic
   rolloutPolicy:
     waitForIdle: true
@@ -96,7 +90,7 @@ spec:
   # above); without the Service DNS names here litellm gets 403s.
   env:
   - name: STRATA_ALLOWED_HOSTS
-    value: strata-fn.llm.svc.cluster.local,strata-fn.llm.svc,strata-fn
+    value: qwen3-8-flash-next-strata.llm.svc.cluster.local,qwen3-8-flash-next-strata.llm.svc,qwen3-8-flash-next-strata
   tolerations:
   - key: llm-workload
     operator: Exists

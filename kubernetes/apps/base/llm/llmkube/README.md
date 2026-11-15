@@ -25,8 +25,8 @@ memini/                     # bge-reranker-v2-m3 on CPU, served to LiteLLM as `r
   memini-rerank-{1,2,3}.yaml  # three single-replica InferenceServices
 
 litellm/                    # chat/vision models, reconciled by the `litellm` KS
-  strata-fn.yaml                  # Qwen3.8-Flash-Next IQ3_S (Strata engine) on the RTX 3090
-  qwen3.8-flash-next.yaml         # Qwen3.8-Flash-Next UD-Q4_K_XL on Strix Halo (gufo, multimodal)
+  qwen3-8-flash-next-strata.yaml  # Qwen3.8-Flash-Next IQ3_S (Strata engine) on the RTX 3090
+  qwen3-8-flash-next-gufo.yaml    # Qwen3.8-Flash-Next UD-Q4_K_XL on Strix Halo (gufo, multimodal)
   llmkube-skirk-cache.yaml        # local-hostpath model cache PVC on skirk
   models/                         # LiteLLMModel CRs, grouped by model name
   # plus commented-out variants in kustomization.yaml (Strix swap-backs, gemma-4-e4b, ...)
@@ -43,7 +43,7 @@ The `Model.spec.source` scheme decides what the operator does:
 
 | `source`                            | What happens                                                                                                                              | Persistence                   |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `hf://<org>/<repo>` + `spec.files`  | Downloads each listed file from the repo into the model cache; `spec.mmproj` names the projector among them (`strata-fn`, flash-next) | Persistent, survives restarts |
+| `hf://<org>/<repo>` + `spec.files`  | Downloads each listed file from the repo into the model cache; `spec.mmproj` names the projector among them (`qwen3-8-flash-next-strata`, `qwen3-8-flash-next-gufo`) | Persistent, survives restarts |
 | `https://…/<file>.gguf`             | Init container `curl`s one file into the **shared cache PVC** (`llmkube-model-cache`, CephFS RWX) on first start; skipped thereafter     | Persistent, survives restarts |
 | `pvc://<claim>/<path>.gguf`         | Mounts the claim **read-only**. No download. Not used today; the claim must exist first                                                   | You staged it                 |
 | `<org>/<repo>` (bare HF id)         | **vLLM runtime only.** the image entrypoint pulls `HF_REPO` into the shared cache (subPath per model). No vLLM model remains in the repo today; historical | Persistent, survives restarts |
@@ -130,8 +130,8 @@ there is no pre-staging path.
 
 ## The 3090: Strata (Flash-Next IQ3_S)
 
-The egpu / RTX 3090 (ganyu) hosts a single resident service, `strata-fn`
-(`litellm/strata-fn.yaml`): the Strata engine (`ghcr.io/niko1221/strata`)
+The egpu / RTX 3090 (ganyu) hosts a single resident service, `qwen3-8-flash-next-strata`
+(`litellm/qwen3-8-flash-next-strata.yaml`): the Strata engine (`ghcr.io/niko1221/strata`)
 running Qwen3.8-Flash-Next IQ3_S at 256K context with MTP and GPU vision. The
 former `nvidia` `ModelPool` + `ModelRouter` (muse-glimmer / qwen3.8-27b
 swapping) was retired when Flash-Next took over all 3090 traffic — no swapping
@@ -152,7 +152,7 @@ Key properties:
   (not CLI-renamable), so it cannot join the `qwen3.8-flash-next` group via
   litellm-operator auto-registration; it has an explicit `LiteLLMModel` CR in
   `litellm/models/` instead (same pattern as the old muse CRs), pointing at
-  `strata-fn.llm.svc.cluster.local` directly.
+  `qwen3-8-flash-next-strata.llm.svc.cluster.local` directly.
 - LiteLLM caps it at `max_parallel_requests: 3` (three concurrent sessions,
   measured ~80 tok/s aggregate at saturation; ~1040 tok/s fresh prefill flat to
   232K, cached-prefix TTFT 0.32-0.6 s at 16K).
@@ -162,7 +162,7 @@ Key properties:
   command before the engine starts.
 
 Rollback: the muse-glimmer and qwen3.8-27b packs and manifests live in git
-history; re-apply the manifests, set `strata-fn` `replicas: 0`, and the 24 GiB
+history; re-apply the manifests, set `qwen3-8-flash-next-strata` `replicas: 0`, and the 24 GiB
 card frees up. The Strata packs stay on the PVC either way (~219 GB total).
 
 ## Continuity notes
