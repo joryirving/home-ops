@@ -4,39 +4,38 @@ kind: Model
 metadata:
   name: decision
 spec:
-  # Pinned to the 2026-10-19 revision: ggml-org's 2026-11-12 re-export
-  # declares a metaspace-always BPE vocabulary that llama.cpp's vocab loader
-  # rejects ("not supported for BPE vocab"), while this revision loads and
-  # serves correctly on the pinned image. Revisit if upstream re-exports.
-  source: https://huggingface.co/ggml-org/Julia-1-GGUF/resolve/1e6b48a6983d7467f8eedc2cb0d21267b5fc052d/Julia-1-Q8_0.gguf
+  source: https://huggingface.co/ggml-org/Kev-4B-GGUF/resolve/f4624b6bb7072f1bab726a622c1cad3f96030b9e/Kev-4B-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: cpu
+    accelerator: vulkan
+    gpu:
+      enabled: true
+      vendor: intel
+      runtime: vulkan
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-intel-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: decision-1
+  name: decision
   labels:
     krr/ignore: "true"
 spec:
   modelRef: decision
   runtime: llamacpp
-  # Image override: the operator's llamacpp runtime predates llama.cpp's
-  # /v1/systemone decision endpoint (PR #29818, 2026-10-02). The ggml-org
-  # server image tracks master; digest-pinned from that tag.
-  image: ghcr.io/ggml-org/llama.cpp:server@sha256:89fe93c2ef53ea2d09ca9f53db8878a8f57bb6b143eb63c76a9c218fb583b392
-  # Julia-1: 144M mmBERT (ModernBERT-small) decision encoder — small enough
-  # that CPU prefill lands in interactive territory (tens of ms), unlike the
-  # 4B dense models whose CPU prefill is seconds-slow. 8192 native context.
+  # Vulkan image and Intel DRA claim use the MS-01 Iris Xe GPUs.
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:8af21639d085883fe5147a25a2ee29ce38302d950faa7e42355556d9f9a5af6c
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
   replicas: 1
   priority: normal
   podLabels:
-    cpu-inference: "true"
+    cpu-inference: "false"
     decision-pool: "true"
   affinity:
     podAntiAffinity:
@@ -50,7 +49,7 @@ spec:
   # No llm-workload toleration on purpose: that taint marks skirk, whose
   # budget is reserved for gufo + the embed/rerank pair. decision-1 stays
   # on the untainted CPU nodes.
-  # Julia's native window is 8192 total tokens (state + question + rubric);
+  # The decision window is 8192 total tokens (state + question + rubric);
   # 16384 across 2 slots gives exactly 8192 per request — the advertised
   # maxInputTokens. Decision serving needs no chat/prompt flags: /v1/systemone
   # scores the declared options in a single pass and never decodes text.
@@ -60,16 +59,14 @@ spec:
   uBatchSize: 2048
   resources:
     cpu: "4"
-    memory: 2Gi
+    memory: 8Gi
   extraArgs:
     - --cont-batching
     - --flash-attn
     - "on"
     - --load-mode
     - mmap
-    # llama.cpp sizes the threadpool from the host's cores (n_threads=6 on a
-    # 4-CPU quota) and spin-waits between passes; oversubscription made even
-    # a short decision take >1s. Pin to the cgroup quota.
+    # Keep CPU threads bounded while the GPU handles model layers.
     - --threads
     - "4"
     - --threads-batch
