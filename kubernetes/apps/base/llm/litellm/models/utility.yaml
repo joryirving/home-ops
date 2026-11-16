@@ -1,0 +1,24 @@
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: utility
+spec:
+  modelName: utility
+  proxyRef: litellm
+  params:
+    model: openai/utility
+    apiBase: http://utility.llm:8080/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      temperature: 0.7
+      top_p: 0.8
+      order: 1
+      max_parallel_requests: 4
+      extra_body:
+        chat_template_kwargs:
+          enable_thinking: false
+  info:
+    mode: chat
+    maxInputTokens: 32768
+    maxOutputTokens: 8192

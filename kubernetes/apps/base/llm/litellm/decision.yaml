@@ -4,7 +4,7 @@ kind: Model
 metadata:
   name: decision
 spec:
-  source: https://huggingface.co/ggml-org/Kev-4B-GGUF/resolve/f4624b6bb7072f1bab726a622c1cad3f96030b9e/Kev-4B-Q8_0.gguf
+  source: https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/resolve/8b29fd3b87373ea85fa59cc2f26251c1591d771a/vllm-d3-mini-Q8_0.gguf
   format: gguf
   quantization: Q8_0
   hardware:
@@ -49,17 +49,15 @@ spec:
   # No llm-workload toleration on purpose: that taint marks skirk, whose
   # budget is reserved for gufo + the embed/rerank pair. decision-1 stays
   # on the untainted CPU nodes.
-  # The decision window is 8192 total tokens (state + question + rubric);
-  # 16384 across 2 slots gives exactly 8192 per request — the advertised
-  # maxInputTokens. Decision serving needs no chat/prompt flags: /v1/systemone
-  # scores the declared options in a single pass and never decodes text.
+  # d3 attention is noncausal: llama.cpp asserts ubatch >= request tokens,
+  # so batch/ubatch must cover the full 16384 context.
   contextSize: 16384
   parallelSlots: 2
-  batchSize: 2048
-  uBatchSize: 2048
+  batchSize: 16384
+  uBatchSize: 16384
   resources:
     cpu: "4"
-    memory: 8Gi
+    memory: 12Gi
   extraArgs:
     - --cont-batching
     - --flash-attn
