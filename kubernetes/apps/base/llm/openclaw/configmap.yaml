@@ -10,35 +10,22 @@ data:
     {
       agents: {
         defaults: {
-            voiceModel: "kokoro/af_heart",
-          // decisionModel: not wired yet. A decision model ("decision",
-          // Kev-4B GGUF on decision-1) already serves /v1/systemone through
-          // LiteLLM for LiteLLM-keyed consumers, but OpenClaw's TypeSafe
-          // decision plugin is not shipped in this build. Set
-          // agents.defaults.decisionModel here once the plugin lands.
-          // continuation-skip: workspace files inject once per session, not on every
-          // continuation turn; agents rely on lossless-claw summaries + memory_recall after.
-          // If agents "forget their contract" deep into long sessions, flip back to "always".
+          voiceModel: "kokoro/af_heart",
           contextInjection: "continuation-skip",
-          // Truncation caps, not allocations (live files are ~3KB each after the 2026-07-29
-          // prompt-hygiene trim). Sized to catch runaway daily memory/YYYY-MM-DD.md logs.
-          // Previous values: 50000 / 100000.
           bootstrapMaxChars: 16384,
           bootstrapTotalMaxChars: 49152,
-          thinkingDefault: "high",
+          thinkingDefault: "adaptive",
           timeoutSeconds: 1800,
           model: {
             primary: "minimax/MiniMax-M3.1-Flash",
             fallbacks: [
               "litellm/qwen3.8-flash-next",
-              "litellm/dsv4.1f",
             ]
           },
           imageModel: {
             primary: "litellm/qwen3.8-flash-next-chat",
             fallbacks: [
               "litellm/glm-5.3-flash",
-              "litellm/dsv4.1f",
               "minimax/MiniMax-M3.1-Flash",
             ]
           },
@@ -50,19 +37,19 @@ data:
           models: {
             "litellm/kimi-k2.8": { alias: "kimi-cheap", params: { cache_prompt: true } },
             "litellm/kimi-k3.1": { alias: "kimi", params: { cache_prompt: true } },
-            "minimax/MiniMax-M3": { alias: "minimax-old", params: { cacheRetention: "short" } },
-            "litellm-anthropic/MiniMax-M3.1-Flash": { alias: "minimax", params: { cacheRetention: "short" } },
-            "litellm/qwen3.8-flash-next": { alias: "skirk", params: { cache_prompt: true, extra_body: { return_progress: true } } },
-            "litellm/qwen3.8-flash-next-chat": { alias: "skirk-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "minimax/MiniMax-M3": { alias: "minimax", params: { cacheRetention: "short" } },
+            "litellm-anthropic/MiniMax-M3.1-Flash": { alias: "minimax-flash", params: { cacheRetention: "short" } },
+            "litellm/qwen3.8-flash-next": { alias: "qwen", params: { cache_prompt: true, extra_body: { return_progress: true } } },
+            "litellm/qwen3.8-flash-next-chat": { alias: "qwen-chat", params: { cache_prompt: true, extra_body: { return_progress: true } } },
             "litellm/dsv4.1f": { alias: "dsv4.1f", params: { cache_prompt: true } },
             "litellm/glm-5.3-flash": { alias: "glm-flash", params: { cache_prompt: true } },
             "litellm/glm-5.3": { alias: "glm-5.3", params: { cache_prompt: true } },
             "litellm/frontier-pool": { alias: "frontier" },
             "litellm/reasoning-pool": { alias: "reasoning" },
             "litellm/implementation-pool": { alias: "implementation" },
-            "litellm/chatgpt/gpt-6-astra": { alias: "gpt" },
-            "litellm/chatgpt/gpt-6.1-sol": { alias: "gpt-balanced" },
-            "litellm/chatgpt/gpt-6.1-terra": { alias: "gpt-terra" },
+            "litellm/chatgpt/gpt-6-astra": { alias: "gpt-high" },
+            "litellm/chatgpt/gpt-6.1-sol": { alias: "gpt" },
+            "litellm/chatgpt/gpt-6.1-terra": { alias: "gpt-balanced" },
             "litellm/chatgpt/gpt-6-luna": { alias: "gpt-cheap" },
           },
           modelPolicy: {
@@ -94,7 +81,7 @@ data:
             },
             archiveAfterMinutes: 120,
             maxConcurrent: 3,
-            thinking: "high",
+            thinking: "medium",
           },
           heartbeat: {
             every: "60m",
@@ -119,16 +106,13 @@ data:
             model: {
               primary: "litellm/glm-5.3-flash",
               fallbacks: [
-                "litellm/kimi-k3.1",
                 "minimax/MiniMax-M3.1-Flash",
+                "litellm/kimi-k3.1",
                 "litellm/qwen3.8-flash-next",
                 "litellm/dsv4.1f",
               ]
             },
             heartbeat: {
-              // Explicit delivery route — the owner-DM resolution path fails
-              // closed for unproven targets under dmPolicy "pairing", leaving
-              // heartbeats skipped with "no-route" since the 2026.9 conversion.
               target: "discord",
               to: "user:$${DISCORD_ADMIN_USER_ID}",
             },
@@ -192,26 +176,11 @@ data:
         provider: "openai",
         timeoutMs: 120000, // schema max; see comment above
         providers: {
-          // TTS cutover (2026-11-12): kokoro-fastapi in-cluster (llm/kokoro
-          // on main, CPU). Speaks the OpenAI /v1/audio/speech dialect:
-          // "input" required, voice falls back to af_heart,
-          // model/response_format/reference_wav_b64 and any unknown fields
-          // ignored (no 422s; verified live with this exact payload shape).
-          // Always WAV, 24kHz mono.
-          // extraBody still carries the pinned voice reference ONLY for
-          // one-line revert (kokoro accepts-and-ignores it; ~588KB/req).
-          // Reference (2026-10-30 keeper cut): 9.2s 24kHz mono clip of the
-          // target speaker from a YouTube short (2SEzD50ubv0), 50/50 blended
-          // raw + 1-pass RNNoise-denoised. Revert: baseUrl back to
-          // http://macbookpro.internal:8766/v1 (kokoro-mlx on the MacBook
-          // Pro M1 Max); deeper revert:
-          // http://lemonade-tts-iris.llm:13305/v1 (OpenMOSS on Strix iGPU;
-          // responseFormat wav because OpenMOSS v0.3 encodes only wav/pcm).
           openai: {
             baseUrl: "http://kokoro.llm:8880/v1",
             apiKey: "not-required",
             model: "kokoro",
-            responseFormat: "wav",
+            responseFormat: "opus",
           },
           elevenlabs: {
             apiKey: "$${ELEVENLABS_API_KEY}",
@@ -226,10 +195,6 @@ data:
           },
         },
       },
-      // Talk (Vet 2026-09-23): realtime talk providers are cloud-only
-      // (OpenAI/Google realtime APIs). Force the native stt-tts loop so
-      // Android nodes use on-device STT + talk.speak TTS (Lemonade above)
-      // with no cloud realtime dependency. Matches live gateway config.
       talk: {
         realtime: {
           mode: "stt-tts",
@@ -240,15 +205,7 @@ data:
           image: { timeoutSeconds: 180 },
           audio: { enabled: true },
           models: [
-            // In-cluster STT cutover (2026-11-10): speaches (faster-whisper) on
-            // an MS-01 CPU replaces parakeet-mlx on the MacBook Pro. Builtin
-            // openai transcription client, so the endpoint speaks
-            // /v1/audio/transcriptions natively (JSON {text}, 16kHz-in
-            // resampled server-side). small.en int8, 14 threads: ~0.6-1.4s
-            // per turn vs 4.4s+ for the old whisper.cpp turbo variant.
-            // STT_MODEL_TTL=-1 keeps the model warm. Revert: point baseUrl back
-            // at http://macbookpro.internal:8765/v1 (parakeet).
-            { provider: "openai", model: "Systran/faster-whisper-small.en", baseUrl: "http://whisper-iris.llm:8080/v1", capabilities: ["audio"], timeoutSeconds: 120 }, // builtin openai transcription client; entry baseUrl overrides api.openai.com (custom provider ids ship no transcribeAudio impl)
+            { provider: "openai", model: "Systran/faster-whisper-small.en", baseUrl: "http://whisper.llm:8080/v1", capabilities: ["audio"], timeoutSeconds: 120 },
           ],
         },
         sessions: { visibility: "all" },
@@ -289,15 +246,6 @@ data:
             ]
           },
           "openai": {
-            // Speech pipeline (2026-11-10): satisfies the media-understanding
-            // auth assertion for the builtin openai transcription client
-            // (ProviderAuthError otherwise); speaches accepts any auth header.
-            // request.allowPrivateNetwork: the endpoint is a cluster-internal
-            // service; as a known cloud provider id, openai gets no
-            // configured-origin trust, so the SSRF guard blocks it without
-            // this opt-in (SsrFBlockedError). Operator-controlled
-            // self-hosted endpoint per docs guidance. No models list — chat
-            // routing unaffected.
             apiKey: "not-required",
             request: { allowPrivateNetwork: true },
           },
@@ -312,11 +260,6 @@ data:
             ],
           },
           "rerank": {
-            // Bundled decision-model provider (rerank plugin): the memini
-            // bge-reranker-v2-m3 pool through LiteLLM's /rerank, so keys and
-            // usage stay tracked. Answers boolean/choice/sort Decision
-            // questions by relevance; never offered as a chat model. Score
-            // range unverified — run any consumer in shadow mode first.
             baseUrl: "http://litellm.llm:4000",
             apiKey: "$${LITELLM_API_KEY}",
             models: [
@@ -624,8 +567,6 @@ data:
           },
         },
       },
-      // Required by OpenClaw's config guard: preserve GitOps-authored config
-      // instead of restoring an older last-known-good copy on each rollout.
       meta: {
         lastTouchedVersion: "2026.9.2",
         migrations: {
