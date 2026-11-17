@@ -33,7 +33,9 @@ for (const plugin of inventory) {
   } else {
     if (!fs.existsSync(config)) fs.writeFileSync(config, '{}\n', { mode: 0o600 });
     console.log('Installing ' + source);
-    console.log(run(['plugins', 'install', source, '--pin', '--accept-capabilities', '--acknowledge-install-policy-warning']));
+    const flags = ['--accept-capabilities', '--acknowledge-install-policy-warning'];
+    if (source.startsWith('npm:')) flags.push('--pin');
+    console.log(run(['plugins', 'install', source, ...flags]));
   }
   const listed = JSON.parse(run(['plugins', 'list', '--json']));
   const installed = listed.plugins.find(entry => entry.id === plugin.id && entry.status === 'loaded');
