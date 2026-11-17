@@ -4,7 +4,7 @@ This document describes the configured LLM fleet, subscriptions, and routing pol
 Clients use stable aliases through LiteLLM at `http://litellm.llm:4000`.
 The source of truth is `kubernetes/apps/base/llm/litellm/`, including `models/` and `litellmproxy.yaml`.
 
-Reconciled against repository configuration on 2026-11-03. Repository configuration describes intended state, not proof of deployment or available quota.
+Reconciled against repository configuration on 2026-11-17. Repository configuration describes intended state, not proof of deployment or available quota.
 The local inventory, ordered pools, and consumer tables describe current configuration.
 Capability rankings, repo-bench results, and dated traffic measurements remain historical evidence, not current model comparisons.
 Subscription prices and allowances are recorded account observations, not a fresh verification of provider terms.
@@ -25,7 +25,7 @@ Neuralwatt supplies energy-metered PAYG as the sole `dsv4.1f` provider, capped a
 
 | Plan                | Price                                        | Cap                                                          | Reset                              | Models                                                | Primary use                                                                                               |
 | ------------------- | -------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage | rolling (3h chat) + weekly (Codex) | GPT-6 Astra, Sol, Luna                                | Astra `frontier-pool` rung 2; Sol `reasoning-pool` rung 2; Luna `implementation-pool` lead                |
+| **ChatGPT Plus**    | ~$25 CAD/mo                                  | unpublished rolling + weekly quota, with tier-weighted usage | rolling (3h chat) + weekly (Codex) | GPT-6.2 Astra, 6.2 Sol, 6.1 Terra, 6 Luna           | Astra `frontier-pool` rung 2; Sol `reasoning-pool` rung 2; Luna `implementation-pool` lead                |
 | **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | legacy Token Plan; observed quota rejections despite grandfathered benefit            | rolling 5h                         | M3.1 Flash (primary), M3, M2.7 (retires 2026-11-18) — Anthropic endpoint | Agentic reasoning workhorse (`MiniMax-M3.1-Flash`); M2.7 auto-reroutes to M3.1 from 2026-10-19     |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                             | rolling 5h                         | GLM-5.3 and GLM-5.3-Flash on the Z.AI coding endpoint | `frontier-pool` rung 3 (GLM-5.3); `glm-5.3-flash` on Z.AI (Flash)                             |
 | **Kimi Coding**     | ~$180 USD/yr ($15/mo; ~$261 CAD/12mo)        | plan allowance                                               | plan-defined                       | Kimi K2.8 Preview Code, Kimi K3                               | `frontier-pool` lead (K3); `reasoning-pool` lead (K2.7)                                                   |
@@ -130,13 +130,13 @@ The repository Actions variable `FALLBACK_MODEL` is `MiniMax-M3.1-Flash` (read 2
 | `MiniMax-M2.7` | Legacy client entry | No active LiteLLMModel CR | 204800 declared by client | Not a configured proxy backend. Old cron entries require separate verification |
 | `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model    |
 | `glm-5.3-flash`       | GLM Coding Lite | glm-5.3-flash (Z.AI) | 1M       | OpenClaw Miso/main primary; `oracle` role; Courier `frontier` coordinator                                                     |
-| `chatgpt/gpt-6-astra` | ChatGPT Plus                      | gpt-6-astra (Codex/OAuth)                   | 272k*    | Direct alias; `frontier-pool` rung 2                                                          |
-| `chatgpt/gpt-6.1-sol` | ChatGPT Plus                      | gpt-6.1-sol (Codex/OAuth)                   | 272k     | Direct alias; `reasoning-pool` rung 2                                                         |
+| `chatgpt/gpt-6.2-astra` | ChatGPT Plus                      | gpt-6.2-astra (Codex/OAuth)                 | 272k*    | Direct alias; `frontier-pool` rung 2                                                          |
+| `chatgpt/gpt-6.2-sol` | ChatGPT Plus                      | gpt-6.2-sol (Codex/OAuth)                   | 272k     | Direct alias; `reasoning-pool` rung 2                                                         |
 | `chatgpt/gpt-6-luna`  | ChatGPT Plus                      | gpt-6-luna (Codex/OAuth)                    | 272k     | Direct alias defaults to `max`; implementation lead defaults to `high`                                |
 | `kimi-k2.8`           | Kimi Coding                       | kimi-for-coding                             | 262k     | Coding subscription; `reasoning-pool` rung 1 is a separate deployment                         |
 | `kimi-k3.1`             | Kimi Coding                       | k3                                          | 1M       | Frontier Kimi lane; `frontier-pool` rung 1 is a separate deployment                           |
 
-\* `gpt-6-astra`'s real window is 1.05M, but a prompt past 272k reprices the *entire* request at
+\* `gpt-6.2-astra`'s real window is 1.05M, but a prompt past 272k reprices the *entire* request at
 2x input/cache and 1.5x output, so it is declared at the cheap ceiling. Raise it deliberately if a
 long-context call is ever worth the multiplier.
 
@@ -179,8 +179,8 @@ Leave output room inside the backend total context, even when metadata lists sep
 
 | Pool | Ordered members | Effort defaults | Policy |
 | --- | --- | --- | --- |
-| `frontier-pool` | Kimi K3.1 Pro -> GPT-6 Astra -> GLM-5.3 (Z.AI) | No effort pin | Frontier escalation; three rungs, no DeepSeek floor |
-| `reasoning-pool` | Kimi K2.8 Preview -> GPT-6.1 Terra -> GLM Flash (Z.AI) -> Flash-Next | K2.8 drops `reasoning_effort` | Planning and hard debugging, then local fallback |
+| `frontier-pool` | Kimi K3.1 Pro -> GPT-6.2 Astra -> GLM-5.3 (Z.AI) | No effort pin | Frontier escalation; three rungs, no DeepSeek floor |
+| `reasoning-pool` | Kimi K2.8 Preview -> GPT-6.2 Sol -> GLM Flash (Z.AI) -> Flash-Next | K2.8 drops `reasoning_effort` | Planning and hard debugging, then local fallback |
 | `implementation-pool` | GPT-6 Luna -> Strata (Flash-Next IQ3_S) | Luna `high`; Strata `xhigh` | Implementation after the approach is settled |
 | `qwen3.8-flash-next` | Flash-Next (skirk primary -> strata overflow) | Thinking recipe | Agent/thinking lane; skirk engine dedicated to it |
 | `qwen3.8-flash-next-chat` | Flash-Next (strata primary -> skirk failover) | Flash-Next `enable_thinking: false` | Chat lane; keeps chat off skirk's engine queue |
@@ -188,7 +188,7 @@ Leave output room inside the backend total context, even when metadata lists sep
 | `free-pool` | Eight OpenRouter deployments, listed below | No effort pin | Optional work on public material only |
 
 Opencode declares `implementation-pool` at 147456 tokens, `frontier-pool` at 272000, and `reasoning-pool` at 262144.
-Reasoning rungs declare input limits of 1048576 (K2.8), 922000 (Terra), 262144 (both GLM Flash deployments), and 232448 (Flash-Next).
+Reasoning rungs declare input limits of 1048576 (K2.8), 272000 (Sol), 262144 (both GLM Flash deployments), and 232448 (Flash-Next).
 The 1M standalone GLM alias does not give the reasoning pool a 1M window.
 The Flash-Next rungs declare 232448 input and 32768 output, summing to the 262144 shared engine budget. Gufo clamps output to the remaining context; Strata's real window is 268288, so both engines admit every request that LiteLLM accepts.
 
@@ -624,7 +624,7 @@ every request's path. Session affinity is on (`session_affinity: true`, 3600s TT
 alias classified until 2026-08-22, then `qwen3.8-flash-next`.
 
 `frontier-pool` is deliberately **not** a tier target, but `auto` is not insulated from the weekly
-caps: COMPLEX reaches Kimi K2.8 Preview and GPT-6.1 Terra as `reasoning-pool` rungs 1 and 2, ahead of
+caps: COMPLEX reaches Kimi K2.8 Preview and GPT-6.2 Sol as `reasoning-pool` rungs 1 and 2, ahead of
 GLM Flash on Z.AI, and Flash-Next. Kimi K3 stays in `frontier-pool` or explicit selection.
 
 ### Measured (2026-08-07, LiteLLM 1.95.0)
@@ -691,7 +691,7 @@ References: LiteLLM [Auto Routing](https://docs.litellm.ai/docs/proxy/auto_routi
 
 ## Frontier pool
 
-`frontier-pool` is the explicit frontier escalation alias. Its strict order is Kimi K3, GPT-6 Astra, then GLM-5.3 on Z.AI.
+`frontier-pool` is the explicit frontier escalation alias. Its strict order is Kimi K3, GPT-6.2 Astra, then GLM-5.3 on Z.AI.
 It has no MiniMax, DeepSeek, or local floor. If all three rungs fail, the request fails instead of degrading to the reasoning lane.
 Sol is in the reasoning pool and a direct alias, not another independent ChatGPT allowance.
 Opencode declares a 272000-token ceiling for frontier, matching Astra's declared input ceiling.
