@@ -22,15 +22,15 @@ spec:
           - name: alertname
             value: Watchdog
             matchType: =
-      # - receiver: triage
-      #   continue: true
-      #   groupWait: 0s
-      #   groupInterval: 1m
-      #   repeatInterval: 12h
-      #   matchers:
-      #     - name: alertname
-      #       value: LiteLLMAuthOrQuotaFailures|AutobrrNetworkUnmonitored
-      #       matchType: "!~"
+      - receiver: triage
+        continue: true
+        groupWait: 0s
+        groupInterval: 1m
+        repeatInterval: 12h
+        matchers:
+          - name: alertname
+            value: LiteLLMAuthOrQuotaFailures|AutobrrNetworkUnmonitored
+            matchType: "!~"
       - receiver: discord
     groupBy: ["alertname", "cluster", "job"]
     groupInterval: 10m
@@ -46,15 +46,15 @@ spec:
           value: warning
           matchType: =
   receivers:
-    # - name: triage
-    #   webhookConfigs:
-    #     - url: http://alert-triage.observability.svc.cluster.local:8080/webhook
-    #       sendResolved: false
-    #       httpConfig:
-    #         authorization:
-    #           credentials:
-    #             name: alert-triage
-    #             key: WEBHOOK_TOKEN
+    - name: triage
+      webhookConfigs:
+        - url: http://alert-triage.observability.svc.cluster.local:8080/webhook
+          sendResolved: false
+          httpConfig:
+            authorization:
+              credentials:
+                name: alert-triage
+                key: WEBHOOK_TOKEN
     - name: blackhole
     - name: heartbeat
       webhookConfigs:
