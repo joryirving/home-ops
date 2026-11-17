@@ -38,37 +38,26 @@ spec:
                 cp /tmp/openclaw.json /home/node/.openclaw/openclaw.json
                 chown 1000:100 /home/node/.openclaw/openclaw.json
                 chmod 400 /home/node/.openclaw/openclaw.json
-        containers:
-          app:
-            image:
+          plugins:
+            image: &openclawImage
               repository: ghcr.io/openclaw/openclaw
               tag: 2026.11.5@sha256:9c74476e3e79b5a1595fd5cf904286eaba3471c10c640aaa9a361a89b41d0882
+            command: [node, /opt/openclaw-plugins/install.cjs]
+            env:
+              HOME: /home/node
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 2Gi
+        containers:
+          app:
+            image: *openclawImage
             command:
               - /bin/sh
               - -c
               - |
-                PLUGIN_FLAGS="--accept-capabilities --acknowledge-install-policy-warning"
-                # Memini ships via ClawHub; pin to the latest published artifact, git tags can lead it.
-                MEMINI_PLUGIN_VERSION=0.7.29
-                if [ "$(cat "$HOME/.openclaw/extensions/memini/.clawver" 2>/dev/null)" != "$MEMINI_PLUGIN_VERSION" ]; then
-                  if node dist/index.js plugins install "clawhub:@eleboucher/memini@$MEMINI_PLUGIN_VERSION" --force $PLUGIN_FLAGS; then
-                    printf '%s' "$MEMINI_PLUGIN_VERSION" > "$HOME/.openclaw/extensions/memini/.clawver"
-                  else
-                    echo "WARN: memini plugin install failed; starting with whatever is present"
-                  fi
-                fi
-                # Official npm plugins (not bundled in the image) must track the gateway version.
-                OPENCLAW_VERSION="$(node dist/index.js --version | awk '{print $2}')"
-                OFFICIAL_MARKER="$HOME/.openclaw/extensions/.official-plugins-version"
-                if [ -n "$OPENCLAW_VERSION" ] && [ "$(cat "$OFFICIAL_MARKER" 2>/dev/null)" != "$OPENCLAW_VERSION" ]; then
-                  if node dist/index.js plugins update comfy $PLUGIN_FLAGS \
-                    && node dist/index.js plugins update "@openclaw/discord@$OPENCLAW_VERSION" $PLUGIN_FLAGS \
-                    && node dist/index.js plugins update searxng $PLUGIN_FLAGS; then
-                    printf '%s' "$OPENCLAW_VERSION" > "$OFFICIAL_MARKER"
-                  else
-                    echo "WARN: official plugin update failed; starting with installed versions"
-                  fi
-                fi
                 if [ -f "$HOME/.openclaw/workspace/image-ui/app.py" ]; then
                   cd "$HOME/.openclaw/workspace/image-ui" && python3 app.py &
                 fi
@@ -219,6 +208,12 @@ spec:
               - path: /usr/local/bin/ffprobe
                 subPath: .openclaw/workspace/bin/ffprobe
                 readOnly: true
+      plugins:
+        type: configMap
+        name: openclaw-plugins
+        globalMounts:
+          - path: /opt/openclaw-plugins
+            readOnly: true
       configmap:
         type: configMap
         name: "{{ .Release.Name }}-config"
