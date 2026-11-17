@@ -93,12 +93,14 @@ spec:
     redis_host: os.environ/REDIS_HOST
     redis_port: os.environ/REDIS_PORT
     routing_strategy: simple-shuffle
+    # Share the actual QFN deployments rather than duplicate Gufo/Strata entries.
+    model_group_alias:
+      grooming-pool: qwen3.8-flash-next
     routing_groups:
     - group_name: fn-least-busy
       models:
       - qwen3.8-flash-next
       - qwen3.8-flash-next-chat
-      - grooming-pool
       routing_strategy: least-busy
     cooldown_time: 30
     enable_pre_call_checks: true
@@ -111,6 +113,9 @@ spec:
     retry_policy:
       BadRequestErrorRetries: 1
     fallbacks:
+    - grooming-pool:
+      - grooming-luna
+      - grooming-glm-flash
     - auto:
       - dsv4.1f
       - MiniMax-M3.1-Flash
