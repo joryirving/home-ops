@@ -28,7 +28,7 @@ spec:
           - name: primary
             endpoint: http://litellm.llm:4000/v1
             api-format: openai
-            credential: model-key
+            credential: litellm
             model: glm-5.3-flash
         default-model-profile: primary
         executor-profiles:
@@ -100,7 +100,11 @@ spec:
             key: private-key.pem
 
       credentials:
-        model-key:
+        # No hyphen: the chart's existingSecret env name keeps hyphens
+        # (PR_REVIEWER_CREDENTIAL_<REF> verbatim) while the runtime maps
+        # every non-alphanumeric to `_`, so hyphenated references are
+        # unreadable upstream chart bug; use a plain lowercase name.
+        litellm:
           existingSecret:
             name: litellm-key-pr-review
             key: api-key
