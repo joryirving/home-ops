@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/gitrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: pr-reviewer-action
+spec:
+  # INTERIM chart source (see #1708): upstream gitignores the built `charts/`
+  # dependency, so the pinned branch joryirving/pr-reviewer-action@chart-interim
+  # commits bjw-s common 5.3.0 on top of upstream commit 1799b9f7… — the same
+  # commit the image digests below were built from — making the chart content
+  # self-contained. Once misospace/pr-reviewer-action#1708 publishes the chart
+  # as an OCI artifact, switch this source to OCIRepository and retire the
+  # fork branch. See that branch's README.interim.md.
+  url: https://github.com/joryirving/pr-reviewer-action.git
+  ref:
+    commit: 66959e5b9855092396d223df23c6feea29c8fabb
+  interval: 30m

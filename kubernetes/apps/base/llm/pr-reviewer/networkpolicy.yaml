@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/networking.k8s.io/networkpolicy_v1.json
+# Worker → LiteLLM egress exception (misospace/pr-reviewer-action#1709).
+# The vendored chart's worker NetworkPolicy only permits DNS + TCP 443 and
+# its `networkPolicy.additionalEgress` appends to the CONTROLLER policy
+# only, so worker Jobs cannot reach the in-cluster HTTP model endpoint on
+# TCP 4000 until a released chart carries the `workerAdditionalEgress` fix.
+# This standalone policy is additive (NetworkPolicy rules union across
+# policies selecting the same pods): worker pods keep the chart's
+# default-deny DNS+443 egress and gain exactly this one exception. No
+# ingress effect — policyTypes pins Egress only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pr-reviewer-worker-litellm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: pr-reviewer-action
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        # Same namespace (llm): pr-reviewer workers and LiteLLM pods.
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: litellm
+              app.kubernetes.io/instance: litellm
+      ports:
+        - protocol: TCP
+          port: 4000
