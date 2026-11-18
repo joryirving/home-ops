@@ -9,12 +9,11 @@ spec:
   # Required placeholder: the postgres component JSON-patches the
   # cloudnative-pg dependency in.
   dependsOn: []
-  chart:
-    spec:
-      chart: deploy/charts/pr-reviewer
-      sourceRef:
-        kind: GitRepository
-        name: pr-reviewer-action
+  # Source-controller builds this HelmChart artifact (chart packaging +
+  # dependency build) from the pinned GitRepository — see helmchart.yaml.
+  chartRef:
+    kind: HelmChart
+    name: pr-reviewer
   values:
     controller:
       instanceConfig: |-

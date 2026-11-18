@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/helmchart_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmChart
+metadata:
+  name: pr-reviewer
+spec:
+  # Path within the pinned GitRepository artifact; source-controller
+  # packages the chart (incl. bjw-s common dependency build) into the
+  # artifact the HelmRelease consumes.
+  chart: deploy/charts/pr-reviewer
+  sourceRef:
+    kind: GitRepository
+    name: pr-reviewer-action
+  interval: 30m
