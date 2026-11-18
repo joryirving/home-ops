@@ -87,7 +87,7 @@ spec:
         existingSecret:
           name: pr-reviewer
           key: ADMIN_TOKEN
-        dashboard: false
+        dashboard: true
 
       reconcile:
         enabled: true
@@ -141,6 +141,61 @@ spec:
       service:
         webhook:
           enabled: true
+          ports:
+            webhook:
+              port: 8080
+            # Operations dashboard (#742) + admin API — GET /dashboard on the
+            # admin listener; the webhook intake (POST-only) stays on 8080.
+            admin:
+              port: 8081
+
+      # Gateway route via the chart's bjw-s common passthrough (same shape as
+      # app-template route blocks). Public surface is deliberately narrow and
+      # there is NO default rule: unmatched paths 404 at the gateway, so
+      # /metrics and /healthz are never exposed (ServiceMonitor scrapes
+      # in-cluster). /admin/* rides the same origin because the dashboard
+      # shell fetches its data from the listener it was served by (bearer-
+      # guarded); the webhook intake gets a dedicated /hook path.
+      # GitHub App webhook URL: https://pr-reviewer.jory.dev/hook
+      route:
+        main:
+          hostnames: ["pr-reviewer.jory.dev"]
+          parentRefs:
+            - name: envoy-external
+              namespace: network
+          rules:
+            - matches:
+                - path:
+                    type: PathPrefix
+                    value: /hook
+              backendRefs:
+                - identifier: webhook
+                  port: 8080
+            - matches:
+                - path:
+                    type: PathPrefix
+                    value: /admin
+              backendRefs:
+                - identifier: webhook
+                  port: 8081
+            - matches:
+                - path:
+                    type: PathPrefix
+                    value: /dashboard
+              backendRefs:
+                - identifier: webhook
+                  port: 8081
+            - matches:
+                - path:
+                    type: PathExact
+                    value: /
+              filters:
+                - type: RequestRedirect
+                  requestRedirect:
+                    statusCode: 301
+                    path:
+                      type: ReplaceFullPath
+                      replaceFullPath: /dashboard
 
       persistence:
         runs:
@@ -175,3 +230,16 @@ spec:
           ports:
             - protocol: TCP
               port: 4000
+        # Kubernetes API (executor Jobs + per-run credential Secret sweeps).
+        # The chart's TCP-443 rule misses the apiserver on kube-proxy-
+        # replacement clusters: Cilium redirects the ClusterIP connection to
+        # the hostNetwork'd backend (nodeIP:6443) and egress policy is
+        # evaluated against the redirected backend — so the sweep/executor
+        # API calls die (misospace/pr-reviewer-action#1714). The node pool is
+        # 10.69.1.21-24 (10.69.1.20/29).
+        - to:
+            - ipBlock:
+                cidr: 10.69.1.20/29
+          ports:
+            - protocol: TCP
+              port: 6443
