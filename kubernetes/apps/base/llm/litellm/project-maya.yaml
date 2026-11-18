@@ -1,0 +1,233 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: project-maya-glm-5-3-flash-s24
+spec:
+  format: gguf
+  hardware:
+    accelerator: cuda
+    gpu:
+      count: 1
+      enabled: true
+      vendor: nvidia
+  quantization: IQ2_XXS
+  source: pvc://project-maya-ganyu-data/Maya-S24/GLM-5.3-Flash-Maya-S24-IQ2_XXS_S-00001-of-00003.gguf
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: project-maya-glm-5-3-flash-s24
+data:
+  prepare.py: |
+    import hashlib
+    import pathlib
+    import shutil
+    import subprocess
+    import sys
+    import urllib.request
+
+    root = pathlib.Path("/data/Maya-S24")
+    root.mkdir(parents=True, exist_ok=True)
+    revision = "1f0c987919a34a8c0495ce80abec1934ab613cff"
+    repo = "peasantsmith/GLM-5.3-Flash-Maya-GGUF"
+    shards = {
+        "GLM-5.3-Flash-Maya-S24-IQ2_XXS_S-00001-of-00003.gguf": "8ebd5c74bcf65ece2a8699b7b6fd2b8d177f350ed252cee252fdd99b86a0138c",
+        "GLM-5.3-Flash-Maya-S24-IQ2_XXS_S-00002-of-00003.gguf": "4bd445da3a0128a9c5b32228c924e0a622aa4a132c7a8dc9a2c207a4beea8e34",
+        "GLM-5.3-Flash-Maya-S24-IQ2_XXS_S-00003-of-00003.gguf": "a6fd4e88007ac49b431c7d02be34e43ab7a09224d53a0c52782327613cb41917",
+    }
+
+    def sha256(path):
+        digest = hashlib.sha256()
+        with path.open("rb") as source:
+            for chunk in iter(lambda: source.read(8 * 1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    for name, expected in shards.items():
+        target = root / name
+        if not target.exists() or sha256(target) != expected:
+            partial = target.with_suffix(target.suffix + ".partial")
+            partial.unlink(missing_ok=True)
+            url = f"https://huggingface.co/{repo}/resolve/{revision}/Maya-S24/{name}"
+            request = urllib.request.Request(url, headers={"User-Agent": "project-maya-gitops/1"})
+            digest = hashlib.sha256()
+            with urllib.request.urlopen(request, timeout=120) as response, partial.open("wb") as output:
+                while chunk := response.read(8 * 1024 * 1024):
+                    output.write(chunk)
+                    digest.update(chunk)
+            if digest.hexdigest() != expected:
+                partial.unlink(missing_ok=True)
+                raise SystemExit(f"SHA-256 mismatch: {name}")
+            partial.replace(target)
+
+    pack = root / "pack"
+    required = ["index.txt", "native_experts.txt", "dense.bin", "tokenizer/vocab.json",
+                "tokenizer/merges.txt", "tokenizer/token_type.json", "tokenizer/chat_template.jinja"]
+    if not all((pack / name).is_file() for name in required):
+        env = dict(__import__("os").environ, MAYA_GGUF_PY="/opt/maya/third_party/llama.cpp/gguf-py")
+        subprocess.run([sys.executable, "/opt/maya/tools/iq_pack.py", "--gguf",
+                        str(root / next(iter(shards))), "--out", str(pack), "--compat-bf16"],
+                       check=True, env=env)
+        template = pack / "tokenizer/chat_template.jinja"
+        if not template.exists():
+            template.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile("/opt/maya/serve/glm5_chat_template.jinja", template)
+    if not all((pack / name).is_file() for name in required):
+        raise SystemExit("Maya-S24 pack is incomplete")
+    print("Maya-S24 shards verified; pack ready", flush=True)
+  config.json: |
+    {
+      "exe": "/opt/maya/build/maya",
+      "args": [
+        "--glm-pack", "/data/Maya-S24/pack",
+        "--max-context", "40960",
+        "--expert-cache", "auto",
+        "--prefill", "auto",
+        "--kv-streaming", "on",
+        "--vision", "off",
+        "--expert-profile", "/opt/maya/data/expert-profile-glm.bin",
+        "--parallel", "1"
+      ],
+      "cwd": "/opt/maya",
+      "tokenizer": "/data/Maya-S24/pack/tokenizer",
+      "model_name": "glm-5.3-flash",
+      "port": 8080,
+      "sampling": {
+        "temperature": 1.0,
+        "top_p": 0.95,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 0.0,
+        "repetition_penalty": 1.0
+      },
+      "reasoning_effort": "max",
+      "env": {
+        "MAYA_GLM_RAM_HEADROOM_GB": "16",
+        "MAYA_GLM_CPU_LANE": "8",
+        "MAYA_SERVER_LOG": "0"
+      },
+      "gpu": [0]
+    }
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: project-maya-glm-5-3-flash-s24
+  labels:
+    krr/ignore: "true"
+    litellm.home-operations.com/managed-by: flux
+spec:
+  modelRef: project-maya-glm-5-3-flash-s24
+  runtime: generic
+  image: ghcr.io/joryirving/maya:1.1.66@sha256:41f0b3f030bea99397f367d50354eb7fb9cd260db308e390abc51095dcb6d003
+  imagePullPolicy: IfNotPresent
+  command:
+    - /bin/sh
+    - -ec
+    - |
+      ulimit -l unlimited
+      /opt/maya/.venv/bin/python /config/prepare.py
+      exec /opt/maya/.venv/bin/python /opt/maya/serve/server.py \
+        --engine maya \
+        --config /config/config.json \
+        --host 0.0.0.0 \
+        --port 8080
+  skipModelInit: true
+  replicas: 0
+  priority: high
+  startupTimeout: 30m
+  nodeSelector:
+    topology.kubernetes.io: egpu
+  runtimeClassName: nvidia
+  podSecurityContext:
+    runAsGroup: 65534
+    fsGroup: 65534
+    fsGroupChangePolicy: OnRootMismatch
+    runAsUser: 65534
+    runAsNonRoot: true
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      add:
+        - SYS_RESOURCE
+    runAsGroup: 65534
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    cpu: "8"
+    memory: 108Gi
+    gpu: 1
+  extraVolumes:
+    - name: config
+      configMap:
+        name: project-maya-glm-5-3-flash-s24
+    - name: maya-data
+      persistentVolumeClaim:
+        claimName: project-maya-ganyu-data
+  extraVolumeMounts:
+    - name: config
+      mountPath: /config
+      readOnly: true
+    - name: maya-data
+      mountPath: /data
+  containerPort: 8080
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: project-maya-ganyu-prepare
+spec:
+  suspend: true
+  backoffLimit: 0
+  activeDeadlineSeconds: 21600
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        topology.kubernetes.io: egpu
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: prepare
+          image: ghcr.io/joryirving/maya:1.1.66@sha256:41f0b3f030bea99397f367d50354eb7fb9cd260db308e390abc51095dcb6d003
+          imagePullPolicy: IfNotPresent
+          command:
+            - /opt/maya/.venv/bin/python
+            - /config/prepare.py
+          resources:
+            requests:
+              cpu: "8"
+              memory: 24Gi
+            limits:
+              memory: 48Gi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: maya-data
+              mountPath: /data
+      volumes:
+        - name: config
+          configMap:
+            name: project-maya-glm-5-3-flash-s24
+        - name: maya-data
+          persistentVolumeClaim:
+            claimName: project-maya-ganyu-data
