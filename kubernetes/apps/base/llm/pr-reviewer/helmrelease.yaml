@@ -119,6 +119,12 @@ spec:
 
       controllers:
         main:
+          # Workaround for the chart setting the v1-style key 'podOptions'
+          # (ignored by bjw-s common 5.3.0, which reads 'pod') when enabling
+          # the controller's in-cluster identity for the Kubernetes executor
+          # — the token mount stays false from defaultPodOptions otherwise.
+          pod:
+            automountServiceAccountToken: true
           containers:
             main:
               image:
