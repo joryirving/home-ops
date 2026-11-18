@@ -1,0 +1,160 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pr-reviewer
+spec:
+  interval: 1h
+  # Required placeholder: the postgres component JSON-patches the
+  # cloudnative-pg dependency in.
+  dependsOn: []
+  chart:
+    spec:
+      chart: deploy/charts/pr-reviewer
+      sourceRef:
+        kind: GitRepository
+        name: pr-reviewer-action
+  values:
+    controller:
+      instanceConfig: |-
+        version: 1
+        unknown-profile-policy: reject
+        forges:
+          - name: github
+            kind: github
+            endpoint: https://api.github.com
+            credential: github-app
+        model-profiles:
+          - name: primary
+            endpoint: http://litellm.llm:4000/v1
+            api-format: openai
+            credential: model-key
+            model: glm-5.3-flash
+        default-model-profile: primary
+        executor-profiles:
+          - name: k8s-jobs
+            kind: kubernetes
+            max-reviews: 2
+            kubernetes:
+              image: ghcr.io/misospace/pr-reviewer-worker@sha256:bae9e1c5e05daeba841db2c12e7ba770b1c46380698505059a8f04909802de63
+              args: []
+              namespace: llm
+              service-account: pr-reviewer-worker
+              ttl-seconds-after-finished: 1800
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 512Mi
+                limits:
+                  cpu: "2"
+                  memory: 2Gi
+              volumes:
+                - claim: pr-reviewer-runs
+                  controller-root: /var/lib/pr-reviewer/runs
+                - claim: pr-reviewer-workspace
+                  controller-root: /var/lib/pr-reviewer/cache
+        default-executor-profile: k8s-jobs
+        adoption:
+          mode: allowlist
+          allowlist: ["joryirving/home-ops", "joryirving/joryirving"]
+          denylist: []
+          discovered-default: adopt
+
+      # CNPG-generated secret (component provisions the Cluster, CNPG mints
+      # the -app secret with the uri key).
+      controlPlaneUrlExistingSecret:
+        name: pr-reviewer-app
+        key: uri
+
+      webhook:
+        enabled: true
+        port: 8080
+        existingSecret:
+          name: pr-reviewer
+          key: WEBHOOK_SECRET
+
+      admin:
+        enabled: true
+        port: 8081
+        existingSecret:
+          name: pr-reviewer
+          key: ADMIN_TOKEN
+        dashboard: false
+
+      reconcile:
+        enabled: true
+        intervalMs: 300000
+        # The saffron App's joryirving-account installation (covers both
+        # pilot repos; must match the webhook's installation for convergence).
+        githubInstallationId: "136450513"
+        repos:
+          - joryirving/home-ops
+          - joryirving/joryirving
+
+      forgeAuth:
+        platform: github
+        github:
+          appId: "3901073"
+          appPrivateKeyExistingSecret:
+            name: pr-reviewer-github
+            key: private-key.pem
+
+      credentials:
+        model-key:
+          existingSecret:
+            name: litellm-key-pr-review
+            key: api-key
+
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: ghcr.io/misospace/pr-reviewer-controller
+                tag: sha-1799b9f750a28764b0afc441a7e840acbfe50137
+                digest: sha256:0abfb5f2c8179089fea7f92d6ff310e8962b7676621f10fc09a4440835c5d946
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  memory: 1Gi
+
+      service:
+        webhook:
+          enabled: true
+
+      persistence:
+        runs:
+          existingClaim: pr-reviewer-runs
+        workspace-cache:
+          existingClaim: pr-reviewer-workspace
+
+    workerExecutor:
+      mode: kubernetes
+      namespace: "" # same namespace as the controller: shared claims mount at identical paths
+      serviceAccount:
+        create: true
+        name: pr-reviewer-worker
+      image:
+        repository: ghcr.io/misospace/pr-reviewer-worker
+        tag: sha-1799b9f750a28764b0afc441a7e840acbfe50137
+      ttlSecondsAfterFinished: 1800
+      volumeClaims:
+        - name: pr-reviewer-runs
+          size: 20Gi
+          storageClass: ceph-filesystem # RWX: controller and worker Jobs share these claims
+        - name: pr-reviewer-workspace
+          size: 20Gi
+          storageClass: ceph-filesystem
+
+    networkPolicy:
+      additionalEgress:
+        # LiteLLM is in-cluster over plain HTTP port 4000; the chart's default
+        # egress only allows DNS, 443 and 5432.
+        - to:
+            - podSelector: {}
+          ports:
+            - protocol: TCP
+              port: 4000
