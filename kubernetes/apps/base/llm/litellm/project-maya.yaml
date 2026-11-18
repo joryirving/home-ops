@@ -27,13 +27,9 @@ metadata:
 spec:
   modelRef: project-maya-glm-5-3-flash-s24
   runtime: generic
-  # The image the containers PR built (containers#1270): the engine and the vision encoder,
-  # with upstream's stamps so maya.py --setup compiles nothing, and the toolchain upstream's
-  # step-1 checks look for. That PR's build is published under `sandbox` (the release tags stay
-  # untouched until it merges); once it merges, the release workflow publishes the same build
-  # under 1.1.67 with a new digest - swap the tag and the digest then:
-  #   docker buildx imagetools inspect ghcr.io/joryirving/maya:1.1.67
-  image: ghcr.io/joryirving/maya:sandbox@sha256:4fce2d9c49740076e206b6346b8c419b512eec8d3f7aa3b7feffe12b2336963b
+  # The engine and the vision encoder, with upstream's stamps so maya.py --setup compiles nothing,
+  # and the toolchain upstream's step-1 checks look for.
+  image: ghcr.io/joryirving/maya:1.1.67@sha256:19e6cf924bc78252de985913deaf0499236a371abe940a4fd900cb40b5f304f8
   imagePullPolicy: IfNotPresent
   command:
     - /bin/sh
