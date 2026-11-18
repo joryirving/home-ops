@@ -54,6 +54,14 @@ spec:
                 - claim: pr-reviewer-workspace
                   controller-root: /var/lib/pr-reviewer/cache
         default-executor-profile: k8s-jobs
+        # Startup requires a default evidence profile; operator mode cannot
+        # express 'no providers' yet (the #727 example's default-evidence-profile:
+        # null is refused, and the providers-file is not plumbed to workers).
+        # Point at the shared workspace claim (mounted controller- and worker-side).
+        evidence-profiles:
+          - name: none
+            providers-file: /var/lib/pr-reviewer/cache/evidence-providers.json
+        default-evidence-profile: none
         adoption:
           mode: allowlist
           allowlist: ["joryirving/home-ops", "joryirving/joryirving"]
