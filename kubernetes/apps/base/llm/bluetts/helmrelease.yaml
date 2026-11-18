@@ -1,0 +1,64 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bluetts
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: bluetts
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        fsGroupChangePolicy: OnRootMismatch
+    controllers:
+      bluetts:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/joryirving/bluetts
+              tag: rolling@sha256:97a7e10c95ed5dc7e9a52654205496c16dbf78fe90908af8a68fad82bf85374d
+            env:
+              TZ: America/Edmonton
+              ORT_INTRA: "8"
+            probes:
+              liveness:
+                enabled: true
+                spec:
+                  initialDelaySeconds: 20
+                  periodSeconds: 20
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                spec:
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  failureThreshold: 12
+            resources:
+              requests:
+                cpu: 500m
+                memory: 2Gi
+              limits:
+                memory: 4Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+    persistence:
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
+    service:
+      app:
+        ports:
+          http:
+            port: &port 8000
