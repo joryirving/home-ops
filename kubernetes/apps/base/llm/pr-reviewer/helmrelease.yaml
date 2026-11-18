@@ -189,13 +189,18 @@ spec:
                 - path:
                     type: Exact
                     value: /
+              # Serve the dashboard at the bare host root without redirect.
+              # Only the exact / request is rewritten; asset paths still use
+              # the existing /dashboard prefix, and /admin stays protected.
               filters:
-                - type: RequestRedirect
-                  requestRedirect:
-                    statusCode: 301
+                - type: URLRewrite
+                  urlRewrite:
                     path:
                       type: ReplaceFullPath
                       replaceFullPath: /dashboard
+              backendRefs:
+                - identifier: webhook
+                  port: 8081
 
       persistence:
         runs:
@@ -221,25 +226,8 @@ spec:
           size: 20Gi
           storageClass: ceph-filesystem
 
+    # The upstream chart defaults to restrictive NetworkPolicies that block
+    # this canary's model, Kubernetes API and admin traffic (#1715).
+    # Opt out until its policies are explicitly configured and qualified.
     networkPolicy:
-      additionalEgress:
-        # LiteLLM is in-cluster over plain HTTP port 4000; the chart's default
-        # egress only allows DNS, 443 and 5432.
-        - to:
-            - podSelector: {}
-          ports:
-            - protocol: TCP
-              port: 4000
-        # Kubernetes API (executor Jobs + per-run credential Secret sweeps).
-        # The chart's TCP-443 rule misses the apiserver on kube-proxy-
-        # replacement clusters: Cilium redirects the ClusterIP connection to
-        # the hostNetwork'd backend (nodeIP:6443) and egress policy is
-        # evaluated against the redirected backend — so the sweep/executor
-        # API calls die (misospace/pr-reviewer-action#1714). The node pool is
-        # 10.69.1.21-24 (10.69.1.20/29).
-        - to:
-            - ipBlock:
-                cidr: 10.69.1.20/29
-          ports:
-            - protocol: TCP
-              port: 6443
+      enabled: false
