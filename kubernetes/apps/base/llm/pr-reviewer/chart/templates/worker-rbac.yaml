@@ -1,0 +1,107 @@
+{{/*
+Worker-executor provisioning (#734/#738): the objects the controller's
+Kubernetes executor needs around the Jobs it creates. Everything is
+namespace-scoped — no cluster roles, no cluster-scope verbs.
+
+The executor touches exactly two resource kinds. batch/jobs: it builds
+the Job manifest itself from the instance config's `kubernetes` profile,
+and pods are removed by the Job controller's background propagation,
+never directly. core/v1 secrets: the credential store
+(`src/executor/kubernetes-credential-store.ts`) projects ONE per-run,
+ephemeral credential Secret per review into the worker namespace through
+the same in-cluster client — it creates and replaces them, label-lists
+its own material, patches the ownerReference rebinding each Secret to
+the owning Job, and deletes them at settle. The shape of those Secrets
+is not guarded by this Role; `deploy/admission/worker-secret-policy.yaml`
+is the cluster-side guardrail on it.
+*/}}
+{{- if eq (dig "mode" "disabled" (.Values.workerExecutor | default dict)) "kubernetes" }}
+{{- $executor := .Values.workerExecutor }}
+{{- $namespace := default .Release.Namespace $executor.namespace }}
+{{- $fullname := include "pr-reviewer.resource-fullname" (dict
+    "releaseName" .Release.Name
+    "chartName" .Chart.Name
+    "nameOverride" .Values.controller.nameOverride
+    "fullnameOverride" .Values.controller.fullnameOverride) }}
+{{- $saCount := len (.Values.controller.serviceAccount | default dict) }}
+{{- $controllerSaName := ternary (printf "%s-main" $fullname) $fullname (gt $saCount 1) }}
+{{- $chartName := .Chart.Name }}
+{{- $releaseName := .Release.Name }}
+{{- $releaseService := .Release.Service }}
+{{- range $claim := $executor.volumeClaims }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $claim.name }}
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $chartName }}
+    app.kubernetes.io/instance: {{ $releaseName }}
+    app.kubernetes.io/managed-by: {{ $releaseService }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $claim.size }}
+  {{- with $claim.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+{{- end }}
+{{- if $executor.serviceAccount.create }}
+---
+# Dedicated worker service account. Worker pods never mount a token (the
+# executor hard-codes automountServiceAccountToken: false in the Job
+# manifest); the SA exists so jobs never run as `default`.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $executor.serviceAccount.name }}
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+automountServiceAccountToken: false
+{{- end }}
+{{- if $executor.rbac.create }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $fullname }}-worker-executor
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "list", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $fullname }}-worker-executor
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $fullname }}-worker-executor
+subjects:
+  # The CONTROLLER's service account holds the verbs: it is the principal
+  # that creates, watches, and deletes the worker Jobs.
+  - kind: ServiceAccount
+    name: {{ $controllerSaName }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

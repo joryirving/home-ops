@@ -1,0 +1,44 @@
+{{/*
+ServiceMonitor for the controller's admin-listener metrics.
+
+The admin listener is bearer-token guarded and the chart binds it to the
+pod-wide wildcard (PR_REVIEWER_ADMIN_BIND=0.0.0.0) whenever the admin
+surface is enabled, so a Prometheus scrape can reach /metrics. The
+monitor selects pods by label via targetPort — no dedicated Service
+needed. The listener's ingress is still bounded by the NetworkPolicy.
+*/}}
+{{- if .Values.serviceMonitor.enabled }}
+{{- if not .Values.controller.admin.enabled }}
+{{- fail "serviceMonitor.enabled requires controller.admin.enabled (metrics are served on the admin listener)" }}
+{{- end }}
+{{- $fullname := include "pr-reviewer.resource-fullname" (dict
+  "releaseName" .Release.Name
+  "chartName" .Chart.Name
+  "nameOverride" .Values.controller.nameOverride
+  "fullnameOverride" .Values.controller.fullnameOverride) }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $fullname }}-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - targetPort: {{ .Values.serviceMonitor.port }}
+      path: {{ .Values.serviceMonitor.path }}
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }}

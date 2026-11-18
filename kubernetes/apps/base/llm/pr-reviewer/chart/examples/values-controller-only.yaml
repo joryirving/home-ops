@@ -1,0 +1,75 @@
+# Controller-only example: a Forgejo instance with an in-process local
+# executor (the controller spawns the worker bundle directly), every
+# secret taken from operator-provided Secrets, PostgreSQL provided
+# externally. Install:
+#
+#   helm install pr-reviewer deploy/charts/pr-reviewer \
+#     -f deploy/charts/pr-reviewer/examples/values-controller-only.yaml
+#
+# Prerequisite Secrets (in the release namespace):
+#   pr-reviewer-instance-config  key instance-config.yaml  (see examples/README.md)
+#   pr-reviewer-control-plane    key dsn                   (postgres://...)
+#   forgejo-token                key token
+---
+controller:
+  # The instance config comes from an existing Secret (full schema:
+  # docs/operator-config-and-adoption.md).
+  instanceConfigExistingSecret:
+    name: pr-reviewer-instance-config
+    key: instance-config.yaml
+
+  # External PostgreSQL — never deployed by this chart.
+  controlPlaneUrlExistingSecret:
+    name: pr-reviewer-control-plane
+    key: dsn
+
+  webhook:
+    enabled: true
+    port: 8080
+    existingSecret:
+      name: forgejo-webhook-secret
+      key: webhook-secret
+
+  admin:
+    enabled: true
+    port: 8081
+    existingSecret:
+      name: pr-reviewer-admin
+      key: token
+
+  reconcile:
+    enabled: true
+    intervalMs: 300000
+    repos:
+      - example-org/example-repo
+
+  forgeAuth:
+    platform: forgejo
+    forgejo:
+      existingSecret:
+        name: forgejo-token
+        key: token
+
+  credentials:
+    model-key:
+      existingSecret:
+        name: model-credentials
+        key: model-key
+
+  controllers:
+    main:
+      containers:
+        main:
+          image:
+            repository: ghcr.io/example/pr-reviewer-controller
+            # Digest pin from the image-publish run summary; the tag is
+            # then only a readable label (rendered as repo:tag@digest).
+            digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            tag: "3.8.0" # x-release-please-version
+
+  service:
+    webhook:
+      enabled: true
+
+workerExecutor:
+  mode: disabled

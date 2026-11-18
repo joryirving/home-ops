@@ -1,0 +1,20 @@
+# External-Postgres delta example: how to point the controller at
+# operator-provided PostgreSQL. This chart NEVER deploys its own
+# database — layer this file over one of the other examples:
+#
+#   helm install pr-reviewer deploy/charts/pr-reviewer \
+#     -f deploy/charts/pr-reviewer/examples/values-controller-only.yaml \
+#     -f deploy/charts/pr-reviewer/examples/values-external-postgres.yaml
+---
+controller:
+  # Preferred: the DSN lives in an operator-managed Secret (key `dsn`).
+  controlPlaneUrlExistingSecret:
+    name: pr-reviewer-control-plane
+    key: dsn
+
+  # Alternative: inline DSN (rendered into a chart-managed Secret).
+  # Prefer the Secret form for anything long-lived.
+  # controlPlaneUrl: postgresql://pr_reviewer:REPLACE_ME@postgres.example.com:5432/pr_reviewer
+  # controlPlaneUrlExistingSecret:
+  #   name: ""
+  #   key: dsn

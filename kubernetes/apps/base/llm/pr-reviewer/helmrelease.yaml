@@ -11,10 +11,14 @@ spec:
   dependsOn: []
   chart:
     spec:
-      chart: deploy/charts/pr-reviewer
+      # Vendored chart (see chart/README.home-ops.md): upstream
+      # misospace/pr-reviewer-action at commit 1799b9f7 — the same commit
+      # the pinned image digests below were built from.
+      chart: ./kubernetes/apps/base/llm/pr-reviewer/chart
       sourceRef:
         kind: GitRepository
-        name: pr-reviewer-action
+        name: flux-system
+        namespace: flux-system
   values:
     controller:
       instanceConfig: |-

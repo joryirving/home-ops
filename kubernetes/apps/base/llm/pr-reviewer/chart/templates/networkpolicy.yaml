@@ -1,0 +1,127 @@
+{{/*
+Default-deny network policies (#738). Two policies, one per pod family:
+
+- Controller pods (release namespace): deny-all ingress; egress limited
+  to DNS, PostgreSQL (5432), and TLS (443 — the forge API and the model
+  endpoints). `networkPolicy.additionalIngress`/`additionalEgress` are
+  operator-extensible rule lists appended verbatim.
+- Worker pods (worker namespace): the selector MUST cover every worker
+  pod the executor creates — src/executor/kubernetes.ts
+  (WORKER_NETWORK_POSTURE.selector) stamps
+  `app.kubernetes.io/managed-by: pr-reviewer-action` onto every worker
+  pod template. Ingress: deny-all (the worker never serves anything).
+  Egress: DNS and TLS only — the worker's request/result travel over the
+  shared volumes, never the network.
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pr-reviewer.resource-fullname" (dict
+    "releaseName" .Release.Name
+    "chartName" .Chart.Name
+    "nameOverride" .Values.controller.nameOverride
+    "fullnameOverride" .Values.controller.fullnameOverride) }}-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "pr-reviewer.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    {{- if .Values.controller.webhook.enabled }}
+    # The webhook intake must be reachable from the forge's delivery
+    # path (typically the cluster ingress controller); any-source by
+    # default — narrow it with additionalIngress.
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.controller.webhook.port }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.enabled }}
+    # Prometheus scrapes /metrics on the admin port; the admin surface is
+    # bearer-token guarded, so namespace-scoped ingress suffices.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.controller.admin.port }}
+    {{- end }}
+    {{- with .Values.networkPolicy.additionalIngress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  egress:
+    # DNS resolution (kube-dns/CoreDNS in kube-system).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # PostgreSQL control plane (operator narrows the destination).
+    - ports:
+        - protocol: TCP
+          port: 5432
+    # Forge API + model endpoints over TLS.
+    - ports:
+        - protocol: TCP
+          port: 443
+    {{- with .Values.networkPolicy.additionalEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- if eq (dig "mode" "disabled" (.Values.workerExecutor | default dict)) "kubernetes" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pr-reviewer.resource-fullname" (dict
+    "releaseName" .Release.Name
+    "chartName" .Chart.Name
+    "nameOverride" .Values.controller.nameOverride
+    "fullnameOverride" .Values.controller.fullnameOverride) }}-worker
+  namespace: {{ default .Release.Namespace .Values.workerExecutor.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: pr-reviewer-action
+  policyTypes:
+    # Explicit deny-all ingress: the worker is never a server.
+    - Ingress
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - ports:
+        - protocol: TCP
+          port: 443
+{{- end }}
+{{- end }}

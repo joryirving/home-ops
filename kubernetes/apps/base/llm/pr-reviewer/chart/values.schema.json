@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "pr-reviewer chart values",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["controller", "workerExecutor"],
+  "properties": {
+    "common": {
+      "type": "object",
+      "description": "Values Helm merges in from the bjw-s common library dependency; operators configure the library through controller/global, not here."
+    },
+    "controller": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "instanceConfig": { "type": "string" },
+        "instanceConfigExistingSecret": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "key": { "type": "string" }
+          }
+        },
+        "controlPlaneUrl": { "type": "string" },
+        "controlPlaneUrlExistingSecret": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "key": { "type": "string" }
+          }
+        },
+        "paths": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "durableStateDir": { "type": "string" },
+            "runsRoot": { "type": "string" },
+            "workspaceCacheRoot": { "type": "string" }
+          }
+        },
+        "webhook": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "secret": { "type": "string" },
+            "existingSecret": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string" },
+                "key": { "type": "string" }
+              }
+            }
+          }
+        },
+        "admin": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "token": { "type": "string" },
+            "dashboard": { "type": "boolean" },
+            "existingSecret": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string" },
+                "key": { "type": "string" }
+              }
+            }
+          }
+        },
+        "reconcile": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "intervalMs": { "type": "integer", "minimum": 50 },
+            "repos": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "githubInstallationId": { "type": "string" }
+          }
+        },
+        "forgeAuth": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "platform": { "enum": ["github", "forgejo"] },
+            "github": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "appId": { "type": "string" },
+                "appPrivateKey": { "type": "string" },
+                "appPrivateKeyExistingSecret": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string" },
+                    "key": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "forgejo": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "token": { "type": "string" },
+                "existingSecret": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string" },
+                    "key": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "credentials": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "value": { "type": "string" },
+              "existingSecret": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "key": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "followUp": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": { "type": "string" },
+            "mentions": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "workerExecutor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["disabled", "kubernetes"] },
+        "namespace": { "type": "string" },
+        "serviceAccount": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "create": { "type": "boolean" },
+            "name": { "type": "string" }
+          }
+        },
+        "rbac": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "create": { "type": "boolean" }
+          }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository": { "type": "string" },
+            "tag": { "type": "string" }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "requests": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["cpu", "memory"],
+              "properties": {
+                "cpu": { "type": "string" },
+                "memory": { "type": "string" }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["cpu", "memory"],
+              "properties": {
+                "cpu": { "type": "string" },
+                "memory": { "type": "string" }
+              }
+            }
+          }
+        },
+        "ttlSecondsAfterFinished": { "type": "integer", "minimum": 0 },
+        "volumeClaims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "size"],
+            "properties": {
+              "name": { "type": "string" },
+              "size": { "type": "string" },
+              "storageClass": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "additionalIngress": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "additionalEgress": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+    "serviceMonitor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "interval": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "path": { "type": "string" },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

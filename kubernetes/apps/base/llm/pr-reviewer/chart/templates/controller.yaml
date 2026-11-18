@@ -1,0 +1,22 @@
+{{/*
+The controller daemon: rendered entirely through the bjw-s common
+library with the component-scoped context (see _helpers.tpl). The
+template-conditional env/probes/secrets/persistence wiring is injected
+before rendering so the fail-closed environment contract in
+src/controller/main.ts is satisfied exactly.
+*/}}
+{{- if .Values.controller.enabled }}
+{{- $workerExecutor := .Values.workerExecutor | default dict }}
+{{- $kubeExecutor := eq (dig "mode" "disabled" $workerExecutor) "kubernetes" }}
+{{- $values := include "pr-reviewer.component-values" (dict "component" "controller" "root" .) | fromYaml }}
+{{- $ctx := dict
+  "Values" $values
+  "Release" .Release
+  "Chart" .Chart
+  "Capabilities" .Capabilities
+  "Template" .Template
+}}
+{{- include "pr-reviewer.controller.configure" (dict "ctx" $ctx "workerExecutorKubernetes" $kubeExecutor) }}
+{{- include "bjw-s.common.loader.init" $ctx }}
+{{- include "bjw-s.common.loader.generate" $ctx }}
+{{- end }}

@@ -1,0 +1,253 @@
+# pr-reviewer self-hosted chart values (#738 Phase B).
+#
+# Structure: `controller` carries the controller daemon's wiring plus the
+# bjw-s `common` library passthrough sections (`controllers`, `service`,
+# `persistence`, `secrets`, `serviceAccount`, `defaultPodOptions`, …)
+# rendered for the controller component; `workerExecutor` provisions the
+# namespace-scoped RBAC/service account/PVCs the #734 Kubernetes executor
+# needs. The chart NEVER deploys PostgreSQL — `controller.controlPlaneUrl`
+# (or an existing secret) points at operator-provided PostgreSQL.
+
+controller:
+  enabled: true
+
+  # ── controller wiring (chart-owned; consumed by the env template) ──
+
+  # The #727 instance config: either inline YAML (rendered into a
+  # chart-managed Secret and mounted at /config/instance-config.yaml) or
+  # an existing Secret's key.
+  instanceConfig: ""
+  instanceConfigExistingSecret:
+    name: ""
+    key: "instance-config.yaml"
+
+  # The #736 PostgreSQL control-plane DSN. Either the DSN string (stored
+  # in a chart-managed Secret) or an existing Secret — the chart never
+  # deploys its own database.
+  controlPlaneUrl: ""
+  controlPlaneUrlExistingSecret:
+    name: ""
+    key: "dsn"
+
+  # Controller-owned roots (PR_REVIEWER_* contract): absolute paths
+  # mounted from `persistence` below. Keep paths and mounts in sync.
+  paths:
+    durableStateDir: /var/lib/pr-reviewer/state
+    runsRoot: /var/lib/pr-reviewer/runs
+    workspaceCacheRoot: /var/lib/pr-reviewer/cache
+
+  # Forge webhook intake (PR_REVIEWER_WEBHOOK_PORT/_SECRET). The secret
+  # is required whenever the intake is enabled — the daemon refuses to
+  # serve an unauthenticated intake.
+  webhook:
+    enabled: false
+    port: 8080
+    secret: ""
+    existingSecret:
+      name: ""
+      key: "webhook-secret"
+
+  # The #737 admin listener (PR_REVIEWER_ADMIN_PORT/_TOKEN). The token is
+  # required whenever the port is set — the admin surface is never served
+  # unauthenticated. The chart binds the listener to the pod-wide wildcard
+  # (PR_REVIEWER_ADMIN_BIND=0.0.0.0) so kubelet probes and Prometheus can
+  # reach it; the bearer token and the NetworkPolicy remain the guards.
+  admin:
+    enabled: false
+    port: 8081
+    token: ""
+    existingSecret:
+      name: ""
+      key: "token"
+    # The #742 operations dashboard (PR_REVIEWER_ADMIN_DASHBOARD). Off by
+    # default: the variable stays absent, which is the controller's OFF
+    # state (/dashboard answers the fixed 404). true renders
+    # PR_REVIEWER_ADMIN_DASHBOARD=true. The shell is unauthenticated and
+    # holds no data; who can REACH it stays the admin bind address' and
+    # the NetworkPolicy's call. Requires admin.enabled.
+    dashboard: false
+
+  # Missed-webhook reconciliation (PR_REVIEWER_RECONCILE_INTERVAL_MS/_REPOS).
+  # With `forgeAuth.platform: github` the reconciliation poll also needs
+  # `githubInstallationId` (PR_REVIEWER_GITHUB_APP_INSTALLATION_ID).
+  reconcile:
+    enabled: false
+    intervalMs: 300000
+    repos: []
+    githubInstallationId: ""
+
+  # Forge material. Exactly one platform per instance (the controller
+  # serves one forge); the private key/token ALWAYS come from a Secret —
+  # inline values exist only for throwaway environments.
+  forgeAuth:
+    platform: github
+    github:
+      appId: ""
+      appPrivateKey: ""
+      appPrivateKeyExistingSecret:
+        name: ""
+        key: "private-key.pem"
+    forgejo:
+      token: ""
+      existingSecret:
+        name: ""
+        key: "token"
+
+  # #735 credential material: map of credential reference (as named in
+  # the instance config's model profiles) to either an inline value or an
+  # existing Secret. Rendered env name: PR_REVIEWER_CREDENTIAL_<REF>
+  # (uppercased, non-alphanumeric mapped to `_`). These are startup
+  # environment snapshots; rotate the Secret together with a controller
+  # rollout/restart.
+  credentials: {}
+
+  # Follow-up Q&A lane; disabled unless a model id is named.
+  followUp:
+    model: ""
+    mentions: []
+
+  # Additional operator environment entries (k8s EnvVar list), appended
+  # after the chart-wired variables.
+  env: []
+
+  # ── bjw-s common passthrough (rendered for the controller) ──
+
+  defaultPodOptions:
+    automountServiceAccountToken: false
+    terminationGracePeriodSeconds: 60
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      # The worker executor pins worker pods to uid/gid 65532
+      # (WORKER_RUN_AS_ID); sharing group 65532 via fsGroup (setgid
+      # propagation on the shared claims) is what lets the controller read
+      # the worker's result file and the worker read the controller's
+      # envelope across the uid boundary (#1631).
+      fsGroup: 65532
+      fsGroupChangePolicy: OnRootMismatch
+      seccompProfile:
+        type: RuntimeDefault
+
+  controllers:
+    main:
+      containers:
+        main:
+          # REQUIRED: set the controller image repository (digest-pinned
+          # preferred; tag defaults to the chart's appVersion).
+          image:
+            repository: ""
+            pullPolicy: IfNotPresent
+            tag: ""
+          # env is chart-managed (rendered from the wiring above); use
+          # `controller.env` for operator additions.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+
+  service:
+    webhook:
+      enabled: false
+      controller: main
+      type: ClusterIP
+      ports:
+        webhook:
+          port: 8080
+
+  persistence:
+    durable-state:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /var/lib/pr-reviewer/state
+    runs:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      globalMounts:
+        - path: /var/lib/pr-reviewer/runs
+    workspace-cache:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      globalMounts:
+        - path: /var/lib/pr-reviewer/cache
+    tmp:
+      type: emptyDir
+      globalMounts:
+        - path: /tmp
+
+  serviceAccount:
+    main:
+      enabled: true
+      # The controller SA token is mounted ONLY when the Kubernetes
+      # worker executor is enabled (the executor talks to the cluster
+      # API); otherwise the controller needs no cluster identity.
+
+# ── worker-executor provisioning (#734/#738) ──────────────────────────
+# The worker Jobs themselves are created by the controller's Kubernetes
+# executor from the instance config's `kubernetes` profile; this section
+# provisions the surrounding Kubernetes objects and documents the
+# instance-config values the executor expects.
+workerExecutor:
+  # disabled: nothing is provisioned. kubernetes: create the worker
+  # service account, the namespace-scoped Role/RoleBinding the
+  # controller's service account needs, and the shared volume claims.
+  mode: disabled
+  # Namespace the worker Jobs run in (default: the release namespace).
+  namespace: ""
+  serviceAccount:
+    create: true
+    # Dedicated worker service account; the executor never falls back to
+    # `default` and the worker pods never mount its token.
+    name: pr-reviewer-worker
+  rbac:
+    create: true
+  # Reference mirror of the instance config's `kubernetes` profile values
+  # (the executor builds the Job manifest from the instance config; these
+  # fields document the deployment facts the profile must repeat):
+  image:
+    repository: ""
+    tag: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  ttlSecondsAfterFinished: 1800
+  # Shared controller/worker PVCs (mounted at the SAME absolute path in
+  # both pods — the instance config's volume mappings reference these
+  # claim names by `controllerRoot`).
+  volumeClaims: []
+
+# ── network policy ─────────────────────────────────────────────────────
+# Default-deny. Controller ingress: deny-all (enable per-service rules
+# via additionalIngress). Controller egress: DNS, PostgreSQL (5432) and
+# TLS (443) for the forge API and model endpoints. Worker egress: DNS and
+# TLS only (the worker's envelope/result travel over shared volumes).
+networkPolicy:
+  enabled: true
+  additionalIngress: []
+  additionalEgress: []
+
+# ── service monitor ────────────────────────────────────────────────────
+# The admin listener serves /metrics on its port and the chart binds it
+# to the pod-wide wildcard whenever the admin surface is enabled, so a
+# Prometheus scrape works out of the box (bounded by the NetworkPolicy
+# and the admin bearer token). Requires the admin surface enabled.
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  port: 8081
+  path: /metrics
+  labels: {}
+
+# Global values are passed through to the common library untouched.
+global: {}
