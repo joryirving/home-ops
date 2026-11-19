@@ -153,11 +153,19 @@ Key properties:
   encoder (server-side, on demand; the engine lends it VRAM). The engine takes
   the image embeddings, so it needs no `--vision` flag — that spelling belongs
   to the Qwen/DeepSeek/MiniMax engines and it would kill the GLM engine.
-- `ulimit -l unlimited` + `CAP_SYS_RESOURCE`: the engine pins the model's RAM
-  tier with mlock.
+- The engine pins the model's RAM tier, and the driver's pinned allocations
+  count against the memlock limit. This node hands containers an 8 MiB limit
+  and Kubernetes cannot set a container's rlimits, so the container starts as
+  root, raises the limit with `ulimit -l unlimited` (that needs
+  `CAP_SYS_RESOURCE`), and drops to the image's user with `setpriv` before
+  Maya runs. The limit is inherited, so the engine keeps it. A container that
+  runs as a non-root user gets no capabilities here at all, which is why it
+  cannot raise the limit from a non-root user.
 - `MAYA_EXPERT_RAM_GB=64`: the RAM tier's cap (upstream's recommendation for
   this quant on a 24 GB card), so the pinned arena stays inside the pod's
-  80Gi limit.
+  80Gi limit. Measured: the pod sits at 79.7 GiB of its 80Gi limit, of which
+  77.5 GiB is the page cache of the mapped model files, and the card holds
+  23.7 GiB of its 24 GiB of VRAM.
 - LiteLLM route `glm-5.3-flash-local` (`litellm/models/project-maya.yaml`),
   kept apart from the cloud GLM route. The engine's 131072 context is split
   into 122880 input and 8192 output tokens.
