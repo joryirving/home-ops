@@ -4,10 +4,16 @@ kind: Model
 metadata:
   name: project-maya-glm-5-3-flash-s24
 spec:
-  # Maya downloads its own weights (upstream's setup), so nothing is fetched
-  # for it by the operator: the source is the same PVC, staged read-only.
-  # The operator only checks that the claim exists and is Bound.
-  source: pvc://project-maya-ganyu-data/Maya-S24/GLM-5.3-Flash-Maya-S24-IQ2_XXS_S-00001-of-00003.gguf
+  # Where the weights come from. Maya's setup downloads them itself (the repo
+  # below, into the PVC), and the operator fetches nothing: the runtime
+  # resolves this source at startup, so the Model is Ready right away.
+  #
+  # It must not be a pvc:// source to that same PVC. The operator holds an
+  # InferenceService back until its Model is Ready, and a pvc:// Model is only
+  # Ready once the claim is Bound. local-hostpath binds on first consumer, so
+  # the claim waits for the pod that the Model holds back: the two wait for
+  # each other and the service never starts.
+  source: hf://peasantsmith/GLM-5.3-Flash-Maya-GGUF
   format: gguf
   quantization: IQ2_XXS
   hardware:
