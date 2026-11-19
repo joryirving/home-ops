@@ -54,18 +54,9 @@ spec:
       # and writes it back into the config (maya.py's server_command), but
       # drafting and the VRAM reserve live only in the config, so the fast path
       # below has to check those two instead of passing them.
-      #
-      # Test window 2026-11-19: DFlash2 with one slot. The card reported 24,042
-      # of 24,576 MiB used with two slots, so the drafter (697 MB) has nowhere to
-      # sit until the expert cache is told to leave room: the reserve is that
-      # room. --yes does NOT skip Maya's draft speed calibration: this window's
-      # first start measured DFlash2 (13.06 tok/s) against no drafting (13.18) at
-      # 8K, saved the config without --dflash, and the agrees() check below then
-      # re-ran setup on every restart. --drafting on pins the drafter without
-      # measuring, so the A/B here is the measurement, not upstream's.
-      PARALLEL=1
-      DRAFT=on
-      RESERVE=1200
+      PARALLEL=2
+      DRAFT=off
+      RESERVE=
 
       CONF=/opt/maya/maya-maya-s24.json
       PACK=/data/Maya-S24/pack
@@ -79,17 +70,11 @@ spec:
       fi
 
       # Drafting is a setup choice: --draft dflash2 has the setup fetch the
-      # pinned drafter and write the engine's --dflash into the config, and
-      # --drafting pins that choice so no start measures it away (--drafting on
-      # drafts with the drafter, off decodes without one; without it --yes
-      # defaults to measure, which strips --dflash whenever drafting is not the
-      # faster side). The reserve is the VRAM the expert pool leaves free beside
-      # it.
+      # pinned drafter and write the engine's --dflash into the config. The
+      # reserve is the VRAM the expert pool leaves free beside it.
       SETUP_FLAGS=
       if [ "$DRAFT" = on ]; then
-        SETUP_FLAGS="--draft dflash2 --drafting on"
-      elif [ "$DRAFT" = off ]; then
-        SETUP_FLAGS="--drafting off"
+        SETUP_FLAGS="--draft dflash2"
       fi
       if [ -n "$RESERVE" ]; then
         SETUP_FLAGS="$SETUP_FLAGS --vram-reserve-mib $RESERVE"
@@ -110,9 +95,8 @@ spec:
       exec setpriv --reuid 65534 --regid 65534 --keep-groups $MAYA --setup --model Maya-S24 --download-model --models-dir /data \
         --context 1000000 --parallel "$PARALLEL" $SETUP_FLAGS --host 0.0.0.0 --port 8080 --yes --plain
   skipModelInit: true
-  # Test window: Maya holds the 3090 and Strata is stopped. Only one of the two
-  # can run at a time on the card; reverting this commit hands it back.
-  replicas: 1
+  # Strata owns the 3090. Keep Maya's model cache for redeploy.
+  replicas: 0
   priority: high
   runtimeClassName: nvidia
   nodeSelector:
