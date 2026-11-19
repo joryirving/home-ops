@@ -49,16 +49,51 @@ spec:
       # keeps it.
       ulimit -l unlimited
       cd /opt/maya
+
+      # The settings, in one place. A start from the config honours --parallel
+      # and writes it back into the config (maya.py's server_command), but
+      # drafting and the VRAM reserve live only in the config, so the fast path
+      # below has to check those two instead of passing them.
+      PARALLEL=2
+      DRAFT=off
+      RESERVE=
+
+      CONF=/opt/maya/maya-maya-s24.json
+      PACK=/data/Maya-S24/pack
       MAYA="/opt/maya/.venv/bin/python /opt/maya/maya.py"
-      # Upstream's own setup: it downloads the model and the vision encoder's
-      # files, builds the pack, writes the config and starts the server. It is
-      # idempotent, so a pod that finds the config and the pack starts the
-      # server directly and downloads nothing.
-      if [ -s /opt/maya/maya-maya-s24.json ] && [ -d /data/Maya-S24/pack ]; then
-        exec setpriv --reuid 65534 --regid 65534 --keep-groups $MAYA --config /opt/maya/maya-maya-s24.json --host 0.0.0.0 --port 8080 --parallel 2 --yes --plain
+
+      # The engine drafts nothing with more than one conversation at a time, so
+      # a drafter without a single slot would start fine and decode slowly.
+      if [ "$DRAFT" = on ] && [ "$PARALLEL" != 1 ]; then
+        echo "DRAFT=on needs PARALLEL=1" >&2
+        exit 1
+      fi
+
+      # Drafting is a setup choice: --draft dflash2 has the setup fetch the
+      # pinned drafter and write the engine's --dflash into the config. The
+      # reserve is the VRAM the expert pool leaves free beside it.
+      SETUP_FLAGS=
+      if [ "$DRAFT" = on ]; then
+        SETUP_FLAGS="--draft dflash2"
+      fi
+      if [ -n "$RESERVE" ]; then
+        SETUP_FLAGS="$SETUP_FLAGS --vram-reserve-mib $RESERVE"
+      fi
+
+      # Upstream's setup is idempotent: with the model, the pack and the config
+      # in place it starts the server and downloads nothing. Reuse a config only
+      # where it agrees with the settings above, since a container restart keeps
+      # the file and would otherwise run the previous settings in silence. A pod
+      # replacement starts from setup anyway: the config lives in the image's own
+      # directory, not on the data claim.
+      agrees() {
+        /opt/maya/.venv/bin/python -c "import json,sys; a=json.load(open(sys.argv[1])).get('args') or []; at=lambda f: a[a.index(f)+1] if f in a and a.index(f)+1 < len(a) else None; sys.exit(0 if at('--parallel') == sys.argv[2] and (('--dflash' in a) == (sys.argv[3] == 'on')) and (not sys.argv[4] or at('--vram-reserve-mib') == sys.argv[4]) else 1)" "$CONF" "$PARALLEL" "$DRAFT" "$RESERVE"
+      }
+      if [ -s "$CONF" ] && [ -d "$PACK" ] && agrees; then
+        exec setpriv --reuid 65534 --regid 65534 --keep-groups $MAYA --config "$CONF" --host 0.0.0.0 --port 8080 --parallel "$PARALLEL" --yes --plain
       fi
       exec setpriv --reuid 65534 --regid 65534 --keep-groups $MAYA --setup --model Maya-S24 --download-model --models-dir /data \
-        --context 1000000 --parallel 2 --host 0.0.0.0 --port 8080 --yes --plain
+        --context 1000000 --parallel "$PARALLEL" $SETUP_FLAGS --host 0.0.0.0 --port 8080 --yes --plain
   skipModelInit: true
   # Strata owns the 3090. Keep Maya's model cache for redeploy.
   replicas: 0
