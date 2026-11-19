@@ -95,8 +95,9 @@ spec:
       exec setpriv --reuid 65534 --regid 65534 --keep-groups $MAYA --setup --model Maya-S24 --download-model --models-dir /data \
         --context 1000000 --parallel "$PARALLEL" $SETUP_FLAGS --host 0.0.0.0 --port 8080 --yes --plain
   skipModelInit: true
-  # Strata owns the 3090. Keep Maya's model cache for redeploy.
-  replicas: 0
+  # Test window: Maya holds the 3090 and Strata is stopped. Only one of the two
+  # can run at a time on the card; reverting this commit hands it back.
+  replicas: 1
   priority: high
   runtimeClassName: nvidia
   nodeSelector:
