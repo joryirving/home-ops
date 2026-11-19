@@ -63,7 +63,11 @@ spec:
     - --served-model-name
     - qwen3.8-flash-next
     - --context
-    - "262144"
+    - "307200"
+    # Dynamic YaRN: sessions stay native (byte-identical) up to 262,144 tokens
+    # and take the smallest covering factor past that, capped at 307,200/262,144
+    # (~1.172). Without the flag gufo refuses any --context above 262,144.
+    - --enable-yarn
     - --max-tokens
     - "65536"
     - --speculative
@@ -91,7 +95,7 @@ spec:
     - --cache-disk-bytes
     - "68719476736"
   skipModelInit: true
-  contextSize: 262144
+  contextSize: 307200
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
