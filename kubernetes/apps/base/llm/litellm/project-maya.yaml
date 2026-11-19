@@ -58,8 +58,11 @@ spec:
       # Test window 2026-11-19: DFlash2 with one slot. The card reported 24,042
       # of 24,576 MiB used with two slots, so the drafter (697 MB) has nowhere to
       # sit until the expert cache is told to leave room: the reserve is that
-      # room. --yes means Maya skips its own speed calibration, so the A/B here
-      # is the measurement, not upstream's.
+      # room. --yes does NOT skip Maya's draft speed calibration: this window's
+      # first start measured DFlash2 (13.06 tok/s) against no drafting (13.18) at
+      # 8K, saved the config without --dflash, and the agrees() check below then
+      # re-ran setup on every restart. --drafting on pins the drafter without
+      # measuring, so the A/B here is the measurement, not upstream's.
       PARALLEL=1
       DRAFT=on
       RESERVE=1200
@@ -76,11 +79,17 @@ spec:
       fi
 
       # Drafting is a setup choice: --draft dflash2 has the setup fetch the
-      # pinned drafter and write the engine's --dflash into the config. The
-      # reserve is the VRAM the expert pool leaves free beside it.
+      # pinned drafter and write the engine's --dflash into the config, and
+      # --drafting pins that choice so no start measures it away (--drafting on
+      # drafts with the drafter, off decodes without one; without it --yes
+      # defaults to measure, which strips --dflash whenever drafting is not the
+      # faster side). The reserve is the VRAM the expert pool leaves free beside
+      # it.
       SETUP_FLAGS=
       if [ "$DRAFT" = on ]; then
-        SETUP_FLAGS="--draft dflash2"
+        SETUP_FLAGS="--draft dflash2 --drafting on"
+      elif [ "$DRAFT" = off ]; then
+        SETUP_FLAGS="--drafting off"
       fi
       if [ -n "$RESERVE" ]; then
         SETUP_FLAGS="$SETUP_FLAGS --vram-reserve-mib $RESERVE"
