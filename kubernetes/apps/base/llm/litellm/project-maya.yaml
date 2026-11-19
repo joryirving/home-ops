@@ -1,0 +1,102 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: project-maya-glm-5-3-flash-s24
+spec:
+  # Maya downloads its own weights (upstream's setup), so nothing is fetched
+  # for it by the operator: the source is the same PVC, staged read-only.
+  # The operator only checks that the claim exists and is Bound.
+  source: pvc://project-maya-ganyu-data/Maya-S24/GLM-5.3-Flash-Maya-S24-IQ2_XXS_S-00001-of-00003.gguf
+  format: gguf
+  quantization: IQ2_XXS
+  hardware:
+    accelerator: cuda
+    gpu:
+      count: 1
+      enabled: true
+      vendor: nvidia
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: project-maya-glm-5-3-flash-s24
+  labels:
+    krr/ignore: "true"
+    litellm.home-operations.com/managed-by: flux
+spec:
+  modelRef: project-maya-glm-5-3-flash-s24
+  runtime: generic
+  # The engine and the vision encoder, with upstream's stamps so maya.py --setup compiles nothing,
+  # and the toolchain upstream's step-1 checks look for.
+  image: ghcr.io/joryirving/maya:1.1.67@sha256:19e6cf924bc78252de985913deaf0499236a371abe940a4fd900cb40b5f304f8
+  imagePullPolicy: IfNotPresent
+  command:
+    - /bin/sh
+    - -ec
+    - |
+      # Maya pins the model's RAM tier with mlock, so the limit has to be off:
+      # raising it needs CAP_SYS_RESOURCE (the container's securityContext).
+      ulimit -l unlimited
+      cd /opt/maya
+      MAYA="/opt/maya/.venv/bin/python /opt/maya/maya.py"
+      # Upstream's own setup: it downloads the model and the vision encoder's
+      # files, builds the pack, writes the config and starts the server. It is
+      # idempotent, so a pod that finds the config and the pack starts the
+      # server directly and downloads nothing.
+      if [ -s /opt/maya/maya-maya-s24.json ] && [ -d /data/Maya-S24/pack ]; then
+        exec $MAYA --config /opt/maya/maya-maya-s24.json --host 0.0.0.0 --port 8080 --yes --plain
+      fi
+      exec $MAYA --setup --model Maya-S24 --download-model --models-dir /data \
+        --context 131072 --parallel 1 --host 0.0.0.0 --port 8080 --yes --plain
+  skipModelInit: true
+  replicas: 1
+  priority: high
+  runtimeClassName: nvidia
+  nodeSelector:
+    topology.kubernetes.io: egpu
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  # The first start downloads ~95 GB and builds the pack before the server
+  # binds its port, so the startup budget is hours, not minutes.
+  startupTimeout: 6h
+  podSecurityContext:
+    runAsUser: 65534
+    runAsGroup: 65534
+    runAsNonRoot: true
+    fsGroup: 65534
+    fsGroupChangePolicy: OnRootMismatch
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+      add:
+        - SYS_RESOURCE
+    runAsUser: 65534
+    runAsGroup: 65534
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    cpu: "8"
+    memory: 80Gi
+    gpu: 1
+  env:
+    # The RAM tier: upstream's recommended 64 GB for this quant on a 24 GB card.
+    # Capped so the pinned arena stays inside the pod's memory limit.
+    - name: MAYA_EXPERT_RAM_GB
+      value: "64"
+  extraVolumes:
+    - name: maya-data
+      persistentVolumeClaim:
+        claimName: project-maya-ganyu-data
+  extraVolumeMounts:
+    - name: maya-data
+      mountPath: /data
+  containerPort: 8080
+  endpoint:
+    port: 8080
+    type: ClusterIP

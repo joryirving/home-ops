@@ -25,7 +25,8 @@ memini/                     # bge-reranker-v2-m3 on CPU, served to LiteLLM as `r
   memini-rerank-{1,2,3}.yaml  # three single-replica InferenceServices
 
 litellm/                    # chat/vision models, reconciled by the `litellm` KS
-  qwen3-8-flash-next-strata.yaml  # Qwen3.8-Flash-Next IQ3_S (Strata engine) on the RTX 3090
+  project-maya.yaml              # GLM-5.3-Flash S24 (Maya engine) on the RTX 3090
+  qwen3-8-flash-next-strata.yaml  # Qwen3.8-Flash-Next IQ3_S (Strata engine), stopped
   qwen3-8-flash-next-gufo.yaml    # Qwen3.8-Flash-Next UD-Q4_K_XL on Strix Halo (gufo, multimodal)
   llmkube-skirk-cache.yaml        # local-hostpath model cache PVC on skirk
   models/                         # LiteLLMModel CRs, grouped by model name
@@ -45,7 +46,7 @@ The `Model.spec.source` scheme decides what the operator does:
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
 | `hf://<org>/<repo>` + `spec.files`  | Downloads each listed file from the repo into the model cache; `spec.mmproj` names the projector among them (`qwen3-8-flash-next-strata`, `qwen3-8-flash-next-gufo`) | Persistent, survives restarts |
 | `https://…/<file>.gguf`             | Init container `curl`s one file into the **shared cache PVC** (`llmkube-model-cache`, CephFS RWX) on first start; skipped thereafter     | Persistent, survives restarts |
-| `pvc://<claim>/<path>.gguf`         | Mounts the claim **read-only**. No download. Not used today; the claim must exist first                                                   | You staged it                 |
+| `pvc://<claim>/<path>.gguf`         | Mounts the claim **read-only**. No download. The claim must exist first. `project-maya-glm-5-3-flash-s24` uses it: Maya downloads its own weights, so the operator only needs a `Model` to hang the service on | You staged it                 |
 | `<org>/<repo>` (bare HF id)         | **vLLM runtime only.** the image entrypoint pulls `HF_REPO` into the shared cache (subPath per model). No vLLM model remains in the repo today; historical | Persistent, survives restarts |
 
 Single-file `https://` sources are still used by the CPU models
@@ -128,42 +129,42 @@ anonymous rate limits. The token is never forwarded off huggingface.co.
 Together with `files:`, that covers gated and multi-file/vision models, so
 there is no pre-staging path.
 
-## The 3090: Strata (Flash-Next IQ3_S)
+## The 3090: Maya (GLM-5.3-Flash S24)
 
-The egpu / RTX 3090 (ganyu) hosts a single resident service, `qwen3-8-flash-next-strata`
-(`litellm/qwen3-8-flash-next-strata.yaml`): the Strata engine (`ghcr.io/niko1221/strata`)
-running Qwen3.8-Flash-Next IQ3_S at 256K context with MTP and GPU vision. The
-former `nvidia` `ModelPool` + `ModelRouter` (muse-glimmer / qwen3.8-27b
-swapping) was retired when Flash-Next took over all 3090 traffic — no swapping
-happens any more; the card has one always-resident workload.
+The egpu / RTX 3090 (ganyu) hosts a single resident service,
+`project-maya-glm-5-3-flash-s24` (`litellm/project-maya.yaml`): Project Maya's
+own `maya` engine (`ghcr.io/joryirving/maya`) running GLM-5.3-Flash S24 at 131K
+context with GPU vision. It took the card over from Strata (Qwen3.8-Flash-Next
+IQ3_S), which is stopped but still in git.
 
 Key properties:
 
-- `runtime: generic` + `skipModelInit: true`: the packs are pre-staged on the
-  `llmkube-ganyu-cache` PVC (`/data/Strata-data`, ~84 GB IQ3_S + ~5 GB MTP
-  draft) and the pod command is a `strata launch` wrapper that supervises the
-  engine and exits (pod restart) if it dies. Do not set `FAMILY`/`MODEL` env
-  vars on this pod — Strata lets env override CLI flags and silently reverts
-  to the wrong pack.
-- Cold start is 4-8 minutes (hashing + load); the startup probe budget reflects
-  that. The prefix cache is RAM-only: after any restart or redeploy, early
-  requests pay full prefill until it warms. Schedule redeploys off-peak.
-- The engine serves the model under the name `qwen3.8-flash-next-iq3_s`
-  (not CLI-renamable), so it cannot join the `qwen3.8-flash-next` group via
-  litellm-operator auto-registration; it has an explicit `LiteLLMModel` CR in
-  `litellm/models/` instead (same pattern as the old muse CRs), pointing at
-  `qwen3-8-flash-next-strata.llm.svc.cluster.local` directly.
-- LiteLLM caps it at `max_parallel_requests: 3` (three concurrent sessions,
-  measured ~80 tok/s aggregate at saturation; ~1040 tok/s fresh prefill flat to
-  232K, cached-prefix TTFT 0.32-0.6 s at 16K).
-- The engine warned about low free VRAM (<512 MiB) and suggested
-  `--vram-reserve-mib 768`; `strata launch` does not expose that flag. If
-  decode throughput degrades, patch the generated run config in the wrapper
-  command before the engine starts.
+- `runtime: generic` + `skipModelInit: true`: the pod runs upstream's own
+  `maya.py --setup`. It downloads the model shards and the vision encoder's
+  mmproj/vocab from HuggingFace into the `project-maya-ganyu-data` PVC
+  (`/data`: ~95 GB shards, ~1 GB pack, ~1 GB vision files), builds the pack,
+  writes the config in `/opt/maya` and starts the server. Nothing is compiled
+  in the pod: the image carries the engine and the encoder with upstream's
+  stamps, so setup's build steps skip.
+- The setup is idempotent: a pod that finds the config and the pack starts the
+  server and downloads nothing. The first start needs hours (download, pack,
+  load), so the startup probe budget is hours, not minutes.
+- Images: GLM-5.3-Flash's vision tower reads pictures through the `maya-vision`
+  encoder (server-side, on demand; the engine lends it VRAM). The engine takes
+  the image embeddings, so it needs no `--vision` flag — that spelling belongs
+  to the Qwen/DeepSeek/MiniMax engines and it would kill the GLM engine.
+- `ulimit -l unlimited` + `CAP_SYS_RESOURCE`: the engine pins the model's RAM
+  tier with mlock.
+- `MAYA_EXPERT_RAM_GB=64`: the RAM tier's cap (upstream's recommendation for
+  this quant on a 24 GB card), so the pinned arena stays inside the pod's
+  80Gi limit.
+- LiteLLM route `glm-5.3-flash-local` (`litellm/models/project-maya.yaml`),
+  kept apart from the cloud GLM route. The engine's 131072 context is split
+  into 122880 input and 8192 output tokens.
 
-Rollback: the muse-glimmer and qwen3.8-27b packs and manifests live in git
-history; re-apply the manifests, set `qwen3-8-flash-next-strata` `replicas: 0`, and the 24 GiB
-card frees up. The Strata packs stay on the PVC either way (~219 GB total).
+Rollback: Strata's manifests stay in git with `replicas: 0` and its packs stay
+on the `llmkube-ganyu-cache` PVC (~219 GB); set `qwen3-8-flash-next-strata`
+`replicas: 1` and stop Maya to put Qwen3.8-Flash-Next IQ3_S back on the card.
 
 ## Continuity notes
 
