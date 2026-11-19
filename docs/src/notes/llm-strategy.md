@@ -81,7 +81,7 @@ MTP proposes several tokens before the main model verifies them.
 | --- | --- | --- | --- | --- |
 | `qwen3.8-flash-next` | Strix Halo (Gufo, two sessions) + 3090 (Strata, three slots) | Qwen3.8-Flash-Next UD-Q4_K_XL (Strix) and GSQ-RCO IQ3_S (3090), shared Q8_0 MTP head, BF16 vision projector | 262144 shared engine budget (Gufo limit; Strata reports 268288); LiteLLM group input 232448, output 32768 | Local reasoning, coding, vision, tools, Courier coordinator |
 | `qwen3.8-flash-next-chat` | Same deployments | Same weights, thinking disabled | Same | Non-thinking vision, heartbeat requests, `auto` classifier |
-| `qwen3.8-flash-next-iq3_s` | 3090, Strata engine 0.1.52 | Same weights, GSQ-RCO IQ3_S, MTP | 232448 LiteLLM input, 32768 output; 268288 engine context | Internal rung inside the `qwen3.8-flash-next` group; three slots, capped `max_parallel_requests: 3` |
+| `qwen3.8-flash-next-iq3_s` | 3090, Strata engine 0.1.62 | Same weights, GSQ-RCO IQ3_S, MTP | 232448 LiteLLM input, 32768 output; 268288 engine context | Internal rung inside the `qwen3.8-flash-next` group; three slots, capped `max_parallel_requests: 3` |
 | `embed` | CPU, three replicas | Qwen3-Embedding-0.6B Q8_0 | 32768 | 1024-dimension embeddings for memini and toolhive |
 | `rerank` | CPU, three replicas | bge-reranker-v2-m3 Q8_0 | Not declared | memini reranking |
 
@@ -104,7 +104,7 @@ Its published MTP gains use greedy decoding, not our sampled temperature 1.0 con
 No matched local sampled before/after result is recorded here.
 Both local services use idle-aware rollouts (`waitForIdle: true`, `idleTimeoutSeconds: 86400`). Do not restart or wake models to inspect capacity.
 
-Vision requests use Flash-Next. The proxy fallback for `qwen3.8-flash-next-chat` tries MiniMax-M3.1-Flash. Strata's vision path is served but not yet exercised; that rung keeps `supportsVision: false` until one real image request passes.
+Vision requests use Flash-Next. The proxy fallback for `qwen3.8-flash-next-chat` tries MiniMax-M3.1-Flash. Strata's vision path is verified (2026-11-09, data-URL image request answered correctly); all its rungs serve with `supportsVision: true`.
 The gaming PC with a 9070 XT is not configured inference capacity. Radiance and a dual-boot Talos worker remain experiments.
 The `dsv4f-local` alias remains registered, but has no configured InferenceService and cannot serve through that missing backend.
 Commented manifests in `litellm/kustomization.yaml` are references, not active capacity.
