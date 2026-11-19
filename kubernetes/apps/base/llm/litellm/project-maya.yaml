@@ -41,8 +41,12 @@ spec:
     - /bin/sh
     - -ec
     - |
-      # Maya pins the model's RAM tier with mlock, so the limit has to be off:
-      # raising it needs CAP_SYS_RESOURCE (the container's securityContext).
+      # Maya pins the model's RAM tier, and the driver's pinned allocations
+      # count against the memlock limit. Kubernetes cannot set a container's
+      # rlimits, and this node hands containers an 8 MiB limit, so the limit is
+      # raised here (that needs CAP_SYS_RESOURCE) and the privileges are
+      # dropped again before Maya runs. The limit is inherited, so the engine
+      # keeps it.
       ulimit -l unlimited
       cd /opt/maya
       MAYA="/opt/maya/.venv/bin/python /opt/maya/maya.py"
@@ -51,9 +55,9 @@ spec:
       # idempotent, so a pod that finds the config and the pack starts the
       # server directly and downloads nothing.
       if [ -s /opt/maya/maya-maya-s24.json ] && [ -d /data/Maya-S24/pack ]; then
-        exec $MAYA --config /opt/maya/maya-maya-s24.json --host 0.0.0.0 --port 8080 --yes --plain
+        exec setpriv --reuid 65534 --regid 65534 $MAYA --config /opt/maya/maya-maya-s24.json --host 0.0.0.0 --port 8080 --yes --plain
       fi
-      exec $MAYA --setup --model Maya-S24 --download-model --models-dir /data \
+      exec setpriv --reuid 65534 --regid 65534 $MAYA --setup --model Maya-S24 --download-model --models-dir /data \
         --context 131072 --parallel 1 --host 0.0.0.0 --port 8080 --yes --plain
   skipModelInit: true
   replicas: 1
@@ -69,9 +73,12 @@ spec:
   # binds its port, so the startup budget is hours, not minutes.
   startupTimeout: 6h
   podSecurityContext:
-    runAsUser: 65534
-    runAsGroup: 65534
-    runAsNonRoot: true
+    # The container starts as root: it raises the memlock limit (which needs
+    # CAP_SYS_RESOURCE) and drops to the image's user before Maya runs. The
+    # fsGroup gives the pod's user write access to the data claim.
+    runAsUser: 0
+    runAsGroup: 0
+    runAsNonRoot: false
     fsGroup: 65534
     fsGroupChangePolicy: OnRootMismatch
   securityContext:
@@ -80,10 +87,12 @@ spec:
       drop:
         - ALL
       add:
+        - SETGID
+        - SETUID
         - SYS_RESOURCE
-    runAsUser: 65534
-    runAsGroup: 65534
-    runAsNonRoot: true
+    runAsUser: 0
+    runAsGroup: 0
+    runAsNonRoot: false
     seccompProfile:
       type: RuntimeDefault
   resources:
