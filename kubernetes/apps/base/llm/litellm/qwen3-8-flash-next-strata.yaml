@@ -40,7 +40,11 @@ spec:
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  # 0.2.7-cuda13 @ sha256:db96cd9… is the amd64 manifest the benchmark ran.
+  # Ships engine 0.1.62-linux-x86_64-cuda-cuda13 (was 0.1.59). The saved run
+  # config on the PVC still names the 0.1.59 vision reader; the Terminal
+  # repoints version-folder paths at the current version when it reads the
+  # config, so the stale path needs no cleanup here. Pack index stays v3, so
+  # the prepared iq3_s pack carries over.
   image: ghcr.io/niko1221/strata:0.2.16-cuda13@sha256:acc0feffeef9d4123e3928537300357908937de530d53771053b6db57129a0c1
   command:
   - /bin/sh
