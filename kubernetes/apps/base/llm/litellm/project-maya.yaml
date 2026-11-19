@@ -97,13 +97,14 @@ spec:
       type: RuntimeDefault
   resources:
     cpu: "8"
-    memory: 80Gi
+    memory: 96Gi
     gpu: 1
   env:
-    # The RAM tier: upstream's recommended 64 GB for this quant on a 24 GB card.
-    # Capped so the pinned arena stays inside the pod's memory limit.
+    # The RAM tier: how much of the model the engine keeps resident. The whole
+    # Maya-S24 quant is 88.2 GiB, so this holds all of it in RAM and leaves
+    # the disk tier empty.
     - name: MAYA_EXPERT_RAM_GB
-      value: "64"
+      value: "88"
   extraVolumes:
     - name: maya-data
       persistentVolumeClaim:
