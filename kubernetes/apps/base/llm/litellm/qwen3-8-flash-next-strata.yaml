@@ -50,7 +50,9 @@ spec:
   - /bin/sh
   - -c
   - |
-    # Launch IQ3_S at 262K (admission verified to 232K prompt tokens).
+    # Launch IQ3_S at 300K (307,200 tokens; YaRN ~1.195 past the trained 262,144,
+    # derived by launch; admission verified to 232K prompt tokens at 262K — the
+    # 300K admission is measured during qualification before agent limits move).
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
     # over CLI flags and silently reverts to the wrong pack (observed).
     # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
@@ -63,7 +65,7 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
     #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
     #   without it the engine 403s litellm's requests by Host header.
-    strata launch --model iq3_s --data-dir /data/Strata-data --context 262k \
+    strata launch --model iq3_s --data-dir /data/Strata-data --context 300k \
       --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key \
       --set conversation-cache-mib=8192
     # `strata launch --no-tui` starts the engine and returns; supervise it.
@@ -101,7 +103,10 @@ spec:
     effect: NoSchedule
   resources:
     cpu: "8"
-    memory: 80Gi
+    # 307,200-token KV is pinned in RAM (kv-resident streams it): ~4.5 GiB of
+    # int8 KV on top of the weight pool. 80Gi ran at 99.7% at 262K; 96Gi matches
+    # the maya pod that shares this node.
+    memory: 96Gi
     gpu: 1
   extraVolumes:
   - name: models
