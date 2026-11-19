@@ -11,6 +11,7 @@ Miscellaneous scripts for cluster operations. `[cluster]` is a kube context name
 | `nas-restart.sh [cluster]`                 | Restart deployments labelled `nfsMount=true`                                                                       | Broken: `$CLUSTER` isn't exported to the generated commands, so they fail unless `CLUSTER` is already set in your environment |
 | `restart-all-pods.sh [cluster]`            | Restart all deployments, daemonsets and statefulsets in all namespaces                                             | **Destructive**; no shebang, run with `bash`                                                                                  |
 | `llm-benchmark.py`                         | Measure per-request and aggregate decode tok/s and TTFT across concurrency levels on an OpenAI-compatible endpoint | Needs `httpx`; not executable, run with `python3`                                                                             |
+| `maya-stage-drafter.sh [cluster]`          | Put the pinned DFlash2 drafter on Maya's data claim on ganyu, and verify its size and sha256. No GPU and no engine: it starts no Maya pod | Refuses to run while a Maya pod exists (the claim is RWO). The drafter is licensed CC BY-NC-ND 4.0: non|
 
 ## Usage
 
@@ -36,4 +37,7 @@ bash ./restart-all-pods.sh [cluster]
 # Benchmark an endpoint (defaults shown)
 python3 ./llm-benchmark.py --base-url http://localhost:8088/v1 --model self-hosted --api-key none \
     --max-tokens 256 --iterations 2 --concurrency 1 2
+
+# Stage the DFlash2 drafter for Maya (does not enable drafting)
+./maya-stage-drafter.sh [cluster]
 ```
