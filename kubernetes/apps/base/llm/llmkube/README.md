@@ -26,7 +26,7 @@ memini/                     # bge-reranker-v2-m3 on CPU, served to LiteLLM as `r
 
 litellm/                    # chat/vision models, reconciled by the `litellm` KS
   project-maya.yaml              # GLM-5.3-Flash S24 (Maya engine) on the RTX 3090
-  qwen3-8-flash-next-strata.yaml  # Qwen3.8-Flash-Next IQ3_S (Strata engine), stopped
+  qwen3-8-flash-next-strata.yaml  # Qwen3.8-Flash-Next IQ3_S (Strata engine) on RTX 3090
   qwen3-8-flash-next-gufo.yaml    # Qwen3.8-Flash-Next UD-Q4_K_XL on Strix Halo (gufo, multimodal)
   llmkube-skirk-cache.yaml        # local-hostpath model cache PVC on skirk
   models/                         # LiteLLMModel CRs, grouped by model name
@@ -129,50 +129,29 @@ anonymous rate limits. The token is never forwarded off huggingface.co.
 Together with `files:`, that covers gated and multi-file/vision models, so
 there is no pre-staging path.
 
-## The 3090: Maya (GLM-5.3-Flash S24)
+## The 3090: Strata and Maya
 
-The egpu / RTX 3090 (ganyu) hosts a single resident service,
-`project-maya-glm-5-3-flash-s24` (`litellm/project-maya.yaml`): Project Maya's
-own `maya` engine (`ghcr.io/joryirving/maya`) running GLM-5.3-Flash S24 at 131K
-context with GPU vision. It took the card over from Strata (Qwen3.8-Flash-Next
-IQ3_S), which is stopped but still in git.
+Strata serves Qwen3.8-Flash-Next IQ3_S on ganyu. Maya is stopped but its image, deployment manifest, and `project-maya-ganyu-data` PVC stay in place.
+The two services use the same RTX 3090. Keep only one at `replicas: 1`.
+The [Maya benchmarks](maya-benchmarks.md) record speed, memory, and expert reads from disk.
 
-Key properties:
+Maya uses the pinned 1.1.67 image and upstream `maya.py --setup`. The image contains the compiled engine and vision encoder.
+Setup uses the weights, pack, and vision files under `/data` on the PVC. A fresh pod can run setup again without downloading files that are already there.
+The container raises the memory lock limit as root, then drops to UID and GID 65534 with `setpriv`. The engine inherits the higher limit.
 
-- `runtime: generic` + `skipModelInit: true`: the pod runs upstream's own
-  `maya.py --setup`. It downloads the model shards and the vision encoder's
-  mmproj/vocab from HuggingFace into the `project-maya-ganyu-data` PVC
-  (`/data`: ~95 GB shards, ~1 GB pack, ~1 GB vision files), builds the pack,
-  writes the config in `/opt/maya` and starts the server. Nothing is compiled
-  in the pod: the image carries the engine and the encoder with upstream's
-  stamps, so setup's build steps skip.
-- The setup is idempotent: a pod that finds the config and the pack starts the
-  server and downloads nothing. The first start needs hours (download, pack,
-  load), so the startup probe budget is hours, not minutes.
-- Images: GLM-5.3-Flash's vision tower reads pictures through the `maya-vision`
-  encoder (server-side, on demand; the engine lends it VRAM). The engine takes
-  the image embeddings, so it needs no `--vision` flag — that spelling belongs
-  to the Qwen/DeepSeek/MiniMax engines and it would kill the GLM engine.
-- The engine pins the model's RAM tier, and the driver's pinned allocations
-  count against the memlock limit. This node hands containers an 8 MiB limit
-  and Kubernetes cannot set a container's rlimits, so the container starts as
-  root, raises the limit with `ulimit -l unlimited` (that needs
-  `CAP_SYS_RESOURCE`), and drops to the image's user with `setpriv` before
-  Maya runs. The limit is inherited, so the engine keeps it. A container that
-  runs as a non-root user gets no capabilities here at all, which is why it
-  cannot raise the limit from a non-root user.
-- `MAYA_EXPERT_RAM_GB=64`: the RAM tier's cap (upstream's recommendation for
-  this quant on a 24 GB card), so the pinned arena stays inside the pod's
-  80Gi limit. Measured: the pod sits at 79.7 GiB of its 80Gi limit, of which
-  77.5 GiB is the page cache of the mapped model files, and the card holds
-  23.7 GiB of its 24 GiB of VRAM.
-- LiteLLM route `glm-5.3-flash-local` (`litellm/models/project-maya.yaml`),
-  kept apart from the cloud GLM route. The engine's 131072 context is split
-  into 122880 input and 8192 output tokens.
+The retained configuration uses two slots, a 1,000,000-token engine context per slot, 96 GiB of pod memory, and `MAYA_EXPERT_RAM_GB=88`.
+The separate `glm-5.3-flash-local` route still budgets 253,952 input and 8,192 output tokens when enabled.
+Vision uses `maya-vision` on demand. Do not add `--vision` to the GLM launch command.
 
-Rollback: Strata's manifests stay in git with `replicas: 0` and its packs stay
-on the `llmkube-ganyu-cache` PVC (~219 GB); set `qwen3-8-flash-next-strata`
-`replicas: 1` and stop Maya to put Qwen3.8-Flash-Next IQ3_S back on the card.
+### Redeploy Maya
+
+1. Set Strata to `replicas: 0` in `litellm/qwen3-8-flash-next-strata.yaml`.
+2. Remove the three Strata entries from the two QFN model groups and `implementation-pool`. Keep Gufo and the cloud entries.
+3. Set Maya to `replicas: 1` in `litellm/project-maya.yaml`.
+4. Restore `./project-maya.yaml` in `litellm/models/kustomization.yaml` and the `glm-5.3-flash-local` grant in `courier/litellmkey.yaml`.
+5. After reconciliation, make sure that Strata is stopped and Maya is ready. Test text and an image through the local route.
+
+Keep both PVCs. To put Strata back, reverse the deployment and route changes.
 
 ## Continuity notes
 
