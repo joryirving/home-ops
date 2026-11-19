@@ -54,9 +54,15 @@ spec:
       # and writes it back into the config (maya.py's server_command), but
       # drafting and the VRAM reserve live only in the config, so the fast path
       # below has to check those two instead of passing them.
-      PARALLEL=2
-      DRAFT=off
-      RESERVE=
+      #
+      # Test window 2026-11-19: DFlash2 with one slot. The card reported 24,042
+      # of 24,576 MiB used with two slots, so the drafter (697 MB) has nowhere to
+      # sit until the expert cache is told to leave room: the reserve is that
+      # room. --yes means Maya skips its own speed calibration, so the A/B here
+      # is the measurement, not upstream's.
+      PARALLEL=1
+      DRAFT=on
+      RESERVE=1200
 
       CONF=/opt/maya/maya-maya-s24.json
       PACK=/data/Maya-S24/pack
