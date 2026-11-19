@@ -14,6 +14,8 @@ Time to first token (TTFT) includes prefill, request overhead, and any wait.
 - The sampled prefills logged no expert reads from disk. Copy-stream counters did not show how long GPU compute waited for weights.
 - Strata's QFN IQ3_S and Maya's GLM prefill at the same rate, 1,020 to 1,170 tok/s above 14K input tokens. QFN decodes far faster, but that gap mixes two effects: QFN drafts with DFlash2 and GLM does not, and Maya's 64-token runs understate its steady state.
 - Maya 1.1.67 supports DFlash2 for GLM-5.3-Flash at any quant, including this IQ2_XXS_S build, but the engine refuses it with `--parallel` above 1. See "DFlash2 for GLM on Maya".
+- DFlash2 on Maya was tested on 2026-11-19 at one slot and worked — 90.8% to 94.5% of drafts accepted — but decoded 14–18% slower than no drafting at 31K and 126K input tokens, and Maya's own startup calibration measured it 1% slower at 8K. Leave drafting off on this card. See "2026-11-19 test window".
+- Strata 0.1.62 (container 0.2.16), rebenchmarked after the window with the same client: decode 157.6 tok/s at 28,816 input tokens and 139.1 tok/s at 116,191, with its own DFlash2 drafting at 93.9–96.1% acceptance. Strata drafts profitably on this card; Maya does not.
 - No exposed PCIe stall was measured. Staged copy work accounts for at most 6.6% to 22.5% of a chunk's wall time, `ring wait` measures the copy stream waiting on compute, and the `/stats` ring fields give contradictory per-batch rates. The remaining question needs a GPU trace, and no tracer is installed.
 
 Interleaving remained off. The tests do not establish whether a wider PCIe link would materially improve prefill.
@@ -161,7 +163,7 @@ Time when no kernel runs is not all transfer wait either. Host planning, CPU exp
 
 ## QFN on Strata against GLM on Maya
 
-Strata serves Qwen3.8-Flash-Next IQ3_S (78 GB of shards) on the same card, engine `0.1.59`, 268,288 context, three slots, dflash2 drafting at `--spec 6`.
+Strata serves Qwen3.8-Flash-Next IQ3_S (78 GB of shards) on the same card, 268,288 context, dflash2 drafting at `--spec 6`. The 0.1.59 rows below predate 2026-11-19. On engine `0.1.62` (container `0.2.16`, verified 2026-11-19) `/props` reports `total_slots: 1`; the earlier three-slot figure was not re-verified on that build, so treat this section's slot count as history.
 The live engine holds 79.4 GiB resident. Maya keeps 90.7 GiB. Both hold about 23.6 GiB of the card's 24 GiB.
 These requests used a unique marker at the start of each prompt, so the prefix cache reused nothing, and thinking was off.
 Prefill and decode use the engine's own `timings`, so queue time behind other traffic does not enter them. Time to first token does include queueing.
@@ -189,7 +191,7 @@ Output length also moves the measured rate. Two matched Strata runs with 1,024 o
 | Strata, 1,024 output tokens | 126,146 | 1,024 | 1,134 | 111.2 | 10.3 | 99.8 | 99.6 | 636 / 466 (0.733) |
 
 Strata's rate barely moves with output length, and its client and engine figures agree within 0.3%, so the table's Strata column is sound at 64 tokens.
-Maya's 15.1 to 19.4 tok/s all come from 64-token runs. One attempt at 1,024 output tokens on the 1M pod is **void and excluded**: that pod was being deleted during the run as the card moved back to Strata, so it shared the GPU with Strata's cold start. A matched Maya run at 1,024 tokens still needs a window when the card is Maya's.
+Maya's 15.1 to 19.4 tok/s all come from 64-token runs. One attempt at 1,024 output tokens on the 1M pod is **void and excluded**: that pod was being deleted during the run as the card moved back to Strata, so it shared the GPU with Strata's cold start. The matched Maya runs at 1,024 tokens happened on 2026-11-19 — see the test-window section: 14.1 tok/s at 31K and 14.8 tok/s at 126K, no drafting.
 
 Strata's queue was busy during two of these requests. The short prompt read its 130 tokens in 1.07 s but waited 28.8 s for a slot.
 Maya was not run at 8K, and Strata was not run past 126,146 tokens. A matched sweep at 180K and 226K on Strata would need about four minutes of the card and would block the local lane meanwhile.
@@ -199,6 +201,8 @@ IQ3_S was faster in every column: prefill 595 and 1,138 against 362 and 706 at 4
 The Unsloth shards total 104 GB and IQ3_S totals 78 GB, so the larger quant cannot stay resident in an 80 GiB pod on a 125.6 GiB node. That explains the gap.
 
 ## DFlash2 for GLM on Maya: supported upstream, blocked by configuration
+
+**Status 2026-11-19: tested.** The pass condition below was met — `draft_n` and `draft_n_accepted` were both nonzero, at 90.8% to 94.5% acceptance — and the speed answer was no. See "2026-11-19 test window" for the numbers.
 
 Maya 1.1.67 (upstream tag `56b5216`) ships a DFlash2 drafter for GLM-5.3-Flash. `maya.py` pins it at line 597: `Anbeeld/GLM-5.3-Flash-DFlash2-GGUF`, revision `f3569acb7f9cee95e66d24442d75536eb00ab842`, file `GLM-5.3-Flash-DFlash2-Q4_K_M.gguf`, 697,017,248 bytes, sha256 starting `f4158ffb`, licence CC BY-NC-ND 4.0.
 The comment says the drafter is made for the model in any of its listed quants, which covers the Maya-S24 `IQ2_XXS_S` shards this deployment runs. It is separate from the model's own MTP block, and the setup offers `mtp` or `dflash2` (`DRAFTS` at line 601). This pod has neither: the manifest sets no `--dflash` path and `MAYA_GLM_NO_MTP` is unset but unused.
@@ -228,6 +232,54 @@ Smallest reversible test, once the card is Maya's again:
 - Rollback: `--dflash off` with `MAYA_GLM_NO_MTP=1` returns to today's one-token-per-step decode.
 - Costs to watch: one slot makes a second caller wait, and a lower RAM tier gives back part of the 31% decode gain in the RAM tier table.
 
+## 2026-11-19 test window: Maya DFlash2 at one slot, and Strata 0.1.62
+
+The 3090 was handed to Maya for the window (commits `ed620c079f`, `508c202109`, `63abfcffe5`). All runs below use the shared bench client piped into the serving pod: greedy (`temperature 0`), thinking off (`reasoning_effort: "none"` on Maya, `enable_thinking: false` on Strata), a unique marker per prompt so the prefix cache reused nothing, `ignore_eos` for the full 1,024-token budget, and engine-measured token counts and durations. Maya ran 1.1.67 with `--parallel 1` and `--vram-reserve-mib 1200` throughout.
+
+### The speed calibration trap
+
+Commit `63abfcffe5` assumed `--yes` skips Maya's draft speed calibration. It does not. The first start measured DFlash2 (13.06 tok/s) against no drafting (13.18 tok/s) — sustained writes after an 8,192-token document — and saved the config **without** `--dflash`. The startup script's `agrees()` check then re-ran setup on every restart, so config B looped through an ~8-minute calibration on each boot and never produced a drafting engine. `8b9953ec88` pinned the choice with `--drafting on` (forced drafting, no measuring), after which the drafter loaded and `/metrics` reported `engine.dflash: 1`. Both commits were reverted at the end of the window by `51e965e2e8`. A future drafting window needs `--drafting on`, not `--draft dflash2` alone.
+
+### Maya, no drafting versus DFlash2, at one slot
+
+No-drafting rows are the control (the window's first engine, which the calibration had stripped). DFlash2 rows are from the replacement pod that loaded the 717 MiB drafter inside the 1,200 MiB reserve.
+
+| Run | Prompt tokens | Prefill (tok/s) | Prefill wall (s) | Decode (tok/s) | Decode wall (s) | Client TTFB (s) | Peak VRAM (MiB) | Drafts accepted / offered |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 31K, no drafting, first request | 31,023 | 841.3 | 36.9 | 14.8 | 73.6 | 30.88 | 23,684 | 0 / 0 |
+| 31K, no drafting, clean rerun | 30,942 | 1,006.3 | 30.7 | 14.1 | 72.7 | not captured | 23,684 | 0 / 0 |
+| 31K, DFlash2, first request | 31,079 | 843.0 | 36.9 | 11.9 | 91.9 | 31.20 | 23,686 | 684 / 753 (0.908) |
+| 126K, no drafting | 126,209 | 1,010.3 | 124.9 | 14.8 | 69.4 | 125.13 | 23,684 | 0 / 0 |
+| 126K, DFlash2 | 125,910 | 957.9 | 131.4 | 12.2 | 89.7 | 126.53 | 23,688 | 731 / 780 (0.937) |
+
+Observations, all observed from engine records rather than estimated:
+
+- DFlash2 passed the working test — `draft_n` and `draft_n_accepted` nonzero, acceptance 90.8% and 93.7% on the two measured runs — and still lost: decode fell from 14.1 to 11.9 tok/s at 31K (−16%) and from 14.8 to 12.2 tok/s at 126K (−18%). Prefill was unchanged within first-request warm-up noise (each engine's first request prefilled ~15% slower than the next; the 841.3 and 843.0 rows are those first requests).
+- Maya's own startup calibration agrees at 8K: 13.18 tok/s without drafting, 13.06 with.
+- The likely mechanism: each verify round runs a block of draft positions through the target model, so RAM-tier expert fetches scale with the block, not with accepted tokens. The baseline logs showed 24.8–26.2 RAM fetches per token; on a card where decode is expert-fetch-bound, high acceptance still multiplies traffic. Strata drafts profitably on the same card because its QFN expert profile keeps nearly everything resident (its `pcie_share` reads 0.007 against Maya's 0.11).
+- Peak VRAM was identical with and without the drafter (23,684–23,688 of 24,576 MiB): the drafter fit inside the 1,200 MiB reserve and no reserve increase was needed.
+- No restarts, no errors, no OOM, no cgroup reclaim in any run.
+
+Verdict: leave DFlash2 off for GLM-5.3-Flash Maya-S24 on the RTX 3090. It works and it is slower.
+
+**Void and excluded in this window:** one 126K DFlash2 attempt ended at 173 of 1,024 tokens (the loop guard terminated the answer after a greedy-decode repetition; prefill 985.9 tok/s and 94.5% acceptance were observed but the decode rate is not comparable). Greedy decoding on the benchmark text also trips the loop guard's repeat-dropper on longer runs — it fired and continued on the 31K runs of both shapes and on the 126K DFlash2 rerun (a 176-token block at token 618); the guard drops repeats and applies a short repetition penalty, and the affected runs still finished their 1,024-token budget. The clean 31K rerun and the clean 126K no-draft run are the primary rows.
+
+The optional long-context sweep past 226K was not run: the drafting question was answered negatively at both sizes, and the sweep would have needed another engine restart and ~30 minutes of the shared card. Restoration took priority per the window plan.
+
+### Strata 0.1.62 after the restore
+
+Strata (Qwen3.8-Flash-Next IQ3_S, engine `0.1.62` read from `/props`, container `0.2.16`, one slot, its own DFlash2 drafting at `--spec 6`) rebenchmarked with the same client after the window closed. Strata has no `/tokenize` endpoint, so the client sizes prompts by a characters-per-token estimate; the shared client's 3.9 estimate undershot Strata's tokenizer (it measured 4.94 chars/token on the returned text), so the first 31K row is smaller than targeted and the later rows used the measured 4.94. The engine's own prompt-token counts are the truth in every row.
+
+| Run | Prompt tokens (engine) | Prefill (tok/s) | Prefill wall (s) | Decode (tok/s) | Decode wall (s) | Client TTFB (s) | Wall (s) | Drafts accepted / offered |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 31K target, 3.9 chars/token estimate | 22,912 | 1,102.3 | 20.8 | 123.5 | 8.3 | 20.85 | 29.1 | 833 / 897 (0.929) |
+| 31K target, 4.94 estimate | 28,816 | 1,148.3 | 25.1 | 157.6 | 6.5 | 25.14 | 31.6 | 838 / 872 (0.961) |
+| 126K target, 4.94 estimate | 116,191 | 1,184.4 | 98.1 | 139.1 | 7.4 | 98.22 | 105.5 | 831 / 885 (0.939) |
+
+These are the first same-build Strata rows: the older Strata decode numbers in the comparison table above came from engine 0.1.59. Against Maya in the same window on the same card, Strata decoded 9–13× faster (139.1–157.6 against 14.1–14.8 tok/s) and prefilled 15–17% faster (1,148.3–1,184.4 against 957.9–1,010.3 tok/s) at the larger sizes. Strata's drafting works where Maya's does not pay; see the mechanism note above.
+
+Restoration check after the window (`51e965e2e8`, the byte-for-byte revert of the four window commits): Strata pod Ready at one replica, Maya at zero replicas with its PVC still Bound, the temporary LiteLLM route gone, and a text plus an image request both answered through LiteLLM with `qwen3.8-flash-next` in the model list.
+
 ## Queueing behind a long first request
 
 Run on the 1M pod during the handoff to Strata, so treat the absolute values as indicative and re-run them in a clean window. A solo short prompt reached its first token in 3.44 s. With an ~31K prompt already in flight, a short second request waited 64.28 s at `max_tokens 1` and 25.77 s at `max_tokens 4096`.
@@ -251,9 +303,10 @@ In 1.1.67 the engine reads one prompt at a time on a single GPU, and there is no
 
 ## Next comparison
 
-1. Matched Maya decode. Needs a window where the 3090 is Maya's: one 31K prompt and one 126K prompt, 1,024 output tokens each, so the decode columns in the comparison table rest on equal output lengths.
-2. The DFlash2 test above, at `--parallel 1`, checked by `draft_n` and `draft_n_accepted` rather than by speed alone.
+1. ~~Matched Maya decode~~ — done 2026-11-19; see the test-window section. Maya decoded 14.1 tok/s at 31K and 14.8 tok/s at 126K with 1,024 output tokens, so the comparison table's Maya column now rests on equal output lengths (the older 15–19 tok/s rows were 64-token runs and are not directly comparable).
+2. ~~The DFlash2 test~~ — done 2026-11-19: it worked and it was slower. Leave it off.
 3. A GPU trace with Nsight Systems in a test image, to separate exposed PCIe stall from CPU expert work and host planning.
+4. A Maya long-context sweep past the 226,272-token maximum (250K, 300K, 450K), one request at a time with cgroup memory watched — still open, lower priority than the items above.
 
 Interleaving lets a request generate output between pieces of another request's prefill.
 At the same context size, compare the longest gap between output tokens with interleaving off and on.
