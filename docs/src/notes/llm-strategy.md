@@ -100,24 +100,42 @@ latency; the second slot never improved time-to-first-token (requests serialize 
 Three slots went untested because two showed no benefit. Verification method: live engine process args and
 per-request `drafts_offered`, not launch flags or env.
 
-The UD-Q4_K_XL-on-3090 question closed measured on 2026-11-20 (main `852a35f1bc` applied,
-`cd03e9dcd3` reverted the same night): the Q4 pack ran live on the same InferenceService — Strata
-0.1.62, 307200 static YaRN, one slot, 96 Gi cgroup, DFlash2 spec-6 auto-picked for Unsloth quants —
-with `--resident-budget-gib 32 --set ple-io=mmap` and the Nov-8 install env overrides stripped.
-Same-night IQ3_S baseline (evidence in `/data/bench-q4/window-2026-11-20-*.log` on the ganyu PVC):
-decode 105.9 / 91.7 / 95.8 / 84.9 t/s at 8K/128K/220K/270K, prefill 2.4-2.6k t/s, DFlash2 acceptance
-77.6-82.8%. Q4 at budget 32: 8K decode 28.2 t/s (−73%), prefill 426 t/s, acceptance unchanged
-(80.4% — drafting was not the loss). The binding constraint was the cgroup, not the budget knob:
-with `--resident-budget-gib` the arena lands in shmem, not anonymous THP (shmem 40.3 Gi, anon_thp 0),
-so Q4's whole read footprint — experts 71.7 + PLE 28.8 + fixed ~20 ≈ 120 Gi — is charged into 96.0;
-`memory.current` pinned at the limit (ev_max 8), +38M refaults, 157 GiB NVMe reads in 5 minutes,
-pgscan +40M — constant page-cache reclaim thrash. IQ3_S fits because its 46.8 Gi of experts live
-entirely in the arena, keeping the file tier small and hot. The Nov-8 45 t/s figure came from
-`--ple-io ram`, which only traded the PLE file charge for a bigger anon overrun (the 80 Gi thrash).
-No budget value inside 96 Gi fixes a 120 Gi demand; Q4 on ganyu would need the cgroup raised
-(node RAM), O_DIRECT expert reads (no such path in 0.1.62), or a smaller quant. The engine serves
-any `model:` name, so no LiteLLM route changes were needed for the swap. IQ3_S restored and verified
-(8K decode 106.7 t/s, DFlash2 82.7%, hit rates 92.5-93.9%).
+The UD-Q4_K_XL-on-3090 question closed measured on 2026-11-20 across two arms on the same
+InferenceService — Strata 0.1.62, 307200 static YaRN, one slot, 96 Gi cgroup, DFlash2 spec-6
+auto-picked for Unsloth quants, Nov-8 install env overrides stripped (arm 1 `852a35f1bc` →
+`cd03e9dcd3`; arm 2 `7664e189c8` → `e2eb9b2e76`). Same-night IQ3_S baseline (evidence in
+`/data/bench-q4/window-2026-11-20-*.log` on the ganyu PVC): decode 105.9 / 91.7 / 95.8 / 84.9 t/s
+at 8K/128K/220K/270K, prefill 2.4-2.6k t/s, DFlash2 acceptance 77.6-82.8%.
+
+Arm 1, `--set resident-budget-gib=32 --set ple-io=mmap`: 8K decode 28.2 t/s (−73%), prefill 426 t/s,
+acceptance unchanged (80.4% — drafting was not the loss); the plateau held flat (28-33 t/s) at every
+context while TTFT stretched to 292 s at 270K. With `--resident-budget-gib` the arena lands in shmem,
+not anonymous THP (shmem ~37.5-40.3 Gi, anon_thp 0), `memory.current` pinned at the limit, refaults
++7.6M/min, ~31 GiB NVMe reads per minute, `ev_max` climbing — page-cache reclaim thrash. Corrected
+cgroup-v2 reading matters here: `memory.stat` `shmem` is a SUBSET of `file`, so the mutually
+exclusive decomposition `anon 3.9 + file 91.7 + kernel 0.5 == current 96.0` holds exactly, and the
+footprint is NOT "experts + PLE + fixed ≈ 120 Gi charged on top". Inside `file`: the 37.5 Gi pinned
+shmem arena leaves ~54 Gi of ordinary page cache for a demand-paged tier that wants 39.7 Gi of
+experts plus the PLE table — a real but modest ~14-16 Gi deficit, and PLE was most of it.
+
+Arm 2 changed only `--set ple-io=direct`, to test whether that PLE page-cache charge was the theft.
+It is not a separate channel in 0.1.62: the engine reads all experts by mmap of the GGUF shards in
+place and the PLE table lives inside shard 00002; with `direct` the engine still opens no O_DIRECT
+fd and its own I/O stats show buffered pread+readahead. So direct could not unmap PLE from the
+shared pool — but it did change behavior: reclaim intensity fell ~12x (640k refaults and 2.6 GiB
+NVMe per minute under live traffic vs 7.6M / 31 GiB), 8K prompt read 14.0 s vs 17.6 s, decode crept
+to ~33 t/s (+18%, measured over a concurrent agent request). Decode still sat on the same ~3x-slower
+plateau and `memory.current` still pinned at 96.0 with `ev_max` climbing: the engine's own launch
+warnings say why — with a 32 GiB budget, 57.3 GiB of experts stay outside RAM, "1835 of 1835
+lendable slots will read their experts from the pack during long prompt" at ~3x slower read. Answer
+to the discriminating question: the failure mode is the expert working set exceeding what 96 Gi can
+keep hot (pinned 32 + GPU 4940 + ~54 ordinary cache covers barely half the 104 GiB mapped), not PLE
+capacity theft; removing the PLE charge trades reclaim thrash for direct-miss latency, still ~70%
+below IQ3_S. IQ3_S fits because all 46.8 Gi of experts are resident and the file tier stays small
+and hot. Q4 on ganyu would need the cgroup raised (node RAM), an O_DIRECT expert path (0.1.62 has
+none), or a smaller quant. The engine serves any `model:` name, so no LiteLLM route changes were
+needed for either swap. IQ3_S restored and verified twice (8K decode 106.7 / 106.5 t/s, DFlash2
+~82%, hit rates 84.9-93.9%, cgroup headroom at 78 Gi with events frozen).
 
 The retired 27B server ran MTP, eight active sequences, prefix caching, and `GPU_UTIL=0.985`; the manifest lives in git history for rollback.
 Startup logs read on 2026-11-03 confirm `int8_per_token_head` KV and three speculative tokens.
