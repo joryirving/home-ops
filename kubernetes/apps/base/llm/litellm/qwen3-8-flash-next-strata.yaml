@@ -50,9 +50,29 @@ spec:
   - /bin/sh
   - -c
   - |
-    # Launch IQ3_S at 300K (307,200 tokens; YaRN ~1.195 past the trained 262,144,
-    # derived by launch; admission verified to 232K prompt tokens at 262K — the
-    # 300K admission is measured during qualification before agent limits move).
+    # PRODUCTION (2026-11-20): UD-IQ4_XS, all experts resident, 2 serving
+    # slots at 307,200 tokens. Promoted after the same-day qualification lane:
+    # routed experts 59.5 GB = 55.4 GiB pinned whole (no --resident-budget-gib;
+    # setup's cgroup-aware all-RAM gate: 55.4 + 16 fits 96), GPU cache 7019
+    # experts / 15.82 GiB VRAM, ev_max 0 through the whole 8K-270K matrix with
+    # pgscan byte-flat, DFlash2 acceptance consistently above IQ3_S's, decode
+    # parity at 128K and +2.7% at 270K, bench standard-v1 sanity 12/12 (logs on
+    # the ganyu PVC: /data/bench-q4/window-2026-11-20-iq4*.log and
+    # /data/bench-standard-iq4xs/). --parallel 2 serves two sessions; measured
+    # two-128K concurrency ran with zero additional reclaim and no per-session
+    # decode penalty, and 2x307K KV projects ~84 Gi of the 96Gi cap.
+    # --set ple-io=mmap keeps the 28.8 GB n-gram PLE table file-backed
+    # (measured touch set ~2 GiB) instead of the install config's --ple-io ram
+    # mlock, which beside the pinned arena leaves no reclaimable slack under a
+    # hard cap. STRATA_ROUTE_TAIL_SKIP=unset: the install env carries =0; the
+    # engine's auto rule (rank-7 skip) is what the qualification ran.
+    # conversation-cache-mib=8192 matches the qualification and prior IQ3_S
+    # launch. The pack was prepared with the unsloth family's --compat-bf16
+    # (195 tensors). LiteLLM routing is unchanged: the engine serves any
+    # model: name, so both groups keep calling qwen3.8-flash-next-iq3_s; only
+    # max_parallel_requests moves 1 -> 2 in the two groups that carry this
+    # rung. Rollback: --model iq3_s, drop the --set overrides, restore
+    # max_parallel_requests: 1.
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
     # over CLI flags and silently reverts to the wrong pack (observed).
     # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
@@ -65,9 +85,10 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
     #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
     #   without it the engine 403s litellm's requests by Host header.
-    strata launch --model iq3_s --data-dir /data/Strata-data --context 300k \
+    strata launch --model ud-iq4_xs --data-dir /data/Strata-data --context 300k \
       --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key \
-      --set conversation-cache-mib=8192
+      --parallel 2 --set conversation-cache-mib=8192 --set ple-io=mmap \
+      --set STRATA_ROUTE_TAIL_SKIP=unset
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
@@ -103,9 +124,10 @@ spec:
     effect: NoSchedule
   resources:
     cpu: "8"
-    # 307,200-token KV is pinned in RAM (kv-resident streams it): ~4.5 GiB of
-    # int8 KV on top of the weight pool. 80Gi ran at 99.7% at 262K; 96Gi matches
-    # the maya pod that shares this node.
+    # IQ4_XS all-resident: 55.4 GiB expert arena + runtime, ~5.7 GiB int8 KV
+    # per 307K session (kv-resident streams it). Two concurrent 307K sessions
+    # project ~84 Gi of the 96Gi cap — measured single-session peak was 72.3
+    # at 270K with ev_max 0 throughout the qualification.
     memory: 96Gi
     gpu: 1
   extraVolumes:
