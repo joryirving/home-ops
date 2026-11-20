@@ -17,12 +17,6 @@ spec:
     - name: envoy-external
       namespace: network
       sectionName: https
-    filters:
-    - type: RequestHeaderModifier
-      requestHeaderModifier:
-        set:
-        - name: x-litellm-session-id
-          value: '%REQ(x-session-id)%'
   env:
   - name: AUTO_REDIRECT_UI_LOGIN_TO_SSO
     value: 'true'
@@ -96,12 +90,13 @@ spec:
     # Share the actual QFN deployments rather than duplicate Gufo/Strata entries.
     model_group_alias:
       grooming-pool: qwen3.8-flash-next
-    routing_groups:
-    - group_name: fn-least-busy
-      models:
-      - qwen3.8-flash-next
-      - qwen3.8-flash-next-chat
-      routing_strategy: least-busy
+    # Callers carrying a recognized session header (x-session-id / x-litellm-session-id)
+    # pin their QFN session to the first deployment via the shared Redis cache;
+    # failover serves from the peer without moving the pin.
+    model_group_affinity_config:
+      qwen3.8-flash-next: [session_affinity]
+      qwen3.8-flash-next-chat: [session_affinity]
+      grooming-pool: [session_affinity]
     cooldown_time: 30
     enable_pre_call_checks: true
     # Gufo rejects a cache fork from a live session when the fork boundary
