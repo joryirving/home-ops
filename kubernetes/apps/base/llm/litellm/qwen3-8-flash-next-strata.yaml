@@ -118,6 +118,12 @@ spec:
   env:
   - name: STRATA_ALLOWED_HOSTS
     value: qwen3-8-flash-next-strata.llm.svc.cluster.local,qwen3-8-flash-next-strata.llm.svc,qwen3-8-flash-next-strata
+  # Batch-MTP: the launch layer (drafting.py slots_draft_nothing / server.py)
+  # reads ITS OWN environment to decide whether parallel slots draft — a
+  # --set STRATA_BATCH_MTP=1 reaches only the engine process and the boot line
+  # stays "none in parallel slots". Container-level env reaches both.
+  - name: STRATA_BATCH_MTP
+    value: "1"
   tolerations:
   - key: llm-workload
     operator: Exists
