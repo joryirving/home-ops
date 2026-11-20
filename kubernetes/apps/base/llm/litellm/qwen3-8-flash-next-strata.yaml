@@ -50,9 +50,8 @@ spec:
   - /bin/sh
   - -c
   - |
-    # Launch IQ3_S at 300K (307,200 tokens; YaRN ~1.195 past the trained 262,144,
-    # derived by launch; admission verified to 232K prompt tokens at 262K — the
-    # 300K admission is measured during qualification before agent limits move).
+    # Launch at 300K (307,200 tokens; YaRN derived by launch; admission
+    # verified to 232K prompt tokens at 262K during qualification).
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
     # over CLI flags and silently reverts to the wrong pack (observed).
     # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
@@ -65,9 +64,19 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
     #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
     #   without it the engine 403s litellm's requests by Host header.
-    strata launch --model iq3_s --data-dir /data/Strata-data --context 300k \
+    # TEMPORARY (Q4 benchmark window arm 2, 2026-11-20): same UD-Q4_K_XL at
+    # resident-budget-gib=32 as the mmap arm, single change ple-io=mmap ->
+    # direct. Corrected cgroup accounting (shmem is inside memory.stat "file")
+    # showed the mmap arm thrashing because PLE's 28.8 GiB page-cache charge
+    # plus 39.7 GiB of demand-paged experts exceeded the ~52 GiB ordinary-file
+    # headroom in the 96 Gi cgroup. --ple-io direct reads PLE unbuffered (no
+    # page-cache charge), so the arm discriminates "expert set fundamentally
+    # exceeds 96 Gi" from "PLE mmap stole the file cache the expert tier
+    # needed". Roll back by restoring --model iq3_s and dropping the Q4 --sets.
+    strata launch --model ud-q4_k_xl --data-dir /data/Strata-data --context 300k \
       --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key \
-      --set conversation-cache-mib=8192
+      --set conversation-cache-mib=8192 --set resident-budget-gib=32 --set ple-io=direct \
+      --set STRATA_HC_Q8=unset --set STRATA_ROUTE_TAIL_SKIP=unset
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
