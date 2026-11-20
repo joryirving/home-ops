@@ -50,19 +50,9 @@ spec:
   - /bin/sh
   - -c
   - |
-    # TEMPORARY (Q4 benchmark window, 2026-11-20): launch UD-Q4_K_XL instead of
-    # IQ3_S to measure the quality/perf trade on ganyu. One variable at a time:
-    # same 300K context (307,200 tokens), 1 slot, 96Gi cgroup, image, DFlash2.
-    # --set entries are the launch's authoritative "user_args" layer (verified
-    # in strata_control/arg_layers.py): they override the Nov-8 catalog args.
-    # - resident-budget-gib=32: pins the hottest 32 GiB of Q4 experts in the
-    #   anonymous arena; measured fit under 96.0 Gi (fixed ~46.5 + 32 + slack).
-    # - ple-io=mmap: the Nov-8 Q4 catalog carries --ple-io ram, which mlocked
-    #   26.8 Gi and thrashed its 80Gi cgroup; mmap keeps the PLE table on the
-    #   reclaimable page cache, matching what IQ3_S does live today.
-    # - STRATA_HC_Q8/STRATA_ROUTE_TAIL_SKIP=unset: strip the Nov-8 install's
-    #   env overrides so both quants run engine defaults (apples to apples).
-    # Roll back by restoring --model iq3_s and dropping the Q4-window --sets.
+    # Launch IQ3_S at 300K (307,200 tokens; YaRN ~1.195 past the trained 262,144,
+    # derived by launch; admission verified to 232K prompt tokens at 262K — the
+    # 300K admission is measured during qualification before agent limits move).
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
     # over CLI flags and silently reverts to the wrong pack (observed).
     # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
@@ -75,10 +65,9 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
     #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
     #   without it the engine 403s litellm's requests by Host header.
-    strata launch --model ud-q4_k_xl --data-dir /data/Strata-data --context 300k \
+    strata launch --model iq3_s --data-dir /data/Strata-data --context 300k \
       --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key \
-      --set conversation-cache-mib=8192 --set resident-budget-gib=32 --set ple-io=mmap \
-      --set STRATA_HC_Q8=unset --set STRATA_ROUTE_TAIL_SKIP=unset
+      --set conversation-cache-mib=8192
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
