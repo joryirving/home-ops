@@ -92,7 +92,10 @@ spec:
       grooming-pool: qwen3.8-flash-next
     # Callers carrying a recognized session header (x-session-id / x-litellm-session-id)
     # pin their QFN session to the first deployment via the shared Redis cache;
-    # failover serves from the peer without moving the pin.
+    # failover serves from the peer without moving the pin. The optional check list is
+    # required: the pre-router's adopted affinity check otherwise never receives the
+    # per-group config (LiteLLM 1.110.2 wiring).
+    optional_pre_call_checks: [session_affinity]
     model_group_affinity_config:
       qwen3.8-flash-next: [session_affinity]
       qwen3.8-flash-next-chat: [session_affinity]
