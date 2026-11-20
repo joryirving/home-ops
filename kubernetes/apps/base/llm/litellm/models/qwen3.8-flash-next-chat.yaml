@@ -27,9 +27,6 @@ spec:
     supportsFunctionCalling: true
     supportsVision: true
     extra:
-      # Local QFN 429s mean backend queue saturation, not an unhealthy deployment.
-      # Keep the backend eligible so the next request can try local QFN again
-      # instead of inheriting the router-wide 30s cooldown.
       allowed_fails_policy:
         RateLimitErrorAllowedFails: 10000
       input_cost_per_token: 2.09e-07
@@ -65,9 +62,6 @@ spec:
     supportsFunctionCalling: true
     supportsVision: true # verified 2026-11-09 on the strata engine: data-URL image request, 200 + correct description
     extra:
-      # Local QFN 429s mean backend queue saturation, not an unhealthy deployment.
-      # Keep the backend eligible so the next request can try local QFN again
-      # instead of inheriting the router-wide 30s cooldown.
       allowed_fails_policy:
         RateLimitErrorAllowedFails: 10000
       input_cost_per_token: 6.2e-08
