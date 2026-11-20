@@ -271,7 +271,8 @@ account moved from pay-as-you-go to a subscription and the cap was removed.
 | `grooming-glm-flash` | Neuralwatt       | 2     | Neuralwatt |
 
 `dsv4.1f` replaced `dsv4f` on 2026-09-26 (#10533). Consumers: OpenClaw and Hermes fallback
-chains, and the `auto` router fallback.
+chains. The `auto` complexity router was torn out on 2026-11-20 — unused (2 calls in 30 days)
+and untrusted; its LiteLLMModel and fallback entry are gone.
 
 Every Neuralwatt rung behind Z.AI serves only when the Z.AI rung fails and its deployment is
 cooling down. The `glm-5.3-flash` alias fallback answers with DeepSeek V4.1 Flash weights, so a
