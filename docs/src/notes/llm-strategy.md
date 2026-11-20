@@ -174,6 +174,29 @@ rerun: the pinned 3-shard UD-IQ4_XS (93,682,584,224 bytes, sha256-pinned in setu
 the unsloth family's `--compat-bf16`; a newer Unsloth v3.1 re-release exists in the same catalog as
 `UD-IQ4_XS-v31` (4 shards, 60.4 GB experts, six tensor types) and was not benchmarked here.
 
+PRODUCTION since 2026-11-20: strata runs UD-IQ4_XS all-resident with `--parallel 2` (commit
+`dc1a64532e`, batch-MTP enabled `d187fc0448`) — the owner's call after the Q4 re-test and this
+lane. Two-slot validation (`/data/bench-q4/window-2026-11-20-prod2slot-validation.log` on the
+ganyu PVC): both slots are real — two simultaneous 270K prompts prefilled concurrently at
+2,269 / 1,795 t/s with `memory.peak` touching 96.0 once, `ev_max` 0 throughout; slot K/V is
+pinned 3.63 GiB per slot at boot, idle `current` 87.7. The measured cost, which the owner
+accepted: parallel slots run one token per request and step (0.1.62 gates drafting off under
+concurrency; forcing batch-MTP cost 98 hard failures on 2026-11-19), and per-session decode
+collapses ~4x at every context (7-19 t/s vs 68.3 single-flight; aggregate 22-33 t/s) while the
+adaptive expert tier storms (hits 43-63%, GPU cache down to 5426 slots). The same
+2-sessions-plus-MTP capability the owner uses lives on gufo (`--sessions 2 --speculative mtp`
+on Strix) — on CUDA 0.1.62 it exists behind `STRATA_BATCH_MTP`.
+
+Batch-MTP (`STRATA_BATCH_MTP=1` as CONTAINER env, commit `d187fc0448`): the launch layer
+(`drafting.py slots_draft_nothing`) reads its own environment — a `--set` reaches only the
+engine process and the boot line stays "none in parallel slots"; container env flips the boot
+line to "Drafting: MTP (DFlash2 isn't available in this mode)" and parallel slots carry MTP
+drafts. Effect measured (`/data/bench-q4/window-2026-11-20-batchmtp-validation.log`): 2x8K
+concurrent aggregate 22-33 → 55.7 t/s (21.5 / 34.2 per session, TTFT 9.2 / 18.2 s); 2x128K
+unchanged (18.9 vs 21.6 — long-context concurrency is bound by KV reads and expert-cache
+misses, hits 62/31%, not drafting); single-flight unchanged (61.9 t/s, 63.7% MTP acceptance);
+stable, `ev_max` 0, `current` 93.3 peak at 2x128K. Kept as production.
+
 The retired 27B server ran MTP, eight active sequences, prefix caching, and `GPU_UTIL=0.985`; the manifest lives in git history for rollback.
 Startup logs read on 2026-11-03 confirm `int8_per_token_head` KV and three speculative tokens.
 On 2026-10-31, the measured shared cache pool held 208,216 tokens in 7.6 GiB, up from 172,649.
