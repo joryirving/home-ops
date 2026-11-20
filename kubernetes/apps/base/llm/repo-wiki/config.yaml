@@ -59,7 +59,7 @@ data:
     #!/usr/bin/env python3
     # Multi-pass repo wiki: stage 1 plans pages, stage 2 writes each from its
     # relevant files. Local-model friendly, background, no truncated whole-repo dump.
-    import io, json, os, pathlib, re, shutil, subprocess, tarfile, urllib.error, urllib.request, fnmatch
+    import fnmatch, hashlib, io, json, os, pathlib, re, shutil, subprocess, tarfile, urllib.error, urllib.request
 
     LITELLM  = os.environ["OPENAI_BASE_URL"].rstrip("/")
     KEY      = os.environ["OPENAI_API_KEY"]
@@ -133,12 +133,13 @@ data:
                 continue
         return files
 
-    def chat(system, user):
+    def chat(system, user, session):
         body = json.dumps({"model": MODEL, "temperature": 0.2, "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user}]}).encode()
         req = urllib.request.Request(f"{LITELLM}/chat/completions", data=body,
-            headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"})
+            headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json",
+                     "x-litellm-session-id": session})
         return json.load(urllib.request.urlopen(req, timeout=TIMEOUT))["choices"][0]["message"]["content"]
 
     PLAN_SYS = (
@@ -155,18 +156,18 @@ data:
         "include a mermaid diagram when it clarifies structure or flow. Start with an H1 "
         "title. Do not invent features absent from the provided source.")
 
-    def plan(repo, files):
+    def plan(repo, files, session):
         tree = "\n".join(sorted(files))
         readme = next((files[p] for p in files
                        if p.lower() == "readme.md" or p.lower().endswith("/readme.md")), "")[:8000]
-        out = chat(PLAN_SYS, f"Repository: {repo}\n\nFile tree:\n{tree}\n\nREADME:\n{readme}")
+        out = chat(PLAN_SYS, f"Repository: {repo}\n\nFile tree:\n{tree}\n\nREADME:\n{readme}", session)
         m = re.search(r"\[.*\]", out, re.S)
         try:
             return json.loads(m.group(0)) if m else []
         except Exception:
             return []
 
-    def write_page(repo, page, files):
+    def write_page(repo, page, files, session):
         ctx, total = [], 0
         for p in page.get("files", []):
             c = files.get(p)
@@ -178,7 +179,7 @@ data:
                 break
         user = (f"Repository: {repo}\nPage title: {page.get('title')}\n"
                 f"Focus: {page.get('focus', '')}\n\nRelevant source files:\n" + "\n\n".join(ctx))
-        return chat(PAGE_SYS, user)
+        return chat(PAGE_SYS, user, session)
 
     def commit(msg):
         subprocess.run(["git", "-C", str(REPO), "add", "-A"], check=False)
@@ -201,8 +202,10 @@ data:
     for repo, sha in stale:
         print(f"== {repo}", flush=True)
         try:
+            # One revision = one session: plan + every page pin to the same backend.
+            sid = "wiki-" + hashlib.sha256(f"{repo}@{sha}".encode()).hexdigest()[:16]
             files = fetch_files(repo)
-            pages = plan(repo, files)[:MAXPAGES]
+            pages = plan(repo, files, sid)[:MAXPAGES]
             if not pages:
                 pages = [{"title": "Overview", "slug": "overview", "focus": "repository overview",
                           "files": sorted(files)[:40]}]
@@ -214,7 +217,7 @@ data:
             for pg in pages:
                 slug = pg.get("slug") or slugify(pg.get("title", "page"))
                 print(f"  page: {pg.get('title')} ({slug})", flush=True)
-                (base / f"{slug}.md").write_text(write_page(repo, pg, files))
+                (base / f"{slug}.md").write_text(write_page(repo, pg, files, sid))
                 index.append(f"- [{pg.get('title', slug)}]({slug}.md)")
             (base / "index.md").write_text("\n".join(index))
             state[repo] = sha
