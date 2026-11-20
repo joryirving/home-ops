@@ -137,6 +137,43 @@ none), or a smaller quant. The engine serves any `model:` name, so no LiteLLM ro
 needed for either swap. IQ3_S restored and verified twice (8K decode 106.7 / 106.5 t/s, DFlash2
 ~82%, hit rates 84.9-93.9%, cgroup headroom at 78 Gi with events frozen).
 
+Both conclusions above are OVERTURNED the same day. The 32 GiB budget was the entire Q4 failure, not
+the cgroup: setup's own all-RAM gate is cgroup-aware (it reads `memory.max`, not host MemTotal) and
+for UD-Q4_K_XL it computes 71.73 GiB of experts + 16 GiB beside = 87.7 under 96 — so with NO
+`--resident-budget-gib` at all (`010154243c`, reverted `d7236edb68`) the engine pinned the whole
+routed-expert set: "experts loaded: 71.73 GiB", GPU cache 5343 experts / 15.58 GiB VRAM beside it,
+`memory.current` 87.4 at boot growing only to 92.8 at a 270K context, `ev_max` 0 through the whole
+matrix, pgscan byte-flat from boot, refault literally unchanged (227,521 before and after four
+runs), NVMe +0.22 GiB total. Strata's 96 Gi host cap plus the 24 GiB VRAM hold the same model gufo
+holds in 99 GB GTT on Strix Halo, and then some. The honest Q4 operating point (vs the same-night
+IQ3_S baseline): decode 67.7 / 67.2 / 64.3 / 67.5 t/s at 8K/128K/220K/270K — flat and
+context-independent, −36/−27/−33/−20%; prefill 724/2089/1962/1961 t/s (−29/−19/−20/−18%); TTFT
+10.3/57.4/105.3/127.9 s; DFlash2 acceptance 74.2-78.6% (−4 to −8 pts). Two concurrent 128K sessions
+fit and ran clean: per-session decode 67.8/69.2 t/s (no concurrency decode penalty), per-session
+prefill ~2,068 t/s each overlapping (~4.1k t/s aggregate in the overlap, ~2.6k over the whole span;
+B's 92.3 s TTFT includes the single-slot queue), `memory.peak` touched 96.0 once with zero events
+and zero additional reclaim during the double-prefill. The limiting resource for two MAX-context
+sessions is host-RAM KV: a second 270K session adds ~5 GiB anon and crosses the cap. Q4 all-resident
+is viable but intrinsically ~30% slower than IQ3_S on this card.
+
+The UD-IQ4_XS lane (same day, `c89b9d2895`, reverted via the same reverts) is the more interesting
+result. Its routed-expert set is 59.5 GB = 55.4 GiB (tensor inventory from the installed
+fingerprints DB, validated against the live IQ3_S 46.84 GiB and Q4 71.73 GiB expert totals: IQ3_S
+33.9 + IQ4_NL 20.3 + IQ4_XS 0.9 + Q8_0 4.5 GB, dense ~5.4 GB, PLE 28.8 GB) — all-resident by the
+same gate with more margin: experts 55.43 GiB, GPU cache 7019 experts / 15.82 GiB, `current` 67 →
+72.3 at 270K, `ev_max` 0 throughout, PLE file-backed mmap with a measured touch set of ~2 GiB. Same
+matrix: decode 91.4 / 91.6 / 88.6 / 87.2 t/s — −13.7% vs IQ3_S only at 8K, parity at 128K, +2.7% at
+270K; prefill −4-5%; DFlash2 acceptance consistently HIGHER than IQ3_S (78.9-82.6% vs 77.6-82.8%,
++2-4 pts at long context); expert hits 91.9-94.5%; PCIe movement 0.1-0.2% of routed experts;
+mixed 128K∥8K per-session 87.5 / 97.6 t/s, TTFT +7%. `strata bench` standard-v1: sanity 12/12
+(instruction 4/4, retrieval 4/4, tool calls 4/4 — matching IQ3_S), short decode 83.4 t/s / TTFT
+0.90 s, 16K prompt 1749 t/s against IQ3_S's recorded 1138 (0.1.52/131K caveats on that record).
+IQ4_XS is the candidate worth a deliberate production qualification: same quality needles, better
+long-context acceptance, decode parity above 128K, at −13.7% short decode. Config notes for any
+rerun: the pinned 3-shard UD-IQ4_XS (93,682,584,224 bytes, sha256-pinned in setup.py) packs with
+the unsloth family's `--compat-bf16`; a newer Unsloth v3.1 re-release exists in the same catalog as
+`UD-IQ4_XS-v31` (4 shards, 60.4 GB experts, six tensor types) and was not benchmarked here.
+
 The retired 27B server ran MTP, eight active sequences, prefix caching, and `GPU_UTIL=0.985`; the manifest lives in git history for rollback.
 Startup logs read on 2026-11-03 confirm `int8_per_token_head` KV and three speculative tokens.
 On 2026-10-31, the measured shared cache pool held 208,216 tokens in 7.6 GiB, up from 172,649.
