@@ -50,26 +50,21 @@ spec:
   - /bin/sh
   - -c
   - |
-    # TEMPORARY (UD-IQ4_XS qualification lane, 2026-11-20): launch the pinned
-    # Unsloth UD-IQ4_XS (revision 38bb39ee, 3 shards, 93,682,584,224 bytes,
-    # sha256-pinned in the installed setup.py) instead of IQ3_S, to measure the
-    # quality/perf trade at ~4-bit. Same 307,200-token context (YaRN derived by
-    # launch), 1 slot, 96Gi cgroup, image, DFlash2 spec-6/conf-0.7.
-    # Memory topology (the lane's hypothesis, from the tensor inventory):
-    # routed experts 59.5 GB = 55.4 GiB vs Q4_K_XL's 71.7 — all resident.
-    # - No --resident-budget-gib: setup's own gate (cgroup-aware) says the
-    #   55.4 GiB expert arena + 16 GiB beside fits 96, so it wrote all-RAM
-    #   mode — the ideal topology, no expert file tier.
-    # - --set ple-io=mmap overrides the config's --ple-io ram: setup would
-    #   mlock the 28.8 GB n-gram PLE table, but with the pinned arena that
-    #   leaves no reclaimable slack under the hard 96 Gi cap (the Nov-8 Q4
-    #   --ple-io ram signature). File-backed PLE is what IQ3_S runs today.
-    # - STRATA_ROUTE_TAIL_SKIP=unset: the IQ4_XS install config carries =0;
-    #   production IQ3_S runs engine auto (unset), so strip for parity.
-    # - conversation-cache-mib=8192 matches the IQ3_S launch. The pack was
-    #   prepared with the unsloth family's --compat-bf16 (195 tensors); the
-    #   engine serves any model: name, so no LiteLLM route changes.
-    # Roll back by restoring --model iq3_s and dropping the IQ4_XS --sets.
+    # TEMPORARY (UD-Q4_K_XL re-test, 2026-11-20): launch the Unsloth UD-Q4_K_XL
+    # with FULL expert residency — the earlier Q4 window pinned only 32 GiB via
+    # --resident-budget-gib, which manufactured the file-tier thrash this arm
+    # removes. No --resident-budget-gib at all: setup's own all-RAM gate
+    # (experts 71.73 GiB + 16 GiB beside = 87.7, under this 96Gi cgroup) picks
+    # full residency, so the whole routed-expert set is pinned in RAM and the
+    # expert file tier disappears. --set ple-io=mmap keeps the 28.8 GB n-gram
+    # PLE table file-backed (measured touch set ~2 GiB on IQ4_XS) instead of
+    # the config's --ple-io ram mlock, which with the pinned arena leaves no
+    # reclaimable slack under the hard cap. STRATA_HC_Q8/STRATA_ROUTE_TAIL_SKIP
+    # stripped from the Nov-8 install env so the engine auto rules run (same as
+    # the IQ3_S and IQ4_XS arms). Same 307,200-token context, 1 slot, DFlash2
+    # spec-6/conf-0.7, image, conversation cache. The IQ4_XS arm (c89b9d2895)
+    # measured clean before this; IQ3_S is restored afterwards.
+    # Roll back by restoring --model iq3_s and dropping the Q4 --sets.
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
     # over CLI flags and silently reverts to the wrong pack (observed).
     # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
@@ -82,10 +77,10 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
     #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
     #   without it the engine 403s litellm's requests by Host header.
-    strata launch --model ud-iq4_xs --data-dir /data/Strata-data --context 300k \
+    strata launch --model ud-q4_k_xl --data-dir /data/Strata-data --context 300k \
       --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key \
       --set conversation-cache-mib=8192 --set ple-io=mmap \
-      --set STRATA_ROUTE_TAIL_SKIP=unset
+      --set STRATA_HC_Q8=unset --set STRATA_ROUTE_TAIL_SKIP=unset
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
