@@ -137,19 +137,23 @@ Never enable an old Courier consumer for REBASE work. Courier 0.1.16 maps that w
 
 Flash-Next is the only local model family. It runs on two independent lanes:
 
-- **skirk (Strix Halo)** — gufo engine, UD-Q4_K_XL quant, MTP, 262144-token
-  context, `--sessions 2`, and a 64 GB disk continuation cache that survives
-  restarts. Served as `qwen3.8-flash-next` / `qwen3.8-flash-next-chat`.
+- **skirk (Strix Halo)** — gufo engine, UD-Q4_K_XL quant, MTP, 307200-token
+  context with `--enable-yarn` (dynamic per-session: native up to 262144,
+  smallest covering factor past it), `--sessions 2`, and a 64 GB disk
+  continuation cache that survives restarts. Served as
+  `qwen3.8-flash-next` / `qwen3.8-flash-next-chat`.
 - **ganyu (RTX 3090)** — `qwen3-8-flash-next-strata` InferenceService
   (`litellm/qwen3-8-flash-next-strata.yaml`),
-  Strata engine, IQ3_S quant at 256K context, three litellm slots
-  (`max_parallel_requests: 3`), served as `qwen3.8-flash-next-iq3_s` through an
-  explicit `LiteLLMModel` CR in the `qwen3.8-flash-next` group. Both group
-  rungs sit at order 0 with per-rung caps (`max_parallel_requests: 2` on skirk,
-  `3` on the strata rung), so the router's simple-shuffle strategy load-shares across
-  the five sessions instead of failover. The packs are
-  pre-staged on the `llmkube-ganyu-cache` PVC; cold start is 4-8 minutes and
-  the prefix cache is RAM-only, so redeploys pay full prefill until warm.
+  Strata engine, IQ3_S quant at 307200 context (static YaRN 1.17188), one
+  engine slot (measured: two slots lost on every latency axis — see
+  [llm-strategy](llm-strategy.md)), served as `qwen3.8-flash-next-iq3_s`
+  through an explicit `LiteLLMModel` CR in the `qwen3.8-flash-next` group.
+  The group routes by order — skirk at order 1 with
+  `max_parallel_requests: 2`, strata at order 2 with
+  `max_parallel_requests: 1` — so gufo is the primary and strata absorbs
+  overflow. The packs are pre-staged on the `llmkube-ganyu-cache` PVC; cold
+  start is 4-8 minutes and the prefix cache is RAM-only, so redeploys pay
+  full prefill until warm.
 
 The former `nvidia` ModelPool (qwen3.8-27B + muse-glimmer swapping on the
 3090) and its `nvidia-router-proxy` service were retired when Flash-Next took

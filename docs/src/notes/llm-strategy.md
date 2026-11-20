@@ -85,10 +85,20 @@ MTP proposes several tokens before the main model verifies them.
 | `embed` | CPU, three replicas | Qwen3-Embedding-0.6B Q8_0 | 32768 | 1024-dimension embeddings for memini and toolhive |
 | `rerank` | CPU, three replicas | bge-reranker-v2-m3 Q8_0 | Not declared | memini reranking |
 
-The 3090 hosts one always-resident service, `qwen3-8-flash-next-strata` (Strata engine, IQ3_S at 268288-token context).
+The 3090 hosts one always-resident service, `qwen3-8-flash-next-strata` (Strata engine, IQ3_S at 307200-token context).
 The former `nvidia` ModelPool and ModelRouter — 27B/muse swapping through `nvidia-router-proxy` —
 were retired when Flash-Next took over all local traffic on 2026-11-08; no swapping happens any more.
 See [Shared local inference](coding-loop.md#shared-local-inference) for operations.
+
+One slot on Strata is a measured choice, not a leftover: the 2026-11-19 concurrency qualification (main
+`eab3ec0638` restore) tested `--parallel 2` three ways on the live engine — auto (batch slots decode
+undrafted, −22% expert pool), `STRATA_BATCH_MTP=1` (never reaches engine args: the flag is not a launch
+option and batch slots drafted nothing — batch-MTP is not reachable on 0.1.62 one-card), and
+`--drafting dflash2` (engine loads per-slot drafters, but concurrency drafted zero and solo 220K decode
+regressed +51%). Every arm lost to 1-slot DFlash2 at solo, aggregate, and mixed long-prefill/short-decode
+latency; the second slot never improved time-to-first-token (requests serialize through prefill).
+Three slots went untested because two showed no benefit. Verification method: live engine process args and
+per-request `drafts_offered`, not launch flags or env.
 
 The retired 27B server ran MTP, eight active sequences, prefix caching, and `GPU_UTIL=0.985`; the manifest lives in git history for rollback.
 Startup logs read on 2026-11-03 confirm `int8_per_token_head` KV and three speculative tokens.
