@@ -21,7 +21,7 @@ Do not infer provider quota units from LiteLLM token counters or add cached inpu
 13:04 and 18:04; this is observed proxy traffic, not a complete consumer ledger or provider quota
 accounting.
 
-Neuralwatt supplies energy-metered PAYG as the sole `dsv4.1f` provider, capped at $1/day.
+Neuralwatt supplies a subscription plan as the sole `dsv4.1f` provider; the $1/day LiteLLM cap was removed when the account moved off pay-as-you-go on 2026-11-20.
 
 | Plan                | Price                                        | Cap                                                          | Reset                              | Models                                                | Primary use                                                                                               |
 | ------------------- | -------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -29,7 +29,7 @@ Neuralwatt supplies energy-metered PAYG as the sole `dsv4.1f` provider, capped a
 | **MiniMax Plus**    | ~$200 USD/yr ($20/mo, annual = 2mo free)     | legacy Token Plan; observed quota rejections despite grandfathered benefit            | rolling 5h                         | M3.1 Flash (primary), M3, M2.7 (retires 2026-11-18) — Anthropic endpoint | Agentic reasoning workhorse (`MiniMax-M3.1-Flash`); M2.7 auto-reroutes to M3.1 from 2026-10-19     |
 | **GLM Coding Lite** | ~$151 USD/yr (promotional, region-dependent) | ~80 prompts / 5h                                             | rolling 5h                         | GLM-5.3 and GLM-5.3-Flash on the Z.AI coding endpoint | `frontier-pool` rung 3 (GLM-5.3); `glm-5.3-flash` on Z.AI (Flash)                             |
 | **Kimi Coding**     | ~$180 USD/yr ($15/mo; ~$261 CAD/12mo)        | plan allowance                                               | plan-defined                       | Kimi K2.8 Preview Code, Kimi K3                               | `frontier-pool` lead (K3); `reasoning-pool` lead (K2.7)                                                   |
-| **Neuralwatt**      | pay-per-use ($5/kWh energy billing)          | account credit; LiteLLM `max_budget` $1/day on its rung      | n/a                                | DeepSeek V4.1 Flash                                   | `dsv4.1f` sole provider                                                                            |
+| **Neuralwatt**      | subscription (was pay-per-use, $5/kWh energy billing) | plan allowance; no LiteLLM budget cap | plan-defined | DeepSeek V4.1 Flash, GLM-5.3, GLM-5.3-Flash | `dsv4.1f` sole provider; second rung behind Z.AI on `glm-5.3`, `glm-5.3-flash`, and two pools |
 
 Retired 2026-08-25: **Opencode Go** ($10 USD/mo gateway; DeepSeek V4 Flash/Pro, MiMo v2.5/Pro,
 Qwen3.8-Max) and **Moonshot** (pay-per-use Kimi fallback behind Kimi Coding).
@@ -175,8 +175,8 @@ The repository Actions variable `FALLBACK_MODEL` is `MiniMax-M3.1-Flash` (read 2
 | `MiniMax-M3.1-Flash` | MiniMax Plus               | MiniMax-M3.1-Flash (Anthropic endpoint) | 1M   | OpenClaw default + Matcha primary; `auto` MEDIUM and miss default; Hermes/opencode `reviewer` + `explorer`. Thinking always on; `reasoning_effort` low/medium/high/xhigh/max (default max). Published list pricing: $0.15/M input, $0.60/M output, $0.015/M cache reads; no long-context tier listed |
 | `MiniMax-M3`          | MiniMax Plus                      | MiniMax-M3 (Anthropic endpoint)             | 1M       | Retained standalone for rollback and manual use; no pool rungs                                 |
 | `MiniMax-M2.7` | Legacy client entry | No active LiteLLMModel CR | 204800 declared by client | Not a configured proxy backend. Old cron entries require separate verification |
-| `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model    |
-| `glm-5.3-flash`       | GLM Coding Lite | glm-5.3-flash (Z.AI) | 1M       | OpenClaw Miso/main primary; `oracle` role; Courier `frontier` coordinator                                                     |
+| `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model. Falls back to Neuralwatt `glm-5.3` (order 2)    |
+| `glm-5.3-flash`       | GLM Coding Lite + Neuralwatt | glm-5.3-flash (Z.AI), DeepSeek V4.1 Flash (Neuralwatt) | 1M       | OpenClaw Miso/main primary; `oracle` role; Courier `frontier` coordinator. Neuralwatt rung (order 3) serves DeepSeek V4.1 Flash if Z.AI fails                                                     |
 | `chatgpt/gpt-6.2-astra` | ChatGPT Plus                      | gpt-6.2-astra (Codex/OAuth)                 | 272k*    | Direct alias; `frontier-pool` rung 2                                                          |
 | `chatgpt/gpt-6.2-sol` | ChatGPT Plus                      | gpt-6.2-sol (Codex/OAuth)                   | 272k     | Direct alias; `reasoning-pool` rung 2                                                         |
 | `chatgpt/gpt-6-luna`  | ChatGPT Plus                      | gpt-6-luna (Codex/OAuth)                    | 272k     | Direct alias defaults to `max`; implementation lead defaults to `high`                                |
@@ -193,22 +193,41 @@ no router fallback in `litellmproxy.yaml`. Kimi Coding signals cap-out with a 40
 but never cools down. Inside `frontier-pool` and `reasoning-pool` the order-based fallback moves past
 it (see **Frontier pool**); a direct `kimi-*` call fails.
 
-### DeepSeek V4.1 Flash (Neuralwatt PAYG)
+### Neuralwatt rungs (subscription)
 
-| Alias     | Order | Provider    | Ctx | Budget                                   |
-| --------- | ----- | ----------- | --- | ---------------------------------------- |
-| `dsv4.1f` | 2     | Neuralwatt  | 1M  | `max_budget: 1.0`, `budget_duration: 1d` |
+Neuralwatt ran under a $1/day LiteLLM cap from 2026-09-27 (#10557) until 2026-11-20, when the
+account moved from pay-as-you-go to a subscription and the cap was removed.
 
-`dsv4.1f` replaced `dsv4f` on 2026-09-26 (#10533); the Neuralwatt rung was capped at $1/day on
-2026-09-27 (#10557). Consumers: OpenClaw and Hermes fallback chains, and the `auto` router fallback.
-DeepSeek is not in `reasoning-pool`. Neuralwatt is not in an ordered pool.
+| Model group       | Rung                | Order | Provider   |
+| ----------------- | ------------------- | ----- | ---------- |
+| `dsv4.1f`         | sole                | 2     | Neuralwatt |
+| `glm-5.3`         | Z.AI                | 1     | Z.AI       |
+| `glm-5.3`         | Neuralwatt          | 2     | Neuralwatt |
+| `glm-5.3-flash`   | Z.AI                | 1     | Z.AI       |
+| `glm-5.3-flash`   | Neuralwatt (DeepSeek V4.1 Flash) | 2 | Neuralwatt |
+| `reasoning-pool`  | GLM Flash, Z.AI     | 4     | Z.AI       |
+| `reasoning-pool`  | GLM Flash, Neuralwatt | 5   | Neuralwatt |
+| `grooming-glm-flash` | Z.AI             | 1     | Z.AI       |
+| `grooming-glm-flash` | Neuralwatt       | 2     | Neuralwatt |
 
-Neuralwatt charges for measured GPU energy rather than tokens. PAYG is $5/kWh; prefix-cache hits
-avoid prefill work and therefore reduce the charged energy. Use Neuralwatt's usage API/dashboard for
+`dsv4.1f` replaced `dsv4f` on 2026-09-26 (#10533). Consumers: OpenClaw and Hermes fallback
+chains, and the `auto` router fallback.
+
+Every Neuralwatt rung behind Z.AI serves only when the Z.AI rung fails and its deployment is
+cooling down. The `glm-5.3-flash` alias fallback answers with DeepSeek V4.1 Flash weights, so a
+Z.AI outage there silently changes the answering model, not just the host. The `glm-5.3` alias
+and both pool rungs keep the same GLM weights. `reasoning-pool` puts the Neuralwatt rung at
+order 5, ahead of the local Flash-Next rung at order 6.
+
+All Neuralwatt rungs declare Neuralwatt's own token prices, not Z.AI's.
+
+Neuralwatt billed measured GPU energy rather than tokens under pay-as-you-go ($5/kWh; prefix-cache
+hits avoided prefill work and therefore reduced the charged energy). The subscription covers usage;
+the declared token prices exist for spend reporting. Use Neuralwatt's usage API/dashboard for
 authoritative cost; LiteLLM and Prometheus are routing/volume telemetry, not the billing authority.
 
 Historical (2026-08-25): the Neuralwatt balance was ~$9.52 against a trailing burn of ~$3.17/day, which
-is why its usage remains capped. `glm-5.2` and `neuralwatt/glm-5.2` were removed on
+is why usage was capped until the subscription replaced pay-as-you-go on 2026-11-20. `glm-5.2` and `neuralwatt/glm-5.2` were removed on
 2026-08-25 — neither had a single consumer.
 
 ### Cloud (Opencode Go gateway) — retired
@@ -227,11 +246,11 @@ Leave output room inside the backend total context, even when metadata lists sep
 | Pool | Ordered members | Effort defaults | Policy |
 | --- | --- | --- | --- |
 | `frontier-pool` | Kimi K3.1 Pro -> GPT-6.2 Astra -> GLM-5.3 (Z.AI) | No effort pin | Frontier escalation; three rungs, no DeepSeek floor |
-| `reasoning-pool` | Kimi K2.8 Preview -> GPT-6.2 Sol -> GLM Flash (Z.AI) -> Flash-Next | K2.8 drops `reasoning_effort` | Planning and hard debugging, then local fallback |
+| `reasoning-pool` | Kimi K2.8 Preview -> GPT-6.2 Sol -> GLM Flash (Z.AI -> Neuralwatt) -> Flash-Next | K2.8 drops `reasoning_effort` | Planning and hard debugging, then local fallback |
 | `implementation-pool` | GPT-6 Luna -> Strata (Flash-Next IQ3_S) | Luna `high`; Strata `xhigh` | Implementation after the approach is settled |
 | `qwen3.8-flash-next` | Flash-Next (skirk primary -> strata overflow) | Thinking recipe | Agent/thinking lane; skirk engine dedicated to it |
 | `qwen3.8-flash-next-chat` | Flash-Next (strata primary -> skirk failover) | Flash-Next `enable_thinking: false` | Chat lane; keeps chat off skirk's engine queue |
-| `grooming-pool` | Flash-Next -> GPT-6 Luna -> GLM Flash (Z.AI) | No effort pin | Dispatch issue grooming |
+| `grooming-pool` | Flash-Next -> GPT-6 Luna -> GLM Flash (Z.AI -> Neuralwatt) | No effort pin | Dispatch issue grooming |
 | `free-pool` | Eight OpenRouter deployments, listed below | No effort pin | Optional work on public material only |
 
 Opencode declares `implementation-pool` at 147456 tokens, `frontier-pool` at 272000, and `reasoning-pool` at 262144.
@@ -239,7 +258,9 @@ Reasoning rungs declare input limits of 1048576 (K2.8), 272000 (Sol), 262144 (bo
 The 1M standalone GLM alias does not give the reasoning pool a 1M window.
 The Flash-Next rungs declare 271360 input and 32768 output, summing to the 307200 shared engine budget (input + output + 3072 slack). Both engines run 307200 (Gufo with dynamic YaRN, Strata with static YaRN ~1.172), so both engines admit every request that LiteLLM accepts.
 
-The direct `glm-5.3-flash` alias uses Z.AI only. The Hyper subscription and its pool rungs are retired.
+The direct `glm-5.3-flash` alias leads on Z.AI and falls back to DeepSeek V4.1 Flash on Neuralwatt;
+`glm-5.3` falls back to the same GLM-5.3 weights on Neuralwatt. The Hyper subscription and its pool
+rungs are retired.
 The reasoning pool retains its Z.AI rung. Neither pool includes MiniMax or DeepSeek.
 The direct Luna alias defaults to `max`, while its implementation rung defaults to `high`.
 Both use nested `extra_body.reasoning.effort`. These are defaults, not enforced overrides of client requests.

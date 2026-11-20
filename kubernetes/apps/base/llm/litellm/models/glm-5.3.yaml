@@ -25,3 +25,33 @@ spec:
       cache_creation_input_token_cost: 1.4e-06
       cache_read_input_token_cost: 2.6e-07
       output_cost_per_token: 4.4e-06
+---
+# Fallback behind z.ai: the same GLM-5.3 weights on Neuralwatt, reached only
+# when the Z.AI rung fails. Costs are Neuralwatt's listed token prices so spend
+# reporting matches the provider.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: glm-5.3-neuralwatt
+spec:
+  modelName: glm-5.3
+  proxyRef: litellm
+  params:
+    model: openai/glm-5.3
+    apiBase: https://api.neuralwatt.com/v1
+    apiKey: os.environ/NEURALWATT_API_KEY
+    additional:
+      order: 2
+      allowed_openai_params:
+      - reasoning_effort
+  info:
+    mode: chat
+    maxInputTokens: 1000000
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    supportsPromptCaching: true
+    extra:
+      input_cost_per_token: 5.8e-07
+      cache_creation_input_token_cost: 5.8e-07
+      cache_read_input_token_cost: 5.8e-08
+      output_cost_per_token: 1.81e-06

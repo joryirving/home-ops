@@ -71,9 +71,9 @@ spec:
     apiBase: https://api.z.ai/api/coding/paas/v4
     apiKey: os.environ/ZAI_API_KEY
     additional:
-      order: 4
       allowed_openai_params:
       - reasoning_effort
+      order: 3
   info:
     mode: chat
     maxInputTokens: 262144
@@ -86,6 +86,37 @@ spec:
       cache_creation_input_token_cost: 1.5e-07
       cache_read_input_token_cost: 3.0e-08
       output_cost_per_token: 5.0e-07
+---
+# Second rung for the GLM Flash model: the same weights on Neuralwatt, reached
+# only when the Z.AI rung fails.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: reasoning-pool-glm-flash-neuralwatt
+spec:
+  modelName: reasoning-pool
+  proxyRef: litellm
+  params:
+    model: openai/glm-5.3-flash
+    apiBase: https://api.neuralwatt.com/v1
+    apiKey: os.environ/NEURALWATT_API_KEY
+    additional:
+      allowed_openai_params:
+      - reasoning_effort
+      order: 4
+  info:
+    mode: chat
+    maxInputTokens: 1000000
+    maxOutputTokens: 131072
+    supportsFunctionCalling: true
+    supportsPromptCaching: true
+    supportsVision: true
+    extra:
+      input_cost_per_token: 1.1e-07
+      cache_creation_input_token_cost: 1.1e-07
+      cache_read_input_token_cost: 2.2e-08
+      output_cost_per_token: 3.6e-07
+
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
