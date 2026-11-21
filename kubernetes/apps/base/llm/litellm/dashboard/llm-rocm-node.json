@@ -898,7 +898,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Peak prefill speed (tok/s) per service over the selected window, from llama.cpp's per-request gauge \u2014 real model speed, not diluted by idle time.",
+      "description": "Counter-derived: only freshly processed prompt tokens are counted, and only actual processing time is divided in. Cached prompt tokens are excluded here and shown separately as cache reuse.",
       "fieldConfig": {
         "defaults": {
           "unit": "tok/s"
@@ -930,12 +930,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (service)(max_over_time(llamacpp:prompt_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_prefill_kv_computed_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_prefill_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
+          "expr": "sum by (service)(rate(llamacpp:prompt_tokens_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[5m])) / clamp_min(sum by (service)(rate(llamacpp:prompt_seconds_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[5m])), 0.001)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
-      "title": "PP speed (peak)",
+      "title": "PP tok/s (fresh prompt tokens)",
       "type": "bargauge"
     },
     {
@@ -943,7 +943,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Peak generation speed (tok/s) per service over the selected window \u2014 real model speed, not diluted by idle time.",
+      "description": "Counter-derived: only freshly processed prompt tokens are counted, and only actual processing time is divided in. Cached prompt tokens are excluded here and shown separately as cache reuse.",
       "fieldConfig": {
         "defaults": {
           "unit": "tok/s"
@@ -975,12 +975,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (service)(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_generation_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_decode_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m]))",
+          "expr": "sum by (service)(rate(llamacpp:tokens_predicted_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[5m])) / clamp_min(sum by (service)(rate(llamacpp:tokens_predicted_seconds_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[5m])), 0.001)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
-      "title": "TG speed (peak)",
+      "title": "TG tok/s (decoded tokens)",
       "type": "bargauge"
     },
     {

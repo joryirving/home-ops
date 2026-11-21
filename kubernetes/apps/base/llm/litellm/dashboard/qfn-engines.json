@@ -30,6 +30,271 @@
         "x": 0,
         "y": 0
       },
+      "id": 800,
+      "panels": [],
+      "title": "Live speed per engine",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Freshly processed prompt tokens per second of actual prompt processing time over the last 2 minutes. Cache reuse is excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 801,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(rate(llamacpp:prompt_tokens_total{model=\"qwen3-8-flash-next-gufo\"}[2m])) / clamp_min(sum(rate(llamacpp:prompt_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[2m])), 0.001)",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Gufo prefill tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Decoded tokens per second over the last 2 minutes, across both Gufo lanes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 807,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(rate(llamacpp:tokens_predicted_total{model=\"qwen3-8-flash-next-gufo\"}[2m])) / clamp_min(sum(rate(llamacpp:tokens_predicted_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[2m])), 0.001)",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Gufo decode tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Engine-reported mean prefill rate for the current request. Reads 0 when Strata is idle.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 813,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max(strata:live_prefill_tok_s_mean{model=\"qwen3-8-flash-next-strata\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Strata prefill tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Engine-reported decode rate for the current request. Reads 0 when Strata is idle; last_decode_tok_s keeps the previous request's figure.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 819,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max(strata:live_tok_s{model=\"qwen3-8-flash-next-strata\"})",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Strata decode tok/s",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 1,
       "panels": [],
       "title": "Engine state",
@@ -73,7 +338,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 1
+        "y": 6
       },
       "id": 2,
       "options": {
@@ -146,7 +411,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 1
+        "y": 6
       },
       "id": 3,
       "options": {
@@ -211,7 +476,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 1
+        "y": 6
       },
       "id": 4,
       "options": {
@@ -282,7 +547,7 @@
         "h": 4,
         "w": 4,
         "x": 12,
-        "y": 1
+        "y": 6
       },
       "id": 5,
       "options": {
@@ -345,7 +610,7 @@
         "h": 4,
         "w": 4,
         "x": 16,
-        "y": 1
+        "y": 6
       },
       "id": 6,
       "options": {
@@ -418,7 +683,7 @@
         "h": 4,
         "w": 4,
         "x": 20,
-        "y": 1
+        "y": 6
       },
       "id": 7,
       "options": {
@@ -459,7 +724,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 10
       },
       "id": 8,
       "panels": [],
@@ -525,7 +790,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 11
       },
       "id": 9,
       "options": {
@@ -629,7 +894,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 11
       },
       "id": 10,
       "options": {
@@ -719,7 +984,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 19
       },
       "id": 11,
       "options": {
@@ -820,7 +1085,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 19
       },
       "id": 12,
       "options": {
@@ -868,7 +1133,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 26
       },
       "id": 13,
       "panels": [],
@@ -880,7 +1145,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Token generation rate reported by each engine.",
+      "description": "Counter-derived decode rate for Gufo (decoded tokens / decode seconds). Strata reports its own live rate.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -934,7 +1199,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 22
+        "y": 27
       },
       "id": 14,
       "options": {
@@ -958,7 +1223,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:predicted_tokens_seconds{model=\"qwen3-8-flash-next-gufo\"}",
+          "expr": "sum(rate(llamacpp:tokens_predicted_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])) / clamp_min(sum(rate(llamacpp:tokens_predicted_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])), 0.001)",
           "instant": false,
           "range": true,
           "refId": "A",
@@ -984,7 +1249,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Prompt processing rate. Long prompts and cache misses land here.",
+      "description": "Gufo: freshly processed prompt tokens divided by actual prompt processing time, so cache reuse cannot inflate it. Strata: engine-reported mean prefill rate over tokens it actually read.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1038,7 +1303,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 22
+        "y": 27
       },
       "id": 15,
       "options": {
@@ -1062,7 +1327,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "llamacpp:prompt_tokens_seconds{model=\"qwen3-8-flash-next-gufo\"}",
+          "expr": "sum(rate(llamacpp:prompt_tokens_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])) / clamp_min(sum(rate(llamacpp:prompt_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])), 0.001)",
           "instant": false,
           "range": true,
           "refId": "A",
@@ -1080,7 +1345,7 @@
           "legendFormat": "Strata"
         }
       ],
-      "title": "Prefill throughput",
+      "title": "Prefill throughput (fresh tokens)",
       "type": "timeseries"
     },
     {
@@ -1142,7 +1407,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 22
+        "y": 27
       },
       "id": 16,
       "options": {
@@ -1190,7 +1455,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 35
       },
       "id": 17,
       "panels": [],
@@ -1256,7 +1521,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 31
+        "y": 36
       },
       "id": 18,
       "options": {
@@ -1346,7 +1611,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 31
+        "y": 36
       },
       "id": 19,
       "options": {
@@ -1447,7 +1712,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 31
+        "y": 36
       },
       "id": 20,
       "options": {
@@ -1487,6 +1752,79 @@
         }
       ],
       "title": "Prompt cache hit rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Prompt tokens served from cache rather than processed. This is reuse, not GPU work, and it is deliberately kept out of the throughput panels.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 43
+      },
+      "id": 990,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(rate(llamacpp:prompt_tokens_cached_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval]))",
+          "instant": false,
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Gufo"
+        }
+      ],
+      "title": "Cache reuse tok/s (not throughput)",
       "type": "timeseries"
     },
     {
@@ -1548,7 +1886,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 38
+        "y": 43
       },
       "id": 21,
       "options": {
@@ -1607,7 +1945,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 38
+        "y": 43
       },
       "id": 22,
       "options": {
@@ -1692,7 +2030,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 38
+        "y": 43
       },
       "id": 23,
       "options": {
@@ -1797,7 +2135,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 50
       },
       "id": 24,
       "options": {
@@ -1898,7 +2236,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 45
+        "y": 50
       },
       "id": 25,
       "options": {
