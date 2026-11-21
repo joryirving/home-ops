@@ -9,10 +9,10 @@ spec:
   # Required placeholder: the postgres component JSON-patches the
   # cloudnative-pg dependency in.
   dependsOn: []
-  # Source-controller builds this HelmChart artifact (chart packaging +
-  # dependency build) from the pinned GitRepository — see helmchart.yaml.
+  # Versioned OCI chart release (misospace/pr-reviewer-action#1708):
+  # chart version == appVersion == release; never replaced once published.
   chartRef:
-    kind: HelmChart
+    kind: OCIRepository
     name: pr-reviewer
   values:
     controller:
@@ -36,7 +36,7 @@ spec:
             kind: kubernetes
             max-reviews: 2
             kubernetes:
-              image: ghcr.io/misospace/pr-reviewer-worker@sha256:bae9e1c5e05daeba841db2c12e7ba770b1c46380698505059a8f04909802de63
+              image: ghcr.io/misospace/pr-reviewer-worker@sha256:fa608079bfcf5be45ee7e05f628ae7764ab063187ac90270448b091c4db42143
               args: []
               namespace: llm
               service-account: pr-reviewer-worker
@@ -54,14 +54,6 @@ spec:
                 - claim: pr-reviewer-workspace
                   controller-root: /var/lib/pr-reviewer/cache
         default-executor-profile: k8s-jobs
-        # Startup requires a default evidence profile; operator mode cannot
-        # express 'no providers' yet (the #727 example's default-evidence-profile:
-        # null is refused, and the providers-file is not plumbed to workers).
-        # Point at the shared workspace claim (mounted controller- and worker-side).
-        evidence-profiles:
-          - name: none
-            providers-file: /var/lib/pr-reviewer/cache/evidence-providers.json
-        default-evidence-profile: none
         adoption:
           mode: allowlist
           allowlist: ["joryirving/home-ops", "joryirving/joryirving"]
@@ -108,10 +100,6 @@ spec:
             key: private-key.pem
 
       credentials:
-        # No hyphen: the chart's existingSecret env name keeps hyphens
-        # (PR_REVIEWER_CREDENTIAL_<REF> verbatim) while the runtime maps
-        # every non-alphanumeric to `_`, so hyphenated references are
-        # unreadable upstream chart bug; use a plain lowercase name.
         litellm:
           existingSecret:
             name: litellm-key-pr-review
@@ -119,18 +107,12 @@ spec:
 
       controllers:
         main:
-          # Workaround for the chart setting the v1-style key 'podOptions'
-          # (ignored by bjw-s common 5.3.0, which reads 'pod') when enabling
-          # the controller's in-cluster identity for the Kubernetes executor
-          # — the token mount stays false from defaultPodOptions otherwise.
-          pod:
-            automountServiceAccountToken: true
           containers:
             main:
               image:
                 repository: ghcr.io/misospace/pr-reviewer-controller
-                tag: sha-1799b9f750a28764b0afc441a7e840acbfe50137
-                digest: sha256:0abfb5f2c8179089fea7f92d6ff310e8962b7676621f10fc09a4440835c5d946
+                tag: "3.10.0"
+                digest: sha256:648ea396fb7efa7fa365b97583908a992ddf84ce18e6e6417f8ea67a70c2d428
               resources:
                 requests:
                   cpu: 100m
@@ -216,7 +198,7 @@ spec:
         name: pr-reviewer-worker
       image:
         repository: ghcr.io/misospace/pr-reviewer-worker
-        tag: sha-1799b9f750a28764b0afc441a7e840acbfe50137
+        tag: "3.10.0"
       ttlSecondsAfterFinished: 1800
       volumeClaims:
         - name: pr-reviewer-runs
@@ -226,8 +208,8 @@ spec:
           size: 20Gi
           storageClass: ceph-filesystem
 
-    # The upstream chart defaults to restrictive NetworkPolicies that block
-    # this canary's model, Kubernetes API and admin traffic (#1715).
-    # Opt out until its policies are explicitly configured and qualified.
+    # Chart default since 3.10.0 (misospace/pr-reviewer-action#1716): policies
+    # are opt-in. Keep them explicitly off for the canary until they are
+    # re-qualified with the documented KPR/model-endpoint exceptions.
     networkPolicy:
       enabled: false

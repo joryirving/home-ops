@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: pr-reviewer
+spec:
+  interval: 30m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  # Versioned chart release: chart version == appVersion == the image release
+  # pinned below. Never replaced once published (no floating aliases).
+  ref:
+    tag: 3.10.0
+  url: oci://ghcr.io/misospace/charts/pr-reviewer
