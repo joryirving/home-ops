@@ -105,6 +105,18 @@ spec:
             name: litellm-key-pr-review
             key: api-key
 
+      # In-cluster TLS fix for misospace/pr-reviewer-action#1773: the runtime
+      # sets TLS SNI from KUBERNETES_SERVICE_HOST, and the kubelet injects the
+      # ClusterIP — an IP never matches the apiserver cert SANs, so every API
+      # call (credential sweeps, executor Job creation) fails the handshake.
+      # User-specified env overrides the injected service variables; the DNS
+      # name is the conventional SNI. Superseded by the upstream SNI fix.
+      env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: kubernetes.default.svc
+        - name: KUBERNETES_SERVICE_PORT
+          value: "443"
+
       controllers:
         main:
           containers:
