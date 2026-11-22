@@ -97,7 +97,13 @@ spec:
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  replicas: 1
+  # PARKED (2026-11-22) for the Hy4-Flash trial: the llama-strix-gpu claim
+  # is allocationMode All and exclusively held, so the hy4-flash lane can
+  # only take the iGPU while this lane is at zero (a sibling claim sits
+  # Pending forever — see the note in ../memini/memini-rerank.yaml). The
+  # QFN and chat groups keep their Strata rung (2x307k, 2 slots) in the
+  # meantime. Restore to 1 when the trial ends.
+  replicas: 0
   priority: high
   nodeSelector:
     topology.kubernetes.io/gpus: amd

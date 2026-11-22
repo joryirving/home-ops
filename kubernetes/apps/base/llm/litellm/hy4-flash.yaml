@@ -1,0 +1,145 @@
+---
+# TRIAL LANE (2026-11-22): Tencent Hy4-Flash (220B-A12B VLM) on skirk's
+# Strix Halo iGPU. Gufo cannot serve it (no Hy4/Hunyuan/Engram code in the
+# engine and no Hy4 extension in the registry), so this lane runs on
+# Strata's own HIP engine (strata-hy4, shape "hy4"), which ships a
+# linux-x86_64-hip-halo build for exactly this APU. The Qwen gufo lane is
+# parked at 0 replicas so this pod can take the exclusive
+# llama-strix-gpu claim.
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: hy4-flash
+spec:
+  # Strata's quantization of Tencent's model (.strata packs; public and
+  # ungated, so no sourceSecretRef). llmkube never downloads these:
+  # skipModelInit is set and the Strata launcher fetches the packs itself
+  # from this repo into its data dir (the image ships the repo URL in
+  # terminal/data/hy4-sources.json). Sizes: SQ-96 89.58 GB, the shared
+  # Engram shard 67.58 GB (read from disk, never loaded whole), Vision
+  # 0.93 GB. format: custom is the generic-runtime value for non-GGUF
+  # files.
+  source: hf://strata-engine/Hy4-Flash-Strata
+  files:
+    - Hy4-Flash-SQ-96.strata
+    - Hy4-Flash-Engram-Q8.strata
+    - Hy4-Flash-Vision.strata
+  format: custom
+  quantization: SQ-96
+  hardware:
+    accelerator: rocm
+    gpu:
+      enabled: true
+      vendor: amd
+      runtime: rocm
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-strix-gpu
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: hy4-flash
+  labels:
+    krr/ignore: "true"
+spec:
+  modelRef: hy4-flash
+  runtime: generic
+  # rocm-gfx1151 is the Strix Halo flavour; CI builds and smoke-tests the
+  # HIP engines with HSA_OVERRIDE_GFX_VERSION=11.5.1 (the same value the
+  # gufo lane carries).
+  image: ghcr.io/niko1221/strata:0.2.19-rocm-gfx1151@sha256:c677d5ee1cbde2c8bfa0a646c1affe9fb5dea23dbe69435d33b6406e3d9f4e36
+  command:
+    - /bin/sh
+    - -c
+    - |
+      # First start downloads about 158 GB (the SQ-96 build, the Engram
+      # shard, the Vision shard) and fetches the strata-hy4 engine itself
+      # from Strata's signed feed (the launch step is allowed to download;
+      # serve is not). sha256 of every pack is verified against the
+      # family's pinned table before the engine starts.
+      #
+      # Sizing (Strata's hy4_fit rule for unified memory: resident must fit
+      # pool - 7.0 reserve - kv_extra - vision): skirk's 128 GB pool with
+      # the 100 Gi limit leaves room for SQ-96 (footprint 89.43 GB) at
+      # 128K context (+3.84 GB KV/workspace beyond the author's 20K) with
+      # ~10 GB slack for the serve frontend and page cache. SQ-128 also
+      # passes the author's arithmetic for a 128 GB shared-memory PC but
+      # leaves under 9 GB for the OS, the k8s daemons and memini on this
+      # node; SQ-96 is "close to the full model" with real headroom.
+      #
+      # The DFly2 drafter is built into the engine and on by default (serve
+      # adds --draft dfly2 when `strata-hy4 --info` reports it); images are
+      # on by default (--vision on fetches the Vision shard). No --parallel
+      # or --kv flags exist for this family: hy4 has no slot config and no
+      # KV-format switch, so the launch line stays short.
+      #
+      # --no-api-key: keyless like the other in-cluster rungs. A keyless
+      # strata serve enforces a DNS-rebinding Host allowlist, so the
+      # service DNS names go into STRATA_ALLOWED_HOSTS below or litellm
+      # gets 403s (learned the hard way on the ganyu rung; also: a stale
+      # /data/state/api-key file overrides keyless mode until deleted --
+      # not expected here, the data dir is fresh under subPath strata-hy4).
+      strata launch --family hy4-flash --model sq-96 \
+        --data-dir /data/Strata-data --context 128k --vision on \
+        --access lan --port 8080 --yes --no-tui --no-api-key
+      # `strata launch --no-tui` starts the engine and returns; supervise
+      # it the way the ganyu rung does. Any HTTP response means the engine
+      # is alive; connection errors mean it died.
+      PY=/opt/strata/terminal/python/bin/python3
+      while $PY -c 'import urllib.request, urllib.error
+      try:
+          urllib.request.urlopen("http://127.0.0.1:8080/v1/models", timeout=5)
+      except urllib.error.HTTPError:
+          pass
+      ' 2>/dev/null; do
+        sleep 15
+      done
+      echo "strata-hy4 engine died; exiting so the pod restarts"
+      exit 1
+  skipModelInit: true
+  contextSize: 131072
+  # Parked at one for the trial: this is the lane's whole point, and the
+  # gufo Qwen rung is at zero to hand it the GPU claim. First start pulls
+  # ~158 GB; the startup probe below allows ~6 h for it.
+  replicas: 1
+  priority: high
+  nodeSelector:
+    topology.kubernetes.io/gpus: amd
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  env:
+    - name: STRATA_ALLOWED_HOSTS
+      value: hy4-flash.llm.svc.cluster.local,hy4-flash.llm.svc,hy4-flash
+    - name: HSA_OVERRIDE_GFX_VERSION
+      value: "11.5.1"
+  resources:
+    cpu: "4"
+    memory: 100Gi
+  extraVolumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: llmkube-skirk-cache
+  extraVolumeMounts:
+    # The same PVC the gufo lane uses for models and its disk cache; this
+    # lane keeps its 158 GB of packs and run configs under its own subtree.
+    - name: data
+      mountPath: /data
+      subPath: strata-hy4
+  containerPort: 8080
+  endpoint:
+    port: 8080
+    type: ClusterIP
+  probeOverrides:
+    # The serve frontend has no /health; /v1/models answers as soon as the
+    # engine is listening (the same probe target the supervise loop uses).
+    # 30 s x 720 covers a cold ~158 GB download at house speeds.
+    startup:
+      httpGet:
+        path: /v1/models
+        port: 8080
+      periodSeconds: 30
+      failureThreshold: 720
