@@ -40,7 +40,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Freshly processed prompt tokens per second of actual prompt processing time over the last 2 minutes. Cache reuse is excluded.",
+      "description": "Fresh prompt tokens divided by actual prompt-processing seconds over 15 minutes. Short windows inflate badly because the token counters tick per token while the seconds counters land at request completion.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -89,7 +89,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(llamacpp:prompt_tokens_total{model=\"qwen3-8-flash-next-gufo\"}[2m])) / clamp_min(sum(rate(llamacpp:prompt_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[2m])), 0.001)",
+          "expr": "sum(increase(llamacpp:prompt_tokens_total{model=\"qwen3-8-flash-next-gufo\"}[15m])) / clamp_min(sum(increase(llamacpp:prompt_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[15m])), 60)",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -103,7 +103,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Decoded tokens per second over the last 2 minutes, across both Gufo lanes.",
+      "description": "Decoded tokens per decode second over 15 minutes, both Gufo lanes.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -152,7 +152,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(llamacpp:tokens_predicted_total{model=\"qwen3-8-flash-next-gufo\"}[2m])) / clamp_min(sum(rate(llamacpp:tokens_predicted_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[2m])), 0.001)",
+          "expr": "sum(increase(llamacpp:tokens_predicted_total{model=\"qwen3-8-flash-next-gufo\"}[15m])) / clamp_min(sum(increase(llamacpp:tokens_predicted_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[15m])), 60)",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -1145,7 +1145,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Counter-derived decode rate for Gufo (decoded tokens / decode seconds). Strata reports its own live rate.",
+      "description": "Gufo: 15-minute decoded-tokens-per-decode-second ratio. Strata: engine-reported live rate.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1223,7 +1223,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(llamacpp:tokens_predicted_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])) / clamp_min(sum(rate(llamacpp:tokens_predicted_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])), 0.001)",
+          "expr": "sum(increase(llamacpp:tokens_predicted_total{model=\"qwen3-8-flash-next-gufo\"}[15m])) / clamp_min(sum(increase(llamacpp:tokens_predicted_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[15m])), 60)",
           "instant": false,
           "range": true,
           "refId": "A",
@@ -1249,7 +1249,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Gufo: freshly processed prompt tokens divided by actual prompt processing time, so cache reuse cannot inflate it. Strata: engine-reported mean prefill rate over tokens it actually read.",
+      "description": "Gufo: 15-minute ratio of freshly processed prompt tokens to prompt-processing seconds, so cache reuse cannot inflate it. Strata: engine-reported mean prefill rate.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1327,7 +1327,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(llamacpp:prompt_tokens_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])) / clamp_min(sum(rate(llamacpp:prompt_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[$__rate_interval])), 0.001)",
+          "expr": "sum(increase(llamacpp:prompt_tokens_total{model=\"qwen3-8-flash-next-gufo\"}[15m])) / clamp_min(sum(increase(llamacpp:prompt_seconds_total{model=\"qwen3-8-flash-next-gufo\"}[15m])), 60)",
           "instant": false,
           "range": true,
           "refId": "A",
