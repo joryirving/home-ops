@@ -1,0 +1,43 @@
+---
+# TEST LANE (2026-11-22): Inkling-2-Mini on the vLLM Ampere port, ganyu's
+# 3090, two 131,072-token slots. Group name is deliberately not the
+# InferenceService name, matching the chat lane's distance
+# (flash-next-chat-strata) so the alias and the service stay separable.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: inkling-vllm
+  labels:
+    litellm.home-operations.com/managed-by: flux
+spec:
+  modelName: inkling-2-mini
+  proxyRef: litellm
+  params:
+    model: openai/inkling-2-mini
+    apiBase: http://inkling-vllm.llm.svc.cluster.local:8000/v1
+    apiKey: sk-llmkube-noauth
+    additional:
+      # Unsloth's published sampling for this checkpoint.
+      temperature: 1.0
+      top_p: 1.0
+      top_k: 0
+      min_p: 0.0
+      order: 1
+      # Matches --max-num-seqs 2 on the service.
+      max_parallel_requests: 2
+  info:
+    mode: chat
+    # Matches --max-model-len. The KV pool is 224k tokens with DSpark at two
+    # sequences, so two simultaneous 131k requests preempt (recompute) rather
+    # than fail; one at a time is fully served.
+    maxInputTokens: 131072
+    maxOutputTokens: 32768
+    supportsFunctionCalling: true
+    # The vision tower is removed to pay for KV: --limit-mm-per-prompt.image=0.
+    supportsVision: false
+    extra:
+      allowed_fails_policy:
+        RateLimitErrorAllowedFails: 10000
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+      cache_read_input_token_cost: 0.0

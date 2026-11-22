@@ -1,0 +1,132 @@
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: inkling-vllm
+spec:
+  # Informational while skipModelInit is set: vLLM fetches the checkpoint
+  # itself into HF_HOME on the shared cache PVC, so llmkube must not
+  # pre-download it. Provenance is the official Thinking Machines release
+  # (NVFP4 experts, MXFP8 dense), not a re-quantization.
+  source: hf://thinkingmachines/Inkling-2-Mini
+  files:
+    - model-00001-of-00001.safetensors
+    - mtp.safetensors
+  format: safetensors
+  hardware:
+    accelerator: cuda
+    gpu:
+      count: 1
+      enabled: true
+      vendor: nvidia
+---
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: inkling-vllm
+  labels:
+    krr/ignore: "true"
+  annotations:
+    # vLLM serves Prometheus metrics natively, so the idle gate reads the
+    # gauge directly instead of the Strata engine's JSON ?format=prometheus.
+    inference.llmkube.dev/idle-metric: vllm:num_requests_running
+    inference.llmkube.dev/idle-metric-path: /metrics
+spec:
+  modelRef: inkling-vllm
+  runtime: generic
+  # Ampere port: vLLM PR #69028 (Inkling-2) plus Hiutaky's ampere-port
+  # commits. Nightly is pinned by digest; the branch HEAD is pinned by SHA
+  # below. Only Triton/torch files change, so the image's package is copied
+  # to a writable path and the fork is overlaid at start - no C++ rebuild.
+  image: vllm/vllm-openai:nightly@sha256:7a46a81f0539b4a1b407fe2c29abbe0b130eeee4e4597f4ed357863af9e36086
+  command:
+    - /bin/bash
+    - -c
+    - |
+      # Inkling-2-Mini on Ampere (sm_86), official NVFP4/MXFP8 checkpoint.
+      #
+      # DSpark ON for the first run. It proposes 7 tokens per step at a
+      # measured 20-29% acceptance, worth 91 -> 112-147 tok/s on a 3090, and
+      # it works with more than one sequence. What it costs is KV pool, not
+      # slots: the fork measures 224k tokens at 2 sequences with DSpark and
+      # 262k without. So this run gives 2 x ~112k rather than 2 x 131,072,
+      # and the numbers below are the fork's measured-safe ones rather than
+      # extrapolated: --kv-cache-memory 5,153,960,755 (23,009 B/token),
+      # --cpu-offload-gb 1, ~23.8 of 24 GB used.
+      #
+      # To buy the last ~38k of pool back, raise --cpu-offload-gb (2, then 3)
+      # and --kv-cache-memory toward 6.03e9 for the full 2 x 131,072; the
+      # untested part is what a second gigabyte of offload costs in decode.
+      set -euo pipefail
+      FORK_SHA=6e9d1cce3eadb9844d491de9b65dba24b9fec566
+      SITE=$(python3 -c 'import site; print(site.getsitepackages()[0])')
+      echo "vLLM package: $SITE/vllm"
+      rm -rf /tmp/vllm-pkg /tmp/fork
+      mkdir -p /tmp/vllm-pkg
+      cp -a "$SITE/vllm" /tmp/vllm-pkg/vllm
+      python3 - "$FORK_SHA" <<'PY'
+      import io, sys, tarfile, urllib.request
+      sha = sys.argv[1]
+      url = f"https://codeload.github.com/Hiutaky/vllm/tar.gz/{sha}"
+      print(f"fetching {url}", flush=True)
+      blob = urllib.request.urlopen(url, timeout=300).read()
+      with tarfile.open(fileobj=io.BytesIO(blob)) as tf:
+          tf.extractall("/tmp/fork")
+      print(f"fetched {len(blob)} bytes", flush=True)
+      PY
+      cp -a "/tmp/fork/vllm-$FORK_SHA/vllm/." /tmp/vllm-pkg/vllm/
+      test -f /tmp/vllm-pkg/vllm/models/inkling2/nvidia/model.py
+      export PYTHONPATH=/tmp/vllm-pkg
+      exec python3 -m vllm.entrypoints.openai.api_server \
+        --model thinkingmachines/Inkling-2-Mini \
+        --served-model-name inkling-2-mini \
+        --dtype bfloat16 \
+        --max-model-len 131072 \
+        --max-num-seqs 2 \
+        --max-num-batched-tokens 256 \
+        --gpu-memory-utilization 0.98 \
+        --kv-cache-memory 5153960755 \
+        --kv-cache-dtype fp8 \
+        --limit-mm-per-prompt.image=0 \
+        --cpu-offload-gb 1 \
+        --cpu-offload-params embed_tokens \
+        --compilation-config.cudagraph_mode=FULL_DECODE_ONLY \
+        --speculative-config.method=dspark \
+        --speculative-config.num_speculative_tokens=7 \
+        --enable-auto-tool-choice \
+        --tool-call-parser inkling \
+        --reasoning-parser inkling
+  skipModelInit: true
+  replicas: 1
+  priority: high
+  runtimeClassName: nvidia
+  nodeSelector:
+    topology.kubernetes.io: egpu
+  env:
+    - name: HF_HOME
+      value: /models/hf
+    - name: HF_HUB_DISABLE_TELEMETRY
+      value: "1"
+    - name: VLLM_HOST_IP
+      value: 127.0.0.1
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  resources:
+    # Weights are ~20 GB on disk; VRAM holds them quantized, the host keeps
+    # the offloaded embedding plus the HF download buffers.
+    cpu: "8"
+    memory: 48Gi
+    gpu: 1
+  extraVolumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llmkube-ganyu-cache
+  extraVolumeMounts:
+    - name: models
+      mountPath: /models
+  containerPort: 8000
+  endpoint:
+    port: 8000
+    type: ClusterIP
