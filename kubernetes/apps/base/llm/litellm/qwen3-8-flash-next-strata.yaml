@@ -81,17 +81,17 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips it),
     #   so the Service DNS names must be in STRATA_ALLOWED_HOSTS below; without
     #   it the engine 403s litellm's requests by Host header.
-    # Memory: 2 x 262k of f16 KV is 17.5 GB, which with any pack exceeds the
-    # 3090 before experts are counted (first attempt OOM'd here). q8 (K8V8) KV
-    # is 16 KiB/token, so 8.8 GB for both slots and better quality than fp8.
-    # That leaves room for 8 GB of expert bodies in VRAM with the rest of
-    # SQ-15's 12.28 GB in RAM (ganyu has 123 GiB); 1 GiB is held back from the
-    # driver so a transient allocation cannot take the card to the edge.
+    # Memory (measured, 2026-11-22): 2 x 262k is not reachable on a 24 GB card.
+    # q8 KV for both slots is 8.8 GB, trunk 2.07 GB, expert bodies 12.28 GB,
+    # which is 23.2 GB before workspace; the engine responds by shrinking the
+    # context (262144 -> 140032) AND spilling ~1000 experts to host RAM with
+    # the fast host path off, which measured ~1.3 tok/s. At 128k the same KV is
+    # 4.5 GB and every expert stays resident, so 2 slots stay at full speed.
+    # Raise --context only together with a smaller pack (SQ-10) or one slot.
     strata launch --model sq-15 --family inkling-2-mini --data-dir /data/Strata-data \
-      --context 262144 --vision gpu --tune skip --access lan --port 8080 \
+      --context 131072 --vision gpu --tune skip --access lan --port 8080 \
       --yes --no-tui --no-api-key --parallel 2 \
-      --set kv-dtype=q8 --set vram-experts-gb=8 --set ram-experts-gb=16 \
-      --set vram-reserve-mib=1024
+      --set kv-dtype=q8 --set vram-reserve-mib=768
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
