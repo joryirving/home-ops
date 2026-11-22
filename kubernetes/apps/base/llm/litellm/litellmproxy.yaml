@@ -45,6 +45,9 @@ spec:
     value: https://litellm.jory.dev
   - name: PROXY_LOGOUT_URL
     value: https://sso.jory.dev/application/o/litellm/end-session/
+  # Loads patches/sitecustomize.py, which randomises least-busy tie-breaks.
+  - name: PYTHONPATH
+    value: /patches
   - name: REDIS_HOST
     value: litellm-dragonfly
   - name: REDIS_PORT
@@ -78,11 +81,16 @@ spec:
   - name: ui
     persistentVolumeClaim:
       claimName: litellm
+  - name: least-busy-patch
+    configMap:
+      name: litellm-patch-least-busy
   volumeMounts:
   - name: cache
     mountPath: /app/cache
   - name: ui
     mountPath: /app/chatgpt_tokens
+  - name: least-busy-patch
+    mountPath: /patches
   routerSettings:
     redis_host: os.environ/REDIS_HOST
     redis_port: os.environ/REDIS_PORT
