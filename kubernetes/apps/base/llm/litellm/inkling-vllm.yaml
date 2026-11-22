@@ -45,17 +45,18 @@ spec:
     - |
       # Inkling-2-Mini on Ampere (sm_86), official NVFP4/MXFP8 checkpoint.
       #
-      # 2 x 131,072 slots is the requirement this config targets. The fork's
-      # own 3090 numbers are 224k tokens of KV pool at 2 sequences with
-      # DSpark and 23.8 of 24 GB used, so DSpark is OFF here: its draft KV
-      # is bf16 and buys ~1.4x decode, but it is what keeps the pool under
-      # 2 x 131k. Without it the fork reports 91 tok/s decode and a 256k
-      # context fitting on a 3090. --cpu-offload-gb 2 covers the rest of the
-      # gap by paying ~1-3% (embed_tokens alone measured -1%).
+      # DSpark ON for the first run. It proposes 7 tokens per step at a
+      # measured 20-29% acceptance, worth 91 -> 112-147 tok/s on a 3090, and
+      # it works with more than one sequence. What it costs is KV pool, not
+      # slots: the fork measures 224k tokens at 2 sequences with DSpark and
+      # 262k without. So this run gives 2 x ~112k rather than 2 x 131,072,
+      # and the numbers below are the fork's measured-safe ones rather than
+      # extrapolated: --kv-cache-memory 5,153,960,755 (23,009 B/token),
+      # --cpu-offload-gb 1, ~23.8 of 24 GB used.
       #
-      # KV cost measured from the fork's own budget: 5,153,960,755 B for a
-      # 224k pool = 23,009 B/token, so 262,144 tokens needs ~6.03e9 B.
-      # If startup OOMs, step --kv-cache-memory down toward 5.6e9.
+      # To buy the last ~38k of pool back, raise --cpu-offload-gb (2, then 3)
+      # and --kv-cache-memory toward 6.03e9 for the full 2 x 131,072; the
+      # untested part is what a second gigabyte of offload costs in decode.
       set -euo pipefail
       FORK_SHA=6e9d1cce3eadb9844d491de9b65dba24b9fec566
       SITE=$(python3 -c 'import site; print(site.getsitepackages()[0])')
@@ -84,12 +85,14 @@ spec:
         --max-num-seqs 2 \
         --max-num-batched-tokens 256 \
         --gpu-memory-utilization 0.98 \
-        --kv-cache-memory 6030000000 \
+        --kv-cache-memory 5153960755 \
         --kv-cache-dtype fp8 \
         --limit-mm-per-prompt.image=0 \
-        --cpu-offload-gb 2 \
+        --cpu-offload-gb 1 \
         --cpu-offload-params embed_tokens \
         --compilation-config.cudagraph_mode=FULL_DECODE_ONLY \
+        --speculative-config.method=dspark \
+        --speculative-config.num_speculative_tokens=7 \
         --enable-auto-tool-choice \
         --tool-call-parser inkling \
         --reasoning-parser inkling
