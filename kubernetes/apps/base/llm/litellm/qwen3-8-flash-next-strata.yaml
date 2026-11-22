@@ -108,11 +108,10 @@ spec:
   # expose that flag. If decode throughput degrades, patch the generated run
   # config in this wrapper before the engine starts.
   skipModelInit: true
-  # Held at zero for the Inkling vLLM trial: ganyu has one 3090, so the
-  # Inkling lane cannot start beside the Qwen engine. The QFN and chat groups
-  # keep their Gufo rungs while this is zero. Restore to 1 to bring the
-  # 2x307k Qwen lane back.
-  replicas: 0
+  # Back up after the Inkling vLLM trial (2026-11-22): ganyu has one 3090, so
+  # the Qwen engine and the Inkling lane cannot both run. QFN and chat get
+  # their Strata rung back.
+  replicas: 1
   priority: high
   runtimeClassName: nvidia
   nodeSelector:

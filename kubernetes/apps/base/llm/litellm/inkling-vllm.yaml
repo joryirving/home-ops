@@ -119,7 +119,13 @@ spec:
         --tool-call-parser inkling \
         --reasoning-parser inkling
   skipModelInit: true
-  replicas: 1
+  # PAUSED (2026-11-22): the vLLM Ampere trial is over for now and ganyu's
+  # single 3090 goes back to the Qwen engine, so this lane stays at zero.
+  # The manifests are kept as they are so it can come back with one edit.
+  # Measured while it ran: one slot at 140,000 tokens with the drafter on
+  # and the vision tower loaded (pool 170,643), 62.7 tok/s solo, and
+  # repo-bench diagnose 0.9375 over 18 tasks.
+  replicas: 0
   priority: high
   runtimeClassName: nvidia
   nodeSelector:
