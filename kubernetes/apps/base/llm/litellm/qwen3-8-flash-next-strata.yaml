@@ -84,8 +84,13 @@ spec:
     # Memory (measured, 2026-11-22): 2 x 262k is not reachable on a 24 GB card.
     # KV for both slots, trunk 2.07 GB and expert bodies 12.28 GB exceed it
     # before workspace; the engine shrank the context (262144 -> 140032) and
-    # spilled ~1000 experts to host, measuring ~1.3 tok/s. At 128k the KV is
-    # ~4.2 GB and every expert stays resident.
+    # spilled ~1000 experts to host, measuring ~1.3 tok/s.
+    #
+    # The CUDA-Graph backend preallocates KV for the whole context and needs
+    # workspace on top: at 2 x 131,072 it sat at 22,924 of 24,576 MiB idle and
+    # a 16k-token prompt OOM'd the engine (CUDA error 2 at ink_cuda.cuh:54),
+    # after which it could not get back up. 2 x 65,536 is ~4.8 GB of KV and
+    # leaves ~6 GB for workspace and the DSpark tree.
     #
     # kv-dtype must stay fp8 here, NOT q8. Engine backend selection
     # (ink_backend.h make_default_backend) routes to the cuda-ep1 backend
@@ -98,7 +103,7 @@ spec:
     # Plain fp8 keeps the CUDA-Graph backend ("cuda"): full device forward,
     # batched slots, DSpark Block-8. Same 16 KiB/token as q8.
     strata launch --model sq-15 --family inkling-2-mini --data-dir /data/Strata-data \
-      --context 131072 --vision gpu --tune skip --access lan --port 8080 \
+      --context 65536 --vision gpu --tune skip --access lan --port 8080 \
       --yes --no-tui --no-api-key --parallel 2 \
       --set kv-dtype=fp8
     # `strata launch --no-tui` starts the engine and returns; supervise it.

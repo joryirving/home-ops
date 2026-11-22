@@ -1,8 +1,9 @@
 ---
 # TEMPORARY TEST (2026-11-22): Inkling-2-Mini on ganyu's 3090, two slots at
-# 131,072 tokens each (2x262k does not fit 24 GB). The Strata pod is swapped
-# to the strata-inkling engine, so this alias is the only way to reach it and
-# the QFN groups run on Gufo alone.
+# 65,536 tokens each. That is the shape that leaves VRAM for workspace:
+# 2x131k sat at 22.9 of 24 GiB and OOM'd on a 16k prompt. The Strata pod is
+# swapped to the strata-inkling engine, so this alias is the only way to
+# reach it and the QFN groups run on Gufo alone.
 # The engine accepts any `model:` name, so that field is cosmetic.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
@@ -26,7 +27,7 @@ spec:
       max_parallel_requests: 2
   info:
     mode: chat
-    maxInputTokens: 131072
+    maxInputTokens: 65536
     maxOutputTokens: 32768
     supportsFunctionCalling: true
     supportsVision: true
