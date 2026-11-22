@@ -56,9 +56,12 @@ spec:
       # --max-model-len 140,000 against a pool of about 156,000 tokens.
       #
       # The vision tower is back: --limit-mm-per-prompt.image=4 instead of 0.
-      # The limit sizes the encoder cache, and a 2.3 MB photo needs 7,676
-      # embedding tokens, so a limit of 1 (a 2,704-token cache) rejects it
-      # outright; 4 gives a 10,816-token cache. The tower costs about 0.6 GiB
+      # --encoder-cache-size 8192: the engine sizes the cache at 2,704 tokens
+      # from the model's declared maximum, but the processor does not clamp
+      # to it - a 2.3 MB photo came out at 7,676 tokens and was rejected
+      # (400, "exceeds the pre-allocated encoder cache size 2704"). The
+      # processor takes no kwargs, so the cache is the only lever. The tower
+      # costs about 0.6 GiB
       # of weights (23 layers, hidden 1024, mlp_ratio 4) plus activations,
       # which is why the KV budget drops from 5,153,960,755 B to 4,200,000,000.
       #
@@ -106,6 +109,7 @@ spec:
         --kv-cache-memory 4200000000 \
         --kv-cache-dtype fp8 \
         --limit-mm-per-prompt.image=4 \
+        --encoder-cache-size 8192 \
         --cpu-offload-gb 1 \
         --cpu-offload-params embed_tokens \
         --compilation-config.cudagraph_mode=FULL_DECODE_ONLY \
