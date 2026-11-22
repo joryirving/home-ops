@@ -29,7 +29,12 @@ spec:
             env:
               NVIDIA_VISIBLE_DEVICES: all
               NVIDIA_DRIVER_CAPABILITIES: utility
-              POWER_LIMIT_WATTS: "300"
+              # 330 W on ganyu's 3090 (the only node with the egpu label).
+              # The Inkling vLLM Ampere port was measured at 85 tok/s with
+              # DSpark on at the old 300 W cap, below the 128 tok/s the
+              # groxaxo 3090 benchmark reports at 330 W; the driver default
+              # for this card is 420 W.
+              POWER_LIMIT_WATTS: "330"
             command:
               - /bin/bash
               - -c
