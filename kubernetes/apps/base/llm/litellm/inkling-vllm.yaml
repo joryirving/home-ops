@@ -109,6 +109,15 @@ spec:
       value: "1"
     - name: VLLM_HOST_IP
       value: 127.0.0.1
+    # Authenticated Hub fetches: the checkpoint is ~20 GB and anonymous
+    # downloads get rate-limited mid-file. The secret is ours - the
+    # ExternalSecret in this same directory (litellm/externalsecret.yaml)
+    # pulls HF_TOKEN from 1Password - so only the reference lives in git.
+    - name: HF_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: huggingface
+          key: HF_TOKEN
   tolerations:
     - key: llm-workload
       operator: Exists
