@@ -51,7 +51,7 @@ spec:
   - -c
   - |
     # TEMPORARY TEST (2026-11-22): Inkling-2-Mini SQ-15, two serving slots at
-    # 131,072 tokens. This pod is ganyu's Strata engine, so the QFN groups lose
+    # 262,144 tokens with experts in RAM. This pod is ganyu's Strata engine, so the QFN groups lose
     # their Strata rung for the duration and run on Gufo's two lanes only.
     #
     # Why SQ-15: 14.35 GB of weights leave the most VRAM for KV at 262k. SQ-20
@@ -81,31 +81,34 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips it),
     #   so the Service DNS names must be in STRATA_ALLOWED_HOSTS below; without
     #   it the engine 403s litellm's requests by Host header.
-    # Memory (measured, 2026-11-22): 2 x 262k is not reachable on a 24 GB card.
-    # KV for both slots, trunk 2.07 GB and expert bodies 12.28 GB exceed it
-    # before workspace; the engine shrank the context (262144 -> 140032) and
-    # spilled ~1000 experts to host, measuring ~1.3 tok/s.
+    # Memory: follow the QFN lane's shape, not a VRAM-only one. qwen3.8 did
+    # 2 x 307k by pinning 55.4 GiB of experts in host RAM and spending VRAM on
+    # KV; Inkling's whole expert set is only 12.28 GB, so it needs the same
+    # treatment, not a smaller context. --vram-experts-gb 2 keeps the hottest
+    # loop-pinned experts on the card (the engine's 3x loop-weighted
+    # vram_load_order) and leaves the other ~10 GB in RAM, which is where the
+    # 24 GB of VRAM goes back to KV.
     #
-    # The CUDA-Graph backend preallocates KV for the whole context and needs
-    # workspace on top: at 2 x 131,072 it sat at 22,924 of 24,576 MiB idle and
-    # a 16k-token prompt OOM'd the engine (CUDA error 2 at ink_cuda.cuh:54),
-    # after which it could not get back up. 2 x 65,536 is ~4.8 GB of KV and
-    # leaves ~6 GB for workspace and the DSpark tree.
+    # Budget at fp8 (engine constant: 8 global visits x 8 kv_heads x 128
+    # head_dim x 2 x 1 byte = 16 KiB/token): 2 x 262,144 slots = 8 GiB of KV.
+    # Base without experts measured ~9.2 GiB (trunk 1.93 + vision 0.60 +
+    # graph/tree/workspace overhead). That lands ~18 GiB of 24, with the
+    # remaining headroom being what lets a near-full prompt prefill.
     #
-    # kv-dtype must stay fp8 here, NOT q8. Engine backend selection
-    # (ink_backend.h make_default_backend) routes to the cuda-ep1 backend
-    # whenever KV is K8V8/K8V4, --vram-reserve-mib >= 0, --cpu-threads > 0 or
-    # --gpus 2. That backend keeps the trunk, the 48 loop visits and the loop
-    # controllers on the HOST in float32 and only offloads per-expert GEMMs
-    # through per-token memcpy (ep_dual_gpu.cu forward_batch), and it has no
-    # DSpark at all (no dspark_draft member, hence the "drafting: off" it
-    # reported). Measured cost: 2.0 tok/s solo, 1 CPU core pinned, GPU 0-12%.
-    # Plain fp8 keeps the CUDA-Graph backend ("cuda"): full device forward,
-    # batched slots, DSpark Block-8. Same 16 KiB/token as q8.
+    # Do NOT reach for VRAM residency here: at 2 x 131k with all experts on the
+    # card it measured 22,924 of 24,576 MiB and OOM'd on the second slot, and
+    # at 2 x 262k it shrank the context and spilled experts anyway (1.3 tok/s).
+    #
+    # kv-dtype must stay fp8, NOT q8. make_default_backend() routes to the
+    # cuda-ep1 backend whenever KV is K8V8/K8V4, --vram-reserve-mib >= 0,
+    # --cpu-threads > 0 or --gpus 2. That backend keeps the trunk, the 48 loop
+    # visits and the loop controllers on the HOST in float32, offloads only
+    # per-expert GEMMs by per-token memcpy, and has no DSpark at all. It
+    # measured 2.0 tok/s solo with one CPU core pinned and the GPU at 0-12%.
     strata launch --model sq-15 --family inkling-2-mini --data-dir /data/Strata-data \
-      --context 65536 --vision gpu --tune skip --access lan --port 8080 \
+      --context 262144 --vision gpu --tune skip --access lan --port 8080 \
       --yes --no-tui --no-api-key --parallel 2 \
-      --set kv-dtype=fp8
+      --set kv-dtype=fp8 --set vram-experts-gb=2
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
