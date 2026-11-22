@@ -1,7 +1,8 @@
 ---
-# TEMPORARY TEST (2026-11-22): Inkling-2-Mini on ganyu's 3090, one slot at
-# 131,072 tokens. That is the ceiling for the fast CUDA backend on a 24 GB
-# card: all 12.28 GB of experts are resident, leaving ~2 GiB for KV. The
+# TEMPORARY TEST (2026-11-22): Inkling-2-Mini on ganyu's 3090, two slots at
+# 65,536 tokens. That is the shape that survives long prompts on a 24 GB
+# card: all 12.28 GB of experts are resident, leaving ~2 GiB for KV and
+# ~1.4 GiB for the CUDA-graph pool. The
 # Strata pod is swapped to the strata-inkling engine, so this alias is the
 # only way to reach it and the QFN groups run on Gufo alone.
 # The engine accepts any `model:` name, so that field is cosmetic.
@@ -22,12 +23,12 @@ spec:
       top_k: 20
       min_p: 0
       order: 1
-      # Matches the engine's --parallel 1. Keep them equal or the router will
+      # Matches the engine's --parallel 2. Keep them equal or the router will
       # admit more work than the engine can hold.
-      max_parallel_requests: 1
+      max_parallel_requests: 2
   info:
     mode: chat
-    maxInputTokens: 131072
+    maxInputTokens: 65536
     maxOutputTokens: 32768
     supportsFunctionCalling: true
     supportsVision: true

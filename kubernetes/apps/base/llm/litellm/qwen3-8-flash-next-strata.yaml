@@ -51,7 +51,7 @@ spec:
   - -c
   - |
     # TEMPORARY TEST (2026-11-22): Inkling-2-Mini SQ-15, two serving slots at
-    # 131,072 tokens. This pod is ganyu's Strata engine, so the QFN groups lose
+    # 65,536 tokens. This pod is ganyu's Strata engine, so the QFN groups lose
     # their Strata rung for the duration and run on Gufo's two lanes only.
     #
     # Why SQ-15: 14.35 GB of weights leave the most VRAM for KV at 262k. SQ-20
@@ -81,32 +81,34 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips it),
     #   so the Service DNS names must be in STRATA_ALLOWED_HOSTS below; without
     #   it the engine 403s litellm's requests by Host header.
-    # Context ceiling, measured on this card (2026-11-22). The engine's own
-    # constant (inkling_fit.py) is 16 KiB/token of KV at fp8: 8 global visits
-    # x 8 kv_heads x 128 head_dim x 2 (K+V) x 1 byte. 1M tokens is therefore
-    # 16 GiB of KV alone, on top of 14.35 GB of weights - not reachable on
+    # Context ceiling, measured on this card (2026-11-22).
+    #
+    # KV cost is fixed by the engine (inkling_fit.py): 8 global visits x 8
+    # kv_heads x 128 head_dim x 2 (K+V) x 1 byte = 16 KiB/token at fp8, so 1M
+    # tokens is 16 GiB of KV on top of 14.35 GB of weights. Not reachable on
     # 24 GB at any setting.
     #
     # The QFN lane reaches 2 x 307k only because qwen3.8 keeps 55.4 GiB of
-    # experts in host RAM. Inkling cannot copy that trick on this build: the
-    # fast "cuda" backend chooses expert placement from free VRAM alone
-    # (ink_runner.cuh: `if (vfree > sec4_bytes + reserve)`), and SQ-15's
-    # 12.28 GB of experts always fits, so it pins all 3072 of them and the
-    # KV gets what is left. --vram-experts-gb / --ram-experts-gb are parsed
-    # but only honoured by the cuda-ep1 backend, which runs the trunk on the
-    # host CPU and measured 2.0 tok/s.
+    # experts in host RAM. Inkling cannot copy that here: the fast "cuda"
+    # backend picks expert placement from free VRAM alone (ink_runner.cuh:
+    # `if (vfree > sec4_bytes + reserve)`), SQ-15's 12.28 GB always fits, and
+    # --vram-experts-gb / --ram-experts-gb are only honoured by the cuda-ep1
+    # backend, which runs the trunk on the host CPU (2.0 tok/s).
     #
-    # So: one 128k slot. 2 x 65,536 holds the same total KV but splits it;
-    # 2 x 131,072 needs 4 GiB of KV (measured 22,924 of 24,576 before the
-    # first long request) and OOM'd on the second slot. 1 x 131,072 lands at
-    # ~20.6 GiB and leaves room for the CUDA-graph pool to grow.
+    # So all 12.28 GB of experts stay resident and KV gets ~2 GiB. Measured:
+    #   2 x 65,536  -> 23,164 MiB steady, 45k-token prompts OK, 2 streams
+    #   1 x 131,072 -> 20,624 MiB fresh, then OOM (CUDA error 2) at a 90k
+    #                  prompt as the CUDA-graph pool grew
+    #   2 x 131,072 -> OOM on the second slot
+    # 2 x 65,536 is the shape that keeps ~1.4 GiB of growth headroom, which is
+    # what a long prefill needs. Raise it only together with a smaller pack.
     #
     # kv-dtype must stay fp8, NOT q8. make_default_backend() routes to
     # cuda-ep1 whenever KV is K8V8/K8V4, --vram-reserve-mib >= 0,
     # --cpu-threads > 0 or --gpus 2.
     strata launch --model sq-15 --family inkling-2-mini --data-dir /data/Strata-data \
-      --context 131072 --vision gpu --tune skip --access lan --port 8080 \
-      --yes --no-tui --no-api-key --parallel 1 \
+      --context 65536 --vision gpu --tune skip --access lan --port 8080 \
+      --yes --no-tui --no-api-key --parallel 2 \
       --set kv-dtype=fp8
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
