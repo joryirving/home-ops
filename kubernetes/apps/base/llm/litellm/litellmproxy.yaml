@@ -7,6 +7,10 @@ spec:
   applyMode: file
   image: ghcr.io/berriai/litellm-database:1.110.2@sha256:3b239acc68e601c436e5feeec7ca0f01a41cd5dffe50975142b7fa7155c1b2ff
   replicas: 3
+  # Bump when patches/sitecustomize.py changes: the ConfigMap alone does not
+  # restart the pods, and the patch is only read at process start.
+  podAnnotations:
+    litellm.home-operations.com/least-busy-patch: "2"
   service:
     port: 4000
     type: ClusterIP
