@@ -98,18 +98,12 @@ spec:
   routerSettings:
     redis_host: os.environ/REDIS_HOST
     redis_port: os.environ/REDIS_PORT
-    routing_strategy: simple-shuffle
-    # QFN runs as a 2+2 pair. Pick the engine with fewer busy slots instead of a
-    # coin flip, so both engines fill before either queues. Other groups keep the
-    # top-level simple-shuffle. Session pins still win: an affinity hit returns a
-    # single deployment, and the strategy only applies when the pin is bypassed.
-    routing_groups:
-    - group_name: qfn
-      models:
-      - qwen3.8-flash-next
-      - qwen3.8-flash-next-chat
-      - grooming-pool
-      routing_strategy: least-busy
+    # Top-level least-busy, not routing_groups: group strategies are answered by the
+    # Rust core, which breaks ties deterministically. This path uses the Python
+    # selector, which patches/sitecustomize.py makes tie-random. Both QFN engines
+    # are order 1, so they are the only same-tier peers in the tree; every other
+    # group escalates by order before the strategy applies.
+    routing_strategy: least-busy
     # Share the actual QFN deployments rather than duplicate Gufo/Strata entries.
     model_group_alias:
       grooming-pool: qwen3.8-flash-next
