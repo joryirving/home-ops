@@ -27,10 +27,10 @@ spec:
       max_parallel_requests: 2
   info:
     mode: chat
-    # Matches --max-model-len. The KV pool is 224k tokens with DSpark at two
-    # sequences, so two simultaneous 131k requests preempt (recompute) rather
-    # than fail; one at a time is fully served.
-    maxInputTokens: 131072
+    # Matches --max-model-len. The KV pool is 207,077 tokens with DSpark, so
+    # two concurrent 100k requests fit with room; a single request can use
+    # the whole pool.
+    maxInputTokens: 100000
     maxOutputTokens: 32768
     supportsFunctionCalling: true
     # The vision tower is removed to pay for KV: --limit-mm-per-prompt.image=0.

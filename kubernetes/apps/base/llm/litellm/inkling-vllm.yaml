@@ -45,20 +45,25 @@ spec:
     - |
       # Inkling-2-Mini on Ampere (sm_86), official NVFP4/MXFP8 checkpoint.
       #
-      # DSpark OFF, card at 330 W, embedding offloaded to host memory.
+      # DSpark ON at 330 W, context dropped to make room for it.
       #
-      # The pool has to carry 262,144 tokens for two full 131,072 slots.
-      # Measured on this card:
-      #   DSpark on,  300 W: pool 207,077 tokens (1.58x at 131,072 per
-      #                      request), 85 tok/s solo, 145 tok/s aggregate
-      #   DSpark off, 300 W: pool 293,368 tokens (2.24x), 58.8 tok/s solo,
-      #                      104 tok/s aggregate
+      # The drafter costs 0.82 GiB of VRAM (bf16 draft KV plus its 0.59 GiB
+      # of weights), which is exactly what two full 131,072-token slots need.
+      # So the context gives way: --max-model-len 100,000 and the fork's
+      # measured-safe KV budget of 5,153,960,755 B, which pools 207,077
+      # tokens - two concurrent 100k sessions, or one long one.
       #
-      # DSpark cannot reach two full slots on this card: the drafter's bf16
-      # draft KV and its 0.59 GiB of weights cost the 0.82 GiB the pool
-      # needs, and the fork offers only the embedding to the CPU offloader
+      # Measured on this card, DSpark on vs off:
+      #   on,  300 W: pool 207,077 (1.58x at 131,072), 85 tok/s solo,
+      #                145 tok/s aggregate
+      #   off, 330 W: pool 293,368 (2.24x at 131,072), 58 tok/s solo,
+      #                107 tok/s aggregate
+      # The draft buys about 45% decode for the pool.
+      #
+      # The fork offers only the embedding to the CPU offloader
       # (model.py calls wrap_modules with iter([self.embed_tokens]) and
-      # nothing else), so there is no way to free the difference.
+      # nothing else), so no amount of --cpu-offload-params frees the
+      # drafter's VRAM.
       #
       # --cpu-offload-gb 1 is the embedding's 0.86 GiB and no more: it is a
       # hard cap (UVAOffloader.cpu_offload_max_bytes), and the embedding
@@ -90,16 +95,18 @@ spec:
         --model thinkingmachines/Inkling-2-Mini \
         --served-model-name inkling-2-mini \
         --dtype bfloat16 \
-        --max-model-len 131072 \
+        --max-model-len 100000 \
         --max-num-seqs 2 \
         --max-num-batched-tokens 256 \
         --gpu-memory-utilization 0.98 \
-        --kv-cache-memory 6030000000 \
+        --kv-cache-memory 5153960755 \
         --kv-cache-dtype fp8 \
         --limit-mm-per-prompt.image=0 \
         --cpu-offload-gb 1 \
         --cpu-offload-params embed_tokens \
         --compilation-config.cudagraph_mode=FULL_DECODE_ONLY \
+        --speculative-config.method=dspark \
+        --speculative-config.num_speculative_tokens=7 \
         --enable-auto-tool-choice \
         --tool-call-parser inkling \
         --reasoning-parser inkling
