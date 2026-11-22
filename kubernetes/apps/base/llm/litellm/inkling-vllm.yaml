@@ -49,9 +49,11 @@ spec:
       #
       # The drafter costs 0.82 GiB of VRAM (bf16 draft KV plus its 0.59 GiB
       # of weights), which is exactly what two full 131,072-token slots need.
-      # So the context gives way: --max-model-len 100,000 and the fork's
-      # measured-safe KV budget of 5,153,960,755 B, which pools 207,077
-      # tokens - two concurrent 100k sessions, or one long one.
+      # So the context gives way: --max-model-len 90,000 and the fork's
+      # measured-safe KV budget of 5,153,960,755 B. Measured pool here is
+      # 196,148 tokens (the draft's KV costs more per token than the model
+      # alone), so 90,000 leaves room for two concurrent sessions plus their
+      # output; 100,000 would fit only 1.96x.
       #
       # Measured on this card, DSpark on vs off:
       #   on,  300 W: pool 207,077 (1.58x at 131,072), 85 tok/s solo,
@@ -95,7 +97,7 @@ spec:
         --model thinkingmachines/Inkling-2-Mini \
         --served-model-name inkling-2-mini \
         --dtype bfloat16 \
-        --max-model-len 100000 \
+        --max-model-len 90000 \
         --max-num-seqs 2 \
         --max-num-batched-tokens 256 \
         --gpu-memory-utilization 0.98 \
