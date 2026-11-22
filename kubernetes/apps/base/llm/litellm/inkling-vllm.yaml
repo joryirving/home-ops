@@ -68,7 +68,9 @@ spec:
       #   times per token, so a coda layer is read once. The cost is PCIe
       #   traffic per token, which is what the measurement will show.
       #
-      # --gpu-memory-utilization 0.99 (was 0.98) buys the last 0.47 GiB.
+      # --gpu-memory-utilization stays 0.98: the card only reports 23.23 of
+      # 23.56 GiB free at startup, so 0.99 (23.33 GiB) is refused outright.
+      # Everything else has to come off the weights.
       set -euo pipefail
       FORK_SHA=6e9d1cce3eadb9844d491de9b65dba24b9fec566
       SITE=$(python3 -c 'import site; print(site.getsitepackages()[0])')
@@ -96,8 +98,8 @@ spec:
         --max-model-len 131072 \
         --max-num-seqs 2 \
         --max-num-batched-tokens 256 \
-        --gpu-memory-utilization 0.99 \
-        --kv-cache-memory 6030000000 \
+        --gpu-memory-utilization 0.98 \
+        --kv-cache-memory 5700000000 \
         --kv-cache-dtype fp8 \
         --limit-mm-per-prompt.image=0 \
         --cpu-offload-gb 1 \
