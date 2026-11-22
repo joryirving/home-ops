@@ -45,15 +45,20 @@ spec:
     - |
       # Inkling-2-Mini on Ampere (sm_86), official NVFP4/MXFP8 checkpoint.
       #
-      # DSpark ON at 330 W, context dropped to make room for it.
+      # One slot, one long session, vision on.
       #
-      # The drafter costs 0.82 GiB of VRAM (bf16 draft KV plus its 0.59 GiB
-      # of weights), which is exactly what two full 131,072-token slots need.
-      # So the context gives way: --max-model-len 90,000 and the fork's
-      # measured-safe KV budget of 5,153,960,755 B. Measured pool here is
-      # 196,148 tokens (the draft's KV costs more per token than the model
-      # alone), so 90,000 leaves room for two concurrent sessions plus their
-      # output; 100,000 would fit only 1.96x.
+      # Two concurrent slots and the drafter cannot both fit: the drafter's
+      # bf16 draft KV and its 0.59 GiB of weights cost the 0.82 GiB that a
+      # second slot's context needs, and the fork offers only the embedding
+      # to the CPU offloader (model.py calls wrap_modules with
+      # iter([self.embed_tokens]) and nothing else), so there is no way to
+      # free the difference. One slot spends the pool on depth instead:
+      # --max-model-len 140,000 against a pool of about 156,000 tokens.
+      #
+      # The vision tower is back: --limit-mm-per-prompt.image=1 instead of 0,
+      # one image per prompt. It costs about 0.6 GiB of weights (23 layers,
+      # hidden 1024, mlp_ratio 4) plus activations, which is why the KV
+      # budget drops from 5,153,960,755 B to 4,200,000,000.
       #
       # Measured on this card, DSpark on vs off:
       #   on,  300 W: pool 207,077 (1.58x at 131,072), 85 tok/s solo,
@@ -61,11 +66,6 @@ spec:
       #   off, 330 W: pool 293,368 (2.24x at 131,072), 58 tok/s solo,
       #                107 tok/s aggregate
       # The draft buys about 45% decode for the pool.
-      #
-      # The fork offers only the embedding to the CPU offloader
-      # (model.py calls wrap_modules with iter([self.embed_tokens]) and
-      # nothing else), so no amount of --cpu-offload-params frees the
-      # drafter's VRAM.
       #
       # --cpu-offload-gb 1 is the embedding's 0.86 GiB and no more: it is a
       # hard cap (UVAOffloader.cpu_offload_max_bytes), and the embedding
@@ -97,13 +97,13 @@ spec:
         --model thinkingmachines/Inkling-2-Mini \
         --served-model-name inkling-2-mini \
         --dtype bfloat16 \
-        --max-model-len 90000 \
-        --max-num-seqs 2 \
+        --max-model-len 140000 \
+        --max-num-seqs 1 \
         --max-num-batched-tokens 256 \
         --gpu-memory-utilization 0.98 \
-        --kv-cache-memory 5153960755 \
+        --kv-cache-memory 4200000000 \
         --kv-cache-dtype fp8 \
-        --limit-mm-per-prompt.image=0 \
+        --limit-mm-per-prompt.image=1 \
         --cpu-offload-gb 1 \
         --cpu-offload-params embed_tokens \
         --compilation-config.cudagraph_mode=FULL_DECODE_ONLY \

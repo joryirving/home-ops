@@ -23,17 +23,17 @@ spec:
       top_k: 0
       min_p: 0.0
       order: 1
-      # Matches --max-num-seqs 2 on the service.
-      max_parallel_requests: 2
+      # Matches --max-num-seqs 1 on the service. Keep them equal or the
+      # router will admit more work than the engine can hold.
+      max_parallel_requests: 1
   info:
     mode: chat
-    # Matches --max-model-len. The KV pool is 196,148 tokens with DSpark, so
-    # two concurrent 90k requests fit with room for their output.
-    maxInputTokens: 90000
+    # Matches --max-model-len. The pool is about 156,000 tokens with the
+    # drafter and the vision tower resident, so one session can hold 140k.
+    maxInputTokens: 140000
     maxOutputTokens: 32768
     supportsFunctionCalling: true
-    # The vision tower is removed to pay for KV: --limit-mm-per-prompt.image=0.
-    supportsVision: false
+    supportsVision: true
     extra:
       allowed_fails_policy:
         RateLimitErrorAllowedFails: 10000
