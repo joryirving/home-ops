@@ -7,10 +7,6 @@ spec:
   applyMode: file
   image: ghcr.io/berriai/litellm-database:1.110.2@sha256:3b239acc68e601c436e5feeec7ca0f01a41cd5dffe50975142b7fa7155c1b2ff
   replicas: 3
-  # Bump when patches/sitecustomize.py changes: the ConfigMap alone does not
-  # restart the pods, and the patch is only read at process start.
-  podAnnotations:
-    litellm.home-operations.com/least-busy-patch: "2"
   service:
     port: 4000
     type: ClusterIP
@@ -49,9 +45,6 @@ spec:
     value: https://litellm.jory.dev
   - name: PROXY_LOGOUT_URL
     value: https://sso.jory.dev/application/o/litellm/end-session/
-  # Loads patches/sitecustomize.py, which randomises least-busy tie-breaks.
-  - name: PYTHONPATH
-    value: /patches
   - name: REDIS_HOST
     value: litellm-dragonfly
   - name: REDIS_PORT
@@ -85,25 +78,19 @@ spec:
   - name: ui
     persistentVolumeClaim:
       claimName: litellm
-  - name: least-busy-patch
-    configMap:
-      name: litellm-patch-least-busy
   volumeMounts:
   - name: cache
     mountPath: /app/cache
   - name: ui
     mountPath: /app/chatgpt_tokens
-  - name: least-busy-patch
-    mountPath: /patches
   routerSettings:
     redis_host: os.environ/REDIS_HOST
     redis_port: os.environ/REDIS_PORT
-    # Top-level least-busy, not routing_groups: group strategies are answered by the
-    # Rust core, which breaks ties deterministically. This path uses the Python
-    # selector, which patches/sitecustomize.py makes tie-random. Both QFN engines
-    # are order 1, so they are the only same-tier peers in the tree; every other
-    # group escalates by order before the strategy applies.
-    routing_strategy: least-busy
+    # least-busy is deterministic in this build: its native selector breaks ties by
+    # deployment id, so sequential traffic all lands on one engine and its peer
+    # idles. Random placement is the only strategy that actually spreads. Session
+    # affinity still keeps each session on the engine it first reached.
+    routing_strategy: simple-shuffle
     # Share the actual QFN deployments rather than duplicate Gufo/Strata entries.
     model_group_alias:
       grooming-pool: qwen3.8-flash-next
