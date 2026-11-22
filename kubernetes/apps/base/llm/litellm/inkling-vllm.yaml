@@ -45,32 +45,24 @@ spec:
     - |
       # Inkling-2-Mini on Ampere (sm_86), official NVFP4/MXFP8 checkpoint.
       #
-      # DSpark ON, card at 330 W, three prelude layers offloaded to host
-      # memory. The pool has to carry 262,144 tokens for two full 131,072
-      # slots, and with DSpark on the drafter's bf16 draft KV and its weights
-      # cost 0.82 GiB that the card does not have.
+      # DSpark OFF, card at 330 W, embedding offloaded to host memory.
       #
+      # The pool has to carry 262,144 tokens for two full 131,072 slots.
       # Measured on this card:
-      #   DSpark on,  300 W: KV pool 207,077 tokens (1.58x at 131,072 per
+      #   DSpark on,  300 W: pool 207,077 tokens (1.58x at 131,072 per
       #                      request), 85 tok/s solo, 145 tok/s aggregate
-      #   DSpark off, 300 W: KV pool 293,368 tokens (2.24x), 58.8 tok/s solo,
+      #   DSpark off, 300 W: pool 293,368 tokens (2.24x), 58.8 tok/s solo,
       #                      104 tok/s aggregate
-      #   DSpark on,  330 W, 3 layers offloaded: pool 287k+ (2.19x), speed
-      #                      measured below
       #
-      # The offload budget is a hard cap (UVAOffloader.cpu_offload_max_bytes),
-      # so --cpu-offload-gb has to cover embed_tokens (0.86 GiB) plus the
-      # layers: at 1 GiB the budget ran out after the embedding and no layer
-      # moved at all. 3 GiB covers the embedding and three ~0.59 GiB layers.
+      # DSpark cannot reach two full slots on this card: the drafter's bf16
+      # draft KV and its 0.59 GiB of weights cost the 0.82 GiB the pool
+      # needs, and the fork offers only the embedding to the CPU offloader
+      # (model.py calls wrap_modules with iter([self.embed_tokens]) and
+      # nothing else), so there is no way to free the difference.
       #
-      # Layers 0-2 are the prelude, which runs once per token; the loop core
-      # (layers 6-17) runs three times per token, so offloading it would pay
-      # three PCIe reads per layer.
-      #
-      # The experts are one fused tensor per layer, but UVA reads only the
-      # pages the kernel touches - 8 of 128 experts per token - so the PCIe
-      # cost is the active slices plus the layer's bf16 attention weights,
-      # not the whole layer.
+      # --cpu-offload-gb 1 is the embedding's 0.86 GiB and no more: it is a
+      # hard cap (UVAOffloader.cpu_offload_max_bytes), and the embedding
+      # table is read row-wise, so it is cheap to serve from host memory.
       #
       # --gpu-memory-utilization stays 0.98: the card reports 23.23 of
       # 23.56 GiB free at startup, so 0.99 (23.33 GiB) is refused outright.
@@ -105,11 +97,9 @@ spec:
         --kv-cache-memory 6030000000 \
         --kv-cache-dtype fp8 \
         --limit-mm-per-prompt.image=0 \
-        --cpu-offload-gb 3 \
-        --cpu-offload-params embed_tokens,layers.0,layers.1,layers.2 \
+        --cpu-offload-gb 1 \
+        --cpu-offload-params embed_tokens \
         --compilation-config.cudagraph_mode=FULL_DECODE_ONLY \
-        --speculative-config.method=dspark \
-        --speculative-config.num_speculative_tokens=7 \
         --enable-auto-tool-choice \
         --tool-call-parser inkling \
         --reasoning-parser inkling
