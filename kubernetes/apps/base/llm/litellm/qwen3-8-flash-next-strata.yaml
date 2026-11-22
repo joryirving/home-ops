@@ -64,6 +64,11 @@ spec:
     # Qwen-only overrides are deliberately dropped: ple-io, STRATA_BATCH_MTP and
     # conversation-cache-mib are unverified for strata-inkling.
     #
+    # --model takes the SIZE (sq-15), with --family naming the family; the
+    # combined "inkling-2-mini-sq-15" key is rejected by catalog.resolve(),
+    # which only knows installed size names. The launcher renders it the same
+    # way: --model {size} --family {family}.
+    #
     # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides over
     # CLI flags and silently reverts to the wrong pack (observed).
     # --no-api-key: serve without auth, matching the keyless gufo rung. litellm
@@ -76,7 +81,7 @@ spec:
     # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips it),
     #   so the Service DNS names must be in STRATA_ALLOWED_HOSTS below; without
     #   it the engine 403s litellm's requests by Host header.
-    strata launch --model inkling-2-mini-sq-15 --data-dir /data/Strata-data \
+    strata launch --model sq-15 --family inkling-2-mini --data-dir /data/Strata-data \
       --context 262144 --vision gpu --tune skip --access lan --port 8080 \
       --yes --no-tui --no-api-key --parallel 2
     # `strata launch --no-tui` starts the engine and returns; supervise it.
