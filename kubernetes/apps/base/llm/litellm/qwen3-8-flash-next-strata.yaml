@@ -51,7 +51,7 @@ spec:
   - -c
   - |
     # TEMPORARY TEST (2026-11-22): Inkling-2-Mini SQ-15, two serving slots at
-    # 262,144 tokens. This pod is ganyu's Strata engine, so the QFN groups lose
+    # 131,072 tokens. This pod is ganyu's Strata engine, so the QFN groups lose
     # their Strata rung for the duration and run on Gufo's two lanes only.
     #
     # Why SQ-15: 14.35 GB of weights leave the most VRAM for KV at 262k. SQ-20
@@ -82,16 +82,25 @@ spec:
     #   so the Service DNS names must be in STRATA_ALLOWED_HOSTS below; without
     #   it the engine 403s litellm's requests by Host header.
     # Memory (measured, 2026-11-22): 2 x 262k is not reachable on a 24 GB card.
-    # q8 KV for both slots is 8.8 GB, trunk 2.07 GB, expert bodies 12.28 GB,
-    # which is 23.2 GB before workspace; the engine responds by shrinking the
-    # context (262144 -> 140032) AND spilling ~1000 experts to host RAM with
-    # the fast host path off, which measured ~1.3 tok/s. At 128k the same KV is
-    # 4.5 GB and every expert stays resident, so 2 slots stay at full speed.
-    # Raise --context only together with a smaller pack (SQ-10) or one slot.
+    # KV for both slots, trunk 2.07 GB and expert bodies 12.28 GB exceed it
+    # before workspace; the engine shrank the context (262144 -> 140032) and
+    # spilled ~1000 experts to host, measuring ~1.3 tok/s. At 128k the KV is
+    # ~4.2 GB and every expert stays resident.
+    #
+    # kv-dtype must stay fp8 here, NOT q8. Engine backend selection
+    # (ink_backend.h make_default_backend) routes to the cuda-ep1 backend
+    # whenever KV is K8V8/K8V4, --vram-reserve-mib >= 0, --cpu-threads > 0 or
+    # --gpus 2. That backend keeps the trunk, the 48 loop visits and the loop
+    # controllers on the HOST in float32 and only offloads per-expert GEMMs
+    # through per-token memcpy (ep_dual_gpu.cu forward_batch), and it has no
+    # DSpark at all (no dspark_draft member, hence the "drafting: off" it
+    # reported). Measured cost: 2.0 tok/s solo, 1 CPU core pinned, GPU 0-12%.
+    # Plain fp8 keeps the CUDA-Graph backend ("cuda"): full device forward,
+    # batched slots, DSpark Block-8. Same 16 KiB/token as q8.
     strata launch --model sq-15 --family inkling-2-mini --data-dir /data/Strata-data \
       --context 131072 --vision gpu --tune skip --access lan --port 8080 \
       --yes --no-tui --no-api-key --parallel 2 \
-      --set kv-dtype=q8 --set vram-reserve-mib=768
+      --set kv-dtype=fp8
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
