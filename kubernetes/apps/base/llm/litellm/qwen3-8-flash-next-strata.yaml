@@ -50,45 +50,35 @@ spec:
   - /bin/sh
   - -c
   - |
-    # PRODUCTION (2026-11-20): UD-IQ4_XS, all experts resident, 2 serving
-    # slots at 307,200 tokens. Promoted after the same-day qualification lane:
-    # routed experts 59.5 GB = 55.4 GiB pinned whole (no --resident-budget-gib;
-    # setup's cgroup-aware all-RAM gate: 55.4 + 16 fits 96), GPU cache 7019
-    # experts / 15.82 GiB VRAM, ev_max 0 through the whole 8K-270K matrix with
-    # pgscan byte-flat, DFlash2 acceptance consistently above IQ3_S's, decode
-    # parity at 128K and +2.7% at 270K, bench standard-v1 sanity 12/12 (logs on
-    # the ganyu PVC: /data/bench-q4/window-2026-11-20-iq4*.log and
-    # /data/bench-standard-iq4xs/). --parallel 2 serves two sessions; measured
-    # two-128K concurrency ran with zero additional reclaim and no per-session
-    # decode penalty, and 2x307K KV projects ~84 Gi of the 96Gi cap.
-    # --set ple-io=mmap keeps the 28.8 GB n-gram PLE table file-backed
-    # (measured touch set ~2 GiB) instead of the install config's --ple-io ram
-    # mlock, which beside the pinned arena leaves no reclaimable slack under a
-    # hard cap. STRATA_ROUTE_TAIL_SKIP=unset: the install env carries =0; the
-    # engine's auto rule (rank-7 skip) is what the qualification ran.
-    # conversation-cache-mib=8192 matches the qualification and prior IQ3_S
-    # launch. The pack was prepared with the unsloth family's --compat-bf16
-    # (195 tensors). LiteLLM routing is unchanged: the engine serves any
-    # model: name, so both groups keep calling qwen3.8-flash-next-iq3_s; only
-    # max_parallel_requests moves 1 -> 2 in the two groups that carry this
-    # rung. Rollback: --model iq3_s, drop the --set overrides, restore
-    # max_parallel_requests: 1.
-    # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
-    # over CLI flags and silently reverts to the wrong pack (observed).
-    # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
-    # in this group. litellm sends sk-llmkube-noauth, which a keyless engine
-    # ignores. Kubelet probes hit /v1/models unauthenticated; a keyed engine
-    # 401s them and never becomes Ready. Gotchas observed live:
-    # - The key actually lives in /data/state/api-key on the PVC (NOT the
-    #   launch preset json); strata 401s every request until that file is
-    #   deleted once. --no-api-key does not remove it.
-    # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
-    #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
-    #   without it the engine 403s litellm's requests by Host header.
-    strata launch --model ud-iq4_xs --data-dir /data/Strata-data --context 300k \
-      --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key \
-      --parallel 2 --set conversation-cache-mib=8192 --set ple-io=mmap \
-      --set STRATA_ROUTE_TAIL_SKIP=unset --set STRATA_BATCH_MTP=1
+    # TEMPORARY TEST (2026-11-22): Inkling-2-Mini SQ-15, two serving slots at
+    # 262,144 tokens. This pod is ganyu's Strata engine, so the QFN groups lose
+    # their Strata rung for the duration and run on Gufo's two lanes only.
+    #
+    # Why SQ-15: 14.35 GB of weights leave the most VRAM for KV at 262k. SQ-20
+    # is bit-exact but at this context leaves ~3 GB of VRAM and spills ~13 GB of
+    # experts to RAM; SQ-10 fits fully but gives up quality.
+    #
+    # First start downloads strata-inkling 0.1.65 and Inkling-2-Mini-SQ-15
+    # (14.35 GB) into /data, then the 0.64 GB vision shard on the first image.
+    #
+    # Qwen-only overrides are deliberately dropped: ple-io, STRATA_BATCH_MTP and
+    # conversation-cache-mib are unverified for strata-inkling.
+    #
+    # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides over
+    # CLI flags and silently reverts to the wrong pack (observed).
+    # --no-api-key: serve without auth, matching the keyless gufo rung. litellm
+    # sends sk-llmkube-noauth, which a keyless engine ignores. Kubelet probes hit
+    # /v1/models unauthenticated; a keyed engine 401s them and never becomes
+    # Ready. Gotchas observed live:
+    # - The key actually lives in /data/state/api-key on the PVC (NOT the launch
+    #   preset json); strata 401s every request until that file is deleted once.
+    #   --no-api-key does not remove it.
+    # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips it),
+    #   so the Service DNS names must be in STRATA_ALLOWED_HOSTS below; without
+    #   it the engine 403s litellm's requests by Host header.
+    strata launch --model inkling-2-mini-sq-15 --data-dir /data/Strata-data \
+      --context 262144 --vision gpu --tune skip --access lan --port 8080 \
+      --yes --no-tui --no-api-key --parallel 2
     # `strata launch --no-tui` starts the engine and returns; supervise it.
     # Any HTTP response means the engine is alive; connection errors mean it
     # died.
@@ -103,10 +93,6 @@ spec:
     done
     echo "strata engine died; exiting so the pod restarts"
     exit 1
-  # The engine warned about low free VRAM (<512 MiB) and suggested
-  # --vram-reserve-mib 768 in the generated engine args; strata launch does not
-  # expose that flag. If decode throughput degrades, patch the generated run
-  # config in this wrapper before the engine starts.
   skipModelInit: true
   replicas: 1
   priority: high
