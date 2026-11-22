@@ -35,7 +35,12 @@ spec:
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: qwen3-8-flash-next-strata
+  # Not the InferenceService name: llmkube auto-registers a LiteLLMModel
+  # named after each service it manages, and an llmkube-owned CR of that
+  # name reverts this spec on every reconcile (seen 2026-11-22 after the
+  # Inkling swap). The chat lane keeps the same distance with
+  # flash-next-chat-strata.
+  name: flash-next-strata
 spec:
   modelName: qwen3.8-flash-next
   proxyRef: litellm
