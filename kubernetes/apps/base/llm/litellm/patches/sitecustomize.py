@@ -12,15 +12,15 @@ deployments, which is what "least busy" is meant to mean.
 
 The function is only called from inside litellm/router_strategy/least_busy.py,
 where the module global is resolved at call time, so patching the module
-attribute is enough. Delete this file once the fix ships upstream.
+attribute is enough. Delete this file once the fix ships upstream
+(BerriAI/litellm#53513).
+
+The import is eager: litellm's own imports do not go through
+builtins.__import__, so an import hook never observes them. The cost is about
+3.5s once per Python process in this container.
 """
 
-import builtins
 import random
-import sys
-
-_TARGET = "litellm.router_strategy.least_busy"
-_installed = False
 
 
 def _least_busy_index(counts):
@@ -29,25 +29,10 @@ def _least_busy_index(counts):
     return random.choice(tied) if len(tied) > 1 else tied[0]
 
 
-def _install():
-    global _installed
-    if _installed:
-        return
-    module = sys.modules.get(_TARGET)
-    if module is None:
-        return
-    module._least_busy_index = _least_busy_index
-    _installed = True
+try:
+    from litellm.router_strategy import least_busy as _least_busy
+except Exception:  # pragma: no cover - never block startup on a shim
+    _least_busy = None
 
-
-_real_import = builtins.__import__
-
-
-def _import(name, globals=None, locals=None, fromlist=(), level=0):
-    module = _real_import(name, globals, locals, fromlist, level)
-    if not _installed and name.split(".")[0] == "litellm":
-        _install()
-    return module
-
-
-builtins.__import__ = _import
+if _least_busy is not None:
+    _least_busy._least_busy_index = _least_busy_index
