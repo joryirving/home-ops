@@ -185,11 +185,7 @@ spec:
         scrapeConfigSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         retention: 30d
-        # Keep real headroom under the volume size: retentionSize equal to the
-        # PVC capacity parks the volume at ~93% used forever, which makes the
-        # kubelet 15%-free rule (KubePersistentVolumeFillingUp) a permanent
-        # firing alert with nothing to do about it.
-        retentionSize: 65GB
+        retentionSize: ${PVC_CAPACITY}GB
         storageSpec:
           volumeClaimTemplate:
             spec:

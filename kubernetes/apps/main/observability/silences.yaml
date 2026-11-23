@@ -132,3 +132,19 @@ spec:
       value: NodeMemoryHighUtilization
     - name: instance
       value: 10.69.1.24:9100
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/observability.giantswarm.io/silence_v1alpha2.json
+# retentionSize is ${PVC_CAPACITY}GB against a ${PVC_CAPACITY}Gi volume, so
+# Prometheus parks the volume just under full by design and the kubelet's
+# 15%-free rule fires forever with no action available. If retentionSize ever
+# gains real headroom, delete this silence.
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: prometheus-pvc-filling-up
+spec:
+  matchers:
+    - name: alertname
+      value: KubePersistentVolumeFillingUp
+    - name: persistentvolumeclaim
+      value: prometheus-kube-prometheus-stack-db-prometheus-kube-prometheus-stack-0
