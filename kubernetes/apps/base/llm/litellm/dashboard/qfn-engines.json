@@ -687,7 +687,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state=~\"generating|reading\"})",
+          "expr": "sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state!=\"idle\"})",
           "instant": true,
           "range": false,
           "refId": "A",
@@ -959,7 +959,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) / clamp_min(sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) + sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state=~\"generating|reading\"}), 1)",
+          "expr": "100 * sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) / clamp_min(sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) + sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state!=\"idle\"}), 1)",
           "instant": true,
           "range": false,
           "refId": "A",
@@ -1077,7 +1077,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state=~\"generating|reading\"})",
+          "expr": "sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state!=\"idle\"})",
           "instant": false,
           "range": true,
           "refId": "B",
@@ -1268,7 +1268,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "clamp_min(sum(litellm_in_flight_requests) - sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) - sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state=~\"generating|reading\"}), 0)",
+          "expr": "clamp_min(sum(litellm_in_flight_requests) - sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) - sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state!=\"idle\"}), 0)",
           "instant": false,
           "range": true,
           "refId": "B",
@@ -1369,7 +1369,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) + sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state=~\"generating|reading\"})",
+          "expr": "sum(llamacpp:requests_processing{model=\"qwen3-8-flash-next-gufo\"}) + sum(strata:live_slots{model=\"qwen3-8-flash-next-strata\", state!=\"idle\"})",
           "instant": false,
           "range": true,
           "refId": "B",
