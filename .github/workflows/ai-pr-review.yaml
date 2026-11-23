@@ -86,40 +86,41 @@ jobs:
           KONFLATE_MCP_URL: https://konflate.jory.dev/mcp
           PR_REVIEWER_GATE_HEAD_SHA: ${{ steps.prctx.outputs.head_sha }}
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          pr-number: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
-          force-review: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+          # Repository-specific guidance comes from AGENTS.md and trusted-base skills.
+          ai-api-format: ${{ vars.PRIMARY_FORMAT }}
+          ai-api-key: ${{ secrets.LITELLM_API_KEY }}
           ai-base-url: ${{ vars.LITELLM_URL }}
           ai-extra-headers: |
             x-litellm-session-id: prreview-${{ github.run_id }}-${{ github.run_attempt }}
-          ai-api-format: ${{ vars.PRIMARY_FORMAT }}
-          ai-specialist-anthropic-effort-support: 'true'
-          ai-model: ${{ vars.PRIMARY_MODEL }}
-          primary-model-context-tokens: ${{ vars.PRIMARY_CONTEXT_TOKENS }}
-          ai-api-key: ${{ secrets.LITELLM_API_KEY }}
-          ai-response-format: off # qwen3.8-flash-next(-chat) rejects response_format; schema enforcement returns per-profile upstream
-          ai-fallback-base-url: ${{ vars.LITELLM_URL }}
           ai-fallback-api-format: ${{ vars.FALLBACK_FORMAT }}
-          ai-fallback-model: ${{ vars.FALLBACK_MODEL }}
-          fallback-model-context-tokens: ${{ vars.FALLBACK_CONTEXT_TOKENS }}
           ai-fallback-api-key: ${{ secrets.LITELLM_API_KEY }}
-          review-routing-mode: auto
-          deep-review: auto # selective, advisory specialists; not every Renovate patch needs adversarial review
-          repository-skills: "true"
-          review-verbosity: concise
-          upstream-link-mode: togithub # clickable upstream evidence without GitHub cross-repo mentions
-          ai-smart-base-url: ${{ vars.LITELLM_URL }}
+          ai-fallback-base-url: ${{ vars.LITELLM_URL }}
+          ai-fallback-model: ${{ vars.FALLBACK_MODEL }}
+          ai-model: ${{ vars.PRIMARY_MODEL }}
+          ai-reasoning-effort: ${{ vars.REASONING_EFFORT }}
+          ai-response-format: off # qwen3.8-flash-next(-chat) rejects response_format; schema enforcement returns per-profile upstream
           ai-smart-api-format: ${{ vars.SMART_FORMAT }}
-          ai-smart-model: ${{ vars.SMART_MODEL }}
-          smart-model-context-tokens: ${{ vars.SMART_CONTEXT_TOKENS }}
           ai-smart-api-key: ${{ secrets.LITELLM_API_KEY }}
+          ai-smart-base-url: ${{ vars.LITELLM_URL }}
+          ai-smart-model: ${{ vars.SMART_MODEL }}
+          ai-specialist-anthropic-effort-support: 'true'
           allowed-source-hosts: "github.com,api.github.com,gitlab.com,registry.terraform.io,artifacthub.io,minecraft.net,www.minecraft.net,talos.dev,www.talos.dev,docs.siderolabs.com,search.jory.dev,api.osv.dev,osv.dev,nvd.nist.gov,www.cve.org"
           ci-timeout-sec: "600"
+          claim-falsification: "true"
+          deep-review: auto # selective, advisory specialists; not every Renovate patch needs adversarial review
+          evidence-providers-file: .github/konflate-evidence-providers.json
+          fallback-model-context-tokens: ${{ vars.FALLBACK_CONTEXT_TOKENS }}
+          force-review: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          pr-number: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+          primary-model-context-tokens: ${{ vars.PRIMARY_CONTEXT_TOKENS }}
+          publish-mode: review_verdict
+          repository-skills: "true"
+          review-routing-mode: auto
+          review-verbosity: concise
           search-url: "https://search.jory.dev/search"
+          smart-model-context-tokens: ${{ vars.SMART_CONTEXT_TOKENS }}
+          standards-file-candidates: "AGENTS.md"
           tool-allowed-gh-api-repos: "*"
           tool-mcp-servers: "konflate=https://konflate.jory.dev/mcp"
-          # Repository-specific guidance comes from AGENTS.md and trusted-base skills.
-          standards-file-candidates: "AGENTS.md"
-          evidence-providers-file: .github/konflate-evidence-providers.json
-          claim-falsification: "true"
-          publish-mode: review_verdict
+          upstream-link-mode: togithub # clickable upstream evidence without GitHub cross-repo mentions
