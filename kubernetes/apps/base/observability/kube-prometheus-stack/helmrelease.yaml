@@ -124,6 +124,11 @@ spec:
     defaultRules:
       disabled:
         KubeHpaMaxedOut: true
+        # Fires on request overcommit rather than on any observed pressure, and
+        # a homelab with this many DaemonSets sits >10% over requested capacity
+        # permanently. KubePodPending and NodeMemoryHighUtilization cover the
+        # symptom that actually matters.
+        KubeMemoryOvercommit: true
     grafana:
       enabled: false
       forceDeployDashboards: true
@@ -180,7 +185,12 @@ spec:
         scrapeConfigSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         retention: 30d
-        retentionSize: ${PVC_CAPACITY}GB
+        # Kept separate from PVC_CAPACITY on purpose: this chart serves both
+        # clusters and retention is a size budget, not the volume size. Each
+        # cluster sets RETENTION_SIZE to ~80% of its volume in decimal GB, so
+        # the kubelet 15%-free rule keeps real headroom instead of the volume
+        # parking permanently just under full.
+        retentionSize: ${RETENTION_SIZE}GB
         storageSpec:
           volumeClaimTemplate:
             spec:

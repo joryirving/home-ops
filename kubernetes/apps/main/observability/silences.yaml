@@ -92,3 +92,43 @@ spec:
       value: AlertmanagerClusterFailedToSendAlerts
     - name: integration
       value: discord
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/observability.giantswarm.io/silence_v1alpha2.json
+# Parked on purpose: a UPS firmware update broke the USB connection the NUT
+# server hangs off, so nut-exporter times out against 192.168.1.8:3493. The
+# exporter itself is healthy — the host it polls is not reachable. Remove this
+# silence and the TargetDown one together once the UPS/NUT host is back.
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: nut-exporter-absent
+spec:
+  matchers:
+    - name: alertname
+      value: NutExporterAbsent
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/observability.giantswarm.io/silence_v1alpha2.json
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: nut-exporter-target-down
+spec:
+  matchers:
+    - name: alertname
+      value: TargetDown
+    - name: job
+      value: nut-exporter
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/observability.giantswarm.io/silence_v1alpha2.json
+# skirk runs a 180B model on the ROCm card, so low available memory is its
+# steady state, not pressure. Same rationale as the voyager silence above.
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: skirk-memory-high-utilization
+spec:
+  matchers:
+    - name: alertname
+      value: NodeMemoryHighUtilization
+    - name: instance
+      value: 10.69.1.24:9100

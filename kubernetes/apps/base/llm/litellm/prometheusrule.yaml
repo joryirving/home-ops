@@ -12,7 +12,8 @@ spec:
           expr: |-
             sum by (requested_model, exception_status, exception_class) (
               increase(litellm_deployment_failed_fallbacks_total[15m])
-            ) > 0
+            ) > 3
+          for: 10m
           annotations:
             summary: >-
               LiteLLM {{ $labels.requested_model }} fallback chain exhausted — no working deployment
@@ -20,44 +21,108 @@ spec:
           labels:
             severity: critical
         - alert: LiteLLMModelFailover
+          # Only cross-model failover is news: a pool falling back to another
+          # member of itself is the router doing normal load spreading, so those
+          # requested_model == fallback_model pairs are dropped from the result.
           expr: |-
-            sum by (requested_model, fallback_model, exception_status, exception_class) (
-              increase(litellm_deployment_successful_fallbacks_total[10m])
-            ) > 3
-          for: 5m
+            sum by (requested_model, fallback_model) (
+              increase(litellm_deployment_successful_fallbacks_total[30m])
+            ) > 10
+            unless on (requested_model, fallback_model)
+            label_replace(
+              sum by (requested_model) (
+                increase(litellm_deployment_successful_fallbacks_total[30m])
+              ),
+              "fallback_model", "$1", "requested_model", "(.+)"
+            )
+          for: 15m
           annotations:
             summary: >-
-              LiteLLM {{ $labels.requested_model }} failing over to {{ $labels.fallback_model }}
-              ({{ $labels.exception_status }} {{ $labels.exception_class }})
+              LiteLLM {{ $labels.requested_model }} is failing over to
+              {{ $labels.fallback_model }} more than 10 times per 30m
           labels:
-            severity: warning
+            severity: info
+            tier: capacity
         - alert: LiteLLMDeploymentOutage
           # deployment_state latches at 2 via the cooldown callback's pool label and
           # never resets (success callbacks label by requested model). Require
-          # ongoing failures so a recovered deployment doesn't alert forever.
+          # ongoing *heavy* failures so routine upstream 429 throttling does not
+          # keep a cooling deployment looking like an outage. The rate is on the
+          # left so $value reports failures/s rather than the state.
           expr: |-
-            max by (litellm_model_name) (litellm_deployment_state) >= 2
+            sum by (litellm_model_name) (rate(litellm_deployment_failure_responses_total[15m])) > 0.05
             and on (litellm_model_name)
-            sum by (litellm_model_name) (rate(litellm_deployment_failure_responses_total[15m])) > 0
-          for: 10m
+            max by (litellm_model_name) (litellm_deployment_state) >= 2
+          for: 20m
           annotations:
             summary: >-
               LiteLLM {{ $labels.litellm_model_name }} out of rotation and still failing
-              (deployment_state >= 2)
+              ({{ $value | humanize }} failures/s with deployment_state >= 2)
           labels:
             severity: warning
-        - alert: LiteLLMAuthOrQuotaFailures
+        - alert: LiteLLMAuthFailure
+          # 401 is the key itself failing; retries and fallbacks cannot fix it,
+          # so it is worth waking up for. 403 is NOT here: Kimi Coding signals
+          # plan cap-out with 403 (docs/src/notes/llm-strategy.md), so 403 is
+          # ambiguous between revoked access and an exhausted plan.
           expr: |-
-            sum by (litellm_model_name, exception_status) (
-              increase(litellm_deployment_failure_responses_total{exception_status=~"403|429"}[15m])
-            ) > 5
+            sum by (model_group, api_base) (
+              increase(litellm_deployment_failure_responses_total{exception_status="401"}[15m])
+            ) > 0
           for: 5m
           annotations:
             summary: >-
-              LiteLLM {{ $labels.litellm_model_name }} returning {{ $labels.exception_status }}
-              (auth/quota — check the upstream key or plan cap)
+              LiteLLM {{ $labels.model_group }} is rejecting credentials (401)
+              from {{ $labels.api_base }} — the upstream key is broken
+          labels:
+            severity: critical
+        - alert: LiteLLMForbidden
+          expr: |-
+            sum by (model_group, api_base) (
+              increase(litellm_deployment_failure_responses_total{exception_status="403"}[15m])
+            ) > 3
+          for: 10m
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.model_group }} returned 403 from {{ $labels.api_base }} —
+              revoked key or provider plan cap
           labels:
             severity: warning
+        - alert: LiteLLMUpstreamRateLimited
+          # Upstream 429s are ordinary burst throttling until they are not.
+          # Normal traffic runs at single digits per 15m; this only trips when a
+          # provider is throttling us hard. It cannot tell a spent plan from an
+          # aggressive rate limit, so it does not claim to. Self-hosted lanes are
+          # split by scheme: in-cluster endpoints are plaintext http, every
+          # upstream provider is https.
+          expr: |-
+            sum by (model_group, api_base) (
+              increase(litellm_deployment_failure_responses_total{exception_status="429", api_base=~"^https://.*"}[15m])
+            ) > 20
+          for: 15m
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.model_group }} is being throttled by
+              {{ $labels.api_base }} ({{ $value | humanize }} 429s in 15m —
+              check the provider rate limit or plan cap)
+          labels:
+            severity: warning
+        - alert: LiteLLMSelfHostedSaturation
+          # Visibility only. The local lanes enforce capacity with 429s, so this
+          # is routed to the quiet path and exists so the rate is chartable and
+          # visible in Alertmanager without paging anyone.
+          expr: |-
+            sum by (model_group, api_base) (
+              increase(litellm_deployment_failure_responses_total{exception_status="429", api_base=~"^http://.*"}[15m])
+            ) > 60
+          for: 20m
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.model_group }} self-hosted lane saturated
+              ({{ $value | humanize }} rejected requests in 15m)
+          labels:
+            severity: info
+            tier: capacity
     - name: llamacpp.rules
       rules:
         - alert: LlamaCppRequestsDeferred
