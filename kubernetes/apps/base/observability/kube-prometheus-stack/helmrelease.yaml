@@ -185,7 +185,12 @@ spec:
         scrapeConfigSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         retention: 30d
-        retentionSize: ${PVC_CAPACITY}GB
+        # Kept separate from PVC_CAPACITY on purpose: this chart serves both
+        # clusters and retention is a size budget, not the volume size. Each
+        # cluster sets RETENTION_SIZE to ~80% of its volume in decimal GB, so
+        # the kubelet 15%-free rule keeps real headroom instead of the volume
+        # parking permanently just under full.
+        retentionSize: ${RETENTION_SIZE}GB
         storageSpec:
           volumeClaimTemplate:
             spec:
