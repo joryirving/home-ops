@@ -22,6 +22,15 @@ spec:
           - name: alertname
             value: Watchdog
             matchType: =
+      # Capacity signals (self-hosted lanes saturating, pools spreading load)
+      # are expected steady-state behaviour. Keep them queryable in the
+      # Alertmanager UI and on the dashboards, but out of Discord and out of the
+      # LLM triage path.
+      - receiver: blackhole
+        matchers:
+          - name: tier
+            value: capacity|info
+            matchType: "=~"
       - receiver: triage
         continue: true
         groupWait: 0s
@@ -29,8 +38,8 @@ spec:
         repeatInterval: 12h
         matchers:
           - name: alertname
-            value: LiteLLMAuthOrQuotaFailures|AutobrrNetworkUnmonitored
-            matchType: "!~"
+            value: AutobrrNetworkUnmonitored
+            matchType: "!="
       - receiver: discord
     groupBy: ["alertname", "cluster", "job"]
     groupInterval: 10m
