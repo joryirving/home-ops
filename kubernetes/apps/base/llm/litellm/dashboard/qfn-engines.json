@@ -288,12 +288,264 @@
       "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Peak 1-minute fresh-token rate over the dashboard range (subquery step 1m). The wall-clock stat beside it is the 15-minute average; this is the burst ceiling the rung actually reaches.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 5
+      },
+      "id": 991,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max_over_time(rate(llamacpp:prompt_tokens_total{model=\"qwen3-8-flash-next-gufo\"}[1m])[${__range}:1m])",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Gufo prefill peak tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Peak 1-minute predicted-token rate over the dashboard range (subquery step 1m). Solo-stream decode sits lower than this; peaks are what a busy lane delivers.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 5
+      },
+      "id": 992,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max_over_time(rate(llamacpp:tokens_predicted_total{model=\"qwen3-8-flash-next-gufo\"}[1m])[${__range}:1m])",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Gufo decode peak tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Peak of the engine's own live prefill window mean over the dashboard range (subquery step 30s).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 5
+      },
+      "id": 993,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max_over_time(strata:live_prefill_tok_s_mean{model=\"qwen3-8-flash-next-strata\"}[${__range}:30s])",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Strata prefill peak tok/s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Peak of the engine's own live decode window mean over the dashboard range (subquery step 30s).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "tok/s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 5
+      },
+      "id": 994,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max_over_time(strata:live_tok_s{model=\"qwen3-8-flash-next-strata\"}[${__range}:30s])",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Strata decode peak tok/s",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 9
       },
       "id": 1,
       "panels": [],
@@ -338,7 +590,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 6
+        "y": 10
       },
       "id": 2,
       "options": {
@@ -411,7 +663,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 6
+        "y": 10
       },
       "id": 3,
       "options": {
@@ -476,7 +728,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 6
+        "y": 10
       },
       "id": 4,
       "options": {
@@ -547,7 +799,7 @@
         "h": 4,
         "w": 4,
         "x": 12,
-        "y": 6
+        "y": 10
       },
       "id": 5,
       "options": {
@@ -610,7 +862,7 @@
         "h": 4,
         "w": 4,
         "x": 16,
-        "y": 6
+        "y": 10
       },
       "id": 6,
       "options": {
@@ -683,7 +935,7 @@
         "h": 4,
         "w": 4,
         "x": 20,
-        "y": 6
+        "y": 10
       },
       "id": 7,
       "options": {
@@ -724,7 +976,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 14
       },
       "id": 8,
       "panels": [],
@@ -790,7 +1042,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 11
+        "y": 15
       },
       "id": 9,
       "options": {
@@ -894,7 +1146,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 11
+        "y": 15
       },
       "id": 10,
       "options": {
@@ -984,7 +1236,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 19
+        "y": 23
       },
       "id": 11,
       "options": {
@@ -1085,7 +1337,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 19
+        "y": 23
       },
       "id": 12,
       "options": {
@@ -1133,7 +1385,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 30
       },
       "id": 13,
       "panels": [],
@@ -1199,7 +1451,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 27
+        "y": 31
       },
       "id": 14,
       "options": {
@@ -1303,7 +1555,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 27
+        "y": 31
       },
       "id": 15,
       "options": {
@@ -1407,7 +1659,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 27
+        "y": 31
       },
       "id": 16,
       "options": {
@@ -1455,7 +1707,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 39
       },
       "id": 17,
       "panels": [],
@@ -1521,7 +1773,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 36
+        "y": 40
       },
       "id": 18,
       "options": {
@@ -1611,7 +1863,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 36
+        "y": 40
       },
       "id": 19,
       "options": {
@@ -1712,7 +1964,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 36
+        "y": 40
       },
       "id": 20,
       "options": {
@@ -1796,7 +2048,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 43
+        "y": 47
       },
       "id": 990,
       "options": {
@@ -1886,7 +2138,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 43
+        "y": 47
       },
       "id": 21,
       "options": {
@@ -1945,7 +2197,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 43
+        "y": 47
       },
       "id": 22,
       "options": {
@@ -2030,7 +2282,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 43
+        "y": 47
       },
       "id": 23,
       "options": {
@@ -2135,7 +2387,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 50
+        "y": 54
       },
       "id": 24,
       "options": {
@@ -2236,7 +2488,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 50
+        "y": 54
       },
       "id": 25,
       "options": {
