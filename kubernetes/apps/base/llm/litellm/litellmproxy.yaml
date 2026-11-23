@@ -86,23 +86,21 @@ spec:
   routerSettings:
     redis_host: os.environ/REDIS_HOST
     redis_port: os.environ/REDIS_PORT
-    # least-busy spreads by each deployment's real in-flight count. Its
-    # selector breaks 0-vs-0 ties by deployment id -- the defect the old
-    # comment was written for, and also the feature: solo/sequential
-    # traffic always lands on the same rung and never bounces (implicit
-    # affinity for free), while bursts spill to the peer by real load.
-    # Measured peaks (qfn-engines dashboard, 2026-11-22): prefill strata
-    # 2470 tok/s vs gufo ~1400; decode gufo ~60 tok/s vs strata ~73. So
-    # strata is the cheap catch-up lane (one re-prefill on arrival, then
-    # its conversation cache holds the session) and gufo is the
-    # decode-premium lane the ties favour.
-    # session_affinity is gone: Redis pins made busy engines queue --
-    # observed 2 busy + 2 queued on gufo while strata sat at zero -- because
-    # failover only serves from the peer on cooldown, never on saturation.
-    # The interim simple-shuffle was the worst of the three: it re-rolls
-    # placement per request, so multi-turn agent sessions coin-flip a full
-    # re-prefill every turn (~50% bounce odds at two rungs).
-    routing_strategy: least-busy
+    # usage-based-routing-v2: route new requests to the deployment with the
+    # lowest per-minute TPM/RPM usage, counted in the Redis router_usage
+    # store -- the only cluster-wide view available at replicas: 3. This
+    # replaces least-busy, whose in-flight counts are per-process: each of
+    # the three proxies counted only its own requests, a request landing on
+    # a fresh replica saw 0-vs-0 and the stable tie-break scan picked the
+    # first deployment in the group, so gufo stacked 7 requests onto 2
+    # slots (5 sitting in the engine queue) while strata never exceeded 1
+    # in-flight over a 5 h window (max 2 / mean 1.06 vs max 1 / mean 0.32).
+    # The tpm/rpm limits on every QFN rung are deliberately absurd so the
+    # limit filter never fires; relative usage does the steering and the
+    # idle rung wins until token-minutes even out. Both counters at zero
+    # still scans in group order, so gufo -- the better quant -- keeps the
+    # first stream after idle.
+    routing_strategy: usage-based-routing-v2
     # Share the actual QFN deployments rather than duplicate Gufo/Strata entries.
     model_group_alias:
       grooming-pool: qwen3.8-flash-next

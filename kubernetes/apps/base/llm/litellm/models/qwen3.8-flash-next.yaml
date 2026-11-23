@@ -19,6 +19,18 @@ spec:
       min_p: 0
       order: 1
       max_parallel_requests: 2
+      # usage-based-routing-v2: the router sends new requests to the rung
+      # with the lowest per-minute usage from the Redis router_usage store
+      # -- the only cluster-wide signal the three proxy replicas share.
+      # least-busy counted per-process in-flight requests, so fresh replicas
+      # always saw 0-vs-0 and stacked everything on gufo (2 lanes + 5
+      # engine-queued while strata sat at max 1 over a 5 h window). The
+      # limits are deliberately absurd: they never filter, relative usage
+      # does the steering, and the idle rung wins until token-minutes even
+      # out. Ties (both counters at zero) scan in group order, so gufo --
+      # the better quant -- keeps the first stream.
+      tpm: 10000000
+      rpm: 10000
   info:
     mode: chat
     maxInputTokens: 271360
@@ -52,6 +64,10 @@ spec:
       # 2 slots live on the engine (--parallel 2, IQ4_XS all-resident): two
       # concurrent sessions fit the 96Gi cgroup with headroom (measured).
       max_parallel_requests: 2
+      # Matches the gufo rung: equal limits keep the usage-based-v2 filter
+      # inert on both rungs of the group.
+      tpm: 10000000
+      rpm: 10000
   info:
     mode: chat
     maxInputTokens: 271360
