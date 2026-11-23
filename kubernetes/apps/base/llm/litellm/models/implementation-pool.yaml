@@ -26,36 +26,7 @@ spec:
       cache_creation_input_token_cost: 1.25e-07
       cache_read_input_token_cost: 1.0e-08
       output_cost_per_token: 5.0e-07
----
-# Strata IQ3_S rung on ganyu (replaces the qwen3.8-27b rung).
-apiVersion: litellm.home-operations.com/v1alpha1
-kind: LiteLLMModel
-metadata:
-  name: implementation-pool-strata
-spec:
-  modelName: implementation-pool
-  proxyRef: litellm
-  params:
-    model: openai/qwen3.8-flash-next-iq3_s
-    apiBase: http://qwen3-8-flash-next-strata.llm.svc.cluster.local:8080/v1
-    apiKey: sk-llmkube-noauth
-    additional:
-      temperature: 1.0
-      top_p: 0.95
-      top_k: 20
-      min_p: 0
-      order: 3
-      max_parallel_requests: 2
-      reasoning_effort: xhigh
-      allowed_openai_params:
-        - reasoning_effort
-  info:
-    mode: chat
-    maxInputTokens: 232448
-    maxOutputTokens: 32768
-    supportsFunctionCalling: true
-    supportsVision: true # verified 2026-11-09 on the strata engine: data-URL image request, 200 + correct description
-    extra:
-      input_cost_per_token: 6.2e-08
-      output_cost_per_token: 1.35e-06
-      cache_read_input_token_cost: 0.0
+# Rung 2 is not a deployment here: it is a pool reference in litellmproxy.yaml
+# fallbacks (implementation-pool -> qwen3.8-flash-next), so failover shares the
+# QFN pool's engines and their max_parallel_requests caps instead of granting
+# this group extra slots on the strata engine.
