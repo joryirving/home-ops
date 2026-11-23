@@ -47,47 +47,64 @@ spec:
           # deployment_state latches at 2 via the cooldown callback's pool label and
           # never resets (success callbacks label by requested model). Require
           # ongoing *heavy* failures so routine upstream 429 throttling does not
-          # keep a cooling deployment looking like an outage.
+          # keep a cooling deployment looking like an outage. The rate is on the
+          # left so $value reports failures/s rather than the state.
           expr: |-
-            max by (litellm_model_name) (litellm_deployment_state) >= 2
-            and on (litellm_model_name)
             sum by (litellm_model_name) (rate(litellm_deployment_failure_responses_total[15m])) > 0.05
+            and on (litellm_model_name)
+            max by (litellm_model_name) (litellm_deployment_state) >= 2
           for: 20m
           annotations:
             summary: >-
               LiteLLM {{ $labels.litellm_model_name }} out of rotation and still failing
-              (deployment_state >= 2, {{ $value | humanize }} failures/s)
+              ({{ $value | humanize }} failures/s with deployment_state >= 2)
           labels:
             severity: warning
         - alert: LiteLLMAuthFailure
-          # 401/403 is a broken key or revoked access — retries and fallbacks
-          # cannot fix it, so it is worth waking up for.
+          # 401 is the key itself failing; retries and fallbacks cannot fix it,
+          # so it is worth waking up for. 403 is NOT here: Kimi Coding signals
+          # plan cap-out with 403 (docs/src/notes/llm-strategy.md), so 403 is
+          # ambiguous between revoked access and an exhausted plan.
           expr: |-
-            sum by (model_group, api_base, exception_status) (
-              increase(litellm_deployment_failure_responses_total{exception_status=~"401|403"}[15m])
+            sum by (model_group, api_base) (
+              increase(litellm_deployment_failure_responses_total{exception_status="401"}[15m])
             ) > 0
           for: 5m
           annotations:
             summary: >-
-              LiteLLM {{ $labels.model_group }} returning {{ $labels.exception_status }}
-              from {{ $labels.api_base }} — upstream key or access is broken
+              LiteLLM {{ $labels.model_group }} is rejecting credentials (401)
+              from {{ $labels.api_base }} — the upstream key is broken
           labels:
             severity: critical
-        - alert: LiteLLMUpstreamQuotaExhausted
-          # Upstream 429s are ordinary burst throttling until they are not.
-          # Normal traffic runs at single digits per 15m; this only trips when a
-          # provider plan is genuinely spent. Self-hosted lanes are excluded on
-          # purpose — a 429 from svc.cluster.local is the lane's own capacity
-          # limiter working as designed (see LiteLLMSelfHostedSaturation).
+        - alert: LiteLLMForbidden
           expr: |-
             sum by (model_group, api_base) (
-              increase(litellm_deployment_failure_responses_total{exception_status="429", api_base!~".*\\.svc\\.cluster\\.local.*"}[15m])
+              increase(litellm_deployment_failure_responses_total{exception_status="403"}[15m])
+            ) > 3
+          for: 10m
+          annotations:
+            summary: >-
+              LiteLLM {{ $labels.model_group }} returned 403 from {{ $labels.api_base }} —
+              revoked key or provider plan cap
+          labels:
+            severity: warning
+        - alert: LiteLLMUpstreamRateLimited
+          # Upstream 429s are ordinary burst throttling until they are not.
+          # Normal traffic runs at single digits per 15m; this only trips when a
+          # provider is throttling us hard. It cannot tell a spent plan from an
+          # aggressive rate limit, so it does not claim to. Self-hosted lanes are
+          # split by scheme: in-cluster endpoints are plaintext http, every
+          # upstream provider is https.
+          expr: |-
+            sum by (model_group, api_base) (
+              increase(litellm_deployment_failure_responses_total{exception_status="429", api_base=~"^https://.*"}[15m])
             ) > 20
           for: 15m
           annotations:
             summary: >-
-              LiteLLM {{ $labels.model_group }} is being rate limited hard
-              ({{ $value | humanize }} upstream 429s in 15m — check the provider plan cap)
+              LiteLLM {{ $labels.model_group }} is being throttled by
+              {{ $labels.api_base }} ({{ $value | humanize }} 429s in 15m —
+              check the provider rate limit or plan cap)
           labels:
             severity: warning
         - alert: LiteLLMSelfHostedSaturation
@@ -96,7 +113,7 @@ spec:
           # visible in Alertmanager without paging anyone.
           expr: |-
             sum by (model_group, api_base) (
-              increase(litellm_deployment_failure_responses_total{exception_status="429", api_base=~".*\\.svc\\.cluster\\.local.*"}[15m])
+              increase(litellm_deployment_failure_responses_total{exception_status="429", api_base=~"^http://.*"}[15m])
             ) > 60
           for: 20m
           annotations:
