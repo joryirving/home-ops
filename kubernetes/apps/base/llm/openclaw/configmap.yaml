@@ -12,6 +12,7 @@ data:
         defaults: {
           voiceModel: "kokoro/af_heart",
           utilityModel: "litellm/utility",
+          decisionModel: "typesafe/decision",
           contextInjection: "continuation-skip",
           bootstrapMaxChars: 16384,
           bootstrapTotalMaxChars: 49152,
@@ -241,6 +242,11 @@ data:
             apiKey: "not-required",
             request: { allowPrivateNetwork: true },
           },
+          "typesafe": {
+            baseUrl: "http://decision.llm:8080/v1",
+            request: { allowPrivateNetwork: true },
+            models: [],
+          },
           "minimax": {
             baseUrl: "http://litellm.llm:4000",
             apiKey: "$${LITELLM_API_KEY}",
@@ -400,7 +406,9 @@ data:
                 "agent:*:cron:**",
                 "agent:*:heartbeat:**",
                 "heartbeat:**",
-                "**:heartbeat:**"
+                "**:heartbeat:**",
+                "**:heartbeat**",
+                "**:cron:**"
               ],
               incrementalMaxDepth: 1,
               leafChunkTokens: 20000,
