@@ -1,0 +1,106 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: rerank
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: rerank
+  interval: 15m
+  values:
+    defaultPodOptions:
+      nodeSelector:
+        kubernetes.io/hostname: layla
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+    controllers:
+      rerank:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: openvino/model_server
+              tag: 2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
+            args:
+              - --source_model
+              - OpenVINO/bge-reranker-v2-m3-fp16-ov
+              - --model_name
+              - rerank
+              - --task
+              - rerank
+              - --target_device
+              - NPU
+              - --model_repository_path
+              - /models
+              - --ov_cache_dir
+              - /models/ov-cache
+              - --rest_port
+              - "8080"
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: 500m
+                memory: 4Gi
+              limits:
+                memory: 8Gi
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /v3/health
+                    port: 8080
+                  periodSeconds: 10
+                  failureThreshold: 60
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /v3/health
+                    port: 8080
+                  initialDelaySeconds: 20
+                  periodSeconds: 20
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /v3/health
+                    port: 8080
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  failureThreshold: 6
+    persistence:
+      models:
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 5Gi
+        storageClass: local-hostpath
+        globalMounts:
+          - path: /models
+      accel:
+        type: hostPath
+        hostPath: /dev/accel
+        hostPathType: Directory
+        globalMounts:
+          - path: /dev/accel
+      render:
+        type: hostPath
+        hostPath: /dev/dri/renderD128
+        hostPathType: CharDevice
+        globalMounts:
+          - path: /dev/dri/renderD128
+    service:
+      app:
+        ports:
+          http:
+            port: 8080
