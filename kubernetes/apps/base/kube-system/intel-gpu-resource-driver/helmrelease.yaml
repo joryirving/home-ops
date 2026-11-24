@@ -14,6 +14,28 @@ spec:
       staticPath: /run/cdi
       dynamicPath: /run/cdi
     kubeletPlugin:
-      privileged: true
+      # Run only where the Talos xe extension is installed: the Intel
+      # control planes and layla, never the AMD worker.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: extensions.talos.dev/xe
+                    operator: Exists
       healthMonitoring:
         enabled: false
+      privileged: true
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node.kubernetes.io/gpu
+          operator: Exists
+          effect: NoSchedule
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
