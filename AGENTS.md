@@ -72,6 +72,7 @@ Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `k
 - Component READMEs stay with components (e.g., `kubernetes/apps/base/kube-system/cilium/README.md`)
 - Secrets stored in 1Password, referenced via `external-secrets`
 - Apps use `HelmRelease` via Flux, rarely raw manifests
+- Keep inline comments to a minimum or non-existent. Do not touch existing comments without justification or direct instructions.
 - Clusters are mostly identical except for app selections and sizing
 - **AI instructions**: The reviewer loads trusted-base repository skills. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). When editing YAML, follow the sorting instructions. `docs/src/notes/coding-loop.md` documents the coding loop (Dispatch + Courier); read it before changing `kubernetes/apps/base/llm/courier/` or Dispatch configuration.
 - **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource and alerting rules; each namespace overlay (`kubernetes/apps/<cluster>/<namespace>/kustomization.yaml`) includes it once for all apps it lists. Helm chart sources are per-app: each app declares its own `OCIRepository` in `ocirepository.yaml`.
