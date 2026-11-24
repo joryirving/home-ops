@@ -31,7 +31,7 @@ spec:
               - --task
               - rerank
               - --target_device
-              - NPU
+              - CPU
               - --model_repository_path
               - /models
               - --ov_cache_dir
@@ -87,18 +87,6 @@ spec:
         storageClass: local-hostpath
         globalMounts:
           - path: /models
-      accel:
-        type: hostPath
-        hostPath: /dev/accel
-        hostPathType: Directory
-        globalMounts:
-          - path: /dev/accel
-      render:
-        type: hostPath
-        hostPath: /dev/dri/renderD128
-        hostPathType: CharDevice
-        globalMounts:
-          - path: /dev/dri/renderD128
     service:
       app:
         ports:
