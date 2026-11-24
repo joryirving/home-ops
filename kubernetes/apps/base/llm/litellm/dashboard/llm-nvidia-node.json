@@ -438,7 +438,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_generation_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_decode_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m])) or max_over_time(strata:last_decode_tok_s{service=~\"$service\"}[$__range])",
+          "expr": "max(max_over_time(llamacpp:predicted_tokens_seconds{service=~\"$service\", service!~\"llama-embed|memini-embed|rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time((sum by (service)(rate(vllm:request_generation_tokens_sum{service=~\"$service\"}[5m])) / sum by (service)(rate(vllm:request_decode_time_seconds_sum{service=~\"$service\"}[5m])))[$__range:1m])) or max_over_time(strata:last_decode_tok_s{service=~\"$service\"}[$__range])",
           "legendFormat": "TG tok/s",
           "refId": "A"
         }
@@ -914,7 +914,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (service)(rate(llamacpp:prompt_tokens_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[15m])) / clamp_min(sum by (service)(rate(llamacpp:prompt_seconds_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[15m])), 60)",
+          "expr": "sum by (service)(rate(llamacpp:prompt_tokens_total{service=~\"$service\", service!~\"llama-embed|memini-embed|rerank|memini-summary|toolhive-embed\"}[15m])) / clamp_min(sum by (service)(rate(llamacpp:prompt_seconds_total{service=~\"$service\", service!~\"llama-embed|memini-embed|rerank|memini-summary|toolhive-embed\"}[15m])), 60)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -959,7 +959,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (service)(rate(llamacpp:tokens_predicted_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[15m])) / clamp_min(sum by (service)(rate(llamacpp:tokens_predicted_seconds_total{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[15m])), 60)",
+          "expr": "sum by (service)(rate(llamacpp:tokens_predicted_total{service=~\"$service\", service!~\"llama-embed|memini-embed|rerank|memini-summary|toolhive-embed\"}[15m])) / clamp_min(sum by (service)(rate(llamacpp:tokens_predicted_seconds_total{service=~\"$service\", service!~\"llama-embed|memini-embed|rerank|memini-summary|toolhive-embed\"}[15m])), 60)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
@@ -1004,7 +1004,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (service)(max_over_time(llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|memini-rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time(strata:engine_max_context{service=~\"$service\"}[$__range]))",
+          "expr": "max by (service)(max_over_time(llamacpp:n_tokens_max{service=~\"$service\", service!~\"llama-embed|memini-embed|rerank|memini-summary|toolhive-embed\"}[$__range]) or max_over_time(strata:engine_max_context{service=~\"$service\"}[$__range]))",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
