@@ -81,6 +81,10 @@ kvmd:
                 type: wol
                 mac: 84:47:09:77:79:61
                 ip: 10.69.1.24
+            wol_server7:
+                type: wol
+                mac: 84:47:09:8e:ad:a6
+                ip: 10.69.1.25
             reboot:
                 type: cmd
                 cmd: ["/usr/bin/sudo", "reboot"]
@@ -195,6 +199,11 @@ kvmd:
                 pin: 7
                 mode: output
                 switch: false
+            server7_wol:
+                driver: wol_server7
+                pin: 0
+                mode: output
+                switch: false
             reboot_button:
                 driver: reboot
                 pin: 0
@@ -221,7 +230,7 @@ kvmd:
                 - ["#Citlali", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
                 - ["#Smurf PC", "server5_led", "server5_btn | KVM", "server5_wol | WOL"]
                 - ["#Skirk", "server6_led", "server6_btn | KVM", "server6_wol | WOL"]
-                - ["#8", "server7_led", "server7_btn | KVM"]
+                - ["#Layla", "server7_led", "server7_btn | KVM", "server7_wol | WOL"]
 ```
 
 3. Remount read-only and restart kvmd
