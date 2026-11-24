@@ -221,7 +221,7 @@ kvmd:
                 - ["#Citlali", "server4_led", "server4_btn | KVM", "server4_wol | WOL"]
                 - ["#Smurf PC", "server5_led", "server5_btn | KVM", "server5_wol | WOL"]
                 - ["#Skirk", "server6_led", "server6_btn | KVM", "server6_wol | WOL"]
-                - ["#8", "server7_led", "server7_btn | KVM"]
+                - ["#Layla", "server7_led", "server7_btn | KVM"]
 ```
 
 3. Remount read-only and restart kvmd
