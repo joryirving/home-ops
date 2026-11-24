@@ -8,15 +8,7 @@ spec:
   format: gguf
   quantization: Q8_0
   hardware:
-    accelerator: vulkan
-    gpu:
-      enabled: true
-      vendor: intel
-      runtime: vulkan
-      layers: 99
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: llama-intel-gpu
+    accelerator: cpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -27,8 +19,9 @@ metadata:
 spec:
   modelRef: decision
   runtime: llamacpp
-  # Vulkan image and Intel DRA claim use the MS-01 Iris Xe GPUs.
   image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:5766735f77edf02ca179264e71e18ed1466e9332912e30f88f7a4ccd0dc6d5b6
+  securityContext:
+    privileged: true
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
@@ -37,18 +30,12 @@ spec:
   podLabels:
     cpu-inference: "false"
     decision-pool: "true"
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                decision-pool: "true"
-            topologyKey: kubernetes.io/hostname
-  # No llm-workload toleration on purpose: that taint marks skirk, whose
-  # budget is reserved for gufo + the embed/rerank pair. decision-1 stays
-  # on the untainted CPU nodes.
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  nodeSelector:
+    kubernetes.io/hostname: layla
   # d3 attention is noncausal: llama.cpp asserts ubatch >= request tokens,
   # so batch/ubatch must cover the full 16384 context.
   contextSize: 16384
@@ -64,11 +51,21 @@ spec:
     - "on"
     - --load-mode
     - mmap
+    - --n-gpu-layers
+    - "99"
     # Keep CPU threads bounded while the GPU handles model layers.
     - --threads
     - "4"
     - --threads-batch
     - "4"
+  extraVolumes:
+    - name: render
+      hostPath:
+        path: /dev/dri/renderD128
+        type: CharDevice
+  extraVolumeMounts:
+    - name: render
+      mountPath: /dev/dri/renderD128
   endpoint:
     port: 8080
     type: ClusterIP

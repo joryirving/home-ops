@@ -13,35 +13,15 @@ spec:
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
-  name: memini-rerank-1
+  name: rerank
   labels:
     krr/ignore: "true"
 spec:
   modelRef: memini-rerank
   runtime: llamacpp
-  # GPU replica on skirk (Strix Halo iGPU), Vulkan build. The DRA path is not
-  # usable for a second consumer: llama-strix-gpu is allocationMode All and
-  # exclusively held by the gufo claim, so a sibling claim would sit Pending
-  # forever. Instead the pod borrows the render node directly — renderD128 is
-  # mode 0666 on Talos, so a plain hostPath Device mount needs no claim, no
-  # group/uid work, and gufo is untouched.
-  # OOM history (2026-11): skirk previously co-hosted embed/rerank/STT/TTS on
-  # the iGPU and OOMed; whisper and TTS were the culprits (large transient
-  # buffers colliding with gufo's growing KV/ngram state in the shared GTT).
-  # This pair is the ONLY co-tenant allowed on skirk. Do not add STT/TTS or
-  # any transient-buffer workload here — the NPU (amdxdna, kernel >=6.14) is
-  # the planned home for those.
-  # Image: kyuz0/amd-strix-halo-toolboxes vulkan-radv — prebuilt llama.cpp
-  # master with Strix Halo Vulkan mat-vec tuning; same digest the whisper
-  # HelmReleases pin. The toolbox has no entrypoint (CMD bash), so the
-  # llama-server path is set explicitly via spec.command.
-  # Memory: the request is a cgroup reservation, not the model size — it must
-  # cover mmap page cache, compute buffers, and GTT allocations charged to
-  # the process (same reason gufo requests 108Gi). Skirk budget: gufo 108Gi
-  # + these two must stay under allocatable (~125Gi), so 4Gi each.
-  image: docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv@sha256:bc2edd4ef83489e3fa1fd827ec200b854104d5ba76460e21a8454ea7ba028145
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:5766735f77edf02ca179264e71e18ed1466e9332912e30f88f7a4ccd0dc6d5b6
   command:
-    - /usr/bin/llama-server
+    - /app/llama-server
   securityContext:
     privileged: true
   rolloutPolicy:
@@ -52,21 +32,12 @@ spec:
   podLabels:
     cpu-inference: "false"
     rerank-pool: "true"
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                rerank-pool: "true"
-            topologyKey: kubernetes.io/hostname
   tolerations:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
   nodeSelector:
-    kubernetes.io/hostname: skirk
+    kubernetes.io/hostname: layla
   contextSize: 16384
   parallelSlots: 4
   batchSize: 16384
@@ -84,12 +55,12 @@ spec:
     - --load-mode
     - mmap
   extraVolumes:
-    - name: amd-render
+    - name: render
       hostPath:
         path: /dev/dri/renderD128
         type: CharDevice
   extraVolumeMounts:
-    - name: amd-render
+    - name: render
       mountPath: /dev/dri/renderD128
   endpoint:
     port: 8080

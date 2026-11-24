@@ -12,15 +12,7 @@ spec:
   format: gguf
   quantization: UD-Q4_K_XL
   hardware:
-    accelerator: vulkan
-    gpu:
-      enabled: true
-      vendor: intel
-      runtime: vulkan
-      layers: 99
-      resourceClaims:
-        - name: gpu
-          resourceClaimTemplateName: llama-intel-gpu
+    accelerator: cpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
@@ -44,6 +36,8 @@ spec:
     type: draft-mtp
     draftModelRef: utility-mtp
   image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:5766735f77edf02ca179264e71e18ed1466e9332912e30f88f7a4ccd0dc6d5b6
+  securityContext:
+    privileged: true
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
@@ -52,15 +46,12 @@ spec:
   podLabels:
     cpu-inference: "false"
     utility-pool: "true"
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                utility-pool: "true"
-            topologyKey: kubernetes.io/hostname
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  nodeSelector:
+    kubernetes.io/hostname: layla
   # 65536 across 2 slots = 32768 per request.
   contextSize: 65536
   parallelSlots: 2
@@ -75,6 +66,8 @@ spec:
     - "on"
     - --load-mode
     - mmap
+    - --n-gpu-layers
+    - "99"
     - --cache-type-k
     - q8_0
     - --cache-type-v
@@ -83,6 +76,14 @@ spec:
     - "4"
     - --threads-batch
     - "4"
+  extraVolumes:
+    - name: render
+      hostPath:
+        path: /dev/dri/renderD128
+        type: CharDevice
+  extraVolumeMounts:
+    - name: render
+      mountPath: /dev/dri/renderD128
   endpoint:
     port: 8080
     type: ClusterIP

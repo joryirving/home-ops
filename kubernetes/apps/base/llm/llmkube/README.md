@@ -159,7 +159,9 @@ Keep both PVCs. To put Strata back, reverse the deployment and route changes.
   a model shared across consumers gets a neutral app instead: `embed`
   (`apps/base/llm/embed`, three single-replica InferenceServices `embed-1/2/3`
   pooled in LiteLLM as `embed`) that both memini and toolhive-config depend
-  on. `memini-rerank-1/2/3` has the same shape, pooled as `rerank`. HAZARD:
+  on. `rerank` (in `apps/base/llm/memini/memini-rerank.yaml`, renamed from
+  `memini-rerank-1` when it moved to layla) has the same shape, pooled as
+  `rerank`. HAZARD:
   memini gates embedding compatibility on the `MEMINI_EMBED_MODEL`
   name and FATALS at startup if it differs from the name the store was created
   under — even when the model and dims are identical (it does not compare vectors).
