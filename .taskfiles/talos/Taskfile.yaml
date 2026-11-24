@@ -7,7 +7,7 @@ vars:
 
 tasks:
   apply-node:
-    desc: Apply Talos config to a node [CLUSTER=main] [NODE=required] [MODE=auto]
+    desc: Apply Talos config to a node [CLUSTER=main] [NODE=required] [ADDRESS=NODE] [MODE=auto]
     cmds:
       # - task: verify-machine-ca
       #   vars:
@@ -17,7 +17,7 @@ tasks:
       #     SCHEMATIC: '{{.SCHEMATIC}}'
       - |-
         minijinja-cli {{.TALOS_DIR}}/machineconfig.yaml.j2 | op inject \
-          | talosctl --nodes {{.NODE}} apply-config \
+          | talosctl --nodes {{.ADDRESS}} apply-config \
             --mode {{.MODE}} \
             {{if .TYPE_PATCH}}--config-patch @{{.TYPE_PATCH}}{{end}} \
             --config-patch @{{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{.NODE}}.yaml \
@@ -25,6 +25,7 @@ tasks:
             --file /dev/stdin {{if .INSECURE}}--insecure{{end}} \
             --talosconfig {{.TALOS_DIR}}/talosconfig
     vars:
+      ADDRESS: '{{.ADDRESS | default .NODE}}'
       EGPU_OVERRIDE: '{{.EGPU | default ""}}'
       EGPU_EFFECTIVE:
         sh: |-
@@ -48,10 +49,10 @@ tasks:
           test -f "$f" && echo "$f" || echo ""
       INSECURE:
         sh: |-
-          if talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.NODE}} get machineconfig &> /dev/null; then
+          if talosctl --talosconfig {{.TALOS_DIR}}/talosconfig --nodes {{.ADDRESS}} get machineconfig &> /dev/null; then
             exit 0
           fi
-          talosctl --nodes {{.NODE}} version --insecure &> /dev/null && echo true
+          talosctl --nodes {{.ADDRESS}} version --insecure &> /dev/null && echo true
       SCHEMATIC:
         sh: task --silent talos:generate-schematic CLUSTER={{.CLUSTER}} NODE={{.NODE}} EGPU={{.EGPU_EFFECTIVE}}
     env:
@@ -301,17 +302,19 @@ tasks:
       - test -f {{.TALOS_DIR}}/talosconfig
       - which talosctl
 
-  generate-iso:
-    desc: Generate a Talos ISO for a specific node [CLUSTER=main] [NODE=required] [VERSION=required]
+  schematic-file:
+    desc: Print the schematic file for a node [CLUSTER=main] [NODE=required] [EGPU=inferred]
+    silent: true
     cmd: |-
-      curl -L -o {{.TALOS_DIR}}/talos-{{.NODE}}-{{.VERSION}}.iso \
-        https://factory.talos.dev/image/{{.TALOS_SCHEMATIC}}/{{.VERSION}}/metal-amd64.iso
+      dir="$(dirname "$(find "{{.TALOS_DIR}}" -name "{{.NODE}}.yaml" -print -quit)")"
+      if [ "{{.EGPU_EFFECTIVE}}" = "true" ]; then
+        echo "${dir}/eGPU-schematic.yaml"
+      elif [ -f "${dir}/{{.NODE}}-schematic.yaml" ]; then
+        echo "${dir}/{{.NODE}}-schematic.yaml"
+      else
+        echo "${dir}/schematic.yaml"
+      fi
     vars:
-      MACHINE_TYPE:
-        sh: |-
-          basename "$(find "${TALOS_DIR}" -name "${NODE}.yaml" -exec dirname {} \;)"
-      TALOS_SCHEMATIC:
-        sh: task --silent talos:generate-schematic NODE={{.NODE}} CLUSTER={{.CLUSTER}} EGPU={{.EGPU_EFFECTIVE}}
       EGPU_OVERRIDE: '{{.EGPU | default ""}}'
       EGPU_EFFECTIVE:
         sh: |-
@@ -323,9 +326,24 @@ tasks:
           yq --exit-status 'select(.kind == "KubeNodeConfig") | .labels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
             && echo true || echo false
     requires:
+      vars: [CLUSTER, NODE]
+    preconditions:
+      - which yq
+
+  generate-iso:
+    desc: Generate a Talos ISO for a specific node [CLUSTER=main] [NODE=required] [VERSION=required]
+    cmd: |-
+      curl -L -o {{.TALOS_DIR}}/talos-{{.NODE}}-{{.VERSION}}.iso \
+        https://factory.talos.dev/image/{{.TALOS_SCHEMATIC}}/{{.VERSION}}/metal-amd64.iso
+    vars:
+      SCHEMATIC_FILE:
+        sh: task --silent talos:schematic-file CLUSTER={{.CLUSTER}} NODE={{.NODE}} EGPU={{.EGPU | default ""}}
+      TALOS_SCHEMATIC:
+        sh: task --silent talos:generate-schematic NODE={{.NODE}} CLUSTER={{.CLUSTER}} EGPU={{.EGPU | default ""}}
+    requires:
       vars: [VERSION, CLUSTER, NODE]
     preconditions:
-      - test -f {{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{if eq .EGPU_EFFECTIVE "true"}}eGPU-schematic.yaml{{else}}schematic.yaml{{end}}
+      - test -f {{.SCHEMATIC_FILE}}
       - which curl task yq
 
   generate-schematic:
@@ -334,19 +352,8 @@ tasks:
       curl --silent -X POST --data-binary @{{.SCHEMATIC_FILE}} https://factory.talos.dev/schematics \
         | jq --raw-output '.id'
     vars:
-      EGPU_OVERRIDE: '{{.EGPU | default ""}}'
-      EGPU_EFFECTIVE:
-        sh: |-
-          if [ -n "{{.EGPU_OVERRIDE}}" ]; then
-            echo "{{.EGPU_OVERRIDE}}"
-            exit 0
-          fi
-          node_file="$(find "${TALOS_DIR}" -name "${NODE}.yaml" -print -quit)"
-          yq --exit-status 'select(.kind == "KubeNodeConfig") | .labels."topology.kubernetes.io" == "egpu"' "$node_file" >/dev/null 2>&1 \
-            && echo true || echo false
-      MACHINE_TYPE:
-        sh: basename "$(find "${TALOS_DIR}" -name "${NODE}.yaml" -exec dirname {} \;)"
-      SCHEMATIC_FILE: '{{.TALOS_DIR}}/{{.MACHINE_TYPE}}/{{if eq .EGPU_EFFECTIVE "true"}}eGPU-schematic.yaml{{else}}schematic.yaml{{end}}'
+      SCHEMATIC_FILE:
+        sh: task --silent talos:schematic-file CLUSTER={{.CLUSTER}} NODE={{.NODE}} EGPU={{.EGPU | default ""}}
     requires:
       vars: [CLUSTER, NODE]
     preconditions:
