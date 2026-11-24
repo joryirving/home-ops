@@ -83,6 +83,7 @@ Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `k
 
 - **Add app**: Create base manifests in `kubernetes/apps/base/<namespace>/<app>/`, then cluster overlay `Kustomization` files for the requested clusters
 - **Update app**: Merge renovate PR or manually edit and push
+- **Flux webhook**: Every push to this repo is webhooked into Flux and reconciles automatically. Do not run force reconciles (`task kubernetes:reconcile`, `flux reconcile`) after pushing — just wait for the webhook.
 - **Troubleshoot**: Check `flux get all -n <namespace>`, `kubectl get events --sort-by=.lastTimestamp`
 - **Scripts**: `hack/` contains operational scripts. See `hack/README.md` for the full list and usage.
 - **Task operations**: The repo is driven by Taskfile. Run `task --list` to see all commands. Common tasks:
