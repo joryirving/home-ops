@@ -23,9 +23,6 @@ spec:
           reloader.stakater.com/auto: "true"
         containers:
           app:
-            image:
-              repository: openvino/model_server
-              tag: 2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
             args:
               - --source_model
               - OpenVINO/bge-reranker-v2-m3-fp16-ov
@@ -41,14 +38,9 @@ spec:
               - /models/ov-cache
               - --rest_port
               - "8080"
-            securityContext:
-              privileged: true
-            resources:
-              requests:
-                cpu: 500m
-                memory: 4Gi
-              limits:
-                memory: 8Gi
+            image:
+              repository: openvino/model_server
+              tag: 2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
             probes:
               startup:
                 enabled: true
@@ -79,6 +71,14 @@ spec:
                   initialDelaySeconds: 10
                   periodSeconds: 10
                   failureThreshold: 6
+            resources:
+              requests:
+                cpu: 500m
+                memory: 4Gi
+              limits:
+                memory: 4Gi
+            securityContext:
+              privileged: true
     persistence:
       models:
         type: persistentVolumeClaim
