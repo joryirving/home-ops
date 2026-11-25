@@ -1,0 +1,65 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: comfyui
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: comfyui
+  dependsOn: []
+  interval: 15m
+  values:
+    controllers:
+      comfyui:
+        # replicas: 0
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: yanwk/comfyui-boot
+              tag: xpu@sha256:6d5a8de3865b75478ea87c06cf2e3dabec0f435816b2f8f9fed9737d0c813092
+            securityContext:
+              privileged: true
+            env:
+              CLI_ARGS: "--listen 0.0.0.0 --cpu --use-pytorch-cross-attention"
+              HF_XET_HIGH_PERFORMANCE: "1"
+            resources:
+              requests:
+                cpu: 500m
+                memory: 8Gi
+    defaultPodOptions:
+      hostIPC: true
+      nodeSelector:
+        topology.kubernetes.io/gpus: intel
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
+    service:
+      app:
+        ports:
+          http:
+            port: 8188
+    route:
+      app:
+        hostnames: ["{{ .Release.Name }}.jory.dev"]
+        parentRefs:
+          - name: envoy-internal
+            namespace: network
+    persistence:
+      comfyui:
+        existingClaim: "comfyui"
+        globalMounts:
+          - path: /root/ComfyUI/
+      data:
+        type: nfs
+        server: voyager.internal
+        path: /mnt/daena/comfyui/
+        globalMounts:
+          - path: /root/ComfyUI/output
+            subPath: output
+          - path: /root/ComfyUI/input
+            subPath: input
