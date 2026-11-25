@@ -12,6 +12,12 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      nodeSelector:
+        topology.kubernetes.io/gpus: intel
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
       securityContext:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch

@@ -30,12 +30,12 @@ spec:
   podLabels:
     cpu-inference: "false"
     decision-pool: "true"
+  nodeSelector:
+    topology.kubernetes.io/gpus: intel
   tolerations:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  nodeSelector:
-    kubernetes.io/hostname: layla
   # d3 attention is noncausal: llama.cpp asserts ubatch >= request tokens,
   # so batch/ubatch must cover the full 16384 context.
   contextSize: 16384

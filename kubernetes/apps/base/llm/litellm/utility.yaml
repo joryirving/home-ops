@@ -46,13 +46,12 @@ spec:
   podLabels:
     cpu-inference: "false"
     utility-pool: "true"
+  nodeSelector:
+    topology.kubernetes.io/gpus: intel
   tolerations:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  nodeSelector:
-    kubernetes.io/hostname: layla
-  # 32768 across 2 slots = 16384 per request.
   contextSize: 32768
   parallelSlots: 2
   batchSize: 2048
