@@ -12,6 +12,12 @@ spec:
   dependsOn: []
   values:
     defaultPodOptions:
+      nodeSelector:
+        topology.kubernetes.io/gpus: intel
+      tolerations:
+        - key: llm-workload
+          operator: Exists
+          effect: NoSchedule
       securityContext:
         runAsNonRoot: true
         fsGroupChangePolicy: OnRootMismatch
@@ -47,16 +53,19 @@ spec:
               limits:
                 memory: 4Gi
             securityContext:
-              allowPrivilegeEscalation: false
-              capabilities:
-                drop:
-                  - ALL
+              privileged: true
               readOnlyRootFilesystem: true
     persistence:
       tmp:
         type: emptyDir
         globalMounts:
           - path: /tmp
+      render:
+        type: hostPath
+        hostPath: /dev/dri/renderD128
+        hostPathType: CharDevice
+        globalMounts:
+          - path: /dev/dri/renderD128
     service:
       app:
         ports:

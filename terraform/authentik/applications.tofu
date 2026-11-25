@@ -13,7 +13,6 @@ locals {
     "Miso-Chat",
     "Miso-Gallery",
     "Open-WebUI",
-    "OpenCode",
     "Paperless",
     "Pinchflat",
     "Portainer",
@@ -150,32 +149,6 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/joryirving/miso-gallery/main/assets/miso-gallery-logo.png"
       redirect_uri      = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc"
-      property_mappings = local.default_property_mappings
-    },
-    OpenCode = {
-      client_id     = module.onepassword_application["OpenCode"].fields["OPENCODE_CLIENT_ID"]
-      client_secret = module.onepassword_application["OpenCode"].fields["OPENCODE_CLIENT_SECRET"]
-      group         = "ai"
-      icon_url      = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/opencode.png"
-      redirect_uri  = "https://opencode.${var.CLUSTER_DOMAIN}/oauth2/callback"
-      launch_url    = "https://opencode.${var.CLUSTER_DOMAIN}"
-      additional_redirect_uris = [
-        {
-          matching_mode     = "strict"
-          redirect_uri_type = "authorization"
-          url               = "https://generate.${var.CLUSTER_DOMAIN}/oauth2/callback"
-        },
-        {
-          matching_mode     = "strict"
-          redirect_uri_type = "authorization"
-          url               = "https://tavern.${var.CLUSTER_DOMAIN}/oauth2/callback"
-        },
-        {
-          matching_mode     = "strict"
-          redirect_uri_type = "authorization"
-          url               = "https://miso-code.${var.CLUSTER_DOMAIN}/oauth2/callback"
-        }
-      ]
       property_mappings = local.default_property_mappings
     },
     Open-WebUI = {
