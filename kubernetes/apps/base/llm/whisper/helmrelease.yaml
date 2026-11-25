@@ -26,29 +26,45 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/speaches-ai/speaches
-              tag: 0.9.0-rc.3-cpu@sha256:2163775b6df5e451a71200e8f675fed68dbd8ab184fc604453d549e486f22fd2
-            env:
-              ENABLE_UI: "false"
-              HF_HUB_CACHE: /cache/huggingface/hub
-              PRELOAD_MODELS: '["Systran/faster-whisper-small.en"]'
-              STT_MODEL_TTL: "-1"
-              UVICORN_PORT: "8080"
-              WHISPER__COMPUTE_TYPE: int8
-              WHISPER__CPU_THREADS: "14"
-              WHISPER__INFERENCE_DEVICE: cpu
+              repository: openvino/model_server
+              tag: 2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
+            command: ["ovms"]
+            args:
+              - --source_model
+              - OpenVINO/whisper-large-v3-turbo-fp16-ov
+              - --model_name
+              - whisper
+              - --task
+              - speech2text
+              - --target_device
+              - NPU
+              - --model_repository_path
+              - /cache
+              - --cache_dir
+              - /cache/ov-cache
+              - --rest_port
+              - "8080"
+            securityContext:
+              privileged: true
             resources:
               requests:
                 cpu: 500m
                 memory: 2Gi
               limits:
-                memory: 4Gi
+                memory: 8Gi
             probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /v2/health/live, port: 8080 }
+                  periodSeconds: 10
+                  failureThreshold: 360
               liveness:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet: { path: /health, port: 8080 }
+                  httpGet: { path: /v2/health/live, port: 8080 }
                   initialDelaySeconds: 30
                   periodSeconds: 30
                   failureThreshold: 6
@@ -56,7 +72,7 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet: { path: /health, port: 8080 }
+                  httpGet: { path: /v2/health/ready, port: 8080 }
                   initialDelaySeconds: 15
                   periodSeconds: 10
                   failureThreshold: 6
@@ -76,3 +92,9 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /cache
+      accel:
+        type: hostPath
+        hostPath: /dev/accel
+        hostPathType: Directory
+        globalMounts:
+          - path: /dev/accel
