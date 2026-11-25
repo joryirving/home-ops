@@ -8,3 +8,21 @@ spec:
   keyAlias: Opencode
   secretName: litellm-key-opencode
   secretKey: api-key
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: opencode
+spec:
+  secretStoreRefs:
+  - name: onepassword
+    kind: ClusterSecretStore
+  selector:
+    secret:
+      name: litellm-key-opencode
+  data:
+  - match:
+      secretKey: api-key
+      remoteRef:
+        remoteKey: litellm
+        property: LITELLM_OPENCODE_API_KEY
