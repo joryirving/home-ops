@@ -80,7 +80,7 @@ def refs_from_virtualkeys() -> list[tuple[str, str]]:
 # Each configmap embeds a client's own config as a string, so the references are
 # matched textually rather than parsed.
 EMBEDDED = [
-    ("opencode", LLM / "opencode/configmap.yaml", r'"model":\s*"([^"]+)"'),
+    ("opencode", LLM / "paseo/configmap.yaml", r'"model":\s*"([^"]+)"'),
     # Model entries are single-line and carry contextWindow; agent definitions
     # spread `id:` over several lines and would otherwise match.
     ("openclaw", LLM / "openclaw/configmap.yaml", r'^\s*\{ id: "([^"]+)".*contextWindow'),
