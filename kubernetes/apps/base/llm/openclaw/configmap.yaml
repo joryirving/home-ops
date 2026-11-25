@@ -12,7 +12,7 @@ data:
         defaults: {
           voiceModel: "kokoro/af_heart",
           utilityModel: "litellm/utility",
-          decisionModel: "typesafe/kev-latest",
+          decisionModel: "typesafe/decision",
           experimental: { decisionAssistance: true },
           contextInjection: "continuation-skip",
           bootstrapMaxChars: 16384,
@@ -244,7 +244,7 @@ data:
             request: { allowPrivateNetwork: true },
           },
           "typesafe": {
-            baseUrl: "http://decision.llm:8080/v1",
+            baseUrl: "http://litellm.llm:4000/v1",
             request: { allowPrivateNetwork: true },
             models: [],
           },
@@ -353,7 +353,13 @@ data:
         load: { paths: ["/home/node/.openclaw/plugin-stage/active/discord", "/home/node/.openclaw/plugin-stage/active/comfy", "/home/node/.openclaw/plugin-stage/active/searxng", "/home/node/.openclaw/plugin-stage/active/memini", "/home/node/.openclaw/plugin-stage/active/typesafe"] },
         allow: ["typesafe", "discord", "lossless-claw", "memini", "searxng", "comfy", "memory-wiki", "chart-renderer", "youtube-tldw", "reddit-thread", "facebook-listing", "sage-environment", "sage-reference-memory", "sage-render", "minimax", "litellm", "browser", "admin-http-rpc", "openai", "device-pair", "image-ui-autostart"],
         entries: {
-          typesafe: { enabled: true },
+          typesafe: {
+            enabled: true,
+            config: {
+              apiKey: { source: "env", provider: "default", id: "LITELLM_API_KEY" },
+              timeoutMs: 30000,
+            },
+          },
           "sage-render": { enabled: true },
           discord: { enabled: true },
           "image-ui-autostart": { enabled: true },
