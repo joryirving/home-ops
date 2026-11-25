@@ -34,12 +34,9 @@ kubernetes/apps/main/llm/toolhive.yaml   # every Flux Kustomization above
 |---|---|---|---|
 | `arr-mcp` | `arr` | `MCPServer` (stdio) | Sonarr, Radarr, Prowlarr |
 | `dispatch-mcp` | `dispatch-mcp` | `MCPServer` (stdio) | Dispatch |
-| `flux-mcp` | `flux` | `MCPServer` (streamable-http) | flux-operator MCP, read-only RBAC |
 | `github-mcp` | `github` | `MCPServer` (stdio) | GitHub |
 | `grafana-mcp` | `grafana` | `MCPServerEntry` (sse) | `mcp-grafana.observability:8000` |
 | `ha-mcp` | `ha-mcp` | `MCPServer` (streamable-http) | Home Assistant |
-| `kubectl-mcp` | `kubectl` | `MCPServer` (streamable-http) | Kubernetes API, read-only RBAC |
-| `plan-shop-eat-mcp` | `plan-shop-eat` | `MCPServerEntry` (streamable-http) | hosted remote |
 | `seerr-mcp` | `seerr-mcp` | `MCPServer` (stdio) | Seerr |
 | `talos-mcp` | `talos-mcp` | `MCPServer` (streamable-http) | Talos API |
 | `unifi-network-mcp` | `unifi-network-mcp` | `MCPServer` (streamable-http) | UniFi Network |
