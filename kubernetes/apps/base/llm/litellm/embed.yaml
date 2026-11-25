@@ -1,15 +1,29 @@
 ---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/v1/persistentvolumeclaim.json
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: embed-cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-hostpath
+  resources:
+    requests:
+      storage: 5Gi
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/llmkube-dev/llmkube/main/config/crd/bases/inference.llmkube.dev_models.yaml
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: Model
 metadata:
   name: embed
 spec:
-  source: https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf
-  format: gguf
-  quantization: Q8_0
+  source: hf://OpenVINO/Qwen3-Embedding-0.6B-int8-ov
+  format: custom
   hardware:
     accelerator: cpu
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/llmkube-dev/llmkube/main/config/crd/bases/inference.llmkube.dev_inferenceservices.yaml
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
@@ -18,10 +32,31 @@ metadata:
     krr/ignore: "true"
 spec:
   modelRef: embed
-  runtime: llamacpp
-  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:5766735f77edf02ca179264e71e18ed1466e9332912e30f88f7a4ccd0dc6d5b6
-  command:
-    - /app/llama-server
+  runtime: generic
+  skipModelInit: true
+  mode: embedding
+  image: openvino/model_server:2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
+  args:
+    - --source_model
+    - OpenVINO/Qwen3-Embedding-0.6B-int8-ov
+    - --model_name
+    - embed
+    - --task
+    - embeddings
+    - --target_device
+    - NPU
+    - --pooling
+    - LAST
+    - --max_length
+    - "4096"
+    - --truncate
+    - "true"
+    - --model_repository_path
+    - /models
+    - --cache_dir
+    - /models/ov-cache
+    - --rest_port
+    - "8080"
   securityContext:
     privileged: true
   rolloutPolicy:
@@ -32,69 +67,50 @@ spec:
   podLabels:
     cpu-inference: "false"
     embed-pool: "true"
+  nodeSelector:
+    kubernetes.io/hostname: layla
   tolerations:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  nodeSelector:
-    kubernetes.io/hostname: layla
-  # llama.cpp divides contextSize across parallelSlots, so the per-request
-  # limit is contextSize / parallelSlots. 32 slots yielded 1024 tokens per
-  # slot, and the mcp-gateway-internal VirtualMCPServer optimizer embeds the
-  # whole aggregated tool catalog (~1.1k tokens and growing) in one request —
-  # once it crossed 1024 every gateway session was terminated on tools/list.
-  # 8 slots gives 4096 tokens per request without growing the KV cache.
-  contextSize: 32768
-  parallelSlots: 8
-  batchSize: 2048
-  uBatchSize: 2048
   resources:
     cpu: 500m
     memory: 4Gi
-  mode: embedding
-  extraArgs:
-    - --cont-batching
-    - --flash-attn
-    - "on"
-    - --cache-ram
-    - "512"
-    - --threads
-    - "4"
-    - --threads-batch
-    - "4"
-    - --n-gpu-layers
-    - "99"
-    - --load-mode
-    - mmap
   extraVolumes:
-    - name: render
+    - name: models
+      persistentVolumeClaim:
+        claimName: embed-cache
+    - name: accel
       hostPath:
-        path: /dev/dri/renderD128
-        type: CharDevice
+        path: /dev/accel
+        type: Directory
   extraVolumeMounts:
-    - name: render
-      mountPath: /dev/dri/renderD128
+    - name: models
+      mountPath: /models
+    - name: accel
+      mountPath: /dev/accel
+  containerPort: 8080
   endpoint:
     port: 8080
     type: ClusterIP
   probeOverrides:
     startup:
       httpGet:
-        path: /health
+        path: /v2/health/live
         port: 8080
       periodSeconds: 10
-      failureThreshold: 360
+      failureThreshold: 120
     liveness:
       httpGet:
-        path: /health
+        path: /v2/health/live
         port: 8080
-      initialDelaySeconds: 30
-      periodSeconds: 30
+      initialDelaySeconds: 20
+      periodSeconds: 20
       failureThreshold: 6
     readiness:
       httpGet:
-        path: /health
+        path: /v2/health/ready
         port: 8080
-      initialDelaySeconds: 20
+      initialDelaySeconds: 10
       periodSeconds: 10
       failureThreshold: 6
