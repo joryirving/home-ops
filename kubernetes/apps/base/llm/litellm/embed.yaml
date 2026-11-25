@@ -44,7 +44,7 @@ spec:
     - --task
     - embeddings
     - --target_device
-    - NPU
+    - GPU
     - --pooling
     - LAST
     - --max_length
@@ -80,15 +80,15 @@ spec:
     - name: models
       persistentVolumeClaim:
         claimName: embed-cache
-    - name: accel
+    - name: dri
       hostPath:
-        path: /dev/accel
-        type: Directory
+        path: /dev/dri/renderD128
+        type: CharDevice
   extraVolumeMounts:
     - name: models
       mountPath: /models
-    - name: accel
-      mountPath: /dev/accel
+    - name: dri
+      mountPath: /dev/dri/renderD128
   containerPort: 8080
   endpoint:
     port: 8080
