@@ -1,7 +1,7 @@
 locals {
   oauth_apps = [
-    "autobrr",
     "Arcane",
+    "Autobrr",
     "Dispatch",
     "ErsatzTV",
     "Grafana",
@@ -12,8 +12,8 @@ locals {
     "Matrix",
     "Miso-Chat",
     "Miso-Gallery",
-    "OpenClaw",
     "Open-WebUI",
+    "OpenClaw",
     "Paperless",
     "Pinchflat",
     "Portainer",
@@ -44,8 +44,8 @@ module "onepassword_application" {
 locals {
   applications = {
     autobrr = {
-      client_id         = module.onepassword_application["autobrr"].fields["AUTOBRR_CLIENT_ID"]
-      client_secret     = module.onepassword_application["autobrr"].fields["AUTOBRR_CLIENT_SECRET"]
+      client_id         = module.onepassword_application["Autobrr"].fields["AUTOBRR_CLIENT_ID"]
+      client_secret     = module.onepassword_application["Autobrr"].fields["AUTOBRR_CLIENT_SECRET"]
       group             = "media"
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/autobrr.png"
       redirect_uri      = "https://autobrr.${var.CLUSTER_DOMAIN}/api/auth/oidc/callback"
@@ -158,8 +158,6 @@ locals {
       group             = "ai"
       icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/openclaw.png"
       redirect_uri      = "https://generate.${var.CLUSTER_DOMAIN}/oauth2/callback"
-      # One provider, two routes: image-ui + codeserver both authenticate via
-      # Envoy Gateway SecurityPolicies against this app (openclaw helmrelease).
       additional_redirect_uris = [
         {
           matching_mode     = "strict",
