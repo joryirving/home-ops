@@ -36,12 +36,10 @@ spec:
     - key: llm-workload
       operator: Exists
       effect: NoSchedule
-  # d3 attention is noncausal: llama.cpp asserts ubatch >= request tokens,
-  # so batch/ubatch must cover the full 16384 context.
   contextSize: 16384
   parallelSlots: 2
   batchSize: 16384
-  uBatchSize: 16384
+  uBatchSize: 8192
   resources:
     cpu: "4"
     memory: 12Gi
