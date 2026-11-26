@@ -4,11 +4,15 @@ kind: Model
 metadata:
   name: decision
 spec:
-  source: https://huggingface.co/ggml-org/vllm-d3-mini-GGUF/resolve/8b29fd3b87373ea85fa59cc2f26251c1591d771a/vllm-d3-mini-Q8_0.gguf
+  source: https://ggml-org/vllm-d3-mini-GGUF
+  sourceSecretRef:
+    name: huggingface
+  files:
+    - vllm-d3-mini-Q4_K_M.gguf
   format: gguf
-  quantization: Q8_0
+  quantization: Q4_K_M
   hardware:
-    accelerator: cpu
+    accelerator: gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -42,7 +46,7 @@ spec:
   uBatchSize: 8192
   resources:
     cpu: "4"
-    memory: 12Gi
+    memory: 8Gi
   extraArgs:
     - --cont-batching
     - --flash-attn
