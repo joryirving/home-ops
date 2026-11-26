@@ -4,10 +4,22 @@ kind: Model
 metadata:
   name: rerank
 spec:
-  source: hf://OpenVINO/bge-reranker-v2-m3-fp16-ov
-  format: custom
+  source: hf://ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF
+  sourceSecretRef:
+    name: huggingface
+  files:
+    - qwen3-reranker-0.6b-q8_0.gguf
+  format: gguf
+  quantization: Q8_0
   hardware:
     accelerator: intel
+    gpu:
+      enabled: true
+      vendor: intel
+      layers: 99
+      resourceClaims:
+        - name: gpu
+          resourceClaimTemplateName: llama-intel-gpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -15,27 +27,23 @@ metadata:
   name: rerank
 spec:
   modelRef: rerank
-  runtime: generic
-  image: openvino/model_server:2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
-  args:
-    - --source_model
-    - OpenVINO/bge-reranker-v2-m3-fp16-ov
-    - --model_name
-    - rerank
-    - --task
-    - rerank
-    - --target_device
-    - GPU
-    - --model_repository_path
-    - /models
-    - --cache_dir
-    - /models/ov-cache
-    - --rest_port
-    - "8080"
-  skipModelInit: true
+  runtime: llamacpp
+  image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:3d21475ecd4383a9649ea21737d07044399d0995490b5ce5c6d89326dc7c7771
   mode: rerank
-  securityContext:
-    privileged: true
+  contextSize: 8192
+  parallelSlots: 2
+  batchSize: 4096
+  uBatchSize: 2048
+  extraArgs:
+    - --cont-batching
+    - --flash-attn
+    - "on"
+    - --load-mode
+    - mmap
+    - --threads
+    - "4"
+    - --threads-batch
+    - "4"
   rolloutPolicy:
     waitForIdle: false
     idleTimeoutSeconds: 300
@@ -48,43 +56,31 @@ spec:
       operator: Exists
       effect: NoSchedule
   resources:
-    cpu: 500m
+    cpu: "4"
     memory: 8Gi
-  extraVolumes:
-    - name: models
-      persistentVolumeClaim:
-        claimName: llmkube-layla-cache
-    - name: dri
-      hostPath:
-        path: /dev/dri/renderD128
-        type: CharDevice
-  extraVolumeMounts:
-    - name: models
-      mountPath: /models
-    - name: dri
-      mountPath: /dev/dri/renderD128
-  containerPort: 8080
+  modelCache:
+    claimName: llmkube-layla-cache
   endpoint:
     port: 8080
     type: ClusterIP
   probeOverrides:
     startup:
       httpGet:
-        path: /v2/health/live
+        path: /health
         port: 8080
       periodSeconds: 10
       failureThreshold: 120
     liveness:
       httpGet:
-        path: /v2/health/live
+        path: /health
         port: 8080
-      initialDelaySeconds: 20
-      periodSeconds: 20
+      initialDelaySeconds: 30
+      periodSeconds: 30
       failureThreshold: 6
     readiness:
       httpGet:
-        path: /v2/health/ready
+        path: /health
         port: 8080
-      initialDelaySeconds: 10
+      initialDelaySeconds: 20
       periodSeconds: 10
       failureThreshold: 6
