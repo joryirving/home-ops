@@ -18,32 +18,10 @@ apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
   name: decision
-  labels:
-    krr/ignore: "true"
 spec:
   modelRef: decision
   runtime: llamacpp
   image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:3d21475ecd4383a9649ea21737d07044399d0995490b5ce5c6d89326dc7c7771
-  securityContext:
-    privileged: true
-  rolloutPolicy:
-    waitForIdle: true
-    idleTimeoutSeconds: 86400
-  replicas: 1
-  priority: normal
-  nodeSelector:
-    topology.kubernetes.io/gpus: intel
-  tolerations:
-    - key: llm-workload
-      operator: Exists
-      effect: NoSchedule
-  contextSize: 16384
-  parallelSlots: 2
-  batchSize: 16384
-  uBatchSize: 8192
-  resources:
-    cpu: "4"
-    memory: 8Gi
   extraArgs:
     - --cont-batching
     - --flash-attn
@@ -57,10 +35,27 @@ spec:
     - "4"
     - --threads-batch
     - "4"
+  contextSize: 16384
+  parallelSlots: 2
+  batchSize: 16384
+  uBatchSize: 8192
+  rolloutPolicy:
+    waitForIdle: true
+    idleTimeoutSeconds: 86400
+  replicas: 1
+  priority: normal
+  nodeSelector:
+    topology.kubernetes.io/gpus: intel
+  tolerations:
+    - key: llm-workload
+      operator: Exists
+      effect: NoSchedule
+  resources:
+    cpu: "4"
+    memory: 8Gi
+  modelCache:
+    claimName: llmkube-layla-cache
   extraVolumes:
-    - name: models
-      persistentVolumeClaim:
-        claimName: llmkube-layla-cache
     - name: render
       hostPath:
         path: /dev/dri/renderD128

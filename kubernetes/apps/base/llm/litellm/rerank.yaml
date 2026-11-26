@@ -16,8 +16,6 @@ metadata:
 spec:
   modelRef: rerank
   runtime: generic
-  skipModelInit: true
-  mode: rerank
   image: openvino/model_server:2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
   args:
     - --source_model
@@ -34,6 +32,8 @@ spec:
     - /models/ov-cache
     - --rest_port
     - "8080"
+  skipModelInit: true
+  mode: rerank
   securityContext:
     privileged: true
   rolloutPolicy:

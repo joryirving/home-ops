@@ -5,6 +5,8 @@ metadata:
   name: embed
 spec:
   source: hf://OpenVINO/Qwen3-Embedding-0.6B-int8-ov
+  sourceSecretRef:
+    name: huggingface
   format: custom
   hardware:
     accelerator: intel
@@ -13,13 +15,9 @@ apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
   name: embed
-  labels:
-    krr/ignore: "true"
 spec:
   modelRef: embed
   runtime: generic
-  skipModelInit: true
-  mode: embedding
   image: openvino/model_server:2026.4.1-gpu@sha256:a928903fe429f1e3e27107cc45932d30d95febfd2d1159dc50869c3eac76fc58
   args:
     - --source_model
@@ -42,6 +40,8 @@ spec:
     - /models/ov-cache
     - --rest_port
     - "8080"
+  skipModelInit: true
+  mode: embedding
   securityContext:
     privileged: true
   rolloutPolicy:
