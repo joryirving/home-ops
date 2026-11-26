@@ -1,28 +1,4 @@
 ---
-# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/v1/persistentvolumeclaim.json
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: embed-cache
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-hostpath
-  resources:
-    requests:
-      storage: 5Gi
----
-# yaml-language-server: $schema=https://raw.githubusercontent.com/llmkube-dev/llmkube/main/config/crd/bases/inference.llmkube.dev_models.yaml
-apiVersion: inference.llmkube.dev/v1alpha1
-kind: Model
-metadata:
-  name: embed
-spec:
-  source: hf://OpenVINO/Qwen3-Embedding-0.6B-int8-ov
-  format: custom
-  hardware:
-    accelerator: intel
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/llmkube-dev/llmkube/main/config/crd/bases/inference.llmkube.dev_inferenceservices.yaml
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -79,7 +55,7 @@ spec:
   extraVolumes:
     - name: models
       persistentVolumeClaim:
-        claimName: embed-cache
+        claimName: llmkube-layla-cache
     - name: dri
       hostPath:
         path: /dev/dri/renderD128
