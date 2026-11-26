@@ -15,15 +15,6 @@ spec:
     accelerator: cpu
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
-kind: Model
-metadata:
-  name: utility-mtp
-spec:
-  source: https://huggingface.co/ggml-org/Qwen3.5-4B-GGUF/resolve/8d43d974efc48399cb58957ad49c8b26bf5a109c/mtp-Qwen3.5-4B-Q8_0.gguf
-  format: gguf
-  quantization: Q8_0
----
-apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
 metadata:
   name: utility
@@ -32,9 +23,6 @@ metadata:
 spec:
   modelRef: utility
   runtime: llamacpp
-  speculativeDecoding:
-    type: draft-mtp
-    draftModelRef: utility-mtp
   image: ghcr.io/ggml-org/llama.cpp:server-vulkan@sha256:87d189d403fda2a612a23c9dcd35c482967f48586e93d812a01e7a1f5e3a1486
   securityContext:
     privileged: true
