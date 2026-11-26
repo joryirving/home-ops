@@ -51,7 +51,7 @@ jobs:
             aqua:siderolabs/talos 1.13.7
 
       - name: Extract Images
-        run: flate diff images -p ./kubernetes/clusters/${{ matrix.cluster }} -o json > images.json
+        run: flate diff images -p ./kubernetes/clusters/${{ matrix.cluster }} --supply .github/flate/supply.yaml -o json > images.json
 
       - name: Pull Images
         run: jq -r '.[]' images.json | xargs -r -n1 talosctl --nodes "$NODE" image pull
