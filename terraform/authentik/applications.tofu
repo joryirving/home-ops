@@ -12,6 +12,7 @@ locals {
     "Matrix",
     "Miso-Chat",
     "Miso-Gallery",
+    "OpenClaw",
     "Open-WebUI",
     "Paperless",
     "Pinchflat",
@@ -149,6 +150,24 @@ locals {
       icon_url          = "https://raw.githubusercontent.com/joryirving/miso-gallery/main/assets/miso-gallery-logo.png"
       redirect_uri      = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc/callback"
       launch_url        = "https://miso-gallery.${var.CLUSTER_DOMAIN}/auth/oidc"
+      property_mappings = local.default_property_mappings
+    },
+    OpenClaw = {
+      client_id     = module.onepassword_application["OpenClaw"].fields["OPENCLAW_CLIENT_ID"]
+      client_secret = module.onepassword_application["OpenClaw"].fields["OPENCLAW_CLIENT_SECRET"]
+      group             = "ai"
+      icon_url          = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/png/openclaw.png"
+      redirect_uri      = "https://generate.${var.CLUSTER_DOMAIN}/oauth2/callback"
+      # One provider, two routes: image-ui + codeserver both authenticate via
+      # Envoy Gateway SecurityPolicies against this app (openclaw helmrelease).
+      additional_redirect_uris = [
+        {
+          matching_mode     = "strict",
+          redirect_uri_type = "authorization",
+          url               = "https://miso-code.${var.CLUSTER_DOMAIN}/oauth2/callback",
+        },
+      ]
+      launch_url        = "https://generate.${var.CLUSTER_DOMAIN}"
       property_mappings = local.default_property_mappings
     },
     Open-WebUI = {
