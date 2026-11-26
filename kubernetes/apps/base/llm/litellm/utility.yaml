@@ -12,7 +12,7 @@ spec:
   format: gguf
   quantization: UD-Q4_K_XL
   hardware:
-    accelerator: gpu
+    accelerator: intel
 ---
 apiVersion: inference.llmkube.dev/v1alpha1
 kind: InferenceService
@@ -64,6 +64,9 @@ spec:
     - --threads-batch
     - "4"
   extraVolumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llmkube-layla-cache
     - name: render
       hostPath:
         path: /dev/dri/renderD128
