@@ -38,7 +38,7 @@ spec:
             command: ["ovms"]
             args:
               - --source_model
-              - OpenVINO/whisper-large-v3-turbo-int4-ov
+              - OpenVINO/whisper-small-int8-ov
               - --model_name
               - whisper
               - --task
@@ -51,6 +51,11 @@ spec:
               - /cache/ov-cache
               - --rest_port
               - "8080"
+            env:
+              OV_NPU_COMPILE_LOG_LEVEL:
+                value: INFO
+              OV_NPU_LOG_LEVEL:
+                value: INFO
             securityContext:
               privileged: true
             resources:
