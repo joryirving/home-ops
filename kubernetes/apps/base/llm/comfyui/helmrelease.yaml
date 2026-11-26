@@ -19,18 +19,19 @@ spec:
         containers:
           app:
             image:
-              repository: yanwk/comfyui-boot
-              tag: xpu@sha256:6d5a8de3865b75478ea87c06cf2e3dabec0f435816b2f8f9fed9737d0c813092
+              repository: ghcr.io/joryirving/comfyui-xpu
+              tag: 0.45.0@sha256:e60ad0172a8a417d0c0f16134e042a589396bd746d9c0ffd5bdc5d98ec9f7fa2
             securityContext:
               privileged: true
             env:
-              CLI_ARGS: "--listen 0.0.0.0 --use-pytorch-cross-attention"
               ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"
               HF_XET_HIGH_PERFORMANCE: "1"
             resources:
               requests:
                 cpu: 500m
                 memory: 8Gi
+              limits:
+                memory: 24Gi
     defaultPodOptions:
       hostIPC: true
       nodeSelector:
@@ -54,13 +55,15 @@ spec:
       comfyui:
         existingClaim: "comfyui"
         globalMounts:
-          - path: /root/ComfyUI/
+          - path: /models/host
+          - path: /data/user
+            subPath: user
       data:
         type: nfs
         server: voyager.internal
         path: /mnt/daena/comfyui/
         globalMounts:
-          - path: /root/ComfyUI/output
+          - path: /data/output
             subPath: output
-          - path: /root/ComfyUI/input
+          - path: /data/input
             subPath: input
