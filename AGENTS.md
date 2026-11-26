@@ -72,7 +72,7 @@ Flux starts from `kubernetes/apps/<cluster>/` overlays. App manifests live in `k
 - Component READMEs stay with components (e.g., `kubernetes/apps/base/kube-system/cilium/README.md`)
 - Secrets stored in 1Password, referenced via `external-secrets`
 - Apps use `HelmRelease` via Flux, rarely raw manifests
-- Keep inline comments to a minimum or non-existent. Do not touch existing comments without justification or direct instructions.
+- Follow the source-comment policy below, including scoped cleanup of redundant comments.
 - Clusters are mostly identical except for app selections and sizing
 - **AI instructions**: The reviewer loads trusted-base repository skills. `.agents/instructions/sorting.instructions.md` defines YAML sorting rules (including `app-template`-specific ordering). When editing YAML, follow the sorting instructions. `docs/src/notes/coding-loop.md` documents the coding loop (Dispatch + Courier); read it before changing `kubernetes/apps/base/llm/courier/` or Dispatch configuration.
 - **Namespace component**: `kubernetes/components/namespace/` injects the Namespace resource and alerting rules; each namespace overlay (`kubernetes/apps/<cluster>/<namespace>/kustomization.yaml`) includes it once for all apps it lists. Helm chart sources are per-app: each app declares its own `OCIRepository` in `ocirepository.yaml`.
@@ -126,3 +126,12 @@ When adding architecture or operational docs, consider:
 ## PR Review Standards
 
 Detailed review policy lives in [.agents/skills/home-ops-gitops-review/SKILL.md](.agents/skills/home-ops-gitops-review/SKILL.md). Load it for Flux, HelmRelease, OCIRepository, secrets, image updates, rendered manifests, or Talos/Kubernetes compatibility reviews. For Renovate PRs, load [.agents/skills/renovate-review/SKILL.md](.agents/skills/renovate-review/SKILL.md). It owns the upstream provenance, release-delta, security, and Renovate-specific verdict policy; do not duplicate it here.
+
+## Source comments
+
+- Prefer clear names and straightforward code over explanatory comments. Omit comments that merely narrate what the code does.
+- Keep each inline implementation comment to one concise line by default. Explain the non-obvious why, not the what; do not evade the limit with an overlong line or consecutive one-line comments.
+- Use multiple lines only when needed for a complex algorithm, non-obvious invariant, security constraint, compatibility requirement, or external protocol behavior. Preserve public API documentation, required docstrings, license headers, and machine-readable directives.
+- Keep issue history, PR review discussions, prior implementation narratives, and agent reasoning out of source comments; put durable explanations in appropriate documentation.
+- While editing code, remove redundant comments and shorten verbose comments in the affected area. Preserve meaningful warnings, invariants, and directives; do not expand the diff into unrelated cleanup.
+- Before opening or updating a PR, inspect added and modified source comments and remove or shorten unnecessary prose. Review comment quality semantically, not by mechanically counting lines.
