@@ -69,11 +69,13 @@ def known(ref: str, names: set[str]) -> bool:
 
 def refs_from_virtualkeys() -> list[tuple[str, str]]:
     out = []
-    for path in (LLM / "litellm/virtualkeys").glob("*.yaml"):
+    # app-scoped keys (litellmkey.yaml) live with their app, not in virtualkeys/
+    paths = list((LLM / "litellm/virtualkeys").glob("*.yaml")) + sorted(LLM.glob("*/litellmkey.yaml"))
+    for path in paths:
         for doc in docs(path, strict=True):
             if doc.get("kind") == "LiteLLMVirtualKey":
                 for m in doc["spec"].get("models", []):
-                    out.append((f"virtualkey {path.stem}", m))
+                    out.append((f"virtualkey {path.parent.name}/{path.stem}", m))
     return out
 
 

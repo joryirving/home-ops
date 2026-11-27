@@ -15,30 +15,133 @@ spec:
       open-webui:
         annotations:
           reloader.stakater.com/auto: "true"
+        # Runs to completion before the app container starts, so retrieval env
+        # vars are never masked by stale config rows; marker on the PVC makes
+        # it once-per-version, bump MIGRATION for future edits instead of adding jobs
+        initContainers:
+          config-migrate:
+            image:
+              # CNPG image the app's own cluster runs; only psql is used
+              repository: ghcr.io/cloudnative-pg/postgresql
+              tag: 18.6@sha256:a66f9e4c34950b78668fa4741bf55e6a58227cc31a6e60c128f2ce1d4c072928
+            env:
+              - name: MIGRATION
+                value: v1
+              - name: DATABASE_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .Release.Name }}-app"
+                    key: uri
+              - name: HOME
+                value: /tmp
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+                # one transaction: marker check + scoped delete + marker insert. Absent config
+                # table (fresh DB) and existing marker are no-ops; marker lives in the DB so a
+                # restored database stays consistently migrated; errors leave no marker for retry
+                psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction -c "
+                  do \$\$
+                  begin
+                    create table if not exists openwebui_migration (
+                      version text primary key,
+                      applied_at timestamptz not null default now()
+                    );
+                    if exists (select 1 from openwebui_migration where version = '$MIGRATION') then
+                      raise notice 'open-webui config migration % already applied', '$MIGRATION';
+                      return;
+                    end if;
+                    if to_regclass('public.config') is not null then
+                      delete from config where key = any(array[
+                        'rag.embedding_engine',
+                        'rag.embedding_model',
+                        'rag.embedding_batch_size',
+                        'rag.reranking_engine',
+                        'rag.reranking_model',
+                        'rag.external_reranker_url',
+                        'rag.external_reranker_api_key',
+                        'rag.openai.api_base_url',
+                        'rag.openai.api_key',
+                        'rag.ollama.base_url',
+                        'ollama.enable',
+                        'ollama.base_urls',
+                        'ollama.api_configs',
+                        'openai.enable',
+                        'openai.api_base_urls',
+                        'openai.api_configs',
+                        'openai.api_keys',
+                        'web.search.enable',
+                        'web.search.engine',
+                        'web.search.searxng_query_url'
+                      ]);
+                    end if;
+                    insert into openwebui_migration (version) values ('$MIGRATION') on conflict do nothing;
+                  end
+                  \$\$;
+                "
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+              readOnlyRootFilesystem: true
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 64Mi
         containers:
           app:
             image:
               repository: ghcr.io/open-webui/open-webui
               tag: v0.13.5@sha256:e0dc5a8bf5c71cadf339d1e7b9408b357da75fb2854f82cad57a1609fadf2a22
             env:
-              # Image Generation
-              ENABLE_OPENAI_API: false
-              ENABLE_OLLAMA_API: true
+              # Image Generation (ComfyUI)
               ENABLE_IMAGE_GENERATION: true
               IMAGE_GENERATION_ENGINE: comfyui
-              IMAGE_GENERATION_MODEL: dreamshaper_8
+              IMAGE_GENERATION_MODEL: JANKUTrainedChenkinNoobai_v777.safetensors
               IMAGE_SIZE: 400x400
               IMAGE_STEPS: 8
               COMFYUI_BASE_URL: http://smurf-pc:8188
-              # Open-webui settings
-              OLLAMA_BASE_URL: http://llama-swap.llm:8080/v1
-              ENABLE_RAG_WEB_SEARCH: true
-              ENABLE_SEARCH_QUERY: true
-              RAG_WEB_SEARCH_ENGINE: searxng
+              # Chat through LiteLLM; the legacy Ollama shim (llama-swap) is gone
+              # ENABLE_OPENAI_API stays unset: 0.13.5 defaults it True, and the
+              # OpenAI-compatible connection is exactly what points at LiteLLM
+              ENABLE_OLLAMA_API: "false"
+              OPENAI_API_BASE_URL: http://litellm.llm:4000/v1
+              OPENAI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-open-webui
+                    key: api-key
+              # RAG embeddings + reranking through LiteLLM aliases.
+              # RAG_OPENAI_* are set explicitly rather than relying on config.py
+              # deriving them from the singular OPENAI_* vars, which it resets first
+              RAG_EMBEDDING_ENGINE: openai
+              RAG_EMBEDDING_MODEL: embed
+              RAG_EMBEDDING_BATCH_SIZE: "8"
+              RAG_OPENAI_API_BASE_URL: http://litellm.llm:4000/v1
+              RAG_OPENAI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-open-webui
+                    key: api-key
+              RAG_RERANKING_ENGINE: external
+              RAG_EXTERNAL_RERANKER_URL: http://litellm.llm:4000/v1/rerank
+              # the external reranker posts its own Bearer token; without this it 401s and silently skips reranking
+              RAG_EXTERNAL_RERANKER_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-open-webui
+                    key: api-key
+              RAG_RERANKING_MODEL: rerank
+              # Web search
+              ENABLE_WEB_SEARCH: "true"
+              WEB_SEARCH_ENGINE: searxng
               SEARXNG_QUERY_URL: http://searxng:8080/search?q=<query>
-              ENABLE_WEBSOCKET_SUPPORT: "true"
+              # App
+              WEBUI_URL: https://chat.jory.dev
+              REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
               WEBSOCKET_MANAGER: "redis"
-              WEBSOCKET_REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
               DATABASE_URL:
                 valueFrom:
                   secretKeyRef:
