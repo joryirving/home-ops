@@ -29,24 +29,20 @@ spec:
           app:
             image:
               repository: ghcr.io/joryirving/bluetts
-              tag: 3.0.1@sha256:572bd51ff76aab98dfc7bb19cbb41c8ff4d25317915f5fe3c2401563f19cf6f2
+              tag: sandbox@sha256:08b128206f080c1b51de66142254946ca5071695e281e8a7b9498e7d0e6bca6b
+            command:
+              - /app/.venv/bin/python
+              - -c
+              - import time; time.sleep(86400)
             env:
-              BLUE_PROVIDERS: OpenVINOExecutionProvider,CPUExecutionProvider
+              BLUE_PROVIDERS: WebGpuExecutionProvider
               TZ: America/Edmonton
               ORT_INTRA: "8"
             probes:
               liveness:
-                enabled: true
-                spec:
-                  initialDelaySeconds: 20
-                  periodSeconds: 20
-                  failureThreshold: 6
+                enabled: false
               readiness:
-                enabled: true
-                spec:
-                  initialDelaySeconds: 10
-                  periodSeconds: 10
-                  failureThreshold: 12
+                enabled: false
             resources:
               requests:
                 cpu: 500m

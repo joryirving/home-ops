@@ -229,7 +229,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Engine-reported decode rate for the current request. Reads 0 when Strata is idle; last_decode_tok_s keeps the previous request's figure.",
+      "description": "Output tokens recorded over the last 5 minutes. Completed-request accounting can lag active decoding.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -278,13 +278,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(strata:live_tok_s{model=\"qwen3-8-flash-next-strata\"})",
+          "expr": "sum(rate(vllm:generation_tokens_total{model=\"qwen3-8-flash-next-strata\"}[5m]))",
           "instant": true,
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "Strata decode tok/s",
+      "title": "Strata output tok/s (5m)",
       "type": "stat"
     },
     {
@@ -481,7 +481,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Peak of the engine's own live decode window mean over the dashboard range (subquery step 30s).",
+      "description": "Peak 5-minute output token rate over the dashboard range. Completed-request accounting can lag active decoding.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -530,13 +530,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max_over_time(strata:live_tok_s{model=\"qwen3-8-flash-next-strata\"}[${__range}:30s])",
+          "expr": "max_over_time((sum(rate(vllm:generation_tokens_total{model=\"qwen3-8-flash-next-strata\"}[5m])))[${__range}:30s])",
           "instant": true,
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "Strata decode peak tok/s",
+      "title": "Strata output peak tok/s (5m)",
       "type": "stat"
     },
     {
@@ -1397,7 +1397,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Gufo: 15-minute decoded-tokens-per-decode-second ratio. Strata: engine-reported live rate.",
+      "description": "Gufo: 15-minute decoded-tokens-per-decode-second ratio. Strata: 5-minute output token rate; completed-request accounting can lag active decoding.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1486,7 +1486,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "strata:live_tok_s{model=\"qwen3-8-flash-next-strata\"}",
+          "expr": "sum(rate(vllm:generation_tokens_total{model=\"qwen3-8-flash-next-strata\"}[5m]))",
           "instant": false,
           "range": true,
           "refId": "B",
