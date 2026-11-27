@@ -102,15 +102,18 @@ spec:
             namespace: network
         rules:
           - backendRefs:
-              - name: "{{ .Release.Name }}"
+              - name: "{{ .Release.Name }}-codeserver"
                 port: &codeserverPort 12321
     service:
       app:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: 10.69.10.133
+        forceRename: "{{ .Release.Name }}"
         ports:
           http:
             port: *port
+      codeserver:
+        ports:
           codeserver:
             port: *codeserverPort
