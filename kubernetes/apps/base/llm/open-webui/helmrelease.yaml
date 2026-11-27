@@ -15,6 +15,66 @@ spec:
       open-webui:
         annotations:
           reloader.stakater.com/auto: "true"
+        # Runs to completion before the app container starts, so retrieval env
+        # vars are never masked by stale config rows; marker on the PVC makes
+        # it once-per-version, bump MIGRATION for future edits instead of adding jobs
+        initContainers:
+          config-migrate:
+            image:
+              # CNPG image the app's own cluster runs; only psql is used
+              repository: ghcr.io/cloudnative-pg/postgresql
+              tag: 18.6@sha256:a66f9e4c34950b78668fa4741bf55e6a58227cc31a6e60c128f2ce1d4c072928
+            env:
+              - name: MIGRATION
+                value: v1
+              - name: DATABASE_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .Release.Name }}-app"
+                    key: uri
+              - name: HOME
+                value: /tmp
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+                marker=/app/backend/data/.openwebui-config-migration-$MIGRATION.done
+                test ! -f "$marker" || exit 0
+                psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction -c "
+                  delete from config where key = any(array[
+                    'rag.embedding_engine',
+                    'rag.embedding_model',
+                    'rag.embedding_batch_size',
+                    'rag.reranking_engine',
+                    'rag.reranking_model',
+                    'rag.external_reranker_url',
+                    'rag.external_reranker_api_key',
+                    'rag.openai.api_base_url',
+                    'rag.openai.api_key',
+                    'rag.ollama.base_url',
+                    'ollama.enable',
+                    'ollama.base_urls',
+                    'ollama.api_configs',
+                    'openai.enable',
+                    'openai.api_base_urls',
+                    'openai.api_configs',
+                    'openai.api_keys',
+                    'web.search.enable',
+                    'web.search.engine',
+                    'web.search.searxng_query_url'
+                  ]);
+                "
+                echo "$MIGRATION" > "$marker"
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+              readOnlyRootFilesystem: true
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 64Mi
         containers:
           app:
             image:
@@ -38,10 +98,18 @@ spec:
                   secretKeyRef:
                     name: litellm-key-open-webui
                     key: api-key
-              # RAG embeddings + reranking through LiteLLM aliases
+              # RAG embeddings + reranking through LiteLLM aliases.
+              # RAG_OPENAI_* are set explicitly rather than relying on config.py
+              # deriving them from the singular OPENAI_* vars, which it resets first
               RAG_EMBEDDING_ENGINE: openai
               RAG_EMBEDDING_MODEL: embed
               RAG_EMBEDDING_BATCH_SIZE: "8"
+              RAG_OPENAI_API_BASE_URL: http://litellm.llm:4000/v1
+              RAG_OPENAI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-open-webui
+                    key: api-key
               RAG_RERANKING_ENGINE: external
               RAG_EXTERNAL_RERANKER_URL: http://litellm.llm:4000/v1/rerank
               # the external reranker posts its own Bearer token; without this it 401s and silently skips reranking
