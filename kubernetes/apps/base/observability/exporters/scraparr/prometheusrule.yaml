@@ -18,6 +18,30 @@ spec:
               the app is down or its API key was rotated
           labels:
             severity: warning
+        # UP only covers reachability/auth; a connector dying mid-cycle keeps UP=1 but
+        # stops refreshing <service>_last_scrape (300s interval, alert at 3x + 10m for)
+        - alert: MediaScrapeStale
+          expr: |-
+            (time() - sonarr_last_scrape > 900) or (time() - radarr_last_scrape > 900)
+            or (time() - prowlarr_last_scrape > 900) or (time() - seerr_last_scrape > 900)
+          for: 10m
+          annotations:
+            summary: >-
+              A Scraparr connector has not completed a scrape in 15m — metrics are stale;
+              check scraparr pod logs
+          labels:
+            severity: warning
+        # exporter down or a connector vanished: staleness cannot fire on absent series
+        - alert: MediaConnectorSeriesMissing
+          expr: |-
+            absent(scraparr_services_up) or count(scraparr_services_up) < 4
+          for: 15m
+          annotations:
+            summary: >-
+              Expected Scraparr connector series are missing (exporter down or a connector
+              failed to start) — 4 connectors configured: sonarr, radarr, prowlarr, seerr
+          labels:
+            severity: warning
         - alert: MediaQueueErrors
           expr: |-
             (sonarr_queue_error > 0 or radarr_queue_error > 0)
