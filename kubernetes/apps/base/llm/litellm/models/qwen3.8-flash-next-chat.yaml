@@ -18,8 +18,6 @@ spec:
       order: 1
       max_parallel_requests: 2
       timeout: 1800
-      # usage-based-routing-v2 steering (see qwen3.8-flash-next group for
-      # the rationale): equal absurd limits, lowest per-minute usage wins.
       tpm: 10000000
       rpm: 10000
       extra_body:
@@ -58,8 +56,6 @@ spec:
       # 2 slots live on the engine (--parallel 2, IQ4_XS all-resident).
       max_parallel_requests: 2
       timeout: 1800
-      # Matches the gufo rung: equal limits keep the usage-based-v2 filter
-      # inert on both rungs of the group.
       tpm: 10000000
       rpm: 10000
       extra_body:
@@ -70,7 +66,7 @@ spec:
     maxInputTokens: 271360
     maxOutputTokens: 32768
     supportsFunctionCalling: true
-    supportsVision: true # verified 2026-11-09 on the strata engine: data-URL image request, 200 + correct description
+    supportsVision: true
     extra:
       allowed_fails_policy:
         RateLimitErrorAllowedFails: 10000
