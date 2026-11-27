@@ -26,7 +26,7 @@ Inspect secret references and access metadata, never secret values.
 
 Dispatch's scheduler syncs tracked repositories every 15 minutes. The hosted groomer assesses one candidate per scheduled run. It proposes labels, a lane, readiness, and sometimes closure. Dispatch validates the plan before application.
 
-Current manifests select `grooming-pool`, a 271360-token context budget, repository context, and a maximum of 18 exploration rounds. The exploration timeout is 480000 ms. The model timeout is 840000 ms, and the scheduled interval is 900000 ms. These are separate limits, not one eight-minute run budget.
+Current manifests select `qwen3.8-flash-next`, a 271360-token context budget, repository context, and a maximum of 18 exploration rounds. The exploration timeout is 480000 ms. The model timeout is 840000 ms, and the scheduled interval is 900000 ms. These are separate limits, not one eight-minute run budget.
 
 An `already_done` closure requires evidence for the issue's acceptance criteria at a pinned repository revision. Model confidence or a free-form success statement does not authorize closure. Dispatch's `docs/groomer-close-policy.md` describes the policy.
 
@@ -207,7 +207,7 @@ Name relevant file paths when known. Do not invent paths to make a brief look co
 | Flash-Next OpenCode limits | 271360 context, 16384 output (litellm caps input at 271360, output at 32768) |
 | OpenCode compaction | Automatic, keep 20000 tokens, buffer 16384 |
 | Tool output cap | 800 lines, 16384 bytes |
-| Groomer model | `grooming-pool` |
+| Groomer model | `qwen3.8-flash-next` |
 | Groomer context | 271360 tokens, repository context enabled |
 | Groomer rounds and exploration timeout | 18 rounds, 480000 ms |
 | Groomer model timeout and interval | 840000 ms, 900000 ms |
