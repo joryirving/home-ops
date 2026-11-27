@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: recyclarr
+spec:
+  groups:
+    - name: recyclarr.rules
+      rules:
+        - alert: RecyclarrJobFailed
+          expr: |-
+            kube_job_status_failed{namespace="downloads", job_name=~"recyclarr-.*"} == 1
+          for: 5m
+          annotations:
+            summary: >-
+              Recyclarr sync job failed — quality profiles in Sonarr/Radarr may be drifting
+              from Trash metadata; inspect the job pod logs
+          labels:
+            severity: warning
+        - alert: RecyclarrSyncStale
+          expr: |-
+            time() - max by (namespace) (
+              kube_job_status_start_time{namespace="downloads", job_name=~"recyclarr-.*"}
+            ) > 26 * 3600
+          for: 1h
+          annotations:
+            summary: >-
+              Recyclarr has not started a sync job in over 26h — the CronJob is paused or the
+              job controller stopped scheduling it
+          labels:
+            severity: warning
