@@ -30,19 +30,23 @@ spec:
             image:
               repository: ghcr.io/joryirving/bluetts
               tag: sandbox@sha256:a3c6ea28fab654754deb33401329b8164ea0c29467f7434935fd355b65653a36
-            command:
-              - /app/.venv/bin/python
-              - -c
-              - import time; time.sleep(86400)
             env:
               BLUE_PROVIDERS: WebGpuExecutionProvider
               TZ: America/Edmonton
               ORT_INTRA: "8"
             probes:
               liveness:
-                enabled: false
+                enabled: true
+                spec:
+                  initialDelaySeconds: 20
+                  periodSeconds: 20
+                  failureThreshold: 6
               readiness:
-                enabled: false
+                enabled: true
+                spec:
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  failureThreshold: 12
             resources:
               requests:
                 cpu: 500m
