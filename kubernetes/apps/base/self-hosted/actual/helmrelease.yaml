@@ -28,6 +28,29 @@ spec:
               tag: 26.11.0
             env:
               GENERIC_TIMEZONE: America/Edmonton
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 5006
+                  periodSeconds: 5
+                  timeoutSeconds: 3
+                  failureThreshold: 30
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 30
+                  timeoutSeconds: 3
+                  failureThreshold: 3
+              readiness: *probes
             resources:
               requests:
                 cpu: 15m
@@ -47,4 +70,4 @@ spec:
       app:
         ports:
           http:
-            port: 5006
+            port: *port
