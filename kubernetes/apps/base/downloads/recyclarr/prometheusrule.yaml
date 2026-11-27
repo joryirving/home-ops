@@ -10,7 +10,7 @@ spec:
       rules:
         - alert: RecyclarrJobFailed
           expr: |-
-            kube_job_failed{namespace="downloads", job_name=~"recyclarr-.*"} == 1
+            kube_job_status_failed{namespace="downloads", job_name=~"recyclarr-.*"} == 1
           for: 5m
           annotations:
             summary: >-
@@ -21,7 +21,7 @@ spec:
         - alert: RecyclarrSyncStale
           expr: |-
             time() - max by (namespace) (
-              kube_job_status_last_start_time{namespace="downloads", job_name=~"recyclarr-.*"}
+              kube_job_status_start_time{namespace="downloads", job_name=~"recyclarr-.*"}
             ) > 26 * 3600
           for: 1h
           annotations:
