@@ -21,24 +21,36 @@ spec:
               repository: ghcr.io/open-webui/open-webui
               tag: v0.13.5@sha256:e0dc5a8bf5c71cadf339d1e7b9408b357da75fb2854f82cad57a1609fadf2a22
             env:
-              # Image Generation
-              ENABLE_OPENAI_API: false
-              ENABLE_OLLAMA_API: true
+              # Image Generation (ComfyUI)
               ENABLE_IMAGE_GENERATION: true
               IMAGE_GENERATION_ENGINE: comfyui
-              IMAGE_GENERATION_MODEL: dreamshaper_8
+              IMAGE_GENERATION_MODEL: JANKUTrainedChenkinNoobai_v777.safetensors
               IMAGE_SIZE: 400x400
               IMAGE_STEPS: 8
               COMFYUI_BASE_URL: http://smurf-pc:8188
-              # Open-webui settings
-              OLLAMA_BASE_URL: http://llama-swap.llm:8080/v1
-              ENABLE_RAG_WEB_SEARCH: true
-              ENABLE_SEARCH_QUERY: true
-              RAG_WEB_SEARCH_ENGINE: searxng
+              # Chat through LiteLLM; the legacy Ollama shim (llama-swap) is gone
+              ENABLE_OLLAMA_API: "false"
+              OPENAI_API_BASE_URL: http://litellm.llm:4000/v1
+              OPENAI_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-open-webui
+                    key: api-key
+              # RAG embeddings + reranking through LiteLLM aliases
+              RAG_EMBEDDING_ENGINE: openai
+              RAG_EMBEDDING_MODEL: embed
+              RAG_EMBEDDING_BATCH_SIZE: "8"
+              RAG_RERANKING_ENGINE: external
+              RAG_EXTERNAL_RERANKER_URL: http://litellm.llm:4000/v1/rerank
+              RAG_RERANKING_MODEL: rerank
+              # Web search
+              ENABLE_WEB_SEARCH: "true"
+              WEB_SEARCH_ENGINE: searxng
               SEARXNG_QUERY_URL: http://searxng:8080/search?q=<query>
-              ENABLE_WEBSOCKET_SUPPORT: "true"
+              # App
+              WEBUI_URL: https://chat.jory.dev
+              REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
               WEBSOCKET_MANAGER: "redis"
-              WEBSOCKET_REDIS_URL: "redis://{{ .Release.Name }}-dragonfly:6379"
               DATABASE_URL:
                 valueFrom:
                   secretKeyRef:
