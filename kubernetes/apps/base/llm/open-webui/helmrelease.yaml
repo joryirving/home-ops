@@ -42,6 +42,12 @@ spec:
               RAG_EMBEDDING_BATCH_SIZE: "8"
               RAG_RERANKING_ENGINE: external
               RAG_EXTERNAL_RERANKER_URL: http://litellm.llm:4000/v1/rerank
+              # the external reranker posts its own Bearer token; without this it 401s and silently skips reranking
+              RAG_EXTERNAL_RERANKER_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm-key-open-webui
+                    key: api-key
               RAG_RERANKING_MODEL: rerank
               # Web search
               ENABLE_WEB_SEARCH: "true"
