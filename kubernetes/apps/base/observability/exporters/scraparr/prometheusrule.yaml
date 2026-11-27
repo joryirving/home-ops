@@ -1,0 +1,30 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: scraparr
+spec:
+  groups:
+    - name: media-pipeline.rules
+      rules:
+        - alert: MediaServiceScrapeDown
+          expr: |-
+            scraparr_services_up == 0
+          for: 10m
+          annotations:
+            summary: >-
+              Scraparr cannot reach {{ $labels.scraparr_services }} ({{ $labels.alias }}) —
+              the app is down or its API key was rotated
+          labels:
+            severity: warning
+        - alert: MediaQueueErrors
+          expr: |-
+            (sonarr_queue_error > 0 or radarr_queue_error > 0)
+          for: 30m
+          annotations:
+            summary: >-
+              A Sonarr/Radarr download queue has carried errors for 30m ({{ $labels.alias }}) —
+              check the queue view for the failing item
+          labels:
+            severity: warning

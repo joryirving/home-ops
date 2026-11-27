@@ -1,0 +1,81 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sabnzbd-exporter
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: sabnzbd-exporter
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      sabnzbd-exporter:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/onedr0p/exportarr
+              tag: v2.3.0@sha256:af535d94061cf97a52e1661945ffba78c03f9443eae7c0da1a80a5a4be56b520
+            args: ["sabnzbd"]
+            env:
+              TZ: America/Edmonton
+              URL: http://sabnzbd.downloads.svc.cluster.local:80
+              PORT: &port 9707
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+    service:
+      app:
+        ports:
+          http:
+            port: *port
+    serviceMonitor:
+      app:
+        serviceName: "{{ .Release.Name }}"
+        endpoints:
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 2m
+            scrapeTimeout: 30s
+            relabelings:
+              - action: replace
+                targetLabel: instance
+                replacement: sabnzbd-exporter
+            metricRelabelings:
+              - action: labeldrop
+                regex: (pod|endpoint|container)
