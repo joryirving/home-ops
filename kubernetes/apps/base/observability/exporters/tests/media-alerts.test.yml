@@ -1,0 +1,134 @@
+# promtool unit tests for the media pipeline alert rules (scraparr + sabnzbd-exporter).
+# Run via hack/test-media-alerts.sh; rule groups are extracted from the two
+# prometheusrule.yaml manifests, so this file only pins inputs and expectations.
+rule_files:
+  - rules-scraparr.yaml
+  - rules-sabnzbd.yaml
+evaluation_interval: 1m
+tests:
+  # MediaServiceScrapeDown: radarr reports down, all four connector series present
+  - interval: 1m
+    input_series:
+      - { series: 'scraparr_services_up{scraparr_services="radarr",alias="Radarr"}', values: '0x27' }
+      - { series: 'scraparr_services_up{scraparr_services="sonarr",alias="sonarr"}', values: '1x27' }
+      - { series: 'scraparr_services_up{scraparr_services="prowlarr",alias="prowlarr"}', values: '1x27' }
+      - { series: 'scraparr_services_up{scraparr_services="seerr",alias="seerr"}', values: '1x27' }
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: MediaServiceScrapeDown
+        exp_alerts:
+          - exp_labels: { alertname: MediaServiceScrapeDown, scraparr_services: radarr, alias: Radarr, severity: warning }
+            exp_annotations: { summary: 'Scraparr cannot reach radarr (Radarr) — the app is down or its API key was rotated' }
+      # radarr down also trips SeriesMissing (its collection fails too); asserted in its own case
+      - { eval_time: 11m, alertname: MediaScrapeStale, exp_alerts: [] }
+  # quiet while every connector is up (required collection series present)
+  - interval: 1m
+    input_series:
+      - { series: 'scraparr_services_up{scraparr_services="sonarr",alias="sonarr"}', values: '1x27' }
+      - { series: 'scraparr_services_up{scraparr_services="radarr",alias="Radarr"}', values: '1x27' }
+      - { series: 'scraparr_services_up{scraparr_services="prowlarr",alias="prowlarr"}', values: '1x27' }
+      - { series: 'scraparr_services_up{scraparr_services="seerr",alias="seerr"}', values: '1x27' }
+      - { series: 'sonarr_queue_error{alias="sonarr"}', values: '0x27' }
+      - { series: 'radarr_queue_error{alias="Radarr"}', values: '0x27' }
+      - { series: 'prowlarr_indexer_count_total{alias="prowlarr"}', values: '19x27' }
+      - { series: 'seerr_request_total{alias="seerr"}', values: '81x27' }
+      - { series: 'sonarr_last_scrape{alias="sonarr"}', values: '1000000000000x27' }
+      - { series: 'radarr_last_scrape{alias="Radarr"}', values: '1000000000000x27' }
+    alert_rule_test:
+      - { eval_time: 11m, alertname: MediaServiceScrapeDown, exp_alerts: [] }
+      - { eval_time: 26m, alertname: MediaScrapeStale, exp_alerts: [] }
+      - { eval_time: 16m, alertname: MediaConnectorSeriesMissing, exp_alerts: [] }
+  # MediaScrapeStale: collector loop stalled — promtool time starts near 0, so a
+  # 0-valued last_scrape exceeds the 900s threshold as the clock advances
+  - interval: 1m
+    input_series:
+      - { series: 'sonarr_last_scrape{alias="sonarr"}', values: '0x27' }
+      - { series: 'radarr_last_scrape{alias="Radarr"}', values: '1000000000000x27' }
+    alert_rule_test:
+      - eval_time: 26m
+        alertname: MediaScrapeStale
+        exp_alerts:
+          - exp_labels: { alertname: MediaScrapeStale, alias: sonarr, severity: warning }
+            exp_annotations: { summary: 'A Scraparr connector has not completed a scrape cycle in 15m — its loop is stalled; check scraparr pod logs' }
+  # fresh scrape timestamps stay quiet
+  - interval: 1m
+    input_series:
+      - { series: 'sonarr_last_scrape{alias="sonarr"}', values: '1000000000000x27' }
+      - { series: 'radarr_last_scrape{alias="Radarr"}', values: '1000000000000x27' }
+    alert_rule_test:
+      - { eval_time: 26m, alertname: MediaScrapeStale, exp_alerts: [] }
+  # MediaConnectorSeriesMissing: exporter fully absent
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: MediaConnectorSeriesMissing
+        exp_alerts:
+          - exp_labels: { alertname: MediaConnectorSeriesMissing, severity: warning }
+            exp_annotations: { summary: 'Expected Scraparr metric series are missing (exporter down, or a connector has not completed a successful collection since startup) — 4 connectors configured: sonarr, radarr, prowlarr, seerr' }
+  # ... partial connector loss (2 of 4 up series)
+  - interval: 1m
+    input_series:
+      - { series: 'scraparr_services_up{scraparr_services="sonarr",alias="sonarr"}', values: '1x17' }
+      - { series: 'scraparr_services_up{scraparr_services="radarr",alias="Radarr"}', values: '1x17' }
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: MediaConnectorSeriesMissing
+        exp_alerts:
+          - exp_labels: { alertname: MediaConnectorSeriesMissing, severity: warning }
+            exp_annotations: { summary: 'Expected Scraparr metric series are missing (exporter down, or a connector has not completed a successful collection since startup) — 4 connectors configured: sonarr, radarr, prowlarr, seerr' }
+  # ... all connectors report UP but a collection never succeeded (auth ok, scrape fails):
+  # UP series exist yet a required metric is absent — staleness cannot see this
+  - interval: 1m
+    input_series:
+      - { series: 'scraparr_services_up{scraparr_services="sonarr",alias="sonarr"}', values: '1x17' }
+      - { series: 'scraparr_services_up{scraparr_services="radarr",alias="Radarr"}', values: '1x17' }
+      - { series: 'scraparr_services_up{scraparr_services="prowlarr",alias="prowlarr"}', values: '1x17' }
+      - { series: 'scraparr_services_up{scraparr_services="seerr",alias="seerr"}', values: '1x17' }
+      - { series: 'radarr_queue_error{alias="Radarr"}', values: '0x17' }
+      - { series: 'prowlarr_indexer_count_total{alias="prowlarr"}', values: '19x17' }
+      - { series: 'seerr_request_total{alias="seerr"}', values: '81x17' }
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: MediaConnectorSeriesMissing
+        exp_alerts:
+          - exp_labels: { alertname: MediaConnectorSeriesMissing, severity: warning }
+            exp_annotations: { summary: 'Expected Scraparr metric series are missing (exporter down, or a connector has not completed a successful collection since startup) — 4 connectors configured: sonarr, radarr, prowlarr, seerr' }
+  # MediaQueueErrors: sustained queue errors fire
+  - interval: 1m
+    input_series:
+      - { series: 'sonarr_queue_error{alias="sonarr"}', values: '1x32' }
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: MediaQueueErrors
+        exp_alerts:
+          - exp_labels: { alertname: MediaQueueErrors, alias: sonarr, severity: warning }
+            exp_annotations: { summary: 'A Sonarr/Radarr download queue has carried errors for 30m (sonarr) — check the queue view for the failing item' }
+  # ... warnings alone do not fire it
+  - interval: 1m
+    input_series:
+      - { series: 'sonarr_queue_error{alias="sonarr"}', values: '0x32' }
+      - { series: 'sonarr_queue_warning{alias="sonarr"}', values: '3x32' }
+      - { series: 'radarr_queue_error{alias="Radarr"}', values: '0x32' }
+    alert_rule_test:
+      - { eval_time: 31m, alertname: MediaQueueErrors, exp_alerts: [] }
+  # UsenetQueueStalled: downloading at 0 B/s with backlog fires
+  - interval: 1m
+    input_series:
+      - { series: 'sabnzbd_status', values: '3x32' }
+      - { series: 'sabnzbd_speed_bps', values: '0x32' }
+      - { series: 'sabnzbd_remaining_bytes', values: '1000000000x32' }
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: UsenetQueueStalled
+        exp_alerts:
+          - exp_labels: { alertname: UsenetQueueStalled, severity: warning }
+            exp_annotations: { summary: 'SABnzbd reports it is downloading but has held 0 B/s for 30m with items still queued — likely a dead NZB server or full disk' }
+  # ... quiet while making progress
+  - interval: 1m
+    input_series:
+      - { series: 'sabnzbd_status', values: '3x32' }
+      - { series: 'sabnzbd_speed_bps', values: '5000000x32' }
+      - { series: 'sabnzbd_remaining_bytes', values: '1000000000x32' }
+    alert_rule_test:
+      - { eval_time: 31m, alertname: UsenetQueueStalled, exp_alerts: [] }

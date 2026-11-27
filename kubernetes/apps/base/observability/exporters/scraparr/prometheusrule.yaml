@@ -18,8 +18,11 @@ spec:
               the app is down or its API key was rotated
           labels:
             severity: warning
-        # UP only covers reachability/auth; a connector dying mid-cycle keeps UP=1 but
-        # stops refreshing <service>_last_scrape (300s interval, alert at 3x + 10m for)
+        # last_scrape advances every connector loop iteration even when collection fails
+        # (v3.2.0: radarr/seerr set it before their failure checks; sonarr/prowlarr before
+        # finishing collection). So a stale timestamp means the collector loop itself is
+        # stalled, not that collection is failing — never-successful connectors are caught
+        # by MediaConnectorSeriesMissing below. 300s interval, alert at 3x
         - alert: MediaScrapeStale
           expr: |-
             (time() - sonarr_last_scrape > 900) or (time() - radarr_last_scrape > 900)
@@ -27,19 +30,24 @@ spec:
           for: 10m
           annotations:
             summary: >-
-              A Scraparr connector has not completed a scrape in 15m — metrics are stale;
-              check scraparr pod logs
+              A Scraparr connector has not completed a scrape cycle in 15m — its loop is
+              stalled; check scraparr pod logs
           labels:
             severity: warning
-        # exporter down or a connector vanished: staleness cannot fire on absent series
+        # one required metric per connector: these series only appear after a connector's
+        # first fully successful collection, so they catch never-succeeding connectors and
+        # absent exporters, which staleness cannot see. Update the list with connectors.
         - alert: MediaConnectorSeriesMissing
           expr: |-
             absent(scraparr_services_up) or count(scraparr_services_up) < 4
+            or absent(sonarr_queue_error) or absent(radarr_queue_error)
+            or absent(prowlarr_indexer_count_total) or absent(seerr_request_total)
           for: 15m
           annotations:
             summary: >-
-              Expected Scraparr connector series are missing (exporter down or a connector
-              failed to start) — 4 connectors configured: sonarr, radarr, prowlarr, seerr
+              Expected Scraparr metric series are missing (exporter down, or a connector
+              has not completed a successful collection since startup) — 4 connectors
+              configured: sonarr, radarr, prowlarr, seerr
           labels:
             severity: warning
         - alert: MediaQueueErrors
