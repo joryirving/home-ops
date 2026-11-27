@@ -235,7 +235,7 @@ The repository Actions variable `FALLBACK_MODEL` is `MiniMax-M3.1-Flash` (read 2
 | `MiniMax-M3.1-Flash` | MiniMax Plus               | MiniMax-M3.1-Flash (Anthropic endpoint) | 1M   | OpenClaw default + Matcha primary; `auto` MEDIUM and miss default; Hermes/opencode `reviewer` + `explorer`. Thinking always on; `reasoning_effort` low/medium/high/xhigh/max (default max). Published list pricing: $0.15/M input, $0.60/M output, $0.015/M cache reads; no long-context tier listed |
 | `MiniMax-M3`          | MiniMax Plus                      | MiniMax-M3 (Anthropic endpoint)             | 1M       | Retained standalone for rollback and manual use; no pool rungs                                 |
 | `MiniMax-M2.7` | Legacy client entry | No active LiteLLMModel CR | 204800 declared by client | Not a configured proxy backend. Old cron entries require separate verification |
-| `glm-5.3`             | GLM Coding Lite                   | glm-5.3 (Z.AI)                              | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of the same model. Falls back to Neuralwatt `glm-5.3` (order 2)    |
+| `glm-5.4`             | GLM Coding Lite + Neuralwatt    | glm-5.4 (Z.AI), glm-5.3 (Neuralwatt)        | 1M       | Hermes fallback; manual. `frontier-pool` rung 3 is a separate deployment of GLM-5.3. Falls back to Neuralwatt `glm-5.3` (order 2)    |
 | `glm-5.3-flash`       | GLM Coding Lite + Neuralwatt | glm-5.3-flash (Z.AI), DeepSeek V4.1 Flash (Neuralwatt) | 1M       | OpenClaw Miso/main primary; `oracle` role; Courier `frontier` coordinator. Neuralwatt rung (order 3) serves DeepSeek V4.1 Flash if Z.AI fails                                                     |
 | `chatgpt/gpt-6.2-astra` | ChatGPT Plus                      | gpt-6.2-astra (Codex/OAuth)                 | 272k*    | Direct alias; `frontier-pool` rung 2                                                          |
 | `chatgpt/gpt-6.2-sol` | ChatGPT Plus                      | gpt-6.2-sol (Codex/OAuth)                   | 272k     | Direct alias; `reasoning-pool` rung 2                                                         |
@@ -261,8 +261,8 @@ account moved from pay-as-you-go to a subscription and the cap was removed.
 | Model group       | Rung                | Order | Provider   |
 | ----------------- | ------------------- | ----- | ---------- |
 | `dsv4.1f`         | sole                | 2     | Neuralwatt |
-| `glm-5.3`         | Z.AI                | 1     | Z.AI       |
-| `glm-5.3`         | Neuralwatt          | 2     | Neuralwatt |
+| `glm-5.4`         | Z.AI                | 1     | Z.AI       |
+| `glm-5.4`         | Neuralwatt (5.3)   | 2     | Neuralwatt |
 | `glm-5.3-flash`   | Z.AI                | 1     | Z.AI       |
 | `glm-5.3-flash`   | Neuralwatt (DeepSeek V4.1 Flash) | 2 | Neuralwatt |
 | `reasoning-pool`  | GLM Flash, Z.AI     | 4     | Z.AI       |
@@ -274,9 +274,10 @@ and untrusted; its LiteLLMModel and fallback entry are gone.
 
 Every Neuralwatt rung behind Z.AI serves only when the Z.AI rung fails and its deployment is
 cooling down. The `glm-5.3-flash` alias fallback answers with DeepSeek V4.1 Flash weights, so a
-Z.AI outage there silently changes the answering model, not just the host. The `glm-5.3` alias
-and both pool rungs keep the same GLM weights. `reasoning-pool` puts the Neuralwatt rung at
-order 5, ahead of the local Flash-Next rung at order 6.
+Z.AI outage there silently changes the answering model, not just the host. The `glm-5.4` alias
+also changes the answering model, because its Neuralwatt rung serves GLM-5.3 weights until
+Neuralwatt adds GLM-5.4. Both pool rungs keep the same GLM weights. `reasoning-pool` puts the
+Neuralwatt rung at order 4, ahead of the local Flash-Next rung at order 5.
 
 All Neuralwatt rungs declare Neuralwatt's own token prices, not Z.AI's.
 
@@ -307,9 +308,8 @@ Leave output room inside the backend total context, even when metadata lists sep
 | `frontier-pool` | Kimi K3.1 Pro -> GPT-6.2 Astra -> GLM-5.3 (Z.AI) | No effort pin | Frontier escalation; three rungs, no DeepSeek floor |
 | `reasoning-pool` | Kimi K2.8 Preview -> GPT-6.2 Sol -> GLM Flash (Z.AI -> Neuralwatt) -> Flash-Next | K2.8 drops `reasoning_effort` | Planning and hard debugging, then local fallback |
 | `implementation-pool` | GPT-6 Luna -> Strata (Flash-Next IQ3_S) | Luna `high`; Strata `xhigh` | Implementation after the approach is settled |
-| `qwen3.8-flash-next` | Flash-Next (skirk primary -> strata overflow) | Thinking recipe | Agent/thinking lane; skirk engine dedicated to it |
+| `qwen3.8-flash-next` | Flash-Next (Gufo and Strata) | Thinking recipe | Agent/thinking lane and Dispatch issue grooming |
 | `qwen3.8-flash-next-chat` | Flash-Next (strata primary -> skirk failover) | Flash-Next `enable_thinking: false` | Chat lane; keeps chat off skirk's engine queue |
-| `qwen3.8-flash-next` | Gufo and Strata | No effort pin | Dispatch issue grooming |
 | `free-pool` | Eight OpenRouter deployments, listed below | No effort pin | Optional work on public material only |
 
 Opencode declares `implementation-pool` at 147456 tokens, `frontier-pool` at 272000, and `reasoning-pool` at 262144.
@@ -318,8 +318,8 @@ The 1M standalone GLM alias does not give the reasoning pool a 1M window.
 The Flash-Next rungs declare 271360 input and 32768 output, summing to the 307200 shared engine budget (input + output + 3072 slack). Both engines run 307200 (Gufo with dynamic YaRN, Strata with static YaRN ~1.172), so both engines admit every request that LiteLLM accepts.
 
 The direct `glm-5.3-flash` alias leads on Z.AI and falls back to DeepSeek V4.1 Flash on Neuralwatt;
-`glm-5.3` falls back to the same GLM-5.3 weights on Neuralwatt. The Hyper subscription and its pool
-rungs are retired.
+`glm-5.4` leads on Z.AI with GLM-5.4 and falls back to GLM-5.3 weights on Neuralwatt. The Hyper
+subscription and its pool rungs are retired.
 The reasoning pool retains its Z.AI rung. Neither pool includes MiniMax or DeepSeek.
 The direct Luna alias defaults to `max`, while its implementation rung defaults to `high`.
 Both use nested `extra_body.reasoning.effort`. These are defaults, not enforced overrides of client requests.
@@ -345,8 +345,9 @@ self-reported on non-overlapping harnesses** (SWE-bench Pro ≠ Verified; Termin
 table as a statement about pricing, cache behaviour, or quota consumption.
 
 Rows for `dsv4p`, `glm-5.2`, `mimo-v2.5` and `mimo-v2.5-pro` are kept for reference only — those
-aliases were retired on 2026-08-25 and are no longer served. The Mellum2 row is likewise
-historical: in that snapshot the then-reviewer alias served Nemotron 3.5 Lightning
+aliases were retired on 2026-08-25 and are no longer served. The `glm-5.3` alias retired on
+2026-11-26, when Z.AI moved to GLM-5.4 and the alias became `glm-5.4`. The Mellum2 row is
+likewise historical: in that snapshot the then-reviewer alias served Nemotron 3.5 Lightning
 30B-A3B. The later 9070XT reviewer and its wake endpoint are now permanently retired.
 
 Rows are ordered by **AA-II**, the [Artificial Analysis Intelligence Index](https://artificialanalysis.ai/leaderboards/models)
@@ -674,7 +675,7 @@ There are two different caches in this stack:
 - LiteLLM's Redis response cache (300-second TTL) covers only the `embedding`/`aembedding` call types
   (`supported_call_types`, #10517); chat completions are not response-cached. It is separate from
   provider prefix caching.
-- OpenClaw model entries set `cache_prompt: true` for `kimi-k2.8`, `kimi-k3.1`, `glm-5.3`,
+- OpenClaw model entries set `cache_prompt: true` for `kimi-k2.8`, `kimi-k3.1`, `glm-5.4`,
   `glm-5.3-flash`, `dsv4.1f` and the local aliases (`qwen3.8-flash-next`, `qwen3.8-27b`,
   `muse-glimmer`, plus their `-chat` twins); the native MiniMax
   entries set `cacheRetention: "short"` instead. Providers may report prefix-cache reads in response
