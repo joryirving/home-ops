@@ -4,15 +4,19 @@ kind: Model
 metadata:
   name: qwen3-8-flash-next-strata
 spec:
-  # Verified against HF (public, ungated) and against the pack names on disk.
-  source: hf://ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF
+  source: hf://unsloth/Qwen3.8-Flash-Next-GGUF
   sourceSecretRef:
     name: huggingface
   files:
-  - IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf
-  - IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
+    - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00004.gguf
+    - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00002-of-00004.gguf
+    - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00003-of-00004.gguf
+    - UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00004-of-00004.gguf
+    - MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf
+    - mmproj-BF16.gguf
+  mmproj: mmproj-BF16.gguf
   format: gguf
-  quantization: IQ3_S
+  quantization: UD-IQ4_XS
   hardware:
     accelerator: cuda
     gpu:
@@ -25,11 +29,6 @@ kind: InferenceService
 metadata:
   name: qwen3-8-flash-next-strata
   annotations:
-    # Idle-aware rollouts (same gate skirk uses): llmkube scrapes this gauge
-    # per-replica and defers pod-template changes (image bumps) until the
-    # engine reports zero running requests. Strata serves /metrics as JSON
-    # unless ?format=prometheus is set, so the path must carry the query.
-    # The probe sends no Accept header and reads baseURL+path verbatim.
     inference.llmkube.dev/idle-metric: vllm:num_requests_running
     inference.llmkube.dev/idle-metric-path: /metrics?format=prometheus
 spec:
@@ -38,63 +37,15 @@ spec:
   rolloutPolicy:
     waitForIdle: true
     idleTimeoutSeconds: 86400
-  # 0.2.20 (engine 0.1.66) crashloops here: the new verify step's layer
-  # doorbell ("layer 0 never rang: operation not supported on global/shared
-  # address space") hits an unsupported system-scope atomic on this
-  # driver/GPU, init aborts with result=11, and the pod crashloops. Back to
-  # the 0.2.19 pin until upstream fixes or documents a CUDA-side
-  # STRATA_VERIFY knob. Ships engine 0.1.62-linux-x86_64-cuda-cuda13. The
-  # saved run config on the PVC still names the 0.1.59 vision reader; the
-  # Terminal repoints version-folder paths at the current version when it
-  # reads the config, so the stale path needs no cleanup here. Pack index
-  # stays v3, so the prepared iq3_s pack carries over.
   image: ghcr.io/niko1221/strata:0.2.22-cuda13@sha256:bd66d4d33ddb896274c72d2fc05a425670f544e1506afa5401621f6d5b6c70ca
   command:
   - /bin/sh
   - -c
   - |
-    # PRODUCTION (2026-11-20): UD-IQ4_XS, all experts resident, 2 serving
-    # slots at 307,200 tokens. Promoted after the same-day qualification lane:
-    # routed experts 59.5 GB = 55.4 GiB pinned whole (no --resident-budget-gib;
-    # setup's cgroup-aware all-RAM gate: 55.4 + 16 fits 96), GPU cache 7019
-    # experts / 15.82 GiB VRAM, ev_max 0 through the whole 8K-270K matrix with
-    # pgscan byte-flat, DFlash2 acceptance consistently above IQ3_S's, decode
-    # parity at 128K and +2.7% at 270K, bench standard-v1 sanity 12/12 (logs on
-    # the ganyu PVC: /data/bench-q4/window-2026-11-20-iq4*.log and
-    # /data/bench-standard-iq4xs/). --parallel 2 serves two sessions; measured
-    # two-128K concurrency ran with zero additional reclaim and no per-session
-    # decode penalty, and 2x307K KV projects ~84 Gi of the 96Gi cap.
-    # --set ple-io=mmap keeps the 28.8 GB n-gram PLE table file-backed
-    # (measured touch set ~2 GiB) instead of the install config's --ple-io ram
-    # mlock, which beside the pinned arena leaves no reclaimable slack under a
-    # hard cap. STRATA_ROUTE_TAIL_SKIP=unset: the install env carries =0; the
-    # engine's auto rule (rank-7 skip) is what the qualification ran.
-    # conversation-cache-mib=8192 matches the qualification and prior IQ3_S
-    # launch. The pack was prepared with the unsloth family's --compat-bf16
-    # (195 tensors). LiteLLM routing is unchanged: the engine serves any
-    # model: name, so both groups keep calling qwen3.8-flash-next-unsloth-ud-iq4_xs; only
-    # max_parallel_requests moves 1 -> 2 in the two groups that carry this
-    # rung. Rollback: --model iq3_s, drop the --set overrides, restore
-    # max_parallel_requests: 1.
-    # No FAMILY/MODEL env vars on this pod: strata launch maps env overrides
-    # over CLI flags and silently reverts to the wrong pack (observed).
-    # --no-api-key: serve without auth, matching the keyless gufo rungs (skirk)
-    # in this group. litellm sends sk-llmkube-noauth, which a keyless engine
-    # ignores. Kubelet probes hit /v1/models unauthenticated; a keyed engine
-    # 401s them and never becomes Ready. Gotchas observed live:
-    # - The key actually lives in /data/state/api-key on the PVC (NOT the
-    #   launch preset json); strata 401s every request until that file is
-    #   deleted once. --no-api-key does not remove it.
-    # - Keyless mode enforces a DNS-rebinding Host check (keyed mode skips
-    #   it), so the Service DNS names must be in STRATA_ALLOWED_HOSTS below;
-    #   without it the engine 403s litellm's requests by Host header.
     strata launch --model ud-iq4_xs --data-dir /data/Strata-data --context 300k \
       --vision gpu --tune skip --access lan --port 8080 --yes --no-tui --no-api-key \
       --parallel 2 --set conversation-cache-mib=8192 --set ple-io=mmap \
       --set STRATA_ROUTE_TAIL_SKIP=unset --set STRATA_BATCH_MTP=1
-    # `strata launch --no-tui` starts the engine and returns; supervise it.
-    # Any HTTP response means the engine is alive; connection errors mean it
-    # died.
     PY=/opt/strata/terminal/python/bin/python3
     while $PY -c 'import urllib.request, urllib.error
     try:
@@ -106,28 +57,15 @@ spec:
     done
     echo "strata engine died; exiting so the pod restarts"
     exit 1
-  # The engine warned about low free VRAM (<512 MiB) and suggested
-  # --vram-reserve-mib 768 in the generated engine args; strata launch does not
-  # expose that flag. If decode throughput degrades, patch the generated run
-  # config in this wrapper before the engine starts.
   skipModelInit: true
-  # Back up after the Inkling vLLM trial (2026-11-22): ganyu has one 3090, so
-  # the Qwen engine and the Inkling lane cannot both run. QFN and chat get
-  # their Strata rung back.
   replicas: 1
   priority: high
   runtimeClassName: nvidia
   nodeSelector:
     topology.kubernetes.io: egpu
-  # Keyless engines enforce a DNS-rebinding Host allowlist (see command
-  # above); without the Service DNS names here litellm gets 403s.
   env:
   - name: STRATA_ALLOWED_HOSTS
     value: qwen3-8-flash-next-strata.llm.svc.cluster.local,qwen3-8-flash-next-strata.llm.svc,qwen3-8-flash-next-strata
-  # Batch-MTP: the launch layer (drafting.py slots_draft_nothing / server.py)
-  # reads ITS OWN environment to decide whether parallel slots draft — a
-  # --set STRATA_BATCH_MTP=1 reaches only the engine process and the boot line
-  # stays "none in parallel slots". Container-level env reaches both.
   - name: STRATA_BATCH_MTP
     value: "1"
   tolerations:
@@ -136,11 +74,7 @@ spec:
     effect: NoSchedule
   resources:
     cpu: "8"
-    # IQ4_XS all-resident: 55.4 GiB expert arena + runtime, ~5.7 GiB int8 KV
-    # per 307K session (kv-resident streams it). Two concurrent 307K sessions
-    # project ~84 Gi of the 96Gi cap — measured single-session peak was 72.3
-    # at 270K with ev_max 0 throughout the qualification.
-    memory: 96Gi
+    memory: 100Gi
     gpu: 1
   extraVolumes:
   - name: models
@@ -153,7 +87,3 @@ spec:
   endpoint:
     port: 8080
     type: ClusterIP
-  # Keyless engine (see command above): default unauthenticated probes
-  # pass. If the engine ever runs keyed again, restore probeOverrides
-  # with an Authorization httpHeader — a keyed engine 401s headerless
-  # probes and the pod never becomes Ready.
