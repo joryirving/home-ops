@@ -1,0 +1,62 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: scraparr
+spec:
+  groups:
+    - name: media-pipeline.rules
+      rules:
+        - alert: MediaServiceScrapeDown
+          expr: |-
+            scraparr_services_up == 0
+          for: 10m
+          annotations:
+            summary: >-
+              Scraparr cannot reach {{ $labels.scraparr_services }} ({{ $labels.alias }}) —
+              the app is down or its API key was rotated
+          labels:
+            severity: warning
+        # last_scrape advances every connector loop iteration even when collection fails
+        # (v3.2.0: radarr/seerr set it before their failure checks; sonarr/prowlarr before
+        # finishing collection). So a stale timestamp means the collector loop itself is
+        # stalled, not that collection is failing — never-successful connectors are caught
+        # by MediaConnectorSeriesMissing below. 300s interval, alert at 3x
+        - alert: MediaScrapeStale
+          expr: |-
+            (time() - sonarr_last_scrape > 900) or (time() - radarr_last_scrape > 900)
+            or (time() - prowlarr_last_scrape > 900) or (time() - seerr_last_scrape > 900)
+          for: 10m
+          annotations:
+            summary: >-
+              A Scraparr connector has not completed a scrape cycle in 15m — its loop is
+              stalled; check scraparr pod logs
+          labels:
+            severity: warning
+        # one required metric per connector: these series only appear after a connector's
+        # first fully successful collection, so they catch never-succeeding connectors and
+        # absent exporters, which staleness cannot see. Update the list with connectors.
+        - alert: MediaConnectorSeriesMissing
+          expr: |-
+            absent(scraparr_services_up) or count(scraparr_services_up) < 4
+            or absent(sonarr_queue_error) or absent(radarr_queue_error)
+            or absent(prowlarr_indexer_count_total) or absent(seerr_request_total)
+          for: 15m
+          annotations:
+            summary: >-
+              Expected Scraparr metric series are missing (exporter down, or a connector
+              has not completed a successful collection since startup) — 4 connectors
+              configured: sonarr, radarr, prowlarr, seerr
+          labels:
+            severity: warning
+        - alert: MediaQueueErrors
+          expr: |-
+            (sonarr_queue_error > 0 or radarr_queue_error > 0)
+          for: 30m
+          annotations:
+            summary: >-
+              A Sonarr/Radarr download queue has carried errors for 30m ({{ $labels.alias }}) —
+              check the queue view for the failing item
+          labels:
+            severity: warning

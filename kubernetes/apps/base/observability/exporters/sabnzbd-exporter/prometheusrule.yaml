@@ -1,0 +1,22 @@
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: sabnzbd-exporter
+spec:
+  groups:
+    - name: sabnzbd-exporter.rules
+      rules:
+        - alert: UsenetQueueStalled
+          expr: |-
+            sabnzbd_status == 3
+            and sabnzbd_speed_bps == 0
+            and sabnzbd_remaining_bytes > 0
+          for: 30m
+          annotations:
+            summary: >-
+              SABnzbd reports it is downloading but has held 0 B/s for 30m with items still
+              queued — likely a dead NZB server or full disk
+          labels:
+            severity: warning

@@ -1,0 +1,90 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scraparr
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: scraparr
+  interval: 15m
+  dependsOn: []
+  values:
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 100
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      scraparr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/thecfu/scraparr
+              tag: 3.2.0@sha256:b9f79a85c33564dfdb1e50ab3d725faeb27b89f4ad5cae7013e39e2f572a8085
+            env:
+              TZ: America/Edmonton
+              GENERAL_ADDRESS: 0.0.0.0
+              GENERAL_PORT: &port 7100
+              SONARR_URL: http://sonarr.downloads.svc.cluster.local:80
+              RADARR_URL: http://radarr.downloads.svc.cluster.local:80
+              PROWLARR_URL: http://prowlarr.downloads.svc.cluster.local:80
+              SEERR_URL: http://seerr.media.svc.cluster.local:80
+              # upstream default polls each connector every 30s; collection stats only need minutes
+              SONARR_INTERVAL: &interval "300"
+              RADARR_INTERVAL: *interval
+              PROWLARR_INTERVAL: *interval
+              SEERR_INTERVAL: *interval
+              # default true re-fetches episode files for all ~455 series per cycle; only sonarr_quality_episodes* needs it
+              SONARR_EPISODE_QUALITY_STATS: "false"
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /metrics
+                    port: *port
+                  initialDelaySeconds: 0
+                  periodSeconds: 30
+                  timeoutSeconds: 10
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+    service:
+      app:
+        ports:
+          http:
+            port: *port
+    serviceMonitor:
+      app:
+        serviceName: "{{ .Release.Name }}"
+        endpoints:
+          - port: http
+            scheme: http
+            path: /metrics
+            interval: 2m
+            scrapeTimeout: 30s
+            relabelings:
+              - action: replace
+                targetLabel: instance
+                replacement: scraparr
+            metricRelabelings:
+              - action: labeldrop
+                regex: (pod|endpoint|container)
