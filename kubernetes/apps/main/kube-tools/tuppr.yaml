@@ -12,8 +12,8 @@ spec:
   wait: true
   prune: true
   sourceRef:
-    kind: GitRepository
-    name: flux-system
+    kind: ExternalArtifact
+    name: tuppr
     namespace: flux-system
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -28,6 +28,7 @@ spec:
   path: ./kubernetes/apps/${CLUSTER}/kube-tools/upgrades
   wait: false
   prune: true
+  # Reads Git directly: content lives in the per-cluster overlay dir, not a base/ artifact
   sourceRef:
     kind: GitRepository
     name: flux-system
